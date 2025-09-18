@@ -1,0 +1,37 @@
+{
+  "name": "money-wise",
+  "version": "1.0.0",
+  "description": "MoneyWise - Smart personal finance app with automatic tracking",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:web\" \"npm run dev:mobile\"",
+    "dev:backend": "cd apps/backend && npm run start:dev",
+    "dev:web": "cd apps/web && npm run dev",
+    "dev:mobile": "cd apps/mobile && npm start",
+    "build": "npm run build:backend && npm run build:web",
+    "build:backend": "cd apps/backend && npm run build",
+    "build:web": "cd apps/web && npm run build",
+    "test": "npm run test:backend && npm run test:web",
+    "test:backend": "cd apps/backend && npm run test",
+    "test:web": "cd apps/web && npm run test",
+    "lint": "npm run lint:backend && npm run lint:web",
+    "lint:backend": "cd apps/backend && npm run lint",
+    "lint:web": "cd apps/web && npm run lint",
+    "setup": "npm install && npm run setup:backend && npm run setup:web && npm run setup:mobile",
+    "setup:backend": "cd apps/backend && npm install",
+    "setup:web": "cd apps/web && npm install",
+    "setup:mobile": "cd apps/mobile && npm install"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "lerna": "^7.4.2"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  }
+}
