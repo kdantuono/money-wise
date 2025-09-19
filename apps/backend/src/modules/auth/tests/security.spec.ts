@@ -173,7 +173,12 @@ describe('Security Framework Tests', () => {
         const testCode = 'ABCD1234';
         
         // Mock hashed backup codes
-        const hashedCode = await crypto.scrypt(testCode, 'moneywise-backup', 32);
+        const hashedCode = await new Promise<Buffer>((resolve, reject) => {
+          crypto.scrypt(testCode, 'moneywise-backup', 32, (err, derivedKey) => {
+            if (err) reject(err);
+            else resolve(derivedKey);
+          });
+        });
         const mfaSettings = {
           userId,
           backupCodes: [hashedCode.toString('hex')],

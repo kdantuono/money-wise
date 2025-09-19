@@ -12,7 +12,7 @@ import {
   Patch,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { RateLimitGuard } from '../guards/rate-limit.guard';
 import { SecurityGuard } from '../guards/security.guard';
 import { AuthService } from '../auth.service';
