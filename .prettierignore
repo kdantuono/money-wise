@@ -1,0 +1,29 @@
+# Prettier ignore patterns
+node_modules/
+.next/
+dist/
+build/
+coverage/
+.nyc_output/
+*.min.js
+*.min.css
+package-lock.json
+*.log
+.env*
+.git/
+.vscode/
+.idea/
+
+# Generated files
+apps/web/.next/
+apps/backend/dist/
+packages/types/dist/
+
+# Test artifacts
+test-results/
+playwright-report/
+coverage/
+
+# Build artifacts
+*.tsbuildinfo
+.swc/
