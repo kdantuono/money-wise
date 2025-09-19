@@ -1,0 +1,115 @@
+# Multi-stage Dockerfile optimized for backend testing in CI/CD
+FROM node:18.17.0-alpine AS base
+
+# Install dependencies needed for node-gyp and native modules
+RUN apk add --no-cache \
+    python3 \
+    make \
+    g++ \
+    libc6-compat \
+    postgresql-client
+
+WORKDIR /app
+
+# Copy package files for dependency resolution
+COPY package*.json ./
+COPY apps/backend/package*.json ./apps/backend/
+COPY packages/types/package*.json ./packages/types/
+
+# ================================
+# Dependencies stage
+# ================================
+FROM base AS deps
+
+# Install dependencies with optimizations for CI
+RUN npm ci --only=production --frozen-lockfile --prefer-offline
+
+# Install dev dependencies in separate layer for testing
+RUN npm ci --frozen-lockfile --prefer-offline
+
+# ================================
+# Test stage
+# ================================
+FROM base AS test
+
+# Copy dependencies from deps stage
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/apps/backend/node_modules ./apps/backend/node_modules
+
+# Copy source code
+COPY . .
+
+# Set up test environment
+ENV NODE_ENV=test
+ENV CI=true
+
+# Create test output directories
+RUN mkdir -p /app/apps/backend/coverage \
+             /app/apps/backend/test-results \
+             /app/apps/backend/dist
+
+# Build the application first
+RUN cd apps/backend && npm run build
+
+# Run type checking
+RUN cd apps/backend && npx tsc --noEmit
+
+# Run linting
+RUN cd apps/backend && npm run lint
+
+# Run unit tests with coverage
+RUN cd apps/backend && npm run test:cov
+
+# Run integration tests
+RUN cd apps/backend && npm run test:e2e
+
+# Expose test results volume
+VOLUME ["/app/apps/backend/coverage", "/app/apps/backend/test-results"]
+
+# Health check for test environment
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:3002/health || exit 1
+
+# Default command for running tests
+CMD ["npm", "run", "test", "--prefix", "apps/backend"]
+
+# ================================
+# Development test stage
+# ================================
+FROM test AS test-dev
+
+# Install additional development tools
+RUN npm install -g nodemon
+
+# Start the application in development mode for testing
+CMD ["npm", "run", "start:dev", "--prefix", "apps/backend"]
+
+# ================================
+# Integration test stage
+# ================================
+FROM test AS integration-test
+
+# Wait for database script
+COPY <<EOF /app/wait-for-db.sh
+#!/bin/sh
+until pg_isready -h \$DB_HOST -p \$DB_PORT -U \$DB_USERNAME; do
+  echo "Waiting for database..."
+  sleep 2
+done
+echo "Database is ready!"
+EOF
+
+RUN chmod +x /app/wait-for-db.sh
+
+# Run migrations and seed test data
+COPY <<EOF /app/setup-test-db.sh
+#!/bin/sh
+cd apps/backend
+npm run typeorm:run-migrations
+npm run seed:test
+EOF
+
+RUN chmod +x /app/setup-test-db.sh
+
+# Default command for integration tests
+CMD ["/app/wait-for-db.sh", "&&", "/app/setup-test-db.sh", "&&", "npm", "run", "test:e2e", "--prefix", "apps/backend"]

@@ -1,0 +1,83 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: moneywise
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - moneywise_network
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - moneywise_network
+
+  backend:
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile.dev
+    ports:
+      - "3002:3002"
+    environment:
+      - NODE_ENV=development
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=password
+      - DB_NAME=moneywise
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - JWT_SECRET=moneywise-super-secret-jwt-key-change-in-production
+      - PLAID_CLIENT_ID=6734e5b4e1ee3b001a6a2a0d
+      - PLAID_SECRET=17b40d9a14e02b8b28ac1b0e1f7fe9
+      - PLAID_ENV=sandbox
+      - PLAID_PRODUCTS=transactions,auth
+      - PLAID_COUNTRY_CODES=US
+      - PLAID_WEBHOOK_URL=http://backend:3002/plaid/webhook
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - moneywise_network
+    volumes:
+      - ./apps/backend:/app/apps/backend
+      - ./packages:/app/packages
+      - /app/node_modules
+    command: npm run start:dev
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile.dev
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - NEXT_PUBLIC_API_URL=http://localhost:3002
+    depends_on:
+      - backend
+    networks:
+      - moneywise_network
+    volumes:
+      - ./apps/web:/app/apps/web
+      - ./packages:/app/packages
+      - /app/node_modules
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  moneywise_network:
+    driver: bridge

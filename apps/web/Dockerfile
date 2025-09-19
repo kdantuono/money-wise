@@ -2,15 +2,26 @@ FROM node:18-alpine
 
 WORKDIR /app
 
-# Copy package files
+# Copy root package.json
 COPY package*.json ./
-COPY ../../packages/types/package*.json ../../packages/types/
 
-# Install dependencies
+# Copy packages
+COPY packages/ ./packages/
+
+# Install root dependencies
 RUN npm install
 
-# Copy source code
-COPY . .
+# Build types package
+WORKDIR /app/packages/types
+RUN npm install && npm run build
+
+# Copy web app
+WORKDIR /app
+COPY apps/web/ ./apps/web/
+
+# Move to web directory and install dependencies
+WORKDIR /app/apps/web
+RUN npm install
 
 # Build the application
 RUN npm run build

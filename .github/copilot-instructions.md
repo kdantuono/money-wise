@@ -1,0 +1,130 @@
+# MoneyWise AI Coding Assistant Instructions
+
+## Project Overview
+MoneyWise is a personal finance application built as a monorepo with microservices architecture. The project consists of a NestJS backend API, Next.js web dashboard, React Native mobile app, and shared TypeScript types package.
+
+## Architecture & Structure
+
+### Monorepo Organization
+- **Root**: Scripts and Docker orchestration
+- **apps/backend**: NestJS API with modular architecture
+- **apps/web**: Next.js web app with App Router
+- **apps/mobile**: React Native app (Expo)
+- **packages/types**: Shared TypeScript definitions
+
+### Backend (NestJS) Patterns
+- **Module Structure**: Each feature has its own module (`auth`, `transactions`, `budgets`, `analytics`, `banking`)
+- **Entity-First Design**: TypeORM entities define the data model
+- **Service Layer**: Business logic lives in services, controllers handle HTTP concerns
+- **Dependency Injection**: Constructor injection pattern with `@Injectable()` and `@InjectRepository()`
+- **JWT Authentication**: Uses Passport.js with JWT strategy, bearer token format
+- **Example Module Pattern**:
+  ```typescript
+  // Module: imports TypeORM features, exports service
+  // Controller: handles HTTP routes, delegates to service
+  // Service: contains business logic, uses repository pattern
+  // Entity: TypeORM entity with decorators
+  ```
+
+### Frontend (Next.js) Patterns
+- **App Router**: Uses Next.js 14 app directory structure
+- **Context Providers**: `AuthContext` and `AppContext` for state management
+- **Component Organization**: 
+  - `ui/`: Reusable UI components (Radix + Tailwind)
+  - `dashboard/`: Feature-specific components
+  - `auth/`: Authentication-related components
+- **API Integration**: Axios for HTTP client, `/api` proxy to backend
+- **Styling**: Tailwind CSS with custom design system
+
+### Testing Strategy
+- **Backend**: Jest with TypeORM test utilities, mock repositories pattern
+- **Frontend**: Testing pyramid (70% unit, 20% integration, 10% E2E)
+- **E2E**: Playwright for visual regression and accessibility testing
+- **Test Location**: `tests/` directory in each app with `unit/`, `integration/`, `e2e/` subdirectories
+
+## Development Workflows
+
+### Essential Commands
+```bash
+# Start all services
+npm run dev
+
+# Individual services
+npm run dev:backend    # NestJS API on :3002
+npm run dev:web       # Next.js on :3000
+npm run dev:mobile    # Expo development server
+
+# Testing
+npm run test:backend  # Jest unit tests
+npm run test:web     # Jest + Playwright tests
+npm run test:e2e     # End-to-end tests
+
+# Database (Docker)
+docker-compose up postgres redis
+```
+
+### Environment Setup
+- **Backend**: Requires PostgreSQL + Redis, uses `.env` file
+- **Shared Types**: Must build first (`cd packages/types && npm run build`)
+- **API Documentation**: Available at `http://localhost:3002/api` (Swagger)
+
+### Database & External Services
+- **Database**: PostgreSQL with TypeORM, entities in each module
+- **Cache**: Redis for session management
+- **Banking**: Plaid integration for financial data (in development)
+- **Authentication**: JWT tokens, 7-day expiration
+
+## Project-Specific Conventions
+
+### Code Patterns
+- **Error Handling**: Use NestJS built-in exceptions (`NotFoundException`, `BadRequestException`)
+- **DTOs**: Separate DTOs for create/update operations with class-validator
+- **API Responses**: Consistent JSON structure, use Swagger decorators
+- **User Context**: All business operations require `userId` parameter for multi-tenancy
+
+### File Naming
+- **Backend**: `feature.service.ts`, `feature.controller.ts`, `feature.entity.ts`
+- **Frontend**: PascalCase for components, kebab-case for utilities
+- **Tests**: `*.spec.ts` for backend, `*.test.tsx` for frontend
+
+### Import Patterns
+- **Backend**: Use relative imports within modules, absolute for cross-module
+- **Frontend**: Use `@/` alias for src directory imports
+- **Types**: Import from `@money-wise/types` package
+
+## Integration Points
+
+### API Communication
+- **Base URL**: Backend runs on `:3002`, web proxies `/api/*` requests
+- **Authentication**: Include `Authorization: Bearer <token>` header
+- **Error Handling**: Backend returns consistent error format, frontend has global error boundary
+
+### Cross-App Dependencies
+- **Types Package**: Shared interfaces between all apps, must be built before others
+- **Database Schema**: Defined in backend entities, referenced by all services
+- **Environment**: Each app has own environment file, shared via Docker compose
+
+### Banking Integration
+- **Current State**: Plaid service partially implemented, placeholder methods in place
+- **Test Files**: Mock Plaid API responses in service tests
+- **Future**: Real Plaid integration for bank account connections
+
+## Key Technical Decisions
+
+### Why This Architecture?
+- **Monorepo**: Shared types and coordinated releases
+- **Microservices**: Scalable backend with clear domain boundaries
+- **Next.js App Router**: Modern React patterns with server components
+- **TypeORM**: Type-safe database operations with decorators
+
+### Performance Considerations
+- **Database**: Use query builders for complex analytics queries
+- **Frontend**: Implement loading states and error boundaries
+- **Caching**: Redis for session data, consider query caching for analytics
+
+### Security Practices
+- **Validation**: Use class-validator on all DTOs
+- **Authorization**: JWT with user context in all protected routes
+- **Data Access**: Repository pattern ensures consistent data filtering by user
+
+When working on this codebase, always consider the multi-tenant nature (user-scoped data), maintain consistency with established patterns, and ensure type safety across the monorepo boundaries.
