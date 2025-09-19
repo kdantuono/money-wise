@@ -6,7 +6,12 @@
       "Bash(tree:*)",
       "Read(//home/nemesi/**)",
       "Bash(tmux:*)",
-      "Bash(git worktree:*)"
+      "Bash(git worktree:*)",
+      "Bash(docker-compose:*)",
+      "Bash(npm install:*)",
+      "Bash(git checkout:*)",
+      "Bash(git stash show:*)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []
