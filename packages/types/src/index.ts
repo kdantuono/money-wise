@@ -246,3 +246,22 @@ export interface CreateAccountRequest {
 export interface UpdateAccountRequest extends Partial<CreateAccountRequest> {
   id: string;
 }
+
+// ML Types
+export interface MLFeatures {
+  amount: number;
+  dayOfWeek: number;
+  hourOfDay: number;
+  merchantNameLength: number;
+  descriptionLength: number;
+  isWeekend: boolean;
+  amountBucket: string;
+  transactionType: TransactionType;
+}
+
+export interface MLPrediction {
+  categoryId: string;
+  confidence: number;
+  modelVersion: string;
+  features: MLFeatures;
+}
