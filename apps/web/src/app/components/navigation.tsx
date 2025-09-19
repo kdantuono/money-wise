@@ -12,12 +12,12 @@ import { IoIosSettings } from 'react-icons/io';
 export function Navigation() {
   const router = useRouter();
   return (
-    <nav className="w-64 min-h-screen border-r bg-white p-4 sticky left-0 top-0">
+    <nav className="w-64 min-h-screen border-r border-blue-100 bg-gradient-to-b from-white to-blue-50/30 p-4 sticky left-0 top-0 shadow-sm">
       <div className="flex items-center gap-1 mb-8">
-        <div className="h-8 w-8 rounded text-white flex items-center justify-center">
-          <img src='/logo.png' className="h-5 w-5" />
+        <div className="h-8 w-8 rounded-xl bg-gradient-to-r from-blue-600 to-blue-800 text-white flex items-center justify-center shadow-md">
+          <span className="text-lg font-bold">M</span>
         </div>
-        <span className="font-semibold text-lg tracking-tighter text-[#2D3648]">Soar Task</span>
+        <span className="font-bold text-lg tracking-tight text-blue-950">MoneyWise</span>
       </div>
 
       <div className="space-y-1 flex flex-col gap-2">

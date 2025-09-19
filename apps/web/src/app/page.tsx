@@ -77,27 +77,29 @@ export default function DashboardPage() {
         {/* Main Content Container */}
         <div className="p-4 lg:p-8 space-y-6 lg:space-y-8">
 
-          {/* Quick Stats Row - Mobile First */}
+          {/* Quick Stats Row - Mobile First - Money-Centric Psychology */}
           <motion.div
             className="grid grid-cols-2 lg:hidden gap-4 mb-6"
             variants={itemVariants}
           >
-            <div className="bg-gradient-to-br from-primary-500 to-primary-700 rounded-2xl p-4 text-white">
+            <div className="bg-gradient-to-br from-blue-600 to-blue-800 rounded-2xl p-4 text-white shadow-lg">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-primary-100 text-xs font-medium">Total Balance</p>
+                  <p className="text-blue-100 text-xs font-medium">Total Wealth</p>
                   <p className="text-xl font-bold">$12,345.67</p>
+                  <p className="text-blue-200 text-xs mt-1">↗ Growing Strong</p>
                 </div>
-                <TrendingUp className="h-6 w-6 text-primary-200" />
+                <TrendingUp className="h-6 w-6 text-green-400" />
               </div>
             </div>
-            <div className="bg-white dark:bg-neutral-900 rounded-2xl p-4 border border-neutral-200 dark:border-neutral-800">
+            <div className="bg-white dark:bg-neutral-900 rounded-2xl p-4 border border-green-200 dark:border-green-800 shadow-lg">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-neutral-500 text-xs font-medium">This Month</p>
-                  <p className="text-lg font-bold text-success-600">+$2,340</p>
+                  <p className="text-neutral-600 text-xs font-medium">Monthly Growth</p>
+                  <p className="text-lg font-bold text-green-600">+$2,340</p>
+                  <p className="text-green-500 text-xs mt-1">🎯 Goal Progress</p>
                 </div>
-                <ArrowUpRight className="h-6 w-6 text-success-500" />
+                <ArrowUpRight className="h-6 w-6 text-green-500" />
               </div>
             </div>
           </motion.div>
@@ -107,31 +109,31 @@ export default function DashboardPage() {
             className="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-6 gap-6"
             variants={itemVariants}
           >
-            {/* My Cards Section */}
+            {/* My Cards Section - Trust & Security Focus */}
             <div className="lg:col-span-2 xl:col-span-4 space-y-4">
               <div className="flex items-center justify-between">
-                <h2 className="text-financial-heading">My Cards</h2>
+                <h2 className="text-financial-heading text-blue-900 font-semibold">💳 My Cards</h2>
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="text-primary-600 hover:text-primary-700 hover:bg-primary-50 dark:hover:bg-primary-950 rounded-lg font-medium"
+                  className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-950 rounded-lg font-medium"
                 >
-                  See All
+                  Manage All
                 </Button>
               </div>
               <CreditCards />
             </div>
 
-            {/* Recent Transactions Section */}
+            {/* Recent Transactions Section - Money Flow Tracking */}
             <div className="lg:col-span-1 xl:col-span-2 space-y-4">
               <div className="flex items-center justify-between">
-                <h2 className="text-financial-heading">Recent Transactions</h2>
+                <h2 className="text-financial-heading text-slate-800 font-semibold">📊 Money Flow</h2>
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="text-primary-600 hover:text-primary-700 hover:bg-primary-50 dark:hover:bg-primary-950 rounded-lg font-medium lg:hidden"
+                  className="text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-950 rounded-lg font-medium lg:hidden"
                 >
-                  View All
+                  Track All
                 </Button>
               </div>
               <RecentTransactions />
@@ -143,23 +145,23 @@ export default function DashboardPage() {
             className="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-6 gap-6"
             variants={itemVariants}
           >
-            {/* Weekly Activity */}
+            {/* Weekly Activity - Growth Visualization */}
             <div className="lg:col-span-2 xl:col-span-4 space-y-4">
               <div className="flex items-center justify-between">
-                <h2 className="text-financial-heading">Weekly Activity</h2>
+                <h2 className="text-financial-heading text-blue-900 font-semibold">📈 Wealth Growth</h2>
                 <div className="flex items-center space-x-2 text-financial-caption">
-                  <span className="w-3 h-3 bg-primary-500 rounded-full"></span>
-                  <span>Deposit</span>
-                  <span className="w-3 h-3 bg-success-500 rounded-full ml-4"></span>
-                  <span>Withdraw</span>
+                  <span className="w-3 h-3 bg-green-500 rounded-full"></span>
+                  <span>Income</span>
+                  <span className="w-3 h-3 bg-blue-500 rounded-full ml-4"></span>
+                  <span>Expenses</span>
                 </div>
               </div>
               <WeeklyActivity />
             </div>
 
-            {/* Expense Statistics */}
+            {/* Expense Statistics - Smart Spending */}
             <div className="lg:col-span-1 xl:col-span-2 space-y-4">
-              <h2 className="text-financial-heading">Expense Statistics</h2>
+              <h2 className="text-financial-heading text-amber-800 font-semibold">💰 Smart Spending</h2>
               <ExpenseStatistics />
             </div>
           </motion.div>
@@ -169,17 +171,17 @@ export default function DashboardPage() {
             className="grid grid-cols-1 lg:grid-cols-7 gap-6"
             variants={itemVariants}
           >
-            {/* Quick Transfer */}
+            {/* Quick Transfer - Secure Money Movement */}
             <div className="lg:col-span-3 space-y-4">
-              <h2 className="text-financial-heading">Quick Transfer</h2>
+              <h2 className="text-financial-heading text-green-800 font-semibold">🚀 Quick Transfer</h2>
               <QuickTransfer />
             </div>
 
-            {/* Balance History */}
+            {/* Balance History - Financial Journey */}
             <div className="lg:col-span-4 space-y-4">
               <div className="flex items-center justify-between">
-                <h2 className="text-financial-heading">Balance History</h2>
-                <select className="text-sm text-neutral-600 bg-transparent border-none focus:outline-none cursor-pointer">
+                <h2 className="text-financial-heading text-purple-800 font-semibold">🎯 Financial Journey</h2>
+                <select className="text-sm text-purple-600 bg-purple-50 border border-purple-200 rounded-lg px-3 py-1 focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer">
                   <option>Last 6 months</option>
                   <option>Last year</option>
                   <option>All time</option>

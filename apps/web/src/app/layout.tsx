@@ -6,7 +6,6 @@ import { AuthProvider } from '@/context/AuthContext'
 import { Navigation } from "./components/navigation"
 import Header from "./components/Header"
 import { Toaster } from "@/components/ui/sonner"
-import { FuturisticLoginWall } from "@/components/FuturisticLoginWall"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -25,20 +24,18 @@ export default function RootLayout({
       <body className={inter.className}>
         <AuthProvider>
           <AppProvider>
-            <FuturisticLoginWall>
-              <div className="min-h-screen bg-[#F5F7FA]">
-                <div className="flex">
-                  {/* Desktop Navigation */}
-                  <div className="hidden lg:block">
-                    <Navigation />
-                  </div>
-                  <main className="flex-1">
-                    <Header />
-                    {children}
-                  </main>
+            <div className="min-h-screen bg-[#F5F7FA]">
+              <div className="flex">
+                {/* Desktop Navigation */}
+                <div className="hidden lg:block">
+                  <Navigation />
                 </div>
+                <main className="flex-1">
+                  <Header />
+                  {children}
+                </main>
               </div>
-            </FuturisticLoginWall>
+            </div>
             <Toaster richColors />
           </AppProvider>
         </AuthProvider>

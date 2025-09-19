@@ -48,40 +48,52 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#F5F7FA] to-[#E8EBF0] flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-950 to-slate-900 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        {/* Logo/Brand */}
+        {/* Logo/Brand - Trust-Building Financial Institution Style */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl mb-4">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-blue-600 to-blue-800 rounded-2xl mb-4 shadow-lg">
             <span className="text-2xl font-bold text-white">M</span>
           </div>
-          <h1 className="text-3xl font-bold text-[#2D3648] mb-2">MoneyWise</h1>
-          <p className="text-gray-600">Smart Personal Finance Management</p>
+          <h1 className="text-3xl font-bold text-white mb-2">MoneyWise</h1>
+          <p className="text-blue-200">Secure Personal Finance Management</p>
+
+          {/* Trust Indicators */}
+          <div className="flex items-center justify-center space-x-4 mt-4 text-xs text-blue-300">
+            <div className="flex items-center space-x-1">
+              <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+              <span>Bank-Level Security</span>
+            </div>
+            <div className="flex items-center space-x-1">
+              <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+              <span>256-bit Encryption</span>
+            </div>
+          </div>
         </div>
 
-        <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+        <Card className="shadow-xl border border-blue-800/20 bg-white/95 backdrop-blur-sm">
           <CardHeader className="space-y-1 pb-4">
-            <CardTitle className="text-2xl font-bold text-center text-[#2D3648]">
+            <CardTitle className="text-2xl font-bold text-center text-blue-950">
               Welcome Back
             </CardTitle>
-            <CardDescription className="text-center text-gray-600">
-              Sign in to your account to continue
+            <CardDescription className="text-center text-slate-600">
+              Sign in to manage your finances securely
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-sm font-medium text-[#2D3648]">
+                <Label htmlFor="email" className="text-sm font-medium text-blue-950">
                   Email Address
                 </Label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                  <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-blue-500" />
                   <Input
                     id="email"
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="pl-10 h-12 border-gray-200 focus:border-blue-500 rounded-xl"
+                    className="pl-10 h-12 border-blue-200 focus:border-blue-600 focus:ring-blue-600/20 rounded-xl bg-blue-50/30"
                     placeholder="Enter your email"
                     required
                   />
@@ -89,24 +101,24 @@ export default function LoginPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password" className="text-sm font-medium text-[#2D3648]">
+                <Label htmlFor="password" className="text-sm font-medium text-blue-950">
                   Password
                 </Label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                  <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-blue-500" />
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="pl-10 pr-10 h-12 border-gray-200 focus:border-blue-500 rounded-xl"
+                    className="pl-10 pr-10 h-12 border-blue-200 focus:border-blue-600 focus:ring-blue-600/20 rounded-xl bg-blue-50/30"
                     placeholder="Enter your password"
                     required
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-blue-500 hover:text-blue-700"
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
@@ -125,16 +137,16 @@ export default function LoginPage() {
               <Button
                 type="submit"
                 disabled={loading}
-                className="w-full h-12 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-xl transition-all duration-200"
+                className="w-full h-12 bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900 text-white font-semibold rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl"
               >
                 {loading ? (
                   <div className="flex items-center">
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Signing in...
+                    Signing in securely...
                   </div>
                 ) : (
                   <div className="flex items-center">
-                    Sign In
+                    Sign In Securely
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </div>
                 )}
