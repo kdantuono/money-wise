@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(docker ps:*)",
-      "Read(//home/nemesi/.claude/**)"
+      "Read(//home/nemesi/.claude/**)",
+      "Bash(git merge:*)"
     ],
     "deny": [],
     "ask": []
