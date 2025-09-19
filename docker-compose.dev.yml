@@ -54,7 +54,7 @@ services:
       - ./apps/backend:/app/apps/backend
       - ./packages:/app/packages
       - /app/node_modules
-    command: npm run start:dev
+    command: sh -c "npm run build && npm run start:prod"
 
   web:
     build:
