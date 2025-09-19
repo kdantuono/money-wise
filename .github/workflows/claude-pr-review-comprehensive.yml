@@ -1,0 +1,125 @@
+name: Claude PR Review - Comprehensive
+
+on:
+  pull_request:
+    types: [opened, synchronize, ready_for_review, reopened]
+
+jobs:
+  comprehensive-review:
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false
+    permissions:
+      contents: read
+      pull-requests: write
+      id-token: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Comprehensive PR Review
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+
+          # Enable progress tracking for visual feedback
+          track_progress: true
+
+          prompt: |
+            REPOSITORY: ${{ github.repository }}
+            PR NUMBER: ${{ github.event.pull_request.number }}
+            PR TITLE: ${{ github.event.pull_request.title }}
+            PR DESCRIPTION: ${{ github.event.pull_request.body }}
+
+            Perform a comprehensive code review for this MoneyWise fintech application PR:
+
+            ## 🔍 REVIEW FOCUS AREAS
+
+            ### 1. **Financial Security & Compliance**
+            - Validate financial calculations and precision
+            - Check for PCI DSS compliance requirements
+            - Review transaction handling security
+            - Verify user data protection (GDPR compliance)
+            - Audit authentication and authorization flows
+
+            ### 2. **Code Quality & Architecture**
+            - Adherence to MoneyWise architectural patterns
+            - NestJS best practices (backend changes)
+            - Next.js 14 App Router patterns (frontend changes)
+            - TypeORM entity design and relationships
+            - Service layer separation and business logic
+
+            ### 3. **Security Vulnerabilities**
+            - SQL injection prevention
+            - XSS protection
+            - CSRF token validation
+            - Input sanitization and validation
+            - Secure API endpoint design
+            - JWT token handling
+            - Rate limiting implementation
+
+            ### 4. **Performance & Optimization**
+            - Database query efficiency
+            - Frontend bundle size impact
+            - API response times
+            - Caching strategies (Redis usage)
+            - Core Web Vitals impact
+            - Resource utilization
+
+            ### 5. **Testing Coverage**
+            - Unit test coverage (must maintain 80%+)
+            - Integration test scenarios
+            - E2E test coverage for critical flows
+            - Edge case handling
+            - Error scenario testing
+
+            ### 6. **Multi-tenant & User Context**
+            - Proper userId scoping for all operations
+            - Data isolation between users
+            - Authorization checks at all levels
+            - User context validation
+
+            ### 7. **API Design & Integration**
+            - RESTful API design principles
+            - Proper HTTP status codes
+            - Swagger documentation updates
+            - Error response consistency
+            - Plaid integration security
+
+            ### 8. **Frontend UX & Accessibility**
+            - WCAG 2.1 AA compliance
+            - Responsive design implementation
+            - Loading states and error handling
+            - Form validation and user feedback
+            - Mobile-first approach
+
+            ## 📝 REVIEW GUIDELINES
+
+            **For Inline Comments:**
+            - Use for specific code issues, suggestions, or security concerns
+            - Reference specific lines or code blocks
+            - Provide actionable feedback with examples
+            - Highlight both issues and excellent implementations
+
+            **For General Comments:**
+            - Overall architecture assessment
+            - Praise for good practices
+            - High-level recommendations
+            - Migration or deployment considerations
+
+            ## ✅ APPROVAL CRITERIA
+
+            Before approval, ensure:
+            - [ ] No security vulnerabilities identified
+            - [ ] Financial calculations are accurate and tested
+            - [ ] Multi-tenant data isolation is maintained
+            - [ ] Test coverage meets 80% threshold
+            - [ ] Performance impact is acceptable
+            - [ ] Documentation is updated where needed
+            - [ ] Breaking changes are properly documented
+
+            Provide detailed, constructive feedback that helps maintain MoneyWise's high quality standards.
+
+          claude_args: |
+            --allowedTools "Read,Glob,Grep,Task,mcp__github_inline_comment__*,mcp__github_pr_comment__*"
