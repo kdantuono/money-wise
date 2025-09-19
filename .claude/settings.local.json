@@ -11,7 +11,11 @@
       "Bash(npm install:*)",
       "Bash(git checkout:*)",
       "Bash(git stash show:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(git fetch:*)",
+      "Bash(git rebase:*)"
     ],
     "deny": [],
     "ask": []
