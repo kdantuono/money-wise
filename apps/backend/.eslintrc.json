@@ -1,0 +1,157 @@
+{
+  "extends": [
+    "@typescript-eslint/recommended",
+    "plugin:@typescript-eslint/recommended-requiring-type-checking"
+  ],
+  "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+    "project": "./tsconfig.json",
+    "sourceType": "module"
+  },
+  "plugins": [
+    "@typescript-eslint",
+    "import",
+    "unused-imports"
+  ],
+  "rules": {
+    // ================================
+    // 🎯 KISS PRINCIPLE ENFORCEMENT
+    // ================================
+    "complexity": ["error", 10],
+    "max-lines": ["error", 300],
+    "max-lines-per-function": ["error", 50],
+    "max-params": ["error", 4],
+    "max-depth": ["error", 4],
+    
+    // ================================
+    // 🔧 SRP ENFORCEMENT  
+    // ================================
+    "max-classes-per-file": ["error", 1],
+    
+    // ================================
+    // 📦 IMPORT ORGANIZATION
+    // ================================
+    "import/order": [
+      "error",
+      {
+        "groups": [
+          "builtin",
+          "external", 
+          "internal",
+          "parent",
+          "sibling",
+          "index"
+        ],
+        "newlines-between": "always",
+        "alphabetize": {
+          "order": "asc",
+          "caseInsensitive": true
+        }
+      }
+    ],
+    "unused-imports/no-unused-imports": "error",
+    "unused-imports/no-unused-vars": [
+      "error",
+      {
+        "vars": "all",
+        "varsIgnorePattern": "^_",
+        "args": "after-used",
+        "argsIgnorePattern": "^_"
+      }
+    ],
+    "import/no-duplicates": "error",
+    
+    // ================================
+    // 📝 NESTJS ARCHITECTURE
+    // ================================
+    "@typescript-eslint/explicit-function-return-type": "error",
+    "@typescript-eslint/explicit-module-boundary-types": "error",
+    "require-jsdoc": [
+      "error",
+      {
+        "require": {
+          "FunctionDeclaration": true,
+          "MethodDefinition": true,
+          "ClassDeclaration": true
+        }
+      }
+    ],
+    
+    // ================================
+    // 🔒 TYPE SAFETY
+    // ================================
+    "@typescript-eslint/no-explicit-any": "error",
+    "@typescript-eslint/no-unsafe-assignment": "error",
+    "@typescript-eslint/no-unsafe-member-access": "error",
+    "@typescript-eslint/no-unsafe-call": "error",
+    "@typescript-eslint/no-unsafe-return": "error",
+    "@typescript-eslint/prefer-nullish-coalescing": "error",
+    "@typescript-eslint/prefer-optional-chain": "error",
+    "@typescript-eslint/no-non-null-assertion": "error",
+    
+    // ================================
+    // 🚫 CODE SMELLS
+    // ================================
+    "no-console": "off",
+    "no-debugger": "error",
+    "no-var": "error",
+    "prefer-const": "error",
+    "no-duplicate-imports": "error",
+    "no-magic-numbers": [
+      "error", 
+      { 
+        "ignore": [-1, 0, 1, 2, 200, 201, 400, 401, 403, 404, 500],
+        "ignoreArrayIndexes": true,
+        "ignoreDefaultValues": true
+      }
+    ],
+    
+    // ================================
+    // 🎨 NAMING CONVENTIONS
+    // ================================
+    "@typescript-eslint/naming-convention": [
+      "error",
+      {
+        "selector": "variableLike",
+        "format": ["camelCase", "PascalCase", "UPPER_CASE"]
+      },
+      {
+        "selector": "function",
+        "format": ["camelCase", "PascalCase"]
+      },
+      {
+        "selector": "typeLike",
+        "format": ["PascalCase"]
+      },
+      {
+        "selector": "interface",
+        "format": ["PascalCase"],
+        "custom": {
+          "regex": "^I[A-Z]",
+          "match": false
+        }
+      },
+      {
+        "selector": "class",
+        "format": ["PascalCase"],
+        "suffix": ["Service", "Controller", "Module", "Entity", "Repository", "Guard", "Interceptor", "Filter", "Pipe"]
+      }
+    ],
+    
+    // ================================
+    // 🏛️ NESTJS SPECIFIC
+    // ================================
+    "@typescript-eslint/parameter-properties": "error"
+  },
+  "overrides": [
+    {
+      "files": ["**/*.spec.ts", "**/*.test.ts"],
+      "rules": {
+        "max-lines-per-function": "off",
+        "require-jsdoc": "off",
+        "@typescript-eslint/no-explicit-any": "off",
+        "no-magic-numbers": "off"
+      }
+    }
+  ]
+}
