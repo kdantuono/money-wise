@@ -100,7 +100,12 @@ export class MfaService {
 
     // Hash backup codes before storing
     const hashedCodes = await Promise.all(
-      backupCodes.map(code => crypto.scrypt(code, 'moneywise-backup', 32))
+      backupCodes.map(code => new Promise<Buffer>((resolve, reject) => {
+        crypto.scrypt(code, 'moneywise-backup', 32, (err, derivedKey) => {
+          if (err) reject(err);
+          else resolve(derivedKey);
+        });
+      }))
     );
 
     const mfaSettings = await this.mfaSettingsRepository.findOne({ where: { userId } });
@@ -123,7 +128,12 @@ export class MfaService {
     }
 
     // Hash provided code and compare
-    const providedHash = await crypto.scrypt(code.toUpperCase(), 'moneywise-backup', 32);
+    const providedHash = await new Promise<Buffer>((resolve, reject) => {
+      crypto.scrypt(code.toUpperCase(), 'moneywise-backup', 32, (err, derivedKey) => {
+        if (err) reject(err);
+        else resolve(derivedKey);
+      });
+    });
     const providedHashHex = providedHash.toString('hex');
 
     const codeIndex = mfaSettings.backupCodes.findIndex(hash => hash === providedHashHex);
