@@ -1,7 +1,10 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany, OneToOne } from 'typeorm';
 import { Transaction } from '../transactions/transaction.entity';
 import { Budget } from '../budgets/budget.entity';
 import { Account } from './account.entity';
+import { PlaidAccount } from '../banking/entities/plaid-account.entity';
+import { UserMfaSettings } from './entities/user-mfa-settings.entity';
+import { UserSession } from './entities/user-session.entity';
 
 @Entity('users')
 export class User {
@@ -34,4 +37,13 @@ export class User {
 
   @OneToMany(() => Account, account => account.user)
   accounts: Account[];
+
+  @OneToMany(() => PlaidAccount, plaidAccount => plaidAccount.user)
+  plaidAccounts: PlaidAccount[];
+
+  @OneToOne(() => UserMfaSettings, mfaSettings => mfaSettings.user)
+  mfaSettings: UserMfaSettings;
+
+  @OneToMany(() => UserSession, session => session.user)
+  sessions: UserSession[];
 }

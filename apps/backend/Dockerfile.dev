@@ -1,0 +1,30 @@
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Copy root package.json and install dependencies
+COPY package*.json ./
+RUN npm install
+
+# Copy packages directory
+COPY packages/ ./packages/
+
+# Copy backend app
+COPY apps/backend/ ./apps/backend/
+
+# Build types package first
+WORKDIR /app/packages/types
+RUN npm install && npm run build
+
+# Switch to backend directory
+WORKDIR /app/apps/backend
+
+# Install backend dependencies
+RUN npm install
+
+# Copy environment file
+COPY apps/backend/.env.example apps/backend/.env
+
+EXPOSE 3002
+
+CMD ["npm", "run", "start:dev"]

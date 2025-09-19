@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(docker ps:*)",
+      "Read(//home/nemesi/.claude/**)",
+      "Bash(tree:*)",
+      "Read(//home/nemesi/**)",
+      "Bash(tmux:*)",
+      "Bash(git worktree:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
