@@ -1,23 +1,23 @@
 # Archive Manifest
 
-> **Complete inventory of archived components during MVP cleanup**
-> **Date**: 2025-01-19
+> **Complete inventory of archived components during MVP cleanup** **Date**: 2025-01-19
 
 ## 📊 Archive Summary
 
-| Category | Items | Total Size | Future Value |
-|----------|-------|------------|--------------|
-| Infrastructure | 17 configs/workflows | ~50KB | Medium |
-| Agent Orchestration | 20+ scripts/dirs | ~500KB | High |
-| Advanced Features | 8 modules/components | ~200KB | Very High |
-| Documentation | 5 workflow docs | ~100KB | Medium |
-| **TOTAL** | **50+ items** | **~850KB** | **High** |
+| Category            | Items                | Total Size | Future Value |
+| ------------------- | -------------------- | ---------- | ------------ |
+| Infrastructure      | 17 configs/workflows | ~50KB      | Medium       |
+| Agent Orchestration | 20+ scripts/dirs     | ~500KB     | High         |
+| Advanced Features   | 8 modules/components | ~200KB     | Very High    |
+| Documentation       | 5 workflow docs      | ~100KB     | Medium       |
+| **TOTAL**           | **50+ items**        | **~850KB** | **High**     |
 
 ## 🗂️ Detailed Inventory
 
 ### Infrastructure (archive/infrastructure/)
 
 **Docker Configurations** (`docker-configs/`):
+
 - `docker-compose.dev.yml.broken` - Path mismatches, reliability issues
 - `docker-compose.ci.yml` - CI-specific config, complex
 - `docker-compose.simple.yml` - Alternate config
@@ -25,6 +25,7 @@
 - `gitlab-ci.yml.unused` - Complete GitLab CI/CD (unused platform)
 
 **GitHub Workflows** (`github-workflows-excess/`):
+
 - `claude-ci-auto-fix.yml` - Auto-fix CI failures
 - `claude-issue-deduplication.yml` - Issue management
 - `claude-issue-triage.yml` - Issue automation
@@ -39,6 +40,7 @@
 ### Agent Orchestration (archive/agent-orchestration/)
 
 **Scripts** (`scripts/`):
+
 1. `agent-communication.sh` (15KB) - Inter-agent communication
 2. `agent-micro-commit.sh` (12KB) - Micro-commit automation
 3. `agent-monitoring.sh` (14KB) - Real-time monitoring
@@ -57,11 +59,13 @@
 16. `tmux-agent-orchestrator.sh` (15KB) - Session management
 
 **Clusters** (`clusters/`):
+
 - `ai-intelligence-cluster.sh` (9KB) - AI development cluster
 - `event-streaming-cluster.sh` (9KB) - Streaming infrastructure
 - `notification-engine-cluster.sh` (9KB) - Notification system
 
 **State Directories** (`state-dirs/`):
+
 - `.agent-comm/` - Agent communication state
 - `.agent-reasoning/` - Agent reasoning logs
 - `.agent-review/` - Code review state
@@ -72,6 +76,7 @@
 ### Advanced Features (archive/advanced-features/)
 
 **Auth Advanced** (`auth-advanced/`):
+
 - `services/social-auth.service.ts` (11KB) - OAuth integrations
 - `services/mfa.service.ts` (6KB) - Multi-factor authentication
 - `entities/user-mfa-settings.entity.ts` - MFA entity
@@ -79,6 +84,7 @@
 - `dto/auth-enhanced.dto.ts` (159 lines) - Advanced DTOs
 
 **ML Modules** (`ml-modules/`):
+
 - `ml-categorization/` (complete module) - AI transaction categorization
   - `controllers/` - ML API endpoints
   - `services/` - ML processing logic
@@ -86,12 +92,14 @@
   - `entities/` - ML data entities
 
 **Backend Modules** (`backend-modules/`):
+
 - `notifications/` - Real-time notification system
 - `real-time-events/` - WebSocket event streaming
 
 ### Documentation (archive/documentation/)
 
 **Workflow Documentation**:
+
 - `AGENT_ORCHESTRATION_WORKFLOW.md` - 5-phase workflow guide
 - `MULTI_AGENT_ORCHESTRATION.md` - Advanced coordination
 - `CI_CD_RESTRUCTURING_COMPLETE.md` - Implementation results
@@ -99,6 +107,7 @@
 ## 🔄 Restoration Process
 
 Each archived component includes:
+
 1. **Context**: Why it was archived
 2. **Dependencies**: What it needs to function
 3. **Integration Notes**: How to restore it

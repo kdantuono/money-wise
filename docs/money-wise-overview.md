@@ -1,10 +1,15 @@
 # MoneyWise - Project Overview
 
 ## Executive Summary
-MoneyWise is a modern personal finance management application designed for cross-platform deployment (iOS, Android, Web). The project emphasizes clean architecture, real-time synchronization, and intuitive UX with a focus on delivering an MVP that handles core financial tracking needs.
+
+MoneyWise is a modern personal finance management application designed for cross-platform deployment (iOS, Android,
+Web). The project emphasizes clean architecture, real-time synchronization, and intuitive UX with a focus on delivering
+an MVP that handles core financial tracking needs.
 
 ## Core Objective
+
 Build a financial tracking application that allows users to:
+
 - Track transactions and account balances
 - Visualize spending patterns
 - Manage budgets
@@ -14,6 +19,7 @@ Build a financial tracking application that allows users to:
 ## Technical Stack
 
 ### Frontend
+
 - **Primary**: Next.js 14+ with React 18
 - **Styling**: Tailwind CSS with shadcn/ui components
 - **State Management**: Zustand or Context API
@@ -21,6 +27,7 @@ Build a financial tracking application that allows users to:
 - **Mobile**: React Native with Expo (future phase)
 
 ### Backend
+
 - **API**: NestJS with TypeScript
 - **Database**: PostgreSQL 15
 - **Cache**: Redis
@@ -28,6 +35,7 @@ Build a financial tracking application that allows users to:
 - **Real-time**: WebSockets for live updates
 
 ### DevOps
+
 - **Version Control**: Git with GitHub
 - **CI/CD**: GitHub Actions
 - **Containerization**: Docker
@@ -117,12 +125,14 @@ CREATE TABLE budgets (
 ## MVP Features (Phase 1 - 3 months)
 
 ### 1. Authentication & User Management
+
 - [ ] User registration with email verification
 - [ ] Secure login with JWT
 - [ ] Password reset functionality
 - [ ] User profile management
 
 ### 2. Dashboard
+
 - [ ] Overview cards showing account balances
 - [ ] Recent transactions list (last 5-10)
 - [ ] Weekly activity chart (deposits vs withdrawals)
@@ -130,6 +140,7 @@ CREATE TABLE budgets (
 - [ ] Quick transfer between accounts
 
 ### 3. Transaction Management
+
 - [ ] Add/Edit/Delete transactions
 - [ ] Categorize transactions
 - [ ] Filter by date range, category, account
@@ -137,12 +148,14 @@ CREATE TABLE budgets (
 - [ ] Bulk import (CSV)
 
 ### 4. Account Management
+
 - [ ] Add multiple accounts (checking, savings, credit cards)
 - [ ] View account details and balance
 - [ ] Account cards with visual differentiation
 - [ ] Archive/deactivate accounts
 
 ### 5. Basic Analytics
+
 - [ ] Monthly spending by category
 - [ ] Balance history line chart
 - [ ] Income vs expenses comparison
@@ -151,6 +164,7 @@ CREATE TABLE budgets (
 ## UI/UX Requirements
 
 ### Visual Design (Based on Dashboard Reference)
+
 - **Color Scheme**: Dark primary cards (#1F2937), light secondary cards (#FFFFFF)
 - **Typography**: Clean, modern sans-serif (Inter or similar)
 - **Card Design**: Rounded corners, subtle shadows, clear hierarchy
@@ -158,6 +172,7 @@ CREATE TABLE budgets (
 - **Responsive**: Mobile-first design approach
 
 ### Key UI Components
+
 1. **Card Component**: Display account info with balance, card number (masked), validity
 2. **Transaction List Item**: Icon, description, date, amount with color coding
 3. **Chart Components**: Reusable wrappers for bar charts, pie charts, line graphs
@@ -167,6 +182,7 @@ CREATE TABLE budgets (
 ## Development Best Practices
 
 ### Code Organization
+
 ```
 moneywise/
 ├── apps/
@@ -180,6 +196,7 @@ moneywise/
 ```
 
 ### Clean Code Principles
+
 1. **Single Responsibility**: Each function/class handles one thing
 2. **DRY**: Avoid code duplication, use shared components
 3. **SOLID**: Apply SOLID principles for maintainable architecture
@@ -187,12 +204,14 @@ moneywise/
 5. **Error Handling**: Comprehensive error boundaries and logging
 
 ### Testing Strategy (TDD)
+
 - **Unit Tests**: Jest for business logic (target: 80% coverage)
 - **Integration Tests**: Test API endpoints with Supertest
 - **E2E Tests**: Cypress for critical user flows
 - **Component Tests**: React Testing Library
 
 ### Code Review Checklist
+
 - [ ] Passes all automated tests
 - [ ] Follows naming conventions
 - [ ] No console.logs in production code
@@ -204,6 +223,7 @@ moneywise/
 ## API Design
 
 ### RESTful Endpoints
+
 ```
 GET    /api/accounts          # List user accounts
 POST   /api/accounts          # Create account
@@ -223,6 +243,7 @@ GET    /api/analytics/charts  # Chart data
 ```
 
 ## Security Requirements
+
 - HTTPS only
 - Input validation and sanitization
 - SQL injection prevention (parameterized queries)
@@ -233,6 +254,7 @@ GET    /api/analytics/charts  # Chart data
 - Sensitive data encryption
 
 ## Performance Targets
+
 - Page load: < 2 seconds
 - API response: < 200ms for simple queries
 - Database queries: Indexed appropriately
@@ -240,13 +262,15 @@ GET    /api/analytics/charts  # Chart data
 - Pagination for large datasets (limit: 50 items)
 
 ## Success Metrics
+
 - User can create account and add first transaction in < 3 minutes
-- Dashboard loads with all widgets in < 2 seconds  
+- Dashboard loads with all widgets in < 2 seconds
 - 95% uptime
 - Zero critical security vulnerabilities
 - Mobile responsive on all common devices
 
 ## Next Steps After MVP
+
 1. Mobile apps (React Native)
 2. Bank integration (Plaid API)
 3. Advanced budgeting tools
@@ -255,10 +279,12 @@ GET    /api/analytics/charts  # Chart data
 6. Family/shared accounts
 
 ## References
+
 - UI Inspiration: [Dashboard Screenshot Provided]
 - Frontend Reference: github.com/Razor-eng/financial-dashboard
 - Mobile UI Reference: github.com/noelzappy/react-native-finance-app-ui-demo
 
 ---
 
-**Note**: This document serves as the single source of truth for the MoneyWise MVP. All development decisions should align with these specifications.
+**Note**: This document serves as the single source of truth for the MoneyWise MVP. All development decisions should
+align with these specifications.

@@ -7,6 +7,7 @@
 ## 🚀 Quick Start
 
 ### Prerequisites
+
 - Node.js 18.0+ and npm 8.0+
 - Docker and Docker Compose
 - PostgreSQL 15+ (via Docker)
@@ -25,6 +26,7 @@ npm run dev
 ```
 
 **Services will be available at:**
+
 - 🌐 **Web Dashboard**: http://localhost:3000
 - 🔧 **API Server**: http://localhost:3002
 - 📚 **API Documentation**: http://localhost:3002/api
@@ -32,6 +34,7 @@ npm run dev
 ## 🏗️ Architecture
 
 ### Monorepo Structure
+
 ```
 money-wise/
 ├── apps/
@@ -45,6 +48,7 @@ money-wise/
 ### Technology Stack
 
 **Backend (NestJS)**
+
 - **Framework**: NestJS 10 with TypeScript
 - **Database**: PostgreSQL 15 with TypeORM
 - **Authentication**: JWT with bcrypt password hashing
@@ -53,6 +57,7 @@ money-wise/
 - **Documentation**: Swagger/OpenAPI integration
 
 **Frontend (Next.js)**
+
 - **Framework**: Next.js 14 with App Router
 - **UI Components**: Radix UI with Tailwind CSS
 - **State Management**: React Context and React Hook Form
@@ -60,6 +65,7 @@ money-wise/
 - **Icons**: Lucide React and React Icons
 
 **Shared**
+
 - **Types**: Centralized TypeScript definitions
 - **Validation**: Zod schemas for client-side validation
 - **Tooling**: ESLint, Prettier, and Jest
@@ -67,6 +73,7 @@ money-wise/
 ## 📋 Core Features
 
 ### MVP Functionality
+
 - **User Authentication**: Secure registration and login
 - **Account Management**: Add and manage financial accounts
 - **Transaction Tracking**: Manual transaction entry and categorization
@@ -74,6 +81,7 @@ money-wise/
 - **Dashboard**: Clean overview of financial status
 
 ### Security Features
+
 - JWT-based authentication with 7-day expiration
 - Bcrypt password hashing
 - Rate limiting and request validation
@@ -119,6 +127,7 @@ docker-compose up -d postgres redis
 Create `.env` files:
 
 **Backend** (`apps/backend/.env`):
+
 ```env
 NODE_ENV=development
 PORT=3002
@@ -128,6 +137,7 @@ REDIS_URL=redis://localhost:6379
 ```
 
 **Frontend** (`apps/web/.env.local`):
+
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:3002
 ```
@@ -135,6 +145,7 @@ NEXT_PUBLIC_API_URL=http://localhost:3002
 ## 📁 Project Structure
 
 ### Backend Modules
+
 - **auth/**: User authentication and session management
 - **transactions/**: Transaction CRUD and categorization
 - **budgets/**: Budget creation and tracking
@@ -143,6 +154,7 @@ NEXT_PUBLIC_API_URL=http://localhost:3002
 - **security/**: Security middleware and validation
 
 ### Frontend Structure
+
 - **app/**: Next.js App Router pages and layouts
 - **components/**: Reusable UI components
 - **contexts/**: React Context providers
@@ -153,6 +165,7 @@ NEXT_PUBLIC_API_URL=http://localhost:3002
 ## 🔒 Security & Compliance
 
 ### Authentication Flow
+
 1. User registers with email/password
 2. Password hashed with bcrypt
 3. JWT token issued on successful login
@@ -160,6 +173,7 @@ NEXT_PUBLIC_API_URL=http://localhost:3002
 5. Automatic token refresh on API calls
 
 ### Data Protection
+
 - All database connections encrypted
 - Sensitive data encrypted at rest
 - No plaintext password storage
@@ -169,11 +183,13 @@ NEXT_PUBLIC_API_URL=http://localhost:3002
 ## 🚦 API Documentation
 
 Interactive API documentation available at:
+
 - **Development**: http://localhost:3002/api
 - **Swagger UI**: Complete endpoint documentation
 - **Schema Validation**: Request/response examples
 
 ### Key Endpoints
+
 ```
 POST /auth/register     # User registration
 POST /auth/login        # User authentication
@@ -187,12 +203,14 @@ POST /budgets          # Create budget
 ## 🧪 Testing Strategy
 
 ### Test Coverage
+
 - **Backend**: Jest unit and integration tests
 - **Frontend**: Jest and React Testing Library
 - **E2E**: Playwright (future implementation)
 - **Target Coverage**: 80% minimum
 
 ### Running Tests
+
 ```bash
 npm run test                    # All tests
 npm run test:coverage          # Coverage report
@@ -209,14 +227,12 @@ npm run test:watch            # Watch mode
 ## 🎯 MVP Scope
 
 ### What's Included
-✅ User registration and authentication
-✅ Manual transaction entry
-✅ Basic account management
-✅ Simple budget tracking
-✅ Clean dashboard interface
-✅ Responsive web design
+
+✅ User registration and authentication ✅ Manual transaction entry ✅ Basic account management ✅ Simple budget
+tracking ✅ Clean dashboard interface ✅ Responsive web design
 
 ### Future Features (Post-MVP)
+
 - Bank connection and automatic transaction import
 - Advanced analytics and reporting
 - Multi-factor authentication
@@ -227,12 +243,14 @@ npm run test:watch            # Watch mode
 ## 🚀 Deployment
 
 ### Development
+
 ```bash
 docker-compose up -d
 npm run dev
 ```
 
 ### Production Build
+
 ```bash
 npm run build
 # Docker production setup coming soon

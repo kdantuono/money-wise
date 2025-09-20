@@ -1,19 +1,19 @@
 # MoneyWise MVP Engineering Implementation Plan
 
-> **Version**: 1.0.0
-> **Created**: 2025-01-19
-> **Estimated Duration**: 12 weeks
-> **Team**: Multi-Agent Orchestration System
+> **Version**: 1.0.0 **Created**: 2025-01-19 **Estimated Duration**: 12 weeks **Team**: Multi-Agent Orchestration System
 
 ## 🎯 Executive Summary
 
-This document outlines the comprehensive engineering implementation plan for the MoneyWise MVP (Minimum Viable Product). The plan leverages the existing multi-agent orchestration system, advanced CI/CD pipeline, and quality standards to deliver a production-ready personal finance application.
+This document outlines the comprehensive engineering implementation plan for the MoneyWise MVP (Minimum Viable Product).
+The plan leverages the existing multi-agent orchestration system, advanced CI/CD pipeline, and quality standards to
+deliver a production-ready personal finance application.
 
 ## 📋 MVP Feature Scope
 
 Based on the [money-wise-overview.md](./money-wise-overview.md), the MVP includes:
 
 ### Core Features
+
 1. **Authentication & User Management**
 2. **Dashboard with Real-time Analytics**
 3. **Transaction Management**
@@ -23,12 +23,14 @@ Based on the [money-wise-overview.md](./money-wise-overview.md), the MVP include
 ## 🏗️ Technical Architecture Overview
 
 ### Tech Stack
+
 - **Backend**: NestJS + TypeScript + PostgreSQL + Redis
 - **Frontend**: Next.js 14 + React 18 + Tailwind CSS + shadcn/ui
 - **Mobile**: React Native + Expo (future phase)
 - **DevOps**: Docker + GitHub Actions + Multi-agent orchestration
 
 ### Quality Standards
+
 - **Test Coverage**: ≥80% (85% for production components)
 - **Security**: WCAG 2.1 AA, security scanning, JWT authentication
 - **Performance**: Core Web Vitals compliance, <2s load time
@@ -37,10 +39,11 @@ Based on the [money-wise-overview.md](./money-wise-overview.md), the MVP include
 ## 📅 Implementation Timeline
 
 ### Phase 1: Foundation Infrastructure (Weeks 1-3)
-**Duration**: 3 weeks
-**Agents**: Backend, Security, DevOps
+
+**Duration**: 3 weeks **Agents**: Backend, Security, DevOps
 
 #### Week 1: Database & Authentication
+
 - **Database Schema Implementation**
   - Users, accounts, account_types, categories tables
   - Transaction types and transactions tables
@@ -53,6 +56,7 @@ Based on the [money-wise-overview.md](./money-wise-overview.md), the MVP include
   - Password reset functionality
 
 #### Week 2: Core API Foundation
+
 - **NestJS Backend Setup**
   - Module structure (auth, accounts, transactions, budgets)
   - TypeORM entity definitions
@@ -65,6 +69,7 @@ Based on the [money-wise-overview.md](./money-wise-overview.md), the MVP include
   - CORS configuration
 
 #### Week 3: API Core Services
+
 - **Account Management API**
   - CRUD operations for accounts
   - Account type management
@@ -75,16 +80,18 @@ Based on the [money-wise-overview.md](./money-wise-overview.md), the MVP include
   - Transaction validation
 
 **Deliverables**:
+
 - ✅ Database schema deployed
 - ✅ Authentication endpoints functional
 - ✅ Core API structure established
 - ✅ Security middleware implemented
 
 ### Phase 2: Frontend Foundation (Weeks 4-6)
-**Duration**: 3 weeks
-**Agents**: Frontend, UI/UX, Tester
+
+**Duration**: 3 weeks **Agents**: Frontend, UI/UX, Tester
 
 #### Week 4: Next.js Setup & Authentication UI
+
 - **Project Setup**
   - Next.js 14 with App Router
   - Tailwind CSS configuration
@@ -97,6 +104,7 @@ Based on the [money-wise-overview.md](./money-wise-overview.md), the MVP include
   - Protected route wrapper
 
 #### Week 5: Core UI Components
+
 - **Design System Components**
   - Card components for accounts/transactions
   - Form components with validation
@@ -108,6 +116,7 @@ Based on the [money-wise-overview.md](./money-wise-overview.md), the MVP include
   - Mobile-first approach
 
 #### Week 6: State Management & API Integration
+
 - **State Management**
   - Context providers (AuthContext, AppContext)
   - API client with Axios
@@ -118,16 +127,18 @@ Based on the [money-wise-overview.md](./money-wise-overview.md), the MVP include
   - Basic transaction listing
 
 **Deliverables**:
+
 - ✅ Next.js application deployed
 - ✅ Authentication flow complete
 - ✅ Core UI components library
 - ✅ Responsive layout system
 
 ### Phase 3: Core Feature Implementation (Weeks 7-9)
-**Duration**: 3 weeks
-**Agents**: Full-stack, Analytics, Tester
+
+**Duration**: 3 weeks **Agents**: Full-stack, Analytics, Tester
 
 #### Week 7: Account Management
+
 - **Backend Features**
   - Multiple account types support
   - Account balance management
@@ -138,6 +149,7 @@ Based on the [money-wise-overview.md](./money-wise-overview.md), the MVP include
   - Account details and editing
 
 #### Week 8: Transaction Management
+
 - **Backend Features**
   - Transaction CRUD with validation
   - Bulk transaction import (CSV)
@@ -150,6 +162,7 @@ Based on the [money-wise-overview.md](./money-wise-overview.md), the MVP include
   - Quick transaction entry
 
 #### Week 9: Dashboard & Analytics
+
 - **Backend Features**
   - Dashboard summary API
   - Analytics data aggregation
@@ -161,16 +174,18 @@ Based on the [money-wise-overview.md](./money-wise-overview.md), the MVP include
   - Account balance overview
 
 **Deliverables**:
+
 - ✅ Complete account management
 - ✅ Full transaction system
 - ✅ Dashboard with analytics
 - ✅ Basic reporting features
 
 ### Phase 4: Advanced Features & Polish (Weeks 10-11)
-**Duration**: 2 weeks
-**Agents**: Frontend, Backend, Performance
+
+**Duration**: 2 weeks **Agents**: Frontend, Backend, Performance
 
 #### Week 10: Enhanced Analytics
+
 - **Advanced Dashboard Features**
   - Monthly spending by category
   - Income vs expenses comparison
@@ -182,6 +197,7 @@ Based on the [money-wise-overview.md](./money-wise-overview.md), the MVP include
   - Budget alerts and notifications
 
 #### Week 11: User Experience Enhancements
+
 - **Performance Optimization**
   - Code splitting and lazy loading
   - Caching strategies
@@ -193,16 +209,18 @@ Based on the [money-wise-overview.md](./money-wise-overview.md), the MVP include
   - Mobile experience polish
 
 **Deliverables**:
+
 - ✅ Advanced analytics dashboard
 - ✅ Basic budget management
 - ✅ Performance optimizations
 - ✅ Enhanced user experience
 
 ### Phase 5: Testing, Security & Deployment (Week 12)
-**Duration**: 1 week
-**Agents**: Tester, Security, DevOps
+
+**Duration**: 1 week **Agents**: Tester, Security, DevOps
 
 #### Testing & Quality Assurance
+
 - **Comprehensive Testing**
   - Unit tests (≥80% coverage)
   - Integration tests for APIs
@@ -214,6 +232,7 @@ Based on the [money-wise-overview.md](./money-wise-overview.md), the MVP include
   - Performance testing under load
 
 #### Production Deployment
+
 - **Infrastructure Setup**
   - Production environment configuration
   - Database migrations
@@ -224,6 +243,7 @@ Based on the [money-wise-overview.md](./money-wise-overview.md), the MVP include
   - User acceptance testing
 
 **Deliverables**:
+
 - ✅ Production-ready application
 - ✅ Comprehensive test suite
 - ✅ Security validation complete
@@ -234,17 +254,20 @@ Based on the [money-wise-overview.md](./money-wise-overview.md), the MVP include
 ### Agent Cluster Assignment
 
 #### AI Intelligence Cluster
+
 - **Architect Agent**: System design, database schema, API architecture
 - **Backend Agent**: NestJS implementation, business logic, data models
 - **Security Agent**: Authentication, authorization, security scanning
 - **Frontend Agent**: Next.js components, state management, UI/UX
 
 #### Notification Engine Cluster
+
 - **Backend Agent**: Real-time updates, WebSocket integration
 - **Frontend Agent**: Toast notifications, real-time UI updates
 - **Tester Agent**: Notification testing and validation
 
 #### Event Streaming Cluster
+
 - **Core Agent**: Real-time data streaming for dashboard updates
 - **Performance Agent**: Optimization and caching strategies
 - **Tester Agent**: Performance testing and validation
@@ -340,18 +363,21 @@ App/
 ## 🔐 Security Implementation Plan
 
 ### Authentication & Authorization
+
 - **JWT Tokens**: 15-minute access tokens, 7-day refresh tokens
 - **Password Security**: bcrypt hashing with salt rounds ≥12
 - **Session Management**: Secure HTTP-only cookies for refresh tokens
 - **API Protection**: Rate limiting (100 req/min per IP)
 
 ### Data Protection
+
 - **Input Validation**: class-validator for all API inputs
 - **SQL Injection Prevention**: TypeORM parameterized queries
 - **XSS Protection**: Helmet.js middleware, Content Security Policy
 - **HTTPS Enforcement**: Production environment only
 
 ### Security Testing
+
 - **SAST Scanning**: Integrated in CI/CD pipeline
 - **Dependency Scanning**: npm audit and Snyk integration
 - **Penetration Testing**: Manual testing of authentication flows
@@ -360,18 +386,21 @@ App/
 ## 📊 Performance Requirements
 
 ### Core Web Vitals Targets
+
 - **First Contentful Paint (FCP)**: <2 seconds
 - **Largest Contentful Paint (LCP)**: <2.5 seconds
 - **First Input Delay (FID)**: <100ms
 - **Cumulative Layout Shift (CLS)**: <0.1
 
 ### API Performance Targets
+
 - **Authentication**: <200ms response time
 - **Dashboard Load**: <500ms for summary data
 - **Transaction Queries**: <300ms for paginated results
 - **Chart Data**: <400ms for analytics endpoints
 
 ### Optimization Strategies
+
 - **Frontend**: Code splitting, lazy loading, caching
 - **Backend**: Redis caching, database indexing, query optimization
 - **Infrastructure**: CDN for static assets, connection pooling
@@ -379,11 +408,13 @@ App/
 ## 🧪 Testing Strategy
 
 ### Test Coverage Distribution
+
 - **Unit Tests**: 70% (Jest + React Testing Library)
 - **Integration Tests**: 20% (API endpoints, database interactions)
 - **E2E Tests**: 10% (Playwright critical user flows)
 
 ### Critical Test Scenarios
+
 1. **Authentication Flow**: Register → Login → Protected Routes
 2. **Account Management**: Create → View → Edit → Archive
 3. **Transaction Flow**: Add → Edit → Filter → Search
@@ -391,6 +422,7 @@ App/
 5. **Budget Management**: Create → Track → Alerts
 
 ### Automated Testing
+
 - **Pre-commit**: Unit tests, linting, type checking
 - **CI Pipeline**: Full test suite, security scanning
 - **Staging**: E2E tests, performance validation
@@ -399,17 +431,20 @@ App/
 ## 🚀 Deployment Strategy
 
 ### Environment Configuration
+
 - **Development**: `docker-compose.dev.yml` (mandatory)
 - **Staging**: Automated deployment from develop branch
 - **Production**: Manual approval with blue-green deployment
 
 ### Infrastructure Requirements
+
 - **Database**: PostgreSQL 15 with read replicas
 - **Cache**: Redis cluster for session storage
 - **CDN**: Static asset delivery optimization
 - **Monitoring**: Application and infrastructure monitoring
 
 ### Rollback Procedures
+
 - **Automatic**: Health check failures trigger rollback
 - **Manual**: One-click rollback to previous stable version
 - **Database**: Versioned migrations with rollback scripts
@@ -417,6 +452,7 @@ App/
 ## 📈 Success Metrics
 
 ### Technical Metrics
+
 - **Deployment Success Rate**: >95%
 - **Test Coverage**: ≥80% maintained
 - **Security Vulnerabilities**: Zero critical, <5 medium
@@ -424,12 +460,14 @@ App/
 - **Uptime**: >99.5% availability
 
 ### User Experience Metrics
+
 - **Time to First Transaction**: <3 minutes from registration
 - **Dashboard Load Time**: <2 seconds
 - **Mobile Responsiveness**: 100% feature parity
 - **Accessibility Score**: 100% WCAG 2.1 AA compliance
 
 ### Business Metrics
+
 - **User Registration**: Successful account creation flow
 - **Feature Adoption**: Core features used within 7 days
 - **Data Accuracy**: Financial calculations validated
@@ -438,18 +476,21 @@ App/
 ## 🔄 Risk Management
 
 ### Technical Risks
+
 - **Integration Complexity**: Mitigated by agent coordination
 - **Performance Issues**: Addressed by optimization phase
 - **Security Vulnerabilities**: Prevented by comprehensive scanning
 - **Data Loss**: Protected by backup and recovery procedures
 
 ### Timeline Risks
+
 - **Scope Creep**: Controlled by strict MVP feature list
 - **Agent Coordination**: Managed by orchestration system
 - **Quality Issues**: Prevented by continuous validation
 - **External Dependencies**: Minimized and well-documented
 
 ### Mitigation Strategies
+
 - **Daily Standups**: Agent coordination meetings
 - **Weekly Reviews**: Progress and quality assessments
 - **Continuous Integration**: Automated quality gates
@@ -458,12 +499,14 @@ App/
 ## 📚 Documentation Requirements
 
 ### Technical Documentation
+
 - **API Documentation**: OpenAPI/Swagger specifications
 - **Database Schema**: ERD and table documentation
 - **Architecture Decisions**: ADR format documentation
 - **Deployment Guides**: Environment setup instructions
 
 ### User Documentation
+
 - **User Guide**: Feature usage instructions
 - **Admin Guide**: System administration procedures
 - **Troubleshooting**: Common issues and solutions
@@ -472,18 +515,21 @@ App/
 ## 🎯 MVP Definition of Done
 
 ### Feature Completeness
+
 - [ ] All 5 core feature areas implemented
 - [ ] User can complete full financial workflow
 - [ ] Dashboard provides meaningful insights
 - [ ] Mobile-responsive design complete
 
 ### Quality Standards
+
 - [ ] ≥80% test coverage achieved
 - [ ] Zero critical security vulnerabilities
 - [ ] Core Web Vitals all green
 - [ ] WCAG 2.1 AA accessibility compliance
 
 ### Production Readiness
+
 - [ ] Production environment deployed
 - [ ] Monitoring and alerting active
 - [ ] Backup and recovery tested
@@ -492,10 +538,10 @@ App/
 ---
 
 **Next Steps**:
+
 1. Review and approve this implementation plan
 2. Initialize agent orchestration system
 3. Begin Phase 1 development
 4. Establish daily coordination meetings
 
-**Contact**: Multi-Agent Orchestration System
-**Emergency**: Use established incident response procedures
+**Contact**: Multi-Agent Orchestration System **Emergency**: Use established incident response procedures

@@ -1,19 +1,22 @@
 # MoneyWise Archive
 
-> **Purpose**: Preserve valuable code that's beyond MVP scope but has future potential
-> **Created**: 2025-01-19 during MVP cleanup process
-> **Status**: Archived for future integration
+> **Purpose**: Preserve valuable code that's beyond MVP scope but has future potential **Created**: 2025-01-19 during
+> MVP cleanup process **Status**: Archived for future integration
 
 ## 📁 Archive Structure
 
 ### `infrastructure/`
+
 **Broken/unused infrastructure configurations**
+
 - Docker configurations with path mismatches and reliability issues
 - GitLab CI/CD configuration (project uses GitHub Actions)
 - Excess GitHub workflows (14 → 3 simplified workflows)
 
 ### `agent-orchestration/`
+
 **Advanced multi-agent development system**
+
 - 17 orchestration scripts with sophisticated TDD automation
 - Agent cluster definitions (AI Intelligence, Event Streaming, Notification Engine)
 - Session management and tmux coordination
@@ -21,7 +24,9 @@
 - **Why Archived**: Over-engineered for MVP, broken session management
 
 ### `advanced-features/`
+
 **High-quality features beyond MVP scope**
+
 - ML transaction categorization (complete AI infrastructure)
 - Real-time notification system
 - WebSocket event streaming
@@ -30,7 +35,9 @@
 - **Why Archived**: Exceed MVP scope, add unnecessary complexity
 
 ### `documentation/`
+
 **Advanced workflow and orchestration documentation**
+
 - Multi-agent workflow guides
 - CI/CD restructuring documentation
 - Agent orchestration methodology

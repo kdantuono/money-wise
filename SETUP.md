@@ -5,11 +5,13 @@
 ## 🚀 Quick Start (5 minutes)
 
 ### Prerequisites
+
 - **Node.js 18+** and npm 8+
 - **Docker** and Docker Compose
 - **Git** for version control
 
 ### 1. Clone and Initialize
+
 ```bash
 git clone <repository-url>
 cd money-wise
@@ -17,6 +19,7 @@ npm run setup
 ```
 
 ### 2. Start Development Environment
+
 ```bash
 # Start database and services
 docker-compose up -d
@@ -26,6 +29,7 @@ npm run dev
 ```
 
 ### 3. Access Application
+
 - 🌐 **Web Dashboard**: http://localhost:3000
 - 🔧 **API Server**: http://localhost:3002
 - 📚 **API Documentation**: http://localhost:3002/api
@@ -37,6 +41,7 @@ npm run dev
 Create `.env` files for backend configuration:
 
 **Backend** (`apps/backend/.env`):
+
 ```env
 NODE_ENV=development
 PORT=3002
@@ -46,6 +51,7 @@ REDIS_URL=redis://localhost:6379
 ```
 
 **Frontend** (`apps/web/.env.local`):
+
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:3002
 ```
@@ -67,6 +73,7 @@ npm run db:seed
 ## 🛠️ Development Workflow
 
 ### Essential Commands
+
 ```bash
 # Development
 npm run dev                # Start all services
@@ -80,6 +87,7 @@ npm run lint             # Lint and format code
 ```
 
 ### Quality Gates (Automated)
+
 ```bash
 # Before starting development session
 .claude/scripts/init-session.sh
@@ -94,6 +102,7 @@ npm run lint             # Lint and format code
 ## 🔧 Development Standards
 
 ### Git Workflow (Mandatory)
+
 ```bash
 # 1. Always create feature branch
 git checkout -b feature/your-feature-name
@@ -108,6 +117,7 @@ git push origin feature/your-feature-name
 ```
 
 ### Code Quality Requirements
+
 - **TypeScript**: Zero compilation errors
 - **Tests**: 80% minimum coverage
 - **Linting**: ESLint + Prettier formatting
@@ -129,6 +139,7 @@ money-wise/
 ## 🗄️ Database Schema
 
 ### Core Entities
+
 - **Users**: Authentication and user management
 - **Accounts**: Financial accounts (checking, savings)
 - **Transactions**: Financial transactions with categorization
@@ -136,6 +147,7 @@ money-wise/
 - **Categories**: Transaction categorization
 
 ### Database Management
+
 ```bash
 # View database
 cd apps/backend
@@ -151,12 +163,14 @@ npm run db:migrate:create migration-name
 ## 🔒 Security Setup
 
 ### Authentication
+
 - **JWT tokens** with 7-day expiration
 - **bcrypt** password hashing
 - **Rate limiting** on auth endpoints
 - **Input validation** on all endpoints
 
 ### Environment Security
+
 - Never commit `.env` files
 - Use strong JWT secrets (32+ characters)
 - Regular dependency updates (`npm audit`)
@@ -164,6 +178,7 @@ npm run db:migrate:create migration-name
 ## 🧪 Testing Setup
 
 ### Test Structure
+
 ```bash
 apps/backend/tests/       # Backend tests
 apps/web/tests/          # Frontend tests
@@ -173,6 +188,7 @@ apps/web/tests/          # Frontend tests
 ```
 
 ### Running Tests
+
 ```bash
 npm run test                    # All tests
 npm run test:coverage          # Coverage report
@@ -185,6 +201,7 @@ npm run test:e2e              # End-to-end tests
 ### Common Issues
 
 **Docker containers not starting:**
+
 ```bash
 # Check container status
 docker-compose ps
@@ -198,6 +215,7 @@ docker-compose restart
 ```
 
 **TypeScript errors:**
+
 ```bash
 # Check for errors
 npx tsc --noEmit
@@ -208,6 +226,7 @@ npm run build
 ```
 
 **Database connection issues:**
+
 ```bash
 # Verify database is running
 docker-compose ps postgres
@@ -218,6 +237,7 @@ npm run db:status
 ```
 
 **Port conflicts:**
+
 ```bash
 # Check what's using ports
 lsof -i :3000
@@ -230,11 +250,13 @@ kill -9 $(lsof -t -i:3000)
 ## 📚 Development Resources
 
 ### Documentation
+
 - **API Documentation**: http://localhost:3002/api (when running)
 - **Architecture Guide**: `docs/plans/architecture.md`
 - **Best Practices**: `.claude/best-practices.md`
 
 ### Key Files
+
 - **Backend Config**: `apps/backend/src/main.ts`
 - **Frontend Config**: `apps/web/next.config.js`
 - **Database Schema**: `apps/backend/src/**/*.entity.ts`
@@ -243,30 +265,26 @@ kill -9 $(lsof -t -i:3000)
 ## 🎯 MVP Feature Scope
 
 ### What's Included
-✅ User registration and authentication
-✅ Manual transaction entry
-✅ Basic account management
-✅ Simple budget tracking
-✅ Clean dashboard interface
-✅ Responsive web design
+
+✅ User registration and authentication ✅ Manual transaction entry ✅ Basic account management ✅ Simple budget
+tracking ✅ Clean dashboard interface ✅ Responsive web design
 
 ### What's Archived (Future Features)
-📦 Bank connection and automatic imports
-📦 AI-powered categorization
-📦 Multi-factor authentication
-📦 Real-time notifications
-📦 Advanced analytics
-📦 Mobile application
+
+📦 Bank connection and automatic imports 📦 AI-powered categorization 📦 Multi-factor authentication 📦 Real-time
+notifications 📦 Advanced analytics 📦 Mobile application
 
 ## 🆘 Getting Help
 
 ### Self-Service
+
 1. Check this setup guide
 2. Review error logs (`docker-compose logs`)
 3. Run quality check (`.claude/scripts/quality-check.sh`)
 4. Check TypeScript compilation (`npx tsc --noEmit`)
 
 ### Resources
+
 - **GitHub Issues**: Report bugs and request features
 - **Documentation**: Complete guides in `docs/` directory
 - **Architecture**: Detailed system design in architecture docs
