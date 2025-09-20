@@ -37,7 +37,6 @@
     "detect-node-es": "^1.1.0",
     "dom-helpers": "^5.2.1",
     "fast-equals": "^5.2.2",
-    "framer-motion": "^12.23.15",
     "get-nonce": "^1.0.1",
     "lucide-react": "^0.263.1",
     "next": "^14.0.0",
