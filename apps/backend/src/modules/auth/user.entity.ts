@@ -23,6 +23,9 @@ export class User {
   @Column({ default: true })
   isActive: boolean;
 
+  @Column({ default: 'USD', length: 3 })
+  preferredCurrency: string;
+
   @CreateDateColumn()
   createdAt: Date;
 

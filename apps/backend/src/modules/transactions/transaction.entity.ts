@@ -47,6 +47,16 @@ export class Transaction {
   @Column('text', { array: true, default: [] })
   attachments: string[];
 
+  // Multi-currency support fields
+  @Column({ default: 'USD', length: 3 })
+  originalCurrency: string;
+
+  @Column('decimal', { precision: 15, scale: 8, default: 1.0 })
+  exchangeRate: number;
+
+  @Column('decimal', { precision: 12, scale: 2, nullable: true })
+  originalAmount: number;
+
   @CreateDateColumn()
   createdAt: Date;
 
