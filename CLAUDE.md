@@ -4,7 +4,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Enhanced Behavior
 
-Follow: [.claude/best-practices.md](.claude/best-practices.md) for detailed operational procedures and quality standards.
+Follow: [.claude/best-practices.md](.claude/best-practices.md) for detailed operational procedures and quality
+standards.
 
 ## 🚨 FOUNDATIONAL RESET STATUS - COMMIT 3eae726
 
@@ -13,6 +14,7 @@ Follow: [.claude/best-practices.md](.claude/best-practices.md) for detailed oper
 **AUTHORIZED DEVIATION FROM BEST-PRACTICES**: Direct main branch commit was authorized for foundational cleanup only.
 
 #### **Infrastructure Status: ✅ OPERATIONAL**
+
 - ✅ **Docker Services**: PostgreSQL + Redis running perfectly
 - ✅ **Backend API**: NestJS fully operational on localhost:3002
 - ✅ **Database Schema**: Complete MVP entities implemented
@@ -21,26 +23,46 @@ Follow: [.claude/best-practices.md](.claude/best-practices.md) for detailed oper
 - ✅ **Dependencies**: Cleaned and security-audited
 
 #### **Cleanup Summary**
+
 - **Files Processed**: 128 files (26,078 additions, 19,727 deletions)
 - **Code Archived**: 850KB+ valuable code preserved in `/archive/`
 - **Infrastructure**: Simplified Docker setup, reliable and proven
 - **Documentation**: Comprehensive cleanup documentation created
 
+#### **CI/CD Pipeline Status: ✅ FIXED (2025-09-20 22:30 UTC)**
+
+**🔧 Pipeline Failures Resolved**: All critical CI/CD errors from MVP refactoring fixed via feature branch `fix/ci-cd-pipeline-failures`
+
+**Fixed Issues:**
+- 🔒 **Security**: Removed hardcoded password `dev123` from AuthContext.tsx → Environment variables
+- 📦 **Build**: Added missing `styled-jsx@5.1.1` dependency → Next.js builds successfully
+- 🧪 **Tests**: Fixed `@money-wise/types` module resolution → Backend tests pass
+- 💅 **Formatting**: Fixed Prettier formatting issues → Code quality standards met
+
+**Commits Applied:**
+- `13aaa82` - security(auth): replace hardcoded password with environment variables
+- `890131b` - fix(build): add missing styled-jsx dependency
+- `98626fa` - style(format): fix Prettier formatting issues
+
 #### **Development Status**
+
 - **Current Branch**: `main` (post-foundational reset)
 - **Next Development**: Will follow standard branch workflow per best-practices
 - **Infrastructure**: Ready for systematic feature development
 - **Quality Gates**: Established and operational
 
-**⚠️ IMPORTANT**: This was a one-time foundational exception. All future development MUST follow the standard feature branch workflow defined in `.claude/best-practices.md`.
+**⚠️ IMPORTANT**: This was a one-time foundational exception. All future development MUST follow the standard feature
+branch workflow defined in `.claude/best-practices.md`.
 
 ## Project Overview
 
-MoneyWise MVP v0.1.0 is a personal finance management application built as a clean monorepo. After comprehensive cleanup, the project focuses on core MVP functionality with a simplified but robust architecture.
+MoneyWise MVP v0.1.0 is a personal finance management application built as a clean monorepo. After comprehensive
+cleanup, the project focuses on core MVP functionality with a simplified but robust architecture.
 
 ## 🚨 CRITICAL Git Workflow - MANDATORY
 
 ### BEFORE ANY CODE CHANGES:
+
 1. **Create feature branch**: `git checkout -b feature/[name]`
 2. **NEVER work on main branch directly** ⚠️
 3. **Commit frequently** - every logical unit, file, or component
@@ -73,6 +95,7 @@ npm run dev:web      # Web dashboard on :3000
 ```
 
 **Services are OPERATIONAL:**
+
 - 🌐 **Web Dashboard**: http://localhost:3000 (ready for development)
 - 🔧 **API Server**: http://localhost:3002 ✅ **RUNNING**
 - 📚 **API Documentation**: http://localhost:3002/api ✅ **ACCESSIBLE**
@@ -122,6 +145,7 @@ money-wise/
 ### Technology Stack (MVP Focus)
 
 **Backend (NestJS)**
+
 - **Framework**: NestJS 10 with TypeScript
 - **Database**: PostgreSQL 15 with ORM (see Database Strategy)
 - **Authentication**: JWT with bcrypt (simplified - MFA archived)
@@ -130,6 +154,7 @@ money-wise/
 - **Documentation**: Swagger/OpenAPI integration
 
 **Frontend (Next.js)**
+
 - **Framework**: Next.js 14 with App Router
 - **UI Components**: Radix UI with Tailwind CSS
 - **State Management**: React Context (simplified)
@@ -137,6 +162,7 @@ money-wise/
 - **Icons**: Lucide React
 
 **Shared**
+
 - **Types**: Centralized TypeScript definitions
 - **Validation**: Zod schemas for client-side validation
 - **Tooling**: ESLint, Prettier, Jest
@@ -144,9 +170,11 @@ money-wise/
 ## Database Strategy & ORM Decision
 
 ### Current State: TypeORM (Preserved)
+
 The existing codebase uses TypeORM. For MVP v0.1.0, **continue with TypeORM** for stability.
 
 ### Future Considerations (Post-MVP)
+
 ```typescript
 // Alternative evaluation for scaling decisions:
 
@@ -178,13 +206,16 @@ await pool.query('CALL calculate_compound_interest($1, $2)', [principal, rate]);
 ```
 
 ### ORM Decision Matrix
+
 **Continue TypeORM when:**
+
 - ✅ MVP development priority
 - ✅ Developer experience over performance
 - ✅ < 100k transactions per user
 - ✅ Team familiarity with current patterns
 
 **Consider migration when:**
+
 - ❌ Performance becomes critical (>1M transactions)
 - ❌ Bundle size critical (<100KB target)
 - ❌ Complex analytics queries needed
@@ -193,6 +224,7 @@ await pool.query('CALL calculate_compound_interest($1, $2)', [principal, rate]);
 ## Backend Architecture (Cleaned)
 
 ### Core Modules (Preserved)
+
 - **auth/**: JWT authentication (simplified - advanced features archived)
 - **transactions/**: Transaction CRUD and categorization
 - **budgets/**: Budget creation and tracking
@@ -201,6 +233,7 @@ await pool.query('CALL calculate_compound_interest($1, $2)', [principal, rate]);
 - **security/**: Basic security middleware
 
 ### Archived Features (Future Integration)
+
 - **ML categorization**: AI-powered transaction categorization
 - **Advanced auth**: MFA, social login, OAuth
 - **Real-time features**: WebSocket notifications
@@ -209,12 +242,14 @@ await pool.query('CALL calculate_compound_interest($1, $2)', [principal, rate]);
 ## Frontend Architecture (Simplified)
 
 ### Component System
+
 - `components/ui/`: Reusable Radix UI + Tailwind components
 - `components/dashboard/`: Feature-specific dashboard components
 - `components/auth/`: Authentication-related components
 - `app/`: Next.js 14 app directory structure
 
 ### State Management (Simplified)
+
 - Context providers (`AuthContext`, `AppContext`)
 - React Hook Form for forms
 - No complex state management (Redux archived for future)
@@ -222,12 +257,14 @@ await pool.query('CALL calculate_compound_interest($1, $2)', [principal, rate]);
 ## Development Workflow & Quality Standards
 
 ### Pre-Session Initialization
+
 ```bash
 # MANDATORY: Run before every development session
 .claude/scripts/init-session.sh
 ```
 
 ### Quality Gates (Enforced by Git Hooks)
+
 ```bash
 # Automatic pre-commit validation
 - TypeScript strict mode check
@@ -241,6 +278,7 @@ await pool.query('CALL calculate_compound_interest($1, $2)', [principal, rate]);
 ```
 
 ### Commit Standards
+
 ```bash
 # Semantic versioning with co-authoring
 git commit -m "feat(transactions): implement manual entry form
@@ -253,6 +291,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 ```
 
 ### Session Completion
+
 ```bash
 # MANDATORY: Run before ending session
 .claude/scripts/session-complete.sh
@@ -261,11 +300,13 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 ## Testing Strategy (Simplified)
 
 ### Test Pyramid (MVP Focus)
+
 - **Unit Tests**: Jest (70%) - Core business logic
 - **Integration Tests**: API endpoints (20%)
 - **E2E Tests**: Playwright (10%) - Critical user flows
 
 ### Testing Commands
+
 ```bash
 npm run test              # All tests
 npm run test:coverage    # Coverage report (80% minimum)
@@ -276,11 +317,13 @@ npm run test:e2e         # End-to-end tests
 ## API Documentation
 
 ### Interactive Documentation
+
 - **Development**: http://localhost:3002/api
 - **Swagger UI**: Complete endpoint documentation
 - **Authentication**: JWT Bearer token required
 
 ### Core Endpoints (MVP)
+
 ```
 POST /auth/register     # User registration
 POST /auth/login        # User authentication
@@ -294,6 +337,7 @@ POST /budgets          # Create new budget
 ## Security & Compliance (Simplified)
 
 ### Authentication Flow (Cleaned)
+
 1. User registers with email/password
 2. Password hashed with bcrypt
 3. JWT token issued (7-day expiration)
@@ -301,6 +345,7 @@ POST /budgets          # Create new budget
 5. Basic rate limiting and validation
 
 ### Security Features (MVP)
+
 - JWT-based authentication
 - Input validation and sanitization
 - Rate limiting on auth endpoints
@@ -310,25 +355,31 @@ POST /budgets          # Create new budget
 ## Archive Management
 
 ### Valuable Code Preserved
+
 The cleanup process preserved 850KB+ of production-ready code in `/archive/`:
 
 #### `advanced-features/`
+
 - **ML modules**: Complete AI categorization system
 - **Auth advanced**: MFA, OAuth, enhanced security
 - **Backend modules**: Real-time notifications, WebSocket infrastructure
 
 #### `agent-orchestration/`
+
 - **17 automation scripts**: TDD automation, quality gates
 - **Agent clusters**: AI Intelligence, Event Streaming, Notification Engine
 - **State management**: Session coordination, tmux integration
 
 #### `infrastructure/`
+
 - **Docker configs**: Production, CI, and development setups
 - **CI/CD workflows**: 12 GitHub workflows, GitLab CI/CD
 - **Advanced monitoring**: Performance testing, security scanning
 
 ### Restoration Process
+
 Each archived component includes:
+
 - Context for archival decision
 - Integration requirements
 - Dependencies needed
@@ -337,12 +388,14 @@ Each archived component includes:
 ## Performance & Monitoring
 
 ### Performance Targets (MVP)
+
 - Initial load: < 1.5s
 - Transaction list: < 200ms
 - Dashboard analytics: < 500ms
 - API response time: < 100ms average
 
 ### Monitoring Strategy (Basic)
+
 - Error tracking and logging
 - Performance metrics collection
 - Basic analytics event tracking
@@ -351,6 +404,7 @@ Each archived component includes:
 ## Documentation Standards
 
 ### Required Documentation
+
 - **Feature Planning**: Before implementation
 - **Implementation Updates**: After completion
 - **API Changes**: Swagger documentation
@@ -358,6 +412,7 @@ Each archived component includes:
 - **Session Summaries**: Auto-generated after each session
 
 ### Documentation Structure
+
 ```
 docs/
 ├── plans/              # Strategic planning documents
@@ -369,6 +424,7 @@ docs/
 ## Important Notes & Reminders
 
 ### Development Philosophy
+
 - **MVP First**: Focus on core functionality over features
 - **Quality Gates**: Every commit must pass quality checks
 - **Documentation**: Update docs with every architectural change
@@ -376,13 +432,16 @@ docs/
 - **Archive Awareness**: Valuable code preserved for future integration
 
 ### Mandatory Workflows
+
 1. **Session Start**: `.claude/scripts/init-session.sh`
 2. **Pre-Commit**: Automatic quality gates via git hooks
 3. **Session End**: `.claude/scripts/session-complete.sh`
 4. **Weekly**: Review archive for potential integrations
 
 ### Future Development Tracks
+
 When ready for post-MVP features:
+
 1. **Advanced Auth**: Restore MFA, OAuth from archive
 2. **ML Features**: Integrate AI categorization system
 3. **Real-time**: Implement WebSocket notifications
@@ -392,6 +451,7 @@ When ready for post-MVP features:
 ## Leadership & Quality Assurance
 
 **Claude Code acts as Technical Lead** with responsibility for:
+
 - **Proactive Quality**: Enforce standards before issues arise
 - **Architecture Guidance**: Long-term technical direction
 - **Risk Management**: Identify and mitigate technical debt
@@ -399,6 +459,7 @@ When ready for post-MVP features:
 - **Performance**: Monitor and optimize system performance
 
 ### Success Criteria
+
 - ✅ 80%+ test coverage maintained
 - ✅ Zero TypeScript errors tolerance
 - ✅ Sub-200ms API response times
