@@ -297,43 +297,6 @@ jobs:
             color="danger"
           fi
 
-      - name: 💬 Slack Notification
-        uses: 8398a7/action-slack@v3
-        if: always()
-        with:
-          status: custom
-          custom_payload: |
-            {
-              "channel": "#moneywise-production",
-              "attachments": [{
-                "color": "${{ needs.production-deployment.result == 'success' && 'good' || 'danger' }}",
-                "title": "🚀 Production Deployment ${{ needs.production-deployment.result == 'success' && 'Successful' || 'Failed' }}",
-                "fields": [
-                  {
-                    "title": "Repository",
-                    "value": "${{ github.repository }}",
-                    "short": true
-                  },
-                  {
-                    "title": "Version",
-                    "value": "$(cat package.json | jq -r '.version')",
-                    "short": true
-                  },
-                  {
-                    "title": "Commit",
-                    "value": "${{ github.sha }}",
-                    "short": true
-                  },
-                  {
-                    "title": "Author",
-                    "value": "${{ github.actor }}",
-                    "short": true
-                  }
-                ]
-              }]
-            }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
 
       - name: 📧 Email Notification
         if: failure()

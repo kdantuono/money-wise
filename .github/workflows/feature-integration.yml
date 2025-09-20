@@ -369,12 +369,3 @@ jobs:
       - name: 📊 Aggregate Test Results
         run: |
           echo "Aggregating all test results..."
-
-      - name: 💬 Slack Notification
-        uses: 8398a7/action-slack@v3
-        if: always()
-        with:
-          status: ${{ job.status }}
-          channel: '#moneywise-ci'
-          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
-          fields: repo,message,commit,author,action,eventName,ref,workflow,job,took
