@@ -1,4 +1,12 @@
-name: 🎭 MoneyWise Feature Integration Pipeline
+      - name: ⏱️ Log job duration
+        run: |
+          echo "Job ${{ github.job }} started at $(date -u +%s)" >> workflow-benchmark.log
+          # ...existing code...
+
+# 🎭 MoneyWise Feature Integration Pipeline
+# Purpose: Validates and integrates feature branches into develop/future. Enforces code quality and security standards prior to merge.
+# Dependencies: Jobs run in parallel unless sequential execution is required for critical steps.
+# Logic: Each job performs validation, build, and testing phases, with resource monitoring and failure notifications included.
 
 on:
   push:
@@ -73,30 +81,37 @@ jobs:
           npm run lint:backend
           npm run lint:web
 
+
       - name: 🧪 Unit Tests with Coverage
         run: |
           npm run test:coverage
         env:
           NODE_ENV: test
-
       - name: 📊 Upload Coverage Reports
         uses: codecov/codecov-action@v3
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: ./coverage/lcov.info
           fail_ci_if_error: true
-
       - name: 🛡️ Security Audit
         run: |
           npm audit --audit-level moderate
           npm run audit:security || true
-
       - name: 🏗️ Build Applications
         run: |
-          npm run build:backend
-          npm run build:web
+          npm run build:backend &
+          npm run build:web &
+          wait
         env:
           NODE_ENV: production
+      - name: 🖥️ Monitor runner resources
+        run: |
+          echo "CPU/RAM usage:" && top -b -n1 | head -20
+          echo "Disk usage:" && df -h
+      - name: 🚨 Notify on failure
+        if: failure()
+        run: |
+          echo "Workflow failed!"
 
   # ================================
   # INTEGRATION & E2E TESTING

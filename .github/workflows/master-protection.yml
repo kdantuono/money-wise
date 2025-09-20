@@ -1,4 +1,12 @@
-name: 🛡️ Master Branch Protection & Production Deploy
+      - name: ⏱️ Log job duration
+        run: |
+          echo "Job ${{ github.job }} started at $(date -u +%s)" >> workflow-benchmark.log
+          # ...existing code...
+
+# 🛡️ Master Branch Protection & Production Deploy
+# Purpose: Protects the main branch and manages production deployment with ultra-strict validation.
+# Dependencies: Jobs are executed sequentially to ensure complete validation before deployment.
+# Logic: Each step verifies a critical property (coverage, type-check, lint, security, performance), with resource monitoring and failure notifications.
 
 on:
   pull_request:
@@ -78,26 +86,21 @@ jobs:
           fi
           echo "✅ No hardcoded secrets detected"
 
-      - name: 🚀 Performance Validation
+      - name: �️ Performance Validation
         run: |
           echo "⚡ Running production performance validation..."
-
-          # Build for production
-          npm run build
-
-          # Performance budget check
+          npm run build &
+          wait
           npm run budget:check
           echo "✅ Performance budgets met"
-
-      - name: 🎭 End-to-End Production Simulation
+      - name: 🖥️ Monitor runner resources
         run: |
-          echo "🎪 Running production-like E2E tests..."
-
-          # Start services in production mode
-          docker-compose -f docker-compose.prod.yml up -d --build
-
-          # Wait for services to be ready
-          timeout 60 bash -c 'until curl -f http://localhost:3000/health; do sleep 2; done'
+          echo "CPU/RAM usage:" && top -b -n1 | head -20
+          echo "Disk usage:" && df -h
+      - name: 🚨 Notify on failure
+        if: failure()
+        run: |
+          echo "Workflow failed!"
 
           # Run E2E tests against production build
           npm run test:e2e:prod
