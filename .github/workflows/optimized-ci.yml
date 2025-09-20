@@ -1,0 +1,430 @@
+# 🚀 MoneyWise Optimized CI/CD Pipeline
+# Consolidated workflow with improved caching, parallel execution, and monitoring
+
+name: Optimized CI/CD
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+    types: [opened, synchronize, reopened, ready_for_review]
+  workflow_dispatch:
+
+# Global environment variables
+env:
+  NODE_VERSION: '18.17.0'
+  COVERAGE_THRESHOLD: 80
+  PERFORMANCE_BUDGET_MS: 3000
+
+# Cancel previous runs on new commits
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ================================
+  # 🏗️ SETUP & VALIDATION
+  # ================================
+  
+  setup:
+    name: 📦 Setup & Dependencies
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false
+    outputs:
+      cache-hit: ${{ steps.cache-deps.outputs.cache-hit }}
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: |
+            package-lock.json
+            apps/*/package-lock.json
+            packages/*/package-lock.json
+
+      - name: 📥 Cache dependencies
+        id: cache-deps
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            apps/*/node_modules
+            packages/*/node_modules
+            ~/.npm
+          key: ${{ runner.os }}-deps-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-deps-
+
+      - name: 📥 Install dependencies
+        if: steps.cache-deps.outputs.cache-hit != 'true'
+        run: |
+          npm ci --prefer-offline --no-audit
+          npm run setup
+
+  # ================================
+  # ⚡ PARALLEL VALIDATION JOBS
+  # ================================
+  
+  code-quality:
+    name: 🔍 Code Quality
+    runs-on: ubuntu-latest
+    needs: setup
+    if: github.event.pull_request.draft == false
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 📥 Restore dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            apps/*/node_modules
+            packages/*/node_modules
+          key: ${{ runner.os }}-deps-${{ hashFiles('**/package-lock.json') }}
+
+      - name: 🎨 Check Prettier formatting
+        run: |
+          npx prettier --check "**/*.{ts,tsx,js,jsx,json,md,yml,yaml}" || {
+            echo "❌ Code formatting issues found. Run 'npm run format' to fix."
+            exit 1
+          }
+
+      - name: 📋 ESLint validation
+        run: |
+          npm run lint || {
+            echo "❌ Linting issues found. Run 'npm run lint:fix' to attempt automatic fixes."
+            exit 1
+          }
+
+      - name: 🔍 TypeScript strict validation
+        run: |
+          cd apps/web && npx tsc --noEmit --strict
+          cd ../backend && npx tsc --noEmit --strict
+
+  security-scan:
+    name: 🔒 Security Scan
+    runs-on: ubuntu-latest
+    needs: setup
+    if: github.event.pull_request.draft == false
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 📥 Restore dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            apps/*/node_modules
+            packages/*/node_modules
+          key: ${{ runner.os }}-deps-${{ hashFiles('**/package-lock.json') }}
+
+      - name: 🔒 Enhanced secret scanning
+        run: |
+          echo "🔒 Scanning for exposed secrets..."
+          
+          # Check for AWS keys (excluding test files)
+          if grep -r "AKIA[0-9A-Z]{16}" --exclude-dir=tests --exclude="*.test.*" --exclude="*.spec.*" apps/; then
+            echo "❌ AWS access keys found in code!"
+            exit 1
+          fi
+          
+          # Check for Stripe keys (excluding test files)
+          if grep -r "sk_live_[0-9a-zA-Z]{24}" --exclude-dir=tests --exclude="*.test.*" --exclude="*.spec.*" apps/; then
+            echo "❌ Stripe secret keys found in code!"
+            exit 1
+          fi
+          
+          # Check for hardcoded passwords (excluding test files and empty passwords)
+          if grep -r "password.*=.*['\"][^'\"]*['\"]" --exclude-dir=tests --exclude="*.test.*" --exclude="*.spec.*" --exclude-dir=__mocks__ apps/ --include="*.ts" --include="*.tsx" | grep -v "password.*=.*['\"]['\"]"; then
+            echo "❌ Hardcoded passwords found in code!"
+            exit 1
+          fi
+          
+          echo "✅ No secrets detected"
+
+      - name: 🛡️ Dependency vulnerability scan
+        run: |
+          npm audit --audit-level moderate || {
+            echo "❌ Security vulnerabilities found in dependencies"
+            exit 1
+          }
+
+  test-suite:
+    name: 🧪 Test Suite
+    runs-on: ubuntu-latest
+    needs: setup
+    if: github.event.pull_request.draft == false
+    
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_DB: test_moneywise
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 📥 Restore dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            apps/*/node_modules
+            packages/*/node_modules
+          key: ${{ runner.os }}-deps-${{ hashFiles('**/package-lock.json') }}
+
+      - name: 🧪 Backend unit tests
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_USERNAME: test_user
+          DB_PASSWORD: test_password
+          DB_NAME: test_moneywise
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+          NODE_ENV: test
+        run: |
+          cd apps/backend
+          npm run test -- --coverage --passWithNoTests --detectOpenHandles
+          
+      - name: 🧪 Frontend unit tests
+        run: |
+          cd apps/web
+          npm run test:unit -- --coverage --passWithNoTests
+
+      - name: 📊 Upload coverage reports
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          directory: ./apps/*/coverage
+          fail_ci_if_error: false
+
+  # ================================
+  # 🏗️ BUILD & PERFORMANCE
+  # ================================
+  
+  build-test:
+    name: 🏗️ Build & Performance
+    runs-on: ubuntu-latest
+    needs: [setup, code-quality]
+    if: github.event.pull_request.draft == false
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 📥 Restore dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            apps/*/node_modules
+            packages/*/node_modules
+          key: ${{ runner.os }}-deps-${{ hashFiles('**/package-lock.json') }}
+
+      - name: 🏗️ Build applications
+        run: |
+          npm run build:backend
+          npm run build:web
+        env:
+          NODE_ENV: production
+
+      - name: 📦 Bundle size analysis
+        run: |
+          cd apps/web
+          echo "📦 Bundle size analysis:"
+          if [ -d ".next/static/chunks" ]; then
+            du -sh .next/static/chunks/* | sort -hr | head -10
+          else
+            echo "⚠️ Build output not found"
+          fi
+
+      - name: ⚡ Performance budget check
+        run: |
+          echo "⚡ Checking performance budgets..."
+          cd apps/web
+          if [ -f ".next/analyze/client.json" ]; then
+            bundle_size=$(jq '.assets | map(.size) | add' .next/analyze/client.json 2>/dev/null || echo "0")
+            if [ "$bundle_size" -gt 1000000 ]; then
+              echo "⚠️ Bundle size exceeds 1MB: ${bundle_size} bytes"
+            else
+              echo "✅ Bundle size within limits: ${bundle_size} bytes"
+            fi
+          else
+            echo "ℹ️ Bundle analysis not available"
+          fi
+
+  # ================================
+  # ✅ CONSOLIDATION & REPORTING
+  # ================================
+  
+  workflow-summary:
+    name: ✅ CI Summary
+    runs-on: ubuntu-latest
+    needs: [code-quality, security-scan, test-suite, build-test]
+    if: always() && github.event.pull_request.draft == false
+    
+    steps:
+      - name: 📊 Generate workflow summary
+        run: |
+          echo "# 🎉 CI/CD Pipeline Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Status Overview" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ needs.code-quality.result }}" == "success" ]; then
+            echo "✅ **Code Quality**: Passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Code Quality**: Failed" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [ "${{ needs.security-scan.result }}" == "success" ]; then
+            echo "✅ **Security Scan**: Passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Security Scan**: Failed" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [ "${{ needs.test-suite.result }}" == "success" ]; then
+            echo "✅ **Test Suite**: Passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Test Suite**: Failed" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [ "${{ needs.build-test.result }}" == "success" ]; then
+            echo "✅ **Build & Performance**: Passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Build & Performance**: Failed" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Quick Links" >> $GITHUB_STEP_SUMMARY
+          echo "- 📊 [Workflow Run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
+          echo "- 🔍 [Code Changes](https://github.com/${{ github.repository }}/pull/${{ github.event.number }})" >> $GITHUB_STEP_SUMMARY
+
+      - name: 💬 Comment on PR (if failed)
+        if: failure() && github.event_name == 'pull_request'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const failures = [];
+            if ('${{ needs.code-quality.result }}' !== 'success') failures.push('Code Quality');
+            if ('${{ needs.security-scan.result }}' !== 'success') failures.push('Security Scan');
+            if ('${{ needs.test-suite.result }}' !== 'success') failures.push('Test Suite');
+            if ('${{ needs.build-test.result }}' !== 'success') failures.push('Build & Performance');
+            
+            const body = `## ❌ CI/CD Pipeline Failed
+            
+            The following checks failed:
+            ${failures.map(f => `- ❌ ${f}`).join('\n')}
+            
+            Please review the [workflow logs](https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}) and fix the issues.
+            
+            **Common fixes:**
+            - Run \`npm run format\` for formatting issues
+            - Run \`npm run lint:fix\` for linting issues
+            - Check test files for failing assertions
+            - Verify build dependencies are installed
+            `;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });
+
+  # ================================
+  # 📈 MONITORING & METRICS
+  # ================================
+  
+  workflow-metrics:
+    name: 📈 Performance Metrics
+    runs-on: ubuntu-latest
+    needs: [workflow-summary]
+    if: always()
+    
+    steps:
+      - name: 📊 Track workflow performance
+        run: |
+          echo "📈 Recording workflow metrics..."
+          
+          # Calculate total runtime
+          start_time="${{ github.event.head_commit.timestamp }}"
+          end_time=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          
+          echo "Workflow started: $start_time"
+          echo "Workflow ended: $end_time"
+          
+          # Log job results for monitoring
+          echo "Job Results:"
+          echo "- Code Quality: ${{ needs.code-quality.result }}"
+          echo "- Security Scan: ${{ needs.security-scan.result }}"  
+          echo "- Test Suite: ${{ needs.test-suite.result }}"
+          echo "- Build Test: ${{ needs.build-test.result }}"
+
+      - name: 🔔 Workflow failure notification
+        if: failure()
+        run: |
+          echo "🚨 Workflow failure detected"
+          echo "Repository: ${{ github.repository }}"
+          echo "Branch: ${{ github.ref_name }}"
+          echo "Commit: ${{ github.sha }}"
+          echo "Actor: ${{ github.actor }}"
+          echo "Run ID: ${{ github.run_id }}"
+          # Add webhook notification here if needed
