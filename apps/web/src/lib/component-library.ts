@@ -194,7 +194,7 @@ export const componentLibrary: Record<string, ComponentInfo> = {
     animations: true,
     testCoverage: 92,
     performanceNotes:
-      'Uses AnimatePresence for smooth view transitions and useMemo for calculations',
+      'Uses CSS transitions for smooth view changes and useMemo for calculations',
     browserSupport: ['Chrome 90+', 'Firefox 88+', 'Safari 14+', 'Edge 90+'],
   },
 

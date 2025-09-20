@@ -336,7 +336,7 @@ export function WeeklyActivity() {
 
             <Tooltip content={<CustomTooltip />} />
 
-            <AnimatePresence mode='wait'>
+            <div>
               {viewMode === 'comparison' && (
                 <>
                   <Bar
@@ -381,7 +381,7 @@ export function WeeklyActivity() {
                   name='Total Volume'
                 />
               )}
-            </AnimatePresence>
+            </div>
           </BarChart>
         </ResponsiveContainer>
       </div>
