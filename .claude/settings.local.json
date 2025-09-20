@@ -46,7 +46,9 @@
       "Bash(docker stop:*)",
       "Bash(docker compose:*)",
       "Bash(npm run type-check:*)",
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "WebFetch(domain:financial-dashboard-r.vercel.app)",
+      "Read(//tmp/**)"
     ],
     "deny": [],
     "ask": []

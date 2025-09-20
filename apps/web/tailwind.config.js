@@ -158,6 +158,15 @@ module.exports = {
           negative: 'hsl(var(--balance-negative))',
           neutral: 'hsl(var(--balance-neutral))',
         },
+        // Credit card gradient colors
+        'gradient-start': 'hsl(var(--gradient-start))',
+        'gradient-end': 'hsl(var(--gradient-end))',
+        'gradient-premium-start': 'hsl(var(--gradient-premium-start))',
+        'gradient-premium-end': 'hsl(var(--gradient-premium-end))',
+        'gradient-platinum-start': 'hsl(var(--gradient-platinum-start))',
+        'gradient-platinum-end': 'hsl(var(--gradient-platinum-end))',
+        'gradient-business-start': 'hsl(var(--gradient-business-start))',
+        'gradient-business-end': 'hsl(var(--gradient-business-end))',
       },
       fontFamily: {
         sans: [

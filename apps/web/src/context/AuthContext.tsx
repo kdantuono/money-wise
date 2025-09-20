@@ -38,8 +38,16 @@ export const useAuth = () => {
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  // DEV: Hardcode user for development mode
+  const isDev = process.env.NODE_ENV === 'development';
+  const mockUser = isDev ? {
+    id: 'dev-user-1',
+    email: 'dev@moneywise.com',
+    name: 'Dev User',
+  } : null;
+
+  const [user, setUser] = useState<User | null>(mockUser);
+  const [loading, setLoading] = useState(!isDev);
   const router = useRouter();
 
   useEffect(() => {
@@ -49,17 +57,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
     // DEV MODE: Auto-login for development and UI testing
     const isDev = process.env.NODE_ENV === 'development';
-    const devBypass = localStorage.getItem('dev-auth-bypass');
 
-    if (isDev && devBypass === 'true') {
+    if (isDev) {
+      // Force dev bypass in development mode
       const mockUser = {
         id: 'dev-user-1',
         email: 'dev@moneywise.com',
         name: 'Dev User',
       };
       setUser(mockUser);
-      localStorage.setItem('token', 'dev-token');
-      localStorage.setItem('user', JSON.stringify(mockUser));
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('token', 'dev-token');
+        localStorage.setItem('user', JSON.stringify(mockUser));
+        localStorage.setItem('dev-auth-bypass', 'true');
+      }
     } else if (token && savedUser) {
       try {
         setUser(JSON.parse(savedUser));

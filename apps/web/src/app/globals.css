@@ -109,6 +109,16 @@
     --chart-4: var(--chart-red);
     --chart-5: var(--chart-purple);
 
+    /* Credit Card Gradient Definitions */
+    --gradient-start: 223 87% 56%; /* Primary blue */
+    --gradient-end: 271 81% 56%; /* Purple */
+    --gradient-premium-start: 38 92% 50%; /* Gold */
+    --gradient-premium-end: 0 84% 60%; /* Red-orange */
+    --gradient-platinum-start: 220 9% 46%; /* Silver */
+    --gradient-platinum-end: 220 13% 91%; /* Light silver */
+    --gradient-business-start: 163 94% 24%; /* Dark green */
+    --gradient-business-end: 160 84% 39%; /* Light green */
+
     /* Financial UI Specific Variables */
     --balance-positive: var(--success-500);
     --balance-negative: var(--error-500);
@@ -151,6 +161,16 @@
     --card-premium-gradient: linear-gradient(135deg, hsl(var(--neutral-800)), hsl(var(--neutral-950)));
     --card-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.3);
     --card-shadow-hover: 0 8px 30px -4px rgba(0, 0, 0, 0.4);
+
+    /* Dark Mode Credit Card Gradients */
+    --gradient-start: 223 87% 65%;
+    --gradient-end: 271 70% 65%;
+    --gradient-premium-start: 38 85% 60%;
+    --gradient-premium-end: 0 75% 70%;
+    --gradient-platinum-start: 220 15% 60%;
+    --gradient-platinum-end: 220 20% 85%;
+    --gradient-business-start: 163 80% 35%;
+    --gradient-business-end: 160 70% 50%;
   }
 }
  
@@ -217,6 +237,44 @@
   .card-premium {
     @apply relative overflow-hidden;
     background: var(--card-premium-gradient);
+  }
+
+
+  /* Enhanced Credit Card Styles */
+  .credit-card {
+    @apply relative overflow-hidden rounded-2xl shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-105;
+    backdrop-filter: blur(10px);
+  }
+
+  .credit-card::before {
+    content: '';
+    @apply absolute inset-0 rounded-2xl;
+    background: linear-gradient(45deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
+    z-index: 1;
+  }
+
+  .credit-card-content {
+    @apply relative z-10;
+  }
+
+  .card-shimmer {
+    @apply relative overflow-hidden;
+  }
+
+  .card-shimmer::after {
+    content: '';
+    @apply absolute top-0 -left-full w-full h-full;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    animation: shimmer-card 3s infinite;
+  }
+
+  @keyframes shimmer-card {
+    0% {
+      left: -100%;
+    }
+    100% {
+      left: 100%;
+    }
   }
 
   /* Enhanced button styles */
