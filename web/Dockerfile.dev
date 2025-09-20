@@ -1,0 +1,25 @@
+FROM node:18-alpine
+
+RUN apk add --no-cache curl
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+RUN npm install
+
+# Copy packages and web code
+COPY packages/ ./packages/
+COPY web/ ./web/
+
+# Build types package
+WORKDIR /app/packages/types
+RUN npm install && npm run build
+
+# Switch to web
+WORKDIR /app/web
+RUN npm install
+
+EXPOSE 3000
+
+CMD ["npm", "run", "dev"]

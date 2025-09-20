@@ -41,7 +41,7 @@ services:
   backend:
     build:
       context: .
-      dockerfile: apps/backend/Dockerfile.dev
+      dockerfile: backend/Dockerfile.dev
     ports:
       - '3002:3002'
     environment:
@@ -68,7 +68,7 @@ services:
     networks:
       - moneywise_network
     volumes:
-      - ./apps/backend:/app/apps/backend
+      - ./backend:/app/backend
       - ./packages:/app/packages
     restart: unless-stopped
     healthcheck:
@@ -81,7 +81,7 @@ services:
   web:
     build:
       context: .
-      dockerfile: apps/web/Dockerfile.dev
+      dockerfile: web/Dockerfile.dev
     ports:
       - '3000:3000'
     environment:
@@ -93,7 +93,7 @@ services:
     networks:
       - moneywise_network
     volumes:
-      - ./apps/web:/app/apps/web
+      - ./web:/app/web
       - ./packages:/app/packages
     restart: unless-stopped
     healthcheck:
