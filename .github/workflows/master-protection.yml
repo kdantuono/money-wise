@@ -79,28 +79,11 @@ jobs:
           npm audit --audit-level high
           echo "✅ No high-severity vulnerabilities"
 
-          # Secret scanning (secure)
-          secret_count=$(grep -r "password\|secret\|key" --include="*.ts" --include="*.js" . | grep -v node_modules | grep -v test | wc -l)
-          if [ "$secret_count" -gt 0 ]; then
-            echo "❌ $secret_count potential secrets detected in code"
-            exit 1
-          fi
-          echo "✅ No hardcoded secrets detected"
+          # Secret scanning (secure, modularized)
+          bash .github/scripts/scan-secrets.sh
 
         - name: 🔒 Secrets Rotation Validation
-          run: |
-            if [ -f .env ]; then
-              LAST_MOD=$(date -r .env +%s)
-              NOW=$(date +%s)
-              DIFF=$(( (NOW - LAST_MOD) / 86400 ))
-              if [ "$DIFF" -gt 90 ]; then
-                echo "❌ .env file is older than 90 days. Please rotate secrets."
-                exit 1
-              fi
-              echo "✅ .env file secrets are recently rotated."
-            else
-              echo "⚠️ .env file not found. Skipping secrets rotation check."
-            fi
+          run: bash .github/scripts/check-secrets-rotation.sh
           - name: 🐳 Build Docker Image (Backend)
             run: |
               docker build -t moneywise-backend:latest -f apps/backend/Dockerfile .
@@ -111,21 +94,26 @@ jobs:
               format: 'table'
               exit-code: '1'
               ignore-unfixed: true
-      - name: �️ Performance Validation
+      - name: 🖥️ Performance Validation
         run: |
           echo "⚡ Running production performance validation..."
           npm run build &
           wait
           npm run budget:check
           echo "✅ Performance budgets met"
-      - name: 🖥️ Monitor runner resources
+      - name: 🔄 Automated Rollback Test
+        run: bash .github/scripts/rollback-test.sh
+      - name: �️ Plaid/Fintech API Security Validation
+        run: bash .github/scripts/plaid-security-check.sh
+      - name: � Workflow Performance Metrics
+        run: bash .github/scripts/performance-metrics.sh
+      - name: �🖥️ Monitor runner resources
         run: |
           echo "CPU/RAM usage:" && top -b -n1 | head -20
           echo "Disk usage:" && df -h
-      - name: 🚨 Notify on failure
+      - name: 🚨 Enhanced Error Reporting
         if: failure()
-        run: |
-          echo "Workflow failed!"
+        run: bash .github/scripts/error-reporting.sh
 
           # Run E2E tests against production build
           npm run test:e2e:prod
