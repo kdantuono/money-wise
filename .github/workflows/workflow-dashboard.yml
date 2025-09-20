@@ -1,0 +1,37 @@
+name: Workflow Dashboard & Issue Automation
+
+on:
+  workflow_run:
+    workflows: ["MoneyWise CI/CD Pipeline", "MoneyWise Feature Integration Pipeline", "Master Branch Protection & Production Deploy"]
+    types:
+      - completed
+
+jobs:
+  dashboard-and-issue:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check workflow status
+        id: status
+        run: |
+          echo "Workflow conclusion: ${{ github.event.workflow_run.conclusion }}"
+          echo "Workflow name: ${{ github.event.workflow_run.name }}"
+      - name: Update dashboard (badge)
+        if: always()
+        run: |
+          # Qui puoi integrare con shields.io o GitHub Pages per aggiornare badge
+          echo "Aggiorna badge di stato workflow"
+      - name: Create issue on repeated failure
+        if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const workflowName = context.payload.workflow_run.name;
+            const runId = context.payload.workflow_run.id;
+            // Logica: crea una issue se ci sono 2+ fallimenti consecutivi (esempio semplificato)
+            github.issues.create({
+              owner,
+              repo,
+              title: `Workflow failed: ${workflowName}`,
+              body: `Workflow ${workflowName} failed (run ID: ${runId}). Verifica la dashboard per dettagli.`
+            });

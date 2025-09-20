@@ -1,6 +1,12 @@
+      - name: ⏱️ Log job duration
+        run: |
+          echo "Job ${{ github.job }} started at $(date -u +%s)" >> workflow-benchmark.log
+          # ...existing code...
+
 # 🚀 MoneyWise GitHub Actions CI/CD Pipeline
-# Comprehensive validation for multi-agent feature merges
-# Ensures code quality, architecture compliance, and zero regressions
+# Purpose: Comprehensive validation for multi-agent feature merges. Ensures code quality, architectural compliance, and zero regressions before integration.
+# Dependencies: Jobs are executed in parallel unless critical validation or deployment steps require sequential execution via `needs`.
+# Logic: Each job covers a distinct validation phase (code quality, architecture, testing, security, performance) and triggers failure notifications as needed.
 
 name: MoneyWise CI/CD Pipeline
 
@@ -24,80 +30,75 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+
 jobs:
-  # ================================
-  # 🔍 CODE QUALITY & FORMATTING
-  # ================================
-  
   code-quality:
     name: 🔍 Code Quality & Formatting
     runs-on: ubuntu-latest
     if: github.event.pull_request.draft == false
-    
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
       - name: 📦 Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-
       - name: 📥 Install dependencies
         run: |
           npm ci --prefer-offline --no-audit
           npm run setup
-
       - name: 🔧 Check Prettier formatting
         run: |
           npx prettier --check "**/*.{ts,tsx,js,jsx,json,md,yml,yaml}"
-
-      - name: 📋 ESLint validation
+      - name: � ESLint validation
         run: |
           npm run lint
-
       - name: 🔍 Import organization check
         run: |
-          # Check for unused imports
           npx eslint "apps/**/*.{ts,tsx}" --rule "unused-imports/no-unused-imports: error"
-          
-          # Validate import order
           npx eslint "apps/**/*.{ts,tsx}" --rule "import/order: [error, { groups: [builtin, external, internal, parent, sibling, index] }]"
-
-      - name: 📊 TypeScript strict validation
+      - name: � TypeScript strict validation
         run: |
           cd apps/web && npx tsc --noEmit --strict
           cd ../backend && npx tsc --noEmit --strict
-
       - name: 🔍 Dependency vulnerability scan
         run: |
           npm audit --audit-level high
           npx better-npm-audit audit --level high
+      - name: 🖥️ Monitor runner resources
+        run: |
+          echo "CPU/RAM usage:" && top -b -n1 | head -20
+          echo "Disk usage:" && df -h
+      - name: 🚨 Notify on failure
+        if: failure()
+        run: |
+          echo "Workflow failed!" # Qui puoi integrare Slack, email o GitHub Issue
 
-  # ================================
-  # 🏛️ ARCHITECTURE COMPLIANCE
-  # ================================
-  
   architecture-validation:
     name: 🏛️ Architecture & Principles
     runs-on: ubuntu-latest
     if: github.event.pull_request.draft == false
-    
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
-
       - name: 📦 Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-
       - name: 📥 Install dependencies
         run: npm ci --prefer-offline --no-audit
+      - name: 🖥️ Monitor runner resources
+        run: |
+          echo "CPU/RAM usage:" && top -b -n1 | head -20
+          echo "Disk usage:" && df -h
+      - name: 🚨 Notify on failure
+        if: failure()
+        run: |
+          echo "Workflow failed!"
 
       - name: 🔍 KISS Principle validation
         run: |

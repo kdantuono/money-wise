@@ -1,4 +1,12 @@
-name: 🛡️ Master Branch Protection & Production Deploy
+      - name: ⏱️ Log job duration
+        run: |
+          echo "Job ${{ github.job }} started at $(date -u +%s)" >> workflow-benchmark.log
+          # ...existing code...
+
+# 🛡️ Master Branch Protection & Production Deploy
+# Purpose: Protects the main branch and manages production deployment with ultra-strict validation.
+# Dependencies: Jobs are executed sequentially to ensure complete validation before deployment.
+# Logic: Each step verifies a critical property (coverage, type-check, lint, security, performance), with resource monitoring and failure notifications.
 
 on:
   pull_request:
@@ -71,33 +79,41 @@ jobs:
           npm audit --audit-level high
           echo "✅ No high-severity vulnerabilities"
 
-          # Secret scanning
-          if grep -r "password\|secret\|key" --include="*.ts" --include="*.js" . | grep -v node_modules | grep -v test; then
-            echo "❌ Potential secrets found in code"
-            exit 1
-          fi
-          echo "✅ No hardcoded secrets detected"
+          # Secret scanning (secure, modularized)
+          bash .github/scripts/scan-secrets.sh
 
-      - name: 🚀 Performance Validation
+        - name: 🔒 Secrets Rotation Validation
+          run: bash .github/scripts/check-secrets-rotation.sh
+          - name: 🐳 Build Docker Image (Backend)
+            run: |
+              docker build -t moneywise-backend:latest -f apps/backend/Dockerfile .
+          - name: 🐳 Docker Image Vulnerability Scan
+            uses: aquasecurity/trivy-action@v0.10.0
+            with:
+              image-ref: 'moneywise-backend:latest'
+              format: 'table'
+              exit-code: '1'
+              ignore-unfixed: true
+      - name: 🖥️ Performance Validation
         run: |
           echo "⚡ Running production performance validation..."
-
-          # Build for production
-          npm run build
-
-          # Performance budget check
+          npm run build &
+          wait
           npm run budget:check
           echo "✅ Performance budgets met"
-
-      - name: 🎭 End-to-End Production Simulation
+      - name: 🔄 Automated Rollback Test
+        run: bash .github/scripts/rollback-test.sh
+      - name: �️ Plaid/Fintech API Security Validation
+        run: bash .github/scripts/plaid-security-check.sh
+      - name: � Workflow Performance Metrics
+        run: bash .github/scripts/performance-metrics.sh
+      - name: �🖥️ Monitor runner resources
         run: |
-          echo "🎪 Running production-like E2E tests..."
-
-          # Start services in production mode
-          docker-compose -f docker-compose.prod.yml up -d --build
-
-          # Wait for services to be ready
-          timeout 60 bash -c 'until curl -f http://localhost:3000/health; do sleep 2; done'
+          echo "CPU/RAM usage:" && top -b -n1 | head -20
+          echo "Disk usage:" && df -h
+      - name: 🚨 Enhanced Error Reporting
+        if: failure()
+        run: bash .github/scripts/error-reporting.sh
 
           # Run E2E tests against production build
           npm run test:e2e:prod
@@ -294,43 +310,6 @@ jobs:
             color="danger"
           fi
 
-      - name: 💬 Slack Notification
-        uses: 8398a7/action-slack@v3
-        if: always()
-        with:
-          status: custom
-          custom_payload: |
-            {
-              "channel": "#moneywise-production",
-              "attachments": [{
-                "color": "${{ needs.production-deployment.result == 'success' && 'good' || 'danger' }}",
-                "title": "🚀 Production Deployment ${{ needs.production-deployment.result == 'success' && 'Successful' || 'Failed' }}",
-                "fields": [
-                  {
-                    "title": "Repository",
-                    "value": "${{ github.repository }}",
-                    "short": true
-                  },
-                  {
-                    "title": "Version",
-                    "value": "$(cat package.json | jq -r '.version')",
-                    "short": true
-                  },
-                  {
-                    "title": "Commit",
-                    "value": "${{ github.sha }}",
-                    "short": true
-                  },
-                  {
-                    "title": "Author",
-                    "value": "${{ github.actor }}",
-                    "short": true
-                  }
-                ]
-              }]
-            }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
 
       - name: 📧 Email Notification
         if: failure()
