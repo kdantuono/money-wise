@@ -52,13 +52,14 @@
       "Bash(./scripts/agent-workflow-orchestrator.sh:*)",
       "Bash(./scripts/orchestra-monitor.sh status:*)",
       "Bash(chmod:*)",
-      "Bash(sudo chown:*)"
+      "Bash(sudo chown:*)",
+      "Bash(npx prettier:*)",
+      "Bash(cat:*)",
+      "Bash(prettier:*)"
     ],
     "deny": [],
     "ask": []
   },
   "enableAllProjectMcpServers": true,
-  "enabledMcpjsonServers": [
-    "sentry"
-  ]
+  "enabledMcpjsonServers": ["sentry"]
 }
