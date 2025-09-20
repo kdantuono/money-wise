@@ -7,12 +7,20 @@ services:
       POSTGRES_DB: moneywise
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
+      PGDATA: /var/lib/postgresql/data/pgdata
     ports:
       - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data/pgdata
     networks:
       - moneywise_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d moneywise"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
   redis:
     image: redis:7-alpine
@@ -22,6 +30,13 @@ services:
       - redis_data:/data
     networks:
       - moneywise_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
 
   backend:
     build:
@@ -46,15 +61,23 @@ services:
       - PLAID_COUNTRY_CODES=US
       - PLAID_WEBHOOK_URL=http://backend:3002/plaid/webhook
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
       - moneywise_network
-    volumes:
-      - ./apps/backend:/app/apps/backend
-      - ./packages:/app/packages
-      - /app/node_modules
-    command: sh -c "npm run build && npm run start:prod"
+    # volumes:
+      # - ./apps/backend:/app/apps/backend
+      # - ./packages:/app/packages
+      # - backend_node_modules:/app/node_modules
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   web:
     build:
@@ -66,17 +89,27 @@ services:
       - NODE_ENV=development
       - NEXT_PUBLIC_API_URL=http://localhost:3002
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     networks:
       - moneywise_network
-    volumes:
-      - ./apps/web:/app/apps/web
-      - ./packages:/app/packages
-      - /app/node_modules
+    # volumes:
+      # - ./apps/web:/app/apps/web
+      # - ./packages:/app/packages
+      # - web_node_modules:/app/node_modules
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
 
 volumes:
   postgres_data:
   redis_data:
+  backend_node_modules:
+  web_node_modules:
 
 networks:
   moneywise_network:

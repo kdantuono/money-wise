@@ -1,5 +1,8 @@
 FROM node:18-alpine
 
+# Install curl for health checks
+RUN apk add --no-cache curl
+
 WORKDIR /app
 
 # Copy root package.json and install dependencies
@@ -23,8 +26,12 @@ WORKDIR /app/apps/backend
 RUN npm install
 
 # Copy environment file
-COPY apps/backend/.env.example apps/backend/.env
+COPY apps/backend/.env.example ./.env
+
+# Build the application
+RUN npm run build
 
 EXPOSE 3002
 
-CMD ["sh", "-c", "npm run build && npm run start:prod"]
+# Start in development mode
+CMD ["npm", "run", "start:prod"]

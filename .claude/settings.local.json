@@ -33,7 +33,20 @@
       "Bash(./scripts/agile-micro-commit-enforcer.sh commit:*)",
       "Bash(sudo rm:*)",
       "Bash(xargs ls:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(gh run view:*)",
+      "Bash(gh issue view:*)",
+      "Bash(gh run list:*)",
+      "Bash(git branch:*)",
+      "Bash(./scripts/enhanced-agent-orchestrator.sh:*)",
+      "Bash(gh:*)",
+      "Bash(docker system prune:*)",
+      "Bash(npm audit:*)",
+      "Bash(docker volume prune:*)",
+      "Bash(docker stop:*)",
+      "Bash(docker compose:*)",
+      "Bash(npm run type-check:*)",
+      "Bash(npm run:*)"
     ],
     "deny": [],
     "ask": []
