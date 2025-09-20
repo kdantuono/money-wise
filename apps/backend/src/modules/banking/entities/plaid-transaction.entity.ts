@@ -39,7 +39,7 @@ export class PlaidTransaction {
   @Column({ name: 'category_id', nullable: true })
   categoryId: string;
 
-  @Column({ name: 'subcategory', nullable: true })
+  @Column({ name: 'subcategory', type: 'jsonb', nullable: true })
   subcategory: string[];
 
   @Column({ name: 'transaction_type', nullable: true })
