@@ -1,3 +1,4 @@
+import { ApiProperty } from '@nestjs/swagger';
 import {
   IsString,
   IsNotEmpty,
@@ -6,7 +7,6 @@ import {
   IsDateString,
   IsNumber,
 } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateLinkTokenDto {
   @ApiProperty({ description: 'User ID for link token creation' })

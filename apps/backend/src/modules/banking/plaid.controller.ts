@@ -19,8 +19,9 @@ import {
   ApiBearerAuth,
   ApiBody,
 } from '@nestjs/swagger';
-import { PlaidService } from './plaid.service';
+
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+
 import {
   CreateLinkTokenDto,
   ExchangeTokenDto,
@@ -30,6 +31,7 @@ import {
   PlaidTransactionResponseDto,
   PlaidLinkResponseDto,
 } from './dto/plaid.dto';
+import { PlaidService } from './plaid.service';
 
 @ApiTags('plaid')
 @Controller('plaid')

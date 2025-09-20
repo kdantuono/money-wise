@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+// Removed framer-motion for MVP simplicity
 import {
   Bar,
   BarChart,
@@ -95,10 +95,8 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload;
     return (
-      <motion.div
-        initial={{ opacity: 0, scale: 0.9, y: 10 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        className='bg-white dark:bg-neutral-800 p-4 rounded-xl shadow-lg border border-neutral-200 dark:border-neutral-700'
+      <div
+        className='bg-white dark:bg-neutral-800 p-4 rounded-xl shadow-lg border border-neutral-200 dark:border-neutral-700 opacity-100 scale-100'
         role='tooltip'
         aria-label={`Activity data for ${data.fullName}`}
       >
@@ -172,7 +170,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
             </div>
           </div>
         </div>
-      </motion.div>
+      </div>
     );
   }
   return null;
@@ -338,7 +336,7 @@ export function WeeklyActivity() {
 
             <Tooltip content={<CustomTooltip />} />
 
-            <AnimatePresence mode='wait'>
+            <div>
               {viewMode === 'comparison' && (
                 <>
                   <Bar
@@ -383,17 +381,14 @@ export function WeeklyActivity() {
                   name='Total Volume'
                 />
               )}
-            </AnimatePresence>
+            </div>
           </BarChart>
         </ResponsiveContainer>
       </div>
 
       {/* Legend and Stats */}
-      <motion.div
-        className='flex flex-col sm:flex-row sm:items-center sm:justify-between mt-4 space-y-3 sm:space-y-0'
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
+      <div
+        className='flex flex-col sm:flex-row sm:items-center sm:justify-between mt-4 space-y-3 sm:space-y-0 opacity-100'
       >
         {/* Legend */}
         <div className='flex items-center space-x-4'>
@@ -449,7 +444,7 @@ export function WeeklyActivity() {
             </span>
           </div>
         </div>
-      </motion.div>
+      </div>
 
       {/* Accessibility Data Table */}
       <div className='sr-only'>

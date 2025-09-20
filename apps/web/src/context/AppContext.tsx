@@ -1,14 +1,14 @@
 'use client';
 
 import { Card } from '@/types/card';
-import { Transaction } from '@/types/transaction';
+import { DisplayTransaction } from '@/types/transaction';
 import { User } from '@/types/user';
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 interface AppContextType {
   user: User | null;
   cards: Card[];
-  transactions: Transaction[];
+  transactions: DisplayTransaction[];
   updateUser: (user: User) => void;
 }
 
@@ -19,13 +19,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const [user, setUser] = useState<User | null>(null);
   const [cards, setCards] = useState<Card[]>([]);
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [transactions, setTransactions] = useState<DisplayTransaction[]>([]);
 
   useEffect(() => {
     setUser({
+      id: '1',
       name: 'John Doe',
       email: 'john@example.com',
       avatar: '/user.png',
+      createdAt: new Date(),
+      updatedAt: new Date(),
     });
     setCards([
       {

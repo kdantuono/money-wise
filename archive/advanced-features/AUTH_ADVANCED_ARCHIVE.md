@@ -1,15 +1,16 @@
 # Advanced Authentication Features Archive
 
-> **Archived**: 2025-01-19
-> **Purpose**: Preserve advanced auth features beyond MVP scope
-> **Status**: Production-ready authentication extensions
+> **Archived**: 2025-01-19 **Purpose**: Preserve advanced auth features beyond MVP scope **Status**: Production-ready
+> authentication extensions
 
 ## 📁 Archived Authentication Components
 
 ### `auth-advanced/services/`
 
 #### `social-auth.service.ts`
+
 **OAuth Integration Service**
+
 - **Features**: Google, Facebook, GitHub OAuth providers
 - **Size**: ~11KB
 - **Capabilities**:
@@ -20,7 +21,9 @@
 - **Dependencies**: passport-google-oauth20, passport-facebook, passport-github2
 
 #### `mfa.service.ts`
+
 **Multi-Factor Authentication Service**
+
 - **Features**: TOTP, SMS, email verification
 - **Size**: ~6KB
 - **Capabilities**:
@@ -34,7 +37,9 @@
 ### `auth-advanced/entities/`
 
 #### `user-mfa-settings.entity.ts`
+
 **MFA Configuration Entity**
+
 - **Purpose**: Store user MFA preferences and secrets
 - **Fields**:
   - `totpSecret` - TOTP secret key
@@ -47,7 +52,9 @@
 ### `auth-advanced/controllers/`
 
 #### `auth-enhanced.controller.ts`
+
 **Enhanced Authentication API**
+
 - **Size**: 400+ lines
 - **Endpoints**:
   - `/auth/oauth/google` - Google OAuth initiation
@@ -62,7 +69,9 @@
 ### `auth-advanced/dto/`
 
 #### `auth-enhanced.dto.ts`
+
 **Advanced Authentication DTOs**
+
 - **Size**: 159 lines
 - **DTOs**:
   - `SocialAuthDto` - OAuth provider data
@@ -75,6 +84,7 @@
 ## 🔧 Integration Requirements
 
 ### Dependencies Needed
+
 ```json
 {
   "passport-google-oauth20": "^2.0.0",
@@ -89,6 +99,7 @@
 ```
 
 ### Environment Variables
+
 ```env
 # OAuth Credentials
 GOOGLE_CLIENT_ID=
@@ -109,6 +120,7 @@ SMTP_PASS=
 ```
 
 ### Database Migrations
+
 ```sql
 -- MFA Settings Table
 CREATE TABLE user_mfa_settings (
@@ -132,6 +144,7 @@ ALTER TABLE users ADD COLUMN github_id VARCHAR(255);
 ## 🔄 Future Integration Process
 
 ### Phase 1: OAuth Integration
+
 1. Install OAuth passport strategies
 2. Configure OAuth provider credentials
 3. Import social-auth.service.ts
@@ -139,6 +152,7 @@ ALTER TABLE users ADD COLUMN github_id VARCHAR(255);
 5. Update auth.module.ts imports
 
 ### Phase 2: MFA Implementation
+
 1. Install MFA dependencies (speakeasy, twilio)
 2. Configure SMS and email services
 3. Import mfa.service.ts and MFA entity
@@ -146,6 +160,7 @@ ALTER TABLE users ADD COLUMN github_id VARCHAR(255);
 5. Update frontend for MFA enrollment/verification
 
 ### Phase 3: Enhanced Security
+
 1. Implement rate limiting for MFA attempts
 2. Add audit logging for auth events
 3. Configure account lockout policies
@@ -154,18 +169,21 @@ ALTER TABLE users ADD COLUMN github_id VARCHAR(255);
 ## 📊 Security Features
 
 ### OAuth Security
+
 - **State Parameter**: CSRF protection for OAuth flows
 - **Scope Limitation**: Minimal required permissions
 - **Token Validation**: Verify OAuth provider tokens
 - **Account Verification**: Email verification for linked accounts
 
 ### MFA Security
+
 - **Secret Encryption**: TOTP secrets encrypted at rest
 - **Rate Limiting**: Prevent brute force MFA attempts
 - **Backup Codes**: One-time use recovery codes
 - **Audit Trail**: Complete MFA event logging
 
 ### Advanced Protection
+
 - **Device Fingerprinting**: Track trusted devices
 - **Geolocation Checks**: Unusual location detection
 - **Session Management**: Enhanced session security
@@ -174,6 +192,7 @@ ALTER TABLE users ADD COLUMN github_id VARCHAR(255);
 ## ⚠️ MVP Exclusion Rationale
 
 ### Why Archived for MVP
+
 - **Complexity**: Adds significant authentication complexity
 - **Dependencies**: Requires external service integrations
 - **User Experience**: MVP users don't need advanced auth initially
@@ -181,6 +200,7 @@ ALTER TABLE users ADD COLUMN github_id VARCHAR(255);
 - **Maintenance**: Ongoing security updates and monitoring required
 
 ### Preserved Value
+
 - **Enterprise Ready**: Production-grade security implementations
 - **Complete Features**: Fully functional OAuth and MFA systems
 - **Best Practices**: Follows security industry standards
@@ -189,12 +209,14 @@ ALTER TABLE users ADD COLUMN github_id VARCHAR(255);
 ## 📈 Business Value
 
 ### Future Integration Benefits
+
 - **User Conversion**: Simplified social login increases signups
 - **Security Compliance**: MFA meets enterprise requirements
 - **Trust Building**: Advanced security features build user confidence
 - **Competitive Advantage**: Security-first approach differentiates product
 
 ### Target User Segments
+
 - **Enterprise Users**: Require MFA for compliance
 - **Security-Conscious Users**: Demand advanced protection
 - **Social Media Users**: Prefer social login convenience

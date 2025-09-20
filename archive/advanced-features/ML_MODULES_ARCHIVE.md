@@ -1,15 +1,16 @@
 # ML/AI Modules Archive
 
-> **Archived**: 2025-01-19
-> **Purpose**: Preserve ML/AI functionality for future integration
-> **Status**: Production-ready code beyond MVP scope
+> **Archived**: 2025-01-19 **Purpose**: Preserve ML/AI functionality for future integration **Status**: Production-ready
+> code beyond MVP scope
 
 ## 📁 Archived ML Modules
 
 ### `backend-modules/ml-categorization/`
+
 **Complete ML transaction categorization system**
 
 #### Module Structure
+
 ```
 ml-categorization/
 ├── controllers/
@@ -26,6 +27,7 @@ ml-categorization/
 ```
 
 #### Capabilities
+
 - **AI-Powered Categorization**: Automatic transaction categorization using ML
 - **Prediction Storage**: Persist ML predictions with confidence scores
 - **Category Management**: Comprehensive category system with seeding
@@ -33,12 +35,14 @@ ml-categorization/
 - **Database Integration**: TypeORM entities for ML data persistence
 
 #### Dependencies
+
 - **TensorFlow.js** or similar ML library
 - **Natural Language Processing** libraries for text analysis
 - **TypeORM** for data persistence
 - **NestJS** module system
 
 #### Integration Notes
+
 ```typescript
 // Import in app.module.ts
 import { MLCategorizationModule } from './modules/ml-categorization/ml-categorization.module';
@@ -54,12 +58,14 @@ import { MLCategorizationModule } from './modules/ml-categorization/ml-categoriz
 ## 🔄 Future Integration
 
 ### When to Restore
+
 1. **Advanced Features Phase**: After core MVP functionality is stable
 2. **AI Enhancement**: When implementing intelligent financial insights
 3. **User Demand**: When categorization automation becomes priority
 4. **Scale Requirements**: When manual categorization becomes inefficient
 
 ### Restoration Process
+
 1. **Dependencies**: Install ML/AI libraries (tensorflow, natural, etc.)
 2. **Database**: Add ML entities to TypeORM configuration
 3. **Module Import**: Add MLCategorizationModule to app imports
@@ -67,6 +73,7 @@ import { MLCategorizationModule } from './modules/ml-categorization/ml-categoriz
 5. **Testing**: Implement ML-specific test suites
 
 ### Quality Assessment
+
 - **Code Quality**: ✅ High - follows NestJS patterns
 - **Documentation**: ✅ Complete TypeScript documentation
 - **Testing**: ⚠️ Needs comprehensive test coverage
@@ -76,18 +83,21 @@ import { MLCategorizationModule } from './modules/ml-categorization/ml-categoriz
 ## ⚠️ Archive Considerations
 
 ### Why Archived
+
 - **MVP Scope**: Beyond minimum viable product requirements
 - **Complexity**: Adds significant complexity to initial launch
 - **Dependencies**: Requires additional ML libraries and infrastructure
 - **Resource Usage**: ML processing can be resource-intensive
 
 ### Preserved Value
+
 - **Complete Implementation**: Fully functional ML categorization system
 - **Enterprise Ready**: Production-quality code with proper architecture
 - **Extensible**: Built to handle additional ML features
 - **Well-Structured**: Follows established NestJS patterns
 
 ### Integration Challenges
+
 - **Performance**: ML processing may require background jobs
 - **Accuracy**: Model training and validation needed
 - **Data Privacy**: ML predictions must maintain user data privacy

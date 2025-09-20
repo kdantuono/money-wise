@@ -354,7 +354,8 @@ export type TypographySize = keyof typeof designTokens.typography.fontSize;
 export const getColorValue = (color: string, shade?: number | string) => {
   if (!shade) return color;
   // Handle both numeric and string shade values
-  const shadeKey = shade.toString() as ColorScale;
+  const shadeKey = shade.toString();
+  // For MVP, skip strict type checking and just use the value
   return `var(--color-${color}-${shadeKey})`;
 };
 

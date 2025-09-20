@@ -2,22 +2,20 @@ import {
   Injectable,
   Inject,
   NotFoundException,
-  BadRequestException,
 } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
+import { InjectRepository } from '@nestjs/typeorm';
 import {
   PlaidApi,
-  Configuration,
-  PlaidEnvironments,
   Products,
   CountryCode,
 } from 'plaid';
+import { Repository } from 'typeorm';
+
+import { User } from '../auth/user.entity';
+
 import { PlaidAccount } from './entities/plaid-account.entity';
 import { PlaidTransaction } from './entities/plaid-transaction.entity';
-import { User } from '../auth/user.entity';
-import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class PlaidService {

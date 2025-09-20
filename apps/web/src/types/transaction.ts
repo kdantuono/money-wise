@@ -15,3 +15,13 @@ export interface Transaction {
   createdAt: Date;
   updatedAt: Date;
 }
+
+// Simplified interface for UI display
+export interface DisplayTransaction {
+  id: string;
+  name: string;
+  date: string;
+  amount: number;
+  icon?: string;
+  color?: string;
+}

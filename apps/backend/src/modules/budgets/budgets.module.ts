@@ -1,9 +1,12 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { BudgetsService } from './budgets.service';
-import { BudgetsController } from './budgets.controller';
-import { Budget } from './budget.entity';
+
 import { Transaction } from '../transactions/transaction.entity';
+
+import { Budget } from './budget.entity';
+import { BudgetsController } from './budgets.controller';
+import { BudgetsService } from './budgets.service';
+
 
 @Module({
   imports: [TypeOrmModule.forFeature([Budget, Transaction])],

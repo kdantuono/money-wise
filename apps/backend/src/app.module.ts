@@ -1,13 +1,14 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { AuthModule } from './modules/auth/auth.module';
-import { TransactionsModule } from './modules/transactions/transactions.module';
-import { BudgetsModule } from './modules/budgets/budgets.module';
-import { AnalyticsModule } from './modules/analytics/analytics.module';
-import { BankingModule } from './modules/banking/banking.module';
-import { HealthModule } from './health/health.module';
+
 import { databaseConfig } from './config/database.config';
+import { HealthModule } from './health/health.module';
+import { AnalyticsModule } from './modules/analytics/analytics.module';
+import { AuthModule } from './modules/auth/auth.module';
+import { BankingModule } from './modules/banking/banking.module';
+import { BudgetsModule } from './modules/budgets/budgets.module';
+import { TransactionsModule } from './modules/transactions/transactions.module';
 
 @Module({
   imports: [

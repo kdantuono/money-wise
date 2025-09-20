@@ -8,7 +8,9 @@ import {
   OneToMany,
   Index,
 } from 'typeorm';
+
 import { User } from '../../auth/user.entity';
+
 import { PlaidTransaction } from './plaid-transaction.entity';
 
 @Entity('plaid_accounts')

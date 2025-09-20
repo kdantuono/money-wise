@@ -1,3 +1,4 @@
+import { BudgetPeriod } from '@money-wise/types';
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -6,8 +7,8 @@ import {
   UpdateDateColumn,
   ManyToOne,
 } from 'typeorm';
+
 import { User } from '../auth/user.entity';
-import { BudgetPeriod } from '@money-wise/types';
 
 @Entity('budgets')
 export class Budget {

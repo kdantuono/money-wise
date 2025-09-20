@@ -10,19 +10,21 @@ import {
   UseGuards,
   Request,
 } from '@nestjs/common';
-import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import {
   ApiTags,
   ApiOperation,
   ApiResponse,
   ApiBearerAuth,
 } from '@nestjs/swagger';
-import { TransactionsService } from './transactions.service';
+
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+
 import {
   CreateTransactionDto,
   UpdateTransactionDto,
   TransactionQueryDto,
 } from './dto/transaction.dto';
+import { TransactionsService } from './transactions.service';
 
 @ApiTags('transactions')
 @ApiBearerAuth()

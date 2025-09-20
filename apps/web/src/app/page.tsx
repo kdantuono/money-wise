@@ -39,13 +39,9 @@ const itemVariants = {
 export default function DashboardPage() {
   return (
     <DashboardWrapper>
-      <div
-        className='min-h-screen bg-neutral-50 dark:bg-neutral-950'
-      >
+      <div className='min-h-screen bg-neutral-50 dark:bg-neutral-950'>
         {/* Mobile Header with Enhanced Search */}
-        <div
-          className='block lg:hidden bg-white dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800 p-4 sticky top-0 z-sticky'
-        >
+        <div className='block lg:hidden bg-white dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800 p-4 sticky top-0 z-sticky'>
           <div className='flex items-center justify-between mb-4'>
             <div>
               <h1 className='text-financial-heading'>Dashboard</h1>
@@ -75,9 +71,7 @@ export default function DashboardPage() {
         {/* Main Content Container */}
         <div className='p-4 lg:p-8 space-y-6 lg:space-y-8'>
           {/* Quick Stats Row - Mobile First - Money-Centric Psychology */}
-          <div
-            className='grid grid-cols-2 lg:hidden gap-4 mb-6'
-          >
+          <div className='grid grid-cols-2 lg:hidden gap-4 mb-6'>
             <div className='bg-gradient-to-br from-blue-600 to-blue-800 rounded-2xl p-4 text-white shadow-lg'>
               <div className='flex items-center justify-between'>
                 <div>
@@ -109,9 +103,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Cards and Recent Transactions Row */}
-          <div
-            className='grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-6 gap-6'
-          >
+          <div className='grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-6 gap-6'>
             {/* My Cards Section - Trust & Security Focus */}
             <div className='lg:col-span-2 xl:col-span-4 space-y-4'>
               <div className='flex items-center justify-between'>
@@ -148,9 +140,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Analytics Row - Responsive Layout */}
-          <div
-            className='grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-6 gap-6'
-          >
+          <div className='grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-6 gap-6'>
             {/* Weekly Activity - Growth Visualization */}
             <div className='lg:col-span-2 xl:col-span-4 space-y-4'>
               <div className='flex items-center justify-between'>
@@ -177,9 +167,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Transfer and Balance History Row */}
-          <div
-            className='grid grid-cols-1 lg:grid-cols-7 gap-6'
-          >
+          <div className='grid grid-cols-1 lg:grid-cols-7 gap-6'>
             {/* Quick Transfer - Secure Money Movement */}
             <div className='lg:col-span-3 space-y-4'>
               <h2 className='text-financial-heading text-green-800 font-semibold'>

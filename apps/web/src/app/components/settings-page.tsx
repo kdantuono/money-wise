@@ -6,16 +6,16 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+// import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { PenSquare } from 'lucide-react';
 import { useAppContext } from '@/context/AppContext';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+// import {
+//   Select,
+//   SelectContent,
+//   SelectItem,
+//   SelectTrigger,
+//   SelectValue,
+// } from '@/components/ui/select';
 import { toast } from 'sonner';
 
 const profileSchema = z.object({
@@ -103,10 +103,13 @@ export function SettingsPage() {
           >
             <div className='flex justify-center lg:justify-start items-center gap-6 mb-8'>
               <div className='relative'>
-                <Avatar className='h-24 w-24'>
-                  <AvatarImage src={avatar} alt='Profile picture' />
-                  <AvatarFallback>{user?.name}</AvatarFallback>
-                </Avatar>
+                <div className='h-24 w-24 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 text-white flex items-center justify-center text-2xl font-bold overflow-hidden'>
+                  {avatar ? (
+                    <img src={avatar} alt='Profile picture' className='w-full h-full object-cover' />
+                  ) : (
+                    user?.name?.[0]?.toUpperCase() || 'U'
+                  )}
+                </div>
                 <label
                   htmlFor='avatar-upload'
                   className='absolute bottom-0 right-0 bg-white rounded-full p-1.5 shadow-md cursor-pointer'
@@ -167,17 +170,15 @@ export function SettingsPage() {
                   <label className='block text-sm text-gray-600 mb-2'>
                     Date of Birth
                   </label>
-                  <Select defaultValue='25 January 1990'>
-                    <SelectTrigger className='bg-white text-zinc-500'>
-                      <SelectValue placeholder='Select date' />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value='25 January 1990'>
-                        25 January 1990
-                      </SelectItem>
-                      {/* Add more date options as needed */}
-                    </SelectContent>
-                  </Select>
+                  <select
+                    className='bg-white text-zinc-500 border border-gray-300 rounded-md px-3 py-2 w-full'
+                    defaultValue='25 January 1990'
+                  >
+                    <option value='25 January 1990'>
+                      25 January 1990
+                    </option>
+                    {/* Add more date options as needed */}
+                  </select>
                 </div>
                 <div>
                   <label className='block text-sm text-gray-600 mb-2'>

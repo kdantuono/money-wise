@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { motion } from 'framer-motion';
+// Removed framer-motion for MVP simplicity
 import {
   Area,
   AreaChart,
@@ -87,10 +87,8 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload;
     return (
-      <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className='bg-white dark:bg-neutral-800 p-4 rounded-xl shadow-lg border border-neutral-200 dark:border-neutral-700'
+      <div
+        className='bg-white dark:bg-neutral-800 p-4 rounded-xl shadow-lg border border-neutral-200 dark:border-neutral-700 opacity-100 scale-100'
         role='tooltip'
         aria-label={`Balance data for ${label}`}
       >
@@ -144,7 +142,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
             </div>
           </div>
         </div>
-      </motion.div>
+      </div>
     );
   }
   return null;
@@ -335,11 +333,8 @@ export function BalanceHistory() {
       </div>
 
       {/* Enhanced Legend */}
-      <motion.div
-        className='flex items-center justify-center mt-4 space-x-6'
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
+      <div
+        className='flex items-center justify-center mt-4 space-x-6 opacity-100'
       >
         <div className='flex items-center space-x-2'>
           <div className='w-3 h-3 rounded-full bg-primary-500'></div>
@@ -353,7 +348,7 @@ export function BalanceHistory() {
             Last {filteredData.length} months
           </span>
         </div>
-      </motion.div>
+      </div>
 
       {/* Screen Reader Data Table */}
       <div className='sr-only'>

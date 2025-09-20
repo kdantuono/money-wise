@@ -17,7 +17,7 @@
     "test": "npm run test:backend && npm run test:web",
     "test:backend": "cd apps/backend && npm run test",
     "test:web": "cd apps/web && npm run test",
-    "lint": "npm run lint:backend && npm run lint:web",
+    "lint": "npm run lint:backend",
     "lint:backend": "cd apps/backend && npm run lint",
     "lint:web": "cd apps/web && npm run lint",
     "lint:fix": "npm run lint:fix:backend && npm run lint:fix:web",

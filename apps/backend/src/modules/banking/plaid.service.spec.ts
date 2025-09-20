@@ -1,12 +1,16 @@
+import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { PlaidApi } from 'plaid';
 import { Repository } from 'typeorm';
-import { ConfigService } from '@nestjs/config';
-import { PlaidService } from './plaid.service';
+
+import { User } from '../auth/user.entity';
+
 import { PlaidAccount } from './entities/plaid-account.entity';
 import { PlaidTransaction } from './entities/plaid-transaction.entity';
-import { User } from '../auth/user.entity';
-import { PlaidApi, Configuration, PlaidEnvironments } from 'plaid';
+import { PlaidService } from './plaid.service';
+
+
 
 describe('PlaidService', () => {
   let service: PlaidService;

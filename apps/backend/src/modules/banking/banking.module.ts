@@ -1,12 +1,15 @@
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigService } from '@nestjs/config';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { PlaidApi, Configuration, PlaidEnvironments } from 'plaid';
-import { PlaidService } from './plaid.service';
-import { PlaidController } from './plaid.controller';
+
+import { User } from '../auth/user.entity';
+
 import { PlaidAccount } from './entities/plaid-account.entity';
 import { PlaidTransaction } from './entities/plaid-transaction.entity';
-import { User } from '../auth/user.entity';
+import { PlaidController } from './plaid.controller';
+import { PlaidService } from './plaid.service';
+
 
 @Module({
   imports: [TypeOrmModule.forFeature([PlaidAccount, PlaidTransaction, User])],

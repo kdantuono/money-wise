@@ -40,11 +40,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   // DEV: Hardcode user for development mode
   const isDev = process.env.NODE_ENV === 'development';
-  const mockUser = isDev ? {
-    id: 'dev-user-1',
-    email: 'dev@moneywise.com',
-    name: 'Dev User',
-  } : null;
+  const mockUser = isDev
+    ? {
+        id: 'dev-user-1',
+        email: 'dev@moneywise.com',
+        name: 'Dev User',
+      }
+    : null;
 
   const [user, setUser] = useState<User | null>(mockUser);
   const [loading, setLoading] = useState(!isDev);
@@ -86,11 +88,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     email: string,
     password: string
   ): Promise<{ success: boolean; error?: string }> => {
-    // DEV MODE: Special credentials for UI development
+    // DEV MODE: Special credentials for UI development (from environment)
     if (
       process.env.NODE_ENV === 'development' &&
-      email === 'dev@moneywise.com' &&
-      password === 'dev123'
+      process.env.NEXT_PUBLIC_DEV_AUTH_EMAIL &&
+      process.env.NEXT_PUBLIC_DEV_AUTH_PASSWORD &&
+      email === process.env.NEXT_PUBLIC_DEV_AUTH_EMAIL &&
+      password === process.env.NEXT_PUBLIC_DEV_AUTH_PASSWORD
     ) {
       const mockUser = {
         id: 'dev-user-1',

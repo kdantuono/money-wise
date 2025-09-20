@@ -1,3 +1,5 @@
+import { TransactionType } from '@money-wise/types';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsString,
   IsNumber,
@@ -7,8 +9,6 @@ import {
   IsArray,
   IsUUID,
 } from 'class-validator';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { TransactionType } from '@money-wise/types';
 
 export class CreateTransactionDto {
   @ApiProperty()
