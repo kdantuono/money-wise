@@ -5,6 +5,7 @@
 ## ⛔ MANDATORY Git Workflow - DO NOT SKIP
 
 ### CRITICAL: Before writing ANY code, you MUST:
+
 1. **Create a feature branch**: `git checkout -b feature/[name]`
 2. **Commit changes FREQUENTLY** (every file/component/logical unit)
 3. **NEVER work on main branch directly** ⚠️
@@ -19,6 +20,7 @@
 ### **IMPORTANT**: You MUST follow this Git workflow for ALL code changes:
 
 #### 1. **ALWAYS create a feature branch BEFORE making changes**
+
 ```bash
 # For new features
 git checkout -b feature/[feature-name]  # e.g., feature/transaction-export
@@ -31,7 +33,9 @@ git checkout -b chore/[task-name]  # e.g., chore/upgrade-dependencies
 ```
 
 #### 2. **Commit changes REGULARLY during development**
+
 Commit frequency requirements:
+
 - ✅ After completing each React component
 - ✅ After implementing each API endpoint
 - ✅ When switching between frontend/backend
@@ -52,6 +56,7 @@ git commit -m "test(utils): add currency conversion helpers with tests"
 ```
 
 #### 3. **NEVER work directly on main branch**
+
 ```bash
 # Verify you're NOT on main before any work
 git branch --show-current  # Should NOT show "main"
@@ -63,6 +68,7 @@ git stash pop
 ```
 
 #### 4. **Commit message format with semantic versioning**
+
 ```bash
 # Format: <type>(<scope>): <subject> [optional body] [optional footer]
 
@@ -87,9 +93,141 @@ git commit -m "feat(transactions): implement real-time balance updates
 Co-Authored-By: Claude <noreply@anthropic.com>"
 ```
 
+## 🔍 A-bis. MANDATORY Post-Commit CI/CD Monitoring
+
+### **CRITICAL**: After EVERY commit/push on ANY branch you MUST:
+
+#### 1. **Immediate GitHub Actions Verification**
+
+```bash
+# After every git push, IMMEDIATELY run:
+echo "🔍 Verifying GitHub Actions status..."
+
+# Check if current branch has running/recent workflows
+gh run list --branch $(git branch --show-current) --limit 3
+
+# If no workflows triggered, check overall status
+gh run list --limit 5
+
+# Monitor active workflows (if any)
+gh run watch --exit-status || echo "No active workflows to monitor"
+```
+
+#### 2. **Failure Response Protocol**
+
+If ANY GitHub Action fails:
+
+```bash
+# MANDATORY failure investigation sequence:
+echo "🚨 CI/CD FAILURE DETECTED - Initiating response protocol"
+
+# 1. Get detailed failure information
+FAILED_RUN_ID=$(gh run list --status failure --limit 1 --json databaseId --jq '.[0].databaseId')
+gh run view $FAILED_RUN_ID --log
+
+# 2. Create immediate action plan
+echo "📋 Creating failure response plan..."
+TODO_FILE="docs/features/$(date +%Y-%m-%d)_ci_cd_failure_response_plan.md"
+
+# 3. Document the failure and planned response
+cat > "$TODO_FILE" << EOF
+# CI/CD Failure Response Plan
+
+## Date: $(date '+%Y-%m-%d %H:%M')
+
+## Author: Claude Code
+
+## Failure Details
+- **Run ID**: $FAILED_RUN_ID
+- **Branch**: $(git branch --show-current)
+- **Last Commit**: $(git log -1 --oneline)
+
+## Immediate Response Todos
+- [ ] Analyze failure logs in detail
+- [ ] Identify root cause of failure
+- [ ] Create fix plan with specific steps
+- [ ] Implement fixes on current branch
+- [ ] Verify fixes with local testing
+- [ ] Push fixes and re-verify CI/CD
+
+## Next Actions
+- [ ] Monitor GitHub Actions after fix push
+- [ ] Update documentation with lessons learned
+- [ ] Prevent similar failures in the future
+
+## Notes
+[Add investigation findings and fix details here]
+EOF
+
+echo "📝 Failure response plan created: $TODO_FILE"
+echo "⚠️ STOP: Do not continue development until CI/CD passes"
+```
+
+#### 3. **Success Verification Checklist**
+
+When GitHub Actions pass:
+
+```bash
+# MANDATORY success verification
+echo "✅ CI/CD SUCCESS - Verifying completion"
+
+# 1. Confirm all jobs passed
+gh run list --branch $(git branch --show-current) --limit 1 --json conclusion --jq '.[0].conclusion'
+
+# 2. Update current feature documentation
+CURRENT_DATE=$(date +%Y-%m-%d)
+FEATURE_DOC="docs/features/${CURRENT_DATE}_$(git branch --show-current | sed 's/[^a-zA-Z0-9]/_/g')_progress.md"
+
+# 3. Log successful milestone
+echo "## ✅ CI/CD Success Checkpoint - $(date '+%Y-%m-%d %H:%M')" >> "$FEATURE_DOC"
+echo "- **Branch**: $(git branch --show-current)" >> "$FEATURE_DOC"
+echo "- **Last Commit**: $(git log -1 --oneline)" >> "$FEATURE_DOC"
+echo "- **GitHub Actions**: All passing" >> "$FEATURE_DOC"
+echo "" >> "$FEATURE_DOC"
+
+echo "📝 Success logged in: $FEATURE_DOC"
+```
+
+#### 4. **Documentation Integration Requirements**
+
+**MANDATORY**: Every feature branch MUST maintain ongoing documentation:
+
+```markdown
+<!-- docs/features/YYYY-MM-DD_[branch-name]_progress.md -->
+
+# Feature Progress: [Branch Name]
+
+## Current Todos & Status
+- [ ] Todo item 1 (status: pending/in_progress/completed)
+- [ ] Todo item 2 (status: pending/in_progress/completed)
+
+## CI/CD Status History
+- ✅ 2025-09-21 10:30 - All checks passing
+- ❌ 2025-09-21 09:15 - Build failure (fixed in commit abc123)
+
+## Decision Log
+- **Decision 1**: Chose approach X because Y
+- **Decision 2**: Modified Z due to constraint A
+
+## Next Session Resumption
+- **Current Focus**: Implementing feature X
+- **Blocker**: None / Issue with Y
+- **Next Steps**: Continue with component Z
+```
+
+### **Implementation Notes**
+
+- **Automation**: Add these commands to git hooks for automatic execution
+- **Failure Tolerance**: ZERO tolerance for continued development with failing CI/CD
+- **Documentation**: Every branch gets its own progress tracking document
+- **Recovery**: All failures must be documented with root cause analysis
+
+---
+
 ## 📋 B. Pre-Session Initialization Protocol
 
 ### Execute this initialization sequence EVERY session:
+
 ```bash
 #!/bin/bash
 # Save as: .claude/init-session.sh
@@ -169,6 +307,7 @@ ANALYZE=true pnpm build
 ```
 
 ### Database & Backend Commands
+
 ```bash
 # Database migrations (Prisma)
 pnpm prisma migrate dev --name [migration-name]
@@ -191,6 +330,7 @@ pnpm prisma migrate reset
 ### Testing Hierarchy for MoneyWise
 
 #### 1. **Unit Testing Requirements**
+
 ```typescript
 // Every new component must have tests
 // src/__tests__/components/TransactionForm.test.tsx
@@ -218,6 +358,7 @@ describe('TransactionForm', () => {
 ```
 
 #### 2. **Integration Testing**
+
 ```typescript
 // Test API endpoints with real database
 // src/__tests__/api/transactions.test.ts
@@ -229,11 +370,11 @@ describe('/api/transactions', () => {
   it('returns paginated results with correct filters', async () => {
     const { req, res } = createMocks({
       method: 'GET',
-      query: { page: '1', limit: '10', category: 'food' }
+      query: { page: '1', limit: '10', category: 'food' },
     });
-    
+
     await handler(req, res);
-    
+
     expect(res._getStatusCode()).toBe(200);
     expect(JSON.parse(res._getData())).toHaveProperty('transactions');
   });
@@ -241,6 +382,7 @@ describe('/api/transactions', () => {
 ```
 
 #### 3. **E2E Testing with Playwright**
+
 ```typescript
 // e2e/transactions.spec.ts
 import { test, expect } from '@playwright/test';
@@ -252,13 +394,13 @@ test.describe('Transaction Management', () => {
     await page.fill('[name="email"]', 'test@example.com');
     await page.fill('[name="password"]', 'testpass');
     await page.click('button[type="submit"]');
-    
+
     // Add transaction
     await page.goto('/transactions/new');
     await page.fill('[name="amount"]', '50.00');
     await page.selectOption('[name="category"]', 'groceries');
     await page.click('button:has-text("Save")');
-    
+
     // Verify
     await expect(page).toHaveURL('/transactions');
     await expect(page.locator('.balance')).toContainText('50.00');
@@ -269,6 +411,7 @@ test.describe('Transaction Management', () => {
 ### Debugging Strategies
 
 #### 1. **State Reset Procedures**
+
 ```bash
 # Reset local storage & session
 # Add to src/utils/debug.ts
@@ -291,11 +434,12 @@ export const resetAppState = () => {
 ```
 
 #### 2. **Debug Mode Implementation**
+
 ```typescript
 // src/components/DebugPanel.tsx
 export const DebugPanel = () => {
   if (process.env.NODE_ENV !== 'development') return null;
-  
+
   return (
     <div className="fixed bottom-4 right-4 bg-black/80 text-white p-4 rounded">
       <button onClick={() => resetAppState()}>Reset State</button>
@@ -311,6 +455,7 @@ export const DebugPanel = () => {
 ### Analytics Event Architecture for MoneyWise
 
 #### Event Planning Requirements
+
 ```typescript
 // src/analytics/events.ts
 export const AnalyticsEvents = {
@@ -318,23 +463,23 @@ export const AnalyticsEvents = {
   USER_SIGNUP: 'user_signup',
   USER_LOGIN: 'user_login',
   USER_LOGOUT: 'user_logout',
-  
+
   // Transaction Events (specific, not generic)
   TRANSACTION_CREATED: 'transaction_created',
   TRANSACTION_EDITED: 'transaction_edited',
   TRANSACTION_DELETED: 'transaction_deleted',
   TRANSACTION_CATEGORIZED: 'transaction_categorized',
-  
+
   // Feature Usage Events
   BUDGET_CREATED: 'budget_created',
   BUDGET_EXCEEDED: 'budget_exceeded',
   REPORT_GENERATED: 'report_generated',
   EXPORT_INITIATED: 'export_initiated',
-  
+
   // Error Events
   API_ERROR: 'api_error',
   VALIDATION_ERROR: 'validation_error',
-  PAYMENT_FAILED: 'payment_failed'
+  PAYMENT_FAILED: 'payment_failed',
 } as const;
 
 // Event payload types
@@ -348,35 +493,34 @@ interface TransactionEventPayload {
 ```
 
 #### Implementation Pattern
+
 ```typescript
 // src/hooks/useAnalytics.ts
 export const useAnalytics = () => {
-  const track = useCallback((
-    event: keyof typeof AnalyticsEvents,
-    properties?: Record<string, any>
-  ) => {
+  const track = useCallback((event: keyof typeof AnalyticsEvents, properties?: Record<string, any>) => {
     // Development: Console logging
     if (process.env.NODE_ENV === 'development') {
       console.log('📊 Analytics Event:', event, properties);
     }
-    
+
     // Production: Send to analytics service
     if (window.gtag) {
       window.gtag('event', event, properties);
     }
-    
+
     // Also send to internal monitoring
     fetch('/api/analytics', {
       method: 'POST',
-      body: JSON.stringify({ event, properties, timestamp: Date.now() })
+      body: JSON.stringify({ event, properties, timestamp: Date.now() }),
     });
   }, []);
-  
+
   return { track };
 };
 ```
 
 ### Testing Analytics Events
+
 ```bash
 # Development testing script
 # .claude/test-analytics.sh
@@ -404,6 +548,7 @@ kill $DEV_PID
 ### Common Analytics Mistakes to Avoid
 
 #### ❌ **DON'T DO THIS**:
+
 ```typescript
 // Generic, meaningless events
 onClick={() => track('button_clicked')}  // NO!
@@ -422,6 +567,7 @@ catch (error) {
 ```
 
 #### ✅ **DO THIS INSTEAD**:
+
 ```typescript
 // Specific, actionable events
 onClick={() => track('TRANSACTION_QUICK_ADD_INITIATED', {
@@ -456,13 +602,18 @@ catch (error) {
 ### Feature Development Documentation Workflow
 
 #### 1. **BEFORE Implementation**: Create Planning Document
+
 ```markdown
 <!-- docs/features/YYYY-MM-DD_transaction_import_plan.md -->
+
 # Feature: Transaction Import from Bank CSV
+
 ## Date: 2025-01-20
+
 ## Author: Claude Code + [Developer Name]
 
 ### Requirements
+
 - [ ] Parse CSV files from major banks (Chase, BoA, Wells Fargo)
 - [ ] Validate transaction data format
 - [ ] Auto-categorize based on merchant names
@@ -470,7 +621,8 @@ catch (error) {
 - [ ] Show import preview before confirmation
 
 ### Technical Approach
-1. **Frontend**: 
+
+1. **Frontend**:
    - Drag-drop file upload component
    - CSV parser using Papaparse
    - Preview table with edit capabilities
@@ -485,69 +637,87 @@ catch (error) {
    - Create imports audit table
 
 ### Success Criteria
+
 - [ ] Import 1000+ transactions in < 3 seconds
 - [ ] 95% accuracy in auto-categorization
 - [ ] Zero data loss during import
 - [ ] Rollback capability for failed imports
 
 ### Risk Mitigation
+
 - Memory limits: Stream large files
 - Rate limiting: Implement queue system
 - Data validation: Multi-stage validation pipeline
 ```
 
 #### 2. **AFTER Implementation**: Create Update Report
+
 ```markdown
 <!-- docs/features/YYYY-MM-DD_transaction_import_completed.md -->
+
 # Implementation Update: Transaction Import
+
 ## Completed: 2025-01-21
+
 ## Author: Claude Code
 
 ### Files Created/Modified
+
 **Frontend:**
+
 - ✅ `src/components/TransactionImport/index.tsx` (new)
 - ✅ `src/components/TransactionImport/CSVParser.tsx` (new)
 - ✅ `src/components/TransactionImport/PreviewTable.tsx` (new)
 - ✅ `src/hooks/useCSVImport.ts` (new)
 
 **Backend:**
+
 - ✅ `pages/api/transactions/import.ts` (new)
 - ✅ `src/services/bankParsers/index.ts` (new)
 - ✅ `src/utils/categoryMatcher.ts` (new)
 
 **Database:**
+
 - ✅ Migration: `20250121_add_import_tracking.sql`
 - ✅ Updated Prisma schema
 
 ### Test Coverage
+
 - Unit tests: 18 passing (92% coverage)
 - Integration tests: 5 passing
 - E2E tests: 3 passing
 
 ### Performance Metrics
+
 - 1000 transactions: 2.3s import time ✅
 - 10000 transactions: 18s import time
 - Memory usage: Max 145MB
 
 ### Known Issues
+
 - ⚠️ Wells Fargo date format needs special handling
 - ⚠️ Category matching accuracy at 89% (below target)
 
 ### Next Steps
+
 - [ ] Optimize category matching algorithm
 - [ ] Add progress indicator for large imports
 - [ ] Implement background job for 10k+ transactions
 ```
 
 #### 3. **ONGOING**: Maintain Current State Documentation
+
 ```markdown
 <!-- docs/current/app_functionality.md -->
+
 # MoneyWise Current Functionality
+
 ## Last Updated: 2025-01-21
 
 ### Core Features
 
 #### 💰 Transaction Management
+
 - ✅ Manual transaction entry
 - ✅ CSV import (Chase, BoA supported)
 - ✅ Auto-categorization (89% accuracy)
@@ -557,6 +727,7 @@ catch (error) {
 - ❌ PDF statement import (planned)
 
 #### 📊 Analytics & Reports
+
 - ✅ Monthly spending breakdown
 - ✅ Category analysis
 - ✅ Trend visualization
@@ -564,20 +735,23 @@ catch (error) {
 - ❌ Predictive analytics (planned)
 
 #### 🎯 Budget Management
+
 - ✅ Category budgets
 - ✅ Alert notifications
 - ⏳ Recurring budgets (in progress)
 - ❌ Goal tracking (planned)
 
 ### API Endpoints
-| Endpoint | Method | Status | Rate Limit |
-|----------|--------|--------|------------|
-| /api/transactions | GET/POST/PUT/DELETE | ✅ Stable | 100/min |
-| /api/transactions/import | POST | ✅ Beta | 10/min |
-| /api/budgets | GET/POST/PUT | ✅ Stable | 50/min |
-| /api/analytics | GET | ⏳ Development | 20/min |
+
+| Endpoint                 | Method              | Status         | Rate Limit |
+| ------------------------ | ------------------- | -------------- | ---------- |
+| /api/transactions        | GET/POST/PUT/DELETE | ✅ Stable      | 100/min    |
+| /api/transactions/import | POST                | ✅ Beta        | 10/min     |
+| /api/budgets             | GET/POST/PUT        | ✅ Stable      | 50/min     |
+| /api/analytics           | GET                 | ⏳ Development | 20/min     |
 
 ### Performance Benchmarks
+
 - Initial load: < 1.5s
 - Transaction list (100 items): < 200ms
 - CSV import (1000 rows): < 3s
@@ -603,7 +777,7 @@ interface ClaudeUpdate {
 
 export class ClaudeMemoryUpdater {
   private claudeMdPath = './claude.md';
-  
+
   async updateMemory(update: ClaudeUpdate) {
     const timestamp = new Date().toISOString();
     const entry = `
@@ -615,14 +789,14 @@ ${update.files.map(f => `- ${f}`).join('\n')}
 ### Impact Level: ${update.impact}
 ---
 `;
-    
+
     // Append to claude.md
     await fs.promises.appendFile(this.claudeMdPath, entry);
-    
+
     // Create git commit
     await this.commitUpdate(update);
   }
-  
+
   private async commitUpdate(update: ClaudeUpdate) {
     const { execSync } = require('child_process');
     execSync('git add claude.md');
@@ -637,7 +811,7 @@ await updater.updateMemory({
   category: 'architecture',
   description: 'Added Redis caching layer for transactions',
   files: ['src/lib/redis.ts', 'docker-compose.yml'],
-  impact: 'high'
+  impact: 'high',
 });
 ```
 
@@ -653,7 +827,7 @@ CHANGED_FILES=$(git diff --name-only HEAD HEAD~1)
 # Check for structural changes
 if echo "$CHANGED_FILES" | grep -E "(package\.json|tsconfig|\.env\.example|prisma/schema)"; then
   echo "Structural change detected, updating claude.md..."
-  
+
   # Extract change type
   if echo "$CHANGED_FILES" | grep "package.json"; then
     CHANGE_TYPE="dependency"
@@ -662,7 +836,7 @@ if echo "$CHANGED_FILES" | grep -E "(package\.json|tsconfig|\.env\.example|prism
   else
     CHANGE_TYPE="configuration"
   fi
-  
+
   # Append to claude.md
   cat >> claude.md << EOF
 
@@ -672,7 +846,7 @@ if echo "$CHANGED_FILES" | grep -E "(package\.json|tsconfig|\.env\.example|prism
 - Commit: $(git rev-parse HEAD)
 ---
 EOF
-  
+
   git add claude.md
   git commit --amend --no-edit
 fi
@@ -761,26 +935,26 @@ on:
 jobs:
   quality-check:
     runs-on: ubuntu-latest
-    
+
     steps:
       - uses: actions/checkout@v3
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '20'
-          
+
       - name: Install pnpm
         uses: pnpm/action-setup@v2
         with:
           version: 8
-          
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-        
+
       - name: Run quality gates
         run: .claude/quality-check.sh
-        
+
       - name: Upload coverage
         uses: codecov/codecov-action@v3
         with:
@@ -792,6 +966,7 @@ jobs:
 ### Critical Failure Recovery
 
 #### 1. **Git Disaster Recovery**
+
 ```bash
 #!/bin/bash
 # .claude/emergency-recovery.sh
@@ -825,28 +1000,28 @@ echo "Recovery complete. Review and test thoroughly."
 ```
 
 #### 2. **Database Rollback Procedure**
+
 ```typescript
 // scripts/db-rollback.ts
 import { PrismaClient } from '@prisma/client';
 
 async function rollbackDatabase(migrationName: string) {
   const prisma = new PrismaClient();
-  
+
   try {
     // 1. Create backup
     await prisma.$executeRaw`
       CREATE TABLE transactions_backup AS 
       SELECT * FROM transactions;
     `;
-    
+
     // 2. Rollback migration
     const { execSync } = require('child_process');
     execSync(`pnpm prisma migrate resolve --rolled-back ${migrationName}`);
-    
+
     // 3. Verify data integrity
     const count = await prisma.transaction.count();
     console.log(`Rolled back. ${count} transactions remain.`);
-    
   } catch (error) {
     console.error('Rollback failed:', error);
     // Restore from backup
@@ -936,9 +1111,11 @@ echo "📄 Summary saved to docs/sessions/"
 
 ```markdown
 <!-- .github/pull_request_template.md -->
+
 ## PR Checklist
 
 ### Code Quality
+
 - [ ] TypeScript strict mode passes
 - [ ] No `any` types without justification
 - [ ] All functions have proper return types
@@ -946,12 +1123,14 @@ echo "📄 Summary saved to docs/sessions/"
 - [ ] Loading states handled properly
 
 ### Performance
+
 - [ ] No N+1 queries in API routes
 - [ ] Images optimized with next/image
 - [ ] Lazy loading implemented where appropriate
 - [ ] Bundle size impact documented
 
 ### Security
+
 - [ ] Input validation on all endpoints
 - [ ] SQL injection prevention verified
 - [ ] XSS protection implemented
@@ -959,6 +1138,7 @@ echo "📄 Summary saved to docs/sessions/"
 - [ ] No secrets in code
 
 ### Testing
+
 - [ ] Unit tests for new functions
 - [ ] Integration tests for API routes
 - [ ] E2E tests for critical paths
@@ -966,12 +1146,14 @@ echo "📄 Summary saved to docs/sessions/"
 - [ ] Error scenarios tested
 
 ### Documentation
+
 - [ ] JSDoc comments for public APIs
 - [ ] README updated if needed
 - [ ] claude.md updated for architectural changes
 - [ ] Migration guide if breaking changes
 
 ### Analytics
+
 - [ ] Events added for new features
 - [ ] Error tracking implemented
 - [ ] Performance metrics captured
@@ -1016,12 +1198,9 @@ ${incident.prevention}
 - Add monitoring for early detection
 - Document in team knowledge base
 `;
-    
-    await fs.promises.writeFile(
-      `docs/incidents/${incident.date}-${incident.category}.md`,
-      report
-    );
-    
+
+    await fs.promises.writeFile(`docs/incidents/${incident.date}-${incident.category}.md`, report);
+
     // Update claude.md with prevention measures
     await this.updateClaudeMemory(incident.prevention);
   }
@@ -1029,8 +1208,9 @@ ${incident.prevention}
 ```
 
 ---
-**Last Updated**: 2025-01-21
-**Version**: 2.0.0  
+
+**Last Updated**: 2025-01-21 **Version**: 2.0.0  
 **Maintainer**: MONEYWISE Team & Claude Code
 
-**Remember**: Every commit counts. Every test matters. Every line of documentation helps. Build with excellence, ship with confidence. 🚀
+**Remember**: Every commit counts. Every test matters. Every line of documentation helps. Build with excellence, ship
+with confidence. 🚀
