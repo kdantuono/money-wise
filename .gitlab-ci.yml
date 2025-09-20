@@ -5,28 +5,28 @@
 # Global Variables
 variables:
   # Node.js Configuration
-  NODE_VERSION: "18.17.0"
-  NPM_CONFIG_CACHE: "$CI_PROJECT_DIR/.npm"
+  NODE_VERSION: '18.17.0'
+  NPM_CONFIG_CACHE: '$CI_PROJECT_DIR/.npm'
 
   # Docker Configuration
   DOCKER_DRIVER: overlay2
-  DOCKER_TLS_CERTDIR: "/certs"
+  DOCKER_TLS_CERTDIR: '/certs'
 
   # Testing Configuration
-  COVERAGE_THRESHOLD: "80"
-  PERFORMANCE_BUDGET: "3000" # 3 seconds
-  ACCESSIBILITY_THRESHOLD: "100" # WCAG 2.1 AA compliance
+  COVERAGE_THRESHOLD: '80'
+  PERFORMANCE_BUDGET: '3000' # 3 seconds
+  ACCESSIBILITY_THRESHOLD: '100' # WCAG 2.1 AA compliance
 
   # Security Configuration
-  SAST_EXCLUDED_ANALYZERS: "eslint"
-  SECRET_DETECTION_EXCLUDED_PATHS: "node_modules/"
+  SAST_EXCLUDED_ANALYZERS: 'eslint'
+  SECRET_DETECTION_EXCLUDED_PATHS: 'node_modules/'
 
   # Quality Gates
-  SONAR_USER_HOME: "${CI_PROJECT_DIR}/.sonar"
+  SONAR_USER_HOME: '${CI_PROJECT_DIR}/.sonar'
 
   # Environment URLs
-  STAGING_URL: "https://staging-money-wise.example.com"
-  PRODUCTION_URL: "https://money-wise.example.com"
+  STAGING_URL: 'https://staging-money-wise.example.com'
+  PRODUCTION_URL: 'https://money-wise.example.com'
 
 # Pipeline Stages
 stages:
@@ -84,7 +84,7 @@ validate:dependencies:
 validate:lint:
   stage: validate
   image: node:${NODE_VERSION}-alpine
-  needs: ["validate:dependencies"]
+  needs: ['validate:dependencies']
   script:
     - echo "📋 Running linting and code style checks"
     - npm run lint
@@ -95,7 +95,7 @@ validate:lint:
 validate:types:
   stage: validate
   image: node:${NODE_VERSION}-alpine
-  needs: ["validate:dependencies"]
+  needs: ['validate:dependencies']
   script:
     - echo "🔍 Type checking TypeScript code"
     - cd apps/web && npm run type-check
@@ -111,7 +111,7 @@ validate:types:
 test:unit:frontend:
   stage: test
   image: node:${NODE_VERSION}-alpine
-  needs: ["validate:dependencies"]
+  needs: ['validate:dependencies']
   script:
     - echo "🧪 Running frontend unit tests"
     - cd apps/web
@@ -134,7 +134,7 @@ test:unit:frontend:
 test:unit:backend:
   stage: test
   image: node:${NODE_VERSION}-alpine
-  needs: ["validate:dependencies"]
+  needs: ['validate:dependencies']
   services:
     - postgres:15-alpine
     - redis:7-alpine
@@ -172,7 +172,7 @@ test:unit:backend:
 test:integration:frontend:
   stage: test
   image: node:${NODE_VERSION}-alpine
-  needs: ["validate:dependencies"]
+  needs: ['validate:dependencies']
   script:
     - echo "🔗 Running frontend integration tests"
     - cd apps/web
@@ -190,7 +190,7 @@ test:integration:frontend:
 test:integration:backend:
   stage: test
   image: node:${NODE_VERSION}-alpine
-  needs: ["validate:dependencies"]
+  needs: ['validate:dependencies']
   services:
     - postgres:15-alpine
     - redis:7-alpine
@@ -223,7 +223,7 @@ test:integration:backend:
 test:accessibility:
   stage: test
   image: node:${NODE_VERSION}-alpine
-  needs: ["validate:dependencies"]
+  needs: ['validate:dependencies']
   script:
     - echo "♿ Running accessibility tests"
     - cd apps/web
@@ -247,7 +247,7 @@ build:docker:frontend:
   image: docker:24-dind
   services:
     - docker:24-dind
-  needs: ["test:unit:frontend", "test:integration:frontend"]
+  needs: ['test:unit:frontend', 'test:integration:frontend']
   before_script:
     - echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER --password-stdin $CI_REGISTRY
   script:
@@ -268,7 +268,7 @@ build:docker:backend:
   image: docker:24-dind
   services:
     - docker:24-dind
-  needs: ["test:unit:backend", "test:integration:backend"]
+  needs: ['test:unit:backend', 'test:integration:backend']
   before_script:
     - echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER --password-stdin $CI_REGISTRY
   script:
@@ -318,7 +318,7 @@ dependency_scanning:
 container_scanning:frontend:
   extends: container_scanning
   stage: security
-  needs: ["build:docker:frontend"]
+  needs: ['build:docker:frontend']
   variables:
     CI_APPLICATION_REPOSITORY: $CI_REGISTRY_IMAGE/frontend
     CI_APPLICATION_TAG: $CI_COMMIT_SHA
@@ -329,7 +329,7 @@ container_scanning:frontend:
 container_scanning:backend:
   extends: container_scanning
   stage: security
-  needs: ["build:docker:backend"]
+  needs: ['build:docker:backend']
   variables:
     CI_APPLICATION_REPOSITORY: $CI_REGISTRY_IMAGE/backend
     CI_APPLICATION_TAG: $CI_COMMIT_SHA
@@ -344,7 +344,7 @@ container_scanning:backend:
 quality:coverage-check:
   stage: quality
   image: node:${NODE_VERSION}-alpine
-  needs: ["test:unit:frontend", "test:unit:backend"]
+  needs: ['test:unit:frontend', 'test:unit:backend']
   script:
     - echo "📊 Checking coverage thresholds"
     - |
@@ -379,9 +379,9 @@ deploy:staging:
   services:
     - docker:24-dind
   needs:
-    - "build:docker:frontend"
-    - "build:docker:backend"
-    - "quality:coverage-check"
+    - 'build:docker:frontend'
+    - 'build:docker:backend'
+    - 'quality:coverage-check'
   environment:
     name: staging
     url: $STAGING_URL
@@ -457,7 +457,7 @@ deploy:staging:
 test:e2e:staging:
   stage: e2e-tests
   image: mcr.microsoft.com/playwright:v1.40.0-focal
-  needs: ["deploy:staging"]
+  needs: ['deploy:staging']
   variables:
     PLAYWRIGHT_BASE_URL: $STAGING_URL
   script:
@@ -479,7 +479,7 @@ test:e2e:staging:
 test:performance:staging:
   stage: e2e-tests
   image: sitespeedio/sitespeed.io:latest
-  needs: ["deploy:staging"]
+  needs: ['deploy:staging']
   script:
     - echo "⚡ Running performance tests"
     - sitespeed.io --budget budget.json $STAGING_URL
@@ -500,8 +500,8 @@ deploy:production:
   services:
     - docker:24-dind
   needs:
-    - "test:e2e:staging"
-    - "test:performance:staging"
+    - 'test:e2e:staging'
+    - 'test:performance:staging'
   environment:
     name: production
     url: $PRODUCTION_URL
@@ -549,7 +549,7 @@ deploy:production:
 monitor:production:
   stage: monitor
   image: curlimages/curl:latest
-  needs: ["deploy:production"]
+  needs: ['deploy:production']
   script:
     - echo "📊 Setting up production monitoring"
     - |

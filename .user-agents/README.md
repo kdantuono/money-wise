@@ -2,7 +2,9 @@
 
 ## Overview
 
-This directory provides direct user access to the MoneyWise enhanced multi-agent orchestration system. You can now interact directly with specialized AI agents that follow ultrathinking methodology, documentation-driven development, and comprehensive quality assurance.
+This directory provides direct user access to the MoneyWise enhanced multi-agent orchestration system. You can now
+interact directly with specialized AI agents that follow ultrathinking methodology, documentation-driven development,
+and comprehensive quality assurance.
 
 ## Quick Start
 
@@ -59,6 +61,7 @@ Each agent in the enhanced system provides:
 ## Usage Examples
 
 ### Feature Development
+
 ```bash
 # Start comprehensive feature development
 ./agent-cli.sh agents create architect system-design
@@ -69,6 +72,7 @@ Each agent in the enhanced system provides:
 ```
 
 ### Quality Assurance
+
 ```bash
 # Run complete quality validation
 ./agent-cli.sh agents quality

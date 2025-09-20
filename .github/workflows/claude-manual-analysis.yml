@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       analysis_type:
-        description: "Type of analysis to perform"
+        description: 'Type of analysis to perform'
         required: true
         type: choice
         options:
@@ -13,15 +13,15 @@ on:
           - performance-audit
           - architecture-review
           - dependency-audit
-        default: "summarize-commit"
+        default: 'summarize-commit'
 
       commit_sha:
-        description: "Specific commit SHA to analyze (leave empty for latest)"
+        description: 'Specific commit SHA to analyze (leave empty for latest)'
         required: false
         type: string
 
       focus_area:
-        description: "Specific area to focus on (optional)"
+        description: 'Specific area to focus on (optional)'
         required: false
         type: choice
         options:
@@ -31,7 +31,7 @@ on:
           - database
           - security
           - performance
-        default: "all"
+        default: 'all'
 
 jobs:
   analyze-code:

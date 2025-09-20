@@ -1,4 +1,12 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, Index } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  ManyToOne,
+  Index,
+} from 'typeorm';
 import { Transaction } from '../../transactions/transaction.entity';
 import { TransactionCategory } from './transaction-category.entity';
 import { MLFeatures } from '@money-wise/types';
@@ -46,6 +54,8 @@ export class TransactionMLPrediction {
   @ManyToOne(() => TransactionCategory, category => category.predictions)
   predictedCategory: TransactionCategory;
 
-  @ManyToOne(() => TransactionCategory, category => category.userCorrections, { nullable: true })
+  @ManyToOne(() => TransactionCategory, category => category.userCorrections, {
+    nullable: true,
+  })
   userCategory: TransactionCategory;
 }

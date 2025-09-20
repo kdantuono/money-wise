@@ -1,4 +1,11 @@
-import { IsEmail, IsString, MinLength, IsNotEmpty, IsOptional, IsBoolean } from 'class-validator';
+import {
+  IsEmail,
+  IsString,
+  MinLength,
+  IsNotEmpty,
+  IsOptional,
+  IsBoolean,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateUserDto {
@@ -26,7 +33,10 @@ export class LoginDto {
   @IsString()
   password: string;
 
-  @ApiPropertyOptional({ example: '123456', description: 'MFA code if enabled' })
+  @ApiPropertyOptional({
+    example: '123456',
+    description: 'MFA code if enabled',
+  })
   @IsOptional()
   @IsString()
   mfaCode?: string;

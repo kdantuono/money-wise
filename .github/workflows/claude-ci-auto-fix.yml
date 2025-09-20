@@ -2,7 +2,7 @@ name: Auto Fix CI Failures
 
 on:
   workflow_run:
-    workflows: ["CI/CD Pipeline"]  # Name of your main CI workflow
+    workflows: ['CI/CD Pipeline'] # Name of your main CI workflow
     types:
       - completed
 

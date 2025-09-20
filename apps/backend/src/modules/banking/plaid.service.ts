@@ -1,8 +1,19 @@
-import { Injectable, Inject, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  Inject,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
-import { PlaidApi, Configuration, PlaidEnvironments, Products, CountryCode } from 'plaid';
+import {
+  PlaidApi,
+  Configuration,
+  PlaidEnvironments,
+  Products,
+  CountryCode,
+} from 'plaid';
 import { PlaidAccount } from './entities/plaid-account.entity';
 import { PlaidTransaction } from './entities/plaid-transaction.entity';
 import { User } from '../auth/user.entity';
@@ -20,17 +31,20 @@ export class PlaidService {
     @InjectRepository(User)
     private userRepository: Repository<User>,
     private configService: ConfigService,
-    @Inject('PLAID_API') private plaidApi: PlaidApi,
+    @Inject('PLAID_API') private plaidApi: PlaidApi
   ) {
     this.plaidClient = this.plaidApi;
   }
 
-  async initializePlaidLink(userId: string, options?: {
-    clientName?: string;
-    language?: string;
-    countryCodes?: string[];
-    products?: string[];
-  }): Promise<{
+  async initializePlaidLink(
+    userId: string,
+    options?: {
+      clientName?: string;
+      language?: string;
+      countryCodes?: string[];
+      products?: string[];
+    }
+  ): Promise<{
     linkToken: string;
     expiration: string;
     requestId: string;
@@ -47,8 +61,14 @@ export class PlaidService {
           client_user_id: userId,
         },
         client_name: options?.clientName || 'MoneyWise',
-        products: (options?.products || this.configService.get('PLAID_PRODUCTS', 'transactions,auth').split(',')) as Products[],
-        country_codes: (options?.countryCodes || this.configService.get('PLAID_COUNTRY_CODES', 'US').split(',')) as CountryCode[],
+        products: (options?.products ||
+          this.configService
+            .get('PLAID_PRODUCTS', 'transactions,auth')
+            .split(',')) as Products[],
+        country_codes: (options?.countryCodes ||
+          this.configService
+            .get('PLAID_COUNTRY_CODES', 'US')
+            .split(',')) as CountryCode[],
         language: options?.language || 'en',
       };
 
@@ -64,7 +84,11 @@ export class PlaidService {
     }
   }
 
-  async exchangePublicToken(userId: string, publicToken: string, metadata?: any): Promise<{
+  async exchangePublicToken(
+    userId: string,
+    publicToken: string,
+    metadata?: any
+  ): Promise<{
     accounts: any[];
     item: any;
     requestId: string;
@@ -120,7 +144,8 @@ export class PlaidService {
           lastSyncAt: new Date(),
         });
 
-        const savedAccount = await this.plaidAccountRepository.save(plaidAccount);
+        const savedAccount =
+          await this.plaidAccountRepository.save(plaidAccount);
         savedAccounts.push(savedAccount);
       }
 
@@ -134,11 +159,14 @@ export class PlaidService {
     }
   }
 
-  async syncTransactions(accountId: string, options?: {
-    startDate?: Date;
-    endDate?: Date;
-    count?: number;
-  }): Promise<{
+  async syncTransactions(
+    accountId: string,
+    options?: {
+      startDate?: Date;
+      endDate?: Date;
+      count?: number;
+    }
+  ): Promise<{
     accountId: string;
     transactionsAdded: number;
     transactionsModified: number;
@@ -175,7 +203,9 @@ export class PlaidService {
           plaidTransactionId: txn.transaction_id,
           amount: txn.amount,
           date: new Date(txn.date),
-          authorizedDate: txn.authorized_date ? new Date(txn.authorized_date) : null,
+          authorizedDate: txn.authorized_date
+            ? new Date(txn.authorized_date)
+            : null,
           description: txn.name || txn.merchant_name || 'Transaction',
           merchantName: txn.merchant_name || null,
           accountOwner: txn.account_owner || null,
@@ -187,9 +217,15 @@ export class PlaidService {
           isoCurrencyCode: txn.iso_currency_code || 'USD',
           unofficialCurrencyCode: txn.unofficial_currency_code || null,
           isPending: txn.pending || false,
-          location: txn.location ? JSON.parse(JSON.stringify(txn.location)) : null,
-          paymentMeta: txn.payment_meta ? JSON.parse(JSON.stringify(txn.payment_meta)) : null,
-          personalFinanceCategory: txn.personal_finance_category ? JSON.parse(JSON.stringify(txn.personal_finance_category)) : null,
+          location: txn.location
+            ? JSON.parse(JSON.stringify(txn.location))
+            : null,
+          paymentMeta: txn.payment_meta
+            ? JSON.parse(JSON.stringify(txn.payment_meta))
+            : null,
+          personalFinanceCategory: txn.personal_finance_category
+            ? JSON.parse(JSON.stringify(txn.personal_finance_category))
+            : null,
         };
 
         await this.plaidTransactionRepository.upsert(transaction, {
@@ -205,7 +241,9 @@ export class PlaidService {
           plaidTransactionId: txn.transaction_id,
           amount: txn.amount,
           date: new Date(txn.date),
-          authorizedDate: txn.authorized_date ? new Date(txn.authorized_date) : null,
+          authorizedDate: txn.authorized_date
+            ? new Date(txn.authorized_date)
+            : null,
           description: txn.name || txn.merchant_name || 'Transaction',
           merchantName: txn.merchant_name || null,
           accountOwner: txn.account_owner || null,
@@ -217,9 +255,15 @@ export class PlaidService {
           isoCurrencyCode: txn.iso_currency_code || 'USD',
           unofficialCurrencyCode: txn.unofficial_currency_code || null,
           isPending: txn.pending || false,
-          location: txn.location ? JSON.parse(JSON.stringify(txn.location)) : null,
-          paymentMeta: txn.payment_meta ? JSON.parse(JSON.stringify(txn.payment_meta)) : null,
-          personalFinanceCategory: txn.personal_finance_category ? JSON.parse(JSON.stringify(txn.personal_finance_category)) : null,
+          location: txn.location
+            ? JSON.parse(JSON.stringify(txn.location))
+            : null,
+          paymentMeta: txn.payment_meta
+            ? JSON.parse(JSON.stringify(txn.payment_meta))
+            : null,
+          personalFinanceCategory: txn.personal_finance_category
+            ? JSON.parse(JSON.stringify(txn.personal_finance_category))
+            : null,
         };
 
         await this.plaidTransactionRepository.upsert(transaction, {
@@ -279,8 +323,16 @@ export class PlaidService {
     }));
   }
 
-  async handleWebhook(webhookData: any): Promise<{ status: string; message: string }> {
-    const { webhookType, webhookCode, itemId, newTransactions, removedTransactions } = webhookData;
+  async handleWebhook(
+    webhookData: any
+  ): Promise<{ status: string; message: string }> {
+    const {
+      webhookType,
+      webhookCode,
+      itemId,
+      newTransactions,
+      removedTransactions,
+    } = webhookData;
     const webhook_type = webhookType;
     const webhook_code = webhookCode;
     const item_id = itemId;
@@ -288,7 +340,10 @@ export class PlaidService {
     try {
       switch (webhook_type) {
         case 'TRANSACTIONS':
-          if (webhook_code === 'DEFAULT_UPDATE' || webhook_code === 'HISTORICAL_UPDATE') {
+          if (
+            webhook_code === 'DEFAULT_UPDATE' ||
+            webhook_code === 'HISTORICAL_UPDATE'
+          ) {
             // Find account by item_id
             const account = await this.plaidAccountRepository.findOne({
               where: { plaidItemId: item_id },
@@ -296,9 +351,15 @@ export class PlaidService {
 
             if (account) {
               await this.syncTransactions(account.id);
-              return { status: 'processed', message: 'Webhook processed successfully' };
+              return {
+                status: 'processed',
+                message: 'Webhook processed successfully',
+              };
             } else {
-              return { status: 'ignored', message: 'Account not found for item_id' };
+              return {
+                status: 'ignored',
+                message: 'Account not found for item_id',
+              };
             }
           }
           break;
@@ -337,26 +398,26 @@ export class PlaidService {
 
     // Map Plaid errors to user-friendly responses
     const errorMapping = {
-      'ITEM_LOGIN_REQUIRED': {
+      ITEM_LOGIN_REQUIRED: {
         action: 'RELINK_REQUIRED',
         userFriendly: true,
       },
-      'INSTITUTION_DOWN': {
+      INSTITUTION_DOWN: {
         action: 'RETRY_LATER',
         retryAfter: 30 * 60 * 1000, // 30 minutes
         userFriendly: true,
       },
-      'INSTITUTION_NOT_RESPONDING': {
+      INSTITUTION_NOT_RESPONDING: {
         action: 'RETRY_LATER',
         retryAfter: 15 * 60 * 1000, // 15 minutes
         userFriendly: true,
       },
-      'RATE_LIMIT_EXCEEDED': {
+      RATE_LIMIT_EXCEEDED: {
         action: 'BACKOFF_REQUIRED',
         backoffSeconds: 60, // 1 minute
         userFriendly: true,
       },
-      'API_ERROR': {
+      API_ERROR: {
         action: 'RETRY_LATER',
         retryAfter: 5 * 60 * 1000, // 5 minutes
         userFriendly: false,

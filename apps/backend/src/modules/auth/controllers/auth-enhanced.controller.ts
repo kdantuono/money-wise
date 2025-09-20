@@ -11,7 +11,12 @@ import {
   Get,
   Patch,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { RateLimitGuard } from '../guards/rate-limit.guard';
 import { SecurityGuard } from '../guards/security.guard';
@@ -37,13 +42,17 @@ export class AuthEnhancedController {
     private authService: AuthService,
     private mfaService: MfaService,
     private sessionService: SessionService,
-    private securityService: SecurityService,
+    private securityService: SecurityService
   ) {}
 
   @Post('register')
   @UseGuards(RateLimitGuard)
   @ApiOperation({ summary: 'Register a new user with enhanced security' })
-  @ApiResponse({ status: 201, description: 'User successfully created', type: EnhancedAuthResponseDto })
+  @ApiResponse({
+    status: 201,
+    description: 'User successfully created',
+    type: EnhancedAuthResponseDto,
+  })
   async register(
     @Body() createUserDto: CreateUserDto,
     @Request() req
@@ -57,7 +66,9 @@ export class AuthEnhancedController {
     );
 
     if (!rateLimitCheck.allowed) {
-      throw new BadRequestException('Too many registration attempts. Please try again later.');
+      throw new BadRequestException(
+        'Too many registration attempts. Please try again later.'
+      );
     }
 
     // Create user
@@ -72,7 +83,10 @@ export class AuthEnhancedController {
     };
 
     // Generate secure token pair
-    const tokens = await this.sessionService.generateTokenPair(user.id, deviceInfo);
+    const tokens = await this.sessionService.generateTokenPair(
+      user.id,
+      deviceInfo
+    );
 
     // Log security event
     await this.securityService.logSecurityEvent('user_registered', 'low', {
@@ -96,14 +110,20 @@ export class AuthEnhancedController {
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @UseGuards(RateLimitGuard)
-  @ApiOperation({ summary: 'Login user with enhanced security and MFA support' })
-  @ApiResponse({ status: 200, description: 'User successfully logged in', type: EnhancedAuthResponseDto })
+  @ApiOperation({
+    summary: 'Login user with enhanced security and MFA support',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'User successfully logged in',
+    type: EnhancedAuthResponseDto,
+  })
   async login(
     @Body() loginDto: LoginDto,
     @Request() req
   ): Promise<EnhancedAuthResponseDto> {
     const clientIp = this.getClientIp(req);
-    
+
     // Check rate limiting
     const rateLimitCheck = await this.securityService.checkRateLimit(
       `${clientIp}:${loginDto.email}`,
@@ -111,12 +131,17 @@ export class AuthEnhancedController {
     );
 
     if (!rateLimitCheck.allowed) {
-      throw new UnauthorizedException('Too many login attempts. Please try again later.');
+      throw new UnauthorizedException(
+        'Too many login attempts. Please try again later.'
+      );
     }
 
     // Validate user credentials
-    const user = await this.authService.validateUser(loginDto.email, loginDto.password);
-    
+    const user = await this.authService.validateUser(
+      loginDto.email,
+      loginDto.password
+    );
+
     if (!user) {
       await this.securityService.logSecurityEvent('login_failed', 'medium', {
         email: loginDto.email,
@@ -128,7 +153,7 @@ export class AuthEnhancedController {
 
     // Check if MFA is enabled
     const mfaEnabled = await this.mfaService.isMfaEnabled(user.id);
-    
+
     if (mfaEnabled && !loginDto.mfaCode) {
       // Return partial response requiring MFA
       return {
@@ -149,8 +174,11 @@ export class AuthEnhancedController {
 
     if (mfaEnabled && loginDto.mfaCode) {
       // Verify MFA code
-      const mfaVerification = await this.mfaService.verifyTotpCode(user.id, loginDto.mfaCode);
-      
+      const mfaVerification = await this.mfaService.verifyTotpCode(
+        user.id,
+        loginDto.mfaCode
+      );
+
       if (!mfaVerification.isValid) {
         await this.securityService.logSecurityEvent('mfa_failed', 'high', {
           userId: user.id,
@@ -170,7 +198,10 @@ export class AuthEnhancedController {
     };
 
     // Generate secure token pair
-    const tokens = await this.sessionService.generateTokenPair(user.id, deviceInfo);
+    const tokens = await this.sessionService.generateTokenPair(
+      user.id,
+      deviceInfo
+    );
 
     // Log successful login
     await this.securityService.logSecurityEvent('login_success', 'low', {
@@ -196,17 +227,19 @@ export class AuthEnhancedController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Setup MFA for user account' })
-  async setupMfa(@Request() req): Promise<{ secret: string; qrCodeUrl: string; manualEntryCode: string }> {
+  async setupMfa(
+    @Request() req
+  ): Promise<{ secret: string; qrCodeUrl: string; manualEntryCode: string }> {
     const userId = req.user.id;
     const email = req.user.email;
-    
+
     const mfaSecret = await this.mfaService.generateTotpSecret(userId, email);
-    
+
     await this.securityService.logSecurityEvent('mfa_setup_initiated', 'low', {
       userId,
       email,
     });
-    
+
     return mfaSecret;
   }
 
@@ -219,21 +252,24 @@ export class AuthEnhancedController {
     @Request() req
   ): Promise<{ success: boolean; backupCodes: string[] }> {
     const userId = req.user.id;
-    
-    const verification = await this.mfaService.verifyTotpCode(userId, mfaVerifyDto.code);
-    
+
+    const verification = await this.mfaService.verifyTotpCode(
+      userId,
+      mfaVerifyDto.code
+    );
+
     if (!verification.isValid) {
       throw new BadRequestException(verification.error);
     }
 
     // Generate backup codes
     const backupCodes = await this.mfaService.generateBackupCodes(userId);
-    
+
     await this.securityService.logSecurityEvent('mfa_enabled', 'low', {
       userId,
       email: req.user.email,
     });
-    
+
     return {
       success: true,
       backupCodes,
@@ -246,14 +282,14 @@ export class AuthEnhancedController {
   @ApiOperation({ summary: 'Disable MFA for user account' })
   async disableMfa(@Request() req): Promise<{ success: boolean }> {
     const userId = req.user.id;
-    
+
     await this.mfaService.disableMfa(userId);
-    
+
     await this.securityService.logSecurityEvent('mfa_disabled', 'medium', {
       userId,
       email: req.user.email,
     });
-    
+
     return { success: true };
   }
 
@@ -263,7 +299,9 @@ export class AuthEnhancedController {
   async refreshToken(
     @Body() refreshTokenDto: RefreshTokenDto,
     @Request() req
-  ): Promise<Omit<EnhancedAuthResponseDto, 'user' | 'mfaRequired' | 'mfaEnabled'>> {
+  ): Promise<
+    Omit<EnhancedAuthResponseDto, 'user' | 'mfaRequired' | 'mfaEnabled'>
+  > {
     const deviceInfo: DeviceInfo = {
       fingerprint: this.generateDeviceFingerprint(req),
       userAgent: req.get('User-Agent') || '',
@@ -284,15 +322,15 @@ export class AuthEnhancedController {
   @ApiOperation({ summary: 'Logout user and revoke session' })
   async logout(@Request() req): Promise<{ success: boolean }> {
     const sessionId = req.user.sessionId;
-    
+
     if (sessionId) {
       await this.sessionService.revokeSession(sessionId);
     }
-    
+
     await this.securityService.logSecurityEvent('logout', 'low', {
       userId: req.user.id,
     });
-    
+
     return { success: true };
   }
 
@@ -302,13 +340,13 @@ export class AuthEnhancedController {
   @ApiOperation({ summary: 'Logout from all devices' })
   async logoutAll(@Request() req): Promise<{ success: boolean }> {
     const userId = req.user.id;
-    
+
     await this.sessionService.revokeAllUserSessions(userId);
-    
+
     await this.securityService.logSecurityEvent('logout_all', 'medium', {
       userId,
     });
-    
+
     return { success: true };
   }
 
@@ -319,7 +357,7 @@ export class AuthEnhancedController {
   async getActiveSessions(@Request() req) {
     const userId = req.user.id;
     const sessions = await this.sessionService.getUserActiveSessions(userId);
-    
+
     return sessions.map(session => ({
       id: session.id,
       deviceFingerprint: session.deviceFingerprint,
@@ -341,7 +379,7 @@ export class AuthEnhancedController {
       req.get('Accept-Encoding') || '',
       this.getClientIp(req),
     ];
-    
+
     return crypto
       .createHash('sha256')
       .update(components.join('|'))
@@ -370,7 +408,7 @@ export class AuthEnhancedController {
       type: 'mfa_temp',
       exp: Math.floor(Date.now() / 1000) + 300, // 5 minutes
     };
-    
+
     return Buffer.from(JSON.stringify(payload)).toString('base64');
   }
 

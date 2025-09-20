@@ -10,7 +10,7 @@ import { CategorySeederService } from '../services/category-seeder.service';
 export class MLCategorizationController {
   constructor(
     private mlCategorizationService: MLCategorizationService,
-    private categorySeederService: CategorySeederService,
+    private categorySeederService: CategorySeederService
   ) {}
 
   @Get('categories')
@@ -21,14 +21,18 @@ export class MLCategorizationController {
   @Post('categorize/:transactionId')
   async categorizeTransaction(
     @Param('transactionId') transactionId: string,
-    @GetUser() user: User,
+    @GetUser() user: User
   ) {
-    return await this.mlCategorizationService.categorizeTransaction(transactionId);
+    return await this.mlCategorizationService.categorizeTransaction(
+      transactionId
+    );
   }
 
   @Get('predictions')
   async getUserPredictions(@GetUser() user: User) {
-    return await this.mlCategorizationService.getTransactionPredictions(user.id);
+    return await this.mlCategorizationService.getTransactionPredictions(
+      user.id
+    );
   }
 
   @Post('seed-categories')

@@ -1,18 +1,11 @@
 {
-  "extends": [
-    "@typescript-eslint/recommended",
-    "plugin:@typescript-eslint/recommended-requiring-type-checking"
-  ],
+  "extends": ["@typescript-eslint/recommended", "plugin:@typescript-eslint/recommended-requiring-type-checking"],
   "parser": "@typescript-eslint/parser",
   "parserOptions": {
     "project": "./tsconfig.json",
     "sourceType": "module"
   },
-  "plugins": [
-    "@typescript-eslint",
-    "import",
-    "unused-imports"
-  ],
+  "plugins": ["@typescript-eslint", "import", "unused-imports"],
   "rules": {
     // ================================
     // 🎯 KISS PRINCIPLE ENFORCEMENT
@@ -22,26 +15,19 @@
     "max-lines-per-function": ["error", 50],
     "max-params": ["error", 4],
     "max-depth": ["error", 4],
-    
+
     // ================================
-    // 🔧 SRP ENFORCEMENT  
+    // 🔧 SRP ENFORCEMENT
     // ================================
     "max-classes-per-file": ["error", 1],
-    
+
     // ================================
     // 📦 IMPORT ORGANIZATION
     // ================================
     "import/order": [
       "error",
       {
-        "groups": [
-          "builtin",
-          "external", 
-          "internal",
-          "parent",
-          "sibling",
-          "index"
-        ],
+        "groups": ["builtin", "external", "internal", "parent", "sibling", "index"],
         "newlines-between": "always",
         "alphabetize": {
           "order": "asc",
@@ -60,7 +46,7 @@
       }
     ],
     "import/no-duplicates": "error",
-    
+
     // ================================
     // 📝 NESTJS ARCHITECTURE
     // ================================
@@ -76,7 +62,7 @@
         }
       }
     ],
-    
+
     // ================================
     // 🔒 TYPE SAFETY
     // ================================
@@ -88,7 +74,7 @@
     "@typescript-eslint/prefer-nullish-coalescing": "error",
     "@typescript-eslint/prefer-optional-chain": "error",
     "@typescript-eslint/no-non-null-assertion": "error",
-    
+
     // ================================
     // 🚫 CODE SMELLS
     // ================================
@@ -98,14 +84,14 @@
     "prefer-const": "error",
     "no-duplicate-imports": "error",
     "no-magic-numbers": [
-      "error", 
-      { 
+      "error",
+      {
         "ignore": [-1, 0, 1, 2, 200, 201, 400, 401, 403, 404, 500],
         "ignoreArrayIndexes": true,
         "ignoreDefaultValues": true
       }
     ],
-    
+
     // ================================
     // 🎨 NAMING CONVENTIONS
     // ================================
@@ -137,7 +123,7 @@
         "suffix": ["Service", "Controller", "Module", "Entity", "Repository", "Guard", "Interceptor", "Filter", "Pipe"]
       }
     ],
-    
+
     // ================================
     // 🏛️ NESTJS SPECIFIC
     // ================================

@@ -15,9 +15,9 @@ const { width } = Dimensions.get('window');
 
 const DashboardScreen = ({ navigation }: any) => {
   const overviewData = {
-    totalIncome: 5420.00,
-    totalExpenses: 3240.50,
-    netIncome: 2179.50,
+    totalIncome: 5420.0,
+    totalExpenses: 3240.5,
+    netIncome: 2179.5,
     transactionCount: 42,
   };
 
@@ -25,7 +25,7 @@ const DashboardScreen = ({ navigation }: any) => {
     {
       id: '1',
       description: 'Salary',
-      amount: 5420.00,
+      amount: 5420.0,
       type: 'income',
       category: 'Salary',
       date: 'Today',
@@ -33,7 +33,7 @@ const DashboardScreen = ({ navigation }: any) => {
     {
       id: '2',
       description: 'Groceries',
-      amount: 120.50,
+      amount: 120.5,
       type: 'expense',
       category: 'Food',
       date: 'Yesterday',
@@ -41,7 +41,7 @@ const DashboardScreen = ({ navigation }: any) => {
     {
       id: '3',
       description: 'Gas Station',
-      amount: 45.20,
+      amount: 45.2,
       type: 'expense',
       category: 'Transportation',
       date: '2 days ago',
@@ -58,7 +58,7 @@ const DashboardScreen = ({ navigation }: any) => {
             <Text style={styles.userName}>Demo User</Text>
           </View>
           <TouchableOpacity style={styles.profileButton}>
-            <Ionicons name="person-circle-outline" size={32} color="#2563eb" />
+            <Ionicons name='person-circle-outline' size={32} color='#2563eb' />
           </TouchableOpacity>
         </View>
 
@@ -69,15 +69,18 @@ const DashboardScreen = ({ navigation }: any) => {
         >
           <Text style={styles.balanceLabel}>Current Balance</Text>
           <Text style={styles.balanceAmount}>
-            ${overviewData.netIncome.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+            $
+            {overviewData.netIncome.toLocaleString('en-US', {
+              minimumFractionDigits: 2,
+            })}
           </Text>
           <View style={styles.balanceActions}>
             <TouchableOpacity style={styles.actionButton}>
-              <Ionicons name="add-circle-outline" size={20} color="white" />
+              <Ionicons name='add-circle-outline' size={20} color='white' />
               <Text style={styles.actionText}>Add Money</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.actionButton}>
-              <Ionicons name="send-outline" size={20} color="white" />
+              <Ionicons name='send-outline' size={20} color='white' />
               <Text style={styles.actionText}>Send Money</Text>
             </TouchableOpacity>
           </View>
@@ -87,14 +90,14 @@ const DashboardScreen = ({ navigation }: any) => {
         <View style={styles.overviewContainer}>
           <View style={styles.overviewGrid}>
             <View style={[styles.overviewCard, styles.incomeCard]}>
-              <Ionicons name="trending-up" size={24} color="#10b981" />
+              <Ionicons name='trending-up' size={24} color='#10b981' />
               <Text style={styles.overviewAmount}>
                 ${overviewData.totalIncome.toLocaleString()}
               </Text>
               <Text style={styles.overviewLabel}>Income</Text>
             </View>
             <View style={[styles.overviewCard, styles.expenseCard]}>
-              <Ionicons name="trending-down" size={24} color="#ef4444" />
+              <Ionicons name='trending-down' size={24} color='#ef4444' />
               <Text style={styles.overviewAmount}>
                 ${overviewData.totalExpenses.toLocaleString()}
               </Text>
@@ -107,39 +110,39 @@ const DashboardScreen = ({ navigation }: any) => {
         <View style={styles.quickActions}>
           <Text style={styles.sectionTitle}>Quick Actions</Text>
           <View style={styles.actionsGrid}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.quickActionItem}
               onPress={() => navigation.navigate('Transactions')}
             >
               <View style={styles.quickActionIcon}>
-                <Ionicons name="add" size={24} color="#2563eb" />
+                <Ionicons name='add' size={24} color='#2563eb' />
               </View>
               <Text style={styles.quickActionText}>Add Transaction</Text>
             </TouchableOpacity>
-            
-            <TouchableOpacity 
+
+            <TouchableOpacity
               style={styles.quickActionItem}
               onPress={() => navigation.navigate('Budgets')}
             >
               <View style={styles.quickActionIcon}>
-                <Ionicons name="wallet" size={24} color="#2563eb" />
+                <Ionicons name='wallet' size={24} color='#2563eb' />
               </View>
               <Text style={styles.quickActionText}>Create Budget</Text>
             </TouchableOpacity>
-            
-            <TouchableOpacity 
+
+            <TouchableOpacity
               style={styles.quickActionItem}
               onPress={() => navigation.navigate('Analytics')}
             >
               <View style={styles.quickActionIcon}>
-                <Ionicons name="stats-chart" size={24} color="#2563eb" />
+                <Ionicons name='stats-chart' size={24} color='#2563eb' />
               </View>
               <Text style={styles.quickActionText}>View Reports</Text>
             </TouchableOpacity>
-            
+
             <TouchableOpacity style={styles.quickActionItem}>
               <View style={styles.quickActionIcon}>
-                <Ionicons name="scan" size={24} color="#2563eb" />
+                <Ionicons name='scan' size={24} color='#2563eb' />
               </View>
               <Text style={styles.quickActionText}>Scan Receipt</Text>
             </TouchableOpacity>
@@ -150,22 +153,30 @@ const DashboardScreen = ({ navigation }: any) => {
         <View style={styles.transactionsSection}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Recent Transactions</Text>
-            <TouchableOpacity onPress={() => navigation.navigate('Transactions')}>
+            <TouchableOpacity
+              onPress={() => navigation.navigate('Transactions')}
+            >
               <Text style={styles.seeAllText}>See All</Text>
             </TouchableOpacity>
           </View>
-          
-          {recentTransactions.map((transaction) => (
+
+          {recentTransactions.map(transaction => (
             <View key={transaction.id} style={styles.transactionItem}>
               <View style={styles.transactionLeft}>
-                <View style={[
-                  styles.transactionIcon,
-                  transaction.type === 'income' ? styles.incomeIcon : styles.expenseIcon
-                ]}>
-                  <Ionicons 
-                    name={transaction.type === 'income' ? 'arrow-down' : 'arrow-up'} 
-                    size={16} 
-                    color="white" 
+                <View
+                  style={[
+                    styles.transactionIcon,
+                    transaction.type === 'income'
+                      ? styles.incomeIcon
+                      : styles.expenseIcon,
+                  ]}
+                >
+                  <Ionicons
+                    name={
+                      transaction.type === 'income' ? 'arrow-down' : 'arrow-up'
+                    }
+                    size={16}
+                    color='white'
                   />
                 </View>
                 <View style={styles.transactionDetails}>
@@ -177,12 +188,18 @@ const DashboardScreen = ({ navigation }: any) => {
                   </Text>
                 </View>
               </View>
-              <Text style={[
-                styles.transactionAmount,
-                transaction.type === 'income' ? styles.incomeAmount : styles.expenseAmount
-              ]}>
+              <Text
+                style={[
+                  styles.transactionAmount,
+                  transaction.type === 'income'
+                    ? styles.incomeAmount
+                    : styles.expenseAmount,
+                ]}
+              >
                 {transaction.type === 'income' ? '+' : '-'}$
-                {transaction.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                {transaction.amount.toLocaleString('en-US', {
+                  minimumFractionDigits: 2,
+                })}
               </Text>
             </View>
           ))}

@@ -24,7 +24,7 @@ export enum AccountType {
   SAVINGS = 'savings',
   CREDIT = 'credit',
   INVESTMENT = 'investment',
-  CASH = 'cash'
+  CASH = 'cash',
 }
 
 export interface Transaction {
@@ -48,7 +48,7 @@ export interface Transaction {
 export enum TransactionType {
   INCOME = 'income',
   EXPENSE = 'expense',
-  TRANSFER = 'transfer'
+  TRANSFER = 'transfer',
 }
 
 export interface Budget {
@@ -71,7 +71,7 @@ export enum BudgetPeriod {
   WEEKLY = 'weekly',
   MONTHLY = 'monthly',
   QUARTERLY = 'quarterly',
-  YEARLY = 'yearly'
+  YEARLY = 'yearly',
 }
 
 export interface Category {
@@ -102,7 +102,7 @@ export enum ConnectionStatus {
   CONNECTED = 'connected',
   DISCONNECTED = 'disconnected',
   ERROR = 'error',
-  PENDING = 'pending'
+  PENDING = 'pending',
 }
 
 export interface Subscription {
@@ -124,7 +124,7 @@ export enum SubscriptionFrequency {
   WEEKLY = 'weekly',
   MONTHLY = 'monthly',
   QUARTERLY = 'quarterly',
-  YEARLY = 'yearly'
+  YEARLY = 'yearly',
 }
 
 export interface FinancialGoal {
@@ -155,7 +155,7 @@ export interface Analytics {
 export enum AnalyticsPeriod {
   MONTH = 'month',
   QUARTER = 'quarter',
-  YEAR = 'year'
+  YEAR = 'year',
 }
 
 export interface CategorySpending {
@@ -184,7 +184,7 @@ export interface BudgetPerformance {
 export enum BudgetStatus {
   ON_TRACK = 'on_track',
   OVER_BUDGET = 'over_budget',
-  APPROACHING_LIMIT = 'approaching_limit'
+  APPROACHING_LIMIT = 'approaching_limit',
 }
 
 // API Response types
@@ -217,7 +217,8 @@ export interface CreateTransactionRequest {
   tags?: string[];
 }
 
-export interface UpdateTransactionRequest extends Partial<CreateTransactionRequest> {
+export interface UpdateTransactionRequest
+  extends Partial<CreateTransactionRequest> {
   id: string;
 }
 

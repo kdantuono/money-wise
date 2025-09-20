@@ -7,7 +7,7 @@ import { TransactionCategory } from '../entities/transaction-category.entity';
 export class CategorySeederService {
   constructor(
     @InjectRepository(TransactionCategory)
-    private categoryRepository: Repository<TransactionCategory>,
+    private categoryRepository: Repository<TransactionCategory>
   ) {}
 
   async seedCategories(): Promise<void> {
@@ -18,16 +18,43 @@ export class CategorySeederService {
     }
 
     const defaultCategories = [
-      { name: 'Food & Dining', description: 'Restaurants, groceries, and food delivery' },
-      { name: 'Transportation', description: 'Gas, public transit, rideshares, and vehicle expenses' },
-      { name: 'Shopping', description: 'General merchandise and retail purchases' },
-      { name: 'Entertainment', description: 'Movies, concerts, streaming services, and recreation' },
-      { name: 'Bills & Utilities', description: 'Rent, utilities, phone, and other regular bills' },
-      { name: 'Healthcare', description: 'Medical expenses, pharmacy, and health insurance' },
+      {
+        name: 'Food & Dining',
+        description: 'Restaurants, groceries, and food delivery',
+      },
+      {
+        name: 'Transportation',
+        description: 'Gas, public transit, rideshares, and vehicle expenses',
+      },
+      {
+        name: 'Shopping',
+        description: 'General merchandise and retail purchases',
+      },
+      {
+        name: 'Entertainment',
+        description: 'Movies, concerts, streaming services, and recreation',
+      },
+      {
+        name: 'Bills & Utilities',
+        description: 'Rent, utilities, phone, and other regular bills',
+      },
+      {
+        name: 'Healthcare',
+        description: 'Medical expenses, pharmacy, and health insurance',
+      },
       { name: 'Travel', description: 'Hotels, flights, and vacation expenses' },
-      { name: 'Education', description: 'Tuition, books, and educational materials' },
-      { name: 'Personal Care', description: 'Haircuts, cosmetics, and personal hygiene' },
-      { name: 'Income', description: 'Salary, freelance work, and other income sources' },
+      {
+        name: 'Education',
+        description: 'Tuition, books, and educational materials',
+      },
+      {
+        name: 'Personal Care',
+        description: 'Haircuts, cosmetics, and personal hygiene',
+      },
+      {
+        name: 'Income',
+        description: 'Salary, freelance work, and other income sources',
+      },
       { name: 'Transfer', description: 'Account transfers and payments' },
       { name: 'Other', description: 'Miscellaneous transactions' },
     ];

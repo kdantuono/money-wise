@@ -1,6 +1,8 @@
 # MoneyWise - Smart Personal Finance App
 
-MoneyWise is a comprehensive personal finance application that automatically tracks your spending, subscriptions, and income by analyzing your financial activity. Built with a modern microservices architecture for scalability and performance.
+MoneyWise is a comprehensive personal finance application that automatically tracks your spending, subscriptions, and
+income by analyzing your financial activity. Built with a modern microservices architecture for scalability and
+performance.
 
 ## 🚀 Features
 
@@ -16,6 +18,7 @@ MoneyWise is a comprehensive personal finance application that automatically tra
 ## 🏗️ Architecture
 
 ### Backend - Microservices (NestJS + PostgreSQL + Redis)
+
 - **API Gateway**: Central routing and authentication
 - **Transaction Service**: CRUD operations and ML categorization
 - **Budget Service**: Budget management and tracking
@@ -23,6 +26,7 @@ MoneyWise is a comprehensive personal finance application that automatically tra
 - **Analytics Service**: Financial insights and reporting
 
 ### Frontend
+
 - **Web**: Next.js dashboard with React components
 - **Mobile**: React Native app for iOS and Android
 - **Shared Types**: TypeScript type definitions
@@ -55,12 +59,14 @@ docker-compose up -d
 ### Manual Setup
 
 1. **Install dependencies**
+
 ```bash
 npm install
 npm run setup
 ```
 
 2. **Setup databases**
+
 ```bash
 # Start PostgreSQL and Redis (or use Docker)
 docker run -d --name postgres -p 5432:5432 -e POSTGRES_DB=moneywise -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=password postgres:15
@@ -68,6 +74,7 @@ docker run -d --name redis -p 6379:6379 redis:7-alpine
 ```
 
 3. **Configure environment**
+
 ```bash
 # Backend configuration
 cp apps/backend/.env.example apps/backend/.env
@@ -75,17 +82,19 @@ cp apps/backend/.env.example apps/backend/.env
 ```
 
 4. **Build shared packages**
+
 ```bash
 cd packages/types && npm run build
 ```
 
 5. **Start the applications**
+
 ```bash
 # Terminal 1 - Backend API
 cd apps/backend
 npm run start:dev
 
-# Terminal 2 - Web Dashboard  
+# Terminal 2 - Web Dashboard
 cd apps/web
 npm run dev
 
@@ -97,6 +106,7 @@ npm start
 ## 📱 Applications
 
 ### Web Dashboard (http://localhost:3000)
+
 - Comprehensive financial dashboard
 - Transaction management
 - Budget tracking with visual progress
@@ -104,6 +114,7 @@ npm start
 - Account management
 
 ### Mobile App
+
 ```bash
 cd apps/mobile
 npm start
@@ -111,6 +122,7 @@ npm start
 ```
 
 ### API Documentation (http://localhost:3002/api)
+
 - Interactive Swagger documentation
 - Test API endpoints
 - Authentication flows
@@ -124,16 +136,19 @@ The application uses JWT-based authentication:
 3. **Protected routes** require valid authentication
 
 Demo credentials:
+
 - Email: `demo@moneywise.com`
 - Password: `password123`
 
 ## 📊 API Endpoints
 
 ### Authentication
+
 - `POST /auth/register` - Register new user
 - `POST /auth/login` - Login user
 
 ### Transactions
+
 - `GET /transactions` - List transactions
 - `POST /transactions` - Create transaction
 - `PUT /transactions/:id` - Update transaction
@@ -141,6 +156,7 @@ Demo credentials:
 - `GET /transactions/analytics/by-category` - Category analytics
 
 ### Budgets
+
 - `GET /budgets` - List budgets
 - `POST /budgets` - Create budget
 - `PUT /budgets/:id` - Update budget
@@ -148,11 +164,13 @@ Demo credentials:
 - `GET /budgets/performance` - Budget performance
 
 ### Analytics
+
 - `GET /analytics/dashboard` - Dashboard overview
 - `GET /analytics/spending-trends` - Spending trends
 - `GET /analytics/category-analytics` - Category breakdown
 
 ### Banking
+
 - `GET /banking/connections` - Bank connections
 - `POST /banking/connect` - Connect bank
 - `POST /banking/sync/:id` - Sync transactions
@@ -160,6 +178,7 @@ Demo credentials:
 ## 🗄️ Database Schema
 
 ### Core Tables
+
 - `users` - User accounts and profiles
 - `accounts` - Financial accounts (bank, credit, etc.)
 - `transactions` - Financial transactions
@@ -168,6 +187,7 @@ Demo credentials:
 - `bank_connections` - Bank integration data
 
 ### Key Relationships
+
 - Users → Accounts (1:many)
 - Accounts → Transactions (1:many)
 - Users → Budgets (1:many)
@@ -189,7 +209,7 @@ npm run dev:backend      # Start backend in dev mode
 npm run build:backend    # Build backend
 npm run test:backend     # Test backend
 
-# Web specific  
+# Web specific
 npm run dev:web      # Start web app in dev mode
 npm run build:web    # Build web app
 npm run test:web     # Test web app
@@ -234,7 +254,7 @@ npm test
 # Backend tests
 cd apps/backend && npm test
 
-# Web tests  
+# Web tests
 cd apps/web && npm test
 
 # E2E tests
@@ -284,7 +304,7 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENS
 ## 🏭 Roadmap
 
 - [ ] Plaid integration for bank connectivity
-- [ ] Machine learning transaction categorization  
+- [ ] Machine learning transaction categorization
 - [ ] Receipt scanning with OCR
 - [ ] Bill tracking and reminders
 - [ ] Investment portfolio tracking
@@ -301,5 +321,6 @@ For support, email support@moneywise.app or join our [Discord community](https:/
 ## 🙏 Acknowledgments
 
 - [Razor-eng/financial-dashboard](https://github.com/Razor-eng/financial-dashboard) - Web dashboard inspiration
-- [noelzappy/react-native-finance-app-ui-demo](https://github.com/noelzappy/react-native-finance-app-ui-demo) - Mobile UI reference
+- [noelzappy/react-native-finance-app-ui-demo](https://github.com/noelzappy/react-native-finance-app-ui-demo) - Mobile
+  UI reference
 - NestJS, Next.js, React Native communities

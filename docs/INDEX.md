@@ -7,6 +7,7 @@
 ## 🔄 **WORKFLOW DOCUMENTATION**
 
 ### **Agent Orchestration**
+
 - **[Agent Orchestration Workflow](./workflow/AGENT_ORCHESTRATION_WORKFLOW.md)** 📋
   - Complete 5-phase development workflow
   - Brainstorming → Assignment → Development → Validation → Integration
@@ -28,6 +29,7 @@
 ## 🔧 **SETUP & CONFIGURATION**
 
 ### **GitHub Integration**
+
 - **[MCP GitHub Integration Setup](./setup/MCP_GITHUB_INTEGRATION_SETUP.md)** 🔗
   - Free GitHub MCPs configuration
   - Automated PR creation and monitoring
@@ -39,6 +41,7 @@
 ## 🏗️ **ARCHITECTURE DOCUMENTATION**
 
 ### **System Architecture**
+
 - **[Integration Strategy](./architecture/INTEGRATION_STRATEGY.md)** 📊
   - 9-phase dependency-ordered integration
   - Quality gates and success metrics
@@ -54,7 +57,8 @@
   - Quality assurance protocols
   - Coverage requirements and validation
 
-- **[MoneyWise Architecture PDF](./architecture/MoneyWise%20-%20Architettura%20Moderna%20e%20Piano%20di%20Sviluppo.pdf)** 📄
+- **[MoneyWise Architecture PDF](./architecture/MoneyWise%20-%20Architettura%20Moderna%20e%20Piano%20di%20Sviluppo.pdf)**
+  📄
   - Complete architectural documentation (Italian)
   - Modern development plan
   - Technical specifications
@@ -64,6 +68,7 @@
 ## 🎨 **ASSETS**
 
 ### **Visual Resources**
+
 - **[Dashboard Preview](./assets/money-wise-dashboard-preview.png)** 🖼️
   - MoneyWise dashboard UI preview
   - Design reference and mockups
@@ -73,16 +78,19 @@
 ## 🚀 **GETTING STARTED**
 
 ### **For New Developers**
+
 1. **Setup Environment**: Check [../SETUP.md](../SETUP.md)
 2. **Read Guidelines**: Review [../CLAUDE.md](../CLAUDE.md)
 3. **Follow Workflow**: Use [Agent Orchestration Workflow](./workflow/AGENT_ORCHESTRATION_WORKFLOW.md)
 
 ### **For Agents**
+
 1. **Development Process**: [Agent Orchestration Workflow](./workflow/AGENT_ORCHESTRATION_WORKFLOW.md)
 2. **Quality Standards**: [Testing Standards](./architecture/TESTING_STANDARDS.md)
 3. **Integration Guidelines**: [Integration Strategy](./architecture/INTEGRATION_STRATEGY.md)
 
 ### **For DevOps/CI/CD**
+
 1. **GitHub Setup**: [MCP GitHub Integration](./setup/MCP_GITHUB_INTEGRATION_SETUP.md)
 2. **Pipeline Architecture**: [CI/CD Architecture](./architecture/CI_CD_ARCHITECTURE.md)
 3. **Implementation Results**: [CI/CD Restructuring Complete](./workflow/CI_CD_RESTRUCTURING_COMPLETE.md)
@@ -92,12 +100,14 @@
 ## 📋 **KEY CONCEPTS**
 
 ### **Agent Orchestration System**
+
 - **5-Phase Workflow**: Systematic development process
 - **Agile Micro-Commits**: TDD with comprehensive testing
 - **Quality Gates**: 80% coverage, zero TypeScript errors
 - **GitHub Integration**: Automated PR and CI/CD management
 
 ### **Branch Strategy**
+
 ```
 main (production)
 ├── develop (integration)
@@ -107,6 +117,7 @@ main (production)
 ```
 
 ### **Quality Standards**
+
 - **Code Coverage**: Minimum 80% (85% for production)
 - **Testing**: Unit, integration, E2E, security, performance
 - **Security**: Comprehensive scanning and validation
@@ -117,6 +128,7 @@ main (production)
 ## 🛠️ **AVAILABLE SCRIPTS**
 
 ### **Core Orchestration**
+
 ```bash
 # Complete workflow orchestration
 ./scripts/agent-workflow-orchestrator.sh
@@ -132,6 +144,7 @@ main (production)
 ```
 
 ### **Quick Commands**
+
 ```bash
 # Start new feature
 ./scripts/agent-workflow-orchestrator.sh brainstorm "feature-name" "description"
@@ -151,6 +164,7 @@ main (production)
 ## 📊 **SUCCESS METRICS**
 
 ### **Implementation Status**
+
 - ✅ **All 7 CI/CD Goals**: Completed with bonus features
 - ✅ **Branch Organization**: Clean `future/` naming convention
 - ✅ **Quality Automation**: Comprehensive testing at every commit
@@ -158,6 +172,7 @@ main (production)
 - ✅ **Production Ready**: World-class CI/CD system operational
 
 ### **Quality Achievements**
+
 - **100% Branch Compliance**: All using `future/` convention
 - **Zero Breaking Changes**: Backward compatibility maintained
 - **80%+ Test Coverage**: Enforced at all levels
@@ -169,15 +184,18 @@ main (production)
 ## 📚 **ADDITIONAL RESOURCES**
 
 ### **Project Configuration**
+
 - **[CLAUDE.md](../CLAUDE.md)** - Claude Code instructions
 - **[README.md](../README.md)** - Main project overview
 - **[SETUP.md](../SETUP.md)** - Development environment setup
 
 ### **External Links**
+
 - **GitHub Repository**: [MoneyWise](https://github.com/kdantuono/money-wise)
 - **CI/CD Pipelines**: GitHub Actions workflows
 - **MCP Documentation**: Anthropic MCP resources
 
 ---
 
-*This index provides quick access to all MoneyWise documentation. For detailed guides, click on the specific links above.*
+_This index provides quick access to all MoneyWise documentation. For detailed guides, click on the specific links
+above._

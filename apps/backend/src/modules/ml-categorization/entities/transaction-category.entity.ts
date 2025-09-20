@@ -1,4 +1,12 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, OneToMany } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  ManyToOne,
+  OneToMany,
+} from 'typeorm';
 import { TransactionMLPrediction } from './transaction-ml-prediction.entity';
 import { User } from '../../auth/user.entity';
 
@@ -38,15 +46,23 @@ export class TransactionCategory {
   @ManyToOne(() => User, { nullable: true })
   user: User;
 
-  @ManyToOne(() => TransactionCategory, category => category.subCategories, { nullable: true })
+  @ManyToOne(() => TransactionCategory, category => category.subCategories, {
+    nullable: true,
+  })
   parentCategory: TransactionCategory;
 
   @OneToMany(() => TransactionCategory, category => category.parentCategory)
   subCategories: TransactionCategory[];
 
-  @OneToMany(() => TransactionMLPrediction, prediction => prediction.predictedCategory)
+  @OneToMany(
+    () => TransactionMLPrediction,
+    prediction => prediction.predictedCategory
+  )
   predictions: TransactionMLPrediction[];
 
-  @OneToMany(() => TransactionMLPrediction, prediction => prediction.userCategory)
+  @OneToMany(
+    () => TransactionMLPrediction,
+    prediction => prediction.userCategory
+  )
   userCorrections: TransactionMLPrediction[];
 }

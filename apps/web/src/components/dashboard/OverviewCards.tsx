@@ -23,9 +23,9 @@ export function OverviewCards() {
     // Simulate API call
     setTimeout(() => {
       setData({
-        totalIncome: 5420.00,
-        totalExpenses: 3240.50,
-        netIncome: 2179.50,
+        totalIncome: 5420.0,
+        totalExpenses: 3240.5,
+        netIncome: 2179.5,
         transactionCount: 42,
       });
       setLoading(false);
@@ -74,12 +74,15 @@ export function OverviewCards() {
 
   if (loading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6'>
         {[...Array(4)].map((_, i) => (
-          <div key={i} className="bg-white rounded-lg shadow-sm p-6 animate-pulse">
-            <div className="h-4 bg-gray-200 rounded w-3/4 mb-4"></div>
-            <div className="h-8 bg-gray-200 rounded w-1/2 mb-2"></div>
-            <div className="h-3 bg-gray-200 rounded w-1/4"></div>
+          <div
+            key={i}
+            className='bg-white rounded-lg shadow-sm p-6 animate-pulse'
+          >
+            <div className='h-4 bg-gray-200 rounded w-3/4 mb-4'></div>
+            <div className='h-8 bg-gray-200 rounded w-1/2 mb-2'></div>
+            <div className='h-3 bg-gray-200 rounded w-1/4'></div>
           </div>
         ))}
       </div>
@@ -87,16 +90,23 @@ export function OverviewCards() {
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6'>
       {cards.map((card, index) => (
-        <div key={index} className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-          <div className="flex items-center justify-between">
+        <div
+          key={index}
+          className='bg-white rounded-lg shadow-sm p-6 border border-gray-200'
+        >
+          <div className='flex items-center justify-between'>
             <div>
-              <p className="text-sm font-medium text-gray-600">{card.title}</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {card.isCount ? card.value : `$${card.value.toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
+              <p className='text-sm font-medium text-gray-600'>{card.title}</p>
+              <p className='text-2xl font-bold text-gray-900'>
+                {card.isCount
+                  ? card.value
+                  : `$${card.value.toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
               </p>
-              <p className={`text-sm ${card.changeType === 'increase' ? 'text-green-600' : 'text-red-600'}`}>
+              <p
+                className={`text-sm ${card.changeType === 'increase' ? 'text-green-600' : 'text-red-600'}`}
+              >
                 {card.change} from last month
               </p>
             </div>

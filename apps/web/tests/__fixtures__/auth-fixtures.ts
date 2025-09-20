@@ -6,18 +6,18 @@ export const mockUser = {
   email: 'test@example.com',
   createdAt: new Date('2024-01-01'),
   updatedAt: new Date('2024-01-01'),
-}
+};
 
 export const mockLoginCredentials = {
   email: 'test@example.com',
   password: 'testpassword123',
-}
+};
 
 export const mockRegisterData = {
   name: 'Test User',
   email: 'test@example.com',
   password: 'testpassword123',
-}
+};
 
 export const mockAuthResponse = {
   success: {
@@ -33,4 +33,4 @@ export const mockAuthResponse = {
     success: false,
     error: 'User already exists',
   },
-}
+};

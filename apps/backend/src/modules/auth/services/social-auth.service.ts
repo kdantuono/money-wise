@@ -1,4 +1,8 @@
-import { Injectable, BadRequestException, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../user.entity';
@@ -51,7 +55,7 @@ export class SocialAuthService {
     private userRepository: Repository<User>,
     private authService: AuthService,
     private sessionService: SessionService,
-    private securityService: SecurityService,
+    private securityService: SecurityService
   ) {}
 
   /**
@@ -64,7 +68,7 @@ export class SocialAuthService {
     try {
       // Exchange auth code for token
       const tokenInfo = await this.exchangeGoogleAuthCode(authCode);
-      
+
       if (!tokenInfo.email_verified) {
         throw new BadRequestException('Email not verified with Google');
       }
@@ -99,11 +103,15 @@ export class SocialAuthService {
         linkedAccounts: ['google'],
       };
     } catch (error) {
-      await this.securityService.logSecurityEvent('social_auth_failed', 'medium', {
-        provider: 'google',
-        error: error.message,
-        ip: deviceInfo.ipAddress,
-      });
+      await this.securityService.logSecurityEvent(
+        'social_auth_failed',
+        'medium',
+        {
+          provider: 'google',
+          error: error.message,
+          ip: deviceInfo.ipAddress,
+        }
+      );
       throw new UnauthorizedException('Google authentication failed');
     }
   }
@@ -118,12 +126,12 @@ export class SocialAuthService {
     try {
       // Verify Apple identity token
       const tokenInfo = await this.verifyAppleIdentityToken(identityToken);
-      
+
       if (!tokenInfo.email_verified) {
         throw new BadRequestException('Email not verified with Apple');
       }
 
-      const displayName = tokenInfo.name 
+      const displayName = tokenInfo.name
         ? `${tokenInfo.name.firstName} ${tokenInfo.name.lastName}`.trim()
         : tokenInfo.email.split('@')[0];
 
@@ -156,11 +164,15 @@ export class SocialAuthService {
         linkedAccounts: ['apple'],
       };
     } catch (error) {
-      await this.securityService.logSecurityEvent('social_auth_failed', 'medium', {
-        provider: 'apple',
-        error: error.message,
-        ip: deviceInfo.ipAddress,
-      });
+      await this.securityService.logSecurityEvent(
+        'social_auth_failed',
+        'medium',
+        {
+          provider: 'apple',
+          error: error.message,
+          ip: deviceInfo.ipAddress,
+        }
+      );
       throw new UnauthorizedException('Apple authentication failed');
     }
   }
@@ -191,12 +203,16 @@ export class SocialAuthService {
       );
 
       // Log social auth event
-      await this.securityService.logSecurityEvent('social_auth_microsoft', 'low', {
-        userId: result.user.id,
-        email: result.user.email,
-        isNewUser: result.isNewUser,
-        ip: deviceInfo.ipAddress,
-      });
+      await this.securityService.logSecurityEvent(
+        'social_auth_microsoft',
+        'low',
+        {
+          userId: result.user.id,
+          email: result.user.email,
+          isNewUser: result.isNewUser,
+          ip: deviceInfo.ipAddress,
+        }
+      );
 
       return {
         user: result.user,
@@ -205,11 +221,15 @@ export class SocialAuthService {
         linkedAccounts: ['microsoft'],
       };
     } catch (error) {
-      await this.securityService.logSecurityEvent('social_auth_failed', 'medium', {
-        provider: 'microsoft',
-        error: error.message,
-        ip: deviceInfo.ipAddress,
-      });
+      await this.securityService.logSecurityEvent(
+        'social_auth_failed',
+        'medium',
+        {
+          provider: 'microsoft',
+          error: error.message,
+          ip: deviceInfo.ipAddress,
+        }
+      );
       throw new UnauthorizedException('Microsoft authentication failed');
     }
   }
@@ -224,12 +244,16 @@ export class SocialAuthService {
   ): Promise<void> {
     // In production, store social account linkages in separate entity
     // For now, this is a placeholder implementation
-    
-    await this.securityService.logSecurityEvent('social_account_linked', 'low', {
-      userId,
-      provider,
-      providerUserId,
-    });
+
+    await this.securityService.logSecurityEvent(
+      'social_account_linked',
+      'low',
+      {
+        userId,
+        provider,
+        providerUserId,
+      }
+    );
   }
 
   /**
@@ -244,7 +268,7 @@ export class SocialAuthService {
   }): Promise<{ user: User; isNewUser: boolean }> {
     // Try to find existing user by email
     let user = await this.userRepository.findOne({
-      where: { email: socialInfo.email }
+      where: { email: socialInfo.email },
     });
 
     if (user) {
@@ -254,7 +278,7 @@ export class SocialAuthService {
 
     // Create new user
     const tempPassword = crypto.randomBytes(32).toString('hex');
-    
+
     user = this.userRepository.create({
       email: socialInfo.email,
       name: socialInfo.name,
@@ -263,14 +287,16 @@ export class SocialAuthService {
     });
 
     user = await this.userRepository.save(user);
-    
+
     return { user, isNewUser: true };
   }
 
   /**
    * Exchange Google auth code for user info
    */
-  private async exchangeGoogleAuthCode(authCode: string): Promise<GoogleTokenInfo> {
+  private async exchangeGoogleAuthCode(
+    authCode: string
+  ): Promise<GoogleTokenInfo> {
     const clientId = process.env.GOOGLE_OAUTH_CLIENT_ID;
     const clientSecret = process.env.GOOGLE_OAUTH_CLIENT_SECRET;
     const redirectUri = process.env.GOOGLE_OAUTH_REDIRECT_URI;
@@ -301,8 +327,10 @@ export class SocialAuthService {
     const tokenData = await tokenResponse.json();
 
     // Get user info
-    const userResponse = await fetch(`https://www.googleapis.com/oauth2/v2/userinfo?access_token=${tokenData.access_token}`);
-    
+    const userResponse = await fetch(
+      `https://www.googleapis.com/oauth2/v2/userinfo?access_token=${tokenData.access_token}`
+    );
+
     if (!userResponse.ok) {
       throw new Error('Failed to get Google user info');
     }
@@ -313,15 +341,17 @@ export class SocialAuthService {
   /**
    * Verify Apple identity token
    */
-  private async verifyAppleIdentityToken(identityToken: string): Promise<AppleTokenInfo> {
+  private async verifyAppleIdentityToken(
+    identityToken: string
+  ): Promise<AppleTokenInfo> {
     // In production, verify the JWT signature against Apple's public keys
     // For now, decode without verification (SECURITY RISK - implement proper verification)
-    
+
     try {
       const payload = JSON.parse(
         Buffer.from(identityToken.split('.')[1], 'base64').toString()
       );
-      
+
       return {
         sub: payload.sub,
         email: payload.email,
@@ -336,7 +366,9 @@ export class SocialAuthService {
   /**
    * Exchange Microsoft auth code for user info
    */
-  private async exchangeMicrosoftAuthCode(authCode: string): Promise<MicrosoftTokenInfo> {
+  private async exchangeMicrosoftAuthCode(
+    authCode: string
+  ): Promise<MicrosoftTokenInfo> {
     const clientId = process.env.MICROSOFT_OAUTH_CLIENT_ID;
     const clientSecret = process.env.MICROSOFT_OAUTH_CLIENT_SECRET;
     const redirectUri = process.env.MICROSOFT_OAUTH_REDIRECT_URI;
@@ -346,20 +378,23 @@ export class SocialAuthService {
     }
 
     // Exchange auth code for access token
-    const tokenResponse = await fetch('https://login.microsoftonline.com/common/oauth2/v2.0/token', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: new URLSearchParams({
-        code: authCode,
-        client_id: clientId,
-        client_secret: clientSecret,
-        redirect_uri: redirectUri,
-        grant_type: 'authorization_code',
-        scope: 'openid profile email',
-      }),
-    });
+    const tokenResponse = await fetch(
+      'https://login.microsoftonline.com/common/oauth2/v2.0/token',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          code: authCode,
+          client_id: clientId,
+          client_secret: clientSecret,
+          redirect_uri: redirectUri,
+          grant_type: 'authorization_code',
+          scope: 'openid profile email',
+        }),
+      }
+    );
 
     if (!tokenResponse.ok) {
       throw new Error('Failed to exchange Microsoft auth code');
@@ -373,13 +408,13 @@ export class SocialAuthService {
         Authorization: `Bearer ${tokenData.access_token}`,
       },
     });
-    
+
     if (!userResponse.ok) {
       throw new Error('Failed to get Microsoft user info');
     }
 
     const userData = await userResponse.json();
-    
+
     return {
       sub: userData.id,
       email: userData.mail || userData.userPrincipalName,

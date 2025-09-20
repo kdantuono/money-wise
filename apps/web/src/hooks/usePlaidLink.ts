@@ -9,7 +9,12 @@ interface PlaidLinkHookProps {
   onEvent?: (eventName: string, metadata: any) => void;
 }
 
-export const usePlaidBanking = ({ userId, onSuccess, onExit, onEvent }: PlaidLinkHookProps) => {
+export const usePlaidBanking = ({
+  userId,
+  onSuccess,
+  onExit,
+  onEvent,
+}: PlaidLinkHookProps) => {
   const [linkToken, setLinkToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -25,7 +30,8 @@ export const usePlaidBanking = ({ userId, onSuccess, onExit, onEvent }: PlaidLin
       setLinkToken(data.linkToken);
       return data.linkToken;
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
+      const errorMessage =
+        err instanceof Error ? err.message : 'Unknown error occurred';
       setError(errorMessage);
       throw err;
     } finally {
@@ -34,39 +40,53 @@ export const usePlaidBanking = ({ userId, onSuccess, onExit, onEvent }: PlaidLin
   }, [userId]);
 
   // Handle successful Plaid Link connection
-  const handleOnSuccess = useCallback(async (publicToken: string, metadata: any) => {
-    setLoading(true);
+  const handleOnSuccess = useCallback(
+    async (publicToken: string, metadata: any) => {
+      setLoading(true);
 
-    try {
-      const data = await plaidApi.exchangePublicToken(publicToken, metadata);
+      try {
+        const data = await plaidApi.exchangePublicToken(publicToken, metadata);
 
-      // Refresh accounts list
-      await fetchAccounts();
+        // Refresh accounts list
+        await fetchAccounts();
 
-      onSuccess?.(publicToken, metadata);
-      return data;
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to connect bank account';
-      setError(errorMessage);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, [onSuccess]);
+        onSuccess?.(publicToken, metadata);
+        return data;
+      } catch (err) {
+        const errorMessage =
+          err instanceof Error ? err.message : 'Failed to connect bank account';
+        setError(errorMessage);
+        throw err;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [onSuccess]
+  );
 
   // Handle Plaid Link exit
-  const handleOnExit = useCallback((error: any, metadata: any) => {
-    if (error) {
-      setError(error.display_message || error.error_message || 'Connection was cancelled');
-    }
-    onExit?.(error, metadata);
-  }, [onExit]);
+  const handleOnExit = useCallback(
+    (error: any, metadata: any) => {
+      if (error) {
+        setError(
+          error.display_message ||
+            error.error_message ||
+            'Connection was cancelled'
+        );
+      }
+      onExit?.(error, metadata);
+    },
+    [onExit]
+  );
 
   // Handle Plaid Link events
-  const handleOnEvent = useCallback((eventName: string, metadata: any) => {
-    console.log('Plaid Link Event:', eventName, metadata);
-    onEvent?.(eventName, metadata);
-  }, [onEvent]);
+  const handleOnEvent = useCallback(
+    (eventName: string, metadata: any) => {
+      console.log('Plaid Link Event:', eventName, metadata);
+      onEvent?.(eventName, metadata);
+    },
+    [onEvent]
+  );
 
   // Fetch user's connected accounts
   const fetchAccounts = useCallback(async () => {
@@ -78,7 +98,8 @@ export const usePlaidBanking = ({ userId, onSuccess, onExit, onEvent }: PlaidLin
       setAccounts(data);
       return data;
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch accounts';
+      const errorMessage =
+        err instanceof Error ? err.message : 'Failed to fetch accounts';
       setError(errorMessage);
       throw err;
     } finally {
@@ -95,7 +116,8 @@ export const usePlaidBanking = ({ userId, onSuccess, onExit, onEvent }: PlaidLin
       const data = await plaidApi.syncTransactions(plaidAccountId);
       return data;
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to sync transactions';
+      const errorMessage =
+        err instanceof Error ? err.message : 'Failed to sync transactions';
       setError(errorMessage);
       throw err;
     } finally {
@@ -104,23 +126,27 @@ export const usePlaidBanking = ({ userId, onSuccess, onExit, onEvent }: PlaidLin
   }, []);
 
   // Disconnect an account
-  const disconnectAccount = useCallback(async (accountId: string) => {
-    setLoading(true);
-    setError(null);
+  const disconnectAccount = useCallback(
+    async (accountId: string) => {
+      setLoading(true);
+      setError(null);
 
-    try {
-      await plaidApi.disconnectAccount(accountId);
+      try {
+        await plaidApi.disconnectAccount(accountId);
 
-      // Refresh accounts list
-      await fetchAccounts();
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to disconnect account';
-      setError(errorMessage);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, [fetchAccounts]);
+        // Refresh accounts list
+        await fetchAccounts();
+      } catch (err) {
+        const errorMessage =
+          err instanceof Error ? err.message : 'Failed to disconnect account';
+        setError(errorMessage);
+        throw err;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [fetchAccounts]
+  );
 
   // Configure Plaid Link
   const config = {

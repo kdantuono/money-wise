@@ -9,14 +9,14 @@ services:
       POSTGRES_PASSWORD: password
       PGDATA: /var/lib/postgresql/data/pgdata
     ports:
-      - "5432:5432"
+      - '5432:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data/pgdata
     networks:
       - moneywise_network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d moneywise"]
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d moneywise']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -25,14 +25,14 @@ services:
   redis:
     image: redis:7-alpine
     ports:
-      - "6379:6379"
+      - '6379:6379'
     volumes:
       - redis_data:/data
     networks:
       - moneywise_network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ['CMD', 'redis-cli', 'ping']
       interval: 10s
       timeout: 3s
       retries: 5
@@ -43,7 +43,7 @@ services:
       context: .
       dockerfile: apps/backend/Dockerfile.dev
     ports:
-      - "3002:3002"
+      - '3002:3002'
     environment:
       - NODE_ENV=development
       - DB_HOST=postgres
@@ -67,13 +67,12 @@ services:
         condition: service_healthy
     networks:
       - moneywise_network
-    # volumes:
-      # - ./apps/backend:/app/apps/backend
-      # - ./packages:/app/packages
-      # - backend_node_modules:/app/node_modules
+    volumes:
+      - ./apps/backend:/app/apps/backend
+      - ./packages:/app/packages
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3002/health"]
+      test: ['CMD', 'curl', '-f', 'http://localhost:3002/health']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -84,7 +83,7 @@ services:
       context: .
       dockerfile: apps/web/Dockerfile.dev
     ports:
-      - "3000:3000"
+      - '3000:3000'
     environment:
       - NODE_ENV=development
       - NEXT_PUBLIC_API_URL=http://localhost:3002
@@ -93,13 +92,12 @@ services:
         condition: service_healthy
     networks:
       - moneywise_network
-    # volumes:
-      # - ./apps/web:/app/apps/web
-      # - ./packages:/app/packages
-      # - web_node_modules:/app/node_modules
+    volumes:
+      - ./apps/web:/app/apps/web
+      - ./packages:/app/packages
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      test: ['CMD', 'curl', '-f', 'http://localhost:3000']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -108,8 +106,6 @@ services:
 volumes:
   postgres_data:
   redis_data:
-  backend_node_modules:
-  web_node_modules:
 
 networks:
   moneywise_network:

@@ -9,9 +9,7 @@ import { PlaidTransaction } from './entities/plaid-transaction.entity';
 import { User } from '../auth/user.entity';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([PlaidAccount, PlaidTransaction, User]),
-  ],
+  imports: [TypeOrmModule.forFeature([PlaidAccount, PlaidTransaction, User])],
   controllers: [PlaidController],
   providers: [
     PlaidService,
@@ -19,7 +17,8 @@ import { User } from '../auth/user.entity';
       provide: 'PLAID_API',
       useFactory: (configService: ConfigService) => {
         const configuration = new Configuration({
-          basePath: PlaidEnvironments[configService.get('PLAID_ENV', 'sandbox')],
+          basePath:
+            PlaidEnvironments[configService.get('PLAID_ENV', 'sandbox')],
           baseOptions: {
             headers: {
               'PLAID-CLIENT-ID': configService.get('PLAID_CLIENT_ID'),

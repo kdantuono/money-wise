@@ -2,8 +2,8 @@ name: 🛡️ Master Branch Protection & Production Deploy
 
 on:
   pull_request:
-    branches: [ main ]
-    types: [ opened, synchronize, reopened ]
+    branches: [main]
+    types: [opened, synchronize, reopened]
 
 env:
   NODE_VERSION: '18'

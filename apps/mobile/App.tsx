@@ -44,11 +44,11 @@ function MainTabNavigator() {
         headerShown: false,
       })}
     >
-      <Tab.Screen name="Dashboard" component={DashboardScreen} />
-      <Tab.Screen name="Transactions" component={TransactionsScreen} />
-      <Tab.Screen name="Budgets" component={BudgetsScreen} />
-      <Tab.Screen name="Analytics" component={AnalyticsScreen} />
-      <Tab.Screen name="Settings" component={SettingsScreen} />
+      <Tab.Screen name='Dashboard' component={DashboardScreen} />
+      <Tab.Screen name='Transactions' component={TransactionsScreen} />
+      <Tab.Screen name='Budgets' component={BudgetsScreen} />
+      <Tab.Screen name='Analytics' component={AnalyticsScreen} />
+      <Tab.Screen name='Settings' component={SettingsScreen} />
     </Tab.Navigator>
   );
 }
@@ -58,14 +58,14 @@ export default function App() {
     <SafeAreaProvider>
       <NavigationContainer>
         <Stack.Navigator>
-          <Stack.Screen 
-            name="Login" 
-            component={LoginScreen} 
+          <Stack.Screen
+            name='Login'
+            component={LoginScreen}
             options={{ headerShown: false }}
           />
-          <Stack.Screen 
-            name="Main" 
-            component={MainTabNavigator} 
+          <Stack.Screen
+            name='Main'
+            component={MainTabNavigator}
             options={{ headerShown: false }}
           />
         </Stack.Navigator>

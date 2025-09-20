@@ -1,6 +1,21 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { BudgetsService } from './budgets.service';
 import { CreateBudgetDto, UpdateBudgetDto } from './dto/budget.dto';
 
@@ -27,14 +42,20 @@ export class BudgetsController {
 
   @Get('active')
   @ApiOperation({ summary: 'Get active budgets' })
-  @ApiResponse({ status: 200, description: 'Active budgets retrieved successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'Active budgets retrieved successfully',
+  })
   async getActiveBudgets(@Request() req) {
     return await this.budgetsService.getActiveBudgets(req.user.id);
   }
 
   @Get('performance')
   @ApiOperation({ summary: 'Get budget performance analytics' })
-  @ApiResponse({ status: 200, description: 'Budget performance retrieved successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'Budget performance retrieved successfully',
+  })
   async getBudgetPerformance(@Request() req) {
     return await this.budgetsService.getBudgetPerformance(req.user.id);
   }
@@ -49,7 +70,11 @@ export class BudgetsController {
   @Patch(':id')
   @ApiOperation({ summary: 'Update a budget' })
   @ApiResponse({ status: 200, description: 'Budget updated successfully' })
-  async update(@Request() req, @Param('id') id: string, @Body() updateBudgetDto: UpdateBudgetDto) {
+  async update(
+    @Request() req,
+    @Param('id') id: string,
+    @Body() updateBudgetDto: UpdateBudgetDto
+  ) {
     return await this.budgetsService.update(req.user.id, id, updateBudgetDto);
   }
 

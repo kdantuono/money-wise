@@ -8,12 +8,7 @@
   "parserOptions": {
     "project": "./tsconfig.json"
   },
-  "plugins": [
-    "@typescript-eslint",
-    "import",
-    "unused-imports",
-    "prefer-arrow-functions"
-  ],
+  "plugins": ["@typescript-eslint", "import", "unused-imports", "prefer-arrow-functions"],
   "rules": {
     // ================================
     // 🎯 KISS PRINCIPLE ENFORCEMENT
@@ -23,9 +18,9 @@
     "max-lines-per-function": ["error", 50],
     "max-params": ["error", 4],
     "max-depth": ["error", 4],
-    
+
     // ================================
-    // 🔧 SRP ENFORCEMENT  
+    // 🔧 SRP ENFORCEMENT
     // ================================
     "max-classes-per-file": ["error", 1],
     "prefer-arrow-functions/prefer-arrow-functions": [
@@ -37,21 +32,14 @@
         "singleReturnOnly": false
       }
     ],
-    
+
     // ================================
     // 📦 IMPORT ORGANIZATION
     // ================================
     "import/order": [
       "error",
       {
-        "groups": [
-          "builtin",
-          "external", 
-          "internal",
-          "parent",
-          "sibling",
-          "index"
-        ],
+        "groups": ["builtin", "external", "internal", "parent", "sibling", "index"],
         "newlines-between": "always",
         "alphabetize": {
           "order": "asc",
@@ -71,7 +59,7 @@
     ],
     "import/no-duplicates": "error",
     "import/no-unresolved": "off",
-    
+
     // ================================
     // 🎭 COMPONENT ARCHITECTURE
     // ================================
@@ -85,7 +73,7 @@
     "react/prop-types": "off",
     "react/display-name": "off",
     "react-hooks/exhaustive-deps": "error",
-    
+
     // ================================
     // 📝 CODE DOCUMENTATION
     // ================================
@@ -109,7 +97,7 @@
         }
       }
     ],
-    
+
     // ================================
     // 🔒 TYPE SAFETY
     // ================================
@@ -121,7 +109,7 @@
     "@typescript-eslint/prefer-nullish-coalescing": "error",
     "@typescript-eslint/prefer-optional-chain": "error",
     "@typescript-eslint/no-non-null-assertion": "error",
-    
+
     // ================================
     // 🚫 CODE SMELLS
     // ================================
@@ -132,14 +120,14 @@
     "prefer-const": "error",
     "no-duplicate-imports": "error",
     "no-magic-numbers": [
-      "error", 
-      { 
+      "error",
+      {
         "ignore": [-1, 0, 1, 2],
         "ignoreArrayIndexes": true,
         "ignoreDefaultValues": true
       }
     ],
-    
+
     // ================================
     // 🎨 NAMING CONVENTIONS
     // ================================

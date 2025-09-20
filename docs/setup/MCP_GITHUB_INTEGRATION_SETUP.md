@@ -1,14 +1,18 @@
 # MoneyWise MCP GitHub Integration Setup
+
 ## Free GitHub MCPs for Enhanced Agent Orchestration
 
 ### 🎯 OVERVIEW
-This guide sets up Model Context Protocol (MCP) integrations with GitHub to enhance our agent orchestration workflow with automated repository management, PR handling, and CI/CD integration.
+
+This guide sets up Model Context Protocol (MCP) integrations with GitHub to enhance our agent orchestration workflow
+with automated repository management, PR handling, and CI/CD integration.
 
 ---
 
 ## 📋 RECOMMENDED FREE GITHUB MCPs
 
 ### 1. **GitHub MCP (Official)** 🏢
+
 - **Source**: `@anthropic/github-mcp`
 - **Type**: Free, Official Anthropic MCP
 - **Capabilities**:
@@ -19,6 +23,7 @@ This guide sets up Model Context Protocol (MCP) integrations with GitHub to enha
   - Release management
 
 ### 2. **GitHub Actions MCP** ⚡
+
 - **Source**: `@anthropic/github-actions-mcp`
 - **Type**: Free, Official
 - **Capabilities**:
@@ -28,6 +33,7 @@ This guide sets up Model Context Protocol (MCP) integrations with GitHub to enha
   - Deployment pipeline management
 
 ### 3. **GitHub Security MCP** 🔒
+
 - **Source**: `@anthropic/github-security-mcp`
 - **Type**: Free, Official
 - **Capabilities**:
@@ -41,6 +47,7 @@ This guide sets up Model Context Protocol (MCP) integrations with GitHub to enha
 ## 🔧 INSTALLATION & CONFIGURATION
 
 ### Step 1: Install MCPs
+
 ```bash
 # Install official GitHub MCPs
 npm install -g @anthropic/github-mcp
@@ -54,6 +61,7 @@ claude mcp install github-security
 ```
 
 ### Step 2: GitHub Authentication Setup
+
 ```bash
 # Create GitHub Personal Access Token (Fine-grained)
 # Required scopes:
@@ -70,6 +78,7 @@ export GITHUB_REPO="money-wise"
 ```
 
 ### Step 3: Claude Code MCP Configuration
+
 Create or update `~/.claude.json`:
 
 ```json
@@ -113,6 +122,7 @@ Create or update `~/.claude.json`:
 ### Enhanced Agent Workflow with MCP
 
 #### 1. **Automated PR Creation**
+
 ```bash
 # Agent completes feature development
 ./scripts/agile-micro-commit-enforcer.sh commit backend feat "complete user auth endpoint" smart-budget
@@ -157,6 +167,7 @@ EOF
 ```
 
 #### 2. **Automated Workflow Monitoring**
+
 ```bash
 # Monitor CI/CD pipeline status
 claude mcp github-actions watch-workflow \
@@ -169,6 +180,7 @@ claude mcp github-actions get-run-status \
 ```
 
 #### 3. **Security Integration**
+
 ```bash
 # Automated security scanning
 claude mcp github-security scan-pr \
@@ -187,6 +199,7 @@ claude mcp github-security get-alerts \
 ## 🔄 AUTOMATED AGENT WORKFLOWS
 
 ### Workflow 1: Complete Feature Development
+
 ```bash
 #!/bin/bash
 # Enhanced agent workflow with MCP integration
@@ -219,6 +232,7 @@ claude mcp github merge-pr \
 ```
 
 ### Workflow 2: Multi-Agent Coordination
+
 ```bash
 #!/bin/bash
 # Coordinate multiple agents with MCP
@@ -253,6 +267,7 @@ claude mcp github merge-sequence \
 ## 📊 MONITORING & ANALYTICS
 
 ### Real-Time Agent Monitoring
+
 ```bash
 # Dashboard for agent activity
 claude mcp github get-activity \
@@ -274,6 +289,7 @@ claude mcp github-security get-dashboard \
 ```
 
 ### Automated Reporting
+
 ```bash
 # Daily agent productivity report
 claude mcp github generate-report \
@@ -296,6 +312,7 @@ claude mcp github generate-report \
 ## 🚨 AUTOMATED ISSUE MANAGEMENT
 
 ### Issue Creation & Tracking
+
 ```bash
 # Automated issue creation from failed tests
 claude mcp github create-issue \
@@ -313,6 +330,7 @@ claude mcp github link-issue-pr \
 ```
 
 ### Automated Triaging
+
 ```bash
 # Intelligent issue assignment
 claude mcp github auto-triage \
@@ -327,6 +345,7 @@ claude mcp github auto-triage \
 ## 🔧 CONFIGURATION VALIDATION
 
 ### Test MCP Setup
+
 ```bash
 # Verify MCP installation
 claude mcp list
@@ -345,6 +364,7 @@ claude mcp github-security get-alerts
 ```
 
 ### Health Checks
+
 ```bash
 # Daily MCP health check
 claude mcp health-check \
@@ -364,6 +384,7 @@ claude mcp monitor \
 ## 📚 USAGE EXAMPLES
 
 ### Example 1: Agent Development Cycle
+
 ```bash
 # 1. Start feature development
 ./scripts/agent-workflow-orchestrator.sh brainstorm \
@@ -390,6 +411,7 @@ claude mcp github-actions monitor-and-merge \
 ```
 
 ### Example 2: Emergency Hotfix
+
 ```bash
 # 1. Detect critical issue
 claude mcp github-security get-critical-alerts
@@ -415,6 +437,7 @@ claude mcp github-actions trigger-emergency-deploy \
 ## 🔒 SECURITY CONSIDERATIONS
 
 ### Token Management
+
 - Use GitHub Fine-grained Personal Access Tokens
 - Limit scope to minimum required permissions
 - Rotate tokens every 90 days
@@ -422,6 +445,7 @@ claude mcp github-actions trigger-emergency-deploy \
 - Never commit tokens to repository
 
 ### Audit & Compliance
+
 ```bash
 # Audit MCP usage
 claude mcp audit \
@@ -441,12 +465,14 @@ claude mcp compliance-report \
 ## 📈 SUCCESS METRICS
 
 ### KPIs to Track
+
 - **Agent Productivity**: Commits/day, PR creation rate, review time
 - **Quality Metrics**: Test coverage, security scan pass rate, build success rate
 - **Automation Efficiency**: Manual intervention reduction, deployment frequency
 - **Developer Experience**: PR merge time, issue resolution time, feedback loop speed
 
 ### Automated Metrics Collection
+
 ```bash
 # Setup automated metrics dashboard
 claude mcp github setup-metrics \
@@ -461,6 +487,7 @@ claude mcp github setup-metrics \
 ## 🚀 GETTING STARTED
 
 ### Quick Setup Script
+
 ```bash
 #!/bin/bash
 # Quick MCP setup for MoneyWise
@@ -488,4 +515,5 @@ echo "🎉 MCP integration setup complete!"
 
 ---
 
-*This setup enables seamless integration between our agent orchestration system and GitHub, providing automated PR management, CI/CD monitoring, and security scanning capabilities.*
+_This setup enables seamless integration between our agent orchestration system and GitHub, providing automated PR
+management, CI/CD monitoring, and security scanning capabilities._

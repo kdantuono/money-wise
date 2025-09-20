@@ -1,4 +1,13 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, OneToMany, Index } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  ManyToOne,
+  OneToMany,
+  Index,
+} from 'typeorm';
 import { User } from '../../auth/user.entity';
 import { PlaidTransaction } from './plaid-transaction.entity';
 
@@ -36,10 +45,22 @@ export class PlaidAccount {
   @Column({ name: 'account_subtype', nullable: true })
   accountSubtype: string;
 
-  @Column({ name: 'current_balance', type: 'decimal', precision: 15, scale: 2, nullable: true })
+  @Column({
+    name: 'current_balance',
+    type: 'decimal',
+    precision: 15,
+    scale: 2,
+    nullable: true,
+  })
   currentBalance: number;
 
-  @Column({ name: 'available_balance', type: 'decimal', precision: 15, scale: 2, nullable: true })
+  @Column({
+    name: 'available_balance',
+    type: 'decimal',
+    precision: 15,
+    scale: 2,
+    nullable: true,
+  })
   availableBalance: number;
 
   @Column({ name: 'currency_code', default: 'USD' })

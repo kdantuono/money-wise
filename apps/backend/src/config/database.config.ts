@@ -2,7 +2,7 @@ import { ConfigService } from '@nestjs/config';
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
 
 export const databaseConfig = (
-  configService: ConfigService,
+  configService: ConfigService
 ): TypeOrmModuleOptions => ({
   type: 'postgres',
   host: configService.get('DB_HOST', 'localhost'),
@@ -12,6 +12,9 @@ export const databaseConfig = (
   database: configService.get('DB_NAME', 'moneywise'),
   entities: [__dirname + '/../**/*.entity{.ts,.js}'],
   synchronize: configService.get('NODE_ENV') !== 'production',
-  ssl: configService.get('NODE_ENV') === 'production' ? { rejectUnauthorized: false } : false,
+  ssl:
+    configService.get('NODE_ENV') === 'production'
+      ? { rejectUnauthorized: false }
+      : false,
   logging: configService.get('NODE_ENV') === 'development',
 });

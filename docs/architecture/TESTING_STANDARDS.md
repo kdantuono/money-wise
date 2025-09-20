@@ -1,12 +1,11 @@
 # MoneyWise Testing Standards & Best Practices
 
-> **Maintained by**: Senior Tester Architect
-> **Version**: 2.0.0
-> **Last Updated**: 2025-01-19
+> **Maintained by**: Senior Tester Architect **Version**: 2.0.0 **Last Updated**: 2025-01-19
 
 ## 🎯 Testing Philosophy
 
-Our testing strategy follows the **Testing Pyramid** principle with a focus on **Test-Driven Development (TDD)**, **Behavior-Driven Development (BDD)**, and **Shift-Left Testing** to ensure quality is built into every line of code.
+Our testing strategy follows the **Testing Pyramid** principle with a focus on **Test-Driven Development (TDD)**,
+**Behavior-Driven Development (BDD)**, and **Shift-Left Testing** to ensure quality is built into every line of code.
 
 ### Core Principles
 
@@ -35,17 +34,18 @@ Our testing strategy follows the **Testing Pyramid** principle with a focus on *
 
 ### Distribution Guidelines
 
-| Test Type | Coverage | Purpose | Speed | Maintenance |
-|-----------|----------|---------|-------|-------------|
-| Unit | 70% | Component isolation | Fast | Low |
-| Integration | 20% | Component interaction | Medium | Medium |
-| E2E | 10% | User workflows | Slow | High |
+| Test Type   | Coverage | Purpose               | Speed  | Maintenance |
+| ----------- | -------- | --------------------- | ------ | ----------- |
+| Unit        | 70%      | Component isolation   | Fast   | Low         |
+| Integration | 20%      | Component interaction | Medium | Medium      |
+| E2E         | 10%      | User workflows        | Slow   | High        |
 
 ## 🧪 Unit Testing Standards
 
 ### Frontend Unit Tests (Jest + React Testing Library)
 
 **File Structure**:
+
 ```
 tests/
 ├── unit/
@@ -65,6 +65,7 @@ tests/
 ```
 
 **Naming Conventions**:
+
 - Test files: `ComponentName.test.tsx` or `functionName.test.ts`
 - Test suites: `describe('ComponentName', () => { ... })`
 - Test cases: `it('should do something when condition', () => { ... })`
@@ -76,44 +77,45 @@ tests/
 describe('LoginForm', () => {
   it('should disable submit button when email is invalid', () => {
     // Test implementation
-  })
+  });
 
   it('should show loading state during authentication', () => {
     // Test implementation
-  })
+  });
 
   it('should clear form after successful login', () => {
     // Test implementation
-  })
-})
+  });
+});
 
 // ✅ Good: AAA Pattern (Arrange, Act, Assert)
 it('should calculate total with tax correctly', () => {
   // Arrange
-  const subtotal = 100
-  const taxRate = 0.08
+  const subtotal = 100;
+  const taxRate = 0.08;
 
   // Act
-  const result = calculateTotal(subtotal, taxRate)
+  const result = calculateTotal(subtotal, taxRate);
 
   // Assert
-  expect(result).toBe(108)
-})
+  expect(result).toBe(108);
+});
 
 // ❌ Bad: Testing implementation details
 it('should call setState with user data', () => {
   // Don't test internal implementation
-})
+});
 
 // ✅ Good: Testing behavior
 it('should display user name after login', () => {
   // Test what users see/experience
-})
+});
 ```
 
 ### Backend Unit Tests (Jest + NestJS Testing)
 
 **File Structure**:
+
 ```
 tests/
 ├── unit/
@@ -135,8 +137,8 @@ tests/
 ```typescript
 // ✅ Good: Service testing with mocked dependencies
 describe('TransactionService', () => {
-  let service: TransactionService
-  let mockRepository: jest.Mocked<Repository<Transaction>>
+  let service: TransactionService;
+  let mockRepository: jest.Mocked<Repository<Transaction>>;
 
   beforeEach(async () => {
     const module = await Test.createTestingModule({
@@ -144,28 +146,28 @@ describe('TransactionService', () => {
         TransactionService,
         {
           provide: getRepositoryToken(Transaction),
-          useValue: createMockRepository()
-        }
-      ]
-    }).compile()
+          useValue: createMockRepository(),
+        },
+      ],
+    }).compile();
 
-    service = module.get<TransactionService>(TransactionService)
-    mockRepository = module.get(getRepositoryToken(Transaction))
-  })
+    service = module.get<TransactionService>(TransactionService);
+    mockRepository = module.get(getRepositoryToken(Transaction));
+  });
 
   it('should create transaction with valid data', async () => {
     // Arrange
-    const transactionData = createValidTransactionData()
-    mockRepository.save.mockResolvedValue(transactionData)
+    const transactionData = createValidTransactionData();
+    mockRepository.save.mockResolvedValue(transactionData);
 
     // Act
-    const result = await service.createTransaction(transactionData)
+    const result = await service.createTransaction(transactionData);
 
     // Assert
-    expect(result).toEqual(transactionData)
-    expect(mockRepository.save).toHaveBeenCalledWith(transactionData)
-  })
-})
+    expect(result).toEqual(transactionData);
+    expect(mockRepository.save).toHaveBeenCalledWith(transactionData);
+  });
+});
 ```
 
 ## 🔗 Integration Testing Standards
@@ -212,33 +214,33 @@ describe('Authentication Flow', () => {
 ```typescript
 // ✅ Good: E2E API testing
 describe('Authentication API (e2e)', () => {
-  let app: INestApplication
-  let authService: AuthService
+  let app: INestApplication;
+  let authService: AuthService;
 
   beforeEach(async () => {
     const moduleFixture = await Test.createTestingModule({
-      imports: [AppModule]
+      imports: [AppModule],
     })
       .overrideProvider(DatabaseService)
       .useValue(mockDatabaseService)
-      .compile()
+      .compile();
 
-    app = moduleFixture.createNestApplication()
-    authService = moduleFixture.get<AuthService>(AuthService)
-    await app.init()
-  })
+    app = moduleFixture.createNestApplication();
+    authService = moduleFixture.get<AuthService>(AuthService);
+    await app.init();
+  });
 
   it('/auth/login (POST)', () => {
     return request(app.getHttpServer())
       .post('/auth/login')
       .send({ email: 'test@example.com', password: 'password123' })
       .expect(200)
-      .expect((res) => {
-        expect(res.body.token).toBeDefined()
-        expect(res.body.user.email).toBe('test@example.com')
-      })
-  })
-})
+      .expect(res => {
+        expect(res.body.token).toBeDefined();
+        expect(res.body.user.email).toBe('test@example.com');
+      });
+  });
+});
 ```
 
 ## 🎭 End-to-End Testing Standards
@@ -246,6 +248,7 @@ describe('Authentication API (e2e)', () => {
 ### Playwright E2E Tests
 
 **Test Structure**:
+
 ```
 tests/
 ├── e2e/
@@ -265,28 +268,28 @@ export class LoginPage {
   constructor(private page: Page) {}
 
   async navigate() {
-    await this.page.goto('/login')
+    await this.page.goto('/login');
   }
 
   async login(email: string, password: string) {
-    await this.page.fill('[data-testid="email-input"]', email)
-    await this.page.fill('[data-testid="password-input"]', password)
-    await this.page.click('[data-testid="login-button"]')
+    await this.page.fill('[data-testid="email-input"]', email);
+    await this.page.fill('[data-testid="password-input"]', password);
+    await this.page.click('[data-testid="login-button"]');
   }
 
   async expectLoginError(message: string) {
-    await expect(this.page.locator('[data-testid="error-message"]')).toContainText(message)
+    await expect(this.page.locator('[data-testid="error-message"]')).toContainText(message);
   }
 }
 
 // Usage in tests
 test('should show error for invalid credentials', async ({ page }) => {
-  const loginPage = new LoginPage(page)
+  const loginPage = new LoginPage(page);
 
-  await loginPage.navigate()
-  await loginPage.login('invalid@email.com', 'wrongpassword')
-  await loginPage.expectLoginError('Invalid credentials')
-})
+  await loginPage.navigate();
+  await loginPage.login('invalid@email.com', 'wrongpassword');
+  await loginPage.expectLoginError('Invalid credentials');
+});
 ```
 
 **Test Data Management**:
@@ -299,8 +302,8 @@ export const createTestUser = (overrides: Partial<User> = {}): User => ({
   name: 'Test User',
   role: 'user',
   createdAt: new Date(),
-  ...overrides
-})
+  ...overrides,
+});
 
 export const createTestTransaction = (overrides: Partial<Transaction> = {}): Transaction => ({
   id: uuid(),
@@ -308,8 +311,8 @@ export const createTestTransaction = (overrides: Partial<Transaction> = {}): Tra
   description: 'Test Transaction',
   category: 'Food',
   date: new Date(),
-  ...overrides
-})
+  ...overrides,
+});
 ```
 
 ## ♿ Accessibility Testing Standards
@@ -318,32 +321,32 @@ export const createTestTransaction = (overrides: Partial<Transaction> = {}): Tra
 
 ```typescript
 // ✅ Comprehensive accessibility testing
-import { injectAxe, checkA11y } from 'axe-playwright'
+import { injectAxe, checkA11y } from 'axe-playwright';
 
 test.describe('Accessibility Tests', () => {
   test.beforeEach(async ({ page }) => {
-    await injectAxe(page)
-  })
+    await injectAxe(page);
+  });
 
   test('should pass WCAG 2.1 AA compliance', async ({ page }) => {
-    await page.goto('/')
+    await page.goto('/');
 
     await checkA11y(page, null, {
       detailedReport: true,
       detailedReportOptions: { html: true },
-      tags: ['wcag2a', 'wcag2aa', 'wcag21aa']
-    })
-  })
+      tags: ['wcag2a', 'wcag2aa', 'wcag21aa'],
+    });
+  });
 
   test('should be keyboard navigable', async ({ page }) => {
-    await page.goto('/')
+    await page.goto('/');
 
     // Test tab navigation
-    await page.keyboard.press('Tab')
-    const focused = await page.evaluate(() => document.activeElement?.tagName)
-    expect(['INPUT', 'BUTTON', 'A'].includes(focused || '')).toBe(true)
-  })
-})
+    await page.keyboard.press('Tab');
+    const focused = await page.evaluate(() => document.activeElement?.tagName);
+    expect(['INPUT', 'BUTTON', 'A'].includes(focused || '')).toBe(true);
+  });
+});
 ```
 
 ### Manual Accessibility Checklist
@@ -363,29 +366,29 @@ test.describe('Accessibility Tests', () => {
 
 ```typescript
 test('should meet Core Web Vitals thresholds', async ({ page }) => {
-  await page.goto('/')
-  await page.waitForLoadState('networkidle')
+  await page.goto('/');
+  await page.waitForLoadState('networkidle');
 
   const metrics = await page.evaluate(() => {
-    return new Promise((resolve) => {
+    return new Promise(resolve => {
       setTimeout(() => {
-        const navigation = performance.getEntriesByType('navigation')[0]
-        const paint = performance.getEntriesByType('paint')
+        const navigation = performance.getEntriesByType('navigation')[0];
+        const paint = performance.getEntriesByType('paint');
 
         resolve({
           fcp: paint.find(entry => entry.name === 'first-contentful-paint')?.startTime || 0,
           lcp: performance.getEntriesByType('largest-contentful-paint')[0]?.startTime || 0,
-          totalTime: navigation.loadEventEnd - navigation.navigationStart
-        })
-      }, 3000)
-    })
-  })
+          totalTime: navigation.loadEventEnd - navigation.navigationStart,
+        });
+      }, 3000);
+    });
+  });
 
   // Assert performance budgets
-  expect(metrics.fcp).toBeLessThan(2000) // First Contentful Paint < 2s
-  expect(metrics.lcp).toBeLessThan(2500) // Largest Contentful Paint < 2.5s
-  expect(metrics.totalTime).toBeLessThan(3000) // Total load time < 3s
-})
+  expect(metrics.fcp).toBeLessThan(2000); // First Contentful Paint < 2s
+  expect(metrics.lcp).toBeLessThan(2500); // Largest Contentful Paint < 2.5s
+  expect(metrics.totalTime).toBeLessThan(3000); // Total load time < 3s
+});
 ```
 
 ### Performance Budget
@@ -420,30 +423,30 @@ export const fixtures = {
     validUser: {
       email: 'user@example.com',
       password: 'Password123!',
-      name: 'John Doe'
+      name: 'John Doe',
     },
     adminUser: {
       email: 'admin@example.com',
       password: 'AdminPass123!',
       name: 'Admin User',
-      role: 'admin'
-    }
+      role: 'admin',
+    },
   },
   transactions: {
     income: {
       amount: 1000,
       type: 'income',
       category: 'Salary',
-      description: 'Monthly salary'
+      description: 'Monthly salary',
     },
     expense: {
       amount: -50,
       type: 'expense',
       category: 'Food',
-      description: 'Lunch'
-    }
-  }
-}
+      description: 'Lunch',
+    },
+  },
+};
 ```
 
 ### Database Seeding
@@ -453,20 +456,20 @@ export const fixtures = {
 export class TestDataSeeder {
   static async seedTestData() {
     // Clear existing data
-    await this.clearTestData()
+    await this.clearTestData();
 
     // Seed users
-    const users = await this.seedUsers()
+    const users = await this.seedUsers();
 
     // Seed transactions
-    await this.seedTransactions(users)
+    await this.seedTransactions(users);
 
-    return { users }
+    return { users };
   }
 
   static async clearTestData() {
-    await TransactionRepository.delete({})
-    await UserRepository.delete({})
+    await TransactionRepository.delete({});
+    await UserRepository.delete({});
   }
 }
 ```
@@ -529,12 +532,12 @@ export class TestDataSeeder {
 
 ### Configuration Files
 
-| File | Purpose |
-|------|---------|
-| `jest.config.js` | Jest configuration |
+| File                   | Purpose                  |
+| ---------------------- | ------------------------ |
+| `jest.config.js`       | Jest configuration       |
 | `playwright.config.ts` | Playwright configuration |
-| `tests/setup.ts` | Global test setup |
-| `tests/__mocks__/` | Mock implementations |
+| `tests/setup.ts`       | Global test setup        |
+| `tests/__mocks__/`     | Mock implementations     |
 
 ## 🚨 Testing Anti-Patterns
 
@@ -542,32 +545,32 @@ export class TestDataSeeder {
 
 ```typescript
 // ❌ Bad: Testing implementation details
-expect(component.setState).toHaveBeenCalled()
+expect(component.setState).toHaveBeenCalled();
 
 // ✅ Good: Testing behavior
-expect(screen.getByText('Success!')).toBeInTheDocument()
+expect(screen.getByText('Success!')).toBeInTheDocument();
 
 // ❌ Bad: Brittle selectors
-page.click('.css-1a2b3c4')
+page.click('.css-1a2b3c4');
 
 // ✅ Good: Semantic selectors
-page.click('[data-testid="submit-button"]')
+page.click('[data-testid="submit-button"]');
 
 // ❌ Bad: Hard-coded waits
-await page.waitForTimeout(5000)
+await page.waitForTimeout(5000);
 
 // ✅ Good: Wait for specific conditions
-await page.waitForSelector('[data-testid="result"]')
+await page.waitForSelector('[data-testid="result"]');
 
 // ❌ Bad: Testing multiple things in one test
 it('should handle user registration and login and dashboard', () => {
   // Too much in one test
-})
+});
 
 // ✅ Good: Single responsibility
 it('should register new user successfully', () => {
   // One clear purpose
-})
+});
 ```
 
 ## 📋 Testing Checklist
@@ -613,6 +616,7 @@ it('should register new user successfully', () => {
 ### Training Requirements
 
 All team members must complete:
+
 - [ ] Testing fundamentals workshop
 - [ ] TDD/BDD methodology training
 - [ ] Accessibility testing certification
@@ -620,6 +624,4 @@ All team members must complete:
 
 ---
 
-**Maintained by**: Senior Tester Architect & CI/CD Engineer
-**Review Cycle**: Quarterly
-**Next Review**: April 2025
+**Maintained by**: Senior Tester Architect & CI/CD Engineer **Review Cycle**: Quarterly **Next Review**: April 2025

@@ -1,6 +1,7 @@
 # MoneyWise Frontend Testing Strategy
 
 ## Overview
+
 Comprehensive testing approach following **TDD**, **KISS**, and **SRP** principles for the MoneyWise application.
 
 ## Testing Pyramid Architecture
@@ -14,10 +15,13 @@ Comprehensive testing approach following **TDD**, **KISS**, and **SRP** principl
 ## 1. Unit Tests (70% - Foundation)
 
 ### **Purpose:** Test individual components in isolation
+
 ### **Framework:** Jest + React Testing Library
+
 ### **SRP Applied:** Each test file tests ONE component responsibility
 
 **Coverage:**
+
 - ✅ `FuturisticLoginWall.test.tsx` - Login form interactions
 - ✅ `AuthContext.test.tsx` - Authentication state management
 - ✅ `ui/button.test.tsx` - Button component behavior
@@ -41,9 +45,11 @@ describe('FuturisticLoginWall', () => {
 ## 2. Integration Tests (20% - Connections)
 
 ### **Purpose:** Test component interactions and data flow
+
 ### **Framework:** Jest + React Testing Library + MSW (Mock Service Worker)
 
 **Coverage:**
+
 - ✅ Authentication flow (login/register/logout)
 - ✅ Form validation with backend responses
 - ✅ Navigation between protected/unprotected routes
@@ -54,9 +60,11 @@ describe('FuturisticLoginWall', () => {
 ## 3. E2E Tests (10% - Real User Scenarios)
 
 ### **Purpose:** Test complete user journeys in real browser
+
 ### **Framework:** Playwright (already proven effective)
 
 **Coverage:**
+
 - ✅ Complete login flow with futuristic animations
 - ✅ Registration → Email verification → Dashboard access
 - ✅ Authentication persistence across page refreshes
@@ -67,6 +75,7 @@ describe('FuturisticLoginWall', () => {
 ### **Framework:** Jest + @testing-library/jest-dom + axe-core
 
 **Coverage:**
+
 - ✅ ARIA labels and roles
 - ✅ Keyboard navigation
 - ✅ Color contrast compliance
@@ -76,19 +85,21 @@ describe('FuturisticLoginWall', () => {
 ## TDD Workflow
 
 ### Red-Green-Refactor Cycle:
+
 1. **RED:** Write failing test first
 2. **GREEN:** Write minimal code to pass
 3. **REFACTOR:** Clean up following KISS/SRP
 
 ### Example TDD Flow:
+
 ```typescript
 // 1. RED: Write failing test
 it('should show loading state during authentication', () => {
   // Test that expects loading indicator
-})
+});
 
 // 2. GREEN: Implement minimal solution
-const [isLoading, setIsLoading] = useState(false)
+const [isLoading, setIsLoading] = useState(false);
 
 // 3. REFACTOR: Clean up and optimize
 // Extract loading logic to custom hook (SRP)
@@ -97,18 +108,21 @@ const [isLoading, setIsLoading] = useState(false)
 ## Testing Standards
 
 ### **KISS Principles:**
+
 - One assertion per test when possible
 - Descriptive test names that explain intent
 - Simple setup and teardown
 - Avoid complex mocking unless necessary
 
 ### **SRP Principles:**
+
 - Each test file covers one component/module
 - Each test covers one behavior/scenario
 - Separate test utilities by concern
 - Mock only external dependencies
 
 ### **Clean Code:**
+
 - Arrange-Act-Assert pattern
 - Consistent naming conventions
 - Shared test utilities and fixtures
@@ -117,12 +131,14 @@ const [isLoading, setIsLoading] = useState(false)
 ## Quality Gates
 
 ### **Pre-commit:**
+
 - All tests must pass
 - Coverage threshold: 80% minimum
 - No console errors or warnings
 - Lint and type-check pass
 
 ### **CI/CD Pipeline:**
+
 - Unit tests run on every PR
 - Integration tests on main branch
 - E2E tests on staging deployment
@@ -131,6 +147,7 @@ const [isLoading, setIsLoading] = useState(false)
 ## Testing Tools & Setup
 
 ### **Dependencies:**
+
 ```json
 {
   "jest": "^29.0.0",
@@ -144,6 +161,7 @@ const [isLoading, setIsLoading] = useState(false)
 ```
 
 ### **File Structure:**
+
 ```
 tests/
 ├── __mocks__/          # Global mocks
@@ -165,4 +183,5 @@ tests/
 
 ---
 
-*This strategy ensures robust, maintainable testing following TDD best practices while respecting KISS and SRP principles.*
+_This strategy ensures robust, maintainable testing following TDD best practices while respecting KISS and SRP
+principles._

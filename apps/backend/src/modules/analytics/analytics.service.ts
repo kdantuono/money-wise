@@ -10,7 +10,7 @@ export class AnalyticsService {
     @InjectRepository(Transaction)
     private transactionRepository: Repository<Transaction>,
     @InjectRepository(Budget)
-    private budgetRepository: Repository<Budget>,
+    private budgetRepository: Repository<Budget>
   ) {}
 
   async getDashboardOverview(userId: string): Promise<any> {
@@ -70,18 +70,27 @@ export class AnalyticsService {
 
     return await this.transactionRepository
       .createQueryBuilder('transaction')
-      .select('DATE_TRUNC(\'month\', transaction.date)', 'month')
-      .addSelect('SUM(CASE WHEN transaction.type = \'income\' THEN transaction.amount ELSE 0 END)', 'income')
-      .addSelect('SUM(CASE WHEN transaction.type = \'expense\' THEN transaction.amount ELSE 0 END)', 'expenses')
+      .select("DATE_TRUNC('month', transaction.date)", 'month')
+      .addSelect(
+        "SUM(CASE WHEN transaction.type = 'income' THEN transaction.amount ELSE 0 END)",
+        'income'
+      )
+      .addSelect(
+        "SUM(CASE WHEN transaction.type = 'expense' THEN transaction.amount ELSE 0 END)",
+        'expenses'
+      )
       .where('transaction.userId = :userId', { userId })
       .andWhere('transaction.date >= :startDate', { startDate })
       .andWhere('transaction.date <= :endDate', { endDate })
-      .groupBy('DATE_TRUNC(\'month\', transaction.date)')
+      .groupBy("DATE_TRUNC('month', transaction.date)")
       .orderBy('month', 'ASC')
       .getRawMany();
   }
 
-  async getCategoryAnalytics(userId: string, period: string = 'month'): Promise<any[]> {
+  async getCategoryAnalytics(
+    userId: string,
+    period: string = 'month'
+  ): Promise<any[]> {
     const startDate = new Date();
     if (period === 'month') {
       startDate.setMonth(startDate.getMonth() - 1);
@@ -103,11 +112,15 @@ export class AnalyticsService {
       .orderBy('amount', 'DESC')
       .getRawMany();
 
-    const totalSpending = categoryData.reduce((sum, cat) => sum + Number(cat.amount), 0);
+    const totalSpending = categoryData.reduce(
+      (sum, cat) => sum + Number(cat.amount),
+      0
+    );
 
     return categoryData.map(cat => ({
       ...cat,
-      percentage: totalSpending > 0 ? (Number(cat.amount) / totalSpending) * 100 : 0,
+      percentage:
+        totalSpending > 0 ? (Number(cat.amount) / totalSpending) * 100 : 0,
     }));
   }
 }

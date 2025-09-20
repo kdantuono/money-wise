@@ -11,10 +11,13 @@ export class BudgetsService {
     @InjectRepository(Budget)
     private budgetRepository: Repository<Budget>,
     @InjectRepository(Transaction)
-    private transactionRepository: Repository<Transaction>,
+    private transactionRepository: Repository<Transaction>
   ) {}
 
-  async create(userId: string, createBudgetDto: CreateBudgetDto): Promise<Budget> {
+  async create(
+    userId: string,
+    createBudgetDto: CreateBudgetDto
+  ): Promise<Budget> {
     const budget = this.budgetRepository.create({
       ...createBudgetDto,
       userId,
@@ -42,11 +45,15 @@ export class BudgetsService {
     return budget;
   }
 
-  async update(userId: string, id: string, updateBudgetDto: UpdateBudgetDto): Promise<Budget> {
+  async update(
+    userId: string,
+    id: string,
+    updateBudgetDto: UpdateBudgetDto
+  ): Promise<Budget> {
     const budget = await this.findOne(userId, id);
-    
+
     Object.assign(budget, updateBudgetDto);
-    
+
     return await this.budgetRepository.save(budget);
   }
 
@@ -55,14 +62,19 @@ export class BudgetsService {
     await this.budgetRepository.remove(budget);
   }
 
-  async updateBudgetSpending(userId: string, budgetId: string): Promise<Budget> {
+  async updateBudgetSpending(
+    userId: string,
+    budgetId: string
+  ): Promise<Budget> {
     const budget = await this.findOne(userId, budgetId);
-    
+
     const spent = await this.transactionRepository
       .createQueryBuilder('transaction')
       .select('SUM(transaction.amount)', 'total')
       .where('transaction.userId = :userId', { userId })
-      .andWhere('transaction.category = :category', { category: budget.category })
+      .andWhere('transaction.category = :category', {
+        category: budget.category,
+      })
       .andWhere('transaction.type = :type', { type: 'expense' })
       .andWhere('transaction.date BETWEEN :startDate AND :endDate', {
         startDate: budget.startDate,
@@ -71,18 +83,21 @@ export class BudgetsService {
       .getRawOne();
 
     budget.spent = parseFloat(spent.total) || 0;
-    
+
     return await this.budgetRepository.save(budget);
   }
 
   async getBudgetPerformance(userId: string): Promise<any[]> {
     const budgets = await this.findAll(userId);
-    
+
     const performance = await Promise.all(
-      budgets.map(async (budget) => {
-        const updatedBudget = await this.updateBudgetSpending(userId, budget.id);
+      budgets.map(async budget => {
+        const updatedBudget = await this.updateBudgetSpending(
+          userId,
+          budget.id
+        );
         const percentage = (updatedBudget.spent / updatedBudget.amount) * 100;
-        
+
         let status = 'on_track';
         if (percentage >= 100) {
           status = 'over_budget';
@@ -103,7 +118,7 @@ export class BudgetsService {
           startDate: updatedBudget.startDate,
           endDate: updatedBudget.endDate,
         };
-      }),
+      })
     );
 
     return performance;
@@ -111,7 +126,7 @@ export class BudgetsService {
 
   async getActiveBudgets(userId: string): Promise<Budget[]> {
     const currentDate = new Date();
-    
+
     return await this.budgetRepository
       .createQueryBuilder('budget')
       .where('budget.userId = :userId', { userId })

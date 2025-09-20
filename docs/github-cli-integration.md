@@ -1,18 +1,23 @@
 # GitHub CLI Integration Setup for MoneyWise
 
 ## Overview
-This document outlines the GitHub CLI integration setup for the MoneyWise personal finance application, providing comprehensive workflow automation and repository management capabilities.
+
+This document outlines the GitHub CLI integration setup for the MoneyWise personal finance application, providing
+comprehensive workflow automation and repository management capabilities.
 
 ## Current Setup Status
 
 ### ✅ Verified Components
+
 - **GitHub CLI Version**: 2.79.0 (latest)
 - **Authentication**: Active with full scope permissions
 - **Account**: kdantuono (admin access)
 - **Repository**: `kdantuono/money-wise` (private)
-- **Token Scopes**: admin:org, admin:public_key, audit_log, copilot, gist, notifications, project, repo, workflow, write:packages
+- **Token Scopes**: admin:org, admin:public_key, audit_log, copilot, gist, notifications, project, repo, workflow,
+  write:packages
 
 ### 🏗️ Repository Configuration
+
 - **Type**: Private repository
 - **Default Branch**: main
 - **Issues**: Enabled ✅
@@ -23,6 +28,7 @@ This document outlines the GitHub CLI integration setup for the MoneyWise person
 ## Key Findings & Issues Created
 
 ### 🚨 Critical Issues Identified
+
 Created systematic GitHub issues for tracking and resolution:
 
 1. **[Issue #7]**: 🔧 CI/CD Pipeline Failures - Multiple Test and Build Issues
@@ -48,6 +54,7 @@ Created systematic GitHub issues for tracking and resolution:
 ## GitHub Actions Analysis
 
 ### 📊 Workflow Inventory (13 Active Workflows)
+
 ```
 1. MoneyWise CI/CD Pipeline (primary)
 2. Auto Fix CI Failures
@@ -65,6 +72,7 @@ Created systematic GitHub issues for tracking and resolution:
 ```
 
 ### 🔴 Recent Failure Analysis
+
 - **Latest Failed Run**: [#17872473050](https://github.com/kdantuono/money-wise/actions/runs/17872473050)
 - **Failure Rate**: ~70% of recent runs
 - **Common Issues**:
@@ -76,6 +84,7 @@ Created systematic GitHub issues for tracking and resolution:
 ## Available GitHub CLI Commands
 
 ### 🔍 Repository Management
+
 ```bash
 # Repository status and information
 gh repo view --json name,description,visibility,defaultBranchRef
@@ -87,6 +96,7 @@ gh api repos/:owner/:repo/branches/main/protection  # Check protection rules
 ```
 
 ### 📋 Issue Management
+
 ```bash
 # List and manage issues
 gh issue list --limit 10 --json number,title,state,author
@@ -97,6 +107,7 @@ gh issue comment <number> --body "Comment"
 ```
 
 ### 🔄 Pull Request Management
+
 ```bash
 # PR operations
 gh pr list --limit 10 --json number,title,state,author
@@ -107,6 +118,7 @@ gh pr review <number> --approve
 ```
 
 ### ⚙️ GitHub Actions Management
+
 ```bash
 # Workflow monitoring
 gh workflow list --json name,state,id
@@ -122,6 +134,7 @@ gh workflow disable <workflow-name>
 ```
 
 ### 🔐 Security & API Access
+
 ```bash
 # Security analysis
 gh api repos/:owner/:repo --jq '.security_and_analysis'
@@ -136,7 +149,9 @@ gh auth status                        # Check authentication
 ## Integration Workflows
 
 ### 🤖 Automated Issue Creation
+
 The GitHub CLI integration can automatically create issues for:
+
 - CI/CD pipeline failures
 - Security vulnerabilities
 - Performance degradation
@@ -144,6 +159,7 @@ The GitHub CLI integration can automatically create issues for:
 - Infrastructure problems
 
 ### 📊 Monitoring & Reporting
+
 ```bash
 # Create monitoring script
 #!/bin/bash
@@ -162,6 +178,7 @@ gh repo view --json pushedAt,updatedAt,stargazerCount
 ```
 
 ### 🚀 Deployment Integration
+
 ```bash
 # Check deployment status
 gh api repos/:owner/:repo/deployments
@@ -178,13 +195,16 @@ gh api repos/:owner/:repo/deployments \
 ## Claude Integration Features
 
 ### 🧠 AI-Powered Workflows
+
 The repository leverages multiple Claude-powered GitHub Actions:
+
 - **Code Review**: Automated PR analysis and feedback
 - **Issue Triage**: Intelligent issue categorization and priority assignment
 - **Security Focus**: Specialized security-focused code reviews
 - **Manual Analysis**: On-demand deep code analysis
 
 ### 🔄 Automation Capabilities
+
 - **Issue Deduplication**: Prevent duplicate issues automatically
 - **CI Failure Auto-Fix**: Attempt automatic resolution of common CI failures
 - **Comprehensive Reviews**: Multi-perspective code analysis
@@ -192,11 +212,13 @@ The repository leverages multiple Claude-powered GitHub Actions:
 ## Security Considerations
 
 ### 🛡️ Current Security Gaps
+
 1. **No Branch Protection**: Main branch unprotected (requires GitHub Pro)
 2. **Missing Security Scanning**: Limited automated security analysis
 3. **Open Merge Policy**: No required reviewers or status checks
 
 ### 🔒 Recommended Security Enhancements
+
 1. **Upgrade to GitHub Pro** for branch protection features
 2. **Implement CODEOWNERS** file for required reviews
 3. **Enable Dependabot** for dependency updates
@@ -206,6 +228,7 @@ The repository leverages multiple Claude-powered GitHub Actions:
 ## Usage Examples
 
 ### 📊 Daily Monitoring Routine
+
 ```bash
 # Check overall health
 gh repo view
@@ -221,6 +244,7 @@ gh api repos/:owner/:repo/events --jq '.[0:5] | .[] | {type, created_at, actor: 
 ```
 
 ### 🚨 Incident Response
+
 ```bash
 # When CI fails
 RUN_ID=$(gh run list --status failure --limit 1 --json databaseId --jq '.[0].databaseId')
@@ -229,6 +253,7 @@ gh issue create --title "CI Failure Analysis" --body "$(cat failure_log.txt)"
 ```
 
 ### 🔄 Release Management
+
 ```bash
 # Create release PR
 gh pr create \
@@ -241,6 +266,7 @@ gh pr create \
 ## Best Practices
 
 ### ✅ Recommended Practices
+
 1. **Regular Health Checks**: Monitor workflow success rates weekly
 2. **Proactive Issue Management**: Create issues for recurring problems
 3. **Security Monitoring**: Regular security scanning and updates
@@ -248,6 +274,7 @@ gh pr create \
 5. **Documentation**: Keep integration documentation updated
 
 ### ⚠️ Cautions
+
 1. **API Rate Limits**: Be mindful of GitHub API usage limits
 2. **Token Security**: Protect and rotate access tokens regularly
 3. **Permission Management**: Use principle of least privilege
@@ -256,6 +283,7 @@ gh pr create \
 ## Troubleshooting
 
 ### 🔧 Common Issues
+
 ```bash
 # Authentication problems
 gh auth status
@@ -269,6 +297,7 @@ gh api rate_limit
 ```
 
 ### 📞 Support Resources
+
 - **GitHub CLI Documentation**: https://cli.github.com/manual/
 - **GitHub API Reference**: https://docs.github.com/en/rest
 - **MoneyWise Issues**: Use created tracking issues for project-specific problems
@@ -277,12 +306,15 @@ gh api rate_limit
 
 ## Summary
 
-The GitHub CLI integration for MoneyWise provides comprehensive repository management and automation capabilities. Critical issues have been identified and systematically tracked through GitHub issues. The primary focus should be resolving the CI/CD pipeline failures and implementing proper security configurations.
+The GitHub CLI integration for MoneyWise provides comprehensive repository management and automation capabilities.
+Critical issues have been identified and systematically tracked through GitHub issues. The primary focus should be
+resolving the CI/CD pipeline failures and implementing proper security configurations.
 
 **Next Steps:**
+
 1. Address critical CI/CD failures (Issue #7)
 2. Implement security measures (Issue #8)
 3. Verify Docker environment reliability (Issue #9)
 4. Optimize workflow performance (Issue #10)
 
-🤖 *Generated by Claude GitHub CLI Integration Agent*
+🤖 _Generated by Claude GitHub CLI Integration Agent_

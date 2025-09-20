@@ -1,4 +1,12 @@
-import { IsString, IsNumber, IsEnum, IsOptional, IsDateString, IsArray, IsUUID } from 'class-validator';
+import {
+  IsString,
+  IsNumber,
+  IsEnum,
+  IsOptional,
+  IsDateString,
+  IsArray,
+  IsUUID,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { TransactionType } from '@money-wise/types';
 

@@ -2,10 +2,24 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Plus, Bank, CheckCircle, AlertCircle, Sync, X } from 'lucide-react';
+import {
+  Loader2,
+  Plus,
+  Bank,
+  CheckCircle,
+  AlertCircle,
+  Sync,
+  X,
+} from 'lucide-react';
 import { usePlaidBanking } from '@/hooks/usePlaidLink';
 
 interface PlaidLinkButtonProps {
@@ -127,27 +141,28 @@ export const PlaidLinkButton: React.FC<PlaidLinkButtonProps> = ({
     <div className={`space-y-6 ${className}`}>
       {/* Success Alert */}
       {showSuccess && (
-        <Alert className="border-green-200 bg-green-50">
-          <CheckCircle className="h-4 w-4 text-green-600" />
-          <AlertDescription className="text-green-800">
-            Bank account connected successfully! Your transactions are being synced.
+        <Alert className='border-green-200 bg-green-50'>
+          <CheckCircle className='h-4 w-4 text-green-600' />
+          <AlertDescription className='text-green-800'>
+            Bank account connected successfully! Your transactions are being
+            synced.
           </AlertDescription>
         </Alert>
       )}
 
       {/* Error Alert */}
       {error && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
+        <Alert variant='destructive'>
+          <AlertCircle className='h-4 w-4' />
           <AlertDescription>
             {error}
             <Button
-              variant="ghost"
-              size="sm"
-              className="ml-2 h-auto p-0 text-destructive hover:text-destructive/80"
+              variant='ghost'
+              size='sm'
+              className='ml-2 h-auto p-0 text-destructive hover:text-destructive/80'
               onClick={() => setError(null)}
             >
-              <X className="h-3 w-3" />
+              <X className='h-3 w-3' />
             </Button>
           </AlertDescription>
         </Alert>
@@ -156,28 +171,29 @@ export const PlaidLinkButton: React.FC<PlaidLinkButtonProps> = ({
       {/* Connect Bank Button */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Bank className="h-5 w-5" />
+          <CardTitle className='flex items-center gap-2'>
+            <Bank className='h-5 w-5' />
             Bank Connections
           </CardTitle>
           <CardDescription>
-            Connect your bank accounts to automatically track transactions and manage your finances.
+            Connect your bank accounts to automatically track transactions and
+            manage your finances.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Button
             onClick={handleConnectBank}
             disabled={loading}
-            className="w-full sm:w-auto"
+            className='w-full sm:w-auto'
           >
             {loading ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2 className='mr-2 h-4 w-4 animate-spin' />
                 Connecting...
               </>
             ) : (
               <>
-                <Plus className="mr-2 h-4 w-4" />
+                <Plus className='mr-2 h-4 w-4' />
                 Connect Bank Account
               </>
             )}
@@ -187,16 +203,18 @@ export const PlaidLinkButton: React.FC<PlaidLinkButtonProps> = ({
 
       {/* Connected Accounts */}
       {accounts.length > 0 && (
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold">Connected Accounts</h3>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className='space-y-4'>
+          <h3 className='text-lg font-semibold'>Connected Accounts</h3>
+          <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-3'>
             {accounts.map((account: PlaidAccount) => (
-              <Card key={account.id} className="relative">
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
-                    <div className="space-y-1">
-                      <CardTitle className="text-base">{account.accountName}</CardTitle>
-                      <CardDescription className="text-sm">
+              <Card key={account.id} className='relative'>
+                <CardHeader className='pb-3'>
+                  <div className='flex items-start justify-between'>
+                    <div className='space-y-1'>
+                      <CardTitle className='text-base'>
+                        {account.accountName}
+                      </CardTitle>
+                      <CardDescription className='text-sm'>
                         {account.institutionName}
                       </CardDescription>
                     </div>
@@ -205,57 +223,71 @@ export const PlaidLinkButton: React.FC<PlaidLinkButtonProps> = ({
                     </Badge>
                   </div>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className='space-y-4'>
                   {/* Balance Information */}
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Current Balance:</span>
-                      <span className="font-medium">
-                        {formatBalance(account.currentBalance, account.currencyCode)}
+                  <div className='space-y-2'>
+                    <div className='flex justify-between text-sm'>
+                      <span className='text-muted-foreground'>
+                        Current Balance:
+                      </span>
+                      <span className='font-medium'>
+                        {formatBalance(
+                          account.currentBalance,
+                          account.currencyCode
+                        )}
                       </span>
                     </div>
                     {account.availableBalance !== null && (
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Available:</span>
-                        <span className="font-medium">
-                          {formatBalance(account.availableBalance, account.currencyCode)}
+                      <div className='flex justify-between text-sm'>
+                        <span className='text-muted-foreground'>
+                          Available:
+                        </span>
+                        <span className='font-medium'>
+                          {formatBalance(
+                            account.availableBalance,
+                            account.currencyCode
+                          )}
                         </span>
                       </div>
                     )}
                   </div>
 
                   {/* Transaction Count */}
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Transactions:</span>
-                    <span className="font-medium">{account.transactionCount}</span>
+                  <div className='flex justify-between text-sm'>
+                    <span className='text-muted-foreground'>Transactions:</span>
+                    <span className='font-medium'>
+                      {account.transactionCount}
+                    </span>
                   </div>
 
                   {/* Last Sync */}
-                  <div className="text-xs text-muted-foreground">
+                  <div className='text-xs text-muted-foreground'>
                     Last synced: {formatDate(account.lastSyncAt)}
                   </div>
 
                   {/* Actions */}
-                  <div className="flex gap-2">
+                  <div className='flex gap-2'>
                     <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleSyncTransactions(account.plaidAccountId)}
+                      variant='outline'
+                      size='sm'
+                      onClick={() =>
+                        handleSyncTransactions(account.plaidAccountId)
+                      }
                       disabled={loading}
-                      className="flex-1"
+                      className='flex-1'
                     >
                       {loading ? (
-                        <Loader2 className="h-3 w-3 animate-spin" />
+                        <Loader2 className='h-3 w-3 animate-spin' />
                       ) : (
-                        <Sync className="h-3 w-3" />
+                        <Sync className='h-3 w-3' />
                       )}
                     </Button>
                     <Button
-                      variant="outline"
-                      size="sm"
+                      variant='outline'
+                      size='sm'
                       onClick={() => handleDisconnectAccount(account.id)}
                       disabled={loading}
-                      className="flex-1 text-destructive hover:text-destructive"
+                      className='flex-1 text-destructive hover:text-destructive'
                     >
                       Disconnect
                     </Button>
@@ -270,9 +302,9 @@ export const PlaidLinkButton: React.FC<PlaidLinkButtonProps> = ({
       {/* Loading State for Account List */}
       {loading && accounts.length === 0 && (
         <Card>
-          <CardContent className="flex items-center justify-center py-8">
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" />
+          <CardContent className='flex items-center justify-center py-8'>
+            <div className='flex items-center gap-2 text-muted-foreground'>
+              <Loader2 className='h-4 w-4 animate-spin' />
               Loading accounts...
             </div>
           </CardContent>
@@ -282,11 +314,14 @@ export const PlaidLinkButton: React.FC<PlaidLinkButtonProps> = ({
       {/* Empty State */}
       {!loading && accounts.length === 0 && !error && (
         <Card>
-          <CardContent className="flex flex-col items-center justify-center py-8 text-center">
-            <Bank className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No Connected Accounts</h3>
-            <p className="text-muted-foreground mb-4">
-              Connect your first bank account to start tracking your finances automatically.
+          <CardContent className='flex flex-col items-center justify-center py-8 text-center'>
+            <Bank className='h-12 w-12 text-muted-foreground mb-4' />
+            <h3 className='text-lg font-semibold mb-2'>
+              No Connected Accounts
+            </h3>
+            <p className='text-muted-foreground mb-4'>
+              Connect your first bank account to start tracking your finances
+              automatically.
             </p>
           </CardContent>
         </Card>

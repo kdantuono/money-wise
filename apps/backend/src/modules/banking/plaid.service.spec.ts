@@ -79,8 +79,12 @@ describe('PlaidService', () => {
     }).compile();
 
     service = module.get<PlaidService>(PlaidService);
-    plaidAccountRepository = module.get<Repository<PlaidAccount>>(getRepositoryToken(PlaidAccount));
-    plaidTransactionRepository = module.get<Repository<PlaidTransaction>>(getRepositoryToken(PlaidTransaction));
+    plaidAccountRepository = module.get<Repository<PlaidAccount>>(
+      getRepositoryToken(PlaidAccount)
+    );
+    plaidTransactionRepository = module.get<Repository<PlaidTransaction>>(
+      getRepositoryToken(PlaidTransaction)
+    );
     userRepository = module.get<Repository<User>>(getRepositoryToken(User));
     configService = module.get<ConfigService>(ConfigService);
     plaidApi = module.get('PLAID_API');
@@ -88,11 +92,11 @@ describe('PlaidService', () => {
     // Setup default config mock responses
     mockConfigService.get.mockImplementation((key: string) => {
       const config = {
-        'PLAID_CLIENT_ID': 'test_client_id',
-        'PLAID_SECRET': 'test_secret',
-        'PLAID_ENV': 'sandbox',
-        'PLAID_PRODUCTS': 'transactions,auth',
-        'PLAID_COUNTRY_CODES': 'US',
+        PLAID_CLIENT_ID: 'test_client_id',
+        PLAID_SECRET: 'test_secret',
+        PLAID_ENV: 'sandbox',
+        PLAID_PRODUCTS: 'transactions,auth',
+        PLAID_COUNTRY_CODES: 'US',
       };
       return config[key];
     });
@@ -108,7 +112,11 @@ describe('PlaidService', () => {
 
   describe('initializePlaidLink', () => {
     const userId = 'test-user-id';
-    const mockUser = { id: userId, email: 'test@example.com', name: 'Test User' } as User;
+    const mockUser = {
+      id: userId,
+      email: 'test@example.com',
+      name: 'Test User',
+    } as User;
 
     it('should create link token for valid user', async () => {
       // Arrange
@@ -130,7 +138,9 @@ describe('PlaidService', () => {
         expiration: '2024-01-01T00:00:00Z',
         requestId: 'test-request-id',
       });
-      expect(mockUserRepository.findOne).toHaveBeenCalledWith({ where: { id: userId } });
+      expect(mockUserRepository.findOne).toHaveBeenCalledWith({
+        where: { id: userId },
+      });
       expect(mockPlaidApi.linkTokenCreate).toHaveBeenCalledWith({
         user: { client_user_id: userId },
         client_name: 'MoneyWise',
@@ -145,25 +155,37 @@ describe('PlaidService', () => {
       mockUserRepository.findOne.mockResolvedValue(null);
 
       // Act & Assert
-      await expect(service.initializePlaidLink(userId)).rejects.toThrow('User not found');
-      expect(mockUserRepository.findOne).toHaveBeenCalledWith({ where: { id: userId } });
+      await expect(service.initializePlaidLink(userId)).rejects.toThrow(
+        'User not found'
+      );
+      expect(mockUserRepository.findOne).toHaveBeenCalledWith({
+        where: { id: userId },
+      });
       expect(mockPlaidApi.linkTokenCreate).not.toHaveBeenCalled();
     });
 
     it('should handle Plaid API errors', async () => {
       // Arrange
       mockUserRepository.findOne.mockResolvedValue(mockUser);
-      mockPlaidApi.linkTokenCreate.mockRejectedValue(new Error('Plaid API Error'));
+      mockPlaidApi.linkTokenCreate.mockRejectedValue(
+        new Error('Plaid API Error')
+      );
 
       // Act & Assert
-      await expect(service.initializePlaidLink(userId)).rejects.toThrow('Plaid API Error');
+      await expect(service.initializePlaidLink(userId)).rejects.toThrow(
+        'Plaid API Error'
+      );
     });
   });
 
   describe('exchangePublicToken', () => {
     const userId = 'test-user-id';
     const publicToken = 'public-sandbox-test-token';
-    const mockUser = { id: userId, email: 'test@example.com', name: 'Test User' } as User;
+    const mockUser = {
+      id: userId,
+      email: 'test@example.com',
+      name: 'Test User',
+    } as User;
 
     it('should exchange public token and save account data', async () => {
       // Arrange
@@ -184,8 +206,8 @@ describe('PlaidService', () => {
               type: 'depository',
               subtype: 'checking',
               balances: {
-                current: 1000.50,
-                available: 950.50,
+                current: 1000.5,
+                available: 950.5,
                 iso_currency_code: 'USD',
               },
             },
@@ -239,8 +261,8 @@ describe('PlaidService', () => {
               type: 'depository',
               subtype: 'checking',
               balances: {
-                current: 1000.50,
-                available: 950.50,
+                current: 1000.5,
+                available: 950.5,
                 iso_currency_code: 'USD',
               },
             },
@@ -262,7 +284,9 @@ describe('PlaidService', () => {
       mockPlaidAccountRepository.save.mockRejectedValue(duplicateError);
 
       // Act & Assert
-      await expect(service.exchangePublicToken(userId, publicToken)).rejects.toThrow();
+      await expect(
+        service.exchangePublicToken(userId, publicToken)
+      ).rejects.toThrow();
     });
   });
 
@@ -315,10 +339,13 @@ describe('PlaidService', () => {
         status: 'success',
       });
       expect(mockPlaidTransactionRepository.upsert).toHaveBeenCalled();
-      expect(mockPlaidAccountRepository.update).toHaveBeenCalledWith(accountId, {
-        cursor: 'next-cursor-token',
-        lastSyncAt: expect.any(Date),
-      });
+      expect(mockPlaidAccountRepository.update).toHaveBeenCalledWith(
+        accountId,
+        {
+          cursor: 'next-cursor-token',
+          lastSyncAt: expect.any(Date),
+        }
+      );
     });
 
     it('should handle duplicate transactions', async () => {
@@ -356,7 +383,9 @@ describe('PlaidService', () => {
       mockPlaidAccountRepository.findOne.mockResolvedValue(null);
 
       // Act & Assert
-      await expect(service.syncTransactions(accountId)).rejects.toThrow('Plaid account not found');
+      await expect(service.syncTransactions(accountId)).rejects.toThrow(
+        'Plaid account not found'
+      );
     });
   });
 
@@ -414,7 +443,10 @@ describe('PlaidService', () => {
 
     it('should process transaction webhook successfully', async () => {
       // Arrange
-      const mockAccount = { id: 'account-id', plaidItemId: 'test-item-id' } as PlaidAccount;
+      const mockAccount = {
+        id: 'account-id',
+        plaidItemId: 'test-item-id',
+      } as PlaidAccount;
       mockPlaidAccountRepository.findOne.mockResolvedValue(mockAccount);
       jest.spyOn(service, 'syncTransactions').mockResolvedValue({
         accountId: 'account-id',
@@ -429,7 +461,10 @@ describe('PlaidService', () => {
       const result = await service.handleWebhook(webhookData);
 
       // Assert
-      expect(result).toEqual({ status: 'processed', message: 'Webhook processed successfully' });
+      expect(result).toEqual({
+        status: 'processed',
+        message: 'Webhook processed successfully',
+      });
       expect(service.syncTransactions).toHaveBeenCalledWith('account-id');
     });
 
@@ -441,7 +476,10 @@ describe('PlaidService', () => {
       const result = await service.handleWebhook(unknownWebhook);
 
       // Assert
-      expect(result).toEqual({ status: 'ignored', message: 'Webhook type not supported' });
+      expect(result).toEqual({
+        status: 'ignored',
+        message: 'Webhook type not supported',
+      });
     });
   });
 

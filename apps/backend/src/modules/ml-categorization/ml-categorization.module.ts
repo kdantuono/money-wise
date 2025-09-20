@@ -13,15 +13,15 @@ import { CategorySeederService } from './services/category-seeder.service';
     TypeOrmModule.forFeature([
       TransactionCategory,
       TransactionMLPrediction,
-      Transaction
-    ])
+      Transaction,
+    ]),
   ],
   controllers: [MLCategorizationController],
   providers: [
     MLCategorizationService,
     TransactionMLModel,
-    CategorySeederService
+    CategorySeederService,
   ],
-  exports: [MLCategorizationService, CategorySeederService]
+  exports: [MLCategorizationService, CategorySeederService],
 })
 export class MLCategorizationModule {}

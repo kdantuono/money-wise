@@ -89,14 +89,14 @@ export function BudgetProgress() {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-        <div className="animate-pulse">
-          <div className="h-6 bg-gray-200 rounded w-1/3 mb-6"></div>
+      <div className='bg-white rounded-lg shadow-sm p-6 border border-gray-200'>
+        <div className='animate-pulse'>
+          <div className='h-6 bg-gray-200 rounded w-1/3 mb-6'></div>
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="mb-6">
-              <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
-              <div className="h-3 bg-gray-200 rounded w-full mb-1"></div>
-              <div className="h-3 bg-gray-200 rounded w-1/4"></div>
+            <div key={i} className='mb-6'>
+              <div className='h-4 bg-gray-200 rounded w-1/2 mb-2'></div>
+              <div className='h-3 bg-gray-200 rounded w-full mb-1'></div>
+              <div className='h-3 bg-gray-200 rounded w-1/4'></div>
             </div>
           ))}
         </div>
@@ -105,35 +105,45 @@ export function BudgetProgress() {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-      <h3 className="text-lg font-semibold text-gray-900 mb-6">Budget Progress</h3>
-      <div className="space-y-6">
-        {budgets.map((budget) => (
+    <div className='bg-white rounded-lg shadow-sm p-6 border border-gray-200'>
+      <h3 className='text-lg font-semibold text-gray-900 mb-6'>
+        Budget Progress
+      </h3>
+      <div className='space-y-6'>
+        {budgets.map(budget => (
           <div key={budget.id}>
-            <div className="flex justify-between items-center mb-2">
+            <div className='flex justify-between items-center mb-2'>
               <div>
-                <h4 className="text-sm font-medium text-gray-900">{budget.name}</h4>
-                <p className="text-xs text-gray-500">{budget.category}</p>
+                <h4 className='text-sm font-medium text-gray-900'>
+                  {budget.name}
+                </h4>
+                <p className='text-xs text-gray-500'>{budget.category}</p>
               </div>
-              <div className="text-right">
-                <p className="text-sm font-medium text-gray-900">
-                  ${budget.spent.toLocaleString()} / ${budget.allocated.toLocaleString()}
+              <div className='text-right'>
+                <p className='text-sm font-medium text-gray-900'>
+                  ${budget.spent.toLocaleString()} / $
+                  {budget.allocated.toLocaleString()}
                 </p>
-                <p className={`text-xs ${
-                  budget.status === 'over_budget' ? 'text-red-600' : 
-                  budget.status === 'approaching_limit' ? 'text-yellow-600' : 'text-green-600'
-                }`}>
+                <p
+                  className={`text-xs ${
+                    budget.status === 'over_budget'
+                      ? 'text-red-600'
+                      : budget.status === 'approaching_limit'
+                        ? 'text-yellow-600'
+                        : 'text-green-600'
+                  }`}
+                >
                   {getStatusText(budget.status)}
                 </p>
               </div>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-2">
+            <div className='w-full bg-gray-200 rounded-full h-2'>
               <div
                 className={`h-2 rounded-full ${getStatusColor(budget.status)}`}
                 style={{ width: `${Math.min(budget.percentage, 100)}%` }}
               ></div>
             </div>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className='text-xs text-gray-500 mt-1'>
               {budget.percentage}% used
             </p>
           </div>

@@ -1,9 +1,9 @@
-const nextJest = require('next/jest')
+const nextJest = require('next/jest');
 
 const createJestConfig = nextJest({
   // Provide the path to your Next.js app to load next.config.js and .env files
   dir: './',
-})
+});
 
 // Custom Jest configuration
 const customJestConfig = {
@@ -39,7 +39,7 @@ const customJestConfig = {
     '/node_modules/',
     '^.+\\.module\\.(css|sass|scss)$',
   ],
-}
+};
 
 // Export Jest config
-module.exports = createJestConfig(customJestConfig)
+module.exports = createJestConfig(customJestConfig);

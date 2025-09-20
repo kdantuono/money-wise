@@ -28,12 +28,12 @@ jobs:
   # ================================
   # 🔍 CODE QUALITY & FORMATTING
   # ================================
-  
+
   code-quality:
     name: 🔍 Code Quality & Formatting
     runs-on: ubuntu-latest
     if: github.event.pull_request.draft == false
-    
+
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
@@ -63,7 +63,7 @@ jobs:
         run: |
           # Check for unused imports
           npx eslint "apps/**/*.{ts,tsx}" --rule "unused-imports/no-unused-imports: error"
-          
+
           # Validate import order
           npx eslint "apps/**/*.{ts,tsx}" --rule "import/order: [error, { groups: [builtin, external, internal, parent, sibling, index] }]"
 
@@ -80,12 +80,12 @@ jobs:
   # ================================
   # 🏛️ ARCHITECTURE COMPLIANCE
   # ================================
-  
+
   architecture-validation:
     name: 🏛️ Architecture & Principles
     runs-on: ubuntu-latest
     if: github.event.pull_request.draft == false
-    
+
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
@@ -103,25 +103,25 @@ jobs:
         run: |
           echo "🔍 Checking for overly complex functions..."
           npx eslint "apps/**/*.{ts,tsx}" --rule "complexity: [error, 10]"
-          
+
           echo "🔍 Checking file size limits..."
           find apps -name "*.ts" -o -name "*.tsx" | xargs wc -l | awk '$1 > 300 { print "⚠️ Large file: " $2 " (" $1 " lines)" }'
 
       - name: 🎯 SRP (Single Responsibility) validation
         run: |
           echo "🎯 Checking for single responsibility violations..."
-          
+
           # Check class method count
           grep -r "class\|function\|const.*=" apps --include="*.ts" --include="*.tsx" | \
           awk -F: '{print $1}' | sort | uniq -c | awk '$1 > 15 { print "⚠️ Too many exports in: " $2 }'
-          
+
           # Check for God objects/files
           find apps -name "*.ts" -o -name "*.tsx" | xargs wc -l | sort -nr | head -10
 
       - name: 🔧 Component architecture validation
         run: |
           echo "🔧 Validating component structure..."
-          
+
           # Check for proper component separation
           find apps/web/src/components -name "*.tsx" -exec grep -l "useState\|useEffect" {} \; | \
           xargs -I {} sh -c 'if [ $(grep -c "export\|function\|const.*=" {}) -gt 3 ]; then echo "⚠️ Component doing too much: {}"; fi'
@@ -129,7 +129,7 @@ jobs:
       - name: 📁 Folder structure validation
         run: |
           echo "📁 Validating MoneyWise architecture patterns..."
-          
+
           # Backend module structure
           for module in apps/backend/src/modules/*/; do
             if [ -d "$module" ]; then
@@ -146,12 +146,12 @@ jobs:
   # ================================
   # 🧪 COMPREHENSIVE TESTING
   # ================================
-  
+
   test-validation:
     name: 🧪 Test Suite Validation
     runs-on: ubuntu-latest
     if: github.event.pull_request.draft == false
-    
+
     services:
       postgres:
         image: postgres:15-alpine
@@ -166,7 +166,7 @@ jobs:
           --health-retries 5
         ports:
           - 5432:5432
-      
+
       redis:
         image: redis:7-alpine
         options: >-
@@ -205,7 +205,7 @@ jobs:
         run: |
           cd apps/backend
           npm run test -- --coverage --passWithNoTests
-          
+
       - name: 🧪 Frontend unit tests
         run: |
           cd apps/web
@@ -219,7 +219,7 @@ jobs:
       - name: 📊 Coverage validation
         run: |
           echo "📊 Validating test coverage..."
-          
+
           # Backend coverage
           if [ -f "apps/backend/coverage/lcov.info" ]; then
             backend_coverage=$(grep -o 'LF:[0-9]*' apps/backend/coverage/lcov.info | awk -F: '{sum+=$2} END {print sum}')
@@ -227,7 +227,7 @@ jobs:
             backend_percent=$(echo "scale=2; $backend_hit / $backend_coverage * 100" | bc)
             echo "Backend coverage: $backend_percent%"
           fi
-          
+
           # Frontend coverage  
           if [ -f "apps/web/coverage/lcov.info" ]; then
             frontend_coverage=$(grep -o 'LF:[0-9]*' apps/web/coverage/lcov.info | awk -F: '{sum+=$2} END {print sum}')
@@ -239,12 +239,12 @@ jobs:
   # ================================
   # 🔒 SECURITY & VULNERABILITY SCANS
   # ================================
-  
+
   security-scan:
     name: 🔒 Security Validation
     runs-on: ubuntu-latest
     if: github.event.pull_request.draft == false
-    
+
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
@@ -261,7 +261,7 @@ jobs:
       - name: 🔒 Secret scanning
         run: |
           echo "🔒 Scanning for exposed secrets..."
-          
+
           # Check for common secret patterns
           if grep -r "AKIA[0-9A-Z]{16}" apps/ || \
              grep -r "sk_live_[0-9a-zA-Z]{24}" apps/ || \
@@ -281,12 +281,12 @@ jobs:
   # ================================
   # 📚 DOCUMENTATION VALIDATION
   # ================================
-  
+
   documentation-check:
     name: 📚 Documentation Compliance
     runs-on: ubuntu-latest
     if: github.event.pull_request.draft == false
-    
+
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
@@ -294,10 +294,10 @@ jobs:
       - name: 📚 Check component documentation
         run: |
           echo "📚 Validating component documentation..."
-          
+
           # Check for JSDoc comments on exported functions
           missing_docs=0
-          
+
           find apps -name "*.ts" -o -name "*.tsx" | xargs grep -l "export " | while read file; do
             if ! grep -q "@param\|@returns\|@description\|/\*\*" "$file"; then
               echo "⚠️ Missing documentation: $file"
@@ -308,7 +308,7 @@ jobs:
       - name: 📝 Check README updates
         run: |
           echo "📝 Checking if README needs updates..."
-          
+
           # Check if new features need README updates
           if git diff --name-only origin/main HEAD | grep -q "src/"; then
             echo "ℹ️ Code changes detected - ensure README is updated"
@@ -317,7 +317,7 @@ jobs:
       - name: 🔍 Type definitions validation
         run: |
           echo "🔍 Validating TypeScript interfaces are documented..."
-          
+
           # Check interfaces have proper documentation
           find apps -name "*.ts" -o -name "*.tsx" | xargs grep -l "interface\|type.*=" | while read file; do
             if ! grep -B5 -A5 "interface\|type.*=" "$file" | grep -q "\/\*\*\|\/\/"; then
@@ -328,12 +328,12 @@ jobs:
   # ================================
   # 🚨 REGRESSION & COMPATIBILITY
   # ================================
-  
+
   regression-testing:
     name: 🚨 Regression & Compatibility
     runs-on: ubuntu-latest
     if: github.event.pull_request.draft == false
-    
+
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
@@ -354,7 +354,7 @@ jobs:
       - name: 🔄 API backward compatibility
         run: |
           echo "🔄 Checking API backward compatibility..."
-          
+
           # Check for breaking changes in API endpoints
           if git diff --name-only origin/main HEAD | grep -q "controller\|route"; then
             echo "ℹ️ API changes detected - validating backward compatibility"
@@ -378,15 +378,15 @@ jobs:
       - name: 🎯 Feature compatibility matrix
         run: |
           echo "🎯 Validating multi-agent feature compatibility..."
-          
+
           # Test that new features don't break existing ones
           cd apps/web
-          
+
           # Run specific regression tests for each agent
           if [ -f "tests/regression/performance-agent.test.ts" ]; then
             npm run test -- tests/regression/performance-agent.test.ts
           fi
-          
+
           if [ -f "tests/regression/feedback-agent.test.ts" ]; then
             npm run test -- tests/regression/feedback-agent.test.ts
           fi
@@ -394,12 +394,12 @@ jobs:
   # ================================
   # 📈 PERFORMANCE VALIDATION
   # ================================
-  
+
   performance-check:
     name: 📈 Performance & Bundle Size
     runs-on: ubuntu-latest
     if: github.event.pull_request.draft == false
-    
+
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
@@ -419,7 +419,7 @@ jobs:
         run: |
           cd apps/web
           npm run build
-          
+
           # Analyze bundle size
           echo "📦 Bundle size analysis:"
           du -sh .next/static/chunks/* | sort -hr | head -10
@@ -427,7 +427,7 @@ jobs:
       - name: ⚡ Performance budget check
         run: |
           echo "⚡ Checking performance budgets..."
-          
+
           # Check for performance regressions
           cd apps/web
           if [ -f ".next/analyze/client.json" ]; then
@@ -440,13 +440,22 @@ jobs:
   # ================================
   # ✅ MERGE VALIDATION SUMMARY
   # ================================
-  
+
   merge-validation:
     name: ✅ Merge Validation Summary
     runs-on: ubuntu-latest
     if: github.event.pull_request.draft == false
-    needs: [code-quality, architecture-validation, test-validation, security-scan, documentation-check, regression-testing, performance-check]
-    
+    needs:
+      [
+        code-quality,
+        architecture-validation,
+        test-validation,
+        security-scan,
+        documentation-check,
+        regression-testing,
+        performance-check,
+      ]
+
     steps:
       - name: ✅ All validations passed
         run: |

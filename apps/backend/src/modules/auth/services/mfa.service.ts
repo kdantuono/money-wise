@@ -21,13 +21,16 @@ export interface MfaVerificationResult {
 export class MfaService {
   constructor(
     @InjectRepository(UserMfaSettings)
-    private mfaSettingsRepository: Repository<UserMfaSettings>,
+    private mfaSettingsRepository: Repository<UserMfaSettings>
   ) {}
 
   /**
    * Generate TOTP secret for user MFA setup
    */
-  async generateTotpSecret(userId: string, email: string): Promise<MfaSecretResponse> {
+  async generateTotpSecret(
+    userId: string,
+    email: string
+  ): Promise<MfaSecretResponse> {
     // Generate secret using speakeasy
     const secret = speakeasy.generateSecret({
       name: `MoneyWise (${email})`,
@@ -39,8 +42,10 @@ export class MfaService {
     const qrCodeUrl = await QRCode.toDataURL(secret.otpauth_url);
 
     // Store secret temporarily (not enabled until verified)
-    let mfaSettings = await this.mfaSettingsRepository.findOne({ where: { userId } });
-    
+    let mfaSettings = await this.mfaSettingsRepository.findOne({
+      where: { userId },
+    });
+
     if (!mfaSettings) {
       mfaSettings = this.mfaSettingsRepository.create({
         userId,
@@ -63,9 +68,14 @@ export class MfaService {
   /**
    * Verify TOTP code and enable MFA
    */
-  async verifyTotpCode(userId: string, code: string): Promise<MfaVerificationResult> {
-    const mfaSettings = await this.mfaSettingsRepository.findOne({ where: { userId } });
-    
+  async verifyTotpCode(
+    userId: string,
+    code: string
+  ): Promise<MfaVerificationResult> {
+    const mfaSettings = await this.mfaSettingsRepository.findOne({
+      where: { userId },
+    });
+
     if (!mfaSettings || !mfaSettings.totpSecret) {
       return { isValid: false, error: 'MFA not set up for this user' };
     }
@@ -94,21 +104,26 @@ export class MfaService {
    * Generate backup codes for MFA recovery
    */
   async generateBackupCodes(userId: string): Promise<string[]> {
-    const backupCodes = Array.from({ length: 10 }, () => 
+    const backupCodes = Array.from({ length: 10 }, () =>
       crypto.randomBytes(4).toString('hex').toUpperCase()
     );
 
     // Hash backup codes before storing
     const hashedCodes = await Promise.all(
-      backupCodes.map(code => new Promise<Buffer>((resolve, reject) => {
-        crypto.scrypt(code, 'moneywise-backup', 32, (err, derivedKey) => {
-          if (err) reject(err);
-          else resolve(derivedKey);
-        });
-      }))
+      backupCodes.map(
+        code =>
+          new Promise<Buffer>((resolve, reject) => {
+            crypto.scrypt(code, 'moneywise-backup', 32, (err, derivedKey) => {
+              if (err) reject(err);
+              else resolve(derivedKey);
+            });
+          })
+      )
     );
 
-    const mfaSettings = await this.mfaSettingsRepository.findOne({ where: { userId } });
+    const mfaSettings = await this.mfaSettingsRepository.findOne({
+      where: { userId },
+    });
     if (mfaSettings) {
       mfaSettings.backupCodes = hashedCodes.map(hash => hash.toString('hex'));
       await this.mfaSettingsRepository.save(mfaSettings);
@@ -120,24 +135,36 @@ export class MfaService {
   /**
    * Verify backup code
    */
-  async verifyBackupCode(userId: string, code: string): Promise<MfaVerificationResult> {
-    const mfaSettings = await this.mfaSettingsRepository.findOne({ where: { userId } });
-    
+  async verifyBackupCode(
+    userId: string,
+    code: string
+  ): Promise<MfaVerificationResult> {
+    const mfaSettings = await this.mfaSettingsRepository.findOne({
+      where: { userId },
+    });
+
     if (!mfaSettings || !mfaSettings.backupCodes?.length) {
       return { isValid: false, error: 'No backup codes available' };
     }
 
     // Hash provided code and compare
     const providedHash = await new Promise<Buffer>((resolve, reject) => {
-      crypto.scrypt(code.toUpperCase(), 'moneywise-backup', 32, (err, derivedKey) => {
-        if (err) reject(err);
-        else resolve(derivedKey);
-      });
+      crypto.scrypt(
+        code.toUpperCase(),
+        'moneywise-backup',
+        32,
+        (err, derivedKey) => {
+          if (err) reject(err);
+          else resolve(derivedKey);
+        }
+      );
     });
     const providedHashHex = providedHash.toString('hex');
 
-    const codeIndex = mfaSettings.backupCodes.findIndex(hash => hash === providedHashHex);
-    
+    const codeIndex = mfaSettings.backupCodes.findIndex(
+      hash => hash === providedHashHex
+    );
+
     if (codeIndex !== -1) {
       // Remove used backup code
       mfaSettings.backupCodes.splice(codeIndex, 1);
@@ -154,7 +181,9 @@ export class MfaService {
    * Check if user has MFA enabled
    */
   async isMfaEnabled(userId: string): Promise<boolean> {
-    const mfaSettings = await this.mfaSettingsRepository.findOne({ where: { userId } });
+    const mfaSettings = await this.mfaSettingsRepository.findOne({
+      where: { userId },
+    });
     return mfaSettings?.isEnabled || false;
   }
 
@@ -162,7 +191,9 @@ export class MfaService {
    * Disable MFA for user
    */
   async disableMfa(userId: string): Promise<void> {
-    const mfaSettings = await this.mfaSettingsRepository.findOne({ where: { userId } });
+    const mfaSettings = await this.mfaSettingsRepository.findOne({
+      where: { userId },
+    });
     if (mfaSettings) {
       mfaSettings.isEnabled = false;
       mfaSettings.totpSecret = null;
@@ -175,8 +206,10 @@ export class MfaService {
    * Get MFA settings for user
    */
   async getMfaSettings(userId: string): Promise<Partial<UserMfaSettings>> {
-    const mfaSettings = await this.mfaSettingsRepository.findOne({ where: { userId } });
-    
+    const mfaSettings = await this.mfaSettingsRepository.findOne({
+      where: { userId },
+    });
+
     if (!mfaSettings) {
       return { isEnabled: false };
     }

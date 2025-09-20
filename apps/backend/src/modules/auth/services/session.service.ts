@@ -40,16 +40,19 @@ export class SessionService {
     private sessionRepository: Repository<UserSession>,
     @InjectRepository(User)
     private userRepository: Repository<User>,
-    private jwtService: JwtService,
+    private jwtService: JwtService
   ) {}
 
   /**
    * Generate secure token pair with device tracking
    */
-  async generateTokenPair(userId: string, deviceInfo: DeviceInfo): Promise<TokenPair> {
+  async generateTokenPair(
+    userId: string,
+    deviceInfo: DeviceInfo
+  ): Promise<TokenPair> {
     // Generate secure session token
     const sessionToken = crypto.randomBytes(32).toString('hex');
-    
+
     // Create session record
     const session = this.sessionRepository.create({
       userId,
@@ -98,10 +101,13 @@ export class SessionService {
   /**
    * Refresh access token using refresh token
    */
-  async refreshAccessToken(refreshToken: string, deviceInfo: DeviceInfo): Promise<TokenPair> {
+  async refreshAccessToken(
+    refreshToken: string,
+    deviceInfo: DeviceInfo
+  ): Promise<TokenPair> {
     try {
       const payload = this.jwtService.verify(refreshToken);
-      
+
       if (payload.type !== 'refresh') {
         throw new UnauthorizedException('Invalid token type');
       }
@@ -112,7 +118,7 @@ export class SessionService {
           id: payload.sessionId,
           sessionToken: payload.sessionToken,
           isActive: true,
-        }
+        },
       });
 
       if (!session || session.expiresAt < new Date()) {
@@ -120,7 +126,10 @@ export class SessionService {
       }
 
       // Perform security checks
-      const securityCheck = await this.validateTokenSecurity(session, deviceInfo);
+      const securityCheck = await this.validateTokenSecurity(
+        session,
+        deviceInfo
+      );
       if (!securityCheck.isValid) {
         // Revoke session for security reasons
         await this.revokeSession(session.id);
@@ -141,7 +150,10 @@ export class SessionService {
   /**
    * Validate token security and detect suspicious activity
    */
-  async validateTokenSecurity(session: UserSession, currentDevice: DeviceInfo): Promise<SecurityCheck> {
+  async validateTokenSecurity(
+    session: UserSession,
+    currentDevice: DeviceInfo
+  ): Promise<SecurityCheck> {
     const reasons: string[] = [];
     let suspiciousActivity = false;
     let riskLevel: 'low' | 'medium' | 'high' = 'low';
@@ -161,7 +173,10 @@ export class SessionService {
 
     // Check user agent for significant changes
     if (session.userAgent && currentDevice.userAgent) {
-      const agentSimilarity = this.calculateSimilarity(session.userAgent, currentDevice.userAgent);
+      const agentSimilarity = this.calculateSimilarity(
+        session.userAgent,
+        currentDevice.userAgent
+      );
       if (agentSimilarity < 0.8) {
         reasons.push('User agent change detected');
         if (riskLevel === 'low') riskLevel = 'medium';
@@ -173,7 +188,7 @@ export class SessionService {
       where: {
         userId: session.userId,
         isActive: true,
-      }
+      },
     });
 
     if (activeSessions > 5) {
@@ -194,10 +209,7 @@ export class SessionService {
    * Revoke specific session
    */
   async revokeSession(sessionId: string): Promise<void> {
-    await this.sessionRepository.update(
-      { id: sessionId },
-      { isActive: false }
-    );
+    await this.sessionRepository.update({ id: sessionId }, { isActive: false });
   }
 
   /**
@@ -245,9 +257,9 @@ export class SessionService {
   private calculateSimilarity(str1: string, str2: string): number {
     const longer = str1.length > str2.length ? str1 : str2;
     const shorter = str1.length > str2.length ? str2 : str1;
-    
+
     if (longer.length === 0) return 1.0;
-    
+
     const editDistance = this.levenshteinDistance(longer, shorter);
     return (longer.length - editDistance) / longer.length;
   }
@@ -257,15 +269,15 @@ export class SessionService {
    */
   private levenshteinDistance(str1: string, str2: string): number {
     const matrix = [];
-    
+
     for (let i = 0; i <= str2.length; i++) {
       matrix[i] = [i];
     }
-    
+
     for (let j = 0; j <= str1.length; j++) {
       matrix[0][j] = j;
     }
-    
+
     for (let i = 1; i <= str2.length; i++) {
       for (let j = 1; j <= str1.length; j++) {
         if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
@@ -279,7 +291,7 @@ export class SessionService {
         }
       }
     }
-    
+
     return matrix[str2.length][str1.length];
   }
 }

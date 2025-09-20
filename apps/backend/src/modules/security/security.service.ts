@@ -12,7 +12,11 @@ export interface RateLimitResult {
 }
 
 export interface SecurityThreat {
-  type: 'brute_force' | 'suspicious_pattern' | 'rate_limit_exceeded' | 'invalid_request';
+  type:
+    | 'brute_force'
+    | 'suspicious_pattern'
+    | 'rate_limit_exceeded'
+    | 'invalid_request';
   severity: 'low' | 'medium' | 'high' | 'critical';
   description: string;
   metadata: Record<string, any>;
@@ -31,7 +35,7 @@ export interface ApiKeyValidation {
 @Injectable()
 export class SecurityService {
   private readonly logger = new Logger(SecurityService.name);
-  
+
   // Rate limiting configurations
   private readonly rateLimits = {
     auth: { requests: 5, window: 300 }, // 5 requests per 5 minutes
@@ -40,9 +44,7 @@ export class SecurityService {
     mfa: { requests: 10, window: 300 }, // 10 attempts per 5 minutes
   };
 
-  constructor(
-    @InjectRedis() private readonly redis: Redis,
-  ) {}
+  constructor(@InjectRedis() private readonly redis: Redis) {}
 
   /**
    * Check rate limit for specific endpoint and identifier
@@ -52,18 +54,19 @@ export class SecurityService {
     endpoint: string,
     customLimit?: { requests: number; window: number }
   ): Promise<RateLimitResult> {
-    const limit = customLimit || this.rateLimits[endpoint] || this.rateLimits.api;
+    const limit =
+      customLimit || this.rateLimits[endpoint] || this.rateLimits.api;
     const key = `rate_limit:${endpoint}:${identifier}`;
-    
+
     const current = await this.redis.get(key);
     const count = current ? parseInt(current, 10) : 0;
-    
+
     if (count >= limit.requests) {
       const ttl = await this.redis.ttl(key);
       return {
         allowed: false,
         remaining: 0,
-        resetTime: Date.now() + (ttl * 1000),
+        resetTime: Date.now() + ttl * 1000,
         retryAfter: ttl,
       };
     }
@@ -79,18 +82,20 @@ export class SecurityService {
     return {
       allowed: true,
       remaining: limit.requests - count - 1,
-      resetTime: Date.now() + (limit.window * 1000),
+      resetTime: Date.now() + limit.window * 1000,
     };
   }
 
   /**
    * Detect suspicious activity patterns
    */
-  async detectSuspiciousActivity(request: Request): Promise<SecurityThreat | null> {
+  async detectSuspiciousActivity(
+    request: Request
+  ): Promise<SecurityThreat | null> {
     const ip = this.getClientIp(request);
     const userAgent = request.get('User-Agent') || '';
     const endpoint = request.path;
-    
+
     // Check for brute force attempts
     const bruteForceCheck = await this.checkBruteForce(ip, endpoint);
     if (bruteForceCheck) {
@@ -123,7 +128,7 @@ export class SecurityService {
     // In production, this would validate against a database
     // For now, using a simple validation pattern
     const keyData = await this.redis.get(`api_key:${apiKey}`);
-    
+
     if (!keyData) {
       return { isValid: false, permissions: [] };
     }
@@ -148,7 +153,7 @@ export class SecurityService {
     const signature = request.get('X-Signature');
     const timestamp = request.get('X-Timestamp');
     const body = JSON.stringify(request.body);
-    
+
     if (!signature || !timestamp) {
       return false;
     }
@@ -187,7 +192,7 @@ export class SecurityService {
     };
 
     this.logger.warn(`Security Event: ${event}`, logEntry);
-    
+
     // Store in Redis for analysis
     await this.redis.lpush('security_events', JSON.stringify(logEntry));
     await this.redis.ltrim('security_events', 0, 9999); // Keep last 10k events
@@ -196,7 +201,10 @@ export class SecurityService {
   /**
    * Check for brute force attempts
    */
-  private async checkBruteForce(ip: string, endpoint: string): Promise<SecurityThreat | null> {
+  private async checkBruteForce(
+    ip: string,
+    endpoint: string
+  ): Promise<SecurityThreat | null> {
     const key = `brute_force:${ip}:${endpoint}`;
     const attempts = await this.redis.get(key);
     const count = attempts ? parseInt(attempts, 10) : 0;
@@ -229,17 +237,27 @@ export class SecurityService {
   /**
    * Check for suspicious request patterns
    */
-  private async checkSuspiciousPatterns(request: Request): Promise<SecurityThreat | null> {
+  private async checkSuspiciousPatterns(
+    request: Request
+  ): Promise<SecurityThreat | null> {
     const userAgent = request.get('User-Agent') || '';
     const ip = this.getClientIp(request);
-    
+
     // Check for automated tools
     const suspiciousAgents = [
-      'curl', 'wget', 'python-requests', 'postman', 'insomnia',
-      'httpclient', 'apache-httpclient', 'okhttp'
+      'curl',
+      'wget',
+      'python-requests',
+      'postman',
+      'insomnia',
+      'httpclient',
+      'apache-httpclient',
+      'okhttp',
     ];
-    
-    if (suspiciousAgents.some(agent => userAgent.toLowerCase().includes(agent))) {
+
+    if (
+      suspiciousAgents.some(agent => userAgent.toLowerCase().includes(agent))
+    ) {
       return {
         type: 'suspicious_pattern',
         severity: 'medium',
@@ -267,14 +285,16 @@ export class SecurityService {
   private checkInvalidRequestPatterns(request: Request): SecurityThreat | null {
     const body = JSON.stringify(request.body);
     const query = JSON.stringify(request.query);
-    
+
     // Check for SQL injection patterns
     const sqlPatterns = [
       /('|(\-\-)|(;)|(\||\|)|(\*|\*))/i,
       /(union|select|insert|delete|update|drop|create|alter)/i,
     ];
-    
-    if (sqlPatterns.some(pattern => pattern.test(body) || pattern.test(query))) {
+
+    if (
+      sqlPatterns.some(pattern => pattern.test(body) || pattern.test(query))
+    ) {
       return {
         type: 'invalid_request',
         severity: 'high',
@@ -290,8 +310,10 @@ export class SecurityService {
       /javascript:/gi,
       /on\w+\s*=/gi,
     ];
-    
-    if (xssPatterns.some(pattern => pattern.test(body) || pattern.test(query))) {
+
+    if (
+      xssPatterns.some(pattern => pattern.test(body) || pattern.test(query))
+    ) {
       return {
         type: 'invalid_request',
         severity: 'high',

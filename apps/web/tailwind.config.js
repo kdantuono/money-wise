@@ -1,12 +1,12 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-  darkMode: ["class"],
+  darkMode: ['class'],
   content: [
     './pages/**/*.{ts,tsx}',
     './components/**/*.{ts,tsx}',
     './app/**/*.{ts,tsx}',
     './src/**/*.{ts,tsx}',
-	],
+  ],
   theme: {
     container: {
       center: true,
@@ -18,19 +18,19 @@ module.exports = {
         '2xl': '6rem',
       },
       screens: {
-        'sm': '640px',
-        'md': '768px',
-        'lg': '1024px',
-        'xl': '1280px',
-        '2xl': '1400px'
-      }
+        sm: '640px',
+        md: '768px',
+        lg: '1024px',
+        xl: '1280px',
+        '2xl': '1400px',
+      },
     },
     screens: {
-      'xs': '475px',
-      'sm': '640px',
-      'md': '768px',
-      'lg': '1024px',
-      'xl': '1280px',
+      xs: '475px',
+      sm: '640px',
+      md: '768px',
+      lg: '1024px',
+      xl: '1280px',
       '2xl': '1536px',
     },
     extend: {
@@ -54,31 +54,31 @@ module.exports = {
           900: 'hsl(var(--primary-900))',
           950: 'hsl(var(--primary-950))',
           DEFAULT: 'hsl(var(--primary))',
-          foreground: 'hsl(var(--primary-foreground))'
+          foreground: 'hsl(var(--primary-foreground))',
         },
         secondary: {
           DEFAULT: 'hsl(var(--secondary))',
-          foreground: 'hsl(var(--secondary-foreground))'
+          foreground: 'hsl(var(--secondary-foreground))',
         },
         destructive: {
           DEFAULT: 'hsl(var(--destructive))',
-          foreground: 'hsl(var(--destructive-foreground))'
+          foreground: 'hsl(var(--destructive-foreground))',
         },
         muted: {
           DEFAULT: 'hsl(var(--muted))',
-          foreground: 'hsl(var(--muted-foreground))'
+          foreground: 'hsl(var(--muted-foreground))',
         },
         accent: {
           DEFAULT: 'hsl(var(--accent))',
-          foreground: 'hsl(var(--accent-foreground))'
+          foreground: 'hsl(var(--accent-foreground))',
         },
         popover: {
           DEFAULT: 'hsl(var(--popover))',
-          foreground: 'hsl(var(--popover-foreground))'
+          foreground: 'hsl(var(--popover-foreground))',
         },
         card: {
           DEFAULT: 'hsl(var(--card))',
-          foreground: 'hsl(var(--card-foreground))'
+          foreground: 'hsl(var(--card-foreground))',
         },
         // Enhanced financial color system
         success: {
@@ -157,21 +157,47 @@ module.exports = {
           positive: 'hsl(var(--balance-positive))',
           negative: 'hsl(var(--balance-negative))',
           neutral: 'hsl(var(--balance-neutral))',
-        }
+        },
       },
       fontFamily: {
-        sans: ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
-        mono: ['JetBrains Mono', 'ui-monospace', 'SFMono-Regular', 'Monaco', 'Consolas', 'Liberation Mono', 'Courier New', 'monospace'],
-        display: ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+        sans: [
+          'Inter',
+          'ui-sans-serif',
+          'system-ui',
+          '-apple-system',
+          'BlinkMacSystemFont',
+          'sans-serif',
+        ],
+        mono: [
+          'JetBrains Mono',
+          'ui-monospace',
+          'SFMono-Regular',
+          'Monaco',
+          'Consolas',
+          'Liberation Mono',
+          'Courier New',
+          'monospace',
+        ],
+        display: [
+          'Inter',
+          'ui-sans-serif',
+          'system-ui',
+          '-apple-system',
+          'BlinkMacSystemFont',
+          'sans-serif',
+        ],
       },
       fontSize: {
-        'xs': ['0.75rem', { lineHeight: '1rem', letterSpacing: '0.05em' }],
-        'sm': ['0.875rem', { lineHeight: '1.25rem', letterSpacing: '0.025em' }],
-        'base': ['1rem', { lineHeight: '1.5rem', letterSpacing: '0' }],
-        'lg': ['1.125rem', { lineHeight: '1.75rem', letterSpacing: '-0.025em' }],
-        'xl': ['1.25rem', { lineHeight: '1.75rem', letterSpacing: '-0.025em' }],
+        xs: ['0.75rem', { lineHeight: '1rem', letterSpacing: '0.05em' }],
+        sm: ['0.875rem', { lineHeight: '1.25rem', letterSpacing: '0.025em' }],
+        base: ['1rem', { lineHeight: '1.5rem', letterSpacing: '0' }],
+        lg: ['1.125rem', { lineHeight: '1.75rem', letterSpacing: '-0.025em' }],
+        xl: ['1.25rem', { lineHeight: '1.75rem', letterSpacing: '-0.025em' }],
         '2xl': ['1.5rem', { lineHeight: '2rem', letterSpacing: '-0.05em' }],
-        '3xl': ['1.875rem', { lineHeight: '2.25rem', letterSpacing: '-0.05em' }],
+        '3xl': [
+          '1.875rem',
+          { lineHeight: '2.25rem', letterSpacing: '-0.05em' },
+        ],
         '4xl': ['2.25rem', { lineHeight: '2.5rem', letterSpacing: '-0.075em' }],
         '5xl': ['3rem', { lineHeight: '1', letterSpacing: '-0.075em' }],
         '6xl': ['3.75rem', { lineHeight: '1', letterSpacing: '-0.075em' }],
@@ -180,45 +206,47 @@ module.exports = {
         '9xl': ['8rem', { lineHeight: '1', letterSpacing: '-0.075em' }],
       },
       spacing: {
-        '0.5': '0.125rem',
-        '1.5': '0.375rem',
-        '2.5': '0.625rem',
-        '3.5': '0.875rem',
-        '18': '4.5rem',
-        '88': '22rem',
-        '128': '32rem',
-        '144': '36rem',
+        0.5: '0.125rem',
+        1.5: '0.375rem',
+        2.5: '0.625rem',
+        3.5: '0.875rem',
+        18: '4.5rem',
+        88: '22rem',
+        128: '32rem',
+        144: '36rem',
       },
       borderRadius: {
-        'none': '0px',
-        'sm': '0.125rem',
-        'base': '0.25rem',
-        'md': '0.375rem',
-        'lg': '0.5rem',
-        'xl': '0.75rem',
+        none: '0px',
+        sm: '0.125rem',
+        base: '0.25rem',
+        md: '0.375rem',
+        lg: '0.5rem',
+        xl: '0.75rem',
         '2xl': '1rem',
         '3xl': '1.5rem',
-        'full': '9999px',
+        full: '9999px',
       },
       boxShadow: {
-        'xs': '0 1px 2px 0 rgb(0 0 0 / 0.05)',
-        'sm': '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)',
-        'base': '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
-        'md': '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
-        'lg': '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)',
-        'xl': '0 25px 50px -12px rgb(0 0 0 / 0.25)',
+        xs: '0 1px 2px 0 rgb(0 0 0 / 0.05)',
+        sm: '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)',
+        base: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
+        md: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
+        lg: '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)',
+        xl: '0 25px 50px -12px rgb(0 0 0 / 0.25)',
         '2xl': '0 25px 50px -12px rgb(0 0 0 / 0.25)',
-        'inner': 'inset 0 2px 4px 0 rgb(0 0 0 / 0.05)',
-        'card': '0 4px 20px -2px rgb(0 0 0 / 0.08), 0 2px 8px -2px rgb(0 0 0 / 0.04)',
-        'card-hover': '0 8px 30px -4px rgb(0 0 0 / 0.12), 0 4px 12px -4px rgb(0 0 0 / 0.08)',
-        'premium': '0 20px 40px -8px rgb(0 0 0 / 0.15), 0 8px 16px -8px rgb(0 0 0 / 0.1)',
+        inner: 'inset 0 2px 4px 0 rgb(0 0 0 / 0.05)',
+        card: '0 4px 20px -2px rgb(0 0 0 / 0.08), 0 2px 8px -2px rgb(0 0 0 / 0.04)',
+        'card-hover':
+          '0 8px 30px -4px rgb(0 0 0 / 0.12), 0 4px 12px -4px rgb(0 0 0 / 0.08)',
+        premium:
+          '0 20px 40px -8px rgb(0 0 0 / 0.15), 0 8px 16px -8px rgb(0 0 0 / 0.1)',
       },
       animation: {
         // Enhanced animations for financial UI
         'fade-in': 'fadeIn 0.5s ease-out forwards',
         'slide-up': 'slideUp 0.5s ease-out forwards',
         'scale-in': 'scaleIn 0.3s ease-out forwards',
-        'shimmer': 'shimmer 2s infinite',
+        shimmer: 'shimmer 2s infinite',
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
         'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
@@ -250,33 +278,33 @@ module.exports = {
         },
       },
       transitionTimingFunction: {
-        'smooth': 'cubic-bezier(0.25, 0.46, 0.45, 0.94)',
-        'bounce': 'cubic-bezier(0.68, -0.55, 0.265, 1.55)',
+        smooth: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+        bounce: 'cubic-bezier(0.68, -0.55, 0.265, 1.55)',
       },
       backdropBlur: {
-        'xs': '2px',
+        xs: '2px',
       },
       zIndex: {
-        'hide': '-1',
-        'auto': 'auto',
-        'base': '0',
-        'docked': '10',
-        'dropdown': '1000',
-        'sticky': '1100',
-        'banner': '1200',
-        'overlay': '1300',
-        'modal': '1400',
-        'popover': '1500',
+        hide: '-1',
+        auto: 'auto',
+        base: '0',
+        docked: '10',
+        dropdown: '1000',
+        sticky: '1100',
+        banner: '1200',
+        overlay: '1300',
+        modal: '1400',
+        popover: '1500',
         'skip-link': '1600',
-        'toast': '1700',
-        'tooltip': '1800',
-      }
-    }
+        toast: '1700',
+        tooltip: '1800',
+      },
+    },
   },
   plugins: [
-    require("tailwindcss-animate"),
+    require('tailwindcss-animate'),
     // Custom plugin for financial utilities
-    function({ addUtilities, theme }) {
+    function ({ addUtilities, theme }) {
       const newUtilities = {
         '.text-balance-positive': {
           color: theme('colors.success.600'),
@@ -288,7 +316,8 @@ module.exports = {
           color: theme('colors.neutral.600'),
         },
         '.bg-gradient-financial': {
-          background: 'linear-gradient(135deg, hsl(var(--primary-600)), hsl(var(--primary-800)))',
+          background:
+            'linear-gradient(135deg, hsl(var(--primary-600)), hsl(var(--primary-800)))',
         },
         '.border-financial': {
           borderColor: theme('colors.neutral.200'),
@@ -299,9 +328,8 @@ module.exports = {
         '.shadow-financial-hover': {
           boxShadow: theme('boxShadow.card-hover'),
         },
-      }
-      addUtilities(newUtilities)
+      };
+      addUtilities(newUtilities);
     },
   ],
-}
-
+};

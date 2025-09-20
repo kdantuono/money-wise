@@ -5,9 +5,9 @@
  * Consolidates test results from all testing frameworks and generates unified reports
  */
 
-const fs = require('fs')
-const path = require('path')
-const { execSync } = require('child_process')
+const fs = require('fs');
+const path = require('path');
+const { execSync } = require('child_process');
 
 // Configuration
 const config = {
@@ -16,14 +16,14 @@ const config = {
   performanceBudget: {
     fcp: 2000, // First Contentful Paint
     lcp: 2500, // Largest Contentful Paint
-    fid: 100,  // First Input Delay
-    cls: 0.1   // Cumulative Layout Shift
-  }
-}
+    fid: 100, // First Input Delay
+    cls: 0.1, // Cumulative Layout Shift
+  },
+};
 
 // Ensure output directory exists
 if (!fs.existsSync(config.outputDir)) {
-  fs.mkdirSync(config.outputDir, { recursive: true })
+  fs.mkdirSync(config.outputDir, { recursive: true });
 }
 
 /**
@@ -32,12 +32,12 @@ if (!fs.existsSync(config.outputDir)) {
 function parseCoverageReport(coveragePath) {
   try {
     if (!fs.existsSync(coveragePath)) {
-      console.warn(`Coverage file not found: ${coveragePath}`)
-      return null
+      console.warn(`Coverage file not found: ${coveragePath}`);
+      return null;
     }
 
-    const coverageData = JSON.parse(fs.readFileSync(coveragePath, 'utf8'))
-    const total = coverageData.total
+    const coverageData = JSON.parse(fs.readFileSync(coveragePath, 'utf8'));
+    const total = coverageData.total;
 
     return {
       lines: total.lines.pct,
@@ -47,11 +47,11 @@ function parseCoverageReport(coveragePath) {
       covered: total.lines.covered,
       total: total.lines.total,
       threshold: config.coverageThreshold,
-      passed: total.lines.pct >= config.coverageThreshold
-    }
+      passed: total.lines.pct >= config.coverageThreshold,
+    };
   } catch (error) {
-    console.error(`Error parsing coverage report: ${error.message}`)
-    return null
+    console.error(`Error parsing coverage report: ${error.message}`);
+    return null;
   }
 }
 
@@ -61,11 +61,11 @@ function parseCoverageReport(coveragePath) {
 function parsePlaywrightResults(resultsPath) {
   try {
     if (!fs.existsSync(resultsPath)) {
-      console.warn(`Playwright results not found: ${resultsPath}`)
-      return null
+      console.warn(`Playwright results not found: ${resultsPath}`);
+      return null;
     }
 
-    const results = JSON.parse(fs.readFileSync(resultsPath, 'utf8'))
+    const results = JSON.parse(fs.readFileSync(resultsPath, 'utf8'));
 
     return {
       total: results.stats.total,
@@ -75,15 +75,17 @@ function parsePlaywrightResults(resultsPath) {
       flaky: results.stats.flaky,
       duration: results.stats.duration,
       success: results.stats.failed === 0,
-      suites: results.suites?.map(suite => ({
-        title: suite.title,
-        tests: suite.tests?.length || 0,
-        failures: suite.tests?.filter(test => test.outcome === 'failed').length || 0
-      })) || []
-    }
+      suites:
+        results.suites?.map(suite => ({
+          title: suite.title,
+          tests: suite.tests?.length || 0,
+          failures:
+            suite.tests?.filter(test => test.outcome === 'failed').length || 0,
+        })) || [],
+    };
   } catch (error) {
-    console.error(`Error parsing Playwright results: ${error.message}`)
-    return null
+    console.error(`Error parsing Playwright results: ${error.message}`);
+    return null;
   }
 }
 
@@ -93,11 +95,11 @@ function parsePlaywrightResults(resultsPath) {
 function parsePerformanceMetrics(metricsPath) {
   try {
     if (!fs.existsSync(metricsPath)) {
-      console.warn(`Performance metrics not found: ${metricsPath}`)
-      return null
+      console.warn(`Performance metrics not found: ${metricsPath}`);
+      return null;
     }
 
-    const metrics = JSON.parse(fs.readFileSync(metricsPath, 'utf8'))
+    const metrics = JSON.parse(fs.readFileSync(metricsPath, 'utf8'));
 
     return {
       fcp: metrics.fcp || 0,
@@ -108,18 +110,18 @@ function parsePerformanceMetrics(metricsPath) {
         fcp: (metrics.fcp || 0) <= config.performanceBudget.fcp,
         lcp: (metrics.lcp || 0) <= config.performanceBudget.lcp,
         fid: (metrics.fid || 0) <= config.performanceBudget.fid,
-        cls: (metrics.cls || 0) <= config.performanceBudget.cls
+        cls: (metrics.cls || 0) <= config.performanceBudget.cls,
       },
       overallPassed: Object.values({
         fcp: (metrics.fcp || 0) <= config.performanceBudget.fcp,
         lcp: (metrics.lcp || 0) <= config.performanceBudget.lcp,
         fid: (metrics.fid || 0) <= config.performanceBudget.fid,
-        cls: (metrics.cls || 0) <= config.performanceBudget.cls
-      }).every(Boolean)
-    }
+        cls: (metrics.cls || 0) <= config.performanceBudget.cls,
+      }).every(Boolean),
+    };
   } catch (error) {
-    console.error(`Error parsing performance metrics: ${error.message}`)
-    return null
+    console.error(`Error parsing performance metrics: ${error.message}`);
+    return null;
   }
 }
 
@@ -129,11 +131,11 @@ function parsePerformanceMetrics(metricsPath) {
 function parseAccessibilityResults(a11yPath) {
   try {
     if (!fs.existsSync(a11yPath)) {
-      console.warn(`Accessibility results not found: ${a11yPath}`)
-      return null
+      console.warn(`Accessibility results not found: ${a11yPath}`);
+      return null;
     }
 
-    const results = JSON.parse(fs.readFileSync(a11yPath, 'utf8'))
+    const results = JSON.parse(fs.readFileSync(a11yPath, 'utf8'));
 
     return {
       violations: results.violations?.length || 0,
@@ -141,16 +143,17 @@ function parseAccessibilityResults(a11yPath) {
       incomplete: results.incomplete?.length || 0,
       inapplicable: results.inapplicable?.length || 0,
       success: (results.violations?.length || 0) === 0,
-      details: results.violations?.map(violation => ({
-        id: violation.id,
-        impact: violation.impact,
-        description: violation.description,
-        nodes: violation.nodes?.length || 0
-      })) || []
-    }
+      details:
+        results.violations?.map(violation => ({
+          id: violation.id,
+          impact: violation.impact,
+          description: violation.description,
+          nodes: violation.nodes?.length || 0,
+        })) || [],
+    };
   } catch (error) {
-    console.error(`Error parsing accessibility results: ${error.message}`)
-    return null
+    console.error(`Error parsing accessibility results: ${error.message}`);
+    return null;
   }
 }
 
@@ -158,12 +161,12 @@ function parseAccessibilityResults(a11yPath) {
  * Generate comprehensive test report
  */
 function generateReport() {
-  console.log('🎯 Generating comprehensive test report...')
+  console.log('🎯 Generating comprehensive test report...');
 
-  const timestamp = new Date().toISOString()
-  const commitSha = process.env.CI_COMMIT_SHA || 'local'
-  const branch = process.env.CI_COMMIT_REF_NAME || 'local'
-  const pipelineUrl = process.env.CI_PIPELINE_URL || ''
+  const timestamp = new Date().toISOString();
+  const commitSha = process.env.CI_COMMIT_SHA || 'local';
+  const branch = process.env.CI_COMMIT_REF_NAME || 'local';
+  const pipelineUrl = process.env.CI_PIPELINE_URL || '';
 
   // Collect all test results
   const testResults = {
@@ -172,44 +175,64 @@ function generateReport() {
       commitSha: commitSha.substring(0, 8),
       branch,
       pipelineUrl,
-      environment: process.env.NODE_ENV || 'test'
+      environment: process.env.NODE_ENV || 'test',
     },
     coverage: {
-      frontend: parseCoverageReport('./apps/web/coverage/coverage-summary.json'),
-      backend: parseCoverageReport('./apps/backend/coverage/coverage-summary.json')
+      frontend: parseCoverageReport(
+        './apps/web/coverage/coverage-summary.json'
+      ),
+      backend: parseCoverageReport(
+        './apps/backend/coverage/coverage-summary.json'
+      ),
     },
     tests: {
       unit: {
-        frontend: parsePlaywrightResults('./apps/web/test-results/unit-results.json'),
-        backend: parsePlaywrightResults('./apps/backend/test-results/unit-results.json')
+        frontend: parsePlaywrightResults(
+          './apps/web/test-results/unit-results.json'
+        ),
+        backend: parsePlaywrightResults(
+          './apps/backend/test-results/unit-results.json'
+        ),
       },
       integration: {
-        frontend: parsePlaywrightResults('./apps/web/test-results/integration-results.json'),
-        backend: parsePlaywrightResults('./apps/backend/test-results/e2e-results.json')
+        frontend: parsePlaywrightResults(
+          './apps/web/test-results/integration-results.json'
+        ),
+        backend: parsePlaywrightResults(
+          './apps/backend/test-results/e2e-results.json'
+        ),
       },
-      e2e: parsePlaywrightResults('./apps/web/test-results/results.json')
+      e2e: parsePlaywrightResults('./apps/web/test-results/results.json'),
     },
     quality: {
-      performance: parsePerformanceMetrics('./apps/web/test-results/performance-metrics.json'),
-      accessibility: parseAccessibilityResults('./apps/web/test-results/accessibility-results.json')
-    }
-  }
+      performance: parsePerformanceMetrics(
+        './apps/web/test-results/performance-metrics.json'
+      ),
+      accessibility: parseAccessibilityResults(
+        './apps/web/test-results/accessibility-results.json'
+      ),
+    },
+  };
 
   // Calculate overall status
   const overallStatus = {
     success: true,
-    issues: []
-  }
+    issues: [],
+  };
 
   // Check coverage thresholds
   if (testResults.coverage.frontend && !testResults.coverage.frontend.passed) {
-    overallStatus.success = false
-    overallStatus.issues.push(`Frontend coverage below threshold: ${testResults.coverage.frontend.lines}%`)
+    overallStatus.success = false;
+    overallStatus.issues.push(
+      `Frontend coverage below threshold: ${testResults.coverage.frontend.lines}%`
+    );
   }
 
   if (testResults.coverage.backend && !testResults.coverage.backend.passed) {
-    overallStatus.success = false
-    overallStatus.issues.push(`Backend coverage below threshold: ${testResults.coverage.backend.lines}%`)
+    overallStatus.success = false;
+    overallStatus.issues.push(
+      `Backend coverage below threshold: ${testResults.coverage.backend.lines}%`
+    );
   }
 
   // Check test failures
@@ -217,48 +240,60 @@ function generateReport() {
     if (typeof tests === 'object' && tests !== null) {
       Object.entries(tests).forEach(([type, result]) => {
         if (result && !result.success) {
-          overallStatus.success = false
-          overallStatus.issues.push(`${category}/${type} tests failed: ${result.failed} failures`)
+          overallStatus.success = false;
+          overallStatus.issues.push(
+            `${category}/${type} tests failed: ${result.failed} failures`
+          );
         }
-      })
+      });
     } else if (tests && !tests.success) {
-      overallStatus.success = false
-      overallStatus.issues.push(`${category} tests failed: ${tests.failed} failures`)
+      overallStatus.success = false;
+      overallStatus.issues.push(
+        `${category} tests failed: ${tests.failed} failures`
+      );
     }
-  })
+  });
 
   // Check quality gates
-  if (testResults.quality.performance && !testResults.quality.performance.overallPassed) {
-    overallStatus.success = false
-    overallStatus.issues.push('Performance budget exceeded')
+  if (
+    testResults.quality.performance &&
+    !testResults.quality.performance.overallPassed
+  ) {
+    overallStatus.success = false;
+    overallStatus.issues.push('Performance budget exceeded');
   }
 
-  if (testResults.quality.accessibility && !testResults.quality.accessibility.success) {
-    overallStatus.success = false
-    overallStatus.issues.push(`Accessibility violations: ${testResults.quality.accessibility.violations}`)
+  if (
+    testResults.quality.accessibility &&
+    !testResults.quality.accessibility.success
+  ) {
+    overallStatus.success = false;
+    overallStatus.issues.push(
+      `Accessibility violations: ${testResults.quality.accessibility.violations}`
+    );
   }
 
-  testResults.overall = overallStatus
+  testResults.overall = overallStatus;
 
   // Generate JSON report
-  const jsonReport = JSON.stringify(testResults, null, 2)
-  fs.writeFileSync(path.join(config.outputDir, 'test-report.json'), jsonReport)
+  const jsonReport = JSON.stringify(testResults, null, 2);
+  fs.writeFileSync(path.join(config.outputDir, 'test-report.json'), jsonReport);
 
   // Generate HTML report
-  generateHTMLReport(testResults)
+  generateHTMLReport(testResults);
 
   // Generate Slack notification payload
-  generateSlackNotification(testResults)
+  generateSlackNotification(testResults);
 
-  console.log(`✅ Test report generated at: ${config.outputDir}`)
+  console.log(`✅ Test report generated at: ${config.outputDir}`);
 
   // Exit with error code if tests failed
   if (!overallStatus.success) {
-    console.error('❌ Test suite failed with issues:', overallStatus.issues)
-    process.exit(1)
+    console.error('❌ Test suite failed with issues:', overallStatus.issues);
+    process.exit(1);
   }
 
-  console.log('🎉 All tests passed successfully!')
+  console.log('🎉 All tests passed successfully!');
 }
 
 /**
@@ -309,7 +344,9 @@ function generateHTMLReport(testResults) {
             <!-- Coverage Card -->
             <div class="card">
                 <h3>📊 Code Coverage</h3>
-                ${testResults.coverage.frontend ? `
+                ${
+                  testResults.coverage.frontend
+                    ? `
                 <div class="metric">
                     <span>Frontend Lines:</span>
                     <span class="metric-value ${testResults.coverage.frontend.passed ? 'success' : 'failure'}">
@@ -320,9 +357,13 @@ function generateHTMLReport(testResults) {
                     <span>Frontend Functions:</span>
                     <span class="metric-value">${testResults.coverage.frontend.functions}%</span>
                 </div>
-                ` : '<p>Frontend coverage not available</p>'}
+                `
+                    : '<p>Frontend coverage not available</p>'
+                }
 
-                ${testResults.coverage.backend ? `
+                ${
+                  testResults.coverage.backend
+                    ? `
                 <div class="metric">
                     <span>Backend Lines:</span>
                     <span class="metric-value ${testResults.coverage.backend.passed ? 'success' : 'failure'}">
@@ -333,44 +374,60 @@ function generateHTMLReport(testResults) {
                     <span>Backend Functions:</span>
                     <span class="metric-value">${testResults.coverage.backend.functions}%</span>
                 </div>
-                ` : '<p>Backend coverage not available</p>'}
+                `
+                    : '<p>Backend coverage not available</p>'
+                }
             </div>
 
             <!-- Test Results Card -->
             <div class="card">
                 <h3>🧪 Test Results</h3>
-                ${testResults.tests.e2e ? `
+                ${
+                  testResults.tests.e2e
+                    ? `
                 <div class="metric">
                     <span>E2E Tests:</span>
                     <span class="metric-value ${testResults.tests.e2e.success ? 'success' : 'failure'}">
                         ${testResults.tests.e2e.passed}/${testResults.tests.e2e.total}
                     </span>
                 </div>
-                ` : ''}
+                `
+                    : ''
+                }
 
-                ${testResults.tests.unit.frontend ? `
+                ${
+                  testResults.tests.unit.frontend
+                    ? `
                 <div class="metric">
                     <span>Frontend Unit:</span>
                     <span class="metric-value ${testResults.tests.unit.frontend.success ? 'success' : 'failure'}">
                         ${testResults.tests.unit.frontend.passed}/${testResults.tests.unit.frontend.total}
                     </span>
                 </div>
-                ` : ''}
+                `
+                    : ''
+                }
 
-                ${testResults.tests.unit.backend ? `
+                ${
+                  testResults.tests.unit.backend
+                    ? `
                 <div class="metric">
                     <span>Backend Unit:</span>
                     <span class="metric-value ${testResults.tests.unit.backend.success ? 'success' : 'failure'}">
                         ${testResults.tests.unit.backend.passed}/${testResults.tests.unit.backend.total}
                     </span>
                 </div>
-                ` : ''}
+                `
+                    : ''
+                }
             </div>
 
             <!-- Performance Card -->
             <div class="card">
                 <h3>⚡ Performance</h3>
-                ${testResults.quality.performance ? `
+                ${
+                  testResults.quality.performance
+                    ? `
                 <div class="metric">
                     <span>First Contentful Paint:</span>
                     <span class="metric-value ${testResults.quality.performance.budgetPassed.fcp ? 'success' : 'failure'}">
@@ -389,13 +446,17 @@ function generateHTMLReport(testResults) {
                         ${testResults.quality.performance.cls}
                     </span>
                 </div>
-                ` : '<p>Performance metrics not available</p>'}
+                `
+                    : '<p>Performance metrics not available</p>'
+                }
             </div>
 
             <!-- Accessibility Card -->
             <div class="card">
                 <h3>♿ Accessibility</h3>
-                ${testResults.quality.accessibility ? `
+                ${
+                  testResults.quality.accessibility
+                    ? `
                 <div class="metric">
                     <span>Violations:</span>
                     <span class="metric-value ${testResults.quality.accessibility.success ? 'success' : 'failure'}">
@@ -406,7 +467,9 @@ function generateHTMLReport(testResults) {
                     <span>Passes:</span>
                     <span class="metric-value success">${testResults.quality.accessibility.passes}</span>
                 </div>
-                ` : '<p>Accessibility results not available</p>'}
+                `
+                    : '<p>Accessibility results not available</p>'
+                }
             </div>
         </div>
 
@@ -416,18 +479,18 @@ function generateHTMLReport(testResults) {
     </div>
 </body>
 </html>
-  `
+  `;
 
-  fs.writeFileSync(path.join(config.outputDir, 'test-report.html'), html)
+  fs.writeFileSync(path.join(config.outputDir, 'test-report.html'), html);
 }
 
 /**
  * Generate Slack notification payload
  */
 function generateSlackNotification(testResults) {
-  const emoji = testResults.overall.success ? '✅' : '❌'
-  const status = testResults.overall.success ? 'PASSED' : 'FAILED'
-  const color = testResults.overall.success ? '#36a64f' : '#ff0000'
+  const emoji = testResults.overall.success ? '✅' : '❌';
+  const status = testResults.overall.success ? 'PASSED' : 'FAILED';
+  const color = testResults.overall.success ? '#36a64f' : '#ff0000';
 
   const notification = {
     text: `${emoji} MoneyWise Test Suite ${status}`,
@@ -436,53 +499,60 @@ function generateSlackNotification(testResults) {
         color: color,
         fields: [
           {
-            title: "Branch",
+            title: 'Branch',
             value: testResults.metadata.branch,
-            short: true
+            short: true,
           },
           {
-            title: "Commit",
+            title: 'Commit',
             value: testResults.metadata.commitSha,
-            short: true
+            short: true,
           },
           {
-            title: "Frontend Coverage",
-            value: testResults.coverage.frontend ? `${testResults.coverage.frontend.lines}%` : 'N/A',
-            short: true
+            title: 'Frontend Coverage',
+            value: testResults.coverage.frontend
+              ? `${testResults.coverage.frontend.lines}%`
+              : 'N/A',
+            short: true,
           },
           {
-            title: "Backend Coverage",
-            value: testResults.coverage.backend ? `${testResults.coverage.backend.lines}%` : 'N/A',
-            short: true
-          }
+            title: 'Backend Coverage',
+            value: testResults.coverage.backend
+              ? `${testResults.coverage.backend.lines}%`
+              : 'N/A',
+            short: true,
+          },
         ],
         actions: [
           {
-            type: "button",
-            text: "View Pipeline",
-            url: testResults.metadata.pipelineUrl
-          }
+            type: 'button',
+            text: 'View Pipeline',
+            url: testResults.metadata.pipelineUrl,
+          },
         ],
-        footer: "MoneyWise CI/CD",
-        ts: Math.floor(Date.now() / 1000)
-      }
-    ]
-  }
+        footer: 'MoneyWise CI/CD',
+        ts: Math.floor(Date.now() / 1000),
+      },
+    ],
+  };
 
   if (!testResults.overall.success) {
     notification.attachments[0].fields.push({
-      title: "Issues",
+      title: 'Issues',
       value: testResults.overall.issues.join('\\n'),
-      short: false
-    })
+      short: false,
+    });
   }
 
-  fs.writeFileSync(path.join(config.outputDir, 'slack-notification.json'), JSON.stringify(notification, null, 2))
+  fs.writeFileSync(
+    path.join(config.outputDir, 'slack-notification.json'),
+    JSON.stringify(notification, null, 2)
+  );
 }
 
 // Run the report generator
 if (require.main === module) {
-  generateReport()
+  generateReport();
 }
 
-module.exports = { generateReport, config }
+module.exports = { generateReport, config };

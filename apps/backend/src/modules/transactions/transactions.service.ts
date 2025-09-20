@@ -2,16 +2,23 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between } from 'typeorm';
 import { Transaction } from './transaction.entity';
-import { CreateTransactionDto, UpdateTransactionDto, TransactionQueryDto } from './dto/transaction.dto';
+import {
+  CreateTransactionDto,
+  UpdateTransactionDto,
+  TransactionQueryDto,
+} from './dto/transaction.dto';
 
 @Injectable()
 export class TransactionsService {
   constructor(
     @InjectRepository(Transaction)
-    private transactionRepository: Repository<Transaction>,
+    private transactionRepository: Repository<Transaction>
   ) {}
 
-  async create(userId: string, createTransactionDto: CreateTransactionDto): Promise<Transaction> {
+  async create(
+    userId: string,
+    createTransactionDto: CreateTransactionDto
+  ): Promise<Transaction> {
     const transaction = this.transactionRepository.create({
       ...createTransactionDto,
       userId,
@@ -21,9 +28,12 @@ export class TransactionsService {
     return await this.transactionRepository.save(transaction);
   }
 
-  async findAll(userId: string, query: TransactionQueryDto): Promise<{ transactions: Transaction[], total: number }> {
+  async findAll(
+    userId: string,
+    query: TransactionQueryDto
+  ): Promise<{ transactions: Transaction[]; total: number }> {
     const { category, type, startDate, endDate, page = 1, limit = 10 } = query;
-    
+
     const queryBuilder = this.transactionRepository
       .createQueryBuilder('transaction')
       .where('transaction.userId = :userId', { userId });
@@ -37,10 +47,13 @@ export class TransactionsService {
     }
 
     if (startDate && endDate) {
-      queryBuilder.andWhere('transaction.date BETWEEN :startDate AND :endDate', {
-        startDate,
-        endDate,
-      });
+      queryBuilder.andWhere(
+        'transaction.date BETWEEN :startDate AND :endDate',
+        {
+          startDate,
+          endDate,
+        }
+      );
     }
 
     queryBuilder
@@ -65,11 +78,15 @@ export class TransactionsService {
     return transaction;
   }
 
-  async update(userId: string, id: string, updateTransactionDto: UpdateTransactionDto): Promise<Transaction> {
+  async update(
+    userId: string,
+    id: string,
+    updateTransactionDto: UpdateTransactionDto
+  ): Promise<Transaction> {
     const transaction = await this.findOne(userId, id);
-    
+
     Object.assign(transaction, updateTransactionDto);
-    
+
     return await this.transactionRepository.save(transaction);
   }
 
@@ -78,7 +95,10 @@ export class TransactionsService {
     await this.transactionRepository.remove(transaction);
   }
 
-  async getTransactionsByCategory(userId: string, period?: string): Promise<any[]> {
+  async getTransactionsByCategory(
+    userId: string,
+    period?: string
+  ): Promise<any[]> {
     const query = this.transactionRepository
       .createQueryBuilder('transaction')
       .select('transaction.category', 'category')
@@ -107,12 +127,18 @@ export class TransactionsService {
 
     return await this.transactionRepository
       .createQueryBuilder('transaction')
-      .select('DATE_TRUNC(\'month\', transaction.date)', 'month')
-      .addSelect('SUM(CASE WHEN transaction.type = \'income\' THEN transaction.amount ELSE 0 END)', 'income')
-      .addSelect('SUM(CASE WHEN transaction.type = \'expense\' THEN transaction.amount ELSE 0 END)', 'expenses')
+      .select("DATE_TRUNC('month', transaction.date)", 'month')
+      .addSelect(
+        "SUM(CASE WHEN transaction.type = 'income' THEN transaction.amount ELSE 0 END)",
+        'income'
+      )
+      .addSelect(
+        "SUM(CASE WHEN transaction.type = 'expense' THEN transaction.amount ELSE 0 END)",
+        'expenses'
+      )
       .where('transaction.userId = :userId', { userId })
       .andWhere('transaction.date >= :startDate', { startDate })
-      .groupBy('DATE_TRUNC(\'month\', transaction.date)')
+      .groupBy("DATE_TRUNC('month', transaction.date)")
       .orderBy('month', 'ASC')
       .getRawMany();
   }

@@ -1,4 +1,4 @@
-import { defineConfig, devices } from '@playwright/test'
+import { defineConfig, devices } from '@playwright/test';
 
 /**
  * Playwright Configuration for Staging Environment
@@ -16,11 +16,13 @@ export default defineConfig({
     ['html', { outputFolder: 'playwright-report' }],
     ['junit', { outputFile: 'test-results/results.xml' }],
     ['json', { outputFile: 'test-results/results.json' }],
-    ['line']
+    ['line'],
   ],
 
   use: {
-    baseURL: process.env.PLAYWRIGHT_BASE_URL || 'https://staging-money-wise.example.com',
+    baseURL:
+      process.env.PLAYWRIGHT_BASE_URL ||
+      'https://staging-money-wise.example.com',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
@@ -31,8 +33,8 @@ export default defineConfig({
 
     // Security headers validation
     extraHTTPHeaders: {
-      'X-Test-Environment': 'staging'
-    }
+      'X-Test-Environment': 'staging',
+    },
   },
 
   // Comprehensive browser coverage
@@ -41,43 +43,43 @@ export default defineConfig({
     {
       name: 'chromium-desktop',
       use: { ...devices['Desktop Chrome'] },
-      testMatch: /.*\.spec\.ts/
+      testMatch: /.*\.spec\.ts/,
     },
     {
       name: 'firefox-desktop',
       use: { ...devices['Desktop Firefox'] },
-      testMatch: /.*\.spec\.ts/
+      testMatch: /.*\.spec\.ts/,
     },
     {
       name: 'webkit-desktop',
       use: { ...devices['Desktop Safari'] },
-      testMatch: /.*\.spec\.ts/
+      testMatch: /.*\.spec\.ts/,
     },
 
     // Mobile Devices
     {
       name: 'mobile-chrome',
       use: { ...devices['Pixel 5'] },
-      testMatch: /.*\.(mobile|responsive)\.spec\.ts/
+      testMatch: /.*\.(mobile|responsive)\.spec\.ts/,
     },
     {
       name: 'mobile-safari',
       use: { ...devices['iPhone 12'] },
-      testMatch: /.*\.(mobile|responsive)\.spec\.ts/
+      testMatch: /.*\.(mobile|responsive)\.spec\.ts/,
     },
 
     // Tablet Devices
     {
       name: 'tablet-chrome',
       use: { ...devices['iPad Pro'] },
-      testMatch: /.*\.(tablet|responsive)\.spec\.ts/
+      testMatch: /.*\.(tablet|responsive)\.spec\.ts/,
     },
 
     // Accessibility Testing
     {
       name: 'accessibility',
       use: { ...devices['Desktop Chrome'] },
-      testMatch: /.*\.accessibility\.spec\.ts/
+      testMatch: /.*\.accessibility\.spec\.ts/,
     },
 
     // Performance Testing
@@ -86,18 +88,21 @@ export default defineConfig({
       use: {
         ...devices['Desktop Chrome'],
         launchOptions: {
-          args: ['--disable-dev-shm-usage', '--disable-background-timer-throttling']
-        }
+          args: [
+            '--disable-dev-shm-usage',
+            '--disable-background-timer-throttling',
+          ],
+        },
       },
-      testMatch: /.*\.performance\.spec\.ts/
+      testMatch: /.*\.performance\.spec\.ts/,
     },
 
     // Visual Regression Testing
     {
       name: 'visual-regression',
       use: { ...devices['Desktop Chrome'] },
-      testMatch: /.*\.visual\.spec\.ts/
-    }
+      testMatch: /.*\.visual\.spec\.ts/,
+    },
   ],
 
   // Global setup and teardown
@@ -112,12 +117,12 @@ export default defineConfig({
     threshold: 0.2,
     // Animation handling
     toHaveScreenshot: { threshold: 0.2, mode: 'local' },
-    toMatchSnapshot: { threshold: 0.2 }
+    toMatchSnapshot: { threshold: 0.2 },
   },
 
   // Output directories
   outputDir: 'test-results/',
 
   // Web server configuration for staging
-  webServer: undefined // Using external staging server
-})
+  webServer: undefined, // Using external staging server
+});

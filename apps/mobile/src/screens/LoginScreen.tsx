@@ -13,7 +13,7 @@ const LoginScreen = ({ navigation }: any) => {
       <View style={styles.content}>
         <Text style={styles.title}>Welcome to MoneyWise</Text>
         <Text style={styles.subtitle}>Smart personal finance tracking</Text>
-        
+
         <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
           <Text style={styles.loginButtonText}>Demo Login</Text>
         </TouchableOpacity>

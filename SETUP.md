@@ -3,12 +3,14 @@
 ## Quick Test Commands
 
 ### 1. Types Package
+
 ```bash
 cd packages/types
 npm install && npm run build
 ```
 
 ### 2. Backend API (Development)
+
 ```bash
 cd apps/backend
 npm install
@@ -19,13 +21,15 @@ npm run start:dev
 ```
 
 ### 3. Web Dashboard
+
 ```bash
-cd apps/web  
+cd apps/web
 npm install
 npm run dev
 ```
 
 ### 4. Mobile App
+
 ```bash
 cd apps/mobile
 npm install
@@ -58,7 +62,7 @@ docker-compose up -d
 # View logs
 docker-compose logs -f
 
-# Stop all services  
+# Stop all services
 docker-compose down
 ```
 

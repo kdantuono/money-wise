@@ -1,4 +1,11 @@
-import { IsString, IsNumber, IsEnum, IsOptional, IsDateString, IsBoolean } from 'class-validator';
+import {
+  IsString,
+  IsNumber,
+  IsEnum,
+  IsOptional,
+  IsDateString,
+  IsBoolean,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { BudgetPeriod } from '@money-wise/types';
 

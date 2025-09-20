@@ -2,7 +2,9 @@
 
 ## Overview
 
-This document outlines the testing standards, methodologies, and best practices implemented in the MoneyWise web application. Our testing strategy follows TDD (Test-Driven Development), KISS (Keep It Simple, Stupid), and SRP (Single Responsibility Principle) principles.
+This document outlines the testing standards, methodologies, and best practices implemented in the MoneyWise web
+application. Our testing strategy follows TDD (Test-Driven Development), KISS (Keep It Simple, Stupid), and SRP (Single
+Responsibility Principle) principles.
 
 ## Testing Philosophy
 
@@ -40,6 +42,7 @@ Our testing strategy follows the testing pyramid with the following distribution
 **Framework**: Jest + React Testing Library
 
 **Structure**:
+
 ```
 tests/unit/
 ├── ComponentName.test.tsx
@@ -48,24 +51,26 @@ tests/unit/
 ```
 
 **Best Practices**:
+
 - Test component behavior, not implementation details
 - Use descriptive test names following the pattern: "should [expected behavior] when [condition]"
 - Mock external dependencies
 - Focus on user interactions and expected outputs
 
 **Example Test Structure**:
+
 ```typescript
 describe('ComponentName', () => {
   describe('Feature Group', () => {
     it('should render correctly with default props', () => {
       // Arrange, Act, Assert
-    })
+    });
 
     it('should handle user interaction when clicked', () => {
       // Arrange, Act, Assert
-    })
-  })
-})
+    });
+  });
+});
 ```
 
 ### 2. Integration Tests (`tests/integration/`)
@@ -75,6 +80,7 @@ describe('ComponentName', () => {
 **Framework**: Jest + React Testing Library
 
 **Structure**:
+
 ```
 tests/integration/
 ├── FeatureFlow.test.tsx
@@ -85,6 +91,7 @@ tests/integration/
 ```
 
 **Best Practices**:
+
 - Test realistic user scenarios
 - Use mock providers for external dependencies
 - Verify state management between components
@@ -97,6 +104,7 @@ tests/integration/
 **Framework**: Playwright
 
 **Structure**:
+
 ```
 tests/e2e/
 ├── authentication.spec.ts
@@ -107,6 +115,7 @@ tests/e2e/
 **Configuration**: `playwright.config.ts`
 
 **Best Practices**:
+
 - Test critical user paths
 - Use page object pattern for complex flows
 - Include accessibility testing with @axe-core/playwright
@@ -144,6 +153,7 @@ it('should do something when condition is met', () => {
 Location: `tests/utils/render-helpers.tsx`
 
 Provides configured render function with necessary providers:
+
 - Authentication context
 - Theme providers
 - Router context (when needed)
@@ -181,15 +191,18 @@ Location: `tests/integration/__mocks__/`
 ## Visual Regression Testing
 
 ### Purpose
+
 Catch unintended visual changes and ensure UI consistency
 
 ### Implementation
+
 - Playwright screenshots for visual comparisons
 - Multiple viewport sizes (mobile, tablet, desktop)
 - Dark mode support
 - Loading states and interactions
 
 ### Best Practices
+
 - Stabilize animations before screenshots
 - Test across different viewport sizes
 - Include both light and dark themes
@@ -198,6 +211,7 @@ Catch unintended visual changes and ensure UI consistency
 ## CI/CD Integration
 
 ### Test Execution
+
 ```bash
 # Unit and Integration Tests
 npm run test
@@ -219,6 +233,7 @@ npm run test:coverage
 ```
 
 ### Performance Targets
+
 - Unit tests: < 10 seconds total
 - Integration tests: < 30 seconds total
 - E2E tests: < 2 minutes total
@@ -226,11 +241,13 @@ npm run test:coverage
 ## Code Coverage
 
 ### Targets
+
 - Overall coverage: > 80%
 - Critical components: > 90%
 - New features: 100% (TDD requirement)
 
 ### Exclusions
+
 - Configuration files
 - Mock files
 - Type definitions
@@ -283,6 +300,7 @@ npm run test:coverage
    - Check mock call counts and arguments
 
 ### Debugging Tools
+
 - Jest debug mode: `npm run test -- --detectOpenHandles`
 - React Testing Library debug: `screen.debug()`
 - Playwright debug: `npx playwright test --debug`
@@ -290,6 +308,7 @@ npm run test:coverage
 ## Maintenance
 
 ### Regular Tasks
+
 - Review and update test coverage reports
 - Refactor tests when components change
 - Update snapshots when UI changes are intentional
@@ -297,6 +316,7 @@ npm run test:coverage
 - Accessibility audit updates
 
 ### When to Update Tests
+
 - Component API changes
 - New features added
 - Bug fixes implemented
@@ -306,12 +326,14 @@ npm run test:coverage
 ## Resources
 
 ### Documentation
+
 - [Jest Documentation](https://jestjs.io/docs/getting-started)
 - [React Testing Library](https://testing-library.com/docs/react-testing-library/intro/)
 - [Playwright Documentation](https://playwright.dev/)
 - [Axe Accessibility Testing](https://github.com/dequelabs/axe-core)
 
 ### Internal Resources
+
 - Component documentation in Storybook (when available)
 - API documentation
 - Design system guidelines
@@ -319,4 +341,4 @@ npm run test:coverage
 
 ---
 
-*This document is maintained by the development team and should be updated as testing practices evolve.*
+_This document is maintained by the development team and should be updated as testing practices evolve._

@@ -1,7 +1,15 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from 'recharts';
 
 interface SpendingData {
   month: string;
@@ -30,40 +38,42 @@ export function SpendingChart() {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-        <div className="animate-pulse">
-          <div className="h-6 bg-gray-200 rounded w-1/3 mb-4"></div>
-          <div className="h-64 bg-gray-200 rounded"></div>
+      <div className='bg-white rounded-lg shadow-sm p-6 border border-gray-200'>
+        <div className='animate-pulse'>
+          <div className='h-6 bg-gray-200 rounded w-1/3 mb-4'></div>
+          <div className='h-64 bg-gray-200 rounded'></div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-      <h3 className="text-lg font-semibold text-gray-900 mb-6">Income vs Expenses</h3>
-      <ResponsiveContainer width="100%" height={300}>
+    <div className='bg-white rounded-lg shadow-sm p-6 border border-gray-200'>
+      <h3 className='text-lg font-semibold text-gray-900 mb-6'>
+        Income vs Expenses
+      </h3>
+      <ResponsiveContainer width='100%' height={300}>
         <LineChart data={data}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="month" />
+          <CartesianGrid strokeDasharray='3 3' />
+          <XAxis dataKey='month' />
           <YAxis />
-          <Tooltip 
+          <Tooltip
             formatter={(value: number) => [`$${value.toLocaleString()}`, '']}
-            labelFormatter={(label) => `Month: ${label}`}
+            labelFormatter={label => `Month: ${label}`}
           />
-          <Line 
-            type="monotone" 
-            dataKey="income" 
-            stroke="#10B981" 
+          <Line
+            type='monotone'
+            dataKey='income'
+            stroke='#10B981'
             strokeWidth={2}
-            name="Income"
+            name='Income'
           />
-          <Line 
-            type="monotone" 
-            dataKey="expenses" 
-            stroke="#EF4444" 
+          <Line
+            type='monotone'
+            dataKey='expenses'
+            stroke='#EF4444'
             strokeWidth={2}
-            name="Expenses"
+            name='Expenses'
           />
         </LineChart>
       </ResponsiveContainer>

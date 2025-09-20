@@ -1,4 +1,4 @@
-import '@testing-library/jest-dom'
+import '@testing-library/jest-dom';
 
 // Global test setup following KISS principle
 // Simple, minimal setup with clear purpose
@@ -15,7 +15,7 @@ jest.mock('next/navigation', () => ({
   }),
   useSearchParams: () => new URLSearchParams(),
   usePathname: () => '/',
-}))
+}));
 
 // Mock framer-motion to avoid animation issues in tests
 jest.mock('framer-motion', () => ({
@@ -26,29 +26,29 @@ jest.mock('framer-motion', () => ({
     input: 'input',
   },
   AnimatePresence: ({ children }: { children: React.ReactNode }) => children,
-}))
+}));
 
 // Global test utilities
 global.ResizeObserver = jest.fn().mockImplementation(() => ({
   observe: jest.fn(),
   unobserve: jest.fn(),
   disconnect: jest.fn(),
-}))
+}));
 
 // Suppress console errors in tests unless needed
-const originalError = console.error
+const originalError = console.error;
 beforeAll(() => {
   console.error = (...args: any[]) => {
     if (
       typeof args[0] === 'string' &&
       args[0].includes('Warning: ReactDOM.render is deprecated')
     ) {
-      return
+      return;
     }
-    originalError.call(console, ...args)
-  }
-})
+    originalError.call(console, ...args);
+  };
+});
 
 afterAll(() => {
-  console.error = originalError
-})
+  console.error = originalError;
+});

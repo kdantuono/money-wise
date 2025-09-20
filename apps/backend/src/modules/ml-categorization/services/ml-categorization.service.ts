@@ -15,12 +15,14 @@ export class MLCategorizationService {
     private predictionRepository: Repository<TransactionMLPrediction>,
     @InjectRepository(Transaction)
     private transactionRepository: Repository<Transaction>,
-    private mlModel: TransactionMLModel,
+    private mlModel: TransactionMLModel
   ) {}
 
-  async categorizeTransaction(transactionId: string): Promise<TransactionMLPrediction> {
+  async categorizeTransaction(
+    transactionId: string
+  ): Promise<TransactionMLPrediction> {
     const transaction = await this.transactionRepository.findOne({
-      where: { id: transactionId }
+      where: { id: transactionId },
     });
 
     if (!transaction) {
@@ -31,7 +33,7 @@ export class MLCategorizationService {
 
     // Find the category by name first
     let category = await this.categoryRepository.findOne({
-      where: { name: prediction.categoryId }
+      where: { name: prediction.categoryId },
     });
 
     // If category doesn't exist, create it
@@ -39,7 +41,7 @@ export class MLCategorizationService {
       category = this.categoryRepository.create({
         name: prediction.categoryId,
         isSystemCategory: true,
-        isActive: true
+        isActive: true,
       });
       category = await this.categoryRepository.save(category);
     }
@@ -59,7 +61,9 @@ export class MLCategorizationService {
     return await this.categoryRepository.find();
   }
 
-  async getTransactionPredictions(userId: string): Promise<TransactionMLPrediction[]> {
+  async getTransactionPredictions(
+    userId: string
+  ): Promise<TransactionMLPrediction[]> {
     return await this.predictionRepository
       .createQueryBuilder('prediction')
       .innerJoin('transaction', 't', 't.id = prediction.transactionId')

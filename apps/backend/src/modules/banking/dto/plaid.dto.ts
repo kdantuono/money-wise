@@ -1,4 +1,11 @@
-import { IsString, IsNotEmpty, IsOptional, IsArray, IsDateString, IsNumber } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  IsArray,
+  IsDateString,
+  IsNumber,
+} from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateLinkTokenDto {
@@ -7,7 +14,10 @@ export class CreateLinkTokenDto {
   @IsNotEmpty()
   userId: string;
 
-  @ApiProperty({ description: 'Client name for link initialization', required: false })
+  @ApiProperty({
+    description: 'Client name for link initialization',
+    required: false,
+  })
   @IsOptional()
   @IsString()
   clientName?: string;
@@ -17,7 +27,10 @@ export class CreateLinkTokenDto {
   @IsString()
   language?: string;
 
-  @ApiProperty({ description: 'Country codes for institutions', required: false })
+  @ApiProperty({
+    description: 'Country codes for institutions',
+    required: false,
+  })
   @IsOptional()
   @IsArray()
   countryCodes?: string[];
@@ -45,17 +58,26 @@ export class SyncTransactionsDto {
   @IsNotEmpty()
   plaidAccountId: string;
 
-  @ApiProperty({ description: 'Start date for transaction sync', required: false })
+  @ApiProperty({
+    description: 'Start date for transaction sync',
+    required: false,
+  })
   @IsOptional()
   @IsDateString()
   startDate?: string;
 
-  @ApiProperty({ description: 'End date for transaction sync', required: false })
+  @ApiProperty({
+    description: 'End date for transaction sync',
+    required: false,
+  })
   @IsOptional()
   @IsDateString()
   endDate?: string;
 
-  @ApiProperty({ description: 'Number of transactions to fetch', required: false })
+  @ApiProperty({
+    description: 'Number of transactions to fetch',
+    required: false,
+  })
   @IsOptional()
   @IsNumber()
   count?: number;

@@ -18,46 +18,100 @@ export class TransactionMLModel {
     let confidence = 0.5;
 
     // Food & Dining
-    if (this.containsKeywords(description + ' ' + merchantName, [
-      'restaurant', 'food', 'dining', 'grocery', 'starbucks', 'mcdonalds',
-      'subway', 'pizza', 'cafe', 'delivery', 'doordash', 'ubereats'
-    ])) {
+    if (
+      this.containsKeywords(description + ' ' + merchantName, [
+        'restaurant',
+        'food',
+        'dining',
+        'grocery',
+        'starbucks',
+        'mcdonalds',
+        'subway',
+        'pizza',
+        'cafe',
+        'delivery',
+        'doordash',
+        'ubereats',
+      ])
+    ) {
       categoryId = 'Food & Dining';
       confidence = 0.85;
     }
     // Transportation
-    else if (this.containsKeywords(description + ' ' + merchantName, [
-      'gas', 'fuel', 'uber', 'lyft', 'taxi', 'metro', 'bus', 'parking',
-      'shell', 'chevron', 'exxon', 'bp'
-    ])) {
+    else if (
+      this.containsKeywords(description + ' ' + merchantName, [
+        'gas',
+        'fuel',
+        'uber',
+        'lyft',
+        'taxi',
+        'metro',
+        'bus',
+        'parking',
+        'shell',
+        'chevron',
+        'exxon',
+        'bp',
+      ])
+    ) {
       categoryId = 'Transportation';
       confidence = 0.8;
     }
     // Shopping
-    else if (this.containsKeywords(description + ' ' + merchantName, [
-      'amazon', 'target', 'walmart', 'store', 'shop', 'retail', 'purchase'
-    ])) {
+    else if (
+      this.containsKeywords(description + ' ' + merchantName, [
+        'amazon',
+        'target',
+        'walmart',
+        'store',
+        'shop',
+        'retail',
+        'purchase',
+      ])
+    ) {
       categoryId = 'Shopping';
       confidence = 0.75;
     }
     // Bills & Utilities
-    else if (this.containsKeywords(description + ' ' + merchantName, [
-      'electric', 'utility', 'phone', 'internet', 'rent', 'mortgage', 'bill'
-    ])) {
+    else if (
+      this.containsKeywords(description + ' ' + merchantName, [
+        'electric',
+        'utility',
+        'phone',
+        'internet',
+        'rent',
+        'mortgage',
+        'bill',
+      ])
+    ) {
       categoryId = 'Bills & Utilities';
       confidence = 0.9;
     }
     // Entertainment
-    else if (this.containsKeywords(description + ' ' + merchantName, [
-      'netflix', 'spotify', 'movie', 'theater', 'entertainment', 'gaming'
-    ])) {
+    else if (
+      this.containsKeywords(description + ' ' + merchantName, [
+        'netflix',
+        'spotify',
+        'movie',
+        'theater',
+        'entertainment',
+        'gaming',
+      ])
+    ) {
       categoryId = 'Entertainment';
       confidence = 0.8;
     }
     // Income
-    else if (transaction.amount > 0 && this.containsKeywords(description, [
-      'salary', 'payroll', 'deposit', 'income', 'payment'
-    ])) {
+    else if (
+      transaction.amount > 0 &&
+      this.containsKeywords(description, [
+        'salary',
+        'payroll',
+        'deposit',
+        'income',
+        'payment',
+      ])
+    ) {
       categoryId = 'Income';
       confidence = 0.9;
     }
@@ -66,7 +120,7 @@ export class TransactionMLModel {
       categoryId,
       confidence,
       modelVersion: this.modelVersion,
-      features
+      features,
     };
   }
 

@@ -2,9 +2,9 @@ name: 🎭 MoneyWise Feature Integration Pipeline
 
 on:
   push:
-    branches: [ develop, 'future/**' ]
+    branches: [develop, 'future/**']
   pull_request:
-    branches: [ develop, main ]
+    branches: [develop, main]
 
 env:
   NODE_VERSION: '18'

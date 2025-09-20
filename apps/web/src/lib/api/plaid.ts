@@ -52,10 +52,11 @@ interface SyncTransactionsResponse {
 
 class PlaidApiClient {
   private getAuthHeaders(): HeadersInit {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : '';
+    const token =
+      typeof window !== 'undefined' ? localStorage.getItem('authToken') : '';
     return {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`,
+      Authorization: `Bearer ${token}`,
     };
   }
 
@@ -63,7 +64,11 @@ class PlaidApiClient {
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.message || data.error || `HTTP ${response.status}: ${response.statusText}`);
+      throw new Error(
+        data.message ||
+          data.error ||
+          `HTTP ${response.status}: ${response.statusText}`
+      );
     }
 
     return data.data || data;
@@ -72,12 +77,15 @@ class PlaidApiClient {
   /**
    * Create a link token for Plaid Link initialization
    */
-  async createLinkToken(userId: string, options?: {
-    clientName?: string;
-    language?: string;
-    countryCodes?: string[];
-    products?: string[];
-  }): Promise<PlaidLinkResponse> {
+  async createLinkToken(
+    userId: string,
+    options?: {
+      clientName?: string;
+      language?: string;
+      countryCodes?: string[];
+      products?: string[];
+    }
+  ): Promise<PlaidLinkResponse> {
     const response = await fetch(`${API_BASE_URL}/plaid/link-token`, {
       method: 'POST',
       headers: this.getAuthHeaders(),
@@ -93,19 +101,25 @@ class PlaidApiClient {
   /**
    * Exchange public token for access token and save account connections
    */
-  async exchangePublicToken(publicToken: string, metadata?: any): Promise<{
+  async exchangePublicToken(
+    publicToken: string,
+    metadata?: any
+  ): Promise<{
     accounts: PlaidAccount[];
     item: any;
     requestId: string;
   }> {
-    const response = await fetch(`${API_BASE_URL}/plaid/exchange-public-token`, {
-      method: 'POST',
-      headers: this.getAuthHeaders(),
-      body: JSON.stringify({
-        publicToken,
-        metadata,
-      }),
-    });
+    const response = await fetch(
+      `${API_BASE_URL}/plaid/exchange-public-token`,
+      {
+        method: 'POST',
+        headers: this.getAuthHeaders(),
+        body: JSON.stringify({
+          publicToken,
+          metadata,
+        }),
+      }
+    );
 
     return this.handleResponse(response);
   }
@@ -125,11 +139,14 @@ class PlaidApiClient {
   /**
    * Sync transactions for a specific account
    */
-  async syncTransactions(plaidAccountId: string, options?: {
-    startDate?: string;
-    endDate?: string;
-    count?: number;
-  }): Promise<SyncTransactionsResponse> {
+  async syncTransactions(
+    plaidAccountId: string,
+    options?: {
+      startDate?: string;
+      endDate?: string;
+      count?: number;
+    }
+  ): Promise<SyncTransactionsResponse> {
     const response = await fetch(`${API_BASE_URL}/plaid/sync-transactions`, {
       method: 'POST',
       headers: this.getAuthHeaders(),
@@ -146,10 +163,13 @@ class PlaidApiClient {
    * Get transactions for a specific account
    */
   async getAccountTransactions(accountId: string): Promise<PlaidTransaction[]> {
-    const response = await fetch(`${API_BASE_URL}/plaid/accounts/${accountId}/transactions`, {
-      method: 'GET',
-      headers: this.getAuthHeaders(),
-    });
+    const response = await fetch(
+      `${API_BASE_URL}/plaid/accounts/${accountId}/transactions`,
+      {
+        method: 'GET',
+        headers: this.getAuthHeaders(),
+      }
+    );
 
     return this.handleResponse<PlaidTransaction[]>(response);
   }
@@ -158,10 +178,13 @@ class PlaidApiClient {
    * Disconnect a bank account
    */
   async disconnectAccount(accountId: string): Promise<void> {
-    const response = await fetch(`${API_BASE_URL}/plaid/accounts/${accountId}/disconnect`, {
-      method: 'POST',
-      headers: this.getAuthHeaders(),
-    });
+    const response = await fetch(
+      `${API_BASE_URL}/plaid/accounts/${accountId}/disconnect`,
+      {
+        method: 'POST',
+        headers: this.getAuthHeaders(),
+      }
+    );
 
     return this.handleResponse(response);
   }

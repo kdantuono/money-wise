@@ -2,7 +2,9 @@
 
 ## Overview
 
-The MoneyWise Multi-Agent Orchestration System is a comprehensive tmux-based framework designed to coordinate multiple AI agents working simultaneously on different aspects of the MoneyWise personal finance application. This system enables efficient parallel development across feature clusters while maintaining code quality and coordination.
+The MoneyWise Multi-Agent Orchestration System is a comprehensive tmux-based framework designed to coordinate multiple
+AI agents working simultaneously on different aspects of the MoneyWise personal finance application. This system enables
+efficient parallel development across feature clusters while maintaining code quality and coordination.
 
 ## Architecture
 
@@ -368,10 +370,10 @@ npm run quality:gates
    ```bash
    # Check tmux installation
    tmux -V
-   
+
    # Kill existing sessions if needed
    tmux kill-server
-   
+
    # Restart orchestration
    ./scripts/orchestration-integration.sh init
    ./scripts/orchestration-integration.sh start
@@ -382,7 +384,7 @@ npm run quality:gates
    ```bash
    # Check agent status
    ./scripts/agent-monitoring.sh agents
-   
+
    # Restart specific cluster
    ./scripts/tmux-agent-orchestrator.sh restart-cluster ai-intelligence
    ```
@@ -392,7 +394,7 @@ npm run quality:gates
    ```bash
    # Check communication logs
    ./scripts/agent-communication.sh logs global
-   
+
    # Reinitialize communication
    ./scripts/agent-communication.sh init
    ```
@@ -492,7 +494,9 @@ The system supports different environments:
 
 ## Conclusion
 
-The MoneyWise Multi-Agent Orchestration System provides a powerful framework for coordinated development across multiple AI agents. By leveraging tmux sessions, structured communication, and comprehensive monitoring, it enables efficient parallel development while maintaining code quality and system reliability.
+The MoneyWise Multi-Agent Orchestration System provides a powerful framework for coordinated development across multiple
+AI agents. By leveraging tmux sessions, structured communication, and comprehensive monitoring, it enables efficient
+parallel development while maintaining code quality and system reliability.
 
 For additional support or questions, refer to the individual script help commands:
 
