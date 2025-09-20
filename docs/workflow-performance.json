@@ -1,0 +1,26 @@
+{
+  "timestamp": "2025-09-20T01:09:30Z",
+  "version": "1.0.0",
+  "metrics": {
+    "total_workflows": 15,
+    "cached_workflows": 1,
+    "claude_workflows": 10,
+    "cache_coverage_percent": 6.6,
+    "optimization_target": {
+      "max_workflows": 8,
+      "min_cache_coverage": 80,
+      "max_claude_workflows": 3
+    }
+  },
+  "issues": {
+    "styling_jsx_missing": true,
+    "eslint_config_missing": true,
+    "formatting_issues": false
+  },
+  "recommendations": [
+    "Consolidate workflows from 15 to 6-8",
+    "Improve caching coverage from 6% to 80%+",
+    "Reduce Claude workflows from 10 to 2-3",
+    "Fix immediate dependency and formatting issues"
+  ]
+}

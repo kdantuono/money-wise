@@ -1,0 +1,36 @@
+name: 📢 Workflow Notifications
+
+on:
+  workflow_run:
+    workflows: ["Optimized CI/CD", "MoneyWise CI/CD Pipeline"]
+    types: [completed]
+
+jobs:
+  notify-failure:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+    
+    steps:
+      - name: 🚨 Create failure issue
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const title = `🚨 Workflow Failure: ${context.payload.workflow_run.name}`;
+            const body = `
+            ## Workflow Failure Report
+            
+            **Workflow**: ${context.payload.workflow_run.name}
+            **Branch**: ${context.payload.workflow_run.head_branch}
+            **Commit**: ${context.payload.workflow_run.head_sha}
+            **Run URL**: ${context.payload.workflow_run.html_url}
+            
+            Please investigate and fix the issues causing this workflow to fail.
+            `;
+            
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: title,
+              body: body,
+              labels: ['bug', 'ci/cd', 'workflow-failure']
+            });
