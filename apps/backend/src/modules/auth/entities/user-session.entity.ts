@@ -51,7 +51,7 @@ export class UserSession {
   @CreateDateColumn()
   createdAt: Date;
 
-  @ManyToOne(() => User, user => user.sessions)
+  @ManyToOne(() => User)
   @JoinColumn({ name: 'userId' })
   user: User;
 }

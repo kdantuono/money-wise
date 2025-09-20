@@ -1,37 +1,31 @@
 FROM node:18-alpine
 
-# Install curl for health checks
-RUN apk add --no-cache curl
+# Install curl for health checks and development tools
+RUN apk add --no-cache curl git
 
 WORKDIR /app
 
-# Copy root package.json and install dependencies
+# Copy package files
 COPY package*.json ./
+
+# Install dependencies
 RUN npm install
 
-# Copy packages directory
-COPY packages/ ./packages/
+# Copy source code
+COPY . .
 
-# Copy backend app
-COPY apps/backend/ ./apps/backend/
+# Install backend dependencies
+WORKDIR /app/apps/backend
+RUN npm install
 
-# Build types package first
+# Build types package
 WORKDIR /app/packages/types
 RUN npm install && npm run build
 
-# Switch to backend directory
+# Switch back to backend
 WORKDIR /app/apps/backend
-
-# Install backend dependencies
-RUN npm install
-
-# Copy environment file
-COPY apps/backend/.env.example ./.env
-
-# Build the application
-RUN npm run build
 
 EXPOSE 3002
 
-# Start in development mode
-CMD ["npm", "run", "start:prod"]
+# Development mode with hot reload
+CMD ["npm", "run", "start:dev"]

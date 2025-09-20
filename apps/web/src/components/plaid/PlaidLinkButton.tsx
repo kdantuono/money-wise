@@ -14,10 +14,10 @@ import { Badge } from '@/components/ui/badge';
 import {
   Loader2,
   Plus,
-  Bank,
+  Building2 as Bank,
   CheckCircle,
   AlertCircle,
-  Sync,
+  RotateCw as Sync,
   X,
 } from 'lucide-react';
 import { usePlaidBanking } from '@/hooks/usePlaidLink';

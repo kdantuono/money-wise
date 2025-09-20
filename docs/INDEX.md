@@ -1,201 +1,196 @@
-# 📚 MoneyWise Documentation Index
+# 📚 MoneyWise MVP v0.1.0 Documentation Index
 
-## 🎯 **QUICK ACCESS DIRECTORY**
+> **Clean, focused documentation for MoneyWise personal finance application**
 
----
+## 🎯 Quick Access Directory
 
-## 🔄 **WORKFLOW DOCUMENTATION**
+### 🚀 **Getting Started**
+- **[Setup Guide](../SETUP.md)** 🔧 - Quick 5-minute setup for development
+- **[README](../README.md)** 📋 - Project overview and architecture
+- **[CLAUDE.md](../CLAUDE.md)** 🤖 - Enhanced development guidance with best practices
 
-### **Agent Orchestration**
+### 📋 **Strategic Planning & Decisions**
+- **[MVP Assessment Decisions](./MVP_ASSESSMENT_DECISIONS.md)** 🎯 - Core strategic decisions and rationale
+- **[Cleanup Strategy](./CLEANUP_STRATEGY.md)** 🧹 - Project cleanup and archival process
+- **[Architecture Guide](./plans/architecture.md)** 🏗️ - Comprehensive system architecture
 
-- **[Agent Orchestration Workflow](./workflow/AGENT_ORCHESTRATION_WORKFLOW.md)** 📋
-  - Complete 5-phase development workflow
-  - Brainstorming → Assignment → Development → Validation → Integration
-  - TDD methodology with micro-commits
-  - Quality gates and validation processes
+### 🏗️ **Architecture & Foundation**
 
-- **[Multi-Agent Orchestration](./workflow/MULTI_AGENT_ORCHESTRATION.md)** 🤖
-  - Advanced multi-agent coordination
-  - Tmux session management
-  - Real-time monitoring and synchronization
+#### **Current Architecture (Post-Cleanup)**
+- **Technology Stack**: NestJS + Next.js + TypeORM + PostgreSQL
+- **Development**: Simplified monorepo with quality gates
+- **Security**: JWT authentication, input validation, rate limiting
+- **Testing**: Jest + Playwright with 80% coverage requirement
 
-- **[CI/CD Restructuring Complete](./workflow/CI_CD_RESTRUCTURING_COMPLETE.md)** ✅
-  - Implementation summary and results
-  - All 7 goals achieved with bonus features
-  - Success metrics and deployment status
+#### **Archive Management**
+- **[Archive Manifest](../archive/ARCHIVE_MANIFEST.md)** 📦 - Complete inventory of archived code (850KB+)
+- **Advanced Features**: ML categorization, MFA, real-time notifications
+- **Infrastructure**: Complex CI/CD, Docker configs, agent orchestration
+- **Future Integration**: Ready for post-MVP restoration
 
----
+## 🔧 **Development Resources**
 
-## 🔧 **SETUP & CONFIGURATION**
-
-### **GitHub Integration**
-
-- **[MCP GitHub Integration Setup](./setup/MCP_GITHUB_INTEGRATION_SETUP.md)** 🔗
-  - Free GitHub MCPs configuration
-  - Automated PR creation and monitoring
-  - Security scanning integration
-  - Real-time workflow management
-
----
-
-## 🏗️ **ARCHITECTURE DOCUMENTATION**
-
-### **System Architecture**
-
-- **[Integration Strategy](./architecture/INTEGRATION_STRATEGY.md)** 📊
-  - 9-phase dependency-ordered integration
-  - Quality gates and success metrics
-  - Strategic feature planning
-
-- **[CI/CD Architecture](./architecture/CI_CD_ARCHITECTURE.md)** ⚙️
-  - Pipeline architecture and design
-  - Quality gates and automation
-  - Deployment strategies
-
-- **[Testing Standards](./architecture/TESTING_STANDARDS.md)** 🧪
-  - Comprehensive testing framework
-  - Quality assurance protocols
-  - Coverage requirements and validation
-
-- **[MoneyWise Architecture PDF](./architecture/MoneyWise%20-%20Architettura%20Moderna%20e%20Piano%20di%20Sviluppo.pdf)**
-  📄
-  - Complete architectural documentation (Italian)
-  - Modern development plan
-  - Technical specifications
-
----
-
-## 🎨 **ASSETS**
-
-### **Visual Resources**
-
-- **[Dashboard Preview](./assets/money-wise-dashboard-preview.png)** 🖼️
-  - MoneyWise dashboard UI preview
-  - Design reference and mockups
-
----
-
-## 🚀 **GETTING STARTED**
-
-### **For New Developers**
-
-1. **Setup Environment**: Check [../SETUP.md](../SETUP.md)
-2. **Read Guidelines**: Review [../CLAUDE.md](../CLAUDE.md)
-3. **Follow Workflow**: Use [Agent Orchestration Workflow](./workflow/AGENT_ORCHESTRATION_WORKFLOW.md)
-
-### **For Agents**
-
-1. **Development Process**: [Agent Orchestration Workflow](./workflow/AGENT_ORCHESTRATION_WORKFLOW.md)
-2. **Quality Standards**: [Testing Standards](./architecture/TESTING_STANDARDS.md)
-3. **Integration Guidelines**: [Integration Strategy](./architecture/INTEGRATION_STRATEGY.md)
-
-### **For DevOps/CI/CD**
-
-1. **GitHub Setup**: [MCP GitHub Integration](./setup/MCP_GITHUB_INTEGRATION_SETUP.md)
-2. **Pipeline Architecture**: [CI/CD Architecture](./architecture/CI_CD_ARCHITECTURE.md)
-3. **Implementation Results**: [CI/CD Restructuring Complete](./workflow/CI_CD_RESTRUCTURING_COMPLETE.md)
-
----
-
-## 📋 **KEY CONCEPTS**
-
-### **Agent Orchestration System**
-
-- **5-Phase Workflow**: Systematic development process
-- **Agile Micro-Commits**: TDD with comprehensive testing
-- **Quality Gates**: 80% coverage, zero TypeScript errors
-- **GitHub Integration**: Automated PR and CI/CD management
-
-### **Branch Strategy**
-
-```
-main (production)
-├── develop (integration)
-    ├── future/smart-budget-intelligence-backend-uuid
-    ├── future/realtime-financial-security-architect-uuid
-    └── future/advanced-banking-integration-frontend-uuid
-```
+### **Core Development**
+- **Database**: PostgreSQL with TypeORM (evaluated alternatives: Drizzle, Kysely)
+- **Frontend**: Next.js 14 App Router with Radix UI + Tailwind
+- **Authentication**: Simplified JWT (advanced auth archived)
+- **API**: RESTful with Swagger documentation
 
 ### **Quality Standards**
+- **Git Workflow**: Mandatory feature branches, quality gates, semantic commits
+- **Testing**: Unit (70%), Integration (20%), E2E (10%)
+- **Performance**: <1.5s load, <200ms API responses
+- **Security**: OWASP compliance, regular audits
 
-- **Code Coverage**: Minimum 80% (85% for production)
-- **Testing**: Unit, integration, E2E, security, performance
-- **Security**: Comprehensive scanning and validation
-- **Performance**: Core Web Vitals compliance
+### **Automation Scripts**
+Located in `.claude/scripts/`:
+- `init-session.sh` - Session initialization
+- `quality-check.sh` - Pre-commit quality gates
+- `session-complete.sh` - Session completion checklist
+- Pre-commit hooks configured automatically
 
----
+## 📊 **Project Status**
 
-## 🛠️ **AVAILABLE SCRIPTS**
+### **Current Phase: RESET → VALIDATION**
+- ✅ **Cleanup Complete**: 18/18 tasks (archived 850KB+ valuable code)
+- ✅ **Reset**: 4/5 tasks (fresh README, CLAUDE.md, SETUP.md, package.json v0.1.0)
+- 🔄 **Current**: Documentation updates
+- ⏳ **Next**: Validation phase (TypeScript, builds, quality standards)
 
-### **Core Orchestration**
+### **MVP Scope (v0.1.0)**
+**What's Included:**
+- ✅ User registration and authentication
+- ✅ Manual transaction entry and categorization
+- ✅ Basic account management
+- ✅ Simple budget tracking
+- ✅ Clean dashboard interface
+- ✅ Responsive web design
 
+**What's Archived (Future Features):**
+- 📦 AI-powered transaction categorization
+- 📦 Multi-factor authentication & social login
+- 📦 Bank connection & automatic imports
+- 📦 Real-time notifications
+- 📦 Advanced analytics & reporting
+- 📦 Mobile application
+
+## 🎓 **Development Workflow**
+
+### **Session Management**
 ```bash
-# Complete workflow orchestration
-./scripts/agent-workflow-orchestrator.sh
+# 1. Start Session
+.claude/scripts/init-session.sh
 
-# Agile micro-commit enforcement
-./scripts/agile-micro-commit-enforcer.sh
+# 2. Development Work
+# - Always use feature branches
+# - Commit frequently with semantic messages
+# - Quality gates run automatically
 
-# Branch management and migration
-./scripts/migrate-branches-to-future.sh
-
-# Real-time monitoring
-./scripts/orchestra-monitor.sh
+# 3. End Session
+.claude/scripts/session-complete.sh
 ```
 
-### **Quick Commands**
+### **Quality Gates (Automated)**
+- **TypeScript**: Zero compilation errors
+- **ESLint**: Code style and quality
+- **Prettier**: Consistent formatting
+- **Tests**: 80% minimum coverage
+- **Security**: High-vulnerability audit
 
-```bash
-# Start new feature
-./scripts/agent-workflow-orchestrator.sh brainstorm "feature-name" "description"
+### **Git Standards**
+- **Branches**: `feature/description`, `fix/description`, `chore/description`
+- **Commits**: Semantic versioning with co-authoring
+- **Hooks**: Pre-commit validation automatically enforced
 
-# Create micro-commit
-./scripts/agile-micro-commit-enforcer.sh commit agent-type tdd-phase "description" feature-name
+## 📁 **File Organization**
 
-# Monitor orchestra
-./scripts/orchestra-monitor.sh watch
-
-# Check migration status
-./scripts/migrate-branches-to-future.sh status
+### **Core Directories**
+```
+money-wise/
+├── apps/
+│   ├── backend/          # NestJS API server
+│   └── web/             # Next.js web dashboard
+├── packages/
+│   └── types/           # Shared TypeScript definitions
+├── .claude/
+│   ├── scripts/         # Automation scripts
+│   └── best-practices.md # Detailed development standards
+├── archive/             # Preserved valuable code (850KB+)
+│   ├── advanced-features/
+│   ├── agent-orchestration/
+│   └── infrastructure/
+└── docs/               # Strategic documentation
+    ├── plans/          # Architecture and planning
+    ├── sessions/       # Development session summaries
+    └── decisions/      # Architecture decision records
 ```
 
+### **Key Configuration Files**
+- **CLAUDE.md**: Enhanced development guidance
+- **SETUP.md**: Quick setup instructions
+- **README.md**: Project overview
+- **docker-compose.yml**: Development environment (being rebuilt)
+- **package.json**: v0.1.0 with cleaned dependencies
+
+## 🔍 **Archived Components**
+
+### **Advanced Features (Future Integration)**
+- **ML Categorization**: Complete AI transaction categorization system
+- **Advanced Auth**: MFA, OAuth, social login capabilities
+- **Real-time Features**: WebSocket notifications, live updates
+- **Performance Optimization**: Bundle optimization, caching strategies
+
+### **Infrastructure (Reference)**
+- **Complex CI/CD**: 12 GitHub workflows, GitLab CI/CD pipeline
+- **Docker Configs**: Production, development, CI configurations
+- **Agent Orchestration**: 17 automation scripts, multi-agent coordination
+
+### **Restoration Ready**
+All archived code includes:
+- Context for archival decision
+- Integration requirements
+- Dependencies and setup instructions
+- Quality status and test coverage
+
+## 🚨 **Important Notes**
+
+### **Development Philosophy**
+- **MVP First**: Core functionality over advanced features
+- **Quality Gates**: Every commit must pass validation
+- **Documentation**: Update docs with every architectural change
+- **Archive Awareness**: Valuable code preserved for future use
+
+### **Success Criteria**
+- 80%+ test coverage maintained
+- Zero TypeScript compilation errors
+- Sub-200ms API response times
+- Complete git commit history with co-authoring
+- Updated documentation with every change
+
+### **Future Development Tracks**
+When ready for post-MVP features:
+1. **Advanced Authentication**: Restore MFA, OAuth from archive
+2. **ML Features**: Integrate AI categorization system
+3. **Real-time**: Implement WebSocket notifications
+4. **Performance**: Consider ORM migration (Drizzle/Kysely)
+5. **Mobile**: Develop React Native application
+6. **Orchestration**: Restore agent automation for complex features
+
+## 📞 **Support & Resources**
+
+### **Getting Help**
+1. **Setup Issues**: See [SETUP.md](../SETUP.md) troubleshooting section
+2. **Architecture Questions**: Review [architecture.md](./plans/architecture.md)
+3. **Development Standards**: Check [.claude/best-practices.md](../.claude/best-practices.md)
+4. **Quality Issues**: Run `.claude/scripts/quality-check.sh`
+
+### **External Resources**
+- **API Documentation**: http://localhost:3002/api (when running)
+- **GitHub Issues**: Bug reports and feature requests
+- **TypeScript Documentation**: Official TypeScript docs
+- **NestJS Documentation**: Official NestJS guides
+- **Next.js Documentation**: Official Next.js documentation
+
 ---
 
-## 📊 **SUCCESS METRICS**
-
-### **Implementation Status**
-
-- ✅ **All 7 CI/CD Goals**: Completed with bonus features
-- ✅ **Branch Organization**: Clean `future/` naming convention
-- ✅ **Quality Automation**: Comprehensive testing at every commit
-- ✅ **GitHub Integration**: MCP automation active
-- ✅ **Production Ready**: World-class CI/CD system operational
-
-### **Quality Achievements**
-
-- **100% Branch Compliance**: All using `future/` convention
-- **Zero Breaking Changes**: Backward compatibility maintained
-- **80%+ Test Coverage**: Enforced at all levels
-- **Automated PR Management**: GitHub MCP integration
-- **Real-time Monitoring**: Active agent orchestration
-
----
-
-## 📚 **ADDITIONAL RESOURCES**
-
-### **Project Configuration**
-
-- **[CLAUDE.md](../CLAUDE.md)** - Claude Code instructions
-- **[README.md](../README.md)** - Main project overview
-- **[SETUP.md](../SETUP.md)** - Development environment setup
-
-### **External Links**
-
-- **GitHub Repository**: [MoneyWise](https://github.com/kdantuono/money-wise)
-- **CI/CD Pipelines**: GitHub Actions workflows
-- **MCP Documentation**: Anthropic MCP resources
-
----
-
-_This index provides quick access to all MoneyWise documentation. For detailed guides, click on the specific links
-above._
+**MoneyWise MVP v0.1.0** - Clean documentation for systematic development with enterprise-grade foundations.

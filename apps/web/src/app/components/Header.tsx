@@ -77,7 +77,7 @@ const Header = () => {
             <DropdownMenuTrigger asChild>
               <Button variant='ghost' className='relative h-8 w-8 rounded-full'>
                 <Avatar>
-                  <AvatarImage src={user?.avatar || '/placeholder.svg'} />
+                  <AvatarImage src={'/placeholder.svg'} />
                   <AvatarFallback className='bg-gradient-to-r from-blue-600 to-purple-600 text-white'>
                     {user?.name?.[0]?.toUpperCase() || 'U'}
                   </AvatarFallback>

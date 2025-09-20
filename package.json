@@ -1,17 +1,16 @@
 {
   "name": "money-wise",
-  "version": "1.0.0",
-  "description": "MoneyWise - Smart personal finance app with automatic tracking",
+  "version": "0.1.0",
+  "description": "MoneyWise MVP - Personal finance management application",
   "private": true,
   "workspaces": [
     "packages/*",
     "apps/*"
   ],
   "scripts": {
-    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:web\" \"npm run dev:mobile\"",
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:web\"",
     "dev:backend": "cd apps/backend && npm run start:dev",
     "dev:web": "cd apps/web && npm run dev",
-    "dev:mobile": "cd apps/mobile && npm start",
     "build": "npm run build:backend && npm run build:web",
     "build:backend": "cd apps/backend && npm run build",
     "build:web": "cd apps/web && npm run build",
@@ -26,28 +25,18 @@
     "lint:fix:web": "cd apps/web && npm run lint -- --fix",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,yml,yaml}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,yml,yaml}\"",
-    "quality:gates": "chmod +x scripts/quality-gates.sh && ./scripts/quality-gates.sh",
-    "quality:kiss": "chmod +x scripts/quality-gates.sh && ./scripts/quality-gates.sh kiss",
-    "quality:srp": "chmod +x scripts/quality-gates.sh && ./scripts/quality-gates.sh srp",
-    "quality:tdd": "chmod +x scripts/quality-gates.sh && ./scripts/quality-gates.sh tdd",
-    "merge:orchestrate": "chmod +x scripts/merge-orchestrator.sh && ./scripts/merge-orchestrator.sh",
-    "merge:validate": "chmod +x scripts/merge-orchestrator.sh && ./scripts/merge-orchestrator.sh validate",
-    "merge:status": "chmod +x scripts/merge-orchestrator.sh && ./scripts/merge-orchestrator.sh status",
-    "setup": "npm install && npm run setup:backend && npm run setup:web && npm run setup:mobile",
+    "setup": "npm install && npm run setup:backend && npm run setup:web",
     "setup:backend": "cd apps/backend && npm install",
-    "setup:web": "cd apps/web && npm install",
-    "setup:mobile": "cd apps/mobile && npm install"
+    "setup:web": "cd apps/web && npm install"
   },
   "devDependencies": {
     "concurrently": "^8.2.2",
-    "lerna": "^7.4.2",
     "prettier": "^3.0.0",
     "eslint": "^8.0.0",
     "@typescript-eslint/parser": "^6.0.0",
     "@typescript-eslint/eslint-plugin": "^6.0.0",
     "eslint-plugin-import": "^2.28.0",
-    "eslint-plugin-unused-imports": "^3.0.0",
-    "better-npm-audit": "^3.7.3"
+    "eslint-plugin-unused-imports": "^3.0.0"
   },
   "engines": {
     "node": ">=18.0.0",

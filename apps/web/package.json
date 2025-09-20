@@ -1,6 +1,6 @@
 {
   "name": "@money-wise/web",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "MoneyWise Web Dashboard - Next.js Frontend",
   "scripts": {
     "dev": "next dev",

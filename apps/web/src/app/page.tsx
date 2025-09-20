@@ -1,7 +1,7 @@
 'use client';
 
 import { SearchIcon, Plus, TrendingUp, ArrowUpRight } from 'lucide-react';
-import { motion } from 'framer-motion';
+// import { motion } from 'framer-motion'; // TODO: Fix framer-motion types
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { CreditCards } from './components/credit-cards';
@@ -39,16 +39,12 @@ const itemVariants = {
 export default function DashboardPage() {
   return (
     <DashboardWrapper>
-      <motion.div
+      <div
         className='min-h-screen bg-neutral-50 dark:bg-neutral-950'
-        initial='hidden'
-        animate='visible'
-        variants={containerVariants}
       >
         {/* Mobile Header with Enhanced Search */}
-        <motion.div
+        <div
           className='block lg:hidden bg-white dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800 p-4 sticky top-0 z-sticky'
-          variants={itemVariants}
         >
           <div className='flex items-center justify-between mb-4'>
             <div>
@@ -74,14 +70,13 @@ export default function DashboardPage() {
               aria-label='Search dashboard'
             />
           </div>
-        </motion.div>
+        </div>
 
         {/* Main Content Container */}
         <div className='p-4 lg:p-8 space-y-6 lg:space-y-8'>
           {/* Quick Stats Row - Mobile First - Money-Centric Psychology */}
-          <motion.div
+          <div
             className='grid grid-cols-2 lg:hidden gap-4 mb-6'
-            variants={itemVariants}
           >
             <div className='bg-gradient-to-br from-blue-600 to-blue-800 rounded-2xl p-4 text-white shadow-lg'>
               <div className='flex items-center justify-between'>
@@ -111,12 +106,11 @@ export default function DashboardPage() {
                 <ArrowUpRight className='h-6 w-6 text-green-500' />
               </div>
             </div>
-          </motion.div>
+          </div>
 
           {/* Cards and Recent Transactions Row */}
-          <motion.div
+          <div
             className='grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-6 gap-6'
-            variants={itemVariants}
           >
             {/* My Cards Section - Trust & Security Focus */}
             <div className='lg:col-span-2 xl:col-span-4 space-y-4'>
@@ -151,12 +145,11 @@ export default function DashboardPage() {
               </div>
               <RecentTransactions />
             </div>
-          </motion.div>
+          </div>
 
           {/* Analytics Row - Responsive Layout */}
-          <motion.div
+          <div
             className='grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-6 gap-6'
-            variants={itemVariants}
           >
             {/* Weekly Activity - Growth Visualization */}
             <div className='lg:col-span-2 xl:col-span-4 space-y-4'>
@@ -181,12 +174,11 @@ export default function DashboardPage() {
               </h2>
               <ExpenseStatistics />
             </div>
-          </motion.div>
+          </div>
 
           {/* Transfer and Balance History Row */}
-          <motion.div
+          <div
             className='grid grid-cols-1 lg:grid-cols-7 gap-6'
-            variants={itemVariants}
           >
             {/* Quick Transfer - Secure Money Movement */}
             <div className='lg:col-span-3 space-y-4'>
@@ -210,12 +202,12 @@ export default function DashboardPage() {
               </div>
               <BalanceHistory />
             </div>
-          </motion.div>
+          </div>
 
           {/* Mobile Bottom Navigation Spacing */}
           <div className='h-20 lg:hidden' aria-hidden='true' />
         </div>
-      </motion.div>
+      </div>
     </DashboardWrapper>
   );
 }

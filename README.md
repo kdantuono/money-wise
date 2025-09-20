@@ -1,326 +1,249 @@
-# MoneyWise - Smart Personal Finance App
+# MoneyWise MVP v0.1.0
 
-MoneyWise is a comprehensive personal finance application that automatically tracks your spending, subscriptions, and
-income by analyzing your financial activity. Built with a modern microservices architecture for scalability and
-performance.
+> **Personal Finance Management Application - Minimum Viable Product**
+>
+> Clean, simple, and reliable financial tracking for personal use
 
-## 🚀 Features
+## 🚀 Quick Start
 
-- **Automatic Transaction Tracking**: Smart categorization with ML
-- **Budget Management**: Create and track budgets with real-time alerts
-- **Real-time Sync**: Cross-platform synchronization
-- **Financial Analytics**: Detailed insights and spending trends
-- **Bank Integration**: Connect multiple bank accounts (via Plaid)
-- **Offline-first**: Works seamlessly without internet connection
-- **Multi-platform**: Web dashboard + React Native mobile apps
-- **E2E Security**: End-to-end encryption for all financial data
+### Prerequisites
+- Node.js 18.0+ and npm 8.0+
+- Docker and Docker Compose
+- PostgreSQL 15+ (via Docker)
+
+### Development Setup
+
+```bash
+# Clone and setup
+git clone <repository-url>
+cd money-wise
+npm run setup
+
+# Start development environment
+docker-compose up -d
+npm run dev
+```
+
+**Services will be available at:**
+- 🌐 **Web Dashboard**: http://localhost:3000
+- 🔧 **API Server**: http://localhost:3002
+- 📚 **API Documentation**: http://localhost:3002/api
 
 ## 🏗️ Architecture
 
-### Backend - Microservices (NestJS + PostgreSQL + Redis)
-
-- **API Gateway**: Central routing and authentication
-- **Transaction Service**: CRUD operations and ML categorization
-- **Budget Service**: Budget management and tracking
-- **Banking Service**: Bank connectivity and sync
-- **Analytics Service**: Financial insights and reporting
-
-### Frontend
-
-- **Web**: Next.js dashboard with React components
-- **Mobile**: React Native app for iOS and Android
-- **Shared Types**: TypeScript type definitions
-
-## 📋 Prerequisites
-
-- Node.js 18+ and npm
-- PostgreSQL 15+
-- Redis 7+
-- Docker & Docker Compose (optional)
-
-## 🛠️ Quick Start
-
-### Using Docker (Recommended)
-
-```bash
-# Clone the repository
-git clone https://github.com/kdantuono/money-wise.git
-cd money-wise
-
-# Start all services with Docker Compose
-docker-compose up -d
-
-# The services will be available at:
-# - Web Dashboard: http://localhost:3000
-# - API: http://localhost:3002
-# - API Docs: http://localhost:3002/api
-```
-
-### Manual Setup
-
-1. **Install dependencies**
-
-```bash
-npm install
-npm run setup
-```
-
-2. **Setup databases**
-
-```bash
-# Start PostgreSQL and Redis (or use Docker)
-docker run -d --name postgres -p 5432:5432 -e POSTGRES_DB=moneywise -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=password postgres:15
-docker run -d --name redis -p 6379:6379 redis:7-alpine
-```
-
-3. **Configure environment**
-
-```bash
-# Backend configuration
-cp apps/backend/.env.example apps/backend/.env
-# Update database credentials if needed
-```
-
-4. **Build shared packages**
-
-```bash
-cd packages/types && npm run build
-```
-
-5. **Start the applications**
-
-```bash
-# Terminal 1 - Backend API
-cd apps/backend
-npm run start:dev
-
-# Terminal 2 - Web Dashboard
-cd apps/web
-npm run dev
-
-# Terminal 3 - Mobile App (optional)
-cd apps/mobile
-npm start
-```
-
-## 📱 Applications
-
-### Web Dashboard (http://localhost:3000)
-
-- Comprehensive financial dashboard
-- Transaction management
-- Budget tracking with visual progress
-- Analytics and reports
-- Account management
-
-### Mobile App
-
-```bash
-cd apps/mobile
-npm start
-# Scan QR code with Expo Go app
-```
-
-### API Documentation (http://localhost:3002/api)
-
-- Interactive Swagger documentation
-- Test API endpoints
-- Authentication flows
-
-## 🔐 Authentication
-
-The application uses JWT-based authentication:
-
-1. **Register/Login** via `/auth/register` or `/auth/login`
-2. **Include JWT token** in Authorization header: `Bearer <token>`
-3. **Protected routes** require valid authentication
-
-Demo credentials:
-
-- Email: `demo@moneywise.com`
-- Password: `password123`
-
-## 📊 API Endpoints
-
-### Authentication
-
-- `POST /auth/register` - Register new user
-- `POST /auth/login` - Login user
-
-### Transactions
-
-- `GET /transactions` - List transactions
-- `POST /transactions` - Create transaction
-- `PUT /transactions/:id` - Update transaction
-- `DELETE /transactions/:id` - Delete transaction
-- `GET /transactions/analytics/by-category` - Category analytics
-
-### Budgets
-
-- `GET /budgets` - List budgets
-- `POST /budgets` - Create budget
-- `PUT /budgets/:id` - Update budget
-- `DELETE /budgets/:id` - Delete budget
-- `GET /budgets/performance` - Budget performance
-
-### Analytics
-
-- `GET /analytics/dashboard` - Dashboard overview
-- `GET /analytics/spending-trends` - Spending trends
-- `GET /analytics/category-analytics` - Category breakdown
-
-### Banking
-
-- `GET /banking/connections` - Bank connections
-- `POST /banking/connect` - Connect bank
-- `POST /banking/sync/:id` - Sync transactions
-
-## 🗄️ Database Schema
-
-### Core Tables
-
-- `users` - User accounts and profiles
-- `accounts` - Financial accounts (bank, credit, etc.)
-- `transactions` - Financial transactions
-- `budgets` - Budget definitions and tracking
-- `categories` - Transaction categories
-- `bank_connections` - Bank integration data
-
-### Key Relationships
-
-- Users → Accounts (1:many)
-- Accounts → Transactions (1:many)
-- Users → Budgets (1:many)
-- Users → Bank Connections (1:many)
-
-## 🔧 Development
-
-### Available Scripts
-
-```bash
-# Root level
-npm run dev          # Start all services
-npm run build        # Build all applications
-npm run test         # Run all tests
-npm run lint         # Lint all code
-
-# Backend specific
-npm run dev:backend      # Start backend in dev mode
-npm run build:backend    # Build backend
-npm run test:backend     # Test backend
-
-# Web specific
-npm run dev:web      # Start web app in dev mode
-npm run build:web    # Build web app
-npm run test:web     # Test web app
-
-# Mobile specific
-npm run dev:mobile   # Start mobile app
-```
-
-### Code Structure
-
+### Monorepo Structure
 ```
 money-wise/
 ├── apps/
-│   ├── backend/         # NestJS API
-│   │   ├── src/
-│   │   │   ├── modules/ # Feature modules
-│   │   │   ├── common/  # Shared utilities
-│   │   │   └── config/  # Configuration
-│   │   └── test/        # Tests
-│   ├── web/            # Next.js web app
-│   │   ├── src/
-│   │   │   ├── app/     # App router pages
-│   │   │   ├── components/ # React components
-│   │   │   ├── lib/     # Utilities
-│   │   │   └── hooks/   # Custom hooks
-│   └── mobile/         # React Native app
-│       ├── src/
-│       │   ├── screens/ # App screens
-│       │   ├── components/ # RN components
-│       │   └── navigation/ # Navigation
-└── packages/
-    ├── types/          # Shared TypeScript types
-    └── shared/         # Shared utilities
+│   ├── backend/          # NestJS API server
+│   └── web/             # Next.js web dashboard
+├── packages/
+│   └── types/           # Shared TypeScript definitions
+└── docs/               # Documentation and planning
 ```
 
-## 🧪 Testing
+### Technology Stack
+
+**Backend (NestJS)**
+- **Framework**: NestJS 10 with TypeScript
+- **Database**: PostgreSQL 15 with TypeORM
+- **Authentication**: JWT with bcrypt password hashing
+- **Caching**: Redis for session management
+- **Validation**: class-validator and class-transformer
+- **Documentation**: Swagger/OpenAPI integration
+
+**Frontend (Next.js)**
+- **Framework**: Next.js 14 with App Router
+- **UI Components**: Radix UI with Tailwind CSS
+- **State Management**: React Context and React Hook Form
+- **API Client**: Axios with proxy configuration
+- **Icons**: Lucide React and React Icons
+
+**Shared**
+- **Types**: Centralized TypeScript definitions
+- **Validation**: Zod schemas for client-side validation
+- **Tooling**: ESLint, Prettier, and Jest
+
+## 📋 Core Features
+
+### MVP Functionality
+- **User Authentication**: Secure registration and login
+- **Account Management**: Add and manage financial accounts
+- **Transaction Tracking**: Manual transaction entry and categorization
+- **Basic Budgeting**: Simple budget creation and tracking
+- **Dashboard**: Clean overview of financial status
+
+### Security Features
+- JWT-based authentication with 7-day expiration
+- Bcrypt password hashing
+- Rate limiting and request validation
+- Helmet middleware for security headers
+- Input sanitization and SQL injection prevention
+
+## 🛠️ Development
+
+### Essential Commands
 
 ```bash
-# Run all tests
-npm test
+# Development
+npm run dev                # Start all services
+npm run dev:backend       # Backend only (port 3002)
+npm run dev:web          # Frontend only (port 3000)
 
-# Backend tests
-cd apps/backend && npm test
+# Building
+npm run build            # Build all applications
+npm run build:backend    # Build NestJS API
+npm run build:web       # Build Next.js app
 
-# Web tests
-cd apps/web && npm test
+# Testing
+npm run test            # Run all tests
+npm run test:backend    # Backend Jest tests
+npm run test:web       # Frontend Jest tests
 
-# E2E tests
-npm run test:e2e
+# Code Quality
+npm run lint           # Lint all code
+npm run lint:fix       # Fix lint issues
+npm run format         # Format code with Prettier
 ```
+
+### Database Setup
+
+```bash
+# Database will be created automatically via Docker
+# Migrations run automatically on startup
+docker-compose up -d postgres redis
+```
+
+### Environment Configuration
+
+Create `.env` files:
+
+**Backend** (`apps/backend/.env`):
+```env
+NODE_ENV=development
+PORT=3002
+DATABASE_URL=postgresql://moneywise:password@localhost:5432/moneywise_dev
+JWT_SECRET=your-jwt-secret-key
+REDIS_URL=redis://localhost:6379
+```
+
+**Frontend** (`apps/web/.env.local`):
+```env
+NEXT_PUBLIC_API_URL=http://localhost:3002
+```
+
+## 📁 Project Structure
+
+### Backend Modules
+- **auth/**: User authentication and session management
+- **transactions/**: Transaction CRUD and categorization
+- **budgets/**: Budget creation and tracking
+- **analytics/**: Basic financial reporting
+- **banking/**: Account management
+- **security/**: Security middleware and validation
+
+### Frontend Structure
+- **app/**: Next.js App Router pages and layouts
+- **components/**: Reusable UI components
+- **contexts/**: React Context providers
+- **hooks/**: Custom React hooks
+- **lib/**: Utility functions and configurations
+- **types/**: Frontend-specific type definitions
+
+## 🔒 Security & Compliance
+
+### Authentication Flow
+1. User registers with email/password
+2. Password hashed with bcrypt
+3. JWT token issued on successful login
+4. Token required for all protected endpoints
+5. Automatic token refresh on API calls
+
+### Data Protection
+- All database connections encrypted
+- Sensitive data encrypted at rest
+- No plaintext password storage
+- Rate limiting on authentication endpoints
+- CORS configuration for frontend access
+
+## 🚦 API Documentation
+
+Interactive API documentation available at:
+- **Development**: http://localhost:3002/api
+- **Swagger UI**: Complete endpoint documentation
+- **Schema Validation**: Request/response examples
+
+### Key Endpoints
+```
+POST /auth/register     # User registration
+POST /auth/login        # User authentication
+GET  /auth/profile      # User profile
+GET  /transactions      # List transactions
+POST /transactions      # Create transaction
+GET  /budgets          # List budgets
+POST /budgets          # Create budget
+```
+
+## 🧪 Testing Strategy
+
+### Test Coverage
+- **Backend**: Jest unit and integration tests
+- **Frontend**: Jest and React Testing Library
+- **E2E**: Playwright (future implementation)
+- **Target Coverage**: 80% minimum
+
+### Running Tests
+```bash
+npm run test                    # All tests
+npm run test:coverage          # Coverage report
+npm run test:watch            # Watch mode
+```
+
+## 📚 Documentation
+
+- **Architecture**: `/docs/plans/architecture.md`
+- **API Reference**: http://localhost:3002/api
+- **Development Guide**: This README
+- **Planning Docs**: `/docs/` directory
+
+## 🎯 MVP Scope
+
+### What's Included
+✅ User registration and authentication
+✅ Manual transaction entry
+✅ Basic account management
+✅ Simple budget tracking
+✅ Clean dashboard interface
+✅ Responsive web design
+
+### Future Features (Post-MVP)
+- Bank connection and automatic transaction import
+- Advanced analytics and reporting
+- Multi-factor authentication
+- Mobile application
+- AI-powered categorization
+- Real-time notifications
 
 ## 🚀 Deployment
 
-### Production Environment Variables
-
+### Development
 ```bash
-# Backend (.env)
-NODE_ENV=production
-DB_HOST=your-postgres-host
-DB_PASSWORD=secure-password
-JWT_SECRET=super-secure-jwt-secret
-REDIS_HOST=your-redis-host
-
-# External APIs
-PLAID_CLIENT_ID=your-plaid-client-id
-PLAID_SECRET=your-plaid-secret
-PLAID_ENV=production
+docker-compose up -d
+npm run dev
 ```
 
-### Docker Production
-
+### Production Build
 ```bash
-# Build production images
-docker-compose -f docker-compose.prod.yml build
-
-# Deploy
-docker-compose -f docker-compose.prod.yml up -d
+npm run build
+# Docker production setup coming soon
 ```
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## 📝 License
-
-This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
-
-## 🏭 Roadmap
-
-- [ ] Plaid integration for bank connectivity
-- [ ] Machine learning transaction categorization
-- [ ] Receipt scanning with OCR
-- [ ] Bill tracking and reminders
-- [ ] Investment portfolio tracking
-- [ ] Financial goal setting and tracking
-- [ ] Multi-currency support
-- [ ] Advanced reporting and exports
-- [ ] Mobile notifications
-- [ ] Subscription management
 
 ## 📞 Support
 
-For support, email support@moneywise.app or join our [Discord community](https://discord.gg/moneywise).
+- **Issues**: GitHub Issues
+- **Documentation**: `/docs/` directory
+- **Architecture**: See architecture documentation for detailed system design
 
-## 🙏 Acknowledgments
+---
 
-- [Razor-eng/financial-dashboard](https://github.com/Razor-eng/financial-dashboard) - Web dashboard inspiration
-- [noelzappy/react-native-finance-app-ui-demo](https://github.com/noelzappy/react-native-finance-app-ui-demo) - Mobile
-  UI reference
-- NestJS, Next.js, React Native communities
+**MoneyWise MVP v0.1.0** - Simple, reliable personal finance management
