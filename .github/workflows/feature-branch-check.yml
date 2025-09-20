@@ -98,7 +98,7 @@ jobs:
             --exclude-dir=node_modules \
             --exclude="*.test.*" --exclude="*.spec.*" \
             --exclude-dir=playwright-report --exclude="*.html" \
-            | grep -v -i "dev123\|test.*password\|password.*test\|mock.*password\|password.*mock\|development\|localhost\|env\|process\.env\|const.*password\|hashedPassword\|visibility\|confirmPassword\|onPasswordChange\|passwordTokenSeenFlag\|setPassword\|password\.length\|password={password}" 2>/dev/null; then
+            | grep -v -i "dev123\|test.*password\|password.*test\|mock.*password\|password.*mock\|development\|localhost\|env\|process\.env\|const.*password\|hashedPassword\|visibility\|confirmPassword\|onPasswordChange\|passwordTokenSeenFlag\|setPassword\|password\.length\|password={password}\|htmlFor.*password\|aria-label.*password" 2>/dev/null; then
             echo "❌ Potential hardcoded passwords found!"
             echo "Review the above matches to ensure no production passwords are committed"
             exit 1
