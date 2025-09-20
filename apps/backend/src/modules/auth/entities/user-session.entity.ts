@@ -7,6 +7,7 @@ import {
   JoinColumn,
   Index,
 } from 'typeorm';
+
 import { User } from '../user.entity';
 
 @Entity('user_sessions')

@@ -1,8 +1,9 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { Request } from 'express';
-import { InjectRedis } from '@nestjs-modules/ioredis';
-import Redis from 'ioredis';
 import * as crypto from 'crypto';
+
+import { Injectable, Logger } from '@nestjs/common';
+import { InjectRedis } from '@nestjs-modules/ioredis';
+import { Request } from 'express';
+import Redis from 'ioredis';
 
 export interface RateLimitResult {
   allowed: boolean;

@@ -5,12 +5,14 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   OneToMany,
-  OneToOne,
 } from 'typeorm';
-import { Transaction } from '../transactions/transaction.entity';
-import { Budget } from '../budgets/budget.entity';
-import { Account } from './account.entity';
+
 import { PlaidAccount } from '../banking/entities/plaid-account.entity';
+import { Budget } from '../budgets/budget.entity';
+import { Transaction } from '../transactions/transaction.entity';
+
+import { Account } from './account.entity';
+
 // import { UserSession } from './entities/user-session.entity';
 
 @Entity('users')

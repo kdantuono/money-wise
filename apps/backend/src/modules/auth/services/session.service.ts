@@ -1,11 +1,13 @@
+import * as crypto from 'crypto';
+
 import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, LessThan } from 'typeorm';
-import { JwtService } from '@nestjs/jwt';
+
 import { UserSession } from '../entities/user-session.entity';
 import { User } from '../user.entity';
-import * as crypto from 'crypto';
-import { Request } from 'express';
+
 
 export interface TokenPair {
   accessToken: string;

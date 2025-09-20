@@ -6,6 +6,7 @@ import {
   ManyToOne,
   Index,
 } from 'typeorm';
+
 import { PlaidAccount } from './plaid-account.entity';
 
 @Entity('plaid_transactions')

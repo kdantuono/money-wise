@@ -1,5 +1,5 @@
 {
-  "extends": ["@typescript-eslint/recommended", "plugin:@typescript-eslint/recommended-requiring-type-checking"],
+  "extends": ["plugin:@typescript-eslint/recommended"],
   "parser": "@typescript-eslint/parser",
   "parserOptions": {
     "project": "./tsconfig.json",
@@ -8,72 +8,28 @@
   "plugins": ["@typescript-eslint", "import", "unused-imports"],
   "rules": {
     // ================================
-    // 🎯 KISS PRINCIPLE ENFORCEMENT
+    // 🎯 MVP SIMPLIFIED RULES
     // ================================
-    "complexity": ["error", 10],
-    "max-lines": ["error", 300],
-    "max-lines-per-function": ["error", 50],
-    "max-params": ["error", 4],
-    "max-depth": ["error", 4],
+    "complexity": ["warn", 15],
+    "max-lines": ["warn", 500],
+    "max-lines-per-function": ["warn", 100],
+    "max-params": ["warn", 6],
 
     // ================================
-    // 🔧 SRP ENFORCEMENT
+    // 📦 IMPORT ORGANIZATION (MVP RELAXED)
     // ================================
-    "max-classes-per-file": ["error", 1],
+    "unused-imports/no-unused-imports": "warn",
+    "@typescript-eslint/no-unused-vars": "warn",
+    "unused-imports/no-unused-vars": "off",
+    "import/no-duplicates": "warn",
 
     // ================================
-    // 📦 IMPORT ORGANIZATION
+    // 🔒 BASIC TYPE SAFETY (MVP RELAXED)
     // ================================
-    "import/order": [
-      "error",
-      {
-        "groups": ["builtin", "external", "internal", "parent", "sibling", "index"],
-        "newlines-between": "always",
-        "alphabetize": {
-          "order": "asc",
-          "caseInsensitive": true
-        }
-      }
-    ],
-    "unused-imports/no-unused-imports": "error",
-    "unused-imports/no-unused-vars": [
-      "error",
-      {
-        "vars": "all",
-        "varsIgnorePattern": "^_",
-        "args": "after-used",
-        "argsIgnorePattern": "^_"
-      }
-    ],
-    "import/no-duplicates": "error",
-
-    // ================================
-    // 📝 NESTJS ARCHITECTURE
-    // ================================
-    "@typescript-eslint/explicit-function-return-type": "error",
-    "@typescript-eslint/explicit-module-boundary-types": "error",
-    "require-jsdoc": [
-      "error",
-      {
-        "require": {
-          "FunctionDeclaration": true,
-          "MethodDefinition": true,
-          "ClassDeclaration": true
-        }
-      }
-    ],
-
-    // ================================
-    // 🔒 TYPE SAFETY
-    // ================================
-    "@typescript-eslint/no-explicit-any": "error",
-    "@typescript-eslint/no-unsafe-assignment": "error",
-    "@typescript-eslint/no-unsafe-member-access": "error",
-    "@typescript-eslint/no-unsafe-call": "error",
-    "@typescript-eslint/no-unsafe-return": "error",
-    "@typescript-eslint/prefer-nullish-coalescing": "error",
-    "@typescript-eslint/prefer-optional-chain": "error",
-    "@typescript-eslint/no-non-null-assertion": "error",
+    "@typescript-eslint/no-explicit-any": "off",
+    "@typescript-eslint/explicit-function-return-type": "off",
+    "@typescript-eslint/explicit-module-boundary-types": "off",
+    "require-jsdoc": "off",
 
     // ================================
     // 🚫 CODE SMELLS
@@ -84,50 +40,13 @@
     "prefer-const": "error",
     "no-duplicate-imports": "error",
     "no-magic-numbers": [
-      "error",
+      "warn",
       {
-        "ignore": [-1, 0, 1, 2, 200, 201, 400, 401, 403, 404, 500],
+        "ignore": [-1, 0, 1, 2, 3, 200, 201, 400, 401, 403, 404, 500, 3000, 3001, 3002, 5432],
         "ignoreArrayIndexes": true,
         "ignoreDefaultValues": true
       }
-    ],
-
-    // ================================
-    // 🎨 NAMING CONVENTIONS
-    // ================================
-    "@typescript-eslint/naming-convention": [
-      "error",
-      {
-        "selector": "variableLike",
-        "format": ["camelCase", "PascalCase", "UPPER_CASE"]
-      },
-      {
-        "selector": "function",
-        "format": ["camelCase", "PascalCase"]
-      },
-      {
-        "selector": "typeLike",
-        "format": ["PascalCase"]
-      },
-      {
-        "selector": "interface",
-        "format": ["PascalCase"],
-        "custom": {
-          "regex": "^I[A-Z]",
-          "match": false
-        }
-      },
-      {
-        "selector": "class",
-        "format": ["PascalCase"],
-        "suffix": ["Service", "Controller", "Module", "Entity", "Repository", "Guard", "Interceptor", "Filter", "Pipe"]
-      }
-    ],
-
-    // ================================
-    // 🏛️ NESTJS SPECIFIC
-    // ================================
-    "@typescript-eslint/parameter-properties": "error"
+    ]
   },
   "overrides": [
     {

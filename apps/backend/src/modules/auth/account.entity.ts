@@ -1,3 +1,4 @@
+import { AccountType } from '@money-wise/types';
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -7,9 +8,10 @@ import {
   ManyToOne,
   OneToMany,
 } from 'typeorm';
-import { User } from './user.entity';
+
 import { Transaction } from '../transactions/transaction.entity';
-import { AccountType } from '@money-wise/types';
+
+import { User } from './user.entity';
 
 @Entity('accounts')
 export class Account {

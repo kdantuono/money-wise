@@ -1,3 +1,5 @@
+import { BudgetPeriod } from '@money-wise/types';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsString,
   IsNumber,
@@ -6,8 +8,6 @@ import {
   IsDateString,
   IsBoolean,
 } from 'class-validator';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { BudgetPeriod } from '@money-wise/types';
 
 export class CreateBudgetDto {
   @ApiProperty()
