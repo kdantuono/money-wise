@@ -47,7 +47,10 @@
     "validate:cache": "node scripts/validate-ci-cache.js",
     "cache:report": "node scripts/validate-ci-cache.js report",
     "cache:clean": "node scripts/validate-ci-cache.js clean",
-    "cache:verify": "npm cache verify && npm run validate:cache"
+    "cache:verify": "npm cache verify && npm run validate:cache",
+    "heal:auto": "node scripts/auto-heal-ci.js",
+    "heal:report": "node scripts/auto-heal-ci.js report",
+    "infrastructure:health": "npm run validate:lockfile && npm run validate:cache && npm run heal:auto"
   },
   "devDependencies": {
     "@next/bundle-analyzer": "^15.5.3",
