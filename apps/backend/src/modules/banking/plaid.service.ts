@@ -85,7 +85,7 @@ export class PlaidService {
   async exchangePublicToken(
     userId: string,
     publicToken: string,
-    metadata?: any
+    _metadata?: any
   ): Promise<{
     accounts: any[];
     item: any;
@@ -328,8 +328,8 @@ export class PlaidService {
       webhookType,
       webhookCode,
       itemId,
-      newTransactions,
-      removedTransactions,
+      newTransactions: _newTransactions,
+      removedTransactions: _removedTransactions,
     } = webhookData;
     const webhook_type = webhookType;
     const webhook_code = webhookCode;
@@ -435,7 +435,7 @@ export class PlaidService {
   }
 
   // Legacy method - will be deprecated
-  async connectBank(userId: string, bankData: any): Promise<any> {
+  async connectBank(userId: string, _bankData: any): Promise<any> {
     // Redirect to new Plaid implementation
     return this.initializePlaidLink(userId);
   }
