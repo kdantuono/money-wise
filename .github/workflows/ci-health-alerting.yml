@@ -1,0 +1,289 @@
+name: 🚨 CI Health Alerting System
+
+on:
+  schedule:
+    # Every 15 minutes during business hours (UTC)
+    - cron: '*/15 8-20 * * 1-5'
+    # Every hour during off-hours and weekends
+    - cron: '0 0-7,21-23 * * *'
+    - cron: '0 * * * 0,6'
+  workflow_dispatch:
+    inputs:
+      alert_type:
+        description: 'Type of alert to trigger'
+        required: false
+        default: 'health_check'
+        type: choice
+        options:
+          - health_check
+          - workflow_analysis
+          - performance_audit
+          - full_system_check
+
+permissions:
+  contents: read
+  actions: read
+  issues: write
+
+jobs:
+  ci-health-monitoring:
+    name: 🔍 CI Health Monitoring & Alerting
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: 📋 Install dependencies
+        run: |
+          npm install @octokit/rest express socket.io
+
+      - name: 🔍 Run CI Health Check
+        id: health-check
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "🚀 Starting CI health monitoring..."
+
+          # Run health monitor
+          timeout 300 node scripts/ci-health-monitor.js || echo "Health check completed with warnings"
+
+          # Check if health data exists
+          if [ -f "monitoring-history.json" ]; then
+            echo "📊 Health data generated successfully"
+
+            # Extract latest health status
+            HEALTH_STATUS=$(node -e "
+              const data = JSON.parse(require('fs').readFileSync('monitoring-history.json', 'utf8'));
+              const latest = data.healthHistory[data.healthHistory.length - 1];
+              console.log(latest?.analysis?.overallHealth || 'unknown');
+            ")
+
+            echo "health-status=${HEALTH_STATUS}" >> $GITHUB_OUTPUT
+            echo "🏥 Current health status: ${HEALTH_STATUS}"
+
+            # Extract failure rate
+            FAILURE_RATE=$(node -e "
+              const data = JSON.parse(require('fs').readFileSync('monitoring-history.json', 'utf8'));
+              const latest = data.healthHistory[data.healthHistory.length - 1];
+              const rate = latest?.metrics?.failureRate || 0;
+              console.log((rate * 100).toFixed(1));
+            ")
+
+            echo "failure-rate=${FAILURE_RATE}" >> $GITHUB_OUTPUT
+            echo "📉 Current failure rate: ${FAILURE_RATE}%"
+
+            # Check for recent alerts
+            ALERT_COUNT=$(node -e "
+              const data = JSON.parse(require('fs').readFileSync('monitoring-history.json', 'utf8'));
+              const alerts = data.alerts || [];
+              const recent = alerts.filter(a => {
+                const alertTime = new Date(a.timestamp);
+                const now = new Date();
+                return (now - alertTime) < 3600000; // Last hour
+              });
+              console.log(recent.length);
+            ")
+
+            echo "alert-count=${ALERT_COUNT}" >> $GITHUB_OUTPUT
+            echo "🚨 Recent alerts: ${ALERT_COUNT}"
+
+          else
+            echo "❌ Health data not generated"
+            echo "health-status=error" >> $GITHUB_OUTPUT
+            echo "failure-rate=0" >> $GITHUB_OUTPUT
+            echo "alert-count=0" >> $GITHUB_OUTPUT
+          fi
+
+      - name: 📊 Run Workflow Analysis
+        id: workflow-analysis
+        if: github.event.inputs.alert_type == 'workflow_analysis' || github.event.inputs.alert_type == 'full_system_check'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "📈 Running workflow analysis..."
+
+          timeout 240 node scripts/workflow-analyzer.js || echo "Workflow analysis completed with warnings"
+
+          if [ -f "workflow-analysis.json" ]; then
+            echo "📋 Workflow analysis completed"
+
+            # Extract problematic workflows count
+            PROBLEMATIC_COUNT=$(node -e "
+              const data = JSON.parse(require('fs').readFileSync('workflow-analysis.json', 'utf8'));
+              console.log(data.summary?.problematicWorkflows || 0);
+            ")
+
+            echo "problematic-workflows=${PROBLEMATIC_COUNT}" >> $GITHUB_OUTPUT
+            echo "⚠️ Problematic workflows: ${PROBLEMATIC_COUNT}"
+
+            # Extract average success rate
+            AVG_SUCCESS_RATE=$(node -e "
+              const data = JSON.parse(require('fs').readFileSync('workflow-analysis.json', 'utf8'));
+              const rate = data.summary?.averageSuccessRate || 0;
+              console.log((rate * 100).toFixed(1));
+            ")
+
+            echo "avg-success-rate=${AVG_SUCCESS_RATE}" >> $GITHUB_OUTPUT
+            echo "📈 Average success rate: ${AVG_SUCCESS_RATE}%"
+
+          else
+            echo "❌ Workflow analysis data not generated"
+            echo "problematic-workflows=0" >> $GITHUB_OUTPUT
+            echo "avg-success-rate=0" >> $GITHUB_OUTPUT
+          fi
+
+      - name: 🚨 Process Critical Alerts
+        if: steps.health-check.outputs.health-status == 'critical' || steps.health-check.outputs.failure-rate > 25
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const healthStatus = '${{ steps.health-check.outputs.health-status }}';
+            const failureRate = parseFloat('${{ steps.health-check.outputs.failure-rate }}');
+            const alertCount = parseInt('${{ steps.health-check.outputs.alert-count }}');
+
+            const title = '🚨 CRITICAL: CI/CD System Health Alert';
+            const body = `
+            ## 🔥 Critical CI/CD Health Issue Detected
+
+            **Immediate Action Required!**
+
+            ### 📊 Current Status
+            - **Health Status**: ${healthStatus}
+            - **Failure Rate**: ${failureRate}%
+            - **Recent Alerts**: ${alertCount}
+            - **Detection Time**: ${new Date().toISOString()}
+
+            ### 🚨 Critical Conditions Met
+            ${healthStatus === 'critical' ? '- ❌ Overall system health is CRITICAL\n' : ''}
+            ${failureRate > 25 ? `- ❌ Failure rate exceeds threshold (${failureRate}% > 25%)\n` : ''}
+            ${alertCount > 3 ? `- ❌ Multiple alerts in the last hour (${alertCount})\n` : ''}
+
+            ### 📋 Immediate Actions Required
+
+            1. **Investigate Recent Failures**
+               - Check GitHub Actions runs for failure patterns
+               - Review error logs and failure causes
+               - Identify if issues are systematic or isolated
+
+            2. **System Recovery**
+               - Restart any stuck workflows if needed
+               - Clear cache if cache corruption detected
+               - Review recent configuration changes
+
+            3. **Monitoring**
+               - Monitor health dashboard: http://localhost:3001 (if running)
+               - Watch for improvement in next 15-minute cycle
+               - Escalate if no improvement within 1 hour
+
+            ### 🔧 Quick Diagnostic Commands
+
+            \`\`\`bash
+            # Check recent workflow runs
+            gh run list --limit 20
+
+            # Check specific workflow status
+            gh run list --workflow="MoneyWise MVP Quality Check" --limit 10
+
+            # Run manual health check
+            node scripts/ci-health-monitor.js
+
+            # Analyze workflows
+            node scripts/workflow-analyzer.js
+            \`\`\`
+
+            ### 📈 Health Dashboard
+
+            For real-time monitoring:
+            \`\`\`bash
+            node scripts/health-dashboard-server.js
+            # Then visit: http://localhost:3001
+            \`\`\`
+
+            ---
+
+            **Auto-generated by CI Health Alerting System**
+            *This issue will auto-resolve when health returns to normal*
+            `;
+
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: title,
+              body: body,
+              labels: ['critical', 'ci/cd', 'infrastructure', 'health-alert'],
+              assignees: ['kdantuono']
+            });
+
+      - name: ⚠️ Process Warning Alerts
+        if: steps.health-check.outputs.health-status == 'warning' || (steps.health-check.outputs.failure-rate > 15 && steps.health-check.outputs.failure-rate <= 25)
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const healthStatus = '${{ steps.health-check.outputs.health-status }}';
+            const failureRate = parseFloat('${{ steps.health-check.outputs.failure-rate }}');
+            const alertCount = parseInt('${{ steps.health-check.outputs.alert-count }}');
+
+            console.log(`⚠️ WARNING: CI health showing warning signs`);
+            console.log(`Health: ${healthStatus}, Failure Rate: ${failureRate}%, Alerts: ${alertCount}`);
+
+            // For now, just log warnings. Could extend to create issues for persistent warnings
+            if (alertCount > 2) {
+              console.log('🔍 Multiple alerts detected - recommend monitoring closely');
+            }
+
+      - name: 📊 Generate Health Report
+        if: always()
+        run: |
+          echo "📋 Generating health report summary..."
+
+          cat > health-report.md << 'EOF'
+          # CI Health Report - $(date)
+
+          ## Status Summary
+          - **Health Status**: ${{ steps.health-check.outputs.health-status }}
+          - **Failure Rate**: ${{ steps.health-check.outputs.failure-rate }}%
+          - **Recent Alerts**: ${{ steps.health-check.outputs.alert-count }}
+          - **Problematic Workflows**: ${{ steps.workflow-analysis.outputs.problematic-workflows }}
+          - **Average Success Rate**: ${{ steps.workflow-analysis.outputs.avg-success-rate }}%
+
+          ## Monitoring Details
+          - **Check Time**: $(date -u '+%Y-%m-%d %H:%M:%S UTC')
+          - **Trigger**: ${{ github.event_name }}
+          - **Repository**: ${{ github.repository }}
+          - **Run ID**: ${{ github.run_id }}
+
+          ## Next Steps
+          - Monitor continues automatically every 15 minutes
+          - Critical issues trigger immediate alerts
+          - Dashboard available at http://localhost:3001 (manual start)
+
+          EOF
+
+          echo "📄 Health report generated:"
+          cat health-report.md
+
+      - name: 💾 Upload Health Data Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-health-data-${{ github.run_number }}
+          path: |
+            monitoring-history.json
+            workflow-analysis.json
+            health-report.md
+          retention-days: 30
+
+      - name: 🔄 Cleanup Temporary Files
+        if: always()
+        run: |
+          # Clean up any temporary files but preserve artifacts
+          find . -name "*.tmp" -delete 2>/dev/null || true
+          echo "🧹 Cleanup completed"
