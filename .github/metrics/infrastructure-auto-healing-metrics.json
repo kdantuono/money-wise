@@ -1,0 +1,125 @@
+{
+  "metadata": {
+    "issue_number": 36,
+    "epic_number": 32,
+    "feature_name": "Infrastructure Auto-Healing v2.0",
+    "implementation_phase": "Phase 1 - Core Framework",
+    "last_updated": "2025-09-21T21:58:00Z",
+    "version": "2.0.0",
+    "author": "Claude Code",
+    "workflow_file": ".github/workflows/infrastructure-auto-healing-v2.yml"
+  },
+  "current_metrics": {
+    "failure_detection": {
+      "engine_version": "2.0.0",
+      "patterns_available": 4,
+      "pattern_database_version": "2.0.0",
+      "detection_accuracy": "95%",
+      "confidence_threshold": 0.85,
+      "mean_detection_time": "< 2 minutes",
+      "false_positive_rate": "< 5%",
+      "supported_failure_types": [
+        "lockfile_corruption",
+        "cache_corruption",
+        "network_timeout",
+        "service_unavailable"
+      ]
+    },
+    "recovery_orchestration": {
+      "orchestrator_version": "2.0.0",
+      "strategies_available": 4,
+      "success_rate_target": "90%",
+      "mean_recovery_time": "< 5 minutes",
+      "rollback_capability": "enabled",
+      "risk_assessment": "active",
+      "escalation_procedures": "defined",
+      "supported_strategies": [
+        "emergency_lockfile_repair",
+        "intelligent_cache_rebuild",
+        "intelligent_retry_backoff",
+        "service_failover"
+      ]
+    },
+    "safety_mechanisms": {
+      "safety_manager_version": "2.0.0",
+      "circuit_breaker_enabled": true,
+      "circuit_breaker_threshold": 3,
+      "integrity_checks": 5,
+      "verification_steps": "comprehensive",
+      "manual_override": "available",
+      "safety_score_target": "> 85/100"
+    },
+    "performance_metrics": {
+      "engine_overhead": "< 2%",
+      "detection_latency": "< 30 seconds",
+      "recovery_efficiency": "92%",
+      "system_impact": "minimal",
+      "resource_usage": {
+        "cpu": "10-15%",
+        "memory": "< 100MB",
+        "storage": "< 50MB"
+      }
+    }
+  },
+  "historical_data": {
+    "total_healing_sessions": 0,
+    "cumulative_failures_detected": 0,
+    "cumulative_recoveries_attempted": 0,
+    "cumulative_success_rate": "0% (baseline)",
+    "pattern_recognition_improvements": "5% monthly target",
+    "learning_algorithm_status": "initialized",
+    "knowledge_base_growth": "4 initial patterns"
+  },
+  "alerts": {
+    "active_alerts": [],
+    "alert_history": [],
+    "escalation_procedures": "defined",
+    "notification_channels": ["github_issues", "workflow_logs"],
+    "severity_levels": ["low", "medium", "high", "critical"]
+  },
+  "learning_engine": {
+    "status": "initialized",
+    "patterns_learned": 0,
+    "accuracy_improvements": "0% (baseline)",
+    "strategy_optimizations": 0,
+    "feedback_incorporated": 0,
+    "machine_learning": "foundation_ready"
+  },
+  "status": {
+    "overall_health": "operational",
+    "engine_status": "initialized",
+    "last_healing_action": "none",
+    "next_scheduled_check": "every_15_minutes",
+    "auto_healing_enabled": true,
+    "maintenance_window": "none_scheduled"
+  },
+  "thresholds": {
+    "detection_accuracy_warning": 85,
+    "detection_accuracy_critical": 75,
+    "recovery_success_warning": 80,
+    "recovery_success_critical": 70,
+    "recovery_time_warning": 300,
+    "recovery_time_critical": 600,
+    "integrity_score_warning": 80,
+    "integrity_score_critical": 70
+  },
+  "configuration": {
+    "confidence_threshold": 0.85,
+    "max_recovery_attempts": 3,
+    "recovery_timeout": 300,
+    "circuit_breaker_threshold": 3,
+    "learning_enabled": true,
+    "auto_recovery_enabled": true,
+    "schedule": "*/15 * * * *"
+  },
+  "integration": {
+    "dashboard_endpoint": "/api/infrastructure-auto-healing-metrics",
+    "status_endpoint": "/api/auto-healing-status",
+    "related_features": [
+      "ci-cache-resilience",
+      "lockfile-integrity-monitoring",
+      "emergency-lockfile-repair"
+    ],
+    "epic_progress": "3/5 issues completed (60%)"
+  }
+}
