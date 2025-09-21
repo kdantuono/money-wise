@@ -53,12 +53,12 @@ jobs:
       performance-score: ${{ steps.analytics.outputs.performance-score }}
 
     steps:
-      - name: 📥 Checkout Repository
+      - name: "Checkout Repository"
         uses: actions/checkout@v4
         with:
           fetch-depth: 2
 
-      - name: 🧠 Cache Intelligence Analysis
+      - name: "Cache Intelligence Analysis"
         id: intelligence
         run: |
           echo "🧠 Analyzing cache strategy and performance patterns..."
@@ -354,7 +354,7 @@ jobs:
             echo "performance_score=50" >> $GITHUB_OUTPUT
           fi
 
-      - name: 🔍 Tier 1: Node Modules Cache Validation
+      - name: "Tier 1: Node Modules Cache Validation"
         id: tier1-validation
         run: |
           echo "🔍 Validating Tier 1: Node modules cache..."
@@ -383,7 +383,7 @@ jobs:
           echo "cache-status=$cache_status" >> $GITHUB_OUTPUT
           echo "validation-result=$validation_result" >> $GITHUB_OUTPUT
 
-      - name: 🔍 Tier 2: Build Artifacts Cache Validation
+      - name: "Tier 2: Build Artifacts Cache Validation"
         id: tier2-validation
         run: |
           echo "🔍 Validating Tier 2: Build artifacts cache..."
@@ -410,7 +410,7 @@ jobs:
           echo "cache-status=$cache_status" >> $GITHUB_OUTPUT
           echo "validation-result=$validation_result" >> $GITHUB_OUTPUT
 
-      - name: 🔍 Tier 3: Backup Cache Validation
+      - name: "Tier 3: Backup Cache Validation"
         id: tier3-validation
         run: |
           echo "🔍 Validating Tier 3: Backup cache system..."
@@ -434,7 +434,7 @@ jobs:
           echo "cache-status=$cache_status" >> $GITHUB_OUTPUT
           echo "validation-result=$validation_result" >> $GITHUB_OUTPUT
 
-      - name: 📊 Cache Performance Analytics
+      - name: "Cache Performance Analytics"
         id: analytics
         run: |
           echo "📊 Analyzing cache performance metrics..."
@@ -488,16 +488,16 @@ jobs:
     timeout-minutes: 20
 
     steps:
-      - name: 📥 Checkout Repository
+      - name: "Checkout Repository"
         uses: actions/checkout@v4
 
-      - name: 📦 Setup Node.js
+      - name: "Setup Node.js"
         uses: actions/setup-node@v4
         with:
           node-version: '18'
           cache: 'npm'
 
-      - name: 🔧 Cache Recovery & Optimization
+      - name: "Cache Recovery & Optimization"
         run: |
           echo "🔧 Starting cache recovery and optimization..."
 
@@ -536,7 +536,7 @@ jobs:
 
           echo "✅ Cache recovery and optimization completed successfully"
 
-      - name: 📈 Update Cache Metrics
+      - name: "Update Cache Metrics"
         run: |
           echo "📈 Updating cache resilience metrics..."
 
@@ -587,10 +587,10 @@ jobs:
     timeout-minutes: 10
 
     steps:
-      - name: 📥 Checkout Repository
+      - name: "Checkout Repository"
         uses: actions/checkout@v4
 
-      - name: 🔔 Cache Health Alerting
+      - name: "Cache Health Alerting"
         if: needs.cache-validation.outputs.performance-score < 70
         uses: actions/github-script@v7
         with:
@@ -641,7 +641,7 @@ jobs:
               labels: ['cache', 'performance', 'ci-cd', 'monitoring']
             });
 
-      - name: 📊 Final Status Report
+      - name: "Final Status Report"
         if: always()
         run: |
           echo "📊 CI CACHE RESILIENCE FINAL REPORT"
