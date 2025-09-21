@@ -47,6 +47,8 @@ jobs:
     name: Emergency Lockfile Repair
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    # Only run if explicitly called or dispatched, not during push validation
+    if: github.event_name == 'workflow_call' || github.event_name == 'workflow_dispatch'
     outputs:
       success: ${{ steps.final-status.outputs.success }}
       stage: ${{ steps.final-status.outputs.stage }}
