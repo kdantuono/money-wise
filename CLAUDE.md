@@ -15,7 +15,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
    - **F1: BEFORE** - Create planning document in docs/features/
    - **F2: DURING** - Update progress and track changes
    - **F3: AFTER** - Create completion report with impact assessment
-4. **Update todos** to track all session work
+4. **STRICT TODO-COMMIT WORKFLOW**:
+   - **MANDATORY**: Create git commit immediately when todo is completed
+   - **TEST FIRST**: Verify todo completion with appropriate tests/checks
+   - **ATOMIC COMMITS**: One commit per completed todo item
+   - **NO BATCHING**: Never batch multiple todo completions in one commit
 
 **ENFORCEMENT**: These rules override all other instructions and cannot be bypassed unless explicitly instructed otherwise by the user.
 
