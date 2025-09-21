@@ -51,6 +51,7 @@ class HealthDashboardServer {
     this.app.get('/api/workflows', this.handleWorkflowAnalysis.bind(this));
     this.app.get('/api/history', this.handleHealthHistory.bind(this));
     this.app.get('/api/alerts', this.handleAlerts.bind(this));
+    this.app.get('/api/cache-metrics', this.handleCacheMetrics.bind(this));
     this.app.post('/api/manual-check', this.handleManualHealthCheck.bind(this));
 
     // Dashboard route
@@ -87,11 +88,12 @@ class HealthDashboardServer {
    */
   async sendInitialData(socket) {
     try {
-      const [health, workflows, history, alerts] = await Promise.all([
+      const [health, workflows, history, alerts, cacheMetrics] = await Promise.all([
         this.getCurrentHealth(),
         this.getWorkflowAnalysis(),
         this.getHealthHistory(),
-        this.getAlerts()
+        this.getAlerts(),
+        this.getCacheMetrics()
       ]);
 
       socket.emit('initial-data', {
@@ -99,6 +101,7 @@ class HealthDashboardServer {
         workflows,
         history,
         alerts,
+        cache_metrics: cacheMetrics,
         timestamp: new Date().toISOString()
       });
     } catch (error) {
@@ -174,6 +177,19 @@ class HealthDashboardServer {
   }
 
   /**
+   * API: Get CI Cache Resilience metrics
+   */
+  async handleCacheMetrics(req, res) {
+    try {
+      const cacheMetrics = await this.getCacheMetrics();
+      res.json(cacheMetrics);
+    } catch (error) {
+      console.error('Failed to get cache metrics:', error.message);
+      res.status(500).json({ error: 'Failed to get cache metrics' });
+    }
+  }
+
+  /**
    * Get current health status
    */
   async getCurrentHealth() {
@@ -227,6 +243,63 @@ class HealthDashboardServer {
       return parsed.alerts?.slice(-20) || [];
     } catch (error) {
       return [];
+    }
+  }
+
+  /**
+   * Get CI Cache Resilience metrics
+   */
+  async getCacheMetrics() {
+    try {
+      const metricsFile = path.join(__dirname, '../.github/metrics/ci-cache-resilience-metrics.json');
+      const data = await fs.readFile(metricsFile, 'utf8');
+      const metrics = JSON.parse(data);
+
+      // Return formatted metrics for dashboard
+      return {
+        metadata: metrics.metadata,
+        current_metrics: metrics.current_metrics,
+        historical_data: metrics.historical_data,
+        alerts: metrics.alerts,
+        thresholds: metrics.thresholds,
+        configuration: metrics.configuration,
+        last_updated: metrics.timestamp || new Date().toISOString(),
+        status: this.calculateCacheHealthStatus(metrics)
+      };
+    } catch (error) {
+      console.warn('Cache metrics file not found or corrupted, returning defaults');
+      return {
+        metadata: { feature_issue: "#35", epic: "#32" },
+        current_metrics: {
+          cache_performance: { overall_score: 0, last_updated: null, trend: "unknown" },
+          tier_status: {
+            tier1_node_modules: { status: "unknown", hit_rate: 0 },
+            tier2_build_artifacts: { status: "unknown", hit_rate: 0 },
+            tier3_backup_cache: { status: "unknown", success_rate: 0 }
+          }
+        },
+        alerts: { active_alerts: 0, last_alert: null },
+        status: "unavailable",
+        last_updated: new Date().toISOString()
+      };
+    }
+  }
+
+  /**
+   * Calculate overall cache health status based on metrics
+   */
+  calculateCacheHealthStatus(metrics) {
+    const performance = metrics.current_metrics?.cache_performance?.overall_score || 0;
+    const thresholds = metrics.thresholds || { performance_warning: 70, performance_critical: 50 };
+
+    if (performance >= thresholds.performance_warning) {
+      return 'healthy';
+    } else if (performance >= thresholds.performance_critical) {
+      return 'warning';
+    } else if (performance > 0) {
+      return 'critical';
+    } else {
+      return 'unknown';
     }
   }
 
