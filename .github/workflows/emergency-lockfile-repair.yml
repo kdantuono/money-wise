@@ -353,7 +353,7 @@ jobs:
 
       - name: 📊 Final Status Report
         id: final-status
-        always_run: true
+        if: always()
         run: |
           echo "📊 EMERGENCY LOCKFILE REPAIR FINAL REPORT"
           echo "================================================"
