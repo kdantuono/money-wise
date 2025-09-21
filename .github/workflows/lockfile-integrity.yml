@@ -1,0 +1,138 @@
+name: 🔒 Lockfile Integrity Monitor
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'package-lock.json'
+      - 'package.json'
+      - 'apps/*/package.json'
+      - 'packages/*/package.json'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'package-lock.json'
+      - 'package.json'
+      - 'apps/*/package.json'
+      - 'packages/*/package.json'
+  schedule:
+    # Daily at 1 AM UTC - validate lockfile integrity
+    - cron: '0 1 * * *'
+  workflow_dispatch:
+
+jobs:
+  lockfile-integrity:
+    name: 🔍 Lockfile Integrity Validation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          # Don't use npm cache for integrity checks
+          cache: false
+
+      - name: 🔒 Comprehensive Lockfile Validation
+        run: |
+          echo "## 🔍 Lockfile Integrity Analysis" >> $GITHUB_STEP_SUMMARY
+
+          # Run comprehensive validation
+          npm run validate:lockfile || {
+            echo "❌ **Critical lockfile integrity failure!**" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### 🚨 Immediate Actions Required:" >> $GITHUB_STEP_SUMMARY
+            echo "1. \`npm install\` to regenerate lockfile" >> $GITHUB_STEP_SUMMARY
+            echo "2. Verify no unauthorized dependency changes" >> $GITHUB_STEP_SUMMARY
+            echo "3. Test application functionality" >> $GITHUB_STEP_SUMMARY
+            echo "4. Commit regenerated lockfile if valid" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          }
+
+          echo "✅ **Lockfile integrity validated successfully**" >> $GITHUB_STEP_SUMMARY
+
+      - name: 📊 Generate Lockfile Health Report
+        run: |
+          echo "## 📊 Lockfile Health Report" >> $GITHUB_STEP_SUMMARY
+          npm run lockfile:report || echo "⚠️ Health report generation failed" >> $GITHUB_STEP_SUMMARY
+
+      - name: 🔍 Dependency Consistency Check
+        run: |
+          echo "## 🔗 Dependency Consistency" >> $GITHUB_STEP_SUMMARY
+
+          # Test npm ci to ensure lockfile works correctly
+          npm ci --dry-run || {
+            echo "❌ npm ci dry-run failed - lockfile inconsistent with package.json" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          }
+
+          echo "✅ npm ci dry-run successful - dependencies consistent" >> $GITHUB_STEP_SUMMARY
+
+      - name: ⚡ Performance Impact Analysis
+        if: github.event_name == 'pull_request'
+        run: |
+          echo "## ⚡ Performance Impact Analysis" >> $GITHUB_STEP_SUMMARY
+
+          # Check if lockfile size changed significantly
+          if [ -f "package-lock.json" ]; then
+            lockfile_size=$(wc -c < package-lock.json)
+            echo "📦 Current lockfile size: $lockfile_size bytes" >> $GITHUB_STEP_SUMMARY
+
+            # Warn if lockfile is unusually large (>2MB suggests issues)
+            if [ $lockfile_size -gt 2097152 ]; then
+              echo "⚠️ **Large lockfile detected** - consider dependency audit" >> $GITHUB_STEP_SUMMARY
+            fi
+          fi
+
+      - name: 🚨 Create Critical Issue on Failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = '🚨 Critical Lockfile Integrity Failure';
+            const body = `
+            ## 🔒 Lockfile Integrity Monitor Alert
+
+            ❌ **Critical lockfile integrity failure detected**
+
+            ### 🚨 Immediate Action Required:
+
+            The automated lockfile integrity monitor has detected corruption or inconsistencies
+            that could break CI/CD pipelines and development environments.
+
+            ### 📋 Resolution Steps:
+
+            1. **Immediate**: Run \`npm install\` to regenerate lockfile
+            2. **Verify**: Ensure no unauthorized dependency changes
+            3. **Test**: Verify application functionality after regeneration
+            4. **Commit**: Push regenerated lockfile if validation passes
+            5. **Monitor**: Watch CI/CD pipelines for resolution
+
+            ### 🔍 Technical Details:
+
+            - **Workflow**: Lockfile Integrity Monitor
+            - **Trigger**: ${context.eventName}
+            - **Branch**: ${context.ref}
+            - **Run ID**: ${context.runId}
+            - **Timestamp**: ${new Date().toISOString()}
+
+            ### 🛡️ Prevention:
+
+            This monitoring system will now prevent future lockfile corruption from
+            breaking CI/CD pipelines by validating integrity before installation.
+
+            ---
+            *This issue was created automatically by the lockfile integrity monitoring system.*
+            `;
+
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: title,
+              body: body,
+              labels: ['critical', 'dependencies', 'infrastructure', 'automation'],
+              assignees: ['kdantuono']
+            });

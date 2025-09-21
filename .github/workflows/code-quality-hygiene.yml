@@ -29,6 +29,16 @@ jobs:
           node-version: 18
           cache: npm
 
+      - name: 🔍 Lockfile Integrity Check
+        run: |
+          echo "## 🔒 Lockfile Integrity Validation" >> $GITHUB_STEP_SUMMARY
+          npm run validate:lockfile || {
+            echo "❌ Lockfile integrity check failed!" >> $GITHUB_STEP_SUMMARY
+            echo "Run \`npm install\` to regenerate lockfile" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          }
+          echo "✅ Lockfile integrity validated" >> $GITHUB_STEP_SUMMARY
+
       - name: 📥 Install dependencies
         run: npm ci
 

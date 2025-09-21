@@ -26,6 +26,16 @@ jobs:
           node-version: 18
           cache: npm
 
+      - name: 🔍 Lockfile Integrity Check
+        run: |
+          echo "## 🔒 Lockfile Integrity Validation" >> $GITHUB_STEP_SUMMARY
+          npm run validate:lockfile || {
+            echo "❌ Lockfile integrity check failed!" >> $GITHUB_STEP_SUMMARY
+            echo "Run \`npm install\` to regenerate lockfile" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          }
+          echo "✅ Lockfile integrity validated" >> $GITHUB_STEP_SUMMARY
+
       - name: ⏱️ Track Installation Performance
         run: |
           echo "## ⚡ Performance Metrics" >> $GITHUB_STEP_SUMMARY
@@ -89,6 +99,9 @@ jobs:
       - name: 📊 Dependency Size Analysis
         run: |
           echo "## 📊 Dependency Impact Analysis" >> $GITHUB_STEP_SUMMARY
+
+          # Create bundle-analysis directory if it doesn't exist
+          mkdir -p bundle-analysis
 
           # Generate dependency analysis
           npm run analyze:deps
