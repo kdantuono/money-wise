@@ -132,6 +132,17 @@ git commit -m "docs(maintenance): update project health documentation"
 
 **CRITICAL**: The following workflow steps are MANDATORY for ALL features, fixes, and improvements. This workflow MUST be completed before moving to the next task.
 
+### 🚨 EPIC COMPLETION AND PRIORITIZATION RULE:
+
+**MANDATORY EPIC MANAGEMENT**: When all user stories of an epic are marked "Done", the following steps are REQUIRED:
+
+1. **Move Epic to "Done"**: Update epic status on GitHub Projects board to "Done"
+2. **Prioritize Next Epic**: Identify the next epic with highest priority
+3. **Take Charge**: Begin work on the highest priority epic's user stories and tasks
+4. **Update Board**: Move next epic to "In Progress" and start first user story
+
+**ENFORCEMENT**: This rule ensures continuous progress through planned epics without gaps or priority confusion. Epic completion triggers immediate transition to next priority work.
+
 **🚨 AGILE BOARD INTEGRATION**: User stories/tasks can ONLY be marked "Done" on GitHub Projects board AFTER completing this ENTIRE workflow. Working on main branch or marking stories as "Done" without completing this workflow is a **CRITICAL METHODOLOGY VIOLATION**.
 
 #### **Phase 1: Push and Verify**
@@ -174,7 +185,11 @@ git status # Should show "working tree clean"
 # 8. Update GitHub Projects board to "Done" status
 gh project item-edit --project-id [PROJECT_ID] --id [ITEM_ID] --field-id [STATUS_FIELD] --single-select-option-id [DONE_ID]
 
-# 9. Verify board reflects completed work
+# 9. Check if epic is complete (all stories done)
+# If epic complete: Move epic to "Done" and prioritize next epic
+# If epic incomplete: Continue with remaining stories
+
+# 10. Verify board reflects completed work
 gh project item-list [PROJECT_NUMBER] --owner [OWNER] --format json
 ```
 

@@ -170,6 +170,17 @@ gh project item-edit --project-id [PROJECT_ID] --id [ITEM_ID] --field-id [STATUS
 - **Duration**: 1-2 development cycles
 - **Tracking**: Aggregate story points completion
 
+### **🚨 MANDATORY EPIC COMPLETION AND PRIORITIZATION RULE**
+
+**When ALL user stories of an epic are marked "Done":**
+
+1. **Move Epic to "Done"**: Update epic status on GitHub Projects board to "Done"
+2. **Prioritize Next Epic**: Identify the next epic with highest priority
+3. **Take Charge**: Begin work on the highest priority epic's user stories and tasks
+4. **Update Board**: Move next epic to "In Progress" and start first user story
+
+**ENFORCEMENT**: This rule ensures continuous progress through planned epics without gaps or priority confusion. Epic completion triggers immediate transition to next priority work.
+
 ### **User Story Format**
 ```
 Title: User Story: [Action/Goal]
