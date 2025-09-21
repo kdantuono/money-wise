@@ -107,14 +107,34 @@ npm run lint             # Lint and format code
 # 1. Always create feature branch
 git checkout -b feature/your-feature-name
 
-# 2. Make changes with frequent commits
+# 2. MANDATORY: Update project health documentation
+# - Update README.md to reflect current project state
+# - Update CHANGELOG.md with branch changes
+# - Validate SETUP.md procedures are accurate
+# - Commit documentation updates before pushing
+
+# 3. Make changes with frequent commits
 git add .
 git commit -m "feat(module): descriptive message"
 
-# 3. Quality gates run automatically on commit
-# 4. Push when ready
-git push origin feature/your-feature-name
+# 4. Quality gates run automatically on commit
+# 5. Follow post-feature workflow for merge
+# - Push → Verify CI/CD → Merge → Verify Main → Cleanup
 ```
+
+### Documentation Maintenance (New Requirement)
+
+**MANDATORY**: Every branch must maintain project health documentation:
+
+```bash
+# Before any push to remote, verify:
+- [ ] README.md reflects current project capabilities
+- [ ] CHANGELOG.md documents all branch changes
+- [ ] SETUP.md procedures are tested and functional
+- [ ] All documentation enables newcomer understanding
+```
+
+**See**: [best-practices.md Section K](.claude/best-practices.md#section-k-branch-documentation-maintenance-standards) for complete requirements.
 
 ### Code Quality Requirements
 

@@ -74,11 +74,19 @@ money-wise/
 
 ### MVP Functionality
 
-- **User Authentication**: Secure registration and login
+- **User Authentication**: Secure registration and login with JWT
 - **Account Management**: Add and manage financial accounts
 - **Transaction Tracking**: Manual transaction entry and categorization
 - **Basic Budgeting**: Simple budget creation and tracking
 - **Dashboard**: Clean overview of financial status
+- **Plaid Integration**: Bank connectivity and transaction import (configured)
+
+### Development Workflow Features
+
+- **Mandatory Post-Feature Workflow**: 4-phase process with CI/CD verification
+- **Branch Documentation Maintenance**: Automated README/CHANGELOG/SETUP updates
+- **Quality Gates**: Automated testing, linting, and security checks
+- **Documentation Standards**: Comprehensive newcomer onboarding support
 
 ### Security Features
 
