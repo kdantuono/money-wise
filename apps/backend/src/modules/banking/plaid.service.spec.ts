@@ -14,11 +14,6 @@ import { PlaidService } from './plaid.service';
 
 describe('PlaidService', () => {
   let service: PlaidService;
-  let plaidAccountRepository: Repository<PlaidAccount>;
-  let plaidTransactionRepository: Repository<PlaidTransaction>;
-  let userRepository: Repository<User>;
-  let configService: ConfigService;
-  let plaidApi: PlaidApi;
 
   const mockPlaidAccountRepository = {
     findOne: jest.fn(),
@@ -83,15 +78,6 @@ describe('PlaidService', () => {
     }).compile();
 
     service = module.get<PlaidService>(PlaidService);
-    plaidAccountRepository = module.get<Repository<PlaidAccount>>(
-      getRepositoryToken(PlaidAccount)
-    );
-    plaidTransactionRepository = module.get<Repository<PlaidTransaction>>(
-      getRepositoryToken(PlaidTransaction)
-    );
-    userRepository = module.get<Repository<User>>(getRepositoryToken(User));
-    configService = module.get<ConfigService>(ConfigService);
-    plaidApi = module.get('PLAID_API');
 
     // Setup default config mock responses
     mockConfigService.get.mockImplementation((key: string) => {
