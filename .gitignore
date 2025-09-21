@@ -186,3 +186,7 @@ html-report/
 
 # Turbo cache
 .turbo/
+
+# Bundle analysis outputs
+bundle-analysis/
+current-sizes.json
