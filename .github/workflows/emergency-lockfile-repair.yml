@@ -15,13 +15,13 @@ on:
     outputs:
       repair_success:
         description: 'Whether the repair was successful'
-        value: ${{ jobs.emergency-repair.outputs.success }}
+        value: ${{ jobs.emergency-repair.outputs.success || 'false' }}
       repair_stage:
         description: 'Stage at which repair succeeded or failed'
-        value: ${{ jobs.emergency-repair.outputs.stage }}
+        value: ${{ jobs.emergency-repair.outputs.stage || 'not_run' }}
       backup_used:
         description: 'Whether a backup was used for repair'
-        value: ${{ jobs.emergency-repair.outputs.backup_used }}
+        value: ${{ jobs.emergency-repair.outputs.backup_used || 'false' }}
 
   workflow_dispatch:
     inputs:
