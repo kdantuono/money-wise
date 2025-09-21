@@ -94,7 +94,7 @@ export class SecurityService {
     request: Request
   ): Promise<SecurityThreat | null> {
     const ip = this.getClientIp(request);
-    const userAgent = request.get('User-Agent') || '';
+    const _userAgent = request.get('User-Agent') || '';
     const endpoint = request.path;
 
     // Check for brute force attempts
