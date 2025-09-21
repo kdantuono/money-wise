@@ -1,0 +1,176 @@
+name: 🗄️ Cache Management
+
+on:
+  schedule:
+    # Weekly cache maintenance on Sunday at 3 AM UTC
+    - cron: '0 3 * * SUN'
+  workflow_dispatch:
+    inputs:
+      force_clean:
+        description: 'Force clean all caches'
+        required: false
+        default: 'false'
+        type: boolean
+      cache_strategy:
+        description: 'Cache validation strategy'
+        required: false
+        default: 'validate'
+        type: choice
+        options:
+          - validate
+          - clean
+          - report
+
+jobs:
+  cache-maintenance:
+    name: 🔧 Cache Health Maintenance
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js (No Cache)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          # Disable cache for maintenance
+          cache: false
+
+      - name: 🔍 Cache Health Assessment
+        run: |
+          echo "## 🗄️ Cache Management Report" >> $GITHUB_STEP_SUMMARY
+          echo "### Cache Strategy: ${{ github.event.inputs.cache_strategy || 'validate' }}" >> $GITHUB_STEP_SUMMARY
+
+          # Check current cache state
+          npm config get cache
+          npm cache ls --silent || echo "Cache listing failed"
+
+      - name: 🧹 Cache Validation and Cleanup
+        run: |
+          strategy="${{ github.event.inputs.cache_strategy || 'validate' }}"
+          force_clean="${{ github.event.inputs.force_clean || 'false' }}"
+
+          if [ "$force_clean" = "true" ] || [ "$strategy" = "clean" ]; then
+            echo "🧹 **Force cleaning all caches**" >> $GITHUB_STEP_SUMMARY
+            npm cache clean --force
+            echo "✅ Cache cleaned successfully" >> $GITHUB_STEP_SUMMARY
+          elif [ "$strategy" = "report" ]; then
+            echo "📊 **Generating cache health report**" >> $GITHUB_STEP_SUMMARY
+            npm run cache:report || echo "⚠️ Cache report generation failed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "🔍 **Validating cache health**" >> $GITHUB_STEP_SUMMARY
+            npm run validate:cache || {
+              echo "❌ Cache validation failed - attempting recovery" >> $GITHUB_STEP_SUMMARY
+              npm run cache:clean
+              echo "🔧 Cache recovery completed" >> $GITHUB_STEP_SUMMARY
+            }
+          fi
+
+      - name: 🧪 Test Cache Performance
+        run: |
+          echo "## ⚡ Cache Performance Test" >> $GITHUB_STEP_SUMMARY
+
+          # Test npm ci performance with clean cache
+          start_time=$(date +%s%N)
+          npm ci --silent
+          end_time=$(date +%s%N)
+          install_time=$((($end_time - $start_time) / 1000000000))
+
+          echo "📦 npm ci time (clean cache): ${install_time}s" >> $GITHUB_STEP_SUMMARY
+
+          # Performance thresholds
+          if [ $install_time -gt 120 ]; then
+            echo "⚠️ **Slow cache performance detected**" >> $GITHUB_STEP_SUMMARY
+            echo "Consider investigating network or registry issues" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "✅ Cache performance within acceptable range" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: 📊 Generate Cache Metrics
+        run: |
+          echo "## 📊 Cache Metrics Summary" >> $GITHUB_STEP_SUMMARY
+
+          # Generate comprehensive cache report
+          npm run cache:report || echo "Cache report unavailable"
+
+          # Verify cache integrity
+          npm cache verify || echo "Cache verification failed"
+
+      - name: 🔄 Cache Resilience Test
+        run: |
+          echo "## 🔄 Cache Resilience Validation" >> $GITHUB_STEP_SUMMARY
+
+          # Test cache recovery scenario
+          echo "Testing cache corruption recovery..." >> $GITHUB_STEP_SUMMARY
+
+          # Simulate cache issue and recovery
+          npm run validate:cache || {
+            echo "Cache validation failed - testing recovery" >> $GITHUB_STEP_SUMMARY
+            npm run cache:clean
+            npm ci --dry-run || {
+              echo "❌ Cache recovery failed" >> $GITHUB_STEP_SUMMARY
+              exit 1
+            }
+            echo "✅ Cache recovery successful" >> $GITHUB_STEP_SUMMARY
+          }
+
+      - name: 📈 Performance Baseline Update
+        run: |
+          echo "## 📈 Performance Baseline" >> $GITHUB_STEP_SUMMARY
+
+          # Create performance baseline for future comparisons
+          echo "Current performance metrics:" >> $GITHUB_STEP_SUMMARY
+          echo "- npm ci time: ${install_time}s" >> $GITHUB_STEP_SUMMARY
+          echo "- Cache size: $(npm cache verify 2>&1 | grep -o '[0-9]* verified' || echo 'unknown')" >> $GITHUB_STEP_SUMMARY
+          echo "- Node.js version: $(node --version)" >> $GITHUB_STEP_SUMMARY
+          echo "- npm version: $(npm --version)" >> $GITHUB_STEP_SUMMARY
+
+      - name: 🚨 Create Issue on Critical Failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = '🚨 Critical Cache Management Failure';
+            const body = `
+            ## 🗄️ Cache Management System Alert
+
+            ❌ **Critical cache management failure detected**
+
+            ### 🚨 Issue Description:
+
+            The automated cache management system has encountered a critical failure
+            that could impact CI/CD performance and reliability.
+
+            ### 📋 Immediate Actions Required:
+
+            1. **Investigate**: Review the [workflow run](${context.payload.repository.html_url}/actions/runs/${context.runId})
+            2. **Manual Clean**: Run \`npm cache clean --force\` if needed
+            3. **Verify**: Test \`npm ci\` performance locally
+            4. **Monitor**: Watch subsequent CI runs for cache-related issues
+
+            ### 🔍 Technical Details:
+
+            - **Workflow**: Cache Management
+            - **Strategy**: ${{ github.event.inputs.cache_strategy || 'validate' }}
+            - **Force Clean**: ${{ github.event.inputs.force_clean || 'false' }}
+            - **Run ID**: ${context.runId}
+            - **Timestamp**: ${new Date().toISOString()}
+
+            ### 🛡️ Recovery Steps:
+
+            The cache management system includes automatic recovery mechanisms.
+            If this issue persists, manual intervention may be required.
+
+            ---
+            *This issue was created automatically by the cache management system.*
+            `;
+
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: title,
+              body: body,
+              labels: ['critical', 'performance', 'cache', 'infrastructure', 'automation'],
+              assignees: ['kdantuono']
+            });

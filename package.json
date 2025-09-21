@@ -43,7 +43,11 @@
     "size-check": "npx size-limit",
     "size-why": "npx size-limit --why",
     "validate:lockfile": "node scripts/validate-lockfile.js",
-    "lockfile:report": "node scripts/validate-lockfile.js report"
+    "lockfile:report": "node scripts/validate-lockfile.js report",
+    "validate:cache": "node scripts/validate-ci-cache.js",
+    "cache:report": "node scripts/validate-ci-cache.js report",
+    "cache:clean": "node scripts/validate-ci-cache.js clean",
+    "cache:verify": "npm cache verify && npm run validate:cache"
   },
   "devDependencies": {
     "@next/bundle-analyzer": "^15.5.3",
