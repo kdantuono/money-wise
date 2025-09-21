@@ -37,8 +37,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 18
-          # Don't use npm cache for integrity checks
-          cache: false
+          # No cache for integrity checks
 
       - name: 🔒 Comprehensive Lockfile Validation
         run: |

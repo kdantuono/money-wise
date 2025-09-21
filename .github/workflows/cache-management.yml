@@ -34,8 +34,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 18
-          # Disable cache for maintenance
-          cache: false
+          # No cache for maintenance
 
       - name: 🔍 Cache Health Assessment
         run: |
