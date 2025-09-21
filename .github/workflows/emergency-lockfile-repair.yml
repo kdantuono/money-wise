@@ -1,0 +1,407 @@
+name: Emergency Lockfile Repair
+
+on:
+  workflow_call:
+    inputs:
+      trigger_reason:
+        description: 'Reason for triggering emergency repair'
+        required: true
+        type: string
+      max_retries:
+        description: 'Maximum number of repair attempts'
+        required: false
+        type: number
+        default: 3
+    outputs:
+      repair_success:
+        description: 'Whether the repair was successful'
+        value: ${{ jobs.emergency-repair.outputs.success }}
+      repair_stage:
+        description: 'Stage at which repair succeeded or failed'
+        value: ${{ jobs.emergency-repair.outputs.stage }}
+      backup_used:
+        description: 'Whether a backup was used for repair'
+        value: ${{ jobs.emergency-repair.outputs.backup_used }}
+
+  workflow_dispatch:
+    inputs:
+      trigger_reason:
+        description: 'Reason for manual emergency repair'
+        required: true
+        type: string
+      max_retries:
+        description: 'Maximum number of repair attempts'
+        required: false
+        type: number
+        default: 3
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  emergency-repair:
+    name: Emergency Lockfile Repair
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      success: ${{ steps.final-status.outputs.success }}
+      stage: ${{ steps.final-status.outputs.stage }}
+      backup_used: ${{ steps.final-status.outputs.backup_used }}
+
+    steps:
+      - name: 🚨 Emergency Repair Initiated
+        run: |
+          echo "::notice title=Emergency Lockfile Repair::Initiating emergency lockfile repair due to: ${{ inputs.trigger_reason }}"
+          echo "🚨 EMERGENCY LOCKFILE REPAIR INITIATED"
+          echo "📋 Trigger Reason: ${{ inputs.trigger_reason }}"
+          echo "🔄 Max Retries: ${{ inputs.max_retries }}"
+          echo "⏰ Started at: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 🔍 Pre-Repair Assessment
+        id: assessment
+        run: |
+          echo "🔍 Assessing lockfile corruption..."
+
+          # Initialize assessment variables
+          echo "has_lockfile=false" >> $GITHUB_OUTPUT
+          echo "lockfile_valid=false" >> $GITHUB_OUTPUT
+          echo "package_json_valid=false" >> $GITHUB_OUTPUT
+          echo "corruption_type=unknown" >> $GITHUB_OUTPUT
+
+          # Check if package-lock.json exists
+          if [[ -f "package-lock.json" ]]; then
+            echo "has_lockfile=true" >> $GITHUB_OUTPUT
+            echo "✅ package-lock.json found"
+
+            # Check JSON validity
+            if jq . package-lock.json > /dev/null 2>&1; then
+              echo "lockfile_valid=true" >> $GITHUB_OUTPUT
+              echo "✅ package-lock.json is valid JSON"
+            else
+              echo "❌ package-lock.json is invalid JSON"
+              echo "corruption_type=invalid_json" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "❌ package-lock.json not found"
+            echo "corruption_type=missing_file" >> $GITHUB_OUTPUT
+          fi
+
+          # Check package.json validity
+          if [[ -f "package.json" ]] && jq . package.json > /dev/null 2>&1; then
+            echo "package_json_valid=true" >> $GITHUB_OUTPUT
+            echo "✅ package.json is valid"
+          else
+            echo "❌ package.json is invalid or missing"
+            echo "::error title=Critical Error::package.json is invalid or missing - cannot proceed with repair"
+            exit 1
+          fi
+
+      - name: 💾 Create Emergency Backup
+        id: backup
+        run: |
+          echo "💾 Creating emergency backup of current state..."
+
+          # Create backup directory with timestamp
+          backup_dir=".lockfile-backups/emergency-$(date -u '+%Y%m%d-%H%M%S')"
+          mkdir -p "$backup_dir"
+
+          # Backup current lockfile if it exists
+          if [[ "${{ steps.assessment.outputs.has_lockfile }}" == "true" ]]; then
+            cp package-lock.json "$backup_dir/package-lock.json.corrupted" || true
+            echo "📄 Backed up corrupted lockfile to $backup_dir"
+          fi
+
+          # Always backup package.json
+          cp package.json "$backup_dir/package.json"
+
+          # Store backup info
+          echo "backup_path=$backup_dir" >> $GITHUB_OUTPUT
+          echo "✅ Emergency backup created at $backup_dir"
+
+      - name: 🔄 Stage 1 - Lockfile Regeneration
+        id: stage1
+        continue-on-error: true
+        run: |
+          echo "🔄 STAGE 1: Attempting lockfile regeneration from package.json"
+
+          # Remove existing lockfile if corrupted
+          if [[ "${{ steps.assessment.outputs.lockfile_valid }}" == "false" ]]; then
+            rm -f package-lock.json
+            echo "🗑️ Removed corrupted lockfile"
+          fi
+
+          # Setup Node.js
+          echo "📦 Setting up Node.js environment..."
+
+          # Attempt regeneration using npm ci with --package-lock-only
+          echo "🔄 Attempting lockfile regeneration..."
+          if npm install --package-lock-only --no-audit --no-fund --prefer-offline; then
+            echo "✅ Stage 1 successful - lockfile regenerated from package.json"
+            echo "success=true" >> $GITHUB_OUTPUT
+            echo "stage=1" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Stage 1 failed - lockfile regeneration unsuccessful"
+            echo "success=false" >> $GITHUB_OUTPUT
+            echo "stage=1" >> $GITHUB_OUTPUT
+          fi
+
+      - name: 🧹 Stage 2 - Clean Install with Cache Clearing
+        id: stage2
+        if: steps.stage1.outputs.success != 'true'
+        continue-on-error: true
+        run: |
+          echo "🧹 STAGE 2: Clean install with cache clearing"
+
+          # Clear npm cache
+          echo "🗑️ Clearing npm cache..."
+          npm cache clean --force || true
+
+          # Remove node_modules and lockfile
+          echo "🗑️ Removing node_modules and lockfile..."
+          rm -rf node_modules package-lock.json
+
+          # Clean install
+          echo "📦 Performing clean install..."
+          if npm install --no-audit --no-fund; then
+            echo "✅ Stage 2 successful - clean install completed"
+            echo "success=true" >> $GITHUB_OUTPUT
+            echo "stage=2" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Stage 2 failed - clean install unsuccessful"
+            echo "success=false" >> $GITHUB_OUTPUT
+            echo "stage=2" >> $GITHUB_OUTPUT
+          fi
+
+      - name: 📂 Stage 3 - Backup Recovery
+        id: stage3
+        if: steps.stage1.outputs.success != 'true' && steps.stage2.outputs.success != 'true'
+        continue-on-error: true
+        run: |
+          echo "📂 STAGE 3: Attempting recovery from backup"
+
+          # Find most recent valid backup
+          backup_found=false
+          if [[ -d ".lockfile-backups" ]]; then
+            echo "🔍 Searching for valid backups..."
+
+            # Sort backups by date (newest first)
+            for backup_dir in $(ls -1t .lockfile-backups/ | head -5); do
+              backup_path=".lockfile-backups/$backup_dir"
+
+              if [[ -f "$backup_path/package-lock.json" ]]; then
+                echo "🔍 Testing backup: $backup_path"
+
+                # Validate backup lockfile
+                if jq . "$backup_path/package-lock.json" > /dev/null 2>&1; then
+                  echo "✅ Valid backup found: $backup_path"
+
+                  # Restore backup
+                  cp "$backup_path/package-lock.json" package-lock.json
+                  rm -rf node_modules
+
+                  # Test backup with clean install
+                  if npm ci --no-audit --no-fund; then
+                    echo "✅ Stage 3 successful - backup recovery completed"
+                    echo "success=true" >> $GITHUB_OUTPUT
+                    echo "stage=3" >> $GITHUB_OUTPUT
+                    echo "backup_path=$backup_path" >> $GITHUB_OUTPUT
+                    backup_found=true
+                    break
+                  else
+                    echo "❌ Backup $backup_path failed validation"
+                    rm -f package-lock.json
+                  fi
+                else
+                  echo "❌ Backup $backup_path has invalid JSON"
+                fi
+              fi
+            done
+          fi
+
+          if [[ "$backup_found" == "false" ]]; then
+            echo "❌ Stage 3 failed - no valid backup found"
+            echo "success=false" >> $GITHUB_OUTPUT
+            echo "stage=3" >> $GITHUB_OUTPUT
+          fi
+
+      - name: 🚨 Stage 4 - Manual Intervention Alert
+        id: stage4
+        if: steps.stage1.outputs.success != 'true' && steps.stage2.outputs.success != 'true' && steps.stage3.outputs.success != 'true'
+        run: |
+          echo "🚨 STAGE 4: All automated repair attempts failed - manual intervention required"
+
+          # Create detailed failure report
+          cat > failure-report.md << 'EOF'
+          # 🚨 Emergency Lockfile Repair Failure Report
+
+          **Trigger Reason**: ${{ inputs.trigger_reason }}
+          **Timestamp**: $(date -u '+%Y-%m-%d %H:%M:%S UTC')
+          **Repository**: ${{ github.repository }}
+          **Branch**: ${{ github.ref_name }}
+          **Commit**: ${{ github.sha }}
+
+          ## 📋 Assessment Results
+          - **Lockfile Present**: ${{ steps.assessment.outputs.has_lockfile }}
+          - **Lockfile Valid**: ${{ steps.assessment.outputs.lockfile_valid }}
+          - **Package.json Valid**: ${{ steps.assessment.outputs.package_json_valid }}
+          - **Corruption Type**: ${{ steps.assessment.outputs.corruption_type }}
+
+          ## 🔄 Repair Attempts
+
+          ### Stage 1: Lockfile Regeneration
+          **Result**: ${{ steps.stage1.outputs.success == 'true' && '✅ Success' || '❌ Failed' }}
+
+          ### Stage 2: Clean Install
+          **Result**: ${{ steps.stage2.outputs.success == 'true' && '✅ Success' || '❌ Failed' }}
+
+          ### Stage 3: Backup Recovery
+          **Result**: ${{ steps.stage3.outputs.success == 'true' && '✅ Success' || '❌ Failed' }}
+
+          ## 🛠️ Manual Recovery Steps
+
+          1. **Check Node.js version compatibility**
+          2. **Verify package.json dependencies for conflicts**
+          3. **Manual dependency resolution**
+          4. **Check for custom npm configurations**
+          5. **Verify network connectivity and registry access**
+
+          ## 📊 Backup Information
+          Emergency backup created at: ${{ steps.backup.outputs.backup_path }}
+          EOF
+
+          echo "success=false" >> $GITHUB_OUTPUT
+          echo "stage=4" >> $GITHUB_OUTPUT
+          echo "manual_intervention=true" >> $GITHUB_OUTPUT
+
+      - name: ✅ Repair Verification
+        id: verification
+        if: steps.stage1.outputs.success == 'true' || steps.stage2.outputs.success == 'true' || steps.stage3.outputs.success == 'true'
+        run: |
+          echo "✅ Verifying repair success..."
+
+          # Verify lockfile integrity
+          if ! jq . package-lock.json > /dev/null 2>&1; then
+            echo "❌ Verification failed: lockfile is invalid JSON"
+            echo "verified=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+          # Verify dependency installation
+          if ! npm ls --depth=0 > /dev/null 2>&1; then
+            echo "⚠️ Warning: Some dependency issues detected, but installation may still work"
+          fi
+
+          # Test build if available
+          if npm run build --if-present > /dev/null 2>&1; then
+            echo "✅ Build test passed"
+          else
+            echo "⚠️ Build test failed or not available"
+          fi
+
+          echo "✅ Repair verification completed successfully"
+          echo "verified=true" >> $GITHUB_OUTPUT
+
+      - name: 💾 Create Success Backup
+        id: success-backup
+        if: steps.verification.outputs.verified == 'true'
+        run: |
+          echo "💾 Creating backup of successful repair..."
+
+          # Create success backup
+          success_backup_dir=".lockfile-backups/success-$(date -u '+%Y%m%d-%H%M%S')"
+          mkdir -p "$success_backup_dir"
+
+          cp package-lock.json "$success_backup_dir/package-lock.json"
+          cp package.json "$success_backup_dir/package.json"
+
+          # Add metadata
+          cat > "$success_backup_dir/metadata.json" << EOF
+          {
+            "timestamp": "$(date -u '+%Y-%m-%d %H:%M:%S UTC')",
+            "repair_stage": "${{ steps.stage1.outputs.success == 'true' && '1' || steps.stage2.outputs.success == 'true' && '2' || steps.stage3.outputs.success == 'true' && '3' || '4' }}",
+            "trigger_reason": "${{ inputs.trigger_reason }}",
+            "commit_sha": "${{ github.sha }}",
+            "workflow_run": "${{ github.run_id }}"
+          }
+          EOF
+
+          echo "✅ Success backup created at $success_backup_dir"
+          echo "backup_path=$success_backup_dir" >> $GITHUB_OUTPUT
+
+      - name: 🧹 Cleanup Old Backups
+        run: |
+          echo "🧹 Cleaning up old backups (keeping last 5)..."
+
+          if [[ -d ".lockfile-backups" ]]; then
+            # Keep only the 5 most recent backups
+            cd .lockfile-backups
+            ls -1t | tail -n +6 | xargs -r rm -rf
+            echo "✅ Old backups cleaned up"
+          fi
+
+      - name: 📊 Final Status Report
+        id: final-status
+        always_run: true
+        run: |
+          echo "📊 EMERGENCY LOCKFILE REPAIR FINAL REPORT"
+          echo "================================================"
+
+          # Determine success and stage
+          if [[ "${{ steps.stage1.outputs.success }}" == "true" ]]; then
+            success="true"
+            stage="1"
+            method="Lockfile Regeneration"
+          elif [[ "${{ steps.stage2.outputs.success }}" == "true" ]]; then
+            success="true"
+            stage="2"
+            method="Clean Install"
+          elif [[ "${{ steps.stage3.outputs.success }}" == "true" ]]; then
+            success="true"
+            stage="3"
+            method="Backup Recovery"
+            echo "backup_used=true" >> $GITHUB_OUTPUT
+          else
+            success="false"
+            stage="4"
+            method="Manual Intervention Required"
+          fi
+
+          # Set outputs
+          echo "success=$success" >> $GITHUB_OUTPUT
+          echo "stage=$stage" >> $GITHUB_OUTPUT
+
+          # Final report
+          echo "🎯 **Final Result**: $([ "$success" == "true" ] && echo "✅ SUCCESS" || echo "❌ FAILED")"
+          echo "📋 **Repair Method**: $method"
+          echo "🔢 **Stage Completed**: $stage"
+          echo "⏰ **Completed at**: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+
+          if [[ "$success" == "true" ]]; then
+            echo "::notice title=Repair Success::Emergency lockfile repair completed successfully using $method"
+          else
+            echo "::error title=Repair Failed::Emergency lockfile repair failed - manual intervention required"
+          fi
+
+      - name: 🚨 Create Manual Intervention Issue
+        if: steps.final-status.outputs.success != 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const reportContent = fs.readFileSync('failure-report.md', 'utf8');
+
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: '🚨 Emergency Lockfile Repair Failed - Manual Intervention Required',
+              body: reportContent,
+              labels: ['emergency', 'lockfile', 'manual-intervention']
+            });
