@@ -100,6 +100,54 @@ cleanup, the project focuses on core MVP functionality with a simplified but rob
 .claude/scripts/session-complete.sh
 ```
 
+### AFTER FEATURE COMPLETION - MANDATORY POST-FEATURE WORKFLOW:
+
+**CRITICAL**: The following workflow steps are MANDATORY for ALL features, fixes, and improvements. This workflow MUST be completed before moving to the next task.
+
+#### **Phase 1: Push and Verify**
+```bash
+# 1. Push feature branch to remote
+git push -u origin feature/[name]
+
+# 2. Monitor CI/CD pipeline status
+gh run list --branch=feature/[name] --limit=1
+gh run watch # Monitor until completion
+```
+
+#### **Phase 2: Merge (Only if CI/CD Green)**
+```bash
+# 3. Merge to main ONLY if CI/CD passes
+git checkout main
+git pull origin main
+git merge feature/[name] --no-ff
+
+# 4. Push merged changes to main
+git push origin main
+```
+
+#### **Phase 3: Verify Main and Cleanup**
+```bash
+# 5. Verify CI/CD passes on main branch
+gh run list --branch=main --limit=1
+gh run watch # Monitor until completion
+
+# 6. Delete branches ONLY after main CI/CD passes
+git branch -d feature/[name]          # Delete local branch
+git push origin --delete feature/[name] # Delete remote branch
+
+# 7. Confirm clean state on main
+git status # Should show "working tree clean"
+```
+
+#### **Failure Handling**
+- **If feature branch CI/CD fails**: Fix issues on feature branch, do NOT merge
+- **If main branch CI/CD fails**: Immediately revert merge, investigate on feature branch
+- **If unsure**: Stop workflow, investigate, seek guidance
+
+**📋 WORKFLOW REFERENCE**: See [best-practices.md Section I](.claude/best-practices.md#section-i-post-feature-workflow-protocol) for complete details and troubleshooting procedures.
+
+**🔒 ENFORCEMENT**: This workflow is mandatory and cannot be bypassed. Breaking this workflow pattern will be flagged as a critical procedure violation.
+
 ## Development Setup
 
 ### Always use Docker Compose for development
@@ -424,6 +472,26 @@ Each archived component includes:
 
 ## Documentation Standards
 
+### **MANDATORY DOCUMENTATION CONSISTENCY REQUIREMENTS**
+
+**CRITICAL**: All documentation MUST follow the consistency standards to ensure newcomer accessibility and evolutionary tracking.
+
+#### **Required Documentation Elements** (Per [best-practices.md Section J](.claude/best-practices.md#section-j-documentation-consistency-standards))
+
+- **Purpose**: Clear statement of what the application/feature/fix accomplishes
+- **Goals**: Specific final objectives and measurable success criteria
+- **Requirements**: Both functional and technical requirements
+- **Architecture**: System design and component relationships
+- **Evolution**: Stage-by-stage development progression with rationale
+- **Todo Tracking**: Task lists with real-time status updates
+- **Decision Records**: Rationale and context for major technical choices
+
+#### **Documentation Types** (Mandatory Coverage)
+
+- **Application-Level**: Overall system purpose, goals, and architecture
+- **Feature-Level**: Specific functionality, integration points, and user impact
+- **Fix-Level**: Problem analysis, solution approach, and impact assessment
+
 ### Required Documentation
 
 - **Feature Planning**: Before implementation
@@ -441,6 +509,8 @@ docs/
 ├── sessions/           # Development session summaries
 └── decisions/          # Architecture decision records
 ```
+
+**🔒 ENFORCEMENT**: Documentation consistency is mandatory for maintainability and team onboarding. Incomplete or inconsistent documentation will be flagged as a critical standards violation.
 
 ## Important Notes & Reminders
 

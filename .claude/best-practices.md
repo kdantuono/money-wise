@@ -1207,9 +1207,229 @@ ${incident.prevention}
 }
 ```
 
+## 🚀 I. Post-Feature Workflow Protocol
+
+### MANDATORY Complete Feature Lifecycle
+
+**This workflow is MANDATORY for ALL features, fixes, and enhancements. No exceptions.**
+
+#### Phase 1: Push and Initial CI/CD Verification
+
+```bash
+# 1. Push feature branch to remote
+git push origin feature/[feature-name]
+
+# 2. Monitor CI/CD pipeline status
+gh run list --branch feature/[feature-name] --limit 1
+
+# 3. Wait for CI/CD completion and verify success
+gh run watch [RUN_ID]  # Monitor until completion
+```
+
+**Requirements**:
+- ✅ All CI/CD checks must pass (security, lint, tests, build)
+- ✅ No failures or warnings in critical checks
+- ❌ **STOP HERE** if any CI/CD checks fail - fix issues before proceeding
+
+#### Phase 2: Merge to Main
+
+```bash
+# 4. Switch to main branch
+git checkout main
+
+# 5. Pull latest changes (if any)
+git pull origin main
+
+# 6. Merge feature branch (fast-forward preferred)
+git merge feature/[feature-name]
+
+# 7. Push merged changes to main
+git push origin main
+```
+
+#### Phase 3: Main Branch CI/CD Verification
+
+```bash
+# 8. Monitor main branch CI/CD pipeline
+gh run list --branch main --limit 1
+
+# 9. Verify main branch CI/CD success
+gh run watch [MAIN_RUN_ID]
+```
+
+**Critical Checkpoint**:
+- ✅ Main branch CI/CD must pass completely
+- ❌ **IMMEDIATE ACTION REQUIRED** if main CI/CD fails:
+  - Create hotfix branch immediately
+  - Investigate and fix issues
+  - Open GitHub issue for tracking
+
+#### Phase 4: Branch Cleanup and Return
+
+```bash
+# 10. Delete local feature branch
+git branch -D feature/[feature-name]
+
+# 11. Delete remote feature branch
+git push origin --delete feature/[feature-name]
+
+# 12. Verify clean main branch status
+git status  # Should show "working tree clean"
+git branch  # Should show only main (and other non-feature branches)
+```
+
+### Post-Feature Workflow Verification Checklist
+
+**Before marking feature as complete, verify**:
+- [ ] Feature branch CI/CD: ✅ SUCCESS
+- [ ] Merged to main successfully
+- [ ] Main branch CI/CD: ✅ SUCCESS
+- [ ] Local feature branch deleted
+- [ ] Remote feature branch deleted
+- [ ] Currently on main branch
+- [ ] Working tree clean
+- [ ] F3 documentation completed (if using Appendix F)
+
+### Emergency Procedures
+
+**If Main Branch CI/CD Fails**:
+1. **Immediate Response**: Create hotfix branch from last known good commit
+2. **Investigation**: Identify root cause of failure
+3. **Documentation**: Create GitHub issue with failure details
+4. **Resolution**: Fix issues and follow hotfix workflow
+5. **Prevention**: Update CI/CD or pre-merge checks to prevent recurrence
+
+## 📚 J. Documentation Consistency Standards
+
+### Comprehensive Newcomer Onboarding Documentation
+
+**Every piece of documentation must serve as a complete reference for someone new to the codebase.**
+
+#### Required Documentation Elements
+
+**For ALL Documentation Types (Application/Feature/Fix)**:
+
+1. **Purpose & Overview**
+   ```markdown
+   ## What This Does
+   Clear, concise explanation of functionality/purpose
+
+   ## Why It Exists
+   Business/technical rationale and problem being solved
+   ```
+
+2. **Goals & Success Criteria**
+   ```markdown
+   ## Final Goals
+   - [ ] Specific, measurable objectives
+   - [ ] Success criteria and acceptance tests
+   - [ ] Performance targets (if applicable)
+   ```
+
+3. **Requirements Documentation**
+   ```markdown
+   ## Requirements
+   ### Functional Requirements
+   - User stories and behavior specifications
+
+   ### Technical Requirements
+   - System constraints and dependencies
+   - Performance and scalability needs
+
+   ### Non-Functional Requirements
+   - Security, maintainability, usability standards
+   ```
+
+4. **Architecture & Design**
+   ```markdown
+   ## Architecture
+   ### System Components
+   - Component diagram and relationships
+   - Data flow and communication patterns
+
+   ### Technology Stack
+   - Languages, frameworks, libraries used
+   - Infrastructure and deployment considerations
+
+   ### Design Decisions
+   - Major architectural choices and rationale
+   - Trade-offs and alternatives considered
+   ```
+
+5. **Evolutionary Development Tracking**
+   ```markdown
+   ## Development Evolution
+   ### Phase 1: [Name]
+   **Status**: ✅ Completed | 🔄 In Progress | ⏸️ Paused | ❌ Failed
+   - Stage-by-stage implementation details
+   - Key milestones and deliverables
+   - Issues encountered and resolutions
+
+   ### Phase 2: [Name]
+   **Status**: [Status]
+   - [Continue pattern for all phases]
+   ```
+
+6. **Todo Task Lists with Evolution**
+   ```markdown
+   ## Task Progression
+   ### Current Sprint/Phase
+   - [x] Completed task with outcome summary
+   - [ ] In-progress task with current status
+   - [ ] Pending task with dependencies
+
+   ### Historical Tasks (Previous Phases)
+   - [Archive format showing progression over time]
+   ```
+
+#### Documentation Types and Specific Requirements
+
+**Application-Level Documentation** (`docs/architecture/`):
+- System overview and purpose
+- High-level architecture and technology decisions
+- Integration patterns and external dependencies
+- Deployment and operational procedures
+
+**Feature-Level Documentation** (`docs/features/`):
+- Feature purpose and user value
+- Implementation approach and architecture
+- Integration points with existing system
+- Testing strategy and quality assurance
+
+**Fix-Level Documentation** (`docs/fixes/` or inline in features):
+- Problem description and impact
+- Root cause analysis
+- Solution approach and implementation
+- Prevention measures and monitoring
+
+#### Documentation Update Protocol
+
+**When Documentation Must Be Updated**:
+- ✅ **Every feature/fix completion** (F3 documentation)
+- ✅ **Architecture changes** (system design modifications)
+- ✅ **Requirements changes** (scope or goal modifications)
+- ✅ **Technology updates** (framework upgrades, new tools)
+- ✅ **Process improvements** (workflow or methodology changes)
+
+**Documentation Review Requirements**:
+- **Monthly Review**: Audit documentation for accuracy and completeness
+- **Pre-Release Review**: Verify all feature documentation is current
+- **Newcomer Test**: Regularly test documentation with fresh perspective
+- **Continuous Improvement**: Update based on feedback and pain points
+
+#### Documentation Quality Standards
+
+**Every document must enable a newcomer to**:
+- ✅ Understand what the system/feature/fix accomplishes
+- ✅ Comprehend the final goals and success criteria
+- ✅ Follow the evolutionary development process
+- ✅ Locate and understand architectural decisions
+- ✅ Identify current status and next steps
+- ✅ Contribute effectively to ongoing development
+
 ---
 
-**Last Updated**: 2025-01-21 **Version**: 2.0.0  
+**Last Updated**: 2025-09-21 **Version**: 2.1.0
 **Maintainer**: MONEYWISE Team & Claude Code
 
 **Remember**: Every commit counts. Every test matters. Every line of documentation helps. Build with excellence, ship
