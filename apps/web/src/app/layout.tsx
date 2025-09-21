@@ -1,13 +1,11 @@
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
+// Local font instead of Google Fonts to avoid external dependencies
 import './globals.css';
 import { AppProvider } from '@/context/AppContext';
 import { AuthProvider } from '@/context/AuthContext';
 import { Navigation } from './components/navigation';
 import Header from './components/Header';
 import { Toaster } from '@/components/ui/sonner';
-
-const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
   title: 'MoneyWise - Smart Personal Finance',
@@ -21,7 +19,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang='en'>
-      <body className={inter.className}>
+      <body className="font-sans antialiased">{/* Using system font instead of Inter */}
         <AuthProvider>
           <AppProvider>
             <div className='min-h-screen bg-[#F5F7FA]'>
