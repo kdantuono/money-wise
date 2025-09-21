@@ -41,7 +41,9 @@
     "analyze:web": "cd apps/web && ANALYZE=true npm run build",
     "analyze:deps": "npm ls --depth=0 --json > bundle-analysis/dependencies.json",
     "size-check": "npx size-limit",
-    "size-why": "npx size-limit --why"
+    "size-why": "npx size-limit --why",
+    "validate:lockfile": "node scripts/validate-lockfile.js",
+    "lockfile:report": "node scripts/validate-lockfile.js report"
   },
   "devDependencies": {
     "@next/bundle-analyzer": "^15.5.3",
