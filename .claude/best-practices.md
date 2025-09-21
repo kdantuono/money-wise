@@ -1,5 +1,14 @@
 # MONEYWISE Claude Code Enhanced Best Practices & Auto-Update Guide
 
+## 📍 **FILE DISCOVERY RULE**
+
+**This file is read using the following fallback sequence**:
+1. **First try global**: `~/.claude/best-practices.md`
+2. **If not found, try project**: `{currentproject}/.claude/best-practices.md`
+3. **Current location**: `/home/nemesi/dev/money-wise/.claude/best-practices.md`
+
+**PURPOSE**: Prevents file-not-found errors during session startup and ensures best-practices are always accessible.
+
 # 🚨 **STOP! READ THIS FIRST!** 🚨
 
 ## ⛔ MANDATORY Git Workflow - DO NOT SKIP

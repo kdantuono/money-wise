@@ -6,7 +6,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### **MANDATORY FIRST ACTION - UNDISCUSSABLE RULE**
 
-**BEFORE ANY OTHER ACTION**: You MUST read [.claude/best-practices.md](.claude/best-practices.md) as the very first action in every session.
+**BEFORE ANY OTHER ACTION**: You MUST read best-practices.md as the very first action in every session using this fallback sequence:
+1. **First try global**: `~/.claude/best-practices.md`
+2. **If not found, try project**: `{currentproject}/.claude/best-practices.md`
+3. **Current project location**: [.claude/best-practices.md](.claude/best-practices.md)
 
 **ADDITIONAL REQUIREMENTS**:
 1. **Read recent decision documents** if 2+ hours have passed since last session
