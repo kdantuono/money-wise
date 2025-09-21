@@ -190,7 +190,7 @@ class PlaidApiClient {
   }
 
   /**
-   * Handle Plaid webhooks (typically called by the backend)
+   * Handle Plaid webhooks for MVP integration (future enhancement)
    */
   async handleWebhook(webhookData: any): Promise<void> {
     const response = await fetch(`${API_BASE_URL}/plaid/webhook`, {
