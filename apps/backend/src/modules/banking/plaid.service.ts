@@ -157,9 +157,94 @@ export class PlaidService {
     }
   }
 
+  /**
+   * Transform Plaid transaction data to our internal format
+   */
+  private transformPlaidTransaction(txn: any, accountId: string): any {
+    return {
+      plaidAccountId: accountId,
+      plaidTransactionId: txn.transaction_id,
+      amount: txn.amount,
+      date: new Date(txn.date),
+      authorizedDate: txn.authorized_date
+        ? new Date(txn.authorized_date)
+        : null,
+      description: txn.name || txn.merchant_name || 'Transaction',
+      merchantName: txn.merchant_name || null,
+      accountOwner: txn.account_owner || null,
+      category: txn.category || [],
+      categoryId: txn.category_id || null,
+      subcategory: null, // Not available in current Plaid API
+      transactionType: null, // Not available in current Plaid API
+      transactionCode: txn.transaction_code || null,
+      isoCurrencyCode: txn.iso_currency_code || 'USD',
+      unofficialCurrencyCode: txn.unofficial_currency_code || null,
+      isPending: txn.pending || false,
+      location: txn.location
+        ? JSON.parse(JSON.stringify(txn.location))
+        : null,
+      paymentMeta: txn.payment_meta
+        ? JSON.parse(JSON.stringify(txn.payment_meta))
+        : null,
+      personalFinanceCategory: txn.personal_finance_category
+        ? JSON.parse(JSON.stringify(txn.personal_finance_category))
+        : null,
+    };
+  }
+
+  /**
+   * Process added transactions
+   */
+  private async processAddedTransactions(
+    added: any[],
+    accountId: string
+  ): Promise<number> {
+    let transactionsAdded = 0;
+    for (const txn of added) {
+      const transaction = this.transformPlaidTransaction(txn, accountId);
+      await this.plaidTransactionRepository.upsert(transaction, {
+        conflictPaths: ['plaidTransactionId'],
+      });
+      transactionsAdded++;
+    }
+    return transactionsAdded;
+  }
+
+  /**
+   * Process modified transactions
+   */
+  private async processModifiedTransactions(
+    modified: any[],
+    accountId: string
+  ): Promise<number> {
+    let transactionsModified = 0;
+    for (const txn of modified) {
+      const transaction = this.transformPlaidTransaction(txn, accountId);
+      await this.plaidTransactionRepository.upsert(transaction, {
+        conflictPaths: ['plaidTransactionId'],
+      });
+      transactionsModified++;
+    }
+    return transactionsModified;
+  }
+
+  /**
+   * Process removed transactions
+   */
+  private async processRemovedTransactions(removed: any[]): Promise<number> {
+    let transactionsRemoved = 0;
+    for (const removedTxnId of removed) {
+      await this.plaidTransactionRepository.delete({
+        plaidTransactionId: removedTxnId.transaction_id,
+      });
+      transactionsRemoved++;
+    }
+    return transactionsRemoved;
+  }
+
   async syncTransactions(
     accountId: string,
-    options?: {
+    _options?: {
       startDate?: Date;
       endDate?: Date;
       count?: number;
@@ -190,93 +275,10 @@ export class PlaidService {
       const response = await this.plaidClient.transactionsSync(request);
       const { added, modified, removed, next_cursor } = response.data;
 
-      let transactionsAdded = 0;
-      let transactionsModified = 0;
-      let transactionsRemoved = 0;
-
-      // Process added transactions
-      for (const txn of added) {
-        const transaction = {
-          plaidAccountId: accountId,
-          plaidTransactionId: txn.transaction_id,
-          amount: txn.amount,
-          date: new Date(txn.date),
-          authorizedDate: txn.authorized_date
-            ? new Date(txn.authorized_date)
-            : null,
-          description: txn.name || txn.merchant_name || 'Transaction',
-          merchantName: txn.merchant_name || null,
-          accountOwner: txn.account_owner || null,
-          category: txn.category || [],
-          categoryId: txn.category_id || null,
-          subcategory: null, // Not available in current Plaid API
-          transactionType: null, // Not available in current Plaid API
-          transactionCode: txn.transaction_code || null,
-          isoCurrencyCode: txn.iso_currency_code || 'USD',
-          unofficialCurrencyCode: txn.unofficial_currency_code || null,
-          isPending: txn.pending || false,
-          location: txn.location
-            ? JSON.parse(JSON.stringify(txn.location))
-            : null,
-          paymentMeta: txn.payment_meta
-            ? JSON.parse(JSON.stringify(txn.payment_meta))
-            : null,
-          personalFinanceCategory: txn.personal_finance_category
-            ? JSON.parse(JSON.stringify(txn.personal_finance_category))
-            : null,
-        };
-
-        await this.plaidTransactionRepository.upsert(transaction, {
-          conflictPaths: ['plaidTransactionId'],
-        });
-        transactionsAdded++;
-      }
-
-      // Process modified transactions
-      for (const txn of modified) {
-        const transaction = {
-          plaidAccountId: accountId,
-          plaidTransactionId: txn.transaction_id,
-          amount: txn.amount,
-          date: new Date(txn.date),
-          authorizedDate: txn.authorized_date
-            ? new Date(txn.authorized_date)
-            : null,
-          description: txn.name || txn.merchant_name || 'Transaction',
-          merchantName: txn.merchant_name || null,
-          accountOwner: txn.account_owner || null,
-          category: txn.category || [],
-          categoryId: txn.category_id || null,
-          subcategory: null, // Not available in current Plaid API
-          transactionType: null, // Not available in current Plaid API
-          transactionCode: txn.transaction_code || null,
-          isoCurrencyCode: txn.iso_currency_code || 'USD',
-          unofficialCurrencyCode: txn.unofficial_currency_code || null,
-          isPending: txn.pending || false,
-          location: txn.location
-            ? JSON.parse(JSON.stringify(txn.location))
-            : null,
-          paymentMeta: txn.payment_meta
-            ? JSON.parse(JSON.stringify(txn.payment_meta))
-            : null,
-          personalFinanceCategory: txn.personal_finance_category
-            ? JSON.parse(JSON.stringify(txn.personal_finance_category))
-            : null,
-        };
-
-        await this.plaidTransactionRepository.upsert(transaction, {
-          conflictPaths: ['plaidTransactionId'],
-        });
-        transactionsModified++;
-      }
-
-      // Process removed transactions
-      for (const removedTxnId of removed) {
-        await this.plaidTransactionRepository.delete({
-          plaidTransactionId: removedTxnId.transaction_id,
-        });
-        transactionsRemoved++;
-      }
+      // Process all transaction changes using extracted methods
+      const transactionsAdded = await this.processAddedTransactions(added, accountId);
+      const transactionsModified = await this.processModifiedTransactions(modified, accountId);
+      const transactionsRemoved = await this.processRemovedTransactions(removed);
 
       // Update account with new cursor and sync time
       const lastSyncAt = new Date();
