@@ -2,6 +2,17 @@
 
 > **Quick and reliable setup for MoneyWise personal finance application**
 
+## 🎯 New Developer? Follow the Checkmarks!
+
+**Setup Verification Checklist** - Check each step to build confidence:
+- [ ] Node.js 18+ installed: `node --version`
+- [ ] Docker running: `docker --version`
+- [ ] Project cloned and dependencies installed
+- [ ] Services started: URLs responding
+- [ ] First successful build completed
+
+**💡 Pro Tip**: If any step fails, check the [Troubleshooting](#-troubleshooting) section below!
+
 ## 🚀 Quick Start (5 minutes)
 
 ### Prerequisites
@@ -28,11 +39,14 @@ docker-compose up -d
 npm run dev
 ```
 
-### 3. Access Application
+### 3. Access Application & Verify Success ✅
 
-- 🌐 **Web Dashboard**: http://localhost:3000
-- 🔧 **API Server**: http://localhost:3002
-- 📚 **API Documentation**: http://localhost:3002/api
+**Test each URL** to confirm setup worked:
+- [ ] 🌐 **Web Dashboard**: http://localhost:3000 (should show MoneyWise interface)
+- [ ] 🔧 **API Server**: http://localhost:3002 (should show "Hello World" or API response)
+- [ ] 📚 **API Documentation**: http://localhost:3002/api (should show Swagger interface)
+
+**✅ Success!** If all URLs work, you're ready to develop! If not, see [Troubleshooting](#-troubleshooting).
 
 ## 📋 Detailed Setup
 
