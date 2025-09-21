@@ -390,16 +390,18 @@ jobs:
           analyzer.analyze().then(report => {
             console.log(JSON.stringify(report, null, 2));
 
-            // Set GitHub Actions outputs
-            process.stdout.write(`integrity_score=${report.integrity_score}\n`);
-            process.stdout.write(`risk_level=${report.risk_level}\n`);
-            process.stdout.write(`issues_found=${report.issues_found}\n`);
-            process.stdout.write(`requires_action=${report.requires_action}\n`);
-            process.stdout.write(`alert_level=${report.alert_level}\n`);
+            // Save report first
+            require('fs').writeFileSync(process.env.report_file || 'integrity-report.json', JSON.stringify(report, null, 2));
 
-            // Save report
-            require('fs').writeFileSync('$report_file', JSON.stringify(report, null, 2));
-            process.stdout.write(`report_file=$report_file\n`);
+            // Write outputs to file for shell processing
+            require('fs').writeFileSync('analysis-outputs.txt', [
+              `integrity_score=${report.integrity_score}`,
+              `risk_level=${report.risk_level}`,
+              `issues_found=${report.issues_found}`,
+              `requires_action=${report.requires_action}`,
+              `alert_level=${report.alert_level}`,
+              `report_file=${process.env.report_file || 'integrity-report.json'}`
+            ].join('\n'));
 
           }).catch(error => {
             console.error('Analysis failed:', error);
@@ -408,7 +410,19 @@ jobs:
           EOF
 
           # Execute analysis
-          node integrity_analysis.js >> $GITHUB_OUTPUT
+          export report_file="$report_file"
+          node integrity_analysis.js
+
+          # Read outputs from file and set GitHub Actions outputs
+          if [[ -f "analysis-outputs.txt" ]]; then
+            cat analysis-outputs.txt >> $GITHUB_OUTPUT
+          else
+            echo "integrity_score=0" >> $GITHUB_OUTPUT
+            echo "risk_level=critical" >> $GITHUB_OUTPUT
+            echo "issues_found=true" >> $GITHUB_OUTPUT
+            echo "requires_action=true" >> $GITHUB_OUTPUT
+            echo "alert_level=critical" >> $GITHUB_OUTPUT
+          fi
 
       - name: 📊 Historical Trend Analysis
         id: trend-analysis
