@@ -1637,10 +1637,70 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 - **Review Requirements**: Documentation accuracy verified in code reviews
 - **Process Integration**: Documentation maintenance embedded in development workflow
 
+# Section L: Board-First Execution Pattern & Micro-Iteration Methodology
+
+## **CRITICAL**: Traceability-First Development Workflow
+
+### **MANDATORY WORKFLOW** for all user stories/tasks:
+
+#### 1. **Tracciabilità First** (BEFORE any code changes)
+```bash
+# Update GitHub Projects board status FIRST
+gh project item-edit [PROJECT_ID] --id [ITEM_ID] --field-id [STATUS_FIELD] --single-select-option-id [IN_PROGRESS_ID]
+```
+
+#### 2. **Micro-Iteration Pattern** (During execution)
+```
+FOR each micro-task in user story:
+  Execute micro-task → Commit → Verify (test/CLI) → Document → Repeat
+```
+
+#### 3. **Completion Workflow** (After user story done)
+```bash
+# Update board to complete
+gh project item-edit [PROJECT_ID] --id [ITEM_ID] --field-id [STATUS_FIELD] --single-select-option-id [DONE_ID]
+# Follow post-feature workflow (push → merge → cleanup)
+```
+
+### **Principle**: Documentation & Traceability → Execution
+
+**Before**: Code → Document → Board Update
+**After**: Board Update → Document → Code → Verify → Iterate
+
+### **Micro-Task Pattern**:
+1. **Define**: Break user story into atomic micro-tasks
+2. **Track**: Update board status before starting
+3. **Execute**: Implement micro-task
+4. **Commit**: Atomic commit with clear message
+5. **Verify**: Test/CLI verification of success
+6. **Document**: Update progress and decisions
+7. **Iterate**: Repeat until story complete
+
+### **GitHub CLI Commands for Board Management**:
+```bash
+# Get project item ID for user story
+gh project item-list [PROJECT_NUMBER] --owner [OWNER] --format json
+
+# Get field options
+gh project field-list [PROJECT_NUMBER] --owner [OWNER] --format json
+
+# Update status to In Progress (use correct option ID)
+gh project item-edit --project-id [PROJECT_ID] --id [ITEM_ID] --field-id [STATUS_FIELD] --single-select-option-id [OPTION_ID]
+```
+
+### **Benefits**:
+- **Real-time Traceability**: Board always reflects current work state
+- **Agile Transparency**: Team/stakeholders see live progress
+- **Methodology Consistency**: Practice what we preach in agile implementation
+- **Quality Assurance**: Verification built into every iteration
+
+### **Enforcement**:
+This refinement is **MANDATORY** and applies to all future user story execution.
+
 ---
 
-**Last Updated**: 2025-09-21 **Version**: 2.2.0
+**Last Updated**: 2025-09-21 **Version**: 2.3.0
 **Maintainer**: MONEYWISE Team & Claude Code
 
-**Remember**: Every commit counts. Every test matters. Every line of documentation helps. Build with excellence, ship
+**Remember**: Every commit counts. Every test matters. Every line of documentation helps. **Traceability first.** Build with excellence, ship
 with confidence. 🚀
