@@ -43,7 +43,20 @@
     "size-check": "npx size-limit",
     "size-why": "npx size-limit --why",
     "validate:lockfile": "node scripts/validate-lockfile.js",
-    "lockfile:report": "node scripts/validate-lockfile.js report"
+    "lockfile:report": "node scripts/validate-lockfile.js report",
+    "validate:cache": "node scripts/validate-ci-cache.js",
+    "cache:report": "node scripts/validate-ci-cache.js report",
+    "cache:clean": "node scripts/validate-ci-cache.js clean",
+    "cache:verify": "npm cache verify && npm run validate:cache",
+    "heal:auto": "node scripts/auto-heal-ci.js",
+    "heal:report": "node scripts/auto-heal-ci.js report",
+    "infrastructure:health": "npm run validate:lockfile && npm run validate:cache && npm run heal:auto",
+    "ci:update": "node scripts/zero-downtime-ci-updater.js",
+    "ci:rollback": "node scripts/zero-downtime-ci-updater.js rollback",
+    "ci:update-report": "node scripts/zero-downtime-ci-updater.js report",
+    "monitor:infrastructure": "node scripts/infrastructure-monitor.js",
+    "monitor:report": "node scripts/infrastructure-monitor.js report",
+    "monitor:health": "npm run infrastructure:health && npm run monitor:infrastructure"
   },
   "devDependencies": {
     "@next/bundle-analyzer": "^15.5.3",

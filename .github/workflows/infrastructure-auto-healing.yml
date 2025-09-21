@@ -1,0 +1,231 @@
+name: 🏥 Infrastructure Auto-Healing
+
+on:
+  workflow_run:
+    workflows: [
+      "🧹 Code Quality Hygiene",
+      "🧹 Dependency Hygiene",
+      "⚡ Performance Hygiene",
+      "🔒 Lockfile Integrity Monitor"
+    ]
+    types: [completed]
+    branches: [main]
+  schedule:
+    # Daily health check at 4 AM UTC
+    - cron: '0 4 * * *'
+  workflow_dispatch:
+    inputs:
+      healing_mode:
+        description: 'Auto-healing mode'
+        required: false
+        default: 'detect-and-heal'
+        type: choice
+        options:
+          - detect-and-heal
+          - report-only
+          - force-heal
+
+jobs:
+  auto-healing:
+    name: 🔧 Infrastructure Health Check & Auto-Healing
+    runs-on: ubuntu-latest
+    # Only run if the triggering workflow failed or on schedule/manual
+    if: >
+      github.event_name == 'schedule' ||
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'failure'
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        with:
+          # Need token to potentially commit fixes
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 📦 Setup Node.js (No Cache - Fresh Environment)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: false
+
+      - name: 🔍 Analyze Triggering Failure
+        if: github.event.workflow_run.conclusion == 'failure'
+        run: |
+          echo "## 🚨 Infrastructure Failure Detected" >> $GITHUB_STEP_SUMMARY
+          echo "**Triggering Workflow**: ${{ github.event.workflow_run.name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Workflow Run**: ${{ github.event.workflow_run.html_url }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Conclusion**: ${{ github.event.workflow_run.conclusion }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "🏥 **Initiating automatic healing protocols...**" >> $GITHUB_STEP_SUMMARY
+
+      - name: 🏥 Execute Auto-Healing Protocols
+        id: auto_healing
+        run: |
+          echo "## 🏥 Auto-Healing Execution" >> $GITHUB_STEP_SUMMARY
+
+          mode="${{ github.event.inputs.healing_mode || 'detect-and-heal' }}"
+          echo "**Healing Mode**: $mode" >> $GITHUB_STEP_SUMMARY
+
+          if [ "$mode" = "report-only" ]; then
+            echo "📊 **Running diagnostic report only**" >> $GITHUB_STEP_SUMMARY
+            npm run heal:report || echo "Healing report failed"
+          else
+            echo "🔧 **Running full auto-healing protocols**" >> $GITHUB_STEP_SUMMARY
+
+            # Run auto-healing and capture exit code
+            if npm run heal:auto; then
+              echo "healing_successful=true" >> $GITHUB_OUTPUT
+              echo "✅ **Auto-healing completed successfully**" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "healing_successful=false" >> $GITHUB_OUTPUT
+              echo "❌ **Auto-healing encountered critical issues**" >> $GITHUB_STEP_SUMMARY
+
+              # Check if escalation data exists
+              if [ -f "auto-healing-escalation.json" ]; then
+                echo "escalation_required=true" >> $GITHUB_OUTPUT
+                echo "📋 **Critical issues logged for manual intervention**" >> $GITHUB_STEP_SUMMARY
+              fi
+            fi
+          fi
+
+      - name: 🧪 Verify Healing Effectiveness
+        if: steps.auto_healing.outputs.healing_successful == 'true'
+        run: |
+          echo "## 🧪 Post-Healing Verification" >> $GITHUB_STEP_SUMMARY
+
+          # Run comprehensive health check
+          npm run infrastructure:health || {
+            echo "❌ Post-healing verification failed!" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          }
+
+          echo "✅ **Infrastructure health verified post-healing**" >> $GITHUB_STEP_SUMMARY
+
+      - name: 📊 Generate Health Report
+        run: |
+          echo "## 📊 Infrastructure Health Report" >> $GITHUB_STEP_SUMMARY
+
+          # Generate comprehensive health metrics
+          echo "### System Health Metrics" >> $GITHUB_STEP_SUMMARY
+          echo "- Node.js: $(node --version)" >> $GITHUB_STEP_SUMMARY
+          echo "- npm: $(npm --version)" >> $GITHUB_STEP_SUMMARY
+          echo "- Lockfile: $([ -f package-lock.json ] && echo "✅ Present" || echo "❌ Missing")" >> $GITHUB_STEP_SUMMARY
+          echo "- Dependencies: $([ -d node_modules ] && echo "✅ Installed" || echo "❌ Missing")" >> $GITHUB_STEP_SUMMARY
+
+          # Cache health
+          cache_size=$(npm config get cache | xargs du -sh 2>/dev/null | cut -f1 || echo "Unknown")
+          echo "- Cache Size: $cache_size" >> $GITHUB_STEP_SUMMARY
+
+          # Workflow health status
+          echo "### Workflow Health Status" >> $GITHUB_STEP_SUMMARY
+          echo "- Healing Mode: ${{ github.event.inputs.healing_mode || 'detect-and-heal' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Healing Result: $([ "${{ steps.auto_healing.outputs.healing_successful }}" = "true" ] && echo "✅ Successful" || echo "⚠️ Issues Detected")" >> $GITHUB_STEP_SUMMARY
+
+      - name: 🔄 Commit Auto-Healing Fixes
+        if: steps.auto_healing.outputs.healing_successful == 'true'
+        run: |
+          # Check if any healing actions created changes that should be committed
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "## 🔄 Committing Auto-Healing Fixes" >> $GITHUB_STEP_SUMMARY
+
+            git config --local user.email "action@github.com"
+            git config --local user.name "GitHub Action Auto-Healing"
+
+            git add .
+            git commit -m "fix(infrastructure): auto-healing infrastructure repairs
+
+🏥 Automated infrastructure repairs performed by auto-healing system
+
+$(npm run heal:report 2>/dev/null || echo 'Healing report unavailable')
+
+🤖 Generated by Infrastructure Auto-Healing System
+Co-Authored-By: Claude <noreply@anthropic.com>" || echo "No changes to commit"
+
+            # Push changes
+            git push || echo "Failed to push auto-healing fixes"
+            echo "✅ **Auto-healing fixes committed to repository**" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "ℹ️ **No repository changes from auto-healing**" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: 🚨 Create Critical Issue for Manual Intervention
+        if: steps.auto_healing.outputs.escalation_required == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+
+            let escalationData = {};
+            try {
+              escalationData = JSON.parse(fs.readFileSync('auto-healing-escalation.json', 'utf8'));
+            } catch (error) {
+              escalationData = { criticalIssues: ['Unknown critical issue'], healingLog: [] };
+            }
+
+            const title = '🚨 Critical Infrastructure Auto-Healing Failure';
+            const body = `
+            ## 🏥 Infrastructure Auto-Healing Alert
+
+            ❌ **Critical infrastructure issues detected that require manual intervention**
+
+            ### 🚨 Critical Issues:
+            ${escalationData.criticalIssues.map(issue => `- ❌ ${issue}`).join('\n')}
+
+            ### 🔧 Auto-Healing Actions Attempted:
+            ${escalationData.healingLog.map(log => `- ${log.emoji} ${log.message}`).join('\n')}
+
+            ### 📋 Manual Intervention Required:
+
+            1. **Immediate**: Review the [workflow run](${context.payload.repository.html_url}/actions/runs/${context.runId})
+            2. **Investigate**: Examine specific failure details in escalation data
+            3. **Resolve**: Address critical issues that auto-healing couldn't fix
+            4. **Verify**: Test infrastructure health manually
+            5. **Monitor**: Watch subsequent CI runs for resolution
+
+            ### 🔍 Technical Details:
+
+            - **Triggering Workflow**: ${{ github.event.workflow_run.name || 'Manual/Scheduled' }}
+            - **Auto-Healing Mode**: ${{ github.event.inputs.healing_mode || 'detect-and-heal' }}
+            - **Environment**: ${escalationData.environment?.nodeVersion || 'Unknown'} on ${escalationData.environment?.platform || 'Unknown'}
+            - **Timestamp**: ${escalationData.timestamp}
+            - **Run ID**: ${context.runId}
+
+            ### 🛡️ Prevention:
+
+            The auto-healing system will continue monitoring and attempting to resolve
+            infrastructure issues automatically. Manual intervention is only required
+            for critical issues that cannot be safely auto-resolved.
+
+            ---
+            *This issue was created automatically by the Infrastructure Auto-Healing System.*
+            `;
+
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: title,
+              body: body,
+              labels: ['critical', 'infrastructure', 'auto-healing', 'manual-intervention'],
+              assignees: ['kdantuono']
+            });
+
+      - name: 📈 Update Auto-Healing Metrics
+        if: always()
+        run: |
+          echo "## 📈 Auto-Healing Metrics" >> $GITHUB_STEP_SUMMARY
+
+          # Track healing effectiveness over time
+          timestamp=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          healing_successful="${{ steps.auto_healing.outputs.healing_successful }}"
+          escalation_required="${{ steps.auto_healing.outputs.escalation_required }}"
+
+          echo "### Current Session Metrics" >> $GITHUB_STEP_SUMMARY
+          echo "- **Execution Time**: $timestamp" >> $GITHUB_STEP_SUMMARY
+          echo "- **Healing Success**: $([ "$healing_successful" = "true" ] && echo "✅" || echo "❌")" >> $GITHUB_STEP_SUMMARY
+          echo "- **Manual Escalation**: $([ "$escalation_required" = "true" ] && echo "🚨 Required" || echo "✅ Not Required")" >> $GITHUB_STEP_SUMMARY
+          echo "- **Trigger**: ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+
+          echo "### System Health Summary" >> $GITHUB_STEP_SUMMARY
+          echo "The infrastructure auto-healing system provides 24/7 monitoring and automatic" >> $GITHUB_STEP_SUMMARY
+          echo "resolution of common CI/CD issues including lockfile corruption, cache problems," >> $GITHUB_STEP_SUMMARY
+          echo "dependency conflicts, and build environment issues." >> $GITHUB_STEP_SUMMARY

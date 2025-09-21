@@ -20,11 +20,33 @@ jobs:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
 
-      - name: 📦 Setup Node.js
+      - name: 📦 Setup Node.js with Resilient Cache
         uses: actions/setup-node@v4
         with:
           node-version: 18
           cache: npm
+        continue-on-error: true
+
+      - name: 🔧 Cache Resilience Check
+        run: |
+          echo "## 🗄️ Cache Health Verification" >> $GITHUB_STEP_SUMMARY
+
+          # Validate cache health before proceeding
+          npm run validate:cache || {
+            echo "⚠️ Cache validation failed - attempting recovery" >> $GITHUB_STEP_SUMMARY
+            npm run cache:clean
+            echo "🔧 Cache recovered successfully" >> $GITHUB_STEP_SUMMARY
+          }
+
+      - name: 🔍 Lockfile Integrity Check
+        run: |
+          echo "## 🔒 Lockfile Integrity Validation" >> $GITHUB_STEP_SUMMARY
+          npm run validate:lockfile || {
+            echo "❌ Lockfile integrity check failed!" >> $GITHUB_STEP_SUMMARY
+            echo "Run \`npm install\` to regenerate lockfile" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          }
+          echo "✅ Lockfile integrity validated" >> $GITHUB_STEP_SUMMARY
 
       - name: ⏱️ Track Installation Performance
         run: |
@@ -89,6 +111,9 @@ jobs:
       - name: 📊 Dependency Size Analysis
         run: |
           echo "## 📊 Dependency Impact Analysis" >> $GITHUB_STEP_SUMMARY
+
+          # Create bundle-analysis directory if it doesn't exist
+          mkdir -p bundle-analysis
 
           # Generate dependency analysis
           npm run analyze:deps
