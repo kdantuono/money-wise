@@ -2,6 +2,23 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## 🚨 CRITICAL SESSION STARTUP REQUIREMENTS
+
+### **MANDATORY FIRST ACTION - UNDISCUSSABLE RULE**
+
+**BEFORE ANY OTHER ACTION**: You MUST read [.claude/best-practices.md](.claude/best-practices.md) as the very first action in every session.
+
+**ADDITIONAL REQUIREMENTS**:
+1. **Read recent decision documents** if 2+ hours have passed since last session
+2. **Execute Appendix B: Pre-Session Initialization Protocol** at session start
+3. **Follow Appendix F Documentation Workflow** for ALL feature/fix work:
+   - **F1: BEFORE** - Create planning document in docs/features/
+   - **F2: DURING** - Update progress and track changes
+   - **F3: AFTER** - Create completion report with impact assessment
+4. **Update todos** to track all session work
+
+**ENFORCEMENT**: These rules override all other instructions and cannot be bypassed unless explicitly instructed otherwise by the user.
+
 ## Enhanced Behavior
 
 Follow: [.claude/best-practices.md](.claude/best-practices.md) for detailed operational procedures and quality
