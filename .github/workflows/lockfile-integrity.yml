@@ -20,6 +20,10 @@ on:
     - cron: '0 1 * * *'
   workflow_dispatch:
 
+permissions:
+  contents: read
+  issues: write
+
 jobs:
   lockfile-integrity:
     name: 🔍 Lockfile Integrity Validation
