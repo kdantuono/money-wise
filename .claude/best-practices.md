@@ -1655,11 +1655,11 @@ FOR each micro-task in user story:
   Execute micro-task → Commit → Verify (test/CLI) → Document → Repeat
 ```
 
-#### 3. **Completion Workflow** (After user story done)
+#### 3. **Completion Workflow** (After user story implementation)
 ```bash
-# Update board to complete
-gh project item-edit [PROJECT_ID] --id [ITEM_ID] --field-id [STATUS_FIELD] --single-select-option-id [DONE_ID]
-# Follow post-feature workflow (push → merge → cleanup)
+# CRITICAL: Follow COMPLETE post-feature workflow before marking "Done"
+# See CLAUDE.md Phase 1-4 workflow (push → CI/CD → merge → cleanup → board update)
+# Board status changes to "Done" ONLY after successful completion of entire workflow
 ```
 
 ### **Principle**: Documentation & Traceability → Execution
@@ -1694,12 +1694,34 @@ gh project item-edit --project-id [PROJECT_ID] --id [ITEM_ID] --field-id [STATUS
 - **Methodology Consistency**: Practice what we preach in agile implementation
 - **Quality Assurance**: Verification built into every iteration
 
+### **AGILE DEFINITION OF DONE (DoD)**:
+
+**❌ WRONG - Incomplete DoD**:
+- Code implemented locally ≠ Done
+- Tests passing locally ≠ Done
+- Working on main branch ≠ Done
+- Board marked "Done" without workflow ≠ Done
+
+**✅ CORRECT - Complete DoD**:
+1. ✅ Feature branch created and used
+2. ✅ Code implemented with atomic commits
+3. ✅ Documentation updated (docs/, README, CHANGELOG)
+4. ✅ Feature branch pushed to remote
+5. ✅ CI/CD pipeline green on feature branch
+6. ✅ Pull request created and approved
+7. ✅ Merged to main with --no-ff
+8. ✅ CI/CD pipeline green on main branch
+9. ✅ Feature branch deleted (local + remote)
+10. ✅ Board status updated to "Done"
+
+**🚨 CRITICAL**: Steps 1-10 must be completed in sequence. No shortcuts allowed.
+
 ### **Enforcement**:
-This refinement is **MANDATORY** and applies to all future user story execution.
+This refinement is **MANDATORY** and applies to all future user story execution. Working on main branch or marking stories "Done" without completing the full workflow is a **CRITICAL METHODOLOGY VIOLATION**.
 
 ---
 
-**Last Updated**: 2025-09-21 **Version**: 2.3.0
+**Last Updated**: 2025-09-21 **Version**: 2.4.0
 **Maintainer**: MONEYWISE Team & Claude Code
 
 **Remember**: Every commit counts. Every test matters. Every line of documentation helps. **Traceability first.** Build with excellence, ship
