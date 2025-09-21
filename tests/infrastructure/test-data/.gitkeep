@@ -1,0 +1,6 @@
+# Test Data Directory
+
+This directory contains test data and fixtures for infrastructure auto-healing tests.
+
+Files in this directory are used by the test suite to validate auto-healing functionality
+and should not be committed to version control unless they are reference fixtures.
