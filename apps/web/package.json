@@ -14,7 +14,9 @@
     "test:unit": "jest tests/unit",
     "test:integration": "jest tests/integration",
     "test:accessibility": "jest tests/accessibility",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "clean": "rm -rf .next coverage",
+    "analyze:deps": "npm ls --depth=0"
   },
   "dependencies": {
     "@floating-ui/core": "^1.7.3",
@@ -41,6 +43,7 @@
     "detect-node-es": "^1.1.0",
     "dom-helpers": "^5.2.1",
     "fast-equals": "^5.2.2",
+    "framer-motion": "^12.23.16",
     "get-nonce": "^1.0.1",
     "lucide-react": "^0.263.1",
     "next": "^14.0.0",
