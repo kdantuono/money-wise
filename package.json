@@ -15,7 +15,12 @@
     "build": "npm run build:backend && npm run build:web",
     "build:backend": "cd apps/backend && npm run build",
     "build:web": "cd apps/web && npm run build",
-    "test": "npm run test:backend && npm run test:web",
+    "test": "jest",
+    "test:coverage": "jest --coverage",
+    "test:unit": "jest --testPathPattern=\"(unit|spec)\\.test\\.(js|ts)\"",
+    "test:integration": "jest --testPathPattern=\"integration\\.test\\.(js|ts)\"",
+    "test:infrastructure": "jest --testPathPattern=\"tests/infrastructure\"",
+    "test:auto-healing": "jest --testPathPattern=\"auto-healing\"",
     "test:backend": "cd apps/backend && npm run test",
     "test:web": "cd apps/web && npm run test",
     "lint": "npm run lint:backend",
@@ -59,15 +64,24 @@
     "monitor:health": "npm run infrastructure:health && npm run monitor:infrastructure"
   },
   "devDependencies": {
+    "@babel/core": "^7.22.0",
+    "@babel/plugin-proposal-class-properties": "^7.18.0",
+    "@babel/plugin-proposal-object-rest-spread": "^7.20.0",
+    "@babel/preset-env": "^7.22.0",
+    "@babel/preset-typescript": "^7.22.0",
     "@next/bundle-analyzer": "^15.5.3",
     "@size-limit/preset-app": "^11.2.0",
+    "@types/jest": "^29.5.5",
+    "@types/node": "^20.6.3",
     "@typescript-eslint/eslint-plugin": "^6.0.0",
     "@typescript-eslint/parser": "^6.0.0",
+    "babel-jest": "^29.7.0",
     "concurrently": "^8.2.2",
     "deep-equal": "^2.2.3",
     "eslint": "^8.0.0",
     "eslint-plugin-import": "^2.28.0",
     "eslint-plugin-unused-imports": "^3.0.0",
+    "jest": "^29.7.0",
     "prettier": "^3.0.0",
     "psl": "^1.15.0",
     "size-limit": "^11.2.0"
@@ -92,5 +106,48 @@
       "path": "apps/web/.next/static/chunks/pages/dashboard-*.js",
       "limit": "100 KB"
     }
-  ]
+  ],
+  "jest": {
+    "testEnvironment": "node",
+    "roots": [
+      "<rootDir>/apps",
+      "<rootDir>/packages",
+      "<rootDir>/tests"
+    ],
+    "testMatch": [
+      "**/__tests__/**/*.(js|ts)",
+      "**/*.(test|spec).(js|ts)"
+    ],
+    "collectCoverageFrom": [
+      "apps/**/*.{js,ts}",
+      "packages/**/*.{js,ts}",
+      "scripts/**/*.{js,ts}",
+      "!**/*.d.ts",
+      "!**/node_modules/**",
+      "!**/dist/**",
+      "!**/coverage/**"
+    ],
+    "coverageDirectory": "coverage",
+    "coverageReporters": [
+      "text",
+      "lcov",
+      "html"
+    ],
+    "coverageThreshold": {
+      "global": {
+        "branches": 70,
+        "functions": 70,
+        "lines": 70,
+        "statements": 70
+      }
+    },
+    "setupFilesAfterEnv": [
+      "<rootDir>/tests/setup.js"
+    ],
+    "moduleFileExtensions": ["js", "ts", "json"],
+    "transform": {
+      "^.+\\.(js|ts)$": "babel-jest"
+    },
+    "testTimeout": 30000
+  }
 }
