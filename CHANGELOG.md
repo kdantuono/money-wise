@@ -8,29 +8,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Branch Documentation Maintenance Rule (Section K in best-practices.md)
-  - Mandatory README.md, CHANGELOG.md, SETUP.md maintenance during branch development
-  - Phase 0 integration with post-feature workflow
-  - Quality standards and verification procedures for project health documentation
-- Post-Feature Workflow Protocol (Section I in best-practices.md)
-  - 4-phase mandatory workflow: Push → Verify CI/CD → Merge → Cleanup
-  - Emergency procedures for CI/CD failures
-  - Complete verification checklist and branch cleanup
-- Documentation Consistency Standards (Section J in best-practices.md)
-  - Comprehensive newcomer onboarding documentation requirements
-  - Required documentation elements for all types (Application/Feature/Fix)
-  - Update protocols and quality standards
+- **Repository Optimization Epic (In Progress)**:
+  - Package.json Scripts MVP Efficiency Audit with 15-20% faster npm install
+  - Agile Methodology Integration with Board-First execution patterns
+  - Comprehensive AGILE_GUIDE.md with 10-step Definition of Done
+  - Documentation consolidation for newcomer accessibility
+  - Epic completion and prioritization rules for continuous development flow
+- **Enhanced Development Experience**:
+  - MVP-optimized scripts: `audit:deps`, `clean`, `doctor`, `reset`
+  - Workspace streamlined to backend + web only (removed mobile from MVP scope)
+  - Best-practices.md fallback discovery rule (global → project)
+- **Documentation Improvements**:
+  - Newcomer-focused README.md with 30-second orientation
+  - Setup verification checklist with confidence-building milestones
+  - Historical implementation files moved to docs/archive/
+  - Clear separation of current vs. historical content
 
 ### Changed
-- Enhanced CLAUDE.md with mandatory branch documentation maintenance requirements
-- Enhanced CLAUDE.md with post-feature workflow enforcement
-- Updated best-practices.md version to 2.2.0 with comprehensive workflow rules
-- Improved Git workflow section with documentation health requirements
+- **Workspace Optimization**: Removed mobile app from workspace (not MVP scope)
+- **Dependency Organization**: Moved framer-motion from root to web package
+- **Workflow Enhancement**: Board-First execution pattern with GitHub Projects integration
+- **File Organization**: Root-level historical .md files moved to docs/archive/historical-implementations/
 
 ### Fixed
-- Critical ESLint warnings in PlaidService (unused variables, complexity)
-- Reduced PlaidService syncTransactions complexity from 35 to ≤15
-- Fixed test file length issues (kept under 500 lines)
+- **Package Dependencies**: Eliminated redundant dependencies and improved organization
+- **Documentation Discovery**: Fallback sequence prevents file-not-found errors
+- **Newcomer Experience**: Clear learning path and setup verification process
 
 ## [0.1.0] - 2025-09-20
 

@@ -4,6 +4,16 @@
 >
 > Clean, simple, and reliable financial tracking for personal use
 
+## 🎯 New Contributor? Start Here!
+
+**Quick Orientation** (30 seconds):
+- 💰 **What**: Personal finance tracking app with transaction management, budgeting, and dashboard
+- 🛠️ **Tech**: NestJS backend + Next.js frontend + PostgreSQL database
+- 📁 **Structure**: Clean monorepo with backend/web apps + shared types
+- 🚀 **MVP**: Core features working, advanced features archived for later
+
+**Get Started** (5 minutes): [→ Setup Guide](SETUP.md) | **Learn More**: [→ Documentation Hub](docs/INDEX.md) | **First Issue**: [→ Good First Issues](https://github.com/kdantuono/money-wise/labels/good%20first%20issue)
+
 ## 🚀 Quick Start
 
 ### Prerequisites

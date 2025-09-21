@@ -2,13 +2,20 @@
 
 > **Clean, focused documentation for MoneyWise personal finance application**
 
-## 🎯 Quick Access Directory
+## 🎯 New to MoneyWise? Start Your Journey Here!
 
-### 🚀 **Getting Started**
+### 🚀 **First-Time Contributors (15-minute path)**
 
-- **[Setup Guide](../SETUP.md)** 🔧 - Quick 5-minute setup for development
-- **[README](../README.md)** 📋 - Project overview and architecture
-- **[CLAUDE.md](../CLAUDE.md)** 🤖 - Enhanced development guidance with best practices
+1. **[📋 Project Overview](../README.md#new-contributor-start-here)** - What is MoneyWise? (30 seconds)
+2. **[🔧 Quick Setup](../SETUP.md)** - Get it running locally (5 minutes)
+3. **[✅ Setup Verification](../SETUP.md#access-application--verify-success)** - Confirm everything works (2 minutes)
+4. **[📚 Architecture Walkthrough](#learning-path)** - Understand the system (7 minutes)
+
+### 📚 **Active Contributors**
+
+- **[🤖 Development Guidelines](../CLAUDE.md)** - Enhanced development guidance with best practices
+- **[📈 Agile Guide](./AGILE_GUIDE.md)** - Board-First methodology and Definition of Done
+- **[🔍 Current Reference](#current-documentation-2025-09-21)** - What's active vs. historical
 
 ### 📋 **Strategic Planning & Decisions**
 
@@ -117,6 +124,23 @@ Located in `.claude/scripts/`:
 - **Commits**: Semantic versioning with co-authoring
 - **Hooks**: Pre-commit validation automatically enforced
 
+## 📋 **Current Documentation (2025-09-21)**
+
+### **Essential Reading (Active Development)**
+- **[README.md](../README.md)** - Project overview with newcomer orientation
+- **[SETUP.md](../SETUP.md)** - Development setup with verification checklist
+- **[CHANGELOG.md](../CHANGELOG.md)** - Current changes and Repository Optimization Epic progress
+- **[AGILE_GUIDE.md](./AGILE_GUIDE.md)** - Board-First methodology and complete workflow
+
+### **Architecture Reference (Current)**
+- **[Package Scripts Audit](./audits/package-scripts-mvp-efficiency-audit.md)** - Recent optimization findings
+- **[Documentation Consolidation Audit](./audits/documentation-consolidation-newcomer-accessibility-audit.md)** - Newcomer accessibility improvements
+
+### **Historical Content (Archived)**
+- **[Historical Implementations](./archive/historical-implementations/)** - ML categorization, agent orchestration
+- **[Feature Planning Archive](./features/)** - Historical planning documents
+- **[Workflow Archive](./workflow/)** - Superseded agent orchestration workflows
+
 ## 📁 **File Organization**
 
 ### **Core Directories**
@@ -136,9 +160,9 @@ money-wise/
 │   ├── agent-orchestration/
 │   └── infrastructure/
 └── docs/               # Strategic documentation
-    ├── plans/          # Architecture and planning
-    ├── sessions/       # Development session summaries
-    └── decisions/      # Architecture decision records
+    ├── audits/         # Recent analysis and optimization findings
+    ├── archive/        # Historical documentation
+    └── plans/          # Current architecture and planning
 ```
 
 ### **Key Configuration Files**
