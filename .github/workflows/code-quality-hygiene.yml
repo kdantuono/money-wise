@@ -1,0 +1,138 @@
+name: 🧹 Code Quality Hygiene
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'apps/**'
+      - 'packages/**'
+      - '*.ts'
+      - '*.tsx'
+      - '*.js'
+      - '*.jsx'
+  workflow_dispatch:
+
+jobs:
+  code-quality:
+    name: 🔍 Code Quality Analysis
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: npm
+
+      - name: 📥 Install dependencies
+        run: npm ci
+
+      - name: 🔧 Build types package
+        run: cd packages/types && npm run build
+
+      - name: 🧹 ESLint Quality Check
+        run: |
+          echo "## 🧹 ESLint Analysis" >> $GITHUB_STEP_SUMMARY
+
+          # Run ESLint with zero warnings tolerance
+          npm run lint 2>&1 | tee eslint-output.txt || {
+            echo "❌ ESLint issues found!" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            tail -20 eslint-output.txt >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            echo "Run \`npm run lint:fix\` to fix auto-fixable issues" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          }
+          echo "✅ No ESLint issues found" >> $GITHUB_STEP_SUMMARY
+
+      - name: 💅 Prettier Format Check
+        run: |
+          echo "## 💅 Code Formatting" >> $GITHUB_STEP_SUMMARY
+
+          npm run format:check || {
+            echo "❌ Code formatting issues found!" >> $GITHUB_STEP_SUMMARY
+            echo "Run \`npm run format\` to fix formatting" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          }
+          echo "✅ Code formatting is consistent" >> $GITHUB_STEP_SUMMARY
+
+      - name: 🔍 TypeScript Compilation
+        run: |
+          echo "## 🔍 TypeScript Analysis" >> $GITHUB_STEP_SUMMARY
+
+          # Check TypeScript compilation
+          cd apps/backend && npx tsc --noEmit || {
+            echo "❌ Backend TypeScript compilation errors!" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          }
+
+          cd ../web && npx tsc --noEmit || {
+            echo "❌ Frontend TypeScript compilation errors!" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          }
+
+          echo "✅ TypeScript compilation successful" >> $GITHUB_STEP_SUMMARY
+
+      - name: 📦 Import Organization Check
+        run: |
+          echo "## 📦 Import Analysis" >> $GITHUB_STEP_SUMMARY
+
+          # Check for unused imports
+          unused_imports=$(find apps packages -name "*.ts" -o -name "*.tsx" | xargs grep -l "import.*from" | xargs grep -L "export" | wc -l)
+
+          if [ $unused_imports -gt 0 ]; then
+            echo "⚠️ Found potential unused imports in $unused_imports files" >> $GITHUB_STEP_SUMMARY
+            echo "Consider running import cleanup tools" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "✅ Import organization looks good" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: 🏗️ Build Verification
+        run: |
+          echo "## 🏗️ Build Verification" >> $GITHUB_STEP_SUMMARY
+
+          # Test that everything builds successfully
+          npm run build:backend || {
+            echo "❌ Backend build failed!" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          }
+
+          echo "✅ Backend build successful" >> $GITHUB_STEP_SUMMARY
+          echo "⚠️ Web build skipped (memory constraints in CI)" >> $GITHUB_STEP_SUMMARY
+
+      - name: 📊 Code Quality Metrics
+        run: |
+          echo "## 📊 Code Quality Metrics" >> $GITHUB_STEP_SUMMARY
+
+          # Count TypeScript files
+          ts_files=$(find apps packages -name "*.ts" -o -name "*.tsx" | wc -l)
+          echo "📄 TypeScript files: $ts_files" >> $GITHUB_STEP_SUMMARY
+
+          # Count JavaScript files
+          js_files=$(find apps packages -name "*.js" -o -name "*.jsx" | wc -l)
+          echo "📄 JavaScript files: $js_files" >> $GITHUB_STEP_SUMMARY
+
+          # Lines of code
+          total_lines=$(find apps packages -name "*.ts" -o -name "*.tsx" -o -name "*.js" -o -name "*.jsx" | xargs wc -l | tail -1 | awk '{print $1}')
+          echo "📏 Total lines of code: $total_lines" >> $GITHUB_STEP_SUMMARY
+
+      - name: 🔄 Auto-fix Suggestions
+        if: failure()
+        run: |
+          echo "## 🔄 Auto-fix Suggestions" >> $GITHUB_STEP_SUMMARY
+          echo "To fix the issues found, run these commands locally:" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+          echo "# Fix linting issues" >> $GITHUB_STEP_SUMMARY
+          echo "npm run lint:fix" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "# Fix formatting issues" >> $GITHUB_STEP_SUMMARY
+          echo "npm run format" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "# Check TypeScript compilation" >> $GITHUB_STEP_SUMMARY
+          echo "npm run build" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
