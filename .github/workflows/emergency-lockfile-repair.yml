@@ -5,8 +5,9 @@ on:
     inputs:
       trigger_reason:
         description: 'Reason for triggering emergency repair'
-        required: true
+        required: false
         type: string
+        default: 'workflow_validation'
       max_retries:
         description: 'Maximum number of repair attempts'
         required: false
@@ -27,8 +28,9 @@ on:
     inputs:
       trigger_reason:
         description: 'Reason for manual emergency repair'
-        required: true
+        required: false
         type: string
+        default: 'manual_dispatch'
       max_retries:
         description: 'Maximum number of repair attempts'
         required: false
