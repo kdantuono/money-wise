@@ -171,3 +171,18 @@ Thumbs.db
 # Temporary files
 tmp/
 temp/
+
+# MoneyWise MVP Specific Exclusions
+# Local configuration files
+.claude/settings.local.json
+
+# Test artifacts and reports
+test-results/
+playwright-report/
+html-report/
+
+# Next.js cache directories
+.next/cache/
+
+# Turbo cache
+.turbo/

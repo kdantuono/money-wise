@@ -132,6 +132,8 @@ git commit -m "docs(maintenance): update project health documentation"
 
 **CRITICAL**: The following workflow steps are MANDATORY for ALL features, fixes, and improvements. This workflow MUST be completed before moving to the next task.
 
+**🚨 AGILE BOARD INTEGRATION**: User stories/tasks can ONLY be marked "Done" on GitHub Projects board AFTER completing this ENTIRE workflow. Working on main branch or marking stories as "Done" without completing this workflow is a **CRITICAL METHODOLOGY VIOLATION**.
+
 #### **Phase 1: Push and Verify**
 ```bash
 # 1. Push feature branch to remote
@@ -166,6 +168,17 @@ git push origin --delete feature/[name] # Delete remote branch
 # 7. Confirm clean state on main
 git status # Should show "working tree clean"
 ```
+
+#### **Phase 4: Finalize Agile Board (ONLY after Phases 1-3 complete)**
+```bash
+# 8. Update GitHub Projects board to "Done" status
+gh project item-edit --project-id [PROJECT_ID] --id [ITEM_ID] --field-id [STATUS_FIELD] --single-select-option-id [DONE_ID]
+
+# 9. Verify board reflects completed work
+gh project item-list [PROJECT_NUMBER] --owner [OWNER] --format json
+```
+
+**✅ DEFINITION OF DONE**: User story/task is ONLY considered "Done" when ALL phases (1-4) are completed successfully.
 
 #### **Failure Handling**
 - **If feature branch CI/CD fails**: Fix issues on feature branch, do NOT merge
