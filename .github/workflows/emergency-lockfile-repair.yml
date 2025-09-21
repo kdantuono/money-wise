@@ -5,8 +5,9 @@ on:
     inputs:
       trigger_reason:
         description: 'Reason for triggering emergency repair'
-        required: true
+        required: false
         type: string
+        default: 'workflow_validation'
       max_retries:
         description: 'Maximum number of repair attempts'
         required: false
@@ -15,20 +16,21 @@ on:
     outputs:
       repair_success:
         description: 'Whether the repair was successful'
-        value: ${{ jobs.emergency-repair.outputs.success }}
+        value: ${{ jobs.emergency-repair.outputs.success || 'false' }}
       repair_stage:
         description: 'Stage at which repair succeeded or failed'
-        value: ${{ jobs.emergency-repair.outputs.stage }}
+        value: ${{ jobs.emergency-repair.outputs.stage || 'not_run' }}
       backup_used:
         description: 'Whether a backup was used for repair'
-        value: ${{ jobs.emergency-repair.outputs.backup_used }}
+        value: ${{ jobs.emergency-repair.outputs.backup_used || 'false' }}
 
   workflow_dispatch:
     inputs:
       trigger_reason:
         description: 'Reason for manual emergency repair'
-        required: true
+        required: false
         type: string
+        default: 'manual_dispatch'
       max_retries:
         description: 'Maximum number of repair attempts'
         required: false
@@ -45,6 +47,8 @@ jobs:
     name: Emergency Lockfile Repair
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    # Only run if explicitly called or dispatched, not during push validation
+    if: github.event_name == 'workflow_call' || github.event_name == 'workflow_dispatch'
     outputs:
       success: ${{ steps.final-status.outputs.success }}
       stage: ${{ steps.final-status.outputs.stage }}
