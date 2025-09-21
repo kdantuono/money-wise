@@ -53,5 +53,5 @@ export class User {
   @OneToMany(() => PlaidAccount, plaidAccount => plaidAccount.user)
   plaidAccounts: PlaidAccount[];
 
-  // MVP: Remove MFA and sessions - kept minimal user entity
+  // MVP: Simplified user entity with essential authentication fields
 }

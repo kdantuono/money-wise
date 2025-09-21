@@ -42,7 +42,6 @@ export class SecurityService {
     auth: { requests: 5, window: 300 }, // 5 requests per 5 minutes
     api: { requests: 100, window: 60 }, // 100 requests per minute
     password_reset: { requests: 3, window: 3600 }, // 3 requests per hour
-    mfa: { requests: 10, window: 300 }, // 10 attempts per 5 minutes
   };
 
   constructor(@InjectRedis() private readonly redis: Redis) {}

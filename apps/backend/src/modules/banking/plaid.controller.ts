@@ -263,7 +263,7 @@ export class PlaidController {
   }
 
   @Post('webhook')
-  @ApiOperation({ summary: 'Handle Plaid webhooks for real-time updates' })
+  @ApiOperation({ summary: 'Handle Plaid webhooks for MVP integration' })
   @ApiResponse({ status: 200, description: 'Webhook processed successfully' })
   @ApiResponse({ status: 400, description: 'Bad request' })
   @ApiResponse({ status: 500, description: 'Internal server error' })

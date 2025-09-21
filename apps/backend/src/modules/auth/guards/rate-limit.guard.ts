@@ -77,9 +77,6 @@ export class RateLimitGuard implements CanActivate {
       return 'password_reset';
     }
 
-    if (path.includes('/auth/mfa')) {
-      return 'mfa';
-    }
 
     return 'api';
   }
