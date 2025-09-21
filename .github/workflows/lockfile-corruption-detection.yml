@@ -1,0 +1,326 @@
+name: Lockfile Corruption Detection
+
+on:
+  push:
+    paths:
+      - 'package-lock.json'
+      - 'package.json'
+  pull_request:
+    paths:
+      - 'package-lock.json'
+      - 'package.json'
+  workflow_run:
+    workflows: ["CI", "Build", "Test"]
+    types:
+      - completed
+  schedule:
+    # Run every 30 minutes during business hours (UTC)
+    - cron: '*/30 8-18 * * 1-5'
+
+permissions:
+  contents: write
+  issues: write
+  actions: write
+
+jobs:
+  detect-corruption:
+    name: Detect Lockfile Corruption
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 🔍 Lockfile Integrity Check
+        id: integrity-check
+        run: |
+          echo "🔍 Performing comprehensive lockfile integrity check..."
+
+          # Initialize check results
+          echo "lockfile_exists=false" >> $GITHUB_OUTPUT
+          echo "lockfile_valid=false" >> $GITHUB_OUTPUT
+          echo "dependencies_consistent=false" >> $GITHUB_OUTPUT
+          echo "corruption_detected=false" >> $GITHUB_OUTPUT
+          echo "corruption_type=none" >> $GITHUB_OUTPUT
+          echo "requires_repair=false" >> $GITHUB_OUTPUT
+
+          # Check 1: Lockfile existence
+          if [[ -f "package-lock.json" ]]; then
+            echo "lockfile_exists=true" >> $GITHUB_OUTPUT
+            echo "✅ package-lock.json exists"
+          else
+            echo "❌ package-lock.json missing"
+            echo "corruption_detected=true" >> $GITHUB_OUTPUT
+            echo "corruption_type=missing_lockfile" >> $GITHUB_OUTPUT
+            echo "requires_repair=true" >> $GITHUB_OUTPUT
+            echo "::warning title=Lockfile Missing::package-lock.json is missing from repository"
+            exit 0
+          fi
+
+          # Check 2: JSON validity
+          if jq . package-lock.json > /dev/null 2>&1; then
+            echo "lockfile_valid=true" >> $GITHUB_OUTPUT
+            echo "✅ package-lock.json is valid JSON"
+          else
+            echo "❌ package-lock.json contains invalid JSON"
+            echo "corruption_detected=true" >> $GITHUB_OUTPUT
+            echo "corruption_type=invalid_json" >> $GITHUB_OUTPUT
+            echo "requires_repair=true" >> $GITHUB_OUTPUT
+            echo "::error title=Invalid JSON::package-lock.json contains invalid JSON syntax"
+            exit 0
+          fi
+
+          # Check 3: Package.json validation
+          if ! jq . package.json > /dev/null 2>&1; then
+            echo "❌ package.json is invalid - cannot validate consistency"
+            echo "corruption_detected=true" >> $GITHUB_OUTPUT
+            echo "corruption_type=invalid_package_json" >> $GITHUB_OUTPUT
+            echo "requires_repair=true" >> $GITHUB_OUTPUT
+            echo "::error title=Invalid package.json::package.json contains invalid JSON"
+            exit 0
+          fi
+
+          # Check 4: Dependency consistency
+          echo "🔍 Checking dependency consistency between package.json and package-lock.json..."
+
+          # Extract dependencies from package.json
+          package_deps=$(jq -r '.dependencies // {} | keys[]' package.json 2>/dev/null | sort)
+          dev_deps=$(jq -r '.devDependencies // {} | keys[]' package.json 2>/dev/null | sort)
+
+          # Extract dependencies from package-lock.json
+          lockfile_deps=$(jq -r '.packages."".dependencies // {} | keys[]' package-lock.json 2>/dev/null | sort)
+          lockfile_dev_deps=$(jq -r '.packages."".devDependencies // {} | keys[]' package-lock.json 2>/dev/null | sort)
+
+          # Check for mismatches
+          if [[ "$package_deps" != "$lockfile_deps" ]] || [[ "$dev_deps" != "$lockfile_dev_deps" ]]; then
+            echo "❌ Dependency mismatch detected between package.json and package-lock.json"
+            echo "corruption_detected=true" >> $GITHUB_OUTPUT
+            echo "corruption_type=dependency_mismatch" >> $GITHUB_OUTPUT
+            echo "requires_repair=true" >> $GITHUB_OUTPUT
+            echo "::warning title=Dependency Mismatch::Dependencies in package.json and package-lock.json are inconsistent"
+          else
+            echo "dependencies_consistent=true" >> $GITHUB_OUTPUT
+            echo "✅ Dependencies are consistent"
+          fi
+
+          # Check 5: Lockfile version compatibility
+          lockfile_version=$(jq -r '.lockfileVersion // 1' package-lock.json 2>/dev/null)
+          if [[ "$lockfile_version" -lt 2 ]]; then
+            echo "⚠️ Old lockfile version detected (v$lockfile_version)"
+            echo "::notice title=Old Lockfile Version::Consider upgrading to lockfile version 2 or higher"
+          fi
+
+          # Check 6: File size validation (detect truncation)
+          lockfile_size=$(stat -f%z package-lock.json 2>/dev/null || stat -c%s package-lock.json 2>/dev/null)
+          if [[ "$lockfile_size" -lt 100 ]]; then
+            echo "❌ Suspiciously small lockfile detected (${lockfile_size} bytes)"
+            echo "corruption_detected=true" >> $GITHUB_OUTPUT
+            echo "corruption_type=truncated_file" >> $GITHUB_OUTPUT
+            echo "requires_repair=true" >> $GITHUB_OUTPUT
+            echo "::error title=Truncated Lockfile::package-lock.json appears to be truncated"
+          fi
+
+          # Check 7: Critical structure validation
+          if ! jq -e '.packages' package-lock.json > /dev/null 2>&1; then
+            echo "❌ Missing 'packages' field in lockfile"
+            echo "corruption_detected=true" >> $GITHUB_OUTPUT
+            echo "corruption_type=missing_packages_field" >> $GITHUB_OUTPUT
+            echo "requires_repair=true" >> $GITHUB_OUTPUT
+            echo "::error title=Malformed Lockfile::Missing required 'packages' field"
+          fi
+
+          # Summary
+          if [[ "${{ steps.integrity-check.outputs.corruption_detected }}" == "true" ]]; then
+            echo "🚨 CORRUPTION DETECTED: ${{ steps.integrity-check.outputs.corruption_type }}"
+          else
+            echo "✅ Lockfile integrity check passed"
+          fi
+
+      - name: 🧪 Installation Test
+        id: install-test
+        if: steps.integrity-check.outputs.corruption_detected != 'true'
+        continue-on-error: true
+        run: |
+          echo "🧪 Testing npm installation with current lockfile..."
+
+          # Setup Node.js
+          echo "📦 Setting up Node.js..."
+
+          # Attempt clean install
+          if timeout 300 npm ci --no-audit --no-fund --prefer-offline; then
+            echo "install_success=true" >> $GITHUB_OUTPUT
+            echo "✅ Installation test passed"
+          else
+            echo "install_success=false" >> $GITHUB_OUTPUT
+            echo "❌ Installation test failed"
+            echo "corruption_detected=true" >> $GITHUB_OUTPUT
+            echo "corruption_type=installation_failure" >> $GITHUB_OUTPUT
+            echo "requires_repair=true" >> $GITHUB_OUTPUT
+            echo "::error title=Installation Failure::npm ci failed with current lockfile"
+          fi
+
+      - name: 🏗️ Build Test
+        id: build-test
+        if: steps.install-test.outputs.install_success == 'true'
+        continue-on-error: true
+        run: |
+          echo "🏗️ Testing build with current lockfile..."
+
+          # Test build if available
+          if npm run build --if-present; then
+            echo "build_success=true" >> $GITHUB_OUTPUT
+            echo "✅ Build test passed"
+          else
+            echo "build_success=false" >> $GITHUB_OUTPUT
+            echo "⚠️ Build test failed (may not indicate corruption)"
+            echo "::warning title=Build Failure::Build failed but this may not indicate lockfile corruption"
+          fi
+
+      - name: 📊 Determine Action Required
+        id: action-required
+        run: |
+          echo "📊 Determining if emergency repair is required..."
+
+          requires_repair="false"
+          trigger_reason=""
+
+          # Check if any corruption was detected
+          if [[ "${{ steps.integrity-check.outputs.corruption_detected }}" == "true" ]]; then
+            requires_repair="true"
+            corruption_type="${{ steps.integrity-check.outputs.corruption_type }}"
+
+            case "$corruption_type" in
+              "missing_lockfile")
+                trigger_reason="Missing package-lock.json file"
+                ;;
+              "invalid_json")
+                trigger_reason="Invalid JSON syntax in package-lock.json"
+                ;;
+              "invalid_package_json")
+                trigger_reason="Invalid JSON syntax in package.json"
+                ;;
+              "dependency_mismatch")
+                trigger_reason="Dependency mismatch between package.json and package-lock.json"
+                ;;
+              "truncated_file")
+                trigger_reason="Truncated or corrupted package-lock.json file"
+                ;;
+              "missing_packages_field")
+                trigger_reason="Malformed lockfile missing required fields"
+                ;;
+              "installation_failure")
+                trigger_reason="npm ci installation failure with current lockfile"
+                ;;
+              *)
+                trigger_reason="General lockfile corruption detected"
+                ;;
+            esac
+          fi
+
+          # Check if installation failed
+          if [[ "${{ steps.install-test.outputs.install_success }}" == "false" ]]; then
+            requires_repair="true"
+            if [[ -z "$trigger_reason" ]]; then
+              trigger_reason="npm ci installation failure"
+            fi
+          fi
+
+          echo "requires_repair=$requires_repair" >> $GITHUB_OUTPUT
+          echo "trigger_reason=$trigger_reason" >> $GITHUB_OUTPUT
+
+          if [[ "$requires_repair" == "true" ]]; then
+            echo "🚨 EMERGENCY REPAIR REQUIRED"
+            echo "📋 Reason: $trigger_reason"
+          else
+            echo "✅ No repair required - lockfile is healthy"
+          fi
+
+      - name: 🚨 Trigger Emergency Repair
+        if: steps.action-required.outputs.requires_repair == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'emergency-lockfile-repair.yml',
+              ref: context.ref,
+              inputs: {
+                trigger_reason: '${{ steps.action-required.outputs.trigger_reason }}',
+                max_retries: '3'
+              }
+            });
+
+      - name: 📈 Update Health Metrics
+        if: always()
+        run: |
+          echo "📈 Recording lockfile health metrics..."
+
+          # Create or update health metrics file
+          metrics_dir=".github/metrics"
+          metrics_file="$metrics_dir/lockfile-health.json"
+          mkdir -p "$metrics_dir"
+
+          # Get current timestamp
+          timestamp=$(date -u '+%Y-%m-%dT%H:%M:%S.%3NZ')
+
+          # Create metrics entry
+          cat > temp_metrics.json << EOF
+          {
+            "timestamp": "$timestamp",
+            "workflow_run": "${{ github.run_id }}",
+            "trigger_event": "${{ github.event_name }}",
+            "branch": "${{ github.ref_name }}",
+            "commit_sha": "${{ github.sha }}",
+            "integrity_check": {
+              "lockfile_exists": ${{ steps.integrity-check.outputs.lockfile_exists }},
+              "lockfile_valid": ${{ steps.integrity-check.outputs.lockfile_valid }},
+              "dependencies_consistent": ${{ steps.integrity-check.outputs.dependencies_consistent }},
+              "corruption_detected": ${{ steps.integrity-check.outputs.corruption_detected }},
+              "corruption_type": "${{ steps.integrity-check.outputs.corruption_type }}"
+            },
+            "installation_test": {
+              "success": ${{ steps.install-test.outputs.install_success || 'null' }}
+            },
+            "build_test": {
+              "success": ${{ steps.build-test.outputs.build_success || 'null' }}
+            },
+            "action_taken": {
+              "repair_required": ${{ steps.action-required.outputs.requires_repair }},
+              "trigger_reason": "${{ steps.action-required.outputs.trigger_reason }}"
+            }
+          }
+          EOF
+
+          # Add to metrics history (keep last 100 entries)
+          if [[ -f "$metrics_file" ]]; then
+            # Merge with existing metrics
+            jq '. + [input]' "$metrics_file" temp_metrics.json | jq '.[:-100] | reverse' > "$metrics_file.tmp"
+            mv "$metrics_file.tmp" "$metrics_file"
+          else
+            # Create new metrics file
+            jq -n '[input]' temp_metrics.json > "$metrics_file"
+          fi
+
+          rm temp_metrics.json
+          echo "✅ Health metrics updated"
+
+      - name: 📊 Status Summary
+        if: always()
+        run: |
+          echo "📊 LOCKFILE CORRUPTION DETECTION SUMMARY"
+          echo "=========================================="
+          echo "🔍 **Corruption Detected**: ${{ steps.integrity-check.outputs.corruption_detected }}"
+          echo "📋 **Corruption Type**: ${{ steps.integrity-check.outputs.corruption_type }}"
+          echo "🧪 **Installation Success**: ${{ steps.install-test.outputs.install_success || 'N/A' }}"
+          echo "🏗️ **Build Success**: ${{ steps.build-test.outputs.build_success || 'N/A' }}"
+          echo "🚨 **Repair Required**: ${{ steps.action-required.outputs.requires_repair }}"
+          echo "📝 **Trigger Reason**: ${{ steps.action-required.outputs.trigger_reason || 'None' }}"
+          echo "⏰ **Completed at**: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+
+          if [[ "${{ steps.action-required.outputs.requires_repair }}" == "true" ]]; then
+            echo "::warning title=Emergency Repair Triggered::Lockfile corruption detected - emergency repair workflow initiated"
+          else
+            echo "::notice title=Health Check Passed::Lockfile integrity verified successfully"
+          fi
