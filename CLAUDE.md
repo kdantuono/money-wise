@@ -100,6 +100,34 @@ cleanup, the project focuses on core MVP functionality with a simplified but rob
 .claude/scripts/session-complete.sh
 ```
 
+### MANDATORY BRANCH DOCUMENTATION MAINTENANCE:
+
+**CRITICAL**: Before ANY feature work, maintain project health documentation to ensure codebase accessibility and functional setup procedures.
+
+#### **Documentation Health Requirements**
+```bash
+# 1. Update README.md to reflect current project state
+# - Verify project description and features are accurate
+# - Update technology stack and setup information
+# - Ensure status indicators reflect reality
+
+# 2. Maintain CHANGELOG.md with branch changes
+# - Document all features, fixes, and improvements
+# - Follow semantic versioning standards
+# - Include dates and clear change categories
+
+# 3. Validate SETUP.md procedures are functional
+# - Test installation steps on clean environment
+# - Update dependency versions and requirements
+# - Add new setup steps for infrastructure changes
+
+# 4. Commit documentation updates before pushing
+git add README.md CHANGELOG.md SETUP.md
+git commit -m "docs(maintenance): update project health documentation"
+```
+
+**📋 DOCUMENTATION REFERENCE**: See [best-practices.md Section K](.claude/best-practices.md#section-k-branch-documentation-maintenance-standards) for complete requirements and quality standards.
+
 ### AFTER FEATURE COMPLETION - MANDATORY POST-FEATURE WORKFLOW:
 
 **CRITICAL**: The following workflow steps are MANDATORY for ALL features, fixes, and improvements. This workflow MUST be completed before moving to the next task.
