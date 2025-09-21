@@ -1,0 +1,169 @@
+{
+  "metrics": [
+    {
+      "timestamp": "2025-09-21T17:33:22.511Z",
+      "system": {
+        "nodeVersion": "v22.19.0",
+        "npmVersion": "11.6.0",
+        "platform": "linux",
+        "arch": "x64",
+        "uptime": 0.130740345,
+        "memoryUsage": {
+          "rss": 46399488,
+          "heapTotal": 5607424,
+          "heapUsed": 4613200,
+          "external": 1591232,
+          "arrayBuffers": 10522
+        },
+        "loadAverage": [
+          0.66,
+          0.44,
+          0.3
+        ]
+      },
+      "lockfile": {
+        "exists": true,
+        "size": 425472,
+        "lastModified": "2025-09-21T17:04:05.576Z",
+        "health": "healthy",
+        "validationResult": "passed",
+        "sizeMB": "0.41"
+      },
+      "cache": {
+        "directory": "/home/nemesi/.npm",
+        "size": 1809456065,
+        "sizeMB": "1725.63",
+        "sizeGB": "1.69",
+        "health": "healthy"
+      },
+      "dependencies": {
+        "totalDependencies": 1479,
+        "outdatedCount": 0,
+        "vulnerabilities": 0,
+        "securityLevel": "secure",
+        "lastAudit": "2025-09-21T17:33:49.774Z"
+      },
+      "performance": {
+        "installTime": 1870,
+        "buildTime": 1471,
+        "installTimeSeconds": "1.87",
+        "buildTimeSeconds": "1.47"
+      },
+      "security": {
+        "auditStatus": "secure",
+        "criticalVulnerabilities": 0,
+        "highVulnerabilities": 0,
+        "lastSecurityScan": "2025-09-21T17:33:54.271Z"
+      },
+      "workflows": {
+        "workflowCount": 12,
+        "workflowHealth": "healthy",
+        "lastCheck": "2025-09-21T17:33:54.271Z"
+      },
+      "health": {
+        "overall": 100,
+        "components": {
+          "lockfile": 100,
+          "cache": 100,
+          "dependencies": 100,
+          "performance": 100,
+          "security": 100,
+          "workflows": 100
+        },
+        "status": "excellent",
+        "weights": {
+          "lockfile": 0.2,
+          "cache": 0.15,
+          "dependencies": 0.2,
+          "performance": 0.2,
+          "security": 0.15,
+          "workflows": 0.1
+        }
+      },
+      "issues": []
+    },
+    {
+      "timestamp": "2025-09-21T17:34:54.515Z",
+      "system": {
+        "nodeVersion": "v22.19.0",
+        "npmVersion": "11.6.0",
+        "platform": "linux",
+        "arch": "x64",
+        "uptime": 0.114349668,
+        "memoryUsage": {
+          "rss": 46399488,
+          "heapTotal": 5607424,
+          "heapUsed": 4628032,
+          "external": 1591232,
+          "arrayBuffers": 10522
+        },
+        "loadAverage": [
+          1.02,
+          0.6,
+          0.37
+        ]
+      },
+      "lockfile": {
+        "exists": true,
+        "size": 425472,
+        "lastModified": "2025-09-21T17:04:05.576Z",
+        "health": "healthy",
+        "validationResult": "passed",
+        "sizeMB": "0.41"
+      },
+      "cache": {
+        "directory": "/home/nemesi/.npm",
+        "size": 1729664208,
+        "sizeMB": "1649.54",
+        "sizeGB": "1.61",
+        "health": "healthy"
+      },
+      "dependencies": {
+        "totalDependencies": 1479,
+        "outdatedCount": 0,
+        "vulnerabilities": 0,
+        "securityLevel": "secure",
+        "lastAudit": "2025-09-21T17:35:09.999Z"
+      },
+      "performance": {
+        "installTime": 1803,
+        "buildTime": 1306,
+        "installTimeSeconds": "1.80",
+        "buildTimeSeconds": "1.31"
+      },
+      "security": {
+        "auditStatus": "secure",
+        "criticalVulnerabilities": 0,
+        "highVulnerabilities": 0,
+        "lastSecurityScan": "2025-09-21T17:35:14.289Z"
+      },
+      "workflows": {
+        "workflowCount": 12,
+        "workflowHealth": "healthy",
+        "lastCheck": "2025-09-21T17:35:14.289Z"
+      },
+      "health": {
+        "overall": 100,
+        "components": {
+          "lockfile": 100,
+          "cache": 100,
+          "dependencies": 100,
+          "performance": 100,
+          "security": 100,
+          "workflows": 100
+        },
+        "status": "excellent",
+        "weights": {
+          "lockfile": 0.2,
+          "cache": 0.15,
+          "dependencies": 0.2,
+          "performance": 0.2,
+          "security": 0.15,
+          "workflows": 0.1
+        }
+      },
+      "issues": []
+    }
+  ],
+  "alerts": []
+}

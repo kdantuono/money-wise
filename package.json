@@ -53,7 +53,10 @@
     "infrastructure:health": "npm run validate:lockfile && npm run validate:cache && npm run heal:auto",
     "ci:update": "node scripts/zero-downtime-ci-updater.js",
     "ci:rollback": "node scripts/zero-downtime-ci-updater.js rollback",
-    "ci:update-report": "node scripts/zero-downtime-ci-updater.js report"
+    "ci:update-report": "node scripts/zero-downtime-ci-updater.js report",
+    "monitor:infrastructure": "node scripts/infrastructure-monitor.js",
+    "monitor:report": "node scripts/infrastructure-monitor.js report",
+    "monitor:health": "npm run infrastructure:health && npm run monitor:infrastructure"
   },
   "devDependencies": {
     "@next/bundle-analyzer": "^15.5.3",
