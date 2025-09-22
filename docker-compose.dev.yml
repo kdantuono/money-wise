@@ -4,20 +4,19 @@ services:
   # PostgreSQL Database
   postgres:
     image: postgres:15-alpine
-    container_name: moneywise-postgres-dev
+    container_name: postgres-dev
     environment:
-      POSTGRES_DB: moneywise_dev
-      POSTGRES_USER: moneywise
+      POSTGRES_DB: app_dev
+      POSTGRES_USER: app_user
       POSTGRES_PASSWORD: password
     ports:
       - '5432:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./apps/backend/sql/init.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
-      - moneywise-network
+      - app-network
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U moneywise -d moneywise_dev']
+      test: ['CMD-SHELL', 'pg_isready -U app_user -d app_dev']
       interval: 30s
       timeout: 10s
       retries: 5
@@ -25,13 +24,13 @@ services:
   # Redis Cache
   redis:
     image: redis:7-alpine
-    container_name: moneywise-redis-dev
+    container_name: redis-dev
     ports:
       - '6379:6379'
     volumes:
       - redis_data:/data
     networks:
-      - moneywise-network
+      - app-network
     healthcheck:
       test: ['CMD', 'redis-cli', 'ping']
       interval: 30s
@@ -49,5 +48,5 @@ volumes:
     driver: local
 
 networks:
-  moneywise-network:
+  app-network:
     driver: bridge
