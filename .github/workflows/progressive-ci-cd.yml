@@ -97,21 +97,21 @@ jobs:
 
           if [[ -f "CLAUDE.md" ]]; then
             echo "✅ CLAUDE.md found"
-            ((HEALTH_SCORE++))
+            HEALTH_SCORE=$((HEALTH_SCORE + 1))
           else
             echo "❌ CLAUDE.md missing"
           fi
 
           if [[ -d ".claude" ]]; then
             echo "✅ .claude directory found"
-            ((HEALTH_SCORE++))
+            HEALTH_SCORE=$((HEALTH_SCORE + 1))
           else
             echo "❌ .claude directory missing"
           fi
 
           if [[ -d "docs" && -n "$(ls -A docs 2>/dev/null)" ]]; then
             echo "✅ Documentation directory found"
-            ((HEALTH_SCORE++))
+            HEALTH_SCORE=$((HEALTH_SCORE + 1))
           else
             echo "⚠️ Documentation directory empty or missing"
           fi
@@ -122,6 +122,8 @@ jobs:
             echo "⚠️ Repository health below threshold"
             exit 1
           fi
+
+          echo "✅ Repository health check passed"
 
       - name: 🔒 Security Baseline Scan
         run: |
