@@ -102,13 +102,31 @@ task → story → epic → dev → main
 
 ## 📚 References
 
+### 🤖 AI Orchestration (Operational Instructions)
 - **Agent Details**: `.claude/agents/README.md`
 - **Process Agents**: `.claude/agents/[analytics|documentation|quality]-specialist.md`
 - **Board Integration**: `.claude/orchestration/board-integration.md`
 - **Commands**: `.claude/commands/README.md`
 - **Epic Workflow**: `.claude/workflows/epic-workflow.md`
-- **Architecture**: `.claude/knowledge/architecture.md`
+- **Architecture Decisions**: `.claude/knowledge/architecture.md`
 - **Legacy Standards**: `.claude/best-practices.md` (selective sections)
 
+### 📋 Project Planning (Requirements & Roadmaps)
+- **MVP Planning Hub**: `docs/planning/README.md` - Complete development roadmaps
+- **App Vision**: `docs/planning/app-overview.md` - Multi-generational finance platform
+- **Critical Path**: `docs/planning/critical-path.md` - 47 blocking tasks for MVP
+- **Milestones**: `docs/planning/milestones/` - 6 detailed implementation phases
+- **Integration Specs**: `docs/planning/integrations/` - Third-party API implementations
+
+### 🏗️ Development Progress
+- **Setup Guide**: `docs/development/setup.md` - Environment configuration
+- **Live Progress**: `docs/development/progress.md` - Real-time development tracking
+
+## 🔍 Optimized Discovery Flow
+
+**Operational Questions** ("How does Claude work?") → `.claude/` (agents, commands, workflows)
+**Planning Questions** ("What should I build?") → `docs/planning/` (requirements, roadmaps, specifications)
+**Development Questions** ("How do I set up/develop?") → `docs/development/` (setup, progress, guides)
+
 ---
-*Version: 3.0.0 | Orchestration-Enabled*
+*Version: 4.0.0 | Planning-Optimized Discovery*

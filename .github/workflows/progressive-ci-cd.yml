@@ -196,16 +196,21 @@ jobs:
       - name: 📥 Checkout Repository
         uses: actions/checkout@v4
 
+      - name: 📦 Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: '8.15.1'
+
       - name: 📦 Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          cache: 'pnpm'
 
       - name: 📥 Install Dependencies
         run: |
           echo "📥 Installing dependencies..."
-          npm ci --prefer-offline --no-audit
+          pnpm install --frozen-lockfile
 
       - name: 🔧 TypeScript Compilation Check
         if: hashFiles('**/tsconfig.json') != ''
@@ -217,7 +222,7 @@ jobs:
         if: hashFiles('**/.eslintrc*') != ''
         run: |
           echo "📋 Running ESLint validation..."
-          npm run lint
+          pnpm lint
 
       - name: 💅 Prettier Format Check
         if: hashFiles('**/.prettierrc*') != ''
@@ -239,24 +244,29 @@ jobs:
       - name: 📥 Checkout Repository
         uses: actions/checkout@v4
 
+      - name: 📦 Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: '8.15.1'
+
       - name: 📦 Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          cache: 'pnpm'
 
       - name: 📥 Install Dependencies
-        run: npm ci --prefer-offline --no-audit
+        run: pnpm install --frozen-lockfile
 
       - name: 🧪 Unit Tests
         run: |
           echo "🧪 Running unit tests..."
-          npm run test
+          pnpm test
 
       - name: 📊 Test Coverage
         run: |
           echo "📊 Generating test coverage..."
-          npm run test:coverage || echo "⚠️ Coverage not configured"
+          pnpm test:coverage || echo "⚠️ Coverage not configured"
 
   # ===================================================================
   # 🏗️ BUILD: Conditional - Active when apps exist
@@ -287,24 +297,30 @@ jobs:
             echo "⏭️ Skipping non-existent app: ${{ matrix.app }}"
           fi
 
+      - name: 📦 Setup pnpm
+        if: steps.check-app.outputs.exists == 'true'
+        uses: pnpm/action-setup@v2
+        with:
+          version: '8.15.1'
+
       - name: 📦 Setup Node.js
         if: steps.check-app.outputs.exists == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          cache: 'pnpm'
 
       - name: 📥 Install Dependencies
         if: steps.check-app.outputs.exists == 'true'
         run: |
-          npm ci --prefer-offline --no-audit
-          cd apps/${{ matrix.app }} && npm ci --prefer-offline --no-audit
+          echo "📥 Installing dependencies..."
+          pnpm install --frozen-lockfile
 
       - name: 🏗️ Build Application
         if: steps.check-app.outputs.exists == 'true'
         run: |
           echo "🏗️ Building ${{ matrix.app }}..."
-          npm run build:${{ matrix.app }}
+          pnpm build:${{ matrix.app }}
 
   # ===================================================================
   # 🔒 SECURITY: Progressive - Enhanced when source code exists
@@ -329,7 +345,7 @@ jobs:
         if: needs.foundation.outputs.has_package_json == 'true'
         run: |
           echo "📦 Running dependency security audit..."
-          npm audit --audit-level high || echo "⚠️ Security vulnerabilities found"
+          pnpm audit --audit-level high || echo "⚠️ Security vulnerabilities found"
 
       - name: 🔍 CodeQL Analysis
         if: needs.foundation.outputs.has_source_code == 'true'

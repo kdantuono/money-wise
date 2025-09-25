@@ -1,6 +1,16 @@
 # MoneyWise .claude Directory Index
 
+> **AI Orchestration System** - Operational instructions for Claude agents
+
 ## 🗺️ Quick Navigation
+
+### 📋 Project Planning & Requirements
+**Location**: `docs/planning/` (moved for better organization)
+- MVP development plans and roadmaps
+- Detailed milestones and specifications
+- Integration requirements and critical paths
+
+### 🤖 AI Orchestration (This Directory)
 
 ### 🤖 Agents (Specialists)
 
