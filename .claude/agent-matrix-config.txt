@@ -1,0 +1,115 @@
+# Agent Selection Matrix Configuration
+version: 1.0.0
+
+patterns:
+  # Epic/Story Management
+  epic_management:
+    keywords: [epic, story, stories, decompose, breakdown, planning]
+    required_agents:
+      - orchestrator
+      - product-manager
+    optional_agents: []
+
+  # Backend Development
+  backend_development:
+    keywords: [api, endpoint, backend, service, controller, middleware, nestjs]
+    required_agents:
+      - backend-specialist
+    optional_agents:
+      - database-specialist
+      - test-specialist
+
+  # Frontend Development  
+  frontend_development:
+    keywords: [ui, component, frontend, react, next, page, dashboard, view]
+    required_agents:
+      - frontend-specialist
+    optional_agents:
+      - test-specialist
+
+  # Database Operations
+  database_operations:
+    keywords: [migration, schema, database, sql, query, index, typeorm, prisma]
+    required_agents:
+      - database-specialist
+    optional_agents:
+      - backend-specialist
+
+  # Testing
+  testing:
+    keywords: [test, testing, coverage, e2e, unit, integration, jest, playwright]
+    required_agents:
+      - test-specialist
+    optional_agents: []
+
+  # Security
+  security_audit:
+    keywords: [security, vulnerability, auth, authentication, authorization, jwt, owasp]
+    required_agents:
+      - security-specialist
+    optional_agents:
+      - backend-specialist
+
+  # DevOps
+  deployment:
+    keywords: [deploy, deployment, ci, cd, pipeline, docker, production, staging]
+    required_agents:
+      - devops-specialist
+    optional_agents:
+      - test-specialist
+
+  # Bug Fixing
+  bug_fixing:
+    keywords: [bug, fix, issue, problem, error, broken, debug]
+    analyze_domain: true  # Determines agents based on affected code
+    fallback_agents:
+      - test-specialist
+
+# Agent Pool Configuration
+agent_pools:
+  backend-specialist:
+    max_instances: 3
+    stateless: true
+    memory_limit: 32000
+    
+  frontend-specialist:
+    max_instances: 2
+    stateless: true
+    memory_limit: 32000
+    
+  database-specialist:
+    max_instances: 1
+    stateless: false  # Maintains schema knowledge
+    memory_limit: 32000
+    
+  test-specialist:
+    max_instances: 3
+    stateless: true
+    memory_limit: 32000
+    
+  security-specialist:
+    max_instances: 1
+    stateless: true
+    memory_limit: 32000
+    
+  orchestrator:
+    max_instances: 1
+    stateless: false  # Maintains epic state
+    memory_limit: 64000
+    
+  product-manager:
+    max_instances: 1
+    stateless: true
+    memory_limit: 32000
+    
+  devops-specialist:
+    max_instances: 1
+    stateless: false  # Maintains deployment state
+    memory_limit: 32000
+
+# Dependency Rules
+dependencies:
+  backend_requires: [database-specialist]
+  frontend_requires: []
+  deployment_requires: [test-specialist, security-specialist]
+  epic_requires: [all]
