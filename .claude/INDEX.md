@@ -3,11 +3,25 @@
 ## 🗺️ Quick Navigation
 
 ### 🤖 Agents (Specialists)
+
+#### 🏗️ Architecture & Design
+- [`architect-agent.md`](agents/architect-agent.md) - System design, scalability, patterns
+
+#### ⚡ Core Development
 - [`backend-specialist.md`](agents/backend-specialist.md) - API, services, business logic
 - [`frontend-specialist.md`](agents/frontend-specialist.md) - UI, React, user experience
 - [`database-specialist.md`](agents/database-specialist.md) - Schema, queries, optimization
+
+#### 🛡️ Quality & Security
 - [`test-specialist.md`](agents/test-specialist.md) - Testing, coverage, quality
 - [`security-specialist.md`](agents/security-specialist.md) - Security, auth, vulnerabilities
+
+#### 📊 Process & Quality Evolution
+- [`analytics-specialist.md`](agents/analytics-specialist.md) - Monitoring, events, metrics
+- [`documentation-specialist.md`](agents/documentation-specialist.md) - Docs automation, standards
+- [`quality-evolution-specialist.md`](agents/quality-evolution-specialist.md) - Continuous improvement
+
+#### ⚙️ Operations & Coordination
 - [`orchestrator.md`](agents/orchestrator.md) - Multi-agent coordination
 - [`product-manager.md`](agents/product-manager.md) - Requirements, stories, planning
 - [`devops-specialist.md`](agents/devops-specialist.md) - CI/CD, deployment, infrastructure
@@ -28,6 +42,7 @@
 - [`epic-orchestrator.md`](orchestration/epic-orchestrator.md) - Epic decomposition and execution
 - [`dependency-resolver.md`](orchestration/dependency-resolver.md) - Task dependency management
 - [`merge-protocol.md`](orchestration/merge-protocol.md) - Progressive merge strategy
+- [`board-integration.md`](orchestration/board-integration.md) - GitHub Projects board-first workflow
 
 ### 🔧 Scripts
 - [`init-session.sh`](scripts/init-session.sh) - Session initialization
@@ -67,13 +82,18 @@ claude "/status"
 
 | Task Type | Primary Agent | Supporting Agents |
 |-----------|---------------|-------------------|
-| API Development | backend-specialist | database, test |
-| UI Development | frontend-specialist | test |
-| Database Work | database-specialist | backend |
-| Bug Fix | test-specialist | domain-specific |
-| Security Audit | security-specialist | backend |
-| Epic Coordination | orchestrator | all |
-| Deployment | devops-specialist | test, security |
+| **System Design** | architect | backend, database |
+| **API Development** | backend-specialist | database, test |
+| **UI Development** | frontend-specialist | test |
+| **Database Work** | database-specialist | backend |
+| **Bug Fix** | test-specialist | domain-specific |
+| **Security Audit** | security-specialist | backend |
+| **Analytics Setup** | analytics-specialist | frontend, backend |
+| **Documentation** | documentation-specialist | architect |
+| **Quality Review** | quality-evolution-specialist | test, security |
+| **Board Management** | orchestrator + board-integration | product-manager |
+| **Epic Coordination** | orchestrator | all |
+| **Deployment** | devops-specialist | test, security |
 
 ## 🔑 Key Principles
 

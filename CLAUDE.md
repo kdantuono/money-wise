@@ -12,9 +12,29 @@
 
 ### Pattern-Based Auto-Loading
 ```yaml
+IF architecture || design || scalability:
+   LOAD: .claude/agents/architect-agent.md
+   PRIORITY: Critical
+
 IF epic || stories || decompose:
    LOAD: .claude/orchestration/epic-orchestrator.md
    EXECUTE: Parallel multi-agent workflow
+
+IF analytics || monitoring || events:
+   LOAD: .claude/agents/analytics-specialist.md
+   EXECUTE: Analytics implementation workflow
+
+IF documentation || docs || readme:
+   LOAD: .claude/agents/documentation-specialist.md
+   EXECUTE: Documentation maintenance workflow
+
+IF quality || incident || review:
+   LOAD: .claude/agents/quality-evolution-specialist.md
+   EXECUTE: Continuous improvement workflow
+
+IF board || project || tracking:
+   LOAD: .claude/orchestration/board-integration.md
+   EXECUTE: Board-first execution pattern
 
 IF api || backend || service:
    LOAD: .claude/agents/backend-specialist.md
@@ -22,7 +42,7 @@ IF api || backend || service:
 
 IF ui || component || frontend:
    LOAD: .claude/agents/frontend-specialist.md
-   
+
 IF test || coverage || e2e:
    LOAD: .claude/agents/test-specialist.md
 
@@ -63,10 +83,14 @@ task → story → epic → dev → main
 **Stage**: MVP Development
 **Architecture**: Monorepo (apps/, packages/)
 
-## 🤖 Available Agents
+## 🤖 Available Agents (12 Specialists)
 
 | Agent | Trigger Keywords | Specialization |
 |-------|-----------------|----------------|
+| **architect** | architecture, design, scalability | System design, ADR, patterns |
+| **analytics-specialist** | analytics, monitoring, events | Metrics, tracking, behavior analysis |
+| **documentation-specialist** | documentation, docs, readme | Auto-docs, standards, newcomer accessibility |
+| **quality-evolution-specialist** | quality, incident, review | Continuous improvement, technical debt |
 | backend-specialist | api, endpoint, service | NestJS, TypeORM, REST |
 | frontend-specialist | ui, component, react | Next.js, React, Tailwind |
 | database-specialist | schema, migration, query | PostgreSQL, Redis |
@@ -79,9 +103,12 @@ task → story → epic → dev → main
 ## 📚 References
 
 - **Agent Details**: `.claude/agents/README.md`
-- **Commands**: `.claude/commands/README.md`  
+- **Process Agents**: `.claude/agents/[analytics|documentation|quality]-specialist.md`
+- **Board Integration**: `.claude/orchestration/board-integration.md`
+- **Commands**: `.claude/commands/README.md`
 - **Epic Workflow**: `.claude/workflows/epic-workflow.md`
 - **Architecture**: `.claude/knowledge/architecture.md`
+- **Legacy Standards**: `.claude/best-practices.md` (selective sections)
 
 ---
 *Version: 3.0.0 | Orchestration-Enabled*

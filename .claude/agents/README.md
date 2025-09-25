@@ -10,6 +10,13 @@ Specialized AI agents that handle specific domains of the MoneyWise application 
 |-------|---------------|---------------|------------------|
 | `architect` | System Design, Scalability | 1 | architecture, design, scalability, pattern |
 
+### Process & Quality Evolution
+| Agent | Specialization | Max Instances | Trigger Keywords |
+|-------|---------------|---------------|------------------|
+| `analytics-specialist` | Metrics, Event Tracking | 1 | analytics, monitoring, events, metrics |
+| `documentation-specialist` | Auto-docs, Standards | 1 | documentation, docs, readme, changelog |
+| `quality-evolution-specialist` | Continuous Improvement | 1 | quality, review, incident, debt |
+
 ### Core Development
 | Agent | Specialization | Max Instances | Trigger Keywords |
 |-------|---------------|---------------|------------------|
@@ -39,6 +46,30 @@ Specialized AI agents that handle specific domains of the MoneyWise application 
 - ✅ Microservices and distributed systems
 - ✅ API design patterns and standards
 - ✅ Cloud architecture frameworks
+
+### Analytics Specialist
+- ✅ Event tracking architecture for financial apps
+- ✅ Performance metrics implementation
+- ✅ User behavior analysis and conversion funnels
+- ✅ Error monitoring and alerting systems
+- ✅ Privacy-compliant analytics (GDPR/CCPA)
+- ✅ Financial domain-specific KPIs
+
+### Documentation Specialist
+- ✅ Auto-documentation generation from code
+- ✅ README/CHANGELOG maintenance automation
+- ✅ Newcomer accessibility testing and improvement
+- ✅ Documentation quality gates and validation
+- ✅ Cross-agent documentation synchronization
+- ✅ Feature documentation templates
+
+### Quality Evolution Specialist
+- ✅ Incident tracking and systematic learning
+- ✅ Technical debt identification and prioritization
+- ✅ PR checklist automation and quality analysis
+- ✅ Continuous improvement process design
+- ✅ Quality metrics tracking and evolution
+- ✅ Code review standards enforcement
 
 ### Backend Specialist
 - ✅ API design and implementation
@@ -142,6 +173,16 @@ IF contains("architecture", "design", "scalability"):
   SELECT architect
   PRIORITY critical
 
+IF contains("analytics", "monitoring", "events"):
+  SELECT analytics-specialist
+
+IF contains("documentation", "docs", "readme"):
+  SELECT documentation-specialist
+
+IF contains("quality", "review", "incident"):
+  SELECT quality-evolution-specialist
+  PRIORITY high
+
 IF contains("api", "backend", "service"):
   SELECT backend-specialist
 
@@ -158,10 +199,11 @@ IF contains("security", "vulnerability"):
 
 ## Performance Considerations
 
-- **Stateless agents**: Can run multiple instances
-- **Stateful agents**: Single instance only (database, orchestrator)
-- **Memory limits**: 32MB per agent (64MB for orchestrator)
-- **Parallel execution**: Up to 10 agents simultaneously
+- **Stateless agents**: Can run multiple instances (backend, frontend, test)
+- **Stateful agents**: Single instance only (architect, database, orchestrator, process agents)
+- **Memory limits**: 32-48MB per agent (64MB for architect)
+- **Parallel execution**: Up to 12 agents simultaneously
+- **Priority levels**: Critical (architect, security) > High (quality) > Normal
 
 ## Best Practices
 
