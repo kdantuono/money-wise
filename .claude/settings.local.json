@@ -52,7 +52,9 @@
       "Bash(npm ci:*)",
       "Bash(npm run build:*)",
       "Bash(npm run build:backend:*)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(gh workflow run:*)",
+      "Bash(docker compose:*)"
     ],
     "deny": [],
     "ask": []

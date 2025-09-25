@@ -1,0 +1,73 @@
+{
+  "version": "1.0.0",
+  "description": "Git hooks and automation configuration for MoneyWise",
+  "hooks": {
+    "pre-commit": [
+      {
+        "name": "lint-staged",
+        "command": "npx lint-staged",
+        "enabled": true
+      },
+      {
+        "name": "test-affected",
+        "command": "npm run test:affected",
+        "enabled": true
+      },
+      {
+        "name": "type-check",
+        "command": "npm run type-check",
+        "enabled": true
+      }
+    ],
+    "post-commit": [
+      {
+        "name": "update-status",
+        "command": "echo \"$(date): $(git rev-parse HEAD)\" >> .claude/orchestration/state/commits.log",
+        "enabled": true
+      }
+    ],
+    "pre-push": [
+      {
+        "name": "test-suite",
+        "command": "npm test",
+        "enabled": true
+      },
+      {
+        "name": "security-scan",
+        "command": "npm audit --audit-level=moderate",
+        "enabled": false
+      }
+    ],
+    "post-merge": [
+      {
+        "name": "install-deps",
+        "command": "npm install",
+        "enabled": true
+      },
+      {
+        "name": "rebuild",
+        "command": "npm run build",
+        "enabled": true
+      }
+    ]
+  },
+  "automation": {
+    "on-file-change": {
+      "*.ts": ["npm run lint:fix", "npm run type-check"],
+      "*.tsx": ["npm run lint:fix", "npm run type-check"],
+      "*.sql": ["npm run db:validate"],
+      "package.json": ["npm install", "npm run build"]
+    },
+    "on-branch-create": {
+      "feature/*": ["npm run setup:feature"],
+      "fix/*": ["npm run setup:bugfix"],
+      "epic/*": [".claude/scripts/spawn-worktree.sh"]
+    }
+  },
+  "claude-specific": {
+    "auto-commit": true,
+    "commit-frequency": "per-component",
+    "co-author": "orchestrator <orchestrator@moneywise.ai>",
+    "sign-commits": true
+  }
+}
