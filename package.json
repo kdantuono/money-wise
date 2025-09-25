@@ -1,0 +1,73 @@
+{
+  "name": "money-wise",
+  "version": "0.1.0",
+  "description": "Personal finance management application with cross-platform support",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently \"pnpm dev:backend\" \"pnpm dev:web\"",
+    "dev:backend": "pnpm --filter @money-wise/backend dev",
+    "dev:web": "pnpm --filter @money-wise/web dev",
+    "dev:mobile": "pnpm --filter @money-wise/mobile dev",
+    "build": "pnpm build:backend && pnpm build:web",
+    "build:backend": "pnpm --filter @money-wise/backend build",
+    "build:web": "pnpm --filter @money-wise/web build",
+    "build:mobile": "pnpm --filter @money-wise/mobile build",
+    "test": "pnpm --recursive test",
+    "test:unit": "pnpm --recursive test:unit",
+    "test:integration": "pnpm --recursive test:integration",
+    "test:e2e": "pnpm --filter @money-wise/web test:e2e",
+    "lint": "pnpm --recursive lint",
+    "lint:fix": "pnpm --recursive lint:fix",
+    "typecheck": "pnpm --recursive typecheck",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "clean": "pnpm --recursive clean && rm -rf node_modules",
+    "db:migrate": "pnpm --filter @money-wise/backend db:migrate",
+    "db:seed": "pnpm --filter @money-wise/backend db:seed",
+    "db:reset": "pnpm --filter @money-wise/backend db:reset",
+    "docker:dev": "docker compose -f docker-compose.dev.yml up -d",
+    "docker:down": "docker compose -f docker-compose.dev.yml down",
+    "docker:logs": "docker compose -f docker-compose.dev.yml logs -f",
+    "postinstall": "husky install"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^18.4.3",
+    "@commitlint/config-conventional": "^18.4.3",
+    "concurrently": "^8.2.2",
+    "husky": "^8.0.3",
+    "lint-staged": "^15.2.0",
+    "prettier": "^3.1.1",
+    "turbo": "^1.11.2"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  },
+  "packageManager": "pnpm@8.15.1",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kdantuono/money-wise.git"
+  },
+  "keywords": [
+    "finance",
+    "personal-finance",
+    "budgeting",
+    "transactions",
+    "monorepo",
+    "nestjs",
+    "nextjs",
+    "react-native"
+  ],
+  "author": "kdantuono",
+  "license": "MIT",
+  "commitlint": {
+    "extends": ["@commitlint/config-conventional"]
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx}": ["prettier --write", "eslint --fix"],
+    "*.{json,md}": ["prettier --write"]
+  }
+}
