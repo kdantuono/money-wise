@@ -2,6 +2,15 @@
 version: 1.0.0
 
 patterns:
+  # Architecture Design
+  architecture_design:
+    keywords: [architecture, design, scalability, pattern, adr, microservices, system]
+    required_agents:
+      - architect
+    optional_agents:
+      - backend-specialist
+      - database-specialist
+
   # Epic/Story Management
   epic_management:
     keywords: [epic, story, stories, decompose, breakdown, planning]
@@ -67,6 +76,16 @@ patterns:
 
 # Agent Pool Configuration
 agent_pools:
+  architect:
+    max_instances: 1
+    stateless: false  # Maintains architecture decisions
+    memory_limit: 64000  # Extra memory for ADR + decision history
+    priority: critical
+    session_persistence: true  # Cross-session memory
+    state_backup: enabled     # Decision recovery
+    decision_store: filesystem # ADR persistence
+    conflict_resolution: block # Prevents contradictory decisions
+
   backend-specialist:
     max_instances: 3
     stateless: true
@@ -113,3 +132,21 @@ dependencies:
   frontend_requires: []
   deployment_requires: [test-specialist, security-specialist]
   epic_requires: [all]
+  architecture_requires: [architect]  # Architecture decisions need architect
+
+# MoneyWise Financial Domain Governance
+financial_governance:
+  architect:
+    security_first: true        # Security decisions have precedence
+    compliance_tracking: true   # PCI/SOX decision audit trail
+    mvp_to_scale_path: true    # Remember evolution planning
+    adr_template: enabled      # Structured Architecture Decision Records
+    review_triggers:           # When to escalate decisions
+      - major_technology_change
+      - security_pattern_change
+      - scalability_threshold
+    delegation_rules:          # What can be delegated to specialists
+      implementation_details: true
+      pattern_applications: true
+      technology_research: false
+      architecture_decisions: false

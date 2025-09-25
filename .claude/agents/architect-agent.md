@@ -10,8 +10,6 @@ capabilities:
   - Microservices architecture
   - Event-driven design
   - API design patterns
-priority: critical
-memory_limit: 32000
 tools:
   - architecture_analyzer
   - dependency_mapper
