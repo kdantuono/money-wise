@@ -49,7 +49,7 @@ export class Transaction {
   merchantName: string | null;
 
   @Column({ type: 'json', nullable: true })
-  plaidMetadata: Record<string, any> | null;
+  plaidMetadata: Record<string, unknown> | null;
 
   @CreateDateColumn()
   createdAt: Date;

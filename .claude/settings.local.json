@@ -65,7 +65,10 @@
       "Bash(gh issue comment:*)",
       "Bash(timeout:*)",
       "Bash(npm run test:backend:*)",
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "Bash(gh workflow:*)",
+      "Bash(npm audit:*)",
+      "Bash(grep:*)"
     ],
     "deny": [],
     "ask": []

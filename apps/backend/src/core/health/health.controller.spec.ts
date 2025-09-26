@@ -9,7 +9,6 @@ import { ConfigService } from '@nestjs/config';
 
 describe('HealthController', () => {
   let controller: HealthController;
-  let configService: jest.Mocked<ConfigService>;
 
   beforeEach(async () => {
     const mockConfigService = {
@@ -30,7 +29,6 @@ describe('HealthController', () => {
     }).compile();
 
     controller = module.get<HealthController>(HealthController);
-    configService = module.get(ConfigService);
   });
 
   it('should be defined', () => {

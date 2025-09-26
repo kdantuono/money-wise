@@ -4,9 +4,6 @@
  */
 
 import { DataSource } from 'typeorm';
-import { Test, TestingModule } from '@nestjs/testing';
-import { ConfigService } from '@nestjs/config';
-import * as bcrypt from 'bcryptjs';
 
 // Increase timeout for integration tests
 jest.setTimeout(30000);
@@ -140,7 +137,7 @@ export const createMockRequest = (overrides = {}) => ({
 });
 
 export const createMockResponse = () => {
-  const res: any = {};
+  const res: Record<string, jest.Mock> = {};
   res.status = jest.fn().mockReturnValue(res);
   res.json = jest.fn().mockReturnValue(res);
   res.send = jest.fn().mockReturnValue(res);

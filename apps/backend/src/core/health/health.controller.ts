@@ -104,7 +104,7 @@ export class HealthController {
     status: 200,
     description: 'Detailed health information including services',
   })
-  async getDetailedHealth(): Promise<HealthCheckResponse & { services: any }> {
+  async getDetailedHealth(): Promise<HealthCheckResponse & { services: Record<string, { status: string; responseTime?: number; error?: string }> }> {
     const basicHealth = this.getHealth();
 
     // Add service health checks
@@ -142,10 +142,11 @@ export class HealthController {
     try {
       // Mock Redis check for now - will be replaced with actual Redis client injection
       return { status: 'ok' };
+    // eslint-disable-next-line no-unreachable
     } catch (error) {
       return {
         status: 'error',
-        error: error.message,
+        error: (error as Error).message,
       };
     }
   }

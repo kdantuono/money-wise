@@ -115,10 +115,9 @@ export class TestDatabaseManager {
    * Seed database with test data
    */
   async seed(): Promise<void> {
-    const dataSource = this.getDataSource();
-
     // Seed test data here
     // This would typically involve creating test users, accounts, etc.
+    // const dataSource = this.getDataSource();
 
     console.log('🌱 Database seeded with test data');
   }
@@ -235,7 +234,7 @@ export class TestDatabaseUtils {
   /**
    * Execute raw SQL query
    */
-  async query(sql: string, parameters?: any[]): Promise<any> {
+  async query(sql: string, parameters?: unknown[]): Promise<unknown> {
     return await this.dataSource.query(sql, parameters);
   }
 

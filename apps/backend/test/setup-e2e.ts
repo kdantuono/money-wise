@@ -6,7 +6,6 @@
 import { DataSource } from 'typeorm';
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 
 // Global test configuration
 jest.setTimeout(60000);
