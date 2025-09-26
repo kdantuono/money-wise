@@ -2,3 +2,15 @@
 > @money-wise/backend@0.1.0 build /home/nemesi/dev/money-wise/apps/backend
 > nest build
 
+[96msrc/core/logging/logging.interceptor.ts[0m:[93m8[0m:[93m28[0m - [91merror[0m[90m TS2307: [0mCannot find module 'rxjs' or its corresponding type declarations.
+
+[7m8[0m import { Observable } from 'rxjs';
+[7m [0m [91m                           ~~~~~~[0m
+[96msrc/core/logging/logging.interceptor.ts[0m:[93m9[0m:[93m33[0m - [91merror[0m[90m TS2307: [0mCannot find module 'rxjs/operators' or its corresponding type declarations.
+
+[7m9[0m import { tap, catchError } from 'rxjs/operators';
+[7m [0m [91m                                ~~~~~~~~~~~~~~~~[0m
+
+Found 2 error(s).
+
+ ELIFECYCLE  Command failed with exit code 1.

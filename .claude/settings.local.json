@@ -63,7 +63,9 @@
       "Bash(gh repo view:*)",
       "Bash(git worktree:*)",
       "Bash(gh issue comment:*)",
-      "Bash(timeout:*)"
+      "Bash(timeout:*)",
+      "Bash(npm run test:backend:*)",
+      "Bash(npm run:*)"
     ],
     "deny": [],
     "ask": []
