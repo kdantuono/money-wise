@@ -55,7 +55,10 @@
       "WebSearch",
       "Bash(gh workflow run:*)",
       "Bash(docker compose:*)",
-      "Bash(pnpm lint:*)"
+      "Bash(pnpm lint:*)",
+      "Bash(pnpm test:*)",
+      "Bash(npx turbo:*)",
+      "Bash(pnpm build:*)"
     ],
     "deny": [],
     "ask": []
