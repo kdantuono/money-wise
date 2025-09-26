@@ -1,0 +1,4 @@
+
+> @money-wise/mobile@0.1.0 typecheck /home/nemesi/dev/money-wise/apps/mobile
+> tsc --noEmit
+
