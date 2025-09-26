@@ -4,22 +4,37 @@
 
 PASS @money-wise/backend src/core/health/health.controller.spec.ts
   HealthController
-    ✓ should be defined (14 ms)
+    ✓ should be defined (17 ms)
     getHealth
-      ✓ should return basic health status (5 ms)
+      ✓ should return basic health status (4 ms)
       ✓ should return consistent timestamp format (4 ms)
-      ✓ should return positive uptime (3 ms)
-      ✓ should return memory usage (3 ms)
+      ✓ should return positive uptime (5 ms)
+      ✓ should return memory usage (6 ms)
     getDetailedHealth
-      ✓ should return detailed health with services status (39 ms)
-      ✓ should include database response time (8 ms)
+      ✓ should return detailed health with services status (44 ms)
+      ✓ should include database response time (4 ms)
     getReadiness
-      ✓ should return readiness status (3 ms)
+      ✓ should return readiness status (2 ms)
     getLiveness
-      ✓ should return liveness status (4 ms)
+      ✓ should return liveness status (5 ms)
 
-Test Suites: 1 passed, 1 total
-Tests:       9 passed, 9 total
+PASS @money-wise/backend src/auth/auth.service.spec.ts
+  AuthService
+    register
+      ✓ should register a new user successfully (6 ms)
+      ✓ should throw ConflictException if user already exists (12 ms)
+    login
+      ✓ should login user successfully (4 ms)
+      ✓ should throw UnauthorizedException if user not found (3 ms)
+      ✓ should throw UnauthorizedException if password is invalid (4 ms)
+      ✓ should throw UnauthorizedException if user is not active (3 ms)
+    validateUser
+      ✓ should return user if valid (2 ms)
+      ✓ should throw UnauthorizedException if user not found (2 ms)
+      ✓ should throw UnauthorizedException if user is not active (2 ms)
+
+Test Suites: 2 passed, 2 total
+Tests:       18 passed, 18 total
 Snapshots:   0 total
-Time:        3.971 s
+Time:        4.422 s
 Ran all test suites matching /src/i.
