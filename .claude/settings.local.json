@@ -59,7 +59,13 @@
       "Bash(pnpm test:*)",
       "Bash(npx turbo:*)",
       "Bash(pnpm build:*)",
-      "Bash(timeout 60s pnpm lint)"
+      "Bash(timeout 60s pnpm lint)",
+      "Bash(pnpm turbo run typecheck:*)",
+      "Bash(pnpm turbo run lint:*)",
+      "Bash(pnpm turbo run test:*)",
+      "Bash(docker logs:*)",
+      "Bash(npx typeorm-ts-node-commonjs migration:generate:*)",
+      "Bash(npx typeorm-ts-node-commonjs migration:create:*)"
     ],
     "deny": [],
     "ask": []
