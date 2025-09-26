@@ -75,7 +75,9 @@
       "Bash(pnpm turbo run test:*)",
       "Bash(docker logs:*)",
       "Bash(npx typeorm-ts-node-commonjs migration:generate:*)",
-      "Bash(npx typeorm-ts-node-commonjs migration:create:*)"
+      "Bash(npx typeorm-ts-node-commonjs migration:create:*)",
+      "Bash(pnpm turbo run build:*)",
+      "Bash(pnpm turbo run test:unit:*)"
     ],
     "deny": [],
     "ask": []
