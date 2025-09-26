@@ -54,7 +54,8 @@
       "Bash(npm run build:backend:*)",
       "WebSearch",
       "Bash(gh workflow run:*)",
-      "Bash(docker compose:*)"
+      "Bash(docker compose:*)",
+      "Bash(pnpm lint:*)"
     ],
     "deny": [],
     "ask": []
