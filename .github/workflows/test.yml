@@ -272,7 +272,7 @@ jobs:
         run: pnpm --filter @money-wise/web test:e2e
 
       - name: Upload E2E test results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: playwright-report
@@ -280,7 +280,7 @@ jobs:
           retention-days: 30
 
       - name: Upload E2E test videos
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: playwright-videos
@@ -327,7 +327,7 @@ jobs:
         run: pnpm test:coverage:report
 
       - name: Upload coverage report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: coverage-report
           path: coverage-reports/

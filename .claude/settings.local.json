@@ -68,7 +68,8 @@
       "Bash(npm run:*)",
       "Bash(gh workflow:*)",
       "Bash(npm audit:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(pnpm --filter @money-wise/mobile typecheck)"
     ],
     "deny": [],
     "ask": []
