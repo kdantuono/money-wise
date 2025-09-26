@@ -24,6 +24,7 @@
     "lint:fix": "pnpm --recursive lint:fix",
     "typecheck": "pnpm --recursive typecheck",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "docs:validate": "node scripts/docs-validate.js",
     "clean": "pnpm --recursive clean && rm -rf node_modules",
     "db:migrate": "pnpm --filter @money-wise/backend db:migrate",
     "db:seed": "pnpm --filter @money-wise/backend db:seed",
