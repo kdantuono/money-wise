@@ -22,7 +22,7 @@ import { DatabaseConfig } from '../config/database.config';
           password: dbConfig.DB_PASSWORD,
           database: dbConfig.DB_NAME,
           schema: dbConfig.DB_SCHEMA,
-          entities: [__dirname + '/../**/*.entity{.ts,.js}'],
+          entities: [__dirname + '/entities/*.entity{.ts,.js}'],
           migrations: [__dirname + '/migrations/*{.ts,.js}'],
           synchronize: dbConfig.DB_SYNCHRONIZE,
           logging: dbConfig.DB_LOGGING,

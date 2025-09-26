@@ -69,7 +69,13 @@
       "Bash(gh workflow:*)",
       "Bash(npm audit:*)",
       "Bash(grep:*)",
-      "Bash(pnpm --filter @money-wise/mobile typecheck)"
+      "Bash(pnpm --filter @money-wise/mobile typecheck)",
+      "Bash(pnpm turbo run typecheck:*)",
+      "Bash(pnpm turbo run lint:*)",
+      "Bash(pnpm turbo run test:*)",
+      "Bash(docker logs:*)",
+      "Bash(npx typeorm-ts-node-commonjs migration:generate:*)",
+      "Bash(npx typeorm-ts-node-commonjs migration:create:*)"
     ],
     "deny": [],
     "ask": []
