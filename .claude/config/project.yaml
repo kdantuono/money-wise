@@ -1,0 +1,114 @@
+project:
+  name: MoneyWise
+  description: Personal Finance Management System
+  version: 0.1.0
+  stage: MVP Development
+  
+architecture:
+  type: monorepo
+  structure:
+    apps:
+      - name: backend
+        type: nestjs
+        port: 3002
+        database: postgresql
+        cache: redis
+      - name: web
+        type: nextjs
+        port: 3000
+        api: http://localhost:3002
+    packages:
+      - name: types
+        type: shared-types
+        description: TypeScript type definitions
+        
+technology_stack:
+  backend:
+    runtime: node:20
+    framework: nestjs@10
+    orm: typeorm
+    validation: class-validator
+    auth: jwt
+    docs: swagger
+  frontend:
+    framework: nextjs@14
+    ui: radix-ui
+    styling: tailwind-css
+    state: zustand
+    api_client: axios
+  database:
+    primary: postgresql@15
+    cache: redis@7
+    migrations: typeorm
+  testing:
+    unit: jest
+    integration: supertest
+    e2e: playwright
+    coverage_target: 85
+    
+development:
+  package_manager: npm
+  node_version: "20"
+  typescript_version: "5.3"
+  
+  scripts:
+    dev: "npm run dev:backend & npm run dev:web"
+    build: "npm run build:backend && npm run build:web"
+    test: "npm run test:unit && npm run test:integration"
+    lint: "eslint . --ext .ts,.tsx"
+    format: "prettier --write ."
+    
+quality_gates:
+  pre_commit:
+    - lint
+    - type_check
+    - test_affected
+  pre_push:
+    - test_all
+    - build
+  pre_merge:
+    - coverage_check
+    - security_audit
+    - performance_test
+    
+environments:
+  development:
+    api_url: http://localhost:3002
+    database_url: postgresql://postgres:postgres@localhost:5432/moneywise_dev
+    redis_url: redis://localhost:6379
+  test:
+    api_url: http://localhost:3002
+    database_url: postgresql://postgres:postgres@localhost:5432/moneywise_test
+    redis_url: redis://localhost:6379/1
+  production:
+    api_url: ${PRODUCTION_API_URL}
+    database_url: ${DATABASE_URL}
+    redis_url: ${REDIS_URL}
+
+deployment:
+  strategy: continuous
+  branches:
+    main: production
+    dev: staging
+    feature/*: preview
+  docker:
+    registry: ghcr.io
+    organization: moneywise
+  ci_cd:
+    provider: github_actions
+    
+monitoring:
+  error_tracking: sentry
+  analytics: mixpanel
+  logging: winston
+  apm: newrelic
+  
+team:
+  product_owner: user
+  tech_lead: claude-orchestrator
+  developers:
+    - claude-backend
+    - claude-frontend
+    - claude-database
+  qa: claude-test
+  devops: claude-devops

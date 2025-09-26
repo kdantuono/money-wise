@@ -1,0 +1,208 @@
+{
+  "epic": "documentation-planning-organization",
+  "id": "EPIC-002",
+  "status": "retroactive_planning",
+  "created_at": "2025-01-26T01:40:00Z",
+  "estimated_completion": "2025-01-26T02:30:00Z",
+  "total_story_points": 13,
+  "priority": "High",
+  "description": "Reorganize documentation from .claude/ to docs/planning/ for better separation of operational vs planning concerns",
+
+  "stories": [
+    {
+      "id": "EPIC-002-S1",
+      "title": "Create Planning Directory Structure",
+      "description": "Set up docs/planning/ directory with proper organization",
+      "story_points": 2,
+      "priority": "High",
+      "status": "completed",
+      "assigned_agent": "devops-specialist",
+      "acceptance_criteria": [
+        "docs/planning/ directory exists",
+        "Subdirectories: mvp/, milestones/, integrations/",
+        "Navigation README files in place"
+      ],
+      "tasks": [
+        {
+          "id": "task-001",
+          "title": "Create directory structure",
+          "agent": "devops-specialist",
+          "status": "completed",
+          "dependencies": []
+        },
+        {
+          "id": "task-002",
+          "title": "Create README navigation",
+          "agent": "documentation-specialist",
+          "status": "completed",
+          "dependencies": ["task-001"]
+        }
+      ]
+    },
+
+    {
+      "id": "EPIC-002-S2",
+      "title": "Migrate Planning Documents",
+      "description": "Move 10 planning documents from .claude/ to docs/planning/",
+      "story_points": 5,
+      "priority": "High",
+      "status": "completed",
+      "assigned_agent": "backend-specialist",
+      "acceptance_criteria": [
+        "All 10 planning docs moved to appropriate subdirectories",
+        "Original .claude/ planning files deleted",
+        "Internal references updated"
+      ],
+      "tasks": [
+        {
+          "id": "task-003",
+          "title": "Catalog and move MVP documents",
+          "agent": "backend-specialist",
+          "status": "completed",
+          "dependencies": ["task-001"]
+        },
+        {
+          "id": "task-004",
+          "title": "Move milestone documents (6 files)",
+          "agent": "backend-specialist",
+          "status": "completed",
+          "dependencies": ["task-001"]
+        },
+        {
+          "id": "task-005",
+          "title": "Move integration documents",
+          "agent": "backend-specialist",
+          "status": "completed",
+          "dependencies": ["task-001"]
+        },
+        {
+          "id": "task-006",
+          "title": "Update internal references",
+          "agent": "backend-specialist",
+          "status": "completed",
+          "dependencies": ["task-003", "task-004", "task-005"]
+        }
+      ]
+    },
+
+    {
+      "id": "EPIC-002-S3",
+      "title": "Update Discovery Mechanisms",
+      "description": "Update CLAUDE.md and INDEX.md to reflect new documentation structure",
+      "story_points": 3,
+      "priority": "High",
+      "status": "completed",
+      "assigned_agent": "documentation-specialist",
+      "acceptance_criteria": [
+        "CLAUDE.md updated with new paths",
+        ".claude/INDEX.md reflects separation",
+        "Clear navigation between operational vs planning docs"
+      ],
+      "tasks": [
+        {
+          "id": "task-007",
+          "title": "Update CLAUDE.md references",
+          "agent": "documentation-specialist",
+          "status": "completed",
+          "dependencies": ["task-006"]
+        },
+        {
+          "id": "task-008",
+          "title": "Update .claude/INDEX.md",
+          "agent": "documentation-specialist",
+          "status": "completed",
+          "dependencies": ["task-006"]
+        },
+        {
+          "id": "task-009",
+          "title": "Create docs/planning/README.md hub",
+          "agent": "documentation-specialist",
+          "status": "completed",
+          "dependencies": ["task-007"]
+        }
+      ]
+    },
+
+    {
+      "id": "EPIC-002-S4",
+      "title": "Fix CI/CD Pipeline Issues",
+      "description": "Resolve monorepo compatibility and validate environment",
+      "story_points": 3,
+      "priority": "Critical",
+      "status": "completed",
+      "assigned_agent": "devops-specialist",
+      "acceptance_criteria": [
+        "Progressive CI/CD pipeline uses pnpm not npm",
+        "pnpm-lock.yaml generated for monorepo",
+        "All CI/CD checks passing"
+      ],
+      "tasks": [
+        {
+          "id": "task-010",
+          "title": "Convert npm to pnpm in CI/CD pipeline",
+          "agent": "devops-specialist",
+          "status": "completed",
+          "dependencies": []
+        },
+        {
+          "id": "task-011",
+          "title": "Generate pnpm-lock.yaml and workspace config",
+          "agent": "devops-specialist",
+          "status": "completed",
+          "dependencies": ["task-010"]
+        },
+        {
+          "id": "task-012",
+          "title": "Validate CI/CD pipeline success",
+          "agent": "test-specialist",
+          "status": "pending",
+          "dependencies": ["task-011"]
+        }
+      ]
+    }
+  ],
+
+  "dependencies": [
+    {"from": "EPIC-002-S2", "to": "EPIC-002-S1", "type": "requires"},
+    {"from": "EPIC-002-S3", "to": "EPIC-002-S2", "type": "requires"},
+    {"from": "EPIC-002-S4", "to": "EPIC-002-S1", "type": "parallel"}
+  ],
+
+  "parallel_execution_plan": [
+    {
+      "phase": 1,
+      "parallel_tracks": [
+        ["task-001", "task-002"],
+        ["task-010"]
+      ]
+    },
+    {
+      "phase": 2,
+      "parallel_tracks": [
+        ["task-003", "task-004", "task-005"],
+        ["task-011"]
+      ]
+    },
+    {
+      "phase": 3,
+      "parallel_tracks": [
+        ["task-006"],
+        ["task-007", "task-008", "task-009"],
+        ["task-012"]
+      ]
+    }
+  ],
+
+  "agent_assignments": {
+    "devops-specialist": ["task-001", "task-010", "task-011"],
+    "documentation-specialist": ["task-002", "task-007", "task-008", "task-009"],
+    "backend-specialist": ["task-003", "task-004", "task-005", "task-006"],
+    "test-specialist": ["task-012"]
+  },
+
+  "quality_gates": {
+    "story_completion": "All tasks complete, tests pass, merge to epic branch",
+    "epic_completion": "All stories complete, CI/CD passing, merge to develop",
+    "rollback_triggers": ["CI/CD failure", "Critical test failure", "Security vulnerability"]
+  }
+}

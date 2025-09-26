@@ -1,0 +1,87 @@
+{
+  "name": "money-wise",
+  "version": "0.1.0",
+  "description": "Personal finance management application with cross-platform support",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "test-utils"
+  ],
+  "scripts": {
+    "dev": "turbo run dev --parallel",
+    "dev:backend": "turbo run dev --filter=@money-wise/backend",
+    "dev:web": "turbo run dev --filter=@money-wise/web",
+    "dev:mobile": "turbo run dev --filter=@money-wise/mobile",
+    "build": "turbo run build",
+    "build:backend": "turbo run build --filter=@money-wise/backend",
+    "build:web": "turbo run build --filter=@money-wise/web",
+    "build:mobile": "turbo run build --filter=@money-wise/mobile",
+    "test": "turbo run test",
+    "test:unit": "turbo run test:unit",
+    "test:integration": "turbo run test:integration",
+    "test:coverage": "turbo run test:coverage",
+    "test:coverage:report": "node scripts/coverage-report.js",
+    "test:coverage:open": "open coverage-reports/html/index.html",
+    "test:watch": "turbo run test:watch",
+    "test:e2e": "turbo run test:e2e",
+    "test:ci": "turbo run test:coverage --output-logs=new-only && pnpm test:coverage:report",
+    "lint": "turbo run lint",
+    "lint:fix": "turbo run lint:fix",
+    "typecheck": "turbo run typecheck",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "docs:validate": "node scripts/docs-validate.js",
+    "clean": "pnpm --recursive clean && rm -rf node_modules",
+    "db:migrate": "pnpm --filter @money-wise/backend db:migrate",
+    "db:seed": "pnpm --filter @money-wise/backend db:seed",
+    "db:reset": "pnpm --filter @money-wise/backend db:reset",
+    "docker:dev": "docker compose -f docker-compose.dev.yml up -d",
+    "docker:down": "docker compose -f docker-compose.dev.yml down",
+    "docker:logs": "docker compose -f docker-compose.dev.yml logs -f",
+    "postinstall": "husky install"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^18.4.3",
+    "@commitlint/config-conventional": "^18.4.3",
+    "@types/jest": "^29.5.8",
+    "concurrently": "^8.2.2",
+    "husky": "^8.0.3",
+    "identity-obj-proxy": "^3.0.0",
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0",
+    "jest-expo": "~49.0.0",
+    "jest-watch-typeahead": "^2.2.2",
+    "lint-staged": "^15.2.0",
+    "prettier": "^3.1.1",
+    "ts-jest": "^29.1.1",
+    "turbo": "^1.11.2"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  },
+  "packageManager": "pnpm@8.15.1",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kdantuono/money-wise.git"
+  },
+  "keywords": [
+    "finance",
+    "personal-finance",
+    "budgeting",
+    "transactions",
+    "monorepo",
+    "nestjs",
+    "nextjs",
+    "react-native"
+  ],
+  "author": "kdantuono",
+  "license": "MIT",
+  "commitlint": {
+    "extends": ["@commitlint/config-conventional"]
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx}": ["prettier --write", "eslint --fix"],
+    "*.{json,md}": ["prettier --write"]
+  }
+}
