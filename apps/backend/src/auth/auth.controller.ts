@@ -149,7 +149,7 @@ export class AuthController {
     status: 401,
     description: 'Unauthorized - invalid or missing token',
   })
-  async logout(@CurrentUser() user: User): Promise<void> {
+  async logout(@CurrentUser() _user: User): Promise<void> { // eslint-disable-line @typescript-eslint/no-unused-vars, no-unused-vars
     // In a production app, you might want to blacklist the token
     // For now, we'll just return success since JWT tokens are stateless
     // The client should remove the token from storage
