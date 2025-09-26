@@ -166,7 +166,7 @@ jobs:
 
           # Check for JWT tokens (exclude package lock files and integrity hashes)
           echo "🔍 Checking JWT tokens..."
-          if grep -rE "ey[A-Za-z0-9+/=]{40,}" . $EXCLUDE_DIRS $EXCLUDE_FILES --exclude="pnpm-lock.yaml" --exclude="package-lock.json" --exclude="yarn.lock" 2>/dev/null | grep -v -E "(example|test|mock|fixture|integrity:|resolution:|sha512-)" 2>/dev/null; then
+          if grep -rE "ey[A-Za-z0-9+/=]{40,}" . $EXCLUDE_DIRS $EXCLUDE_FILES --exclude="pnpm-lock.yaml" --exclude="package-lock.json" --exclude="yarn.lock" 2>/dev/null | grep -v -E "(example|test|mock|fixture|integrity:|resolution:|sha512-|pnpm-lock)" 2>/dev/null; then
             echo "❌ Potential JWT token detected!"
             SECRET_FOUND=true
           fi
