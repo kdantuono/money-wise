@@ -1,0 +1,5 @@
+
+> @money-wise/config@0.1.0 test /home/nemesi/dev/money-wise/packages/config
+> jest --passWithNoTests
+
+No tests found, exiting with code 0
