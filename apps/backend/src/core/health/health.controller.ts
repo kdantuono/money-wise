@@ -97,4 +97,56 @@ export class HealthController {
       timestamp: new Date().toISOString(),
     };
   }
+
+  @Get('detailed')
+  @ApiOperation({ summary: 'Detailed health check with service dependencies' })
+  @ApiResponse({
+    status: 200,
+    description: 'Detailed health information including services',
+  })
+  async getDetailedHealth(): Promise<HealthCheckResponse & { services: any }> {
+    const basicHealth = this.getHealth();
+
+    // Add service health checks
+    const services = {
+      database: await this.checkDatabaseHealth(),
+      redis: await this.checkRedisHealth(),
+    };
+
+    return {
+      ...basicHealth,
+      services,
+    };
+  }
+
+  private async checkDatabaseHealth(): Promise<{ status: string; responseTime?: number; error?: string }> {
+    try {
+      const start = Date.now();
+      // Mock database check for now - will be replaced with actual DataSource injection
+      await new Promise(resolve => setTimeout(resolve, 1));
+      const responseTime = Date.now() - start;
+
+      return {
+        status: 'ok',
+        responseTime,
+      };
+    } catch (error) {
+      return {
+        status: 'error',
+        error: error.message,
+      };
+    }
+  }
+
+  private async checkRedisHealth(): Promise<{ status: string; error?: string }> {
+    try {
+      // Mock Redis check for now - will be replaced with actual Redis client injection
+      return { status: 'ok' };
+    } catch (error) {
+      return {
+        status: 'error',
+        error: error.message,
+      };
+    }
+  }
 }

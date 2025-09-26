@@ -13,12 +13,15 @@
       "issueNumber": 62,
       "title": "Database Architecture & TypeORM Setup",
       "agent": "database-specialist",
-      "status": "pending",
+      "status": "in_progress",
       "storyPoints": 8,
       "worktree": "story-001-database",
       "branch": "story/database-architecture",
       "dependencies": [],
-      "tasks": ["TASK-001", "TASK-002", "TASK-003", "TASK-004", "TASK-005", "TASK-006"]
+      "tasks": ["TASK-001", "TASK-002", "TASK-003", "TASK-004", "TASK-005", "TASK-006"],
+      "completedTasks": ["TASK-001", "TASK-002", "TASK-003"],
+      "progress": "50%",
+      "lastUpdate": "2025-09-26T00:00:00Z"
     },
     {
       "id": "STORY-002",

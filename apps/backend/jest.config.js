@@ -16,6 +16,9 @@ module.exports = {
   // Test environment for Node.js
   testEnvironment: 'node',
 
+  // Use TypeScript preset
+  preset: 'ts-jest',
+
   // Module name mapping specific to backend
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
@@ -58,26 +61,6 @@ module.exports = {
       statements: 75
     }
   },
-
-  // Transform configuration for NestJS
-  transform: {
-    '^.+\\.(ts|js)$': ['ts-jest', {
-      tsconfig: '<rootDir>/tsconfig.json'
-    }]
-  },
-
-  // E2E test configuration
-  projects: [
-    {
-      displayName: 'unit',
-      testMatch: ['<rootDir>/src/**/*.{test,spec}.{ts,js}']
-    },
-    {
-      displayName: 'e2e',
-      testMatch: ['<rootDir>/test/**/*.{test,spec}.{ts,js}'],
-      testEnvironment: 'node'
-    }
-  ],
 
   // Ignore patterns
   testPathIgnorePatterns: [

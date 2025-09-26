@@ -59,7 +59,11 @@
       "Bash(pnpm test:*)",
       "Bash(npx turbo:*)",
       "Bash(pnpm build:*)",
-      "Bash(timeout 60s pnpm lint)"
+      "Bash(timeout 60s pnpm lint)",
+      "Bash(gh repo view:*)",
+      "Bash(git worktree:*)",
+      "Bash(gh issue comment:*)",
+      "Bash(timeout:*)"
     ],
     "deny": [],
     "ask": []

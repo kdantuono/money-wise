@@ -2,4 +2,24 @@
 > @money-wise/backend@0.1.0 test /home/nemesi/dev/money-wise/apps/backend
 > jest --passWithNoTests
 
-No tests found, exiting with code 0
+PASS @money-wise/backend src/core/health/health.controller.spec.ts
+  HealthController
+    ✓ should be defined (13 ms)
+    getHealth
+      ✓ should return basic health status (4 ms)
+      ✓ should return consistent timestamp format (3 ms)
+      ✓ should return positive uptime (4 ms)
+      ✓ should return memory usage (3 ms)
+    getDetailedHealth
+      ✓ should return detailed health with services status (37 ms)
+      ✓ should include database response time (8 ms)
+    getReadiness
+      ✓ should return readiness status (2 ms)
+    getLiveness
+      ✓ should return liveness status (3 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       9 passed, 9 total
+Snapshots:   0 total
+Time:        2.339 s, estimated 4 s
+Ran all test suites.
