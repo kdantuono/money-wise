@@ -1,0 +1,20 @@
+# Security Scan Whitelist
+# Files/patterns to exclude from security scanning to avoid false positives
+
+# Documentation and planning files - these contain example code, not real secrets
+docs/planning/**/*.md
+.github/CLAUDE_ACTIONS_SETUP.md
+.github/validate-claude-actions.sh
+
+# Patterns to exclude (case-insensitive)
+# Configuration examples in docs (not real API keys)
+api_key.*settings\.(client_id|secret)
+anthropic_api_key.*ANTHROPIC_API_KEY
+api.{0,5}key.*configuration
+api.{0,5}key.*example
+
+# Test files and mock data
+**/*.test.*
+**/*.spec.*
+**/mocks/**
+**/fixtures/**
