@@ -12,8 +12,9 @@
     }
   },
   "env": {
-    "react-native/react-native": true,
-    "es2020": true
+    "es2020": true,
+    "node": true,
+    "jest": true
   },
   "rules": {
     "@typescript-eslint/no-unused-vars": ["error", { "argsIgnorePattern": "^_" }],

@@ -1,0 +1,4 @@
+
+> @money-wise/backend@0.1.0 lint /home/nemesi/dev/money-wise/apps/backend
+> eslint "{src,apps,libs,test}/**/*.ts" --fix
+

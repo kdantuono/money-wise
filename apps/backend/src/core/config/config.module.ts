@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule as NestConfigModule } from '@nestjs/config';
-import { plainToClass, Transform } from 'class-transformer';
+import { plainToClass } from 'class-transformer';
 import { validateSync } from 'class-validator';
 import { AppConfig } from './app.config';
 import { DatabaseConfig } from './database.config';
