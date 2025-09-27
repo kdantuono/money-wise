@@ -260,7 +260,7 @@ jobs:
         if: hashFiles('**/.prettierrc*') != ''
         run: |
           echo "💅 Checking code formatting..."
-          npx prettier --check .
+          npx prettier --check . --ignore-path .prettierignore
 
   # ===================================================================
   # 🧪 TESTING: Conditional - Active when tests exist
