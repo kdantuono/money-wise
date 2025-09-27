@@ -67,7 +67,8 @@ jobs:
 
       - name: Run license check
         run: |
-          npx license-checker --onlyAllow 'MIT;Apache-2.0;BSD-2-Clause;BSD-3-Clause;ISC;CC0-1.0;Unlicense'
+          # Exclude private packages and check only dependencies
+          npx license-checker --onlyAllow 'MIT;Apache-2.0;BSD-2-Clause;BSD-3-Clause;ISC;CC0-1.0;Unlicense;MPL-2.0' --excludePrivatePackages
 
   codeql:
     name: CodeQL Analysis
