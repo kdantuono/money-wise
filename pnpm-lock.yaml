@@ -126,6 +126,9 @@ importers:
         specifier: ^0.3.17
         version: 0.3.27(pg@8.16.3)(redis@4.7.1)(reflect-metadata@0.2.2)(ts-node@10.9.2)
     devDependencies:
+      '@faker-js/faker':
+        specifier: ^10.0.0
+        version: 10.0.0
       '@nestjs/cli':
         specifier: ^10.0.0
         version: 10.4.9
@@ -145,7 +148,7 @@ importers:
         specifier: ^4.17.17
         version: 4.17.23
       '@types/jest':
-        specifier: ^29.5.2
+        specifier: ^29.5.14
         version: 29.5.14
       '@types/node':
         specifier: ^20.3.1
@@ -157,7 +160,7 @@ importers:
         specifier: ^1.0.38
         version: 1.0.38
       '@types/supertest':
-        specifier: ^2.0.12
+        specifier: ^2.0.16
         version: 2.0.16
       '@typescript-eslint/eslint-plugin':
         specifier: ^6.0.0
@@ -169,19 +172,19 @@ importers:
         specifier: ^8.42.0
         version: 8.57.1
       jest:
-        specifier: ^29.5.0
+        specifier: ^29.7.0
         version: 29.7.0(@types/node@20.19.17)(ts-node@10.9.2)
       source-map-support:
         specifier: ^0.5.21
         version: 0.5.21
       supertest:
-        specifier: ^6.3.3
+        specifier: ^6.3.4
         version: 6.3.4
       testcontainers:
         specifier: ^10.4.0
         version: 10.28.0
       ts-jest:
-        specifier: ^29.1.0
+        specifier: ^29.4.4
         version: 29.4.4(@babel/core@7.28.4)(esbuild@0.25.10)(jest@29.7.0)(typescript@5.9.2)
       ts-loader:
         specifier: ^9.4.3
@@ -3248,6 +3251,11 @@ packages:
       chalk: 4.1.2
       find-up: 5.0.0
       js-yaml: 4.1.0
+
+  /@faker-js/faker@10.0.0:
+    resolution: {integrity: sha512-UollFEUkVXutsaP+Vndjxar40Gs5JL2HeLcl8xO1QAjJgOdhc3OmBFWyEylS+RddWaaBiAzH+5/17PLQJwDiLw==}
+    engines: {node: ^20.19.0 || ^22.13.0 || ^23.5.0 || >=24.0.0, npm: '>=10'}
+    dev: true
 
   /@fal-works/esbuild-plugin-global-externals@2.1.2:
     resolution: {integrity: sha512-cEee/Z+I12mZcFJshKcCqC8tuX5hG3s+d+9nZ3LabqKF1vKdF41B92pJVCBggjAGORAeOzyyDDKrZwIkLffeOQ==}
@@ -7606,7 +7614,6 @@ packages:
       typescript: 5.9.2
     transitivePeerDependencies:
       - supports-color
-    dev: true
 
   /@typescript-eslint/project-service@8.44.1(typescript@5.9.2):
     resolution: {integrity: sha512-ycSa60eGg8GWAkVsKV4E6Nz33h+HjTXbsDT4FILyL8Obk5/mx4tbvCNsLf9zret3ipSumAOG89UcCs/KRaKYrA==}
@@ -7620,7 +7627,6 @@ packages:
       typescript: 5.9.2
     transitivePeerDependencies:
       - supports-color
-    dev: true
 
   /@typescript-eslint/scope-manager@6.21.0:
     resolution: {integrity: sha512-OwLUIWZJry80O99zvqXVEioyniJMa+d2GrqpUTqi5/v5D5rOrppJVBPa0yKCblcigC0/aYAzxxqQ1B+DS2RYsg==}
@@ -7635,7 +7641,6 @@ packages:
     dependencies:
       '@typescript-eslint/types': 8.44.1
       '@typescript-eslint/visitor-keys': 8.44.1
-    dev: true
 
   /@typescript-eslint/tsconfig-utils@8.44.1(typescript@5.9.2):
     resolution: {integrity: sha512-B5OyACouEjuIvof3o86lRMvyDsFwZm+4fBOqFHccIctYgBjqR3qT39FBYGN87khcgf0ExpdCBeGKpKRhSFTjKQ==}
@@ -7644,7 +7649,6 @@ packages:
       typescript: '>=4.8.4 <6.0.0'
     dependencies:
       typescript: 5.9.2
-    dev: true
 
   /@typescript-eslint/type-utils@6.21.0(eslint@8.57.1)(typescript@5.9.2):
     resolution: {integrity: sha512-rZQI7wHfao8qMX3Rd3xqeYSMCL3SoiSQLBATSiVKARdFGCYSRvmViieZjqc58jKgs8Y8i9YvVVhRbHSTA4VBag==}
@@ -7690,7 +7694,6 @@ packages:
   /@typescript-eslint/types@8.44.1:
     resolution: {integrity: sha512-Lk7uj7y9uQUOEguiDIDLYLJOrYHQa7oBiURYVFqIpGxclAFQ78f6VUOM8lI2XEuNOKNB7XuvM2+2cMXAoq4ALQ==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
-    dev: true
 
   /@typescript-eslint/typescript-estree@6.21.0(typescript@5.9.2):
     resolution: {integrity: sha512-6npJTkZcO+y2/kr+z0hc4HwNfrrP4kNYh57ek7yCNlrBjWQ1Y0OS7jiZTkgumrvkX5HkEKXFZkkdFNkaW2wmUQ==}
@@ -7732,7 +7735,6 @@ packages:
       typescript: 5.9.2
     transitivePeerDependencies:
       - supports-color
-    dev: true
 
   /@typescript-eslint/utils@6.21.0(eslint@8.57.1)(typescript@5.9.2):
     resolution: {integrity: sha512-NfWVaC8HP9T8cbKQxHcsJBY5YE1O33+jpMwN45qzWWaPDZgLIbo12toGMWnmhvCpd3sIxkpDw3Wv1B3dYrbDQQ==}
@@ -7782,7 +7784,6 @@ packages:
     dependencies:
       '@typescript-eslint/types': 8.44.1
       eslint-visitor-keys: 4.2.1
-    dev: true
 
   /@ungap/structured-clone@1.3.0:
     resolution: {integrity: sha512-WmoN8qaIAo7WTYWbAZuG8PYEhn5fkz7dZrqTBZ7dtt//lL2Gwms1IcnQ5yHqjDfX8Ft5j4YzDM23f87zBfDe9g==}
@@ -11176,7 +11177,7 @@ packages:
       '@nolyfill/is-core-module': 1.0.39
       debug: 4.4.3
       eslint: 8.57.1
-      eslint-plugin-import: 2.32.0(@typescript-eslint/parser@6.21.0)(eslint-import-resolver-typescript@3.10.1)(eslint@8.57.1)
+      eslint-plugin-import: 2.32.0(@typescript-eslint/parser@8.44.1)(eslint-import-resolver-typescript@3.10.1)(eslint@8.57.1)
       get-tsconfig: 4.10.1
       is-bun-module: 2.0.0
       stable-hash: 0.0.5
@@ -11242,7 +11243,6 @@ packages:
       eslint-import-resolver-typescript: 3.10.1(eslint-plugin-import@2.32.0)(eslint@8.57.1)
     transitivePeerDependencies:
       - supports-color
-    dev: true
 
   /eslint-plugin-expo@1.0.0(eslint@8.57.1)(typescript@5.9.2):
     resolution: {integrity: sha512-qLtunR+cNFtC+jwYCBia5c/PJurMjSLMOV78KrEOyQK02ohZapU4dCFFnS2hfrJuw0zxfsjVkjqg3QBqi933QA==}
@@ -11329,7 +11329,6 @@ packages:
       - eslint-import-resolver-typescript
       - eslint-import-resolver-webpack
       - supports-color
-    dev: true
 
   /eslint-plugin-jsx-a11y@6.10.2(eslint@8.57.1):
     resolution: {integrity: sha512-scB3nz4WmG75pV8+3eRUQOHZlNSUhFNq37xnpgRkCCELU3XMvXAxLk1eqWWyE22Ki4Q01Fnsw9BA3cJHDPgn2Q==}
@@ -11440,7 +11439,6 @@ packages:
   /eslint-visitor-keys@4.2.1:
     resolution: {integrity: sha512-Uhdk5sfqcee/9H/rCOJikYz67o0a2Tw2hGRPOG2Y1R2dg7brRe1uG0yaNQDHu+TO/uQPF/5eCapvYSmHUjt7JQ==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
-    dev: true
 
   /eslint@8.57.1:
     resolution: {integrity: sha512-ypowyDxpVSYpkXr9WPv2PAZCtNip1Mv5KTW0SCurXv/9iOpcrH9PaqUElksqEB6pChqHGDRCFTyrZlGhnLNGiA==}
@@ -19446,7 +19444,6 @@ packages:
       typescript: '>=4.8.4'
     dependencies:
       typescript: 5.9.2
-    dev: true
 
   /ts-dedent@2.2.0:
     resolution: {integrity: sha512-q5W7tVM71e2xjHZTlgfTDoPF/SmqKG5hddq9SzR49CH2hayqRKJtQ4mtRlSxKaJlR/+9rEM+mnBHf7I2/BQcpQ==}
