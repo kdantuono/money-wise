@@ -80,6 +80,62 @@ update_item_status() {
     fi
 }
 
+# Function to validate review workflow
+validate_review_workflow() {
+    local title="$1"
+    local current_status=$(get_item_status "$title")
+
+    if [ "$current_status" != "In Review" ] && [ "$current_status" != "Done" ]; then
+        print_status $RED "🚨 MANDATORY REVIEW WORKFLOW VIOLATION!"
+        print_status $YELLOW "📋 Current status: ${current_status:-"null"}"
+        print_status $YELLOW "🔄 Required workflow: In Progress → In Review → Copilot Review → Done"
+        print_status $BLUE "💡 Use: $0 review \"$title\" to move to review first"
+        return 1
+    fi
+    return 0
+}
+
+# Function to prompt for GitHub Copilot review
+prompt_copilot_review() {
+    local title="$1"
+
+    print_status $BLUE "🤖 MANDATORY GITHUB COPILOT REVIEW REQUIRED"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    print_status $YELLOW "📋 REVIEW CHECKLIST FOR: $title"
+    echo "1. ✅ All code implemented and tested"
+    echo "2. ✅ CI/CD pipelines passing"
+    echo "3. 🔄 Request GitHub Copilot review (REQUIRED)"
+    echo "4. ⏳ Wait for user feedback and approval"
+    echo "5. ✅ Only after approval → use 'confirm-review' command"
+    echo ""
+    print_status $BLUE "📝 REQUEST COPILOT REVIEW WITH:"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "@copilot review all changes for [$title] including:"
+    echo "- Implementation completeness"
+    echo "- Code quality and patterns"
+    echo "- Test coverage"
+    echo "- Security considerations"
+    echo "- Performance implications"
+    echo "- Documentation completeness"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    print_status $RED "⚠️  DO NOT use 'complete' until review is confirmed!"
+}
+
+# Function to check if review was completed
+check_review_completion() {
+    local title="$1"
+
+    print_status $YELLOW "🔍 REVIEW COMPLETION CHECK FOR: $title"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    print_status $BLUE "❓ Has GitHub Copilot completed the review?"
+    print_status $BLUE "❓ Have you addressed all feedback?"
+    print_status $BLUE "❓ Are you ready to mark this as Done?"
+    echo ""
+    print_status $GREEN "✅ If YES to all: Review workflow complete"
+    print_status $RED "❌ If NO to any: Return to GitHub for more review"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+}
+
 # Function to list all items and their statuses
 list_all_items() {
     print_status $BLUE "📋 Current Board Status:"
@@ -107,12 +163,61 @@ case "$1" in
     "complete")
         if [ -z "$2" ]; then
             print_status $RED "❌ Usage: $0 complete \"Story Title\""
+            print_status $YELLOW "💡 Use: $0 confirm-review \"Story Title\" for reviewed items"
             exit 1
         fi
         title="$2"
-        print_status $YELLOW "🎯 Moving '$title' to Done..."
+
+        # ENFORCE MANDATORY REVIEW WORKFLOW
+        if ! validate_review_workflow "$title"; then
+            exit 1
+        fi
+
+        print_status $RED "🚨 DIRECT COMPLETION NOT ALLOWED!"
+        print_status $YELLOW "🔄 Required workflow: In Progress → In Review → Copilot Review → Done"
+        print_status $BLUE "💡 Use: $0 review \"$title\" then $0 confirm-review \"$title\""
+        exit 1
+        ;;
+    "review")
+        if [ -z "$2" ]; then
+            print_status $RED "❌ Usage: $0 review \"Story Title\""
+            exit 1
+        fi
+        title="$2"
+        print_status $YELLOW "👀 Moving '$title' to In Review..."
         item_id=$(find_item_by_title "$title")
-        update_item_status "$item_id" "$STATUS_DONE" "Done"
+        if update_item_status "$item_id" "$STATUS_IN_REVIEW" "In Review"; then
+            prompt_copilot_review "$title"
+        fi
+        ;;
+    "confirm-review")
+        if [ -z "$2" ]; then
+            print_status $RED "❌ Usage: $0 confirm-review \"Story Title\""
+            exit 1
+        fi
+        title="$2"
+        current_status=$(get_item_status "$title")
+
+        if [ "$current_status" != "In Review" ]; then
+            print_status $RED "🚨 REVIEW WORKFLOW ERROR!"
+            print_status $YELLOW "📋 Current status: ${current_status:-"null"}"
+            print_status $YELLOW "🔄 Item must be 'In Review' status first"
+            print_status $BLUE "💡 Use: $0 review \"$title\" first"
+            exit 1
+        fi
+
+        check_review_completion "$title"
+        read -p "🤖 Confirm GitHub Copilot review completed and approved? (yes/no): " confirmation
+
+        if [[ "$confirmation" =~ ^[Yy][Ee][Ss]$ ]]; then
+            print_status $YELLOW "🎯 Moving '$title' to Done..."
+            item_id=$(find_item_by_title "$title")
+            update_item_status "$item_id" "$STATUS_DONE" "Done"
+            print_status $GREEN "🎉 Review workflow completed successfully!"
+        else
+            print_status $YELLOW "🔄 Review not confirmed. Item remains In Review."
+            print_status $BLUE "💡 Return to GitHub, complete review, then try again"
+        fi
         ;;
     "todo")
         if [ -z "$2" ]; then
@@ -123,16 +228,6 @@ case "$1" in
         print_status $YELLOW "📝 Moving '$title' to To Do..."
         item_id=$(find_item_by_title "$title")
         update_item_status "$item_id" "$STATUS_TODO" "To Do"
-        ;;
-    "review")
-        if [ -z "$2" ]; then
-            print_status $RED "❌ Usage: $0 review \"Story Title\""
-            exit 1
-        fi
-        title="$2"
-        print_status $YELLOW "👀 Moving '$title' to In Review..."
-        item_id=$(find_item_by_title "$title")
-        update_item_status "$item_id" "$STATUS_IN_REVIEW" "In Review"
         ;;
     "backlog")
         if [ -z "$2" ]; then
@@ -154,25 +249,37 @@ case "$1" in
         print_status $BLUE "📊 Current status of '$title': ${current_status:-"null"}"
         ;;
     "help"|"-h"|"--help")
-        echo "Board Status Management Script"
-        echo "================================"
+        echo "Board Status Management Script with Mandatory Review Workflow"
+        echo "============================================================="
         echo "Usage: $0 <command> [arguments]"
         echo ""
-        echo "Commands:"
-        echo "  list                    - List all items and their statuses"
-        echo "  start \"Story Title\"     - Move item to In Progress"
-        echo "  complete \"Story Title\" - Move item to Done"
-        echo "  todo \"Story Title\"     - Move item to To Do"
-        echo "  review \"Story Title\"   - Move item to In Review"
-        echo "  backlog \"Story Title\"  - Move item to Backlog"
-        echo "  status \"Story Title\"   - Show current status of item"
-        echo "  help                    - Show this help message"
+        print_status $BLUE "🚨 MANDATORY REVIEW WORKFLOW ENFORCED:"
+        print_status $YELLOW "In Progress → In Review → Copilot Review → Done"
         echo ""
-        echo "Examples:"
+        echo "Commands:"
+        echo "  list                      - List all items and their statuses"
+        echo "  start \"Story Title\"       - Move item to In Progress"
+        echo "  review \"Story Title\"      - Move to In Review + prompt Copilot review"
+        echo "  confirm-review \"Story\"    - Confirm review complete, then move to Done"
+        echo "  todo \"Story Title\"       - Move item to To Do"
+        echo "  backlog \"Story Title\"    - Move item to Backlog"
+        echo "  status \"Story Title\"     - Show current status of item"
+        echo "  help                      - Show this help message"
+        echo ""
+        print_status $RED "⚠️  BLOCKED COMMAND:"
+        echo "  complete \"Story Title\"   - BLOCKED! Use review workflow instead"
+        echo ""
+        print_status $GREEN "📋 REVIEW WORKFLOW EXAMPLES:"
+        echo "  $0 review \"STORY-003\"                    # Move to review + get Copilot prompt"
+        echo "  # [Go to GitHub, request @copilot review]"
+        echo "  $0 confirm-review \"STORY-003\"            # Confirm review done → Move to Done"
+        echo ""
+        echo "Other Examples:"
         echo "  $0 list"
         echo "  $0 start \"STORY-003\""
-        echo "  $0 complete \"JWT Authentication\""
         echo "  $0 status \"EPIC-003\""
+        echo ""
+        print_status $BLUE "🔒 QUALITY GATE: No item can be marked Done without Copilot review!"
         ;;
     *)
         print_status $RED "❌ Unknown command: $1"
