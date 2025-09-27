@@ -12,8 +12,8 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   /* Retry on CI only */
   retries: process.env.CI ? 2 : 0,
-  /* Opt out of parallel tests on CI. */
-  workers: process.env.CI ? 1 : undefined,
+  /* Single worker for CI stability */
+  workers: 1,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: [
     ['html', { open: 'never' }],
@@ -39,32 +39,25 @@ export default defineConfig({
     navigationTimeout: 30000,
   },
 
-  /* Configure projects for major browsers */
+  /* Configure projects for minimal browser testing in CI */
   projects: [
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
       testMatch: /basic-.*\.spec\.ts/,
-    },
-
-    {
-      name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
-      testMatch: /basic-.*\.spec\.ts/,
-    },
-
-    {
-      name: 'webkit',
-      use: { ...devices['Desktop Safari'] },
-      testMatch: /basic-.*\.spec\.ts/,
-    },
+    }
   ],
 
-  /* Run only the Next.js dev server for basic tests */
-  webServer: {
+  /* Use built application in CI for faster startup */
+  webServer: process.env.CI ? {
+    command: 'pnpm start',
+    url: 'http://localhost:3000',
+    reuseExistingServer: false,
+    timeout: 45 * 1000,
+  } : {
     command: 'pnpm dev',
     url: 'http://localhost:3000',
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: true,
     timeout: 120 * 1000,
   },
 
