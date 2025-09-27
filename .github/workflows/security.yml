@@ -70,32 +70,33 @@ jobs:
           # Exclude private packages and check only dependencies
           npx license-checker --onlyAllow 'MIT;Apache-2.0;BSD-2-Clause;BSD-3-Clause;ISC;CC0-1.0;Unlicense;MPL-2.0' --excludePrivatePackages
 
-  codeql:
-    name: CodeQL Analysis
-    runs-on: ubuntu-latest
-    permissions:
-      actions: read
-      contents: read
-      security-events: write
-
-    strategy:
-      matrix:
-        language: ['typescript']
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
-        with:
-          languages: ${{ matrix.language }}
-
-      - name: Autobuild
-        uses: github/codeql-action/autobuild@v3
-
-      - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v3
+  # TODO: Enable CodeQL when repository code scanning is configured
+  # codeql:
+  #   name: CodeQL Analysis
+  #   runs-on: ubuntu-latest
+  #   permissions:
+  #     actions: read
+  #     contents: read
+  #     security-events: write
+  #
+  #   strategy:
+  #     matrix:
+  #       language: ['typescript']
+  #
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4
+  #
+  #     - name: Initialize CodeQL
+  #       uses: github/codeql-action/init@v3
+  #       with:
+  #         languages: ${{ matrix.language }}
+  #
+  #     - name: Autobuild
+  #       uses: github/codeql-action/autobuild@v3
+  #
+  #     - name: Perform CodeQL Analysis
+  #       uses: github/codeql-action/analyze@v3
 
   secrets-scan:
     name: Secrets Scan
@@ -133,7 +134,7 @@ jobs:
   notify-security-issues:
     name: Notify Security Issues
     runs-on: ubuntu-latest
-    needs: [security-audit, codeql, secrets-scan]
+    needs: [security-audit, secrets-scan]
     if: failure() && github.ref == 'refs/heads/main'
 
     steps:
