@@ -76,6 +76,27 @@ git commit -m "type(scope): description"
 task → story → epic → dev → main
 ```
 
+## 🚨 MANDATORY CI/CD VERIFICATION
+
+**ABSOLUTE REQUIREMENT AFTER ANY PUSH:**
+
+```bash
+# ALWAYS verify CI/CD status after pushing
+git push origin [branch]
+gh run list --branch [branch] --limit 1  # Check latest run
+gh run watch [run-id]                     # Wait for completion
+
+# ❌ NEVER CLAIM SUCCESS WITHOUT VERIFICATION
+# ❌ NEVER PROCEED IF ANY PIPELINE FAILS
+# ✅ ONLY PROCEED WHEN ALL WORKFLOWS ARE GREEN
+```
+
+**ENFORCEMENT RULES:**
+1. **ZERO TOLERANCE**: Any failed pipeline MUST be fixed before proceeding
+2. **VERIFICATION MANDATORY**: Must confirm green status with `gh run view`
+3. **NO FALSE CLAIMS**: Never report success without actual pipeline verification
+4. **BLOCKING REQUIREMENT**: Failed CI/CD blocks ALL development work
+
 ## 📊 Project Context
 
 **Application**: MoneyWise Personal Finance
