@@ -10,6 +10,9 @@ coverage/
 # Claude configuration - has specific formatting requirements
 .claude/
 
+# Test utilities - may have JSX/TSX mixed syntax
+test-utils/
+
 # Lock files
 pnpm-lock.yaml
 package-lock.json

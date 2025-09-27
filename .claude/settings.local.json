@@ -77,7 +77,21 @@
       "Bash(npx typeorm-ts-node-commonjs migration:generate:*)",
       "Bash(npx typeorm-ts-node-commonjs migration:create:*)",
       "Bash(pnpm turbo run build:*)",
-      "Bash(pnpm turbo run test:unit:*)"
+      "Bash(pnpm turbo run test:unit:*)",
+      "Bash(/home/nemesi/dev/money-wise/.claude/scripts/board-status.sh list:*)",
+      "Bash(/home/nemesi/dev/money-wise/.claude/scripts/board-status.sh:*)",
+      "Bash(git reset:*)",
+      "Bash(git remote:*)",
+      "Bash(gh api:*)",
+      "Bash(gh pr list:*)",
+      "Bash(pnpm typecheck:*)",
+      "Bash(./scripts/health-check.sh:*)",
+      "Bash(docker exec:*)",
+      "Bash(docker volume:*)",
+      "Bash(pnpm test:e2e:basic:*)",
+      "Bash(pnpm run:*)",
+      "Bash(DB_HOST=localhost DB_PORT=5432 DB_USERNAME=postgres DB_PASSWORD=password DB_NAME=moneywise pnpm run db:migrate)",
+      "Bash(npx prettier:*)"
     ],
     "deny": [],
     "ask": []

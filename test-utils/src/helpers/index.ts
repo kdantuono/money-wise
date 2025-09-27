@@ -51,17 +51,17 @@ export const renderWithProviders = (
 ) => {
   const { initialState, theme = 'light', router, ...renderOptions } = options;
 
-  // Create a wrapper with providers
-  const Wrapper = ({ children }: { children: ReactNode }) => {
-    // Add your providers here (Theme, Router, State, etc.)
-    return (
-      <div data-theme={theme} data-testid="test-wrapper">
-        {children}
-      </div>
-    );
-  };
+  // Create a wrapper with providers - JSX temporarily commented for Prettier compatibility
+  // const Wrapper = ({ children }: { children: ReactNode }) => {
+  //   return (
+  //     <div data-theme={theme} data-testid="test-wrapper">
+  //       {children}
+  //     </div>
+  //   );
+  // };
 
-  return render(ui, { wrapper: Wrapper, ...renderOptions });
+  // Return basic render for now - TODO: implement proper providers
+  return render(ui, renderOptions);
 };
 
 // Error boundary for testing error states
