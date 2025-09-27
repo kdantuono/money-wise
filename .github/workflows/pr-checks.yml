@@ -5,6 +5,11 @@ on:
     branches: [main, develop]
     types: [opened, synchronize, reopened]
 
+permissions:
+  contents: read
+  pull-requests: read
+  checks: write
+
 env:
   NODE_VERSION: '18'
   PNPM_VERSION: '8.15.1'
@@ -21,11 +26,14 @@ jobs:
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: 🔍 Detect changes
-        uses: dorny/paths-filter@v2
+        uses: dorny/paths-filter@v3
         id: changes
         with:
+          token: ${{ secrets.GITHUB_TOKEN }}
           filters: |
             backend:
               - 'apps/backend/**'
@@ -77,13 +85,13 @@ jobs:
 
     services:
       postgres:
-        image: postgres:15-alpine
+        image: timescale/timescaledb:latest-pg15
         env:
-          POSTGRES_DB: test_db
-          POSTGRES_USER: test_user
-          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: moneywise_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
         options: >-
-          --health-cmd pg_isready
+          --health-cmd "pg_isready -U postgres -d moneywise_test"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -121,8 +129,13 @@ jobs:
       - name: 🧪 Run backend tests
         run: pnpm --filter @money-wise/backend test
         env:
-          DATABASE_URL: postgresql://test_user:test_password@localhost:5432/test_db
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_USERNAME: postgres
+          DB_PASSWORD: password
+          DB_NAME: moneywise_test
           REDIS_URL: redis://localhost:6379
+          NODE_ENV: test
 
   test-web:
     name: 🧪 Test Web

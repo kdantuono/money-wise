@@ -352,7 +352,15 @@ jobs:
         if: steps.check-app.outputs.exists == 'true'
         run: |
           echo "🏗️ Building ${{ matrix.app }}..."
-          pnpm build:${{ matrix.app }}
+          if [[ "${{ matrix.app }}" == "backend" ]]; then
+            pnpm --filter @money-wise/backend build
+          elif [[ "${{ matrix.app }}" == "web" ]]; then
+            pnpm --filter @money-wise/web build
+          elif [[ "${{ matrix.app }}" == "mobile" ]]; then
+            echo "📱 Mobile build not yet configured"
+          else
+            echo "⚠️ Unknown app: ${{ matrix.app }}"
+          fi
 
   # ===================================================================
   # 🔒 SECURITY: Progressive - Enhanced when source code exists
