@@ -487,7 +487,7 @@ export class AuthTestMatchers {
   /**
    * Check if object matches AuthResponse structure
    */
-  static toBeValidAuthResponse(received: any) {
+  static toBeValidAuthResponse(received: unknown) {
     const pass = AuthTestUtils.validateAuthResponse(received);
 
     if (pass) {
@@ -506,7 +506,7 @@ export class AuthTestMatchers {
   /**
    * Check if JWT token is valid format
    */
-  static toBeValidJwtToken(received: any) {
+  static toBeValidJwtToken(received: unknown) {
     const pass = typeof received === 'string' && received.split('.').length === 3;
 
     if (pass) {

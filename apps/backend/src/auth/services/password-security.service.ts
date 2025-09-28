@@ -160,10 +160,6 @@ export class PasswordSecurityService {
    * Check if password has been used recently by user
    */
   async isPasswordInHistory(_userId: string, _newPassword: string): Promise<boolean> {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const userId = _userId;
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const newPassword = _newPassword;
     // In a real implementation, you would store password hashes in a separate table
     // For now, we'll return false (no history check)
     // TODO: Implement password history table and check

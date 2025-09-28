@@ -62,7 +62,7 @@ export interface AuditEvent {
   email?: string;
   ipAddress: string;
   userAgent: string;
-  details: Record<string, any>;
+  details: Record<string, unknown>;
   timestamp: Date;
   sessionId?: string;
   location?: {
@@ -108,7 +108,7 @@ export class AuditLogService {
   async logEvent(
     eventType: AuditEventType,
     request: Request,
-    details: Record<string, any> = {},
+    details: Record<string, unknown> = {},
     userId?: string,
     email?: string,
   ): Promise<void> {
@@ -192,7 +192,7 @@ export class AuditLogService {
   /**
    * Log account lockout
    */
-  async logAccountLocked(request: Request, userId: string, email: string, details: any): Promise<void> {
+  async logAccountLocked(request: Request, userId: string, email: string, details: Record<string, unknown>): Promise<void> {
     await this.logEvent(
       AuditEventType.ACCOUNT_LOCKED,
       request,
@@ -390,8 +390,6 @@ export class AuditLogService {
   }
 
   private async getLocationFromIp(_ip: string): Promise<{ country?: string; city?: string; region?: string } | undefined> {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const ip = _ip;
     // In production, you would use a GeoIP service
     // For now, return undefined
     return undefined;

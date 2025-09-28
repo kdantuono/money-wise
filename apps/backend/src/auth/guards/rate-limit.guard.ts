@@ -24,7 +24,7 @@ export const RATE_LIMIT_KEY = 'rate-limit';
 
 // Decorator to set rate limit options
 export const RateLimit = (options: RateLimitOptions) => {
-  return (target: any, propertyKey?: string, descriptor?: PropertyDescriptor) => {
+  return (target: object, propertyKey?: string, descriptor?: PropertyDescriptor) => {
     if (descriptor) {
       // Method decorator
       Reflect.defineMetadata(RATE_LIMIT_KEY, options, descriptor.value);

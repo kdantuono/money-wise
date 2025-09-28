@@ -60,7 +60,7 @@ describe('AccountRepository', () => {
       set: jest.fn().mockReturnThis(),
       update: jest.fn().mockReturnThis(),
       execute: jest.fn(),
-    } as any;
+    } as jest.Mocked<SelectQueryBuilder<Account>>;
 
     // Create mock repository
     mockRepository = {
@@ -68,12 +68,12 @@ describe('AccountRepository', () => {
       find: jest.fn(),
       update: jest.fn(),
       createQueryBuilder: jest.fn().mockReturnValue(mockQueryBuilder),
-    } as any;
+    } as jest.Mocked<Repository<Account>>;
 
     // Create mock data source
     mockDataSource = {
       getRepository: jest.fn().mockReturnValue(mockRepository),
-    } as any;
+    } as jest.Mocked<DataSource>;
 
     // Create mock logger
     mockLogger = {

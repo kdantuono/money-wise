@@ -4,6 +4,7 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { Repository } from 'typeorm';
 import { BadRequestException, UnauthorizedException, ConflictException } from '@nestjs/common';
+import { Request } from 'express';
 import { AuthSecurityService } from './auth-security.service';
 import { PasswordSecurityService } from './services/password-security.service';
 import { AccountLockoutService } from './services/account-lockout.service';
@@ -47,7 +48,7 @@ describe('AuthSecurityService', () => {
     headers: {},
     connection: { remoteAddress: '127.0.0.1' },
     socket: { remoteAddress: '127.0.0.1' },
-  } as any;
+  } as Request;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
