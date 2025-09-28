@@ -2,39 +2,171 @@
 > @money-wise/backend@0.1.0 test:unit /home/nemesi/dev/money-wise/apps/backend
 > jest --passWithNoTests --testPathPattern='src'
 
-PASS @money-wise/backend src/core/health/health.controller.spec.ts
-  HealthController
-    ✓ should be defined (17 ms)
-    getHealth
-      ✓ should return basic health status (4 ms)
-      ✓ should return consistent timestamp format (4 ms)
-      ✓ should return positive uptime (5 ms)
-      ✓ should return memory usage (6 ms)
-    getDetailedHealth
-      ✓ should return detailed health with services status (44 ms)
-      ✓ should include database response time (4 ms)
-    getReadiness
-      ✓ should return readiness status (2 ms)
-    getLiveness
-      ✓ should return liveness status (5 ms)
-
 PASS @money-wise/backend src/auth/auth.service.spec.ts
   AuthService
     register
-      ✓ should register a new user successfully (6 ms)
-      ✓ should throw ConflictException if user already exists (12 ms)
+      ✓ should register a new user successfully (28 ms)
+      ✓ should throw ConflictException if user already exists (16 ms)
     login
       ✓ should login user successfully (4 ms)
       ✓ should throw UnauthorizedException if user not found (3 ms)
       ✓ should throw UnauthorizedException if password is invalid (4 ms)
-      ✓ should throw UnauthorizedException if user is not active (3 ms)
+      ✓ should throw UnauthorizedException if user is not active (4 ms)
     validateUser
-      ✓ should return user if valid (2 ms)
-      ✓ should throw UnauthorizedException if user not found (2 ms)
-      ✓ should throw UnauthorizedException if user is not active (2 ms)
+      ✓ should return user if valid (4 ms)
+      ✓ should throw UnauthorizedException if user not found (3 ms)
+      ✓ should throw UnauthorizedException if user is not active (4 ms)
 
-Test Suites: 2 passed, 2 total
-Tests:       18 passed, 18 total
+PASS @money-wise/backend src/core/database/repositories/__tests__/base.repository.spec.ts
+  BaseRepository
+    constructor
+      ✓ should initialize repository with correct entity (8 ms)
+    create
+      ✓ should create and save a new entity successfully (9 ms)
+      ✓ should handle creation errors and throw descriptive error (21 ms)
+    save
+      ✓ should save an existing entity successfully (3 ms)
+      ✓ should handle save errors (4 ms)
+    findById
+      ✓ should find entity by ID successfully (3 ms)
+      ✓ should return null when entity not found (3 ms)
+      ✓ should handle findById errors (3 ms)
+    findOne
+      ✓ should find one entity with FindOptionsWhere (3 ms)
+      ✓ should find one entity with FindOneOptions (10 ms)
+      ✓ should handle findOne errors (4 ms)
+    find
+      ✓ should find multiple entities with options (2 ms)
+      ✓ should find all entities when no options provided (2 ms)
+      ✓ should handle find errors (2 ms)
+    findWithPagination
+      ✓ should return paginated results (3 ms)
+      ✓ should handle pagination with criteria (3 ms)
+      ✓ should handle pagination errors (4 ms)
+    update
+      ✓ should update entity successfully (2 ms)
+      ✓ should return null when entity to update not found (2 ms)
+      ✓ should handle update errors (3 ms)
+    delete
+      ✓ should delete entity successfully (9 ms)
+      ✓ should return false when no entity was deleted (2 ms)
+      ✓ should handle delete errors (2 ms)
+    deleteBy
+      ✓ should delete entities by criteria (2 ms)
+      ✓ should handle deleteBy errors (3 ms)
+    count
+      ✓ should count entities with criteria (2 ms)
+      ✓ should count all entities when no criteria provided (2 ms)
+      ✓ should handle count errors (3 ms)
+    exists
+      ✓ should return true when entity exists (2 ms)
+      ✓ should return false when entity does not exist (2 ms)
+      ✓ should handle exists errors (3 ms)
+    bulkInsert
+      ✓ should perform bulk insert successfully (6 ms)
+      ✓ should handle bulk insert errors (2 ms)
+    bulkUpdate
+      ✓ should perform bulk update successfully (2 ms)
+      ✓ should handle bulk update errors (3 ms)
+    query
+      ✓ should execute raw query successfully (2 ms)
+      ✓ should execute parameterized query (2 ms)
+      ✓ should handle query errors (4 ms)
+
+PASS @money-wise/backend src/core/database/repositories/__tests__/integration/repositories.integration.spec.ts
+  Repository Integration Tests
+    Repository Pattern Integration
+      ✓ should have repositories properly exported from index (430 ms)
+      ✓ should have repository module and injection tokens exported (1 ms)
+      ✓ should validate repository structure integrity (1 ms)
+      ✓ should validate test coverage completeness (2 ms)
+    Repository Pattern Compliance
+      ✓ should document zero-tolerance validation achievements (1 ms)
+      ✓ should validate atomic commit compliance (2 ms)
+
+PASS @money-wise/backend src/core/health/health.controller.spec.ts
+  HealthController
+    ✓ should be defined (6 ms)
+    getHealth
+      ✓ should return basic health status (5 ms)
+      ✓ should return consistent timestamp format (3 ms)
+      ✓ should return positive uptime (3 ms)
+      ✓ should return memory usage (2 ms)
+    getDetailedHealth
+      ✓ should return detailed health with services status (5 ms)
+      ✓ should include database response time (4 ms)
+    getReadiness
+      ✓ should return readiness status (2 ms)
+    getLiveness
+      ✓ should return liveness status (2 ms)
+
+FAIL @money-wise/backend src/core/database/repositories/__tests__/user.repository.spec.ts
+  ● Test suite failed to run
+
+    [96msrc/core/database/repositories/__tests__/user.repository.spec.ts[0m:[93m19[0m:[93m26[0m - [91merror[0m[90m TS2352: [0mConversion of type '{ id: string; email: string; firstName: string; lastName: string; passwordHash: string; emailVerified: boolean; emailVerificationToken: string; passwordResetToken: null; passwordResetExpires: null; createdAt: Date; updatedAt: Date; }' to type 'User' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+      Type '{ id: string; email: string; firstName: string; lastName: string; passwordHash: string; emailVerified: boolean; emailVerificationToken: string; passwordResetToken: null; passwordResetExpires: null; createdAt: Date; updatedAt: Date; }' is missing the following properties from type 'User': role, status, currency, accounts, and 3 more.
+
+    [7m 19[0m   const mockUser: User = {
+    [7m   [0m [91m                         ~[0m
+    [7m 20[0m     id: 'user-id-123',
+    [7m   [0m [91m~~~~~~~~~~~~~~~~~~~~~~[0m
+    [7m...[0m 
+    [7m 30[0m     updatedAt: new Date('2025-09-28T10:00:00Z'),
+    [7m   [0m [91m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+    [7m 31[0m   } as User;
+    [7m   [0m [91m~~~~~~~~~~~[0m
+    [96msrc/core/database/repositories/__tests__/user.repository.spec.ts[0m:[93m213[0m:[93m48[0m - [91merror[0m[90m TS2345: [0mArgument of type '{ passwordResetToken: string; id: string; email: string; firstName: string; lastName: string; passwordHash: string; role: UserRole; status: UserStatus; ... 8 more ...; accounts: Account[]; }' is not assignable to parameter of type 'User | Promise<User>'.
+      Type '{ passwordResetToken: string; id: string; email: string; firstName: string; lastName: string; passwordHash: string; role: UserRole; status: UserStatus; avatar?: string; ... 7 more ...; accounts: Account[]; }' is missing the following properties from type 'User': fullName, isEmailVerified, isActive
+
+    [7m213[0m       mockRepository.findOne.mockResolvedValue(userWithResetToken);
+    [7m   [0m [91m                                               ~~~~~~~~~~~~~~~~~~[0m
+    [96msrc/core/database/repositories/__tests__/user.repository.spec.ts[0m:[93m403[0m:[93m50[0m - [91merror[0m[90m TS2345: [0mArgument of type '(User | { id: string; email: string; firstName: string; lastName: string; passwordHash: string; role: UserRole; status: UserStatus; avatar?: string; timezone?: string; ... 6 more ...; accounts: Account[]; })[]' is not assignable to parameter of type 'User[] | Promise<User[]>'.
+      Type '(User | { id: string; email: string; firstName: string; lastName: string; passwordHash: string; role: UserRole; status: UserStatus; avatar?: string; timezone?: string; ... 6 more ...; accounts: Account[]; })[]' is not assignable to type 'User[]'.
+        Type 'User | { id: string; email: string; firstName: string; lastName: string; passwordHash: string; role: UserRole; status: UserStatus; avatar?: string; timezone?: string; ... 6 more ...; accounts: Account[]; }' is not assignable to type 'User'.
+          Type '{ id: string; email: string; firstName: string; lastName: string; passwordHash: string; role: UserRole; status: UserStatus; avatar?: string; timezone?: string; currency: string; ... 5 more ...; accounts: Account[]; }' is missing the following properties from type 'User': fullName, isEmailVerified, isActive
+
+    [7m403[0m       mockQueryBuilder.getMany.mockResolvedValue(users);
+    [7m   [0m [91m                                                 ~~~~~[0m
+    [96msrc/core/database/repositories/__tests__/user.repository.spec.ts[0m:[93m500[0m:[93m50[0m - [91merror[0m[90m TS2345: [0mArgument of type '(User | { id: string; email: string; firstName: string; lastName: string; passwordHash: string; role: UserRole; status: UserStatus; avatar?: string; timezone?: string; ... 6 more ...; accounts: Account[]; })[]' is not assignable to parameter of type 'User[] | Promise<User[]>'.
+      Type '(User | { id: string; email: string; firstName: string; lastName: string; passwordHash: string; role: UserRole; status: UserStatus; avatar?: string; timezone?: string; ... 6 more ...; accounts: Account[]; })[]' is not assignable to type 'User[]'.
+        Type 'User | { id: string; email: string; firstName: string; lastName: string; passwordHash: string; role: UserRole; status: UserStatus; avatar?: string; timezone?: string; ... 6 more ...; accounts: Account[]; }' is not assignable to type 'User'.
+          Type '{ id: string; email: string; firstName: string; lastName: string; passwordHash: string; role: UserRole; status: UserStatus; avatar?: string; timezone?: string; currency: string; ... 5 more ...; accounts: Account[]; }' is missing the following properties from type 'User': fullName, isEmailVerified, isActive
+
+    [7m500[0m       mockQueryBuilder.getMany.mockResolvedValue(users);
+    [7m   [0m [91m                                                 ~~~~~[0m
+
+FAIL @money-wise/backend src/core/database/repositories/__tests__/account.repository.spec.ts
+  ● Test suite failed to run
+
+    [96msrc/core/database/repositories/__tests__/account.repository.spec.ts[0m:[93m20[0m:[93m32[0m - [91merror[0m[90m TS2352: [0mConversion of type '{ id: string; userId: string; name: string; type: AccountType.CHECKING; balance: number; currency: string; isActive: true; plaidAccountId: string; plaidItemId: string; createdAt: Date; updatedAt: Date; }' to type 'Account' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+      Type '{ id: string; userId: string; name: string; type: AccountType.CHECKING; balance: number; currency: string; isActive: true; plaidAccountId: string; plaidItemId: string; createdAt: Date; updatedAt: Date; }' is missing the following properties from type 'Account': status, source, currentBalance, syncEnabled, and 7 more.
+
+    [7m 20[0m   const mockAccount: Account = {
+    [7m   [0m [91m                               ~[0m
+    [7m 21[0m     id: 'account-id-123',
+    [7m   [0m [91m~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+    [7m...[0m 
+    [7m 31[0m     updatedAt: new Date('2025-09-28T10:00:00Z'),
+    [7m   [0m [91m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+    [7m 32[0m   } as Account;
+    [7m   [0m [91m~~~~~~~~~~~~~~[0m
+    [96msrc/core/database/repositories/__tests__/account.repository.spec.ts[0m:[93m94[0m:[93m45[0m - [91merror[0m[90m TS2345: [0mArgument of type '(Account | { id: string; userId: string; name: string; type: AccountType; status: AccountStatus; source: AccountSource; currentBalance: number; ... 18 more ...; transactions: Transaction[]; })[]' is not assignable to parameter of type 'Account[] | Promise<Account[]>'.
+      Type '(Account | { id: string; userId: string; name: string; type: AccountType; status: AccountStatus; source: AccountSource; currentBalance: number; ... 18 more ...; transactions: Transaction[]; })[]' is not assignable to type 'Account[]'.
+        Type 'Account | { id: string; userId: string; name: string; type: AccountType; status: AccountStatus; source: AccountSource; currentBalance: number; ... 18 more ...; transactions: Transaction[]; }' is not assignable to type 'Account'.
+          Type '{ id: string; userId: string; name: string; type: AccountType; status: AccountStatus; source: AccountSource; currentBalance: number; availableBalance?: number; ... 17 more ...; transactions: Transaction[]; }' is missing the following properties from type 'Account': isPlaidAccount, isManualAccount, needsSync, displayName, maskedAccountNumber
+
+    [7m94[0m       mockRepository.find.mockResolvedValue(accounts);
+    [7m  [0m [91m                                            ~~~~~~~~[0m
+    [96msrc/core/database/repositories/__tests__/account.repository.spec.ts[0m:[93m442[0m:[93m50[0m - [91merror[0m[90m TS2345: [0mArgument of type '{ balance: number; id: string; userId: string; name: string; type: AccountType; status: AccountStatus; source: AccountSource; currentBalance: number; ... 18 more ...; transactions: Transaction[]; }[]' is not assignable to parameter of type 'Account[] | Promise<Account[]>'.
+      Type '{ balance: number; id: string; userId: string; name: string; type: AccountType; status: AccountStatus; source: AccountSource; currentBalance: number; ... 18 more ...; transactions: Transaction[]; }[]' is not assignable to type 'Account[]'.
+        Type '{ balance: number; id: string; userId: string; name: string; type: AccountType; status: AccountStatus; source: AccountSource; currentBalance: number; ... 18 more ...; transactions: Transaction[]; }' is missing the following properties from type 'Account': isPlaidAccount, isManualAccount, needsSync, displayName, maskedAccountNumber
+
+    [7m442[0m       mockQueryBuilder.getMany.mockResolvedValue(lowBalanceAccounts);
+    [7m   [0m [91m                                                 ~~~~~~~~~~~~~~~~~~[0m
+
+Test Suites: 2 failed, 4 passed, 6 total
+Tests:       62 passed, 62 total
 Snapshots:   0 total
-Time:        4.422 s
+Time:        6.994 s
 Ran all test suites matching /src/i.
+ ELIFECYCLE  Command failed with exit code 1.
