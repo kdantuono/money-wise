@@ -124,7 +124,7 @@ export abstract class BaseRepository<T> implements IBaseRepository<T> {
   async delete(id: string): Promise<boolean> {
     try {
       const result = await this.repository.delete(id);
-      const deleted = result.affected && result.affected > 0;
+      const deleted = !!(result.affected && result.affected > 0);
       this.logger.debug(`Deleted entity with ID: ${id} - Success: ${deleted}`);
       return deleted;
     } catch (error) {
