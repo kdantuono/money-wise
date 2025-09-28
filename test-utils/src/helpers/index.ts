@@ -4,7 +4,7 @@
  */
 
 import { render, RenderOptions, screen, waitFor } from '@testing-library/react';
-import { ReactElement, ReactNode } from 'react';
+import React, { ReactElement, ReactNode } from 'react';
 
 // Type utilities for tests
 export type DeepPartial<T> = {
@@ -51,17 +51,17 @@ export const renderWithProviders = (
 ) => {
   const { initialState, theme = 'light', router, ...renderOptions } = options;
 
-  // Create a wrapper with providers - JSX temporarily commented for Prettier compatibility
-  // const Wrapper = ({ children }: { children: ReactNode }) => {
-  //   return (
-  //     <div data-theme={theme} data-testid="test-wrapper">
-  //       {children}
-  //     </div>
-  //   );
-  // };
+  // Create a wrapper with providers
+  const Wrapper = ({ children }: { children: ReactNode }) => {
+    // Add your providers here (Theme, Router, State, etc.)
+    return React.createElement(
+      'div',
+      { 'data-theme': theme, 'data-testid': 'test-wrapper' },
+      children
+    );
+  };
 
-  // Return basic render for now - TODO: implement proper providers
-  return render(ui, renderOptions);
+  return render(ui, { wrapper: Wrapper, ...renderOptions });
 };
 
 // Error boundary for testing error states

@@ -83,10 +83,10 @@ npm run test:web     # Jest + Playwright tests
 npm run test:e2e     # End-to-end tests
 
 # Quality gates (CI/CD validation)
-npm run quality:gates # Comprehensive validation
-npm run quality:kiss  # KISS principle compliance
-npm run quality:srp   # Single Responsibility Principle
-npm run quality:tdd   # Test-driven development validation
+.claude/scripts/quality-check.sh  # Comprehensive validation script
+pnpm lint                         # ESLint validation
+pnpm typecheck                    # TypeScript validation
+pnpm test:coverage                # Test coverage validation
 
 # Database (Docker)
 docker-compose -f docker-compose.dev.yml up postgres redis
@@ -98,7 +98,7 @@ docker-compose -f docker-compose.dev.yml up postgres redis
 - **Shared Types**: Must build first (`cd packages/types && npm run build`)
 - **API Documentation**: Available at `http://localhost:3002/api` (Swagger)
 - **Environment Variables**: Each app has its own `.env` file
-- **Quality Validation**: Run `npm run quality:gates` before committing
+- **Quality Validation**: Run `.claude/scripts/quality-check.sh` before committing
 - **Development Auth**: Frontend supports dev bypass mode with `localStorage.setItem('dev-auth-bypass', 'true')`
 
 ### Database & External Services
@@ -190,3 +190,44 @@ docker-compose -f docker-compose.dev.yml up postgres redis
 
 When working on this codebase, always consider the multi-tenant nature (user-scoped data), maintain consistency with
 established patterns, and ensure type safety across the monorepo boundaries.
+
+## Context Optimization for AI Coding Assistants
+
+### Repository Structure Context
+- **Monorepo Pattern**: Use workspace-aware commands (`pnpm --filter @money-wise/[app]`)
+- **Shared Dependencies**: Always build packages first before apps
+- **Development Flow**: Docker Compose for services, pnpm for package management
+
+### Code Context Clues
+- **Module Boundaries**: Each app has clear domain separation (auth, transactions, budgets, etc.)
+- **Type Safety**: Leverage `@money-wise/types` for cross-app type sharing
+- **Error Patterns**: Use NestJS exceptions in backend, toast notifications in frontend
+- **Testing Patterns**: Jest for unit tests, Playwright for E2E, mock repositories for testing
+
+### AI Assistant Guidelines
+- **File Exploration**: Always check related files in the same module before making changes
+- **Type Imports**: Import from `@money-wise/types` for shared interfaces
+- **Error Handling**: Follow existing error handling patterns in each app
+- **Testing**: Write tests that follow the existing patterns in the codebase
+
+## Common Issues & Troubleshooting
+
+### Development Environment Issues
+- **Build Failures**: Ensure shared packages are built first (`cd packages/types && pnpm build`)
+- **Type Errors**: Run `pnpm typecheck` to validate TypeScript across all packages
+- **Test Failures**: Use `pnpm test:coverage` to run tests with coverage reporting
+- **Docker Issues**: Use `docker-compose -f docker-compose.dev.yml up -d` for services
+
+### Dependency Issues
+- **Installation**: Use `pnpm install --frozen-lockfile` to respect lockfile
+- **Workspace Issues**: Use `pnpm --filter @money-wise/[app] [command]` for app-specific commands
+- **Type Resolution**: Restart TypeScript server if types aren't resolving properly
+
+### Performance Guidelines
+- **Bundle Analysis**: Check `.next` directory size after web builds
+- **Database Queries**: Use TypeORM query builders for complex analytics
+- **Error Boundaries**: Implement proper error handling in React components
+
+<tool_calling>
+You have the capability to call multiple tools in a single response. For maximum efficiency, whenever you need to perform multiple independent operations, ALWAYS invoke all relevant tools simultaneously rather than sequentially. Especially when exploring repository, reading files, viewing directories, validating changes or replying to comments.
+</tool_calling>
