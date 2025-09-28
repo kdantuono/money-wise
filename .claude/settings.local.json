@@ -115,7 +115,12 @@
       "Bash(gh pr diff:*)",
       "Bash(gh pr review:*)",
       "Bash(gh pr merge:*)",
-      "Bash(gh pr ready:*)"
+      "Bash(gh pr ready:*)",
+      "Bash(gh pr checks:*)",
+      "Bash(mkdir:*)",
+      "Bash(pnpm:*)",
+      "Bash(git submodule:*)",
+      "Bash(git rm:*)"
     ],
     "deny": [],
     "ask": []
