@@ -93,7 +93,13 @@
       "Bash(DB_HOST=localhost DB_PORT=5432 DB_USERNAME=postgres DB_PASSWORD=password DB_NAME=moneywise pnpm run db:migrate)",
       "Bash(npx prettier:*)",
       "Bash(pnpm install:*)",
-      "Bash(pnpm audit:*)"
+      "Bash(pnpm audit:*)",
+      "Bash(pnpm add:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npx tsc:*)",
+      "Bash(pnpm list:*)",
+      "Bash(.claude/scripts/init-session.sh:*)",
+      "Bash(git clean:*)"
     ],
     "deny": [],
     "ask": []
