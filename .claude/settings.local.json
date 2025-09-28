@@ -93,7 +93,17 @@
       "Bash(DB_HOST=localhost DB_PORT=5432 DB_USERNAME=postgres DB_PASSWORD=password DB_NAME=moneywise pnpm run db:migrate)",
       "Bash(npx prettier:*)",
       "Bash(pnpm install:*)",
-      "Bash(pnpm audit:*)"
+      "Bash(pnpm audit:*)",
+      "Bash(npx license-checker:*)",
+      "Bash(pnpm --filter @money-wise/backend test)",
+      "Bash(pnpm --filter @money-wise/backend typecheck)",
+      "Bash(__NEW_LINE__ gh issue comment 74 --repo kdantuono/money-wise --body \"🔗 **Parent Task**: #62 (STORY-001)\n**Type**: Gap remediation sub-task\n**Status**: Blocks parent story completion\")",
+      "Bash(__NEW_LINE__ gh issue comment 75 --repo kdantuono/money-wise --body \"🔗 **Parent Task**: #62 (STORY-001)\n**Type**: Gap remediation sub-task  \n**Status**: Blocks parent story completion\")",
+      "Bash(__NEW_LINE__ echo \"✅ Parent references added to first 2 gap tasks\")",
+      "Bash(__NEW_LINE__ echo \"STORY-001 gap tasks: 74, 75, 76, 77, 78\")",
+      "Bash(__NEW_LINE__ echo \"STORY-002 gap tasks: 79, 80, 81\")",
+      "Bash(pnpm add:*)",
+      "Bash(npx tsc:*)"
     ],
     "deny": [],
     "ask": []

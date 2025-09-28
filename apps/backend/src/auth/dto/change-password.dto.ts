@@ -1,18 +1,9 @@
-import { IsEmail, IsString, MinLength, MaxLength, Matches } from 'class-validator';
+import { IsString, MinLength, MaxLength, Matches } from 'class-validator';
 
-export class RegisterDto {
-  @IsEmail()
-  email: string;
-
+export class ChangePasswordDto {
   @IsString()
-  @MinLength(2)
-  @MaxLength(50)
-  firstName: string;
-
-  @IsString()
-  @MinLength(2)
-  @MaxLength(50)
-  lastName: string;
+  @MinLength(8)
+  currentPassword: string;
 
   @IsString()
   @MinLength(12)
@@ -23,5 +14,8 @@ export class RegisterDto {
       message: 'Password must contain at least one uppercase letter, one lowercase letter, one number and one special character',
     },
   )
-  password: string;
+  newPassword: string;
+
+  @IsString()
+  confirmPassword: string;
 }

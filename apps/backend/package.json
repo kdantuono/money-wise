@@ -16,6 +16,11 @@
     "test:coverage": "jest --coverage --passWithNoTests",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand --passWithNoTests",
     "test:e2e": "jest --config ./test/jest-e2e.json --passWithNoTests",
+    "test:db": "jest --config ./src/core/database/tests/jest.database.config.js",
+    "test:db:watch": "jest --config ./src/core/database/tests/jest.database.config.js --watch",
+    "test:db:coverage": "jest --config ./src/core/database/tests/jest.database.config.js --coverage",
+    "test:db:suite": "ts-node src/core/database/tests/run-database-tests.ts",
+    "test:db:performance": "jest --config ./src/core/database/tests/jest.database.config.js --testPathPattern='performance'",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist coverage",
     "db:migrate": "typeorm-ts-node-commonjs migration:run -d src/config/database.ts",
@@ -24,6 +29,7 @@
     "db:seed": "ts-node src/database/seeds/index.ts"
   },
   "dependencies": {
+    "@liaoliaots/nestjs-redis": "^10.0.0",
     "@money-wise/types": "workspace:*",
     "@nestjs/common": "^10.0.0",
     "@nestjs/config": "^3.1.1",
@@ -33,13 +39,18 @@
     "@nestjs/platform-express": "^10.0.0",
     "@nestjs/swagger": "^7.1.16",
     "@nestjs/typeorm": "^10.0.1",
+    "@types/argon2": "^0.15.4",
     "@types/compression": "^1.8.1",
+    "@types/ioredis": "^5.0.0",
+    "@types/uuid": "^11.0.0",
+    "argon2": "^0.44.0",
     "bcryptjs": "^2.4.3",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.0",
     "compression": "^1.7.4",
     "dotenv": "^17.2.2",
     "helmet": "^7.1.0",
+    "ioredis": "^5.8.0",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "passport-local": "^1.0.0",
@@ -47,7 +58,8 @@
     "redis": "^4.6.10",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2",
-    "typeorm": "^0.3.17"
+    "typeorm": "^0.3.17",
+    "uuid": "^13.0.0"
   },
   "devDependencies": {
     "@faker-js/faker": "^10.0.0",
