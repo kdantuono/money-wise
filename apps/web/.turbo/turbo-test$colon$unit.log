@@ -1,5 +1,17 @@
 
-> @money-wise/web@0.1.0 test:unit /home/nemesi/dev/money-wise/apps/web
-> jest --passWithNoTests
+> @money-wise/web@0.1.0 test:unit /home/runner/work/money-wise/money-wise/apps/web
+> vitest run
 
-No tests found, exiting with code 0
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+[7m[1m[36m RUN [39m[22m[27m [36mv1.6.1[39m [90m/home/runner/work/money-wise/money-wise/apps/web[39m
+
+ [32m✓[39m [33m|@money-wise/web|[39m __tests__/components/ui/button.test.tsx [2m ([22m[2m9 tests[22m[2m)[22m[33m 1174[2mms[22m[39m
+ [32m✓[39m [33m|@money-wise/web|[39m __tests__/pages/home.test.tsx [2m ([22m[2m4 tests[22m[2m)[22m[33m 470[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m2 passed[39m[22m[90m (2)[39m
+[2m      Tests [22m [1m[32m13 passed[39m[22m[90m (13)[39m
+[2m   Start at [22m 20:51:58
+[2m   Duration [22m 6.76s[2m (transform 237ms, setup 403ms, collect 1.11s, tests 1.64s, environment 2.09s, prepare 808ms)[22m
+
+[?25h

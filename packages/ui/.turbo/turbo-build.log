@@ -1,22 +1,22 @@
 
-> @money-wise/ui@0.1.0 build /home/nemesi/dev/money-wise/packages/ui
+> @money-wise/ui@0.1.0 build /home/runner/work/money-wise/money-wise/packages/ui
 > tsup
 
-CLI Building entry: src/index.ts
-CLI Using tsconfig: tsconfig.json
-CLI tsup v8.5.0
-CLI Using tsup config: /home/nemesi/dev/money-wise/packages/ui/tsup.config.ts
-CLI Target: es2020
-CLI Cleaning output folder
-CJS Build start
-ESM Build start
-CJS dist/index.js     791.00 B
-CJS dist/index.js.map 187.00 B
-CJS ⚡️ Build success in 18ms
-ESM dist/index.mjs     34.00 B
-ESM dist/index.mjs.map 71.00 B
-ESM ⚡️ Build success in 18ms
-DTS Build start
-DTS ⚡️ Build success in 919ms
-DTS dist/index.d.ts  13.00 B
-DTS dist/index.d.mts 13.00 B
+[34mCLI[39m Building entry: src/index.ts
+[34mCLI[39m Using tsconfig: tsconfig.json
+[34mCLI[39m tsup v8.5.0
+[34mCLI[39m Using tsup config: /home/runner/work/money-wise/money-wise/packages/ui/tsup.config.ts
+[34mCLI[39m Target: es2020
+[34mCLI[39m Cleaning output folder
+[34mCJS[39m Build start
+[34mESM[39m Build start
+[32mCJS[39m [1mdist/index.js     [22m[32m791.00 B[39m
+[32mCJS[39m [1mdist/index.js.map [22m[32m187.00 B[39m
+[32mCJS[39m ⚡️ Build success in 95ms
+[32mESM[39m [1mdist/index.mjs     [22m[32m34.00 B[39m
+[32mESM[39m [1mdist/index.mjs.map [22m[32m71.00 B[39m
+[32mESM[39m ⚡️ Build success in 99ms
+[34mDTS[39m Build start
+[32mDTS[39m ⚡️ Build success in 2882ms
+[32mDTS[39m [1mdist/index.d.ts  [22m[32m13.00 B[39m
+[32mDTS[39m [1mdist/index.d.mts [22m[32m13.00 B[39m
