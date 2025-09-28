@@ -87,7 +87,7 @@ export class AccountRepository extends BaseRepository<Account> implements IAccou
   async updateBalance(accountId: string, newBalance: number): Promise<boolean> {
     try {
       const result = await this.repository.update(accountId, { balance: newBalance });
-      return result.affected && result.affected > 0;
+      return !!(result.affected && result.affected > 0);
     } catch (error) {
       this.logger.error(`Failed to update account balance: ${error.message}`, error.stack);
       throw new Error(`Failed to update account balance: ${error.message}`);
@@ -103,7 +103,7 @@ export class AccountRepository extends BaseRepository<Account> implements IAccou
         .where('id = :id', { id: accountId })
         .execute();
 
-      return result.affected && result.affected > 0;
+      return !!(result.affected && result.affected > 0);
     } catch (error) {
       this.logger.error(`Failed to increment account balance: ${error.message}`, error.stack);
       throw new Error(`Failed to increment account balance: ${error.message}`);
@@ -119,7 +119,7 @@ export class AccountRepository extends BaseRepository<Account> implements IAccou
         .where('id = :id', { id: accountId })
         .execute();
 
-      return result.affected && result.affected > 0;
+      return !!(result.affected && result.affected > 0);
     } catch (error) {
       this.logger.error(`Failed to decrement account balance: ${error.message}`, error.stack);
       throw new Error(`Failed to decrement account balance: ${error.message}`);
@@ -172,7 +172,7 @@ export class AccountRepository extends BaseRepository<Account> implements IAccou
   async deactivateAccount(accountId: string): Promise<boolean> {
     try {
       const result = await this.repository.update(accountId, { isActive: false });
-      return result.affected && result.affected > 0;
+      return !!(result.affected && result.affected > 0);
     } catch (error) {
       this.logger.error(`Failed to deactivate account: ${error.message}`, error.stack);
       throw new Error(`Failed to deactivate account: ${error.message}`);
@@ -182,7 +182,7 @@ export class AccountRepository extends BaseRepository<Account> implements IAccou
   async reactivateAccount(accountId: string): Promise<boolean> {
     try {
       const result = await this.repository.update(accountId, { isActive: true });
-      return result.affected && result.affected > 0;
+      return !!(result.affected && result.affected > 0);
     } catch (error) {
       this.logger.error(`Failed to reactivate account: ${error.message}`, error.stack);
       throw new Error(`Failed to reactivate account: ${error.message}`);
@@ -211,7 +211,7 @@ export class AccountRepository extends BaseRepository<Account> implements IAccou
   async updateLastSyncedAt(accountId: string): Promise<boolean> {
     try {
       const result = await this.repository.update(accountId, { updatedAt: new Date() });
-      return result.affected && result.affected > 0;
+      return !!(result.affected && result.affected > 0);
     } catch (error) {
       this.logger.error(`Failed to update sync timestamp: ${error.message}`, error.stack);
       throw new Error(`Failed to update sync timestamp: ${error.message}`);
