@@ -3,15 +3,10 @@ import { ConfigService } from '@nestjs/config';
 import {
   CloudWatchClient,
   PutMetricDataCommand,
-  PutMetricDataCommandInput,
   MetricDatum,
   StandardUnit,
-  PutAnomalyDetectorCommand,
-  PutAnomalyDetectorCommandInput,
   PutMetricAlarmCommand,
   PutMetricAlarmCommandInput,
-  ComparisonOperator,
-  Statistic,
 } from '@aws-sdk/client-cloudwatch';
 import {
   CloudWatchLogsClient,
@@ -382,7 +377,7 @@ export class CloudWatchService implements OnModuleInit {
 
     for (const alarmConfig of enabledAlarms) {
       try {
-        const { enabled, environment: envs, ...alarmParams } = alarmConfig;
+        const { enabled: _enabled, environment: _envs, ...alarmParams } = alarmConfig;
 
         const alarm: PutMetricAlarmCommandInput = {
           ...alarmParams,

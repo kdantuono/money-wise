@@ -21,7 +21,7 @@ export class MonitoringInterceptor implements NestInterceptor {
     const response = context.switchToHttp().getResponse<Response>();
     const startTime = Date.now();
 
-    const { method, url, headers } = request;
+    const { method, url } = request;
 
     // Extract user ID from request if available
     const userId = this.extractUserId(request);

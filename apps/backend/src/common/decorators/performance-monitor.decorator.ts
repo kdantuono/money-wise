@@ -41,14 +41,13 @@ export async function measurePerformance<T>(
     {
       name: options.name || name,
       op: options.op || 'function',
-      description: options.description,
     },
     async (span) => {
       try {
         // Set tags if provided
         if (options.tags) {
           Object.entries(options.tags).forEach(([key, value]) => {
-            span.setTag(key, value);
+            span.setAttributes({ [key]: value });
           });
         }
 
@@ -56,21 +55,24 @@ export async function measurePerformance<T>(
 
         const duration = Date.now() - startTime;
 
-        // Set performance metrics
-        span.setMeasurement('duration', duration, 'millisecond');
+        // Set performance metrics as attributes
+        span.setAttributes({
+          'performance.duration': duration,
+          'performance.duration_ms': duration
+        });
 
         if (startMemory && options.measureMemory) {
           const endMemory = process.memoryUsage();
           const memoryDelta = endMemory.heapUsed - startMemory.heapUsed;
-          span.setMeasurement('memory_delta', memoryDelta, 'byte');
+          span.setAttributes({ 'performance.memory_delta': memoryDelta });
         }
 
         // Check performance thresholds
         if (options.warningThreshold && duration > options.warningThreshold) {
-          span.setTag('performance_warning', 'true');
+          span.setAttributes({ 'performance.warning': true });
 
           if (options.errorThreshold && duration > options.errorThreshold) {
-            span.setTag('performance_error', 'true');
+            span.setAttributes({ 'performance.error': true });
             Sentry.captureMessage(
               `Performance threshold exceeded: ${name} took ${duration}ms`,
               'warning'
@@ -78,10 +80,10 @@ export async function measurePerformance<T>(
           }
         }
 
-        span.setStatus('ok');
+        span.setStatus({ code: 1 }); // OK status
         return result;
       } catch (error) {
-        span.setStatus('internal_error');
+        span.setStatus({ code: 2 }); // ERROR status
         span.recordException(error as Error);
         throw error;
       }
@@ -109,10 +111,12 @@ export class PerformanceMetrics {
     const duration = Date.now() - startTime;
     this.measurements.delete(key);
 
-    // Record measurement with Sentry
-    Sentry.metrics.gauge('custom.duration', duration, {
-      unit: 'millisecond',
-      tags: {
+    // Record measurement as breadcrumb for now
+    Sentry.addBreadcrumb({
+      message: `Performance measurement: ${key}`,
+      level: 'info',
+      data: {
+        duration,
         measurement_key: key,
         ...tags,
       },
@@ -122,18 +126,34 @@ export class PerformanceMetrics {
   }
 
   static recordGauge(name: string, value: number, tags?: Record<string, string>): void {
-    Sentry.metrics.gauge(name, value, { tags });
+    Sentry.addBreadcrumb({
+      message: `Gauge metric: ${name}`,
+      level: 'info',
+      data: { value, ...tags },
+    });
   }
 
   static recordCounter(name: string, value: number = 1, tags?: Record<string, string>): void {
-    Sentry.metrics.increment(name, value, { tags });
+    Sentry.addBreadcrumb({
+      message: `Counter metric: ${name}`,
+      level: 'info',
+      data: { value, ...tags },
+    });
   }
 
   static recordSet(name: string, value: string, tags?: Record<string, string>): void {
-    Sentry.metrics.set(name, value, { tags });
+    Sentry.addBreadcrumb({
+      message: `Set metric: ${name}`,
+      level: 'info',
+      data: { value, ...tags },
+    });
   }
 
   static recordDistribution(name: string, value: number, tags?: Record<string, string>): void {
-    Sentry.metrics.distribution(name, value, { tags });
+    Sentry.addBreadcrumb({
+      message: `Distribution metric: ${name}`,
+      level: 'info',
+      data: { value, ...tags },
+    });
   }
 }
