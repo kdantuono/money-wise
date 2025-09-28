@@ -74,7 +74,7 @@ export class UserRepository extends BaseRepository<User> implements IUserReposit
         emailVerified: true,
         emailVerificationToken: null,
       });
-      return result.affected && result.affected > 0;
+      return !!(result.affected && result.affected > 0);
     } catch (error) {
       this.logger.error(`Failed to mark email as verified: ${error.message}`, error.stack);
       throw new Error(`Failed to mark email as verified: ${error.message}`);
@@ -84,7 +84,7 @@ export class UserRepository extends BaseRepository<User> implements IUserReposit
   async updatePasswordHash(userId: string, passwordHash: string): Promise<boolean> {
     try {
       const result = await this.repository.update(userId, { passwordHash });
-      return result.affected && result.affected > 0;
+      return !!(result.affected && result.affected > 0);
     } catch (error) {
       this.logger.error(`Failed to update password hash: ${error.message}`, error.stack);
       throw new Error(`Failed to update password hash: ${error.message}`);
@@ -97,7 +97,7 @@ export class UserRepository extends BaseRepository<User> implements IUserReposit
         passwordResetToken: token,
         passwordResetExpires: expiresAt,
       });
-      return result.affected && result.affected > 0;
+      return !!(result.affected && result.affected > 0);
     } catch (error) {
       this.logger.error(`Failed to set password reset token: ${error.message}`, error.stack);
       throw new Error(`Failed to set password reset token: ${error.message}`);
@@ -110,7 +110,7 @@ export class UserRepository extends BaseRepository<User> implements IUserReposit
         passwordResetToken: null,
         passwordResetExpires: null,
       });
-      return result.affected && result.affected > 0;
+      return !!(result.affected && result.affected > 0);
     } catch (error) {
       this.logger.error(`Failed to clear password reset token: ${error.message}`, error.stack);
       throw new Error(`Failed to clear password reset token: ${error.message}`);
