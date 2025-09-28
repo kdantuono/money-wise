@@ -44,7 +44,7 @@ export class UserRepository extends BaseRepository<User> implements IUserReposit
     }
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
   async findByEmailVerificationToken(_token: string): Promise<User | null> {
     try {
       // Note: emailVerificationToken property doesn't exist in current User entity
@@ -57,7 +57,7 @@ export class UserRepository extends BaseRepository<User> implements IUserReposit
     }
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
   async findByPasswordResetToken(_token: string): Promise<User | null> {
     try {
       // Note: passwordResetToken property doesn't exist in current User entity
@@ -92,7 +92,7 @@ export class UserRepository extends BaseRepository<User> implements IUserReposit
     }
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
   async setPasswordResetToken(_userId: string, _token: string, _expiresAt: Date): Promise<boolean> {
     try {
       // Note: passwordResetToken and passwordResetExpires not implemented in current User entity
@@ -105,7 +105,7 @@ export class UserRepository extends BaseRepository<User> implements IUserReposit
     }
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
   async clearPasswordResetToken(_userId: string): Promise<boolean> {
     try {
       // Note: passwordResetToken and passwordResetExpires not implemented in current User entity
