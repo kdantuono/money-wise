@@ -48,7 +48,7 @@ BEGIN
         t.table_name::TEXT,
         EXISTS(SELECT 1 FROM timescaledb_information.hypertables h WHERE h.hypertable_name = t.table_name)::BOOLEAN as is_hypertable,
         EXISTS(SELECT 1 FROM timescaledb_information.compression_settings c WHERE c.hypertable_name = t.table_name)::BOOLEAN as compression_enabled,
-        EXISTS(SELECT 1 FROM timescaledb_information.policy_stats p WHERE p.hypertable = t.table_name AND p.policy_name LIKE '%retention%')::BOOLEAN as retention_enabled
+        EXISTS(SELECT 1 FROM timescaledb_information.jobs j WHERE j.hypertable_name = t.table_name AND j.proc_name LIKE '%retention%')::BOOLEAN as retention_enabled
     FROM information_schema.tables t
     WHERE t.table_schema = 'public' AND t.table_name = 'transactions';
 END;

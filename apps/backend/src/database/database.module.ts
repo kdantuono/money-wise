@@ -3,9 +3,11 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { User, Account, Category, Transaction } from '../core/database/entities';
 import { TimescaleDBService } from './timescaledb.service';
+import { timescaleDbConfig } from '../config/timescaledb.config';
 
 @Module({
   imports: [
+    ConfigModule.forFeature(timescaleDbConfig),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({
