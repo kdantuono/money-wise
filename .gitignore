@@ -107,6 +107,8 @@ lerna-debug.log*
 .cache
 .parcel-cache
 .turbo/
+**/.turbo/
+*.tsbuildinfo
 
 # Database files
 *.db
