@@ -126,13 +126,96 @@ pnpm docker:down      # Stop development services
 pnpm docker:logs      # View service logs
 ```
 
+## 🔐 Authentication Setup
+
+MoneyWise uses JWT-based authentication with secure password hashing and token refresh capabilities.
+
+### **Quick Authentication Setup**
+
+1. **Configure JWT Secrets** (Required):
+```bash
+# Generate secure secrets
+openssl rand -hex 32  # Copy output for JWT_ACCESS_SECRET
+openssl rand -hex 32  # Copy output for JWT_REFRESH_SECRET
+
+# Add to your .env file
+JWT_ACCESS_SECRET=your_generated_access_secret_here
+JWT_REFRESH_SECRET=your_generated_refresh_secret_here
+JWT_ACCESS_EXPIRES_IN=15m
+JWT_REFRESH_EXPIRES_IN=7d
+```
+
+2. **Verify Database Connection**:
+```bash
+# Ensure PostgreSQL is running
+pnpm docker:dev
+
+# Run database migrations
+pnpm db:migrate
+```
+
+3. **Test Authentication**:
+```bash
+# Start the backend
+pnpm dev:backend
+
+# Test registration (in another terminal)
+curl -X POST http://localhost:3001/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "test@example.com",
+    "password": "TestPassword123!",
+    "firstName": "Test",
+    "lastName": "User"
+  }'
+```
+
+### **Authentication Features**
+
+- ✅ **Secure Registration**: bcrypt password hashing with 12 salt rounds
+- ✅ **JWT Authentication**: Access tokens (15min) + Refresh tokens (7d)
+- ✅ **Input Validation**: Comprehensive password complexity requirements
+- ✅ **Account Management**: User profiles with status tracking
+- ✅ **API Documentation**: Interactive Swagger UI at `/api`
+- 🚧 **Rate Limiting**: Planned for production security
+- 🚧 **Email Verification**: Database prepared, implementation planned
+
+### **Authentication Documentation**
+
+- **[API Reference](./docs/api/authentication.md)** - Complete API documentation
+- **[Setup Guide](./docs/development/authentication-setup.md)** - Detailed configuration steps
+- **[Security Guide](./docs/security/authentication-security.md)** - Security best practices
+- **[Troubleshooting](./docs/development/authentication-troubleshooting.md)** - Common issues and solutions
+- **[Flow Diagrams](./docs/api/authentication-flows.md)** - Visual authentication flows
+
+### **Password Requirements**
+
+- Minimum 8 characters
+- At least one uppercase letter (A-Z)
+- At least one lowercase letter (a-z)
+- At least one number (0-9)
+- At least one special character (@$!%*?&)
+
+### **Development API Access**
+
+- **Swagger UI**: http://localhost:3001/api (interactive API testing)
+- **Health Check**: http://localhost:3001/api/health
+- **Auth Endpoints**:
+  - `POST /auth/register` - User registration
+  - `POST /auth/login` - User login
+  - `POST /auth/refresh` - Token refresh
+  - `GET /auth/profile` - Get user profile (protected)
+  - `POST /auth/logout` - User logout (protected)
+
 ## 🎯 Features
 
 ### **Core Features (MVP)**
-- [ ] **User Authentication & Authorization**
-  - User registration and login
-  - JWT-based authentication
-  - Profile management
+- ✅ **User Authentication & Authorization**
+  - ✅ User registration and login
+  - ✅ JWT-based authentication
+  - ✅ Profile management
+  - ✅ Password security with bcrypt
+  - ✅ Token refresh mechanism
 
 - [ ] **Transaction Management**
   - Manual transaction entry
