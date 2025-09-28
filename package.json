@@ -31,6 +31,10 @@
     "typecheck": "turbo run typecheck",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
     "docs:validate": "node scripts/docs-validate.js",
+    "sentry:test": "tsx scripts/test-sentry-integration.ts",
+    "sentry:release": "sentry-cli releases new $npm_package_version",
+    "sentry:sourcemaps": "sentry-cli sourcemaps upload --release=$npm_package_version dist",
+    "sentry:finalize": "sentry-cli releases finalize $npm_package_version",
     "clean": "pnpm --recursive clean && rm -rf node_modules",
     "db:migrate": "pnpm --filter @money-wise/backend db:migrate",
     "db:seed": "pnpm --filter @money-wise/backend db:seed",
@@ -44,6 +48,7 @@
     "@commitlint/cli": "^18.4.3",
     "@commitlint/config-conventional": "^18.4.3",
     "@types/jest": "^29.5.8",
+    "axios": "^1.6.2",
     "concurrently": "^8.2.2",
     "husky": "^8.0.3",
     "identity-obj-proxy": "^3.0.0",
@@ -54,6 +59,7 @@
     "lint-staged": "^15.2.0",
     "prettier": "^3.1.1",
     "ts-jest": "^29.1.1",
+    "tsx": "^4.20.6",
     "turbo": "^1.11.2"
   },
   "pnpm": {

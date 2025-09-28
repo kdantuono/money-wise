@@ -106,7 +106,8 @@
       "Read(//home/nemesi/**)",
       "Bash(xargs cat:*)",
       "Bash(git restore:*)",
-      "Bash(./.claude/scripts/init-session.sh:*)"
+      "Bash(./.claude/scripts/init-session.sh:*)",
+      "Bash(pnpm sentry:test:*)"
     ],
     "deny": [],
     "ask": []
