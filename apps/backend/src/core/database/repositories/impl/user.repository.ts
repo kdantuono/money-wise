@@ -5,7 +5,7 @@
 
 import { Injectable } from '@nestjs/common';
 import { DataSource } from 'typeorm';
-import { User } from '../../../../entities/user.entity';
+import { User } from '../../entities';
 import { IUserRepository } from '../interfaces/user.repository.interface';
 import { BaseRepository } from './base.repository';
 
@@ -44,24 +44,26 @@ export class UserRepository extends BaseRepository<User> implements IUserReposit
     }
   }
 
-  async findByEmailVerificationToken(token: string): Promise<User | null> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async findByEmailVerificationToken(_token: string): Promise<User | null> {
     try {
-      const user = await this.repository.findOne({
-        where: { emailVerificationToken: token },
-      });
-      return user || null;
+      // Note: emailVerificationToken property doesn't exist in current User entity
+      // This method needs to be updated when token-based verification is implemented
+      this.logger.warn('emailVerificationToken not implemented in current User entity');
+      return null;
     } catch (error) {
       this.logger.error(`Failed to find user by verification token: ${error.message}`, error.stack);
       throw new Error(`Failed to find user by verification token: ${error.message}`);
     }
   }
 
-  async findByPasswordResetToken(token: string): Promise<User | null> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async findByPasswordResetToken(_token: string): Promise<User | null> {
     try {
-      const user = await this.repository.findOne({
-        where: { passwordResetToken: token },
-      });
-      return user || null;
+      // Note: passwordResetToken property doesn't exist in current User entity
+      // This method needs to be updated when password reset tokens are implemented
+      this.logger.warn('passwordResetToken not implemented in current User entity');
+      return null;
     } catch (error) {
       this.logger.error(`Failed to find user by reset token: ${error.message}`, error.stack);
       throw new Error(`Failed to find user by reset token: ${error.message}`);
@@ -71,8 +73,7 @@ export class UserRepository extends BaseRepository<User> implements IUserReposit
   async markEmailAsVerified(userId: string): Promise<boolean> {
     try {
       const result = await this.repository.update(userId, {
-        emailVerified: true,
-        emailVerificationToken: null,
+        emailVerifiedAt: new Date(),
       });
       return !!(result.affected && result.affected > 0);
     } catch (error) {
@@ -91,26 +92,26 @@ export class UserRepository extends BaseRepository<User> implements IUserReposit
     }
   }
 
-  async setPasswordResetToken(userId: string, token: string, expiresAt: Date): Promise<boolean> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async setPasswordResetToken(_userId: string, _token: string, _expiresAt: Date): Promise<boolean> {
     try {
-      const result = await this.repository.update(userId, {
-        passwordResetToken: token,
-        passwordResetExpires: expiresAt,
-      });
-      return !!(result.affected && result.affected > 0);
+      // Note: passwordResetToken and passwordResetExpires not implemented in current User entity
+      // This method needs to be updated when password reset is implemented
+      this.logger.warn('Password reset tokens not implemented in current User entity');
+      return false;
     } catch (error) {
       this.logger.error(`Failed to set password reset token: ${error.message}`, error.stack);
       throw new Error(`Failed to set password reset token: ${error.message}`);
     }
   }
 
-  async clearPasswordResetToken(userId: string): Promise<boolean> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async clearPasswordResetToken(_userId: string): Promise<boolean> {
     try {
-      const result = await this.repository.update(userId, {
-        passwordResetToken: null,
-        passwordResetExpires: null,
-      });
-      return !!(result.affected && result.affected > 0);
+      // Note: passwordResetToken and passwordResetExpires not implemented in current User entity
+      // This method needs to be updated when password reset is implemented
+      this.logger.warn('Password reset tokens not implemented in current User entity');
+      return false;
     } catch (error) {
       this.logger.error(`Failed to clear password reset token: ${error.message}`, error.stack);
       throw new Error(`Failed to clear password reset token: ${error.message}`);
@@ -157,15 +158,14 @@ export class UserRepository extends BaseRepository<User> implements IUserReposit
 
       const [total, verified, recentlyCreated] = await Promise.all([
         this.repository.count(),
-        this.repository.count({ where: { emailVerified: true } }),
-        this.repository.count({
-          where: {
-            createdAt: this.repository.manager.createQueryBuilder()
-              .select()
-              .where('createdAt >= :date', { date: sevenDaysAgo })
-              .getQuery() as any,
-          },
-        }),
+        this.repository
+          .createQueryBuilder('user')
+          .where('user.emailVerifiedAt IS NOT NULL')
+          .getCount(),
+        this.repository
+          .createQueryBuilder('user')
+          .where('user.createdAt >= :date', { date: sevenDaysAgo })
+          .getCount(),
       ]);
 
       return {

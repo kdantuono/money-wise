@@ -8,7 +8,7 @@ import { Test } from '@nestjs/testing';
 import { DataSource, Repository, SelectQueryBuilder } from 'typeorm';
 import { Logger } from '@nestjs/common';
 import { AccountRepository } from '../impl/account.repository';
-import { Account, AccountType } from '../../../../entities/account.entity';
+import { Account, AccountType } from '../../entities';
 
 describe('AccountRepository', () => {
   let accountRepository: AccountRepository;

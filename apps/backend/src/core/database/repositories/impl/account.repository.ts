@@ -5,7 +5,7 @@
 
 import { Injectable } from '@nestjs/common';
 import { DataSource } from 'typeorm';
-import { Account, AccountType } from '../../../../entities/account.entity';
+import { Account, AccountType } from '../../entities';
 import { IAccountRepository } from '../interfaces/account.repository.interface';
 import { BaseRepository } from './base.repository';
 
@@ -86,7 +86,7 @@ export class AccountRepository extends BaseRepository<Account> implements IAccou
 
   async updateBalance(accountId: string, newBalance: number): Promise<boolean> {
     try {
-      const result = await this.repository.update(accountId, { balance: newBalance });
+      const result = await this.repository.update(accountId, { currentBalance: newBalance });
       return !!(result.affected && result.affected > 0);
     } catch (error) {
       this.logger.error(`Failed to update account balance: ${error.message}`, error.stack);
@@ -99,7 +99,7 @@ export class AccountRepository extends BaseRepository<Account> implements IAccou
       const result = await this.repository
         .createQueryBuilder()
         .update(Account)
-        .set({ balance: () => `balance + ${amount}` })
+        .set({ currentBalance: () => `currentBalance + ${amount}` })
         .where('id = :id', { id: accountId })
         .execute();
 
@@ -115,7 +115,7 @@ export class AccountRepository extends BaseRepository<Account> implements IAccou
       const result = await this.repository
         .createQueryBuilder()
         .update(Account)
-        .set({ balance: () => `balance - ${amount}` })
+        .set({ currentBalance: () => `currentBalance - ${amount}` })
         .where('id = :id', { id: accountId })
         .execute();
 
@@ -130,7 +130,7 @@ export class AccountRepository extends BaseRepository<Account> implements IAccou
     try {
       const result = await this.repository
         .createQueryBuilder('account')
-        .select('SUM(account.balance)', 'total')
+        .select('SUM(account.currentBalance)', 'total')
         .where('account.userId = :userId', { userId })
         .andWhere('account.isActive = :isActive', { isActive: true })
         .getRawOne();
@@ -151,7 +151,7 @@ export class AccountRepository extends BaseRepository<Account> implements IAccou
       const results = await this.repository
         .createQueryBuilder('account')
         .select('account.type', 'accountType')
-        .addSelect('SUM(account.balance)', 'totalBalance')
+        .addSelect('SUM(account.currentBalance)', 'totalBalance')
         .addSelect('COUNT(account.id)', 'accountCount')
         .where('account.userId = :userId', { userId })
         .andWhere('account.isActive = :isActive', { isActive: true })
@@ -259,14 +259,14 @@ export class AccountRepository extends BaseRepository<Account> implements IAccou
     try {
       const queryBuilder = this.repository
         .createQueryBuilder('account')
-        .where('account.balance < :threshold', { threshold })
+        .where('account.currentBalance < :threshold', { threshold })
         .andWhere('account.isActive = :isActive', { isActive: true });
 
       if (userId) {
         queryBuilder.andWhere('account.userId = :userId', { userId });
       }
 
-      const accounts = await queryBuilder.orderBy('account.balance', 'ASC').getMany();
+      const accounts = await queryBuilder.orderBy('account.currentBalance', 'ASC').getMany();
       return accounts;
     } catch (error) {
       this.logger.error(`Failed to find low balance accounts: ${error.message}`, error.stack);
@@ -296,7 +296,7 @@ export class AccountRepository extends BaseRepository<Account> implements IAccou
           };
         }
         acc[institution].accounts.push(account);
-        acc[institution].totalBalance += parseFloat(account.balance.toString());
+        acc[institution].totalBalance += parseFloat(account.currentBalance.toString());
         return acc;
       }, {} as Record<string, { institution: string; accounts: Account[]; totalBalance: number }>);
 

@@ -7,10 +7,10 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 // Import entities
-import { User } from '../../../entities/user.entity';
-import { Account } from '../../../entities/account.entity';
-import { Category } from '../../../entities/category.entity';
-import { Transaction } from '../../../entities/transaction.entity';
+import { User } from '../entities';
+import { Account } from '../entities';
+import { Category } from '../entities';
+import { Transaction } from '../entities';
 
 // Import repository implementations
 import { UserRepository } from './impl/user.repository';
