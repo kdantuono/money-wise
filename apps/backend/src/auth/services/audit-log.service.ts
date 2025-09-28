@@ -389,7 +389,6 @@ export class AuditLogService {
     return request.headers['x-session-id'] as string || undefined;
   }
 
-  // eslint-disable-next-line no-unused-vars
   private async getLocationFromIp(_ip: string): Promise<{ country?: string; city?: string; region?: string } | undefined> {
     // In production, you would use a GeoIP service
     // For now, return undefined

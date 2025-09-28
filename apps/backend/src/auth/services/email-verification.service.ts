@@ -341,7 +341,6 @@ export class EmailVerificationService {
   }
 
   private sanitizeUser(user: User): Partial<User> {
-    // eslint-disable-next-line no-unused-vars
     const { passwordHash: _passwordHash, ...sanitizedUser } = user;
     return sanitizedUser;
   }

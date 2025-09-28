@@ -66,7 +66,6 @@ export class AuthController {
   async register(@Body() registerDto: RegisterDto, @Req() request: Request): Promise<AuthResponseDto> {
     const result = await this.authSecurityService.register(registerDto, request);
     // Remove verification token from response (used internally for email sending)
-    // eslint-disable-next-line no-unused-vars
     const { verificationToken: _verificationToken, ...response } = result;
     return response;
   }
