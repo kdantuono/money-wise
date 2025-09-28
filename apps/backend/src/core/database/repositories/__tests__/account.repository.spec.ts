@@ -4,7 +4,7 @@
  * Focus on critical methods: balance operations, Plaid integration, account management
  */
 
-import { Test, TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
 import { DataSource, Repository, SelectQueryBuilder } from 'typeorm';
 import { Logger } from '@nestjs/common';
 import { AccountRepository } from '../impl/account.repository';
@@ -70,7 +70,7 @@ describe('AccountRepository', () => {
       log: jest.fn(),
     } as any;
 
-    const module: TestingModule = await Test.createTestingModule({
+    await Test.createTestingModule({
       providers: [
         {
           provide: DataSource,

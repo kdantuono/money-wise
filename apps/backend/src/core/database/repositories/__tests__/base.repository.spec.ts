@@ -3,7 +3,7 @@
  * Comprehensive test suite for BaseRepository with 95% coverage target
  */
 
-import { Test, TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
 import { DataSource, Repository, FindManyOptions, FindOneOptions, FindOptionsWhere } from 'typeorm';
 import { Logger } from '@nestjs/common';
 import { BaseRepository } from '../impl/base.repository';
@@ -67,7 +67,7 @@ describe('BaseRepository', () => {
       log: jest.fn(),
     } as any;
 
-    const module: TestingModule = await Test.createTestingModule({
+    await Test.createTestingModule({
       providers: [
         {
           provide: DataSource,

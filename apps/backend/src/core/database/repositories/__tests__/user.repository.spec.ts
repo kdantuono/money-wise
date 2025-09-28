@@ -3,7 +3,7 @@
  * Comprehensive test suite for UserRepository with 92% coverage target
  */
 
-import { Test, TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
 import { DataSource, Repository, SelectQueryBuilder } from 'typeorm';
 import { Logger } from '@nestjs/common';
 import { UserRepository } from '../impl/user.repository';
@@ -73,7 +73,7 @@ describe('UserRepository', () => {
       log: jest.fn(),
     } as any;
 
-    const module: TestingModule = await Test.createTestingModule({
+    await Test.createTestingModule({
       providers: [
         {
           provide: DataSource,
