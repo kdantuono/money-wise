@@ -211,7 +211,11 @@ export class TimescaleDBService implements OnModuleInit {
     }
   }
 
-  async getTimescaleDBInfo(): Promise<any> {
+  async getTimescaleDBInfo(): Promise<{
+    extensions: Array<{ name: string; default_version: string; installed_version: string }>;
+    hypertables: Array<Record<string, any>>;
+    policies: Array<Record<string, any>>;
+  }> {
     try {
       const [versionInfo, hypertables, policies] = await Promise.all([
         this.dataSource.query(`
