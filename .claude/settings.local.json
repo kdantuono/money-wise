@@ -99,7 +99,14 @@
       "Bash(npx tsc:*)",
       "Bash(pnpm list:*)",
       "Bash(.claude/scripts/init-session.sh:*)",
-      "Bash(git clean:*)"
+      "Bash(git clean:*)",
+      "Bash(pnpm test:unit:*)",
+      "Bash(npx jest:*)",
+      "Read(//home/nemesi/dev/**)",
+      "Read(//home/nemesi/**)",
+      "Bash(xargs cat:*)",
+      "Bash(git restore:*)",
+      "Bash(./.claude/scripts/init-session.sh:*)"
     ],
     "deny": [],
     "ask": []

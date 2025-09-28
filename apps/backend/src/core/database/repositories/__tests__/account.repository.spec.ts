@@ -1,14 +1,14 @@
 /**
  * AccountRepository Unit Tests
  * Comprehensive test suite for AccountRepository with 90% coverage target
- * Focus on critical methods: balance operations, Plaid integration, account management
+ * Focus on critical methods: currentBalance operations, Plaid integration, account management
  */
 
 import { Test } from '@nestjs/testing';
 import { DataSource, Repository, SelectQueryBuilder } from 'typeorm';
 import { Logger } from '@nestjs/common';
 import { AccountRepository } from '../impl/account.repository';
-import { Account, AccountType } from '../../entities';
+import { Account, AccountType, AccountStatus, AccountSource } from '../../entities';
 
 describe('AccountRepository', () => {
   let accountRepository: AccountRepository;
@@ -17,19 +17,32 @@ describe('AccountRepository', () => {
   let mockQueryBuilder: jest.Mocked<SelectQueryBuilder<Account>>;
   let mockLogger: jest.Mocked<Logger>;
 
-  const mockAccount: Account = {
+  const createMockAccount = (overrides: Partial<Account> = {}): Account => ({
     id: 'account-id-123',
     userId: 'user-id-123',
     name: 'Test Checking Account',
     type: AccountType.CHECKING,
-    balance: 1000.50,
+    status: AccountStatus.ACTIVE,
+    source: AccountSource.PLAID,
+    currentBalance: 1000.50,
     currency: 'USD',
     isActive: true,
+    syncEnabled: true,
     plaidAccountId: 'plaid-account-123',
     plaidItemId: 'plaid-item-123',
     createdAt: new Date('2025-09-28T10:00:00Z'),
     updatedAt: new Date('2025-09-28T10:00:00Z'),
-  } as Account;
+    user: undefined,
+    transactions: [],
+    get isPlaidAccount() { return this.source === AccountSource.PLAID; },
+    get isManualAccount() { return this.source === AccountSource.MANUAL; },
+    get needsSync() { return this.syncEnabled && this.isPlaidAccount && (!this.lastSyncAt || (Date.now() - this.lastSyncAt.getTime()) / (1000 * 60 * 60) >= 1); },
+    get displayName() { return this.institutionName ? `${this.institutionName} - ${this.name}` : this.name; },
+    get maskedAccountNumber() { return this.accountNumber ? `****${this.accountNumber.slice(-4)}` : ''; },
+    ...overrides,
+  } as Account);
+
+  const mockAccount = createMockAccount();
 
   beforeEach(async () => {
     // Create mock query builder with update methods
@@ -90,7 +103,7 @@ describe('AccountRepository', () => {
 
   describe('findByUserId', () => {
     it('should find accounts by user ID', async () => {
-      const accounts = [mockAccount, { ...mockAccount, id: 'account-id-456' }];
+      const accounts = [mockAccount, createMockAccount({ id: 'account-id-456' })];
       mockRepository.find.mockResolvedValue(accounts);
 
       const result = await accountRepository.findByUserId('user-id-123');
@@ -137,13 +150,13 @@ describe('AccountRepository', () => {
   });
 
   describe('updateBalance', () => {
-    it('should update account balance successfully', async () => {
+    it('should update account currentBalance successfully', async () => {
       const updateResult = { affected: 1, raw: {} };
       mockRepository.update.mockResolvedValue(updateResult as any);
 
       const result = await accountRepository.updateBalance('account-id-123', 1500.75);
 
-      expect(mockRepository.update).toHaveBeenCalledWith('account-id-123', { balance: 1500.75 });
+      expect(mockRepository.update).toHaveBeenCalledWith('account-id-123', { currentBalance: 1500.75 });
       expect(result).toBe(true);
     });
 
@@ -161,13 +174,13 @@ describe('AccountRepository', () => {
       mockRepository.update.mockRejectedValue(error);
 
       await expect(accountRepository.updateBalance('account-id-123', 1000)).rejects.toThrow(
-        'Failed to update account balance: Balance update failed'
+        'Failed to update account currentBalance: Balance update failed'
       );
     });
   });
 
   describe('incrementBalance', () => {
-    it('should increment account balance successfully', async () => {
+    it('should increment account currentBalance successfully', async () => {
       const executeResult = { affected: 1, raw: {} };
       mockQueryBuilder.execute.mockResolvedValue(executeResult);
 
@@ -195,13 +208,13 @@ describe('AccountRepository', () => {
       mockQueryBuilder.execute.mockRejectedValue(error);
 
       await expect(accountRepository.incrementBalance('account-id-123', 100)).rejects.toThrow(
-        'Failed to increment account balance: Increment failed'
+        'Failed to increment account currentBalance: Increment failed'
       );
     });
   });
 
   describe('decrementBalance', () => {
-    it('should decrement account balance successfully', async () => {
+    it('should decrement account currentBalance successfully', async () => {
       const executeResult = { affected: 1, raw: {} };
       mockQueryBuilder.execute.mockResolvedValue(executeResult);
 
@@ -219,19 +232,19 @@ describe('AccountRepository', () => {
       mockQueryBuilder.execute.mockRejectedValue(error);
 
       await expect(accountRepository.decrementBalance('account-id-123', 100)).rejects.toThrow(
-        'Failed to decrement account balance: Decrement failed'
+        'Failed to decrement account currentBalance: Decrement failed'
       );
     });
   });
 
   describe('getTotalBalanceForUser', () => {
-    it('should get total balance for user', async () => {
+    it('should get total currentBalance for user', async () => {
       mockQueryBuilder.getRawOne.mockResolvedValue({ total: '2500.75' });
 
       const result = await accountRepository.getTotalBalanceForUser('user-id-123');
 
       expect(mockRepository.createQueryBuilder).toHaveBeenCalledWith('account');
-      expect(mockQueryBuilder.select).toHaveBeenCalledWith('SUM(account.balance)', 'total');
+      expect(mockQueryBuilder.select).toHaveBeenCalledWith('SUM(account.currentBalance)', 'total');
       expect(mockQueryBuilder.where).toHaveBeenCalledWith('account.userId = :userId', {
         userId: 'user-id-123',
       });
@@ -250,11 +263,11 @@ describe('AccountRepository', () => {
     });
 
     it('should handle getTotalBalanceForUser errors', async () => {
-      const error = new Error('Total balance query failed');
+      const error = new Error('Total currentBalance query failed');
       mockQueryBuilder.getRawOne.mockRejectedValue(error);
 
       await expect(accountRepository.getTotalBalanceForUser('user-id-123')).rejects.toThrow(
-        'Failed to get total balance: Total balance query failed'
+        'Failed to get total currentBalance: Total currentBalance query failed'
       );
     });
   });
@@ -383,7 +396,7 @@ describe('AccountRepository', () => {
   });
 
   describe('getAccountBalancesSummary', () => {
-    it('should get account balances summary by type', async () => {
+    it('should get account currentBalances summary by type', async () => {
       const summaryResults = [
         {
           accountType: AccountType.CHECKING,
@@ -402,7 +415,7 @@ describe('AccountRepository', () => {
 
       expect(mockRepository.createQueryBuilder).toHaveBeenCalledWith('account');
       expect(mockQueryBuilder.select).toHaveBeenCalledWith('account.type', 'accountType');
-      expect(mockQueryBuilder.addSelect).toHaveBeenCalledWith('SUM(account.balance)', 'totalBalance');
+      expect(mockQueryBuilder.addSelect).toHaveBeenCalledWith('SUM(account.currentBalance)', 'totalBalance');
       expect(mockQueryBuilder.addSelect).toHaveBeenCalledWith('COUNT(account.id)', 'accountCount');
       expect(mockQueryBuilder.where).toHaveBeenCalledWith('account.userId = :userId', {
         userId: 'user-id-123',
@@ -431,20 +444,20 @@ describe('AccountRepository', () => {
       mockQueryBuilder.getRawMany.mockRejectedValue(error);
 
       await expect(accountRepository.getAccountBalancesSummary('user-id-123')).rejects.toThrow(
-        'Failed to get account balances summary: Summary query failed'
+        'Failed to get account currentBalances summary: Summary query failed'
       );
     });
   });
 
   describe('findLowBalanceAccounts', () => {
-    it('should find low balance accounts with user filter', async () => {
-      const lowBalanceAccounts = [{ ...mockAccount, balance: 50.0 }];
+    it('should find low currentBalance accounts with user filter', async () => {
+      const lowBalanceAccounts = [createMockAccount({ currentBalance: 50.0 })];
       mockQueryBuilder.getMany.mockResolvedValue(lowBalanceAccounts);
 
       const result = await accountRepository.findLowBalanceAccounts(100, 'user-id-123');
 
       expect(mockRepository.createQueryBuilder).toHaveBeenCalledWith('account');
-      expect(mockQueryBuilder.where).toHaveBeenCalledWith('account.balance < :threshold', {
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith('account.currentBalance < :threshold', {
         threshold: 100,
       });
       expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('account.isActive = :isActive', {
@@ -453,16 +466,16 @@ describe('AccountRepository', () => {
       expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('account.userId = :userId', {
         userId: 'user-id-123',
       });
-      expect(mockQueryBuilder.orderBy).toHaveBeenCalledWith('account.balance', 'ASC');
+      expect(mockQueryBuilder.orderBy).toHaveBeenCalledWith('account.currentBalance', 'ASC');
       expect(result).toEqual(lowBalanceAccounts);
     });
 
     it('should handle findLowBalanceAccounts errors', async () => {
-      const error = new Error('Low balance query failed');
+      const error = new Error('Low currentBalance query failed');
       mockQueryBuilder.getMany.mockRejectedValue(error);
 
       await expect(accountRepository.findLowBalanceAccounts(100)).rejects.toThrow(
-        'Failed to find low balance accounts: Low balance query failed'
+        'Failed to find low currentBalance accounts: Low currentBalance query failed'
       );
     });
   });

@@ -2,31 +2,30 @@
 > @money-wise/web@0.1.0 build /home/nemesi/dev/money-wise/apps/web
 > next build
 
-   ▲ Next.js 14.0.3
+  ▲ Next.js 14.2.32
 
    Creating an optimized production build ...
  ✓ Compiled successfully
    Linting and checking validity of types ...
    Collecting page data ...
    Generating static pages (0/7) ...
-   Generating static pages (1/7) 
-   Generating static pages (3/7) 
-   Generating static pages (5/7) 
- ✓ Generating static pages (7/7) 
+   Generating static pages (1/7) 
+   Generating static pages (3/7) 
+   Generating static pages (5/7) 
+ ✓ Generating static pages (7/7)
    Finalizing page optimization ...
    Collecting build traces ...
 
 Route (app)                              Size     First Load JS
-┌ ○ /                                    138 B          84.1 kB
-├ ○ /_not-found                          872 B          84.8 kB
-├ ○ /auth/login                          3.13 kB         148 kB
-├ ○ /auth/register                       3.41 kB         148 kB
-└ ○ /dashboard                           6.01 kB         129 kB
-+ First Load JS shared by all            83.9 kB
-  ├ chunks/45a9102b-c08f05e3be04edd7.js  53.3 kB
-  ├ chunks/804-4bf4cb4261d26438.js       28.8 kB
-  ├ chunks/main-app-ccd458523d8d3881.js  220 B
-  └ chunks/webpack-591be4b762b6a420.js   1.69 kB
+┌ ○ /                                    137 B          87.2 kB
+├ ○ /_not-found                          872 B            88 kB
+├ ○ /auth/login                          3.11 kB         152 kB
+├ ○ /auth/register                       3.4 kB          152 kB
+└ ○ /dashboard                           5.89 kB         133 kB
++ First Load JS shared by all            87.1 kB
+  ├ chunks/78-8b4834746df6295e.js        31.6 kB
+  ├ chunks/96a9fa71-aeb0bc012af654bf.js  53.6 kB
+  └ other shared chunks (total)          1.89 kB
 
 
 ○  (Static)  prerendered as static content
