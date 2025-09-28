@@ -33,7 +33,7 @@ export class SessionTimeoutGuard implements CanActivate {
       port: this.configService.get('REDIS_PORT', 6379),
       password: this.configService.get('REDIS_PASSWORD'),
       db: this.configService.get('REDIS_DB', 0),
-      retryDelayOnFailover: 100,
+      // retryDelayOnFailover: removed in ioredis v5,
       maxRetriesPerRequest: 3,
     });
 
@@ -210,7 +210,7 @@ export class SessionManagementService {
       port: this.configService.get('REDIS_PORT', 6379),
       password: this.configService.get('REDIS_PASSWORD'),
       db: this.configService.get('REDIS_DB', 0),
-      retryDelayOnFailover: 100,
+      // retryDelayOnFailover: removed in ioredis v5,
       maxRetriesPerRequest: 3,
     });
   }
@@ -251,7 +251,7 @@ export class SessionManagementService {
       }
 
       await this.redis.del(...keys);
-      this.logger.info(`Invalidated ${keys.length} sessions for user ${userId}`);
+      this.logger.log(`Invalidated ${keys.length} sessions for user ${userId}`);
 
       return keys.length;
     } catch (error) {

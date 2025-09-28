@@ -56,7 +56,7 @@ export class RateLimitGuard implements CanActivate {
       port: this.configService.get('REDIS_PORT', 6379),
       password: this.configService.get('REDIS_PASSWORD'),
       db: this.configService.get('REDIS_DB', 0),
-      retryDelayOnFailover: 100,
+      // retryDelayOnFailover: removed in ioredis v5,
       maxRetriesPerRequest: 3,
     });
 

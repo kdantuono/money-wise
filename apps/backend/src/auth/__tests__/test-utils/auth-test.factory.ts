@@ -2,11 +2,11 @@ import { JwtService } from '@nestjs/jwt';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
 
-import { User, UserStatus, UserRole } from '../../core/database/entities/user.entity';
-import { RegisterDto } from '../dto/register.dto';
-import { LoginDto } from '../dto/login.dto';
-import { AuthResponseDto } from '../dto/auth-response.dto';
-import { JwtPayload } from '../auth.service';
+import { User, UserStatus, UserRole } from '../../../core/database/entities/user.entity';
+import { RegisterDto } from '../../dto/register.dto';
+import { LoginDto } from '../../dto/login.dto';
+import { AuthResponseDto } from '../../dto/auth-response.dto';
+import { JwtPayload } from '../../auth.service';
 
 /**
  * Factory class for creating test data and utilities for authentication tests
@@ -254,7 +254,7 @@ export class AuthTestFactory {
       exist: jest.fn(),
       existsBy: jest.fn(),
       extend: jest.fn(),
-    } as jest.Mocked<Repository<User>>;
+    } as unknown as jest.Mocked<Repository<User>>;
   }
 
   /**
@@ -267,7 +267,7 @@ export class AuthTestFactory {
       verify: jest.fn(),
       verifyAsync: jest.fn(),
       decode: jest.fn(),
-    } as jest.Mocked<JwtService>;
+    } as unknown as jest.Mocked<JwtService>;
   }
 
   /**

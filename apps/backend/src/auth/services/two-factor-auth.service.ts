@@ -41,7 +41,7 @@ export class TwoFactorAuthService {
       port: this.configService.get('REDIS_PORT', 6379),
       password: this.configService.get('REDIS_PASSWORD'),
       db: this.configService.get('REDIS_DB', 0),
-      retryDelayOnFailover: 100,
+      // retryDelayOnFailover: removed in ioredis v5,
       maxRetriesPerRequest: 3,
     });
 
@@ -88,7 +88,7 @@ export class TwoFactorAuthService {
         }),
       );
 
-      this.logger.info(`2FA setup initiated for user ${userId}`);
+      this.logger.log(`2FA setup initiated for user ${userId}`);
 
       return {
         secret: secret.base32!,
@@ -146,7 +146,7 @@ export class TwoFactorAuthService {
       // Clean up setup data
       await this.redis.del(setupKey);
 
-      this.logger.info(`2FA enabled for user ${userId}`);
+      this.logger.log(`2FA enabled for user ${userId}`);
 
       return {
         success: true,
@@ -227,7 +227,7 @@ export class TwoFactorAuthService {
       const userKey = `2fa_user:${userId}`;
       await this.redis.del(userKey);
 
-      this.logger.info(`2FA disabled for user ${userId}`);
+      this.logger.log(`2FA disabled for user ${userId}`);
 
       return {
         success: true,
@@ -286,7 +286,7 @@ export class TwoFactorAuthService {
       userData.backupCodes = newBackupCodes;
       await this.redis.set(userKey, JSON.stringify(userData));
 
-      this.logger.info(`New backup codes generated for user ${userId}`);
+      this.logger.log(`New backup codes generated for user ${userId}`);
 
       return {
         backupCodes: newBackupCodes.map(bc => bc.code),
@@ -330,7 +330,7 @@ export class TwoFactorAuthService {
       // Update user data
       await this.redis.set(userKey, JSON.stringify(userData));
 
-      this.logger.info(`Backup code used for user ${userId}`);
+      this.logger.log(`Backup code used for user ${userId}`);
 
       return {
         success: true,

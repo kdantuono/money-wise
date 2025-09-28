@@ -411,7 +411,7 @@ export class AuthSecurityService {
         result.user?.email,
       );
 
-      return result;
+      return result as EmailVerificationResponseDto;
     } catch (error) {
       await this.auditLogService.logEvent(
         AuditEventType.EMAIL_VERIFICATION_FAILED,

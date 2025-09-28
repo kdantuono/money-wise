@@ -36,7 +36,7 @@ export class EmailVerificationService {
       port: this.configService.get('REDIS_PORT', 6379),
       password: this.configService.get('REDIS_PASSWORD'),
       db: this.configService.get('REDIS_DB', 0),
-      retryDelayOnFailover: 100,
+      // retryDelayOnFailover: removed in ioredis v5,
       maxRetriesPerRequest: 3,
     });
 
@@ -142,7 +142,7 @@ export class EmailVerificationService {
         where: { id: user.id },
       });
 
-      this.logger.info(`Email verified successfully for user ${user.id}`);
+      this.logger.log(`Email verified successfully for user ${user.id}`);
 
       return {
         success: true,
@@ -202,7 +202,7 @@ export class EmailVerificationService {
       // Generate new token
       const newToken = await this.generateVerificationToken(userId, user.email);
 
-      this.logger.info(`Resent verification email for user ${userId}`);
+      this.logger.log(`Resent verification email for user ${userId}`);
 
       return newToken;
     } catch (error) {

@@ -47,7 +47,7 @@ export class PasswordResetService {
       port: this.configService.get('REDIS_PORT', 6379),
       password: this.configService.get('REDIS_PASSWORD'),
       db: this.configService.get('REDIS_DB', 0),
-      retryDelayOnFailover: 100,
+      // retryDelayOnFailover: removed in ioredis v5,
       maxRetriesPerRequest: 3,
     });
 
@@ -138,7 +138,7 @@ export class PasswordResetService {
       // Store reverse lookup
       await this.redis.setex(existingTokenKey, 30 * 60, token);
 
-      this.logger.info(`Password reset token generated for user ${user.id}`);
+      this.logger.log(`Password reset token generated for user ${user.id}`);
 
       return {
         token,
@@ -280,7 +280,7 @@ export class PasswordResetService {
       // Clean up user lookup
       await this.redis.del(`password_reset_user:${user.id}`);
 
-      this.logger.info(`Password reset successfully for user ${user.id}`, {
+      this.logger.log(`Password reset successfully for user ${user.id}`, {
         userId: user.id,
         email: user.email,
         ipAddress,
@@ -405,7 +405,7 @@ export class PasswordResetService {
         await this.redis.del(tokenKey);
         await this.redis.del(userTokenKey);
 
-        this.logger.info(`Revoked password reset tokens for user ${userId}`);
+        this.logger.log(`Revoked password reset tokens for user ${userId}`);
       }
     } catch (error) {
       this.logger.error('Error revoking user tokens:', error);

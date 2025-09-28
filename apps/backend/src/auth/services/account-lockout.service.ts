@@ -42,7 +42,7 @@ export class AccountLockoutService {
       port: this.configService.get('REDIS_PORT', 6379),
       password: this.configService.get('REDIS_PASSWORD'),
       db: this.configService.get('REDIS_DB', 0),
-      retryDelayOnFailover: 100,
+      // retryDelayOnFailover: removed in ioredis v5,
       maxRetriesPerRequest: 3,
     });
 
@@ -220,7 +220,7 @@ export class AccountLockoutService {
       await this.redis.del(key);
       await this.updateUserLockoutStatus(identifier, false);
 
-      this.logger.info(`Account manually unlocked: ${identifier}`);
+      this.logger.log(`Account manually unlocked: ${identifier}`);
     } catch (error) {
       this.logger.error('Error unlocking account:', error);
     }

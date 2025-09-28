@@ -362,7 +362,7 @@ export class CloudWatchService implements OnModuleInit {
    * Setup CloudWatch alarms based on configuration
    */
   private async setupDefaultAlarms(): Promise<void> {
-    const currentEnvironment = this.configService.get('NODE_ENV', 'development');
+    const currentEnvironment: string = this.configService.get('NODE_ENV', 'development');
 
     // Import alarm configurations
     const { CLOUDWATCH_ALARMS, ENVIRONMENT_THRESHOLDS } = await import('./alarms.config');
