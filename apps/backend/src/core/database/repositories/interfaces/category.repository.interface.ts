@@ -3,7 +3,7 @@
  * Extends base repository with Category-specific operations
  */
 
-import { Category, CategoryType } from '../entities/category.entity';
+import { Category, CategoryType } from '../../entities';
 import { IBaseRepository } from './base.repository.interface';
 
 export interface ICategoryRepository extends IBaseRepository<Category> {
