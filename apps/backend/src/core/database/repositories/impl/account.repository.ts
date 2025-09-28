@@ -5,7 +5,7 @@
 
 import { Injectable } from '@nestjs/common';
 import { DataSource } from 'typeorm';
-import { Account, AccountType } from '../../../../entities/account.entity';
+import { Account, AccountType } from '../entities/account.entity';
 import { IAccountRepository } from '../interfaces/account.repository.interface';
 import { BaseRepository } from './base.repository';
 

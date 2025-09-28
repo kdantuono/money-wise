@@ -3,7 +3,7 @@
  * Extends base repository with Transaction-specific operations
  */
 
-import { Transaction, TransactionStatus } from '../../../../entities/transaction.entity';
+import { Transaction, TransactionStatus } from '../entities/transaction.entity';
 import { IBaseRepository } from './base.repository.interface';
 
 export interface ITransactionRepository extends IBaseRepository<Transaction> {

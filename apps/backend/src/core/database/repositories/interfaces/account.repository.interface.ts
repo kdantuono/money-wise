@@ -3,7 +3,7 @@
  * Extends base repository with Account-specific operations
  */
 
-import { Account, AccountType } from '../../../../entities/account.entity';
+import { Account, AccountType } from '../entities/account.entity';
 import { IBaseRepository } from './base.repository.interface';
 
 export interface IAccountRepository extends IBaseRepository<Account> {
