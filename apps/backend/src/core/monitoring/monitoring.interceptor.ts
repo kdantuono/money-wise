@@ -16,7 +16,7 @@ export class MonitoringInterceptor implements NestInterceptor {
 
   constructor(private readonly monitoringService: MonitoringService) {}
 
-  intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
+  intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
     const request = context.switchToHttp().getRequest<Request>();
     const response = context.switchToHttp().getResponse<Response>();
     const startTime = Date.now();
@@ -85,7 +85,7 @@ export class MonitoringInterceptor implements NestInterceptor {
 
   private extractUserId(request: Request): string | undefined {
     // Extract user ID from JWT token or session
-    const user = (request as any).user;
+    const user = (request as Request & { user?: { id?: string; sub?: string } }).user;
     return user?.id || user?.sub;
   }
 

@@ -34,7 +34,7 @@ export class MonitoringService implements OnModuleInit {
   private requestCount = 0;
   private errorCount = 0;
   private metricsBuffer: ApiMetrics[] = [];
-  private flushInterval: any;
+  private flushInterval: ReturnType<typeof setInterval>;
 
   constructor(private readonly cloudWatchService?: CloudWatchService) {}
 

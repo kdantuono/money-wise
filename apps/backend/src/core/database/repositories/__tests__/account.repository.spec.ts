@@ -174,7 +174,7 @@ describe('AccountRepository', () => {
       mockRepository.update.mockRejectedValue(error);
 
       await expect(accountRepository.updateBalance('account-id-123', 1000)).rejects.toThrow(
-        'Failed to update account currentBalance: Balance update failed'
+        'Failed to update account balance: Balance update failed'
       );
     });
   });
@@ -208,7 +208,7 @@ describe('AccountRepository', () => {
       mockQueryBuilder.execute.mockRejectedValue(error);
 
       await expect(accountRepository.incrementBalance('account-id-123', 100)).rejects.toThrow(
-        'Failed to increment account currentBalance: Increment failed'
+        'Failed to increment account balance: Increment failed'
       );
     });
   });
@@ -232,7 +232,7 @@ describe('AccountRepository', () => {
       mockQueryBuilder.execute.mockRejectedValue(error);
 
       await expect(accountRepository.decrementBalance('account-id-123', 100)).rejects.toThrow(
-        'Failed to decrement account currentBalance: Decrement failed'
+        'Failed to decrement account balance: Decrement failed'
       );
     });
   });
@@ -267,7 +267,7 @@ describe('AccountRepository', () => {
       mockQueryBuilder.getRawOne.mockRejectedValue(error);
 
       await expect(accountRepository.getTotalBalanceForUser('user-id-123')).rejects.toThrow(
-        'Failed to get total currentBalance: Total currentBalance query failed'
+        'Failed to get total balance: Total currentBalance query failed'
       );
     });
   });
@@ -444,7 +444,7 @@ describe('AccountRepository', () => {
       mockQueryBuilder.getRawMany.mockRejectedValue(error);
 
       await expect(accountRepository.getAccountBalancesSummary('user-id-123')).rejects.toThrow(
-        'Failed to get account currentBalances summary: Summary query failed'
+        'Failed to get account balances summary: Summary query failed'
       );
     });
   });
@@ -475,7 +475,7 @@ describe('AccountRepository', () => {
       mockQueryBuilder.getMany.mockRejectedValue(error);
 
       await expect(accountRepository.findLowBalanceAccounts(100)).rejects.toThrow(
-        'Failed to find low currentBalance accounts: Low currentBalance query failed'
+        'Failed to find low balance accounts: Low currentBalance query failed'
       );
     });
   });

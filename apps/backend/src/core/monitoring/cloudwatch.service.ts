@@ -286,7 +286,7 @@ export class CloudWatchService implements OnModuleInit {
     level: string,
     message: string,
     context?: string,
-    metadata?: Record<string, any>,
+    metadata?: Record<string, unknown>,
   ): Promise<void> {
     if (!this.config.enabled || !this.cloudWatchLogsClient) {
       return;
@@ -377,7 +377,7 @@ export class CloudWatchService implements OnModuleInit {
 
     for (const alarmConfig of enabledAlarms) {
       try {
-        const { enabled: _enabled, environment: _envs, ...alarmParams } = alarmConfig;
+        const { environment: envs, ...alarmParams } = alarmConfig;
 
         const alarm: PutMetricAlarmCommandInput = {
           ...alarmParams,
@@ -409,7 +409,7 @@ export class CloudWatchService implements OnModuleInit {
     metricName: string,
     defaultThreshold: number,
     environment: string,
-    thresholds: any,
+    thresholds: Record<string, Record<string, number>>,
   ): number {
     const envThresholds = thresholds[environment];
     if (!envThresholds) {
