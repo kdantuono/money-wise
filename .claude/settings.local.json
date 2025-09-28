@@ -69,7 +69,8 @@
       "Bash(gh workflow:*)",
       "Bash(npm audit:*)",
       "Bash(grep:*)",
-      "Bash(pnpm --filter @money-wise/mobile typecheck)"
+      "Bash(pnpm --filter @money-wise/mobile typecheck)",
+      "Bash(.claude/scripts/init-session.sh:*)"
     ],
     "deny": [],
     "ask": []
