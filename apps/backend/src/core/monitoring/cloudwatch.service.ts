@@ -377,7 +377,7 @@ export class CloudWatchService implements OnModuleInit {
 
     for (const alarmConfig of enabledAlarms) {
       try {
-        const { environment: _envs, ...alarmParams } = alarmConfig;
+        const { environment, ...alarmParams } = alarmConfig;
 
         const alarm: PutMetricAlarmCommandInput = {
           ...alarmParams,

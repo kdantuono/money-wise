@@ -193,7 +193,6 @@ describe('UserRepository', () => {
     });
 
     it('should handle findByEmailVerificationToken errors', async () => {
-      const error = new Error('Token lookup failed');
       jest.spyOn(userRepository as any, 'findByEmailVerificationToken').mockRejectedValue(new Error('Failed to find user by verification token: Token lookup failed'));
 
       await expect(
