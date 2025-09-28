@@ -377,7 +377,8 @@ export class CloudWatchService implements OnModuleInit {
 
     for (const alarmConfig of enabledAlarms) {
       try {
-        const { environment: alarmEnvironments, ...alarmParams } = alarmConfig;
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { environment: _, ...alarmParams } = alarmConfig;
 
         const alarm: PutMetricAlarmCommandInput = {
           ...alarmParams,
