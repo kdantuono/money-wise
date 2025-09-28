@@ -1,6 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject } from '@nestjs/common';
 import { Redis } from 'ioredis';
-import { InjectRedis } from '@liaoliaots/nestjs-redis';
 
 export interface RateLimitConfig {
   maxAttempts: number;
@@ -29,7 +28,7 @@ export class RateLimitService {
   };
 
   constructor(
-    @InjectRedis() private readonly redis: Redis,
+    @Inject('default') private readonly redis: Redis,
   ) {}
 
   async checkRateLimit(

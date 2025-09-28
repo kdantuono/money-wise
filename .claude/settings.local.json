@@ -103,7 +103,8 @@
       "Bash(__NEW_LINE__ echo \"STORY-001 gap tasks: 74, 75, 76, 77, 78\")",
       "Bash(__NEW_LINE__ echo \"STORY-002 gap tasks: 79, 80, 81\")",
       "Bash(pnpm add:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(pnpm list:*)"
     ],
     "deny": [],
     "ask": []
