@@ -27,8 +27,8 @@ export abstract class BaseRepository<T> implements IBaseRepository<T> {
 
   async create(entityData: Partial<T>): Promise<T> {
     try {
-      const entity = this.repository.create(entityData);
-      const savedEntity = await this.repository.save(entity);
+      const entity = this.repository.create(entityData as any);
+      const savedEntity = await this.repository.save(entity) as T;
       this.logger.debug(`Created entity with ID: ${(savedEntity as any).id}`);
       return savedEntity;
     } catch (error) {
@@ -51,7 +51,7 @@ export abstract class BaseRepository<T> implements IBaseRepository<T> {
   async findById(id: string): Promise<T | null> {
     try {
       const entity = await this.repository.findOne({
-        where: { id } as FindOptionsWhere<T>,
+        where: { id } as any,
       });
       return entity || null;
     } catch (error) {
@@ -167,7 +167,7 @@ export abstract class BaseRepository<T> implements IBaseRepository<T> {
 
   async bulkInsert(entities: Partial<T>[]): Promise<T[]> {
     try {
-      const createdEntities = this.repository.create(entities);
+      const createdEntities = this.repository.create(entities as any[]);
       const savedEntities = await this.repository.save(createdEntities);
       this.logger.debug(`Bulk inserted ${savedEntities.length} entities`);
       return savedEntities;
