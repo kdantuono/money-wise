@@ -65,7 +65,7 @@ export async function withSentryTransaction<T>(
 export class SentryTransactionManager {
   private static activeTransactions = new Map<string, ReturnType<typeof Sentry.startSpan>>();
 
-  static startTransaction(name: string, _options: SentryTransactionOptions = {}): string {
+  static startTransaction(name: string): string {
     const transactionId = `${name}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     
     // Store a placeholder transaction

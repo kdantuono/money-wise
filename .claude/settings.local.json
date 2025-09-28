@@ -107,7 +107,15 @@
       "Bash(xargs cat:*)",
       "Bash(git restore:*)",
       "Bash(./.claude/scripts/init-session.sh:*)",
-      "Bash(pnpm sentry:test:*)"
+      "Bash(pnpm sentry:test:*)",
+      "Bash(gh issue reopen:*)",
+      "Bash(gh pr create:*)",
+      "Bash(git fetch:*)",
+      "Bash(gh pr view:*)",
+      "Bash(gh pr diff:*)",
+      "Bash(gh pr review:*)",
+      "Bash(gh pr merge:*)",
+      "Bash(gh pr ready:*)"
     ],
     "deny": [],
     "ask": []

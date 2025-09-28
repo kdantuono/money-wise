@@ -209,7 +209,6 @@ describe('UserRepository', () => {
     });
 
     it('should handle findByPasswordResetToken errors', async () => {
-      const error = new Error('Reset token lookup failed');
       jest.spyOn(userRepository as any, 'findByPasswordResetToken').mockRejectedValue(new Error('Failed to find user by reset token: Reset token lookup failed'));
 
       await expect(
@@ -296,7 +295,6 @@ describe('UserRepository', () => {
     });
 
     it('should handle setPasswordResetToken errors', async () => {
-      const error = new Error('Token set failed');
       jest.spyOn(userRepository as any, 'setPasswordResetToken').mockRejectedValue(new Error('Failed to set password reset token: Token set failed'));
 
       await expect(
@@ -312,7 +310,6 @@ describe('UserRepository', () => {
     });
 
     it('should handle clearPasswordResetToken errors', async () => {
-      const error = new Error('Token clear failed');
       jest.spyOn(userRepository as any, 'clearPasswordResetToken').mockRejectedValue(new Error('Failed to clear password reset token: Token clear failed'));
 
       await expect(userRepository.clearPasswordResetToken('user-id-123')).rejects.toThrow(

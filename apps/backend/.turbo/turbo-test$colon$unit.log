@@ -1,101 +1,114 @@
 
 > @money-wise/backend@0.1.0 test:unit /home/nemesi/dev/money-wise/apps/backend
-> jest --passWithNoTests --testPathPattern='src' "--testPathPattern=auth"
+> jest --passWithNoTests --testPathPattern='src'
+
+PASS @money-wise/backend src/common/decorators/__tests__/sentry-transaction.decorator.spec.ts
+  SentryTransactionDecorator
+    withSentryTransaction
+      ✓ should wrap function with Sentry transaction (5 ms)
+      ✓ should handle errors in wrapped function (7 ms)
+    SentryTransactionManager
+      ✓ should manage transaction lifecycle (2 ms)
+
+PASS @money-wise/backend src/common/interceptors/__tests__/sentry.interceptor.spec.ts
+  SentryInterceptor
+    intercept
+      ✓ should create interceptor instance (2 ms)
 
 PASS @money-wise/backend src/auth/auth.service.spec.ts
   AuthService
     register
-      ✓ should register a new user successfully (25 ms)
-      ✓ should throw ConflictException if user already exists (16 ms)
+      ✓ should register a new user successfully (19 ms)
+      ✓ should throw ConflictException if user already exists (12 ms)
     login
-      ✓ should login user successfully (5 ms)
-      ✓ should throw UnauthorizedException if user not found (7 ms)
-      ✓ should throw UnauthorizedException if password is invalid (14 ms)
-      ✓ should throw UnauthorizedException if user is not active (3 ms)
+      ✓ should login user successfully (4 ms)
+      ✓ should throw UnauthorizedException if user not found (4 ms)
+      ✓ should throw UnauthorizedException if password is invalid (3 ms)
+      ✓ should throw UnauthorizedException if user is not active (8 ms)
     validateUser
-      ✓ should return user if valid (6 ms)
-      ✓ should throw UnauthorizedException if user not found (6 ms)
-      ✓ should throw UnauthorizedException if user is not active (5 ms)
+      ✓ should return user if valid (3 ms)
+      ✓ should throw UnauthorizedException if user not found (3 ms)
+      ✓ should throw UnauthorizedException if user is not active (3 ms)
 
 PASS @money-wise/backend src/core/database/repositories/__tests__/base.repository.spec.ts
   BaseRepository
     constructor
-      ✓ should initialize repository with correct entity (6 ms)
+      ✓ should initialize repository with correct entity (7 ms)
     create
-      ✓ should create and save a new entity successfully (3 ms)
-      ✓ should handle creation errors and throw descriptive error (23 ms)
+      ✓ should create and save a new entity successfully (4 ms)
+      ✓ should handle creation errors and throw descriptive error (16 ms)
     save
-      ✓ should save an existing entity successfully (4 ms)
-      ✓ should handle save errors (13 ms)
+      ✓ should save an existing entity successfully (3 ms)
+      ✓ should handle save errors (2 ms)
     findById
-      ✓ should find entity by ID successfully (4 ms)
-      ✓ should return null when entity not found (3 ms)
+      ✓ should find entity by ID successfully (2 ms)
+      ✓ should return null when entity not found (10 ms)
       ✓ should handle findById errors (3 ms)
     findOne
-      ✓ should find one entity with FindOptionsWhere (2 ms)
+      ✓ should find one entity with FindOptionsWhere (3 ms)
       ✓ should find one entity with FindOneOptions (3 ms)
-      ✓ should handle findOne errors (3 ms)
+      ✓ should handle findOne errors (2 ms)
     find
       ✓ should find multiple entities with options (3 ms)
       ✓ should find all entities when no options provided (2 ms)
       ✓ should handle find errors (3 ms)
     findWithPagination
-      ✓ should return paginated results (3 ms)
-      ✓ should handle pagination with criteria (4 ms)
+      ✓ should return paginated results (2 ms)
+      ✓ should handle pagination with criteria (2 ms)
       ✓ should handle pagination errors (3 ms)
     update
-      ✓ should update entity successfully (3 ms)
-      ✓ should return null when entity to update not found (2 ms)
-      ✓ should handle update errors (4 ms)
+      ✓ should update entity successfully (2 ms)
+      ✓ should return null when entity to update not found (7 ms)
+      ✓ should handle update errors (3 ms)
     delete
-      ✓ should delete entity successfully (3 ms)
+      ✓ should delete entity successfully (4 ms)
       ✓ should return false when no entity was deleted (2 ms)
-      ✓ should handle delete errors (3 ms)
+      ✓ should handle delete errors (2 ms)
     deleteBy
-      ✓ should delete entities by criteria (2 ms)
+      ✓ should delete entities by criteria (3 ms)
       ✓ should handle deleteBy errors (3 ms)
     count
-      ✓ should count entities with criteria (9 ms)
-      ✓ should count all entities when no criteria provided (3 ms)
-      ✓ should handle count errors (4 ms)
+      ✓ should count entities with criteria (2 ms)
+      ✓ should count all entities when no criteria provided (2 ms)
+      ✓ should handle count errors (2 ms)
     exists
-      ✓ should return true when entity exists (3 ms)
-      ✓ should return false when entity does not exist (2 ms)
-      ✓ should handle exists errors (2 ms)
+      ✓ should return true when entity exists (2 ms)
+      ✓ should return false when entity does not exist (1 ms)
+      ✓ should handle exists errors (11 ms)
     bulkInsert
-      ✓ should perform bulk insert successfully (3 ms)
-      ✓ should handle bulk insert errors (5 ms)
+      ✓ should perform bulk insert successfully (2 ms)
+      ✓ should handle bulk insert errors (2 ms)
     bulkUpdate
       ✓ should perform bulk update successfully (2 ms)
-      ✓ should handle bulk update errors (3 ms)
+      ✓ should handle bulk update errors (2 ms)
     query
-      ✓ should execute raw query successfully (2 ms)
+      ✓ should execute raw query successfully (3 ms)
       ✓ should execute parameterized query (2 ms)
-      ✓ should handle query errors (8 ms)
+      ✓ should handle query errors (2 ms)
 
 PASS @money-wise/backend src/core/health/health.controller.spec.ts
   HealthController
-    ✓ should be defined (9 ms)
+    ✓ should be defined (4 ms)
     getHealth
-      ✓ should return basic health status (5 ms)
+      ✓ should return basic health status (3 ms)
       ✓ should return consistent timestamp format (3 ms)
-      ✓ should return positive uptime (4 ms)
-      ✓ should return memory usage (4 ms)
+      ✓ should return positive uptime (2 ms)
+      ✓ should return memory usage (3 ms)
     getDetailedHealth
-      ✓ should return detailed health with services status (21 ms)
-      ✓ should include database response time (5 ms)
+      ✓ should return detailed health with services status (13 ms)
+      ✓ should include database response time (4 ms)
     getReadiness
-      ✓ should return readiness status (3 ms)
+      ✓ should return readiness status (2 ms)
     getLiveness
       ✓ should return liveness status (2 ms)
 
 PASS @money-wise/backend src/core/database/repositories/__tests__/integration/repositories.integration.spec.ts
   Repository Integration Tests
     Repository Pattern Integration
-      ✓ should have repositories properly exported from index (286 ms)
+      ✓ should have repositories properly exported from index (205 ms)
       ✓ should have repository module and injection tokens exported (1 ms)
-      ✓ should validate repository structure integrity (3 ms)
-      ✓ should validate test coverage completeness (2 ms)
+      ✓ should validate repository structure integrity (1 ms)
+      ✓ should validate test coverage completeness (1 ms)
     Repository Pattern Compliance
       ✓ should document zero-tolerance validation achievements (1 ms)
       ✓ should validate atomic commit compliance (1 ms)
@@ -103,220 +116,99 @@ PASS @money-wise/backend src/core/database/repositories/__tests__/integration/re
 PASS @money-wise/backend src/core/database/repositories/__tests__/user.repository.spec.ts
   UserRepository
     findByEmail
-      ✓ should find user by email with case insensitivity (7 ms)
-      ✓ should return null when user not found (3 ms)
-      ✓ should handle findByEmail errors (21 ms)
+      ✓ should find user by email with case insensitivity (12 ms)
+      ✓ should return null when user not found (2 ms)
+      ✓ should handle findByEmail errors (16 ms)
     isEmailTaken
       ✓ should return true when email is taken (3 ms)
-      ✓ should return false when email is not taken (3 ms)
+      ✓ should return false when email is not taken (2 ms)
       ✓ should exclude specific user when checking email availability (2 ms)
-      ✓ should handle isEmailTaken errors (11 ms)
+      ✓ should handle isEmailTaken errors (3 ms)
     findByEmailVerificationToken
-      ✓ should return null for email verification token (not implemented) (4 ms)
-      ✓ should handle findByEmailVerificationToken errors (5 ms)
+      ✓ should return null for email verification token (not implemented) (2 ms)
+      ✓ should handle findByEmailVerificationToken errors (8 ms)
     findByPasswordResetToken
       ✓ should return null for password reset token (not implemented) (2 ms)
-      ✓ should handle findByPasswordResetToken errors (3 ms)
+      ✓ should handle findByPasswordResetToken errors (4 ms)
     markEmailAsVerified
       ✓ should mark email as verified successfully (3 ms)
-      ✓ should return false when no user was updated (3 ms)
-      ✓ should handle markEmailAsVerified errors (4 ms)
+      ✓ should return false when no user was updated (2 ms)
+      ✓ should handle markEmailAsVerified errors (2 ms)
     updatePasswordHash
       ✓ should update password hash successfully (3 ms)
-      ✓ should return false when no user was updated (3 ms)
-      ✓ should handle updatePasswordHash errors (4 ms)
+      ✓ should return false when no user was updated (2 ms)
+      ✓ should handle updatePasswordHash errors (3 ms)
     setPasswordResetToken
       ✓ should return false for password reset token (not implemented) (2 ms)
-      ✓ should handle setPasswordResetToken errors (11 ms)
+      ✓ should handle setPasswordResetToken errors (2 ms)
     clearPasswordResetToken
-      ✓ should return false for clear password reset token (not implemented) (3 ms)
-      ✓ should handle clearPasswordResetToken errors (3 ms)
+      ✓ should return false for clear password reset token (not implemented) (2 ms)
+      ✓ should handle clearPasswordResetToken errors (2 ms)
     findWithAccounts
-      ✓ should find user with their accounts (3 ms)
+      ✓ should find user with their accounts (2 ms)
       ✓ should return null when user not found (3 ms)
-      ✓ should handle findWithAccounts errors (3 ms)
+      ✓ should handle findWithAccounts errors (2 ms)
     findByDateRange
-      ✓ should find users within date range (4 ms)
-      ✓ should handle findByDateRange errors (3 ms)
+      ✓ should find users within date range (3 ms)
+      ✓ should handle findByDateRange errors (2 ms)
     getUserStats
       ✓ should return user statistics (3 ms)
-      ✓ should handle getUserStats errors (4 ms)
+      ✓ should handle getUserStats errors (2 ms)
     softDelete
       ✓ should log soft delete request (4 ms)
-      ✓ should handle softDelete errors (3 ms)
+      ✓ should handle softDelete errors (4 ms)
     search
-      ✓ should search users by first name, last name, and email (11 ms)
-      ✓ should use default limit when not provided (4 ms)
+      ✓ should search users by first name, last name, and email (4 ms)
+      ✓ should use default limit when not provided (3 ms)
       ✓ should handle search errors (3 ms)
 
-FAIL @money-wise/backend src/core/database/repositories/__tests__/account.repository.spec.ts
+PASS @money-wise/backend src/core/database/repositories/__tests__/account.repository.spec.ts
   AccountRepository
     findByUserId
-      ✓ should find accounts by user ID (7 ms)
-      ✓ should handle findByUserId errors (31 ms)
+      ✓ should find accounts by user ID (5 ms)
+      ✓ should handle findByUserId errors (17 ms)
     findActiveAccountsByUserId
-      ✓ should find active accounts by user ID (5 ms)
-      ✓ should handle findActiveAccountsByUserId errors (5 ms)
+      ✓ should find active accounts by user ID (9 ms)
+      ✓ should handle findActiveAccountsByUserId errors (2 ms)
     updateBalance
-      ✓ should update account currentBalance successfully (5 ms)
-      ✓ should return false when no account was updated (4 ms)
-      ✕ should handle updateBalance errors (16 ms)
+      ✓ should update account currentBalance successfully (3 ms)
+      ✓ should return false when no account was updated (2 ms)
+      ✓ should handle updateBalance errors (2 ms)
     incrementBalance
-      ✓ should increment account currentBalance successfully (4 ms)
-      ✓ should return false when no account was updated (3 ms)
-      ✕ should handle incrementBalance errors (4 ms)
+      ✓ should increment account currentBalance successfully (2 ms)
+      ✓ should return false when no account was updated (1 ms)
+      ✓ should handle incrementBalance errors (3 ms)
     decrementBalance
-      ✓ should decrement account currentBalance successfully (14 ms)
-      ✕ should handle decrementBalance errors (5 ms)
+      ✓ should decrement account currentBalance successfully (3 ms)
+      ✓ should handle decrementBalance errors (2 ms)
     getTotalBalanceForUser
-      ✓ should get total currentBalance for user (4 ms)
-      ✓ should return 0 when no total found (3 ms)
-      ✕ should handle getTotalBalanceForUser errors (3 ms)
+      ✓ should get total currentBalance for user (8 ms)
+      ✓ should return 0 when no total found (2 ms)
+      ✓ should handle getTotalBalanceForUser errors (2 ms)
     findByPlaidAccountId
       ✓ should find account by Plaid account ID (2 ms)
       ✓ should return null when Plaid account not found (2 ms)
-      ✓ should handle findByPlaidAccountId errors (3 ms)
+      ✓ should handle findByPlaidAccountId errors (1 ms)
     deactivateAccount
-      ✓ should deactivate account successfully (3 ms)
+      ✓ should deactivate account successfully (1 ms)
       ✓ should return false when no account was deactivated (2 ms)
       ✓ should handle deactivateAccount errors (2 ms)
     reactivateAccount
-      ✓ should reactivate account successfully (3 ms)
-      ✓ should handle reactivateAccount errors (10 ms)
+      ✓ should reactivate account successfully (2 ms)
+      ✓ should handle reactivateAccount errors (2 ms)
     findAccountsForSync
-      ✓ should find accounts for sync with user filter (4 ms)
+      ✓ should find accounts for sync with user filter (2 ms)
       ✓ should find all accounts for sync without user filter (3 ms)
-      ✓ should handle findAccountsForSync errors (3 ms)
+      ✓ should handle findAccountsForSync errors (9 ms)
     getAccountBalancesSummary
-      ✓ should get account currentBalances summary by type (6 ms)
-      ✕ should handle getAccountBalancesSummary errors (3 ms)
+      ✓ should get account currentBalances summary by type (4 ms)
+      ✓ should handle getAccountBalancesSummary errors (2 ms)
     findLowBalanceAccounts
       ✓ should find low currentBalance accounts with user filter (3 ms)
-      ✕ should handle findLowBalanceAccounts errors (3 ms)
+      ✓ should handle findLowBalanceAccounts errors (5 ms)
 
-  ● AccountRepository › updateBalance › should handle updateBalance errors
-
-    expect(received).rejects.toThrow(expected)
-
-    Expected substring: "Failed to update account currentBalance: Balance update failed"
-    Received message:   "Failed to update account balance: Balance update failed"
-
-          91 |     } catch (error) {
-          92 |       this.logger.error(`Failed to update account balance: ${error.message}`, error.stack);
-        > 93 |       throw new Error(`Failed to update account balance: ${error.message}`);
-             |             ^
-          94 |     }
-          95 |   }
-          96 |
-
-      at AccountRepository.updateBalance (src/core/database/repositories/impl/account.repository.ts:93:13)
-      at Object.<anonymous> (src/core/database/repositories/__tests__/account.repository.spec.ts:176:7)
-      at Object.toThrow (../../node_modules/.pnpm/expect@29.7.0/node_modules/expect/build/index.js:218:22)
-      at Object.<anonymous> (src/core/database/repositories/__tests__/account.repository.spec.ts:176:85)
-
-  ● AccountRepository › incrementBalance › should handle incrementBalance errors
-
-    expect(received).rejects.toThrow(expected)
-
-    Expected substring: "Failed to increment account currentBalance: Increment failed"
-    Received message:   "Failed to increment account balance: Increment failed"
-
-          107 |     } catch (error) {
-          108 |       this.logger.error(`Failed to increment account balance: ${error.message}`, error.stack);
-        > 109 |       throw new Error(`Failed to increment account balance: ${error.message}`);
-              |             ^
-          110 |     }
-          111 |   }
-          112 |
-
-      at AccountRepository.incrementBalance (src/core/database/repositories/impl/account.repository.ts:109:13)
-      at Object.<anonymous> (src/core/database/repositories/__tests__/account.repository.spec.ts:210:7)
-      at Object.toThrow (../../node_modules/.pnpm/expect@29.7.0/node_modules/expect/build/index.js:218:22)
-      at Object.<anonymous> (src/core/database/repositories/__tests__/account.repository.spec.ts:210:87)
-
-  ● AccountRepository › decrementBalance › should handle decrementBalance errors
-
-    expect(received).rejects.toThrow(expected)
-
-    Expected substring: "Failed to decrement account currentBalance: Decrement failed"
-    Received message:   "Failed to decrement account balance: Decrement failed"
-
-          123 |     } catch (error) {
-          124 |       this.logger.error(`Failed to decrement account balance: ${error.message}`, error.stack);
-        > 125 |       throw new Error(`Failed to decrement account balance: ${error.message}`);
-              |             ^
-          126 |     }
-          127 |   }
-          128 |
-
-      at AccountRepository.decrementBalance (src/core/database/repositories/impl/account.repository.ts:125:13)
-      at Object.<anonymous> (src/core/database/repositories/__tests__/account.repository.spec.ts:234:7)
-      at Object.toThrow (../../node_modules/.pnpm/expect@29.7.0/node_modules/expect/build/index.js:218:22)
-      at Object.<anonymous> (src/core/database/repositories/__tests__/account.repository.spec.ts:234:87)
-
-  ● AccountRepository › getTotalBalanceForUser › should handle getTotalBalanceForUser errors
-
-    expect(received).rejects.toThrow(expected)
-
-    Expected substring: "Failed to get total currentBalance: Total currentBalance query failed"
-    Received message:   "Failed to get total balance: Total currentBalance query failed"
-
-          139 |     } catch (error) {
-          140 |       this.logger.error(`Failed to get total balance: ${error.message}`, error.stack);
-        > 141 |       throw new Error(`Failed to get total balance: ${error.message}`);
-              |             ^
-          142 |     }
-          143 |   }
-          144 |
-
-      at AccountRepository.getTotalBalanceForUser (src/core/database/repositories/impl/account.repository.ts:141:13)
-      at Object.<anonymous> (src/core/database/repositories/__tests__/account.repository.spec.ts:269:7)
-      at Object.toThrow (../../node_modules/.pnpm/expect@29.7.0/node_modules/expect/build/index.js:218:22)
-      at Object.<anonymous> (src/core/database/repositories/__tests__/account.repository.spec.ts:269:85)
-
-  ● AccountRepository › getAccountBalancesSummary › should handle getAccountBalancesSummary errors
-
-    expect(received).rejects.toThrow(expected)
-
-    Expected substring: "Failed to get account currentBalances summary: Summary query failed"
-    Received message:   "Failed to get account balances summary: Summary query failed"
-
-          166 |     } catch (error) {
-          167 |       this.logger.error(`Failed to get account balances summary: ${error.message}`, error.stack);
-        > 168 |       throw new Error(`Failed to get account balances summary: ${error.message}`);
-              |             ^
-          169 |     }
-          170 |   }
-          171 |
-
-      at AccountRepository.getAccountBalancesSummary (src/core/database/repositories/impl/account.repository.ts:168:13)
-      at Object.<anonymous> (src/core/database/repositories/__tests__/account.repository.spec.ts:446:7)
-      at Object.toThrow (../../node_modules/.pnpm/expect@29.7.0/node_modules/expect/build/index.js:218:22)
-      at Object.<anonymous> (src/core/database/repositories/__tests__/account.repository.spec.ts:446:88)
-
-  ● AccountRepository › findLowBalanceAccounts › should handle findLowBalanceAccounts errors
-
-    expect(received).rejects.toThrow(expected)
-
-    Expected substring: "Failed to find low currentBalance accounts: Low currentBalance query failed"
-    Received message:   "Failed to find low balance accounts: Low currentBalance query failed"
-
-          271 |     } catch (error) {
-          272 |       this.logger.error(`Failed to find low balance accounts: ${error.message}`, error.stack);
-        > 273 |       throw new Error(`Failed to find low balance accounts: ${error.message}`);
-              |             ^
-          274 |     }
-          275 |   }
-          276 |
-
-      at AccountRepository.findLowBalanceAccounts (src/core/database/repositories/impl/account.repository.ts:273:13)
-      at Object.<anonymous> (src/core/database/repositories/__tests__/account.repository.spec.ts:477:7)
-      at Object.toThrow (../../node_modules/.pnpm/expect@29.7.0/node_modules/expect/build/index.js:218:22)
-      at Object.<anonymous> (src/core/database/repositories/__tests__/account.repository.spec.ts:477:75)
-
-Test Suites: 1 failed, 5 passed, 6 total
-Tests:       6 failed, 119 passed, 125 total
+Test Suites: 8 passed, 8 total
+Tests:       129 passed, 129 total
 Snapshots:   0 total
-Time:        5.796 s
-Ran all test suites matching /src|auth/i.
- ELIFECYCLE  Command failed with exit code 1.
+Time:        8.212 s
+Ran all test suites matching /src/i.
