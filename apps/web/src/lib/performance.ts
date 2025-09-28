@@ -43,14 +43,8 @@ export class PerformanceMonitor {
     const duration = endTime - startTime;
     this.measurements.delete(key);
 
-    // Report to Sentry
-    Sentry.metrics.gauge('web.performance.duration', duration, {
-      unit: 'millisecond',
-      tags: {
-        measurement_key: key,
-        ...tags,
-      },
-    });
+    // Log performance measurement
+    console.debug(`Performance: ${key} took ${duration}ms`);
 
     return duration;
   }
@@ -170,9 +164,7 @@ export function initWebVitals() {
     new PerformanceObserver((list) => {
       for (const entry of list.getEntries()) {
         if (entry.name === 'first-contentful-paint') {
-          Sentry.metrics.gauge('web.vitals.fcp', entry.startTime, {
-            unit: 'millisecond',
-          });
+          console.debug(`Web Vitals FCP: ${entry.startTime}ms`);
         }
       }
     }).observe({ entryTypes: ['paint'] });
@@ -181,9 +173,7 @@ export function initWebVitals() {
     new PerformanceObserver((list) => {
       const entries = list.getEntries();
       const lastEntry = entries[entries.length - 1];
-      Sentry.metrics.gauge('web.vitals.lcp', lastEntry.startTime, {
-        unit: 'millisecond',
-      });
+      console.debug(`Web Vitals LCP: ${lastEntry.startTime}ms`);
     }).observe({ entryTypes: ['largest-contentful-paint'] });
 
     // Cumulative Layout Shift (CLS)
@@ -194,15 +184,13 @@ export function initWebVitals() {
           clsValue += (entry as any).value;
         }
       }
-      Sentry.metrics.gauge('web.vitals.cls', clsValue);
+      Sentry.setMeasurement('web.vitals.cls', clsValue);
     }).observe({ entryTypes: ['layout-shift'] });
 
     // First Input Delay (FID)
     new PerformanceObserver((list) => {
       for (const entry of list.getEntries()) {
-        Sentry.metrics.gauge('web.vitals.fid', (entry as any).processingStart - entry.startTime, {
-          unit: 'millisecond',
-        });
+        Sentry.setMeasurement('web.vitals.fid', (entry as any).processingStart - entry.startTime);
       }
     }).observe({ entryTypes: ['first-input'] });
   }
@@ -225,23 +213,11 @@ export function monitorApiCall(url: string, method: string = 'GET') {
       });
 
       // Report API metrics
-      Sentry.metrics.gauge('api.request.duration', duration, {
-        unit: 'millisecond',
-        tags: {
-          url,
-          method,
-          status: status?.toString(),
-        },
-      });
+      Sentry.setMeasurement(`api.${method}.duration`, duration);
 
       if (error) {
-        Sentry.metrics.increment('api.request.error', 1, {
-          tags: {
-            url,
-            method,
-            status: status?.toString(),
-          },
-        });
+        Sentry.setTag('api.error', 'true');
+        Sentry.captureMessage(`API Error: ${method} ${url}`, 'error');
       }
     },
   };
