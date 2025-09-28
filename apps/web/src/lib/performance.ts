@@ -70,21 +70,20 @@ export class PerformanceMonitor {
         const startTime = performance.now();
 
         try {
+          // Tags will be logged for debugging purposes
           if (tags) {
-            Object.entries(tags).forEach(([key, value]) => {
-              span.setTag(key, value);
-            });
+            console.debug(`Performance tags for ${name}:`, tags);
           }
 
           const result = await operation();
           const duration = performance.now() - startTime;
 
-          span.setMeasurement('duration', duration, 'millisecond');
-          span.setStatus('ok');
+          console.debug(`Performance: ${name} took ${duration}ms`);
+          span.setStatus({ code: 1 }); // OK status
 
           return result;
         } catch (error) {
-          span.setStatus('internal_error');
+          span.setStatus({ code: 2 }); // Internal Error status
           span.recordException(error as Error);
           throw error;
         }
@@ -113,21 +112,20 @@ export class PerformanceMonitor {
         const startTime = performance.now();
 
         try {
+          // Tags will be logged for debugging purposes
           if (tags) {
-            Object.entries(tags).forEach(([key, value]) => {
-              span.setTag(key, value);
-            });
+            console.debug(`Performance tags for ${name}:`, tags);
           }
 
           const result = operation();
           const duration = performance.now() - startTime;
 
-          span.setMeasurement('duration', duration, 'millisecond');
-          span.setStatus('ok');
+          console.debug(`Performance: ${name} took ${duration}ms`);
+          span.setStatus({ code: 1 }); // OK status
 
           return result;
         } catch (error) {
-          span.setStatus('internal_error');
+          span.setStatus({ code: 2 }); // Internal Error status
           span.recordException(error as Error);
           throw error;
         }
@@ -184,13 +182,13 @@ export function initWebVitals() {
           clsValue += (entry as any).value;
         }
       }
-      Sentry.setMeasurement('web.vitals.cls', clsValue);
+      console.debug(`Web Vitals CLS: ${clsValue}`);
     }).observe({ entryTypes: ['layout-shift'] });
 
     // First Input Delay (FID)
     new PerformanceObserver((list) => {
       for (const entry of list.getEntries()) {
-        Sentry.setMeasurement('web.vitals.fid', (entry as any).processingStart - entry.startTime);
+        console.debug(`Web Vitals FID: ${(entry as any).processingStart - entry.startTime}ms`);
       }
     }).observe({ entryTypes: ['first-input'] });
   }
@@ -213,10 +211,10 @@ export function monitorApiCall(url: string, method: string = 'GET') {
       });
 
       // Report API metrics
-      Sentry.setMeasurement(`api.${method}.duration`, duration);
+      console.debug(`API Performance: ${method} ${url} took ${duration}ms`);
 
       if (error) {
-        Sentry.setTag('api.error', 'true');
+        Sentry.setContext('api', { error: 'true', method, url });
         Sentry.captureMessage(`API Error: ${method} ${url}`, 'error');
       }
     },
