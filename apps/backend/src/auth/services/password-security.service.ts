@@ -159,6 +159,7 @@ export class PasswordSecurityService {
   /**
    * Check if password has been used recently by user
    */
+  // eslint-disable-next-line no-unused-vars
   async isPasswordInHistory(_userId: string, _newPassword: string): Promise<boolean> {
     // In a real implementation, you would store password hashes in a separate table
     // For now, we'll return false (no history check)

@@ -276,6 +276,7 @@ export class AccountLockoutService {
     return baseDuration * multiplier;
   }
 
+  // eslint-disable-next-line no-unused-vars
   private async updateUserLockoutStatus(
     identifier: string,
     isLocked: boolean,

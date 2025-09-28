@@ -125,7 +125,8 @@
       "Bash(docker rm:*)",
       "Bash(git merge-base:*)",
       "Bash(git rebase:*)",
-      "Bash(git log:*)"
+      "Bash(git log:*)",
+      "Bash(docker ps:*)"
     ],
     "deny": [],
     "ask": []
