@@ -16,21 +16,20 @@ Please only submit bug reports when using the officially supported version.
 
 =============
 [0m[0m
-[0m[4m/home/runner/work/money-wise/money-wise/apps/backend/src/common/decorators/__tests__/sentry-transaction.decorator.spec.ts[24m[0m
-[0m  [2m1:10[22m  [31merror[39m  'Test' is defined but never used           [2m@typescript-eslint/no-unused-vars[22m[0m
-[0m  [2m1:10[22m  [31merror[39m  'Test' is defined but never used           [2mno-unused-vars[22m[0m
-[0m  [2m1:16[22m  [31merror[39m  'TestingModule' is defined but never used  [2m@typescript-eslint/no-unused-vars[22m[0m
-[0m  [2m1:16[22m  [31merror[39m  'TestingModule' is defined but never used  [2mno-unused-vars[22m[0m
+[0m[4m/home/runner/work/money-wise/money-wise/apps/backend/src/common/decorators/sentry-transaction.decorator.ts[24m[0m
+[0m  [2m68:41[22m  [31merror[39m  'options' is assigned a value but never used  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m68:41[22m  [31merror[39m  'options' is assigned a value but never used  [2mno-unused-vars[22m[0m
+[0m  [2m77:51[22m  [31merror[39m  '_status' is assigned a value but never used  [2mno-unused-vars[22m[0m
 [0m[0m
 [0m[4m/home/runner/work/money-wise/money-wise/apps/backend/src/common/interceptors/__tests__/sentry.interceptor.spec.ts[24m[0m
-[0m   [2m55:10[22m  [33mwarning[39m  Unexpected any. Specify a different type                                 [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m  [2m185:17[22m  [31merror[39m    'error' is defined but never used. Allowed unused args must match /^_/u  [2m@typescript-eslint/no-unused-vars[22m[0m
-[0m  [2m185:17[22m  [31merror[39m    'error' is defined but never used                                        [2mno-unused-vars[22m[0m
-[0m  [2m205:52[22m  [33mwarning[39m  Unexpected any. Specify a different type                                 [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m  [2m220:52[22m  [33mwarning[39m  Unexpected any. Specify a different type                                 [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m  [2m240:41[22m  [33mwarning[39m  Unexpected any. Specify a different type                                 [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m  [2m258:41[22m  [33mwarning[39m  Unexpected any. Specify a different type                                 [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m  [2m265:41[22m  [33mwarning[39m  Unexpected any. Specify a different type                                 [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m2:14[22m  [31merror[39m  'throwError' is defined but never used                     [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m   [2m2:14[22m  [31merror[39m  'throwError' is defined but never used                     [2mno-unused-vars[22m[0m
+[0m   [2m4:13[22m  [31merror[39m  'Sentry' is defined but never used                         [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m   [2m4:13[22m  [31merror[39m  'Sentry' is defined but never used                         [2mno-unused-vars[22m[0m
+[0m  [2m16:7[22m   [31merror[39m  'mockExecutionContext' is assigned a value but never used  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m16:7[22m   [31merror[39m  'mockExecutionContext' is assigned a value but never used  [2mno-unused-vars[22m[0m
+[0m  [2m17:7[22m   [31merror[39m  'mockCallHandler' is assigned a value but never used       [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m17:7[22m   [31merror[39m  'mockCallHandler' is assigned a value but never used       [2mno-unused-vars[22m[0m
 [0m[0m
 [0m[4m/home/runner/work/money-wise/money-wise/apps/backend/src/core/database/repositories/__tests__/account.repository.spec.ts[24m[0m
 [0m   [2m63:10[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
@@ -119,29 +118,10 @@ Please only submit bug reports when using the officially supported version.
 [0m  [2m77:35[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
 [0m  [2m77:51[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
 [0m[0m
-[0m[4m/home/runner/work/money-wise/money-wise/apps/backend/src/core/monitoring/cloudwatch.service.ts[24m[0m
-[0m  [2m289:31[22m  [33mwarning[39m  Unexpected any. Specify a different type       [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m  [2m380:26[22m  [31merror[39m    '_enabled' is assigned a value but never used  [2m@typescript-eslint/no-unused-vars[22m[0m
-[0m  [2m380:26[22m  [31merror[39m    '_enabled' is assigned a value but never used  [2mno-unused-vars[22m[0m
-[0m  [2m380:49[22m  [31merror[39m    '_envs' is assigned a value but never used     [2m@typescript-eslint/no-unused-vars[22m[0m
-[0m  [2m380:49[22m  [31merror[39m    '_envs' is assigned a value but never used     [2mno-unused-vars[22m[0m
-[0m  [2m412:17[22m  [33mwarning[39m  Unexpected any. Specify a different type       [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m[0m
-[0m[4m/home/runner/work/money-wise/money-wise/apps/backend/src/core/monitoring/health.controller.ts[24m[0m
-[0m  [2m175:21[22m  [31merror[39m  Unreachable code  [2mno-unreachable[22m[0m
-[0m  [2m186:21[22m  [31merror[39m  Unreachable code  [2mno-unreachable[22m[0m
-[0m[0m
-[0m[4m/home/runner/work/money-wise/money-wise/apps/backend/src/core/monitoring/monitoring.interceptor.ts[24m[0m
-[0m  [2m19:71[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m  [2m88:30[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m[0m
-[0m[4m/home/runner/work/money-wise/money-wise/apps/backend/src/core/monitoring/monitoring.service.ts[24m[0m
-[0m  [2m37:26[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m[0m
 [0m[4m/home/runner/work/money-wise/money-wise/apps/backend/src/database/timescaledb.service.ts[24m[0m
 [0m  [2m216:39[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
 [0m  [2m217:36[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
 [0m[0m
-[0m[31m[1m✖ 100 problems (20 errors, 80 warnings)[22m[39m[0m
+[0m[31m[1m✖ 88 problems (19 errors, 69 warnings)[22m[39m[0m
 [0m[31m[1m[22m[39m[0m
 [41m[30m ELIFECYCLE [39m[49m [31mCommand failed with exit code 1.[39m
