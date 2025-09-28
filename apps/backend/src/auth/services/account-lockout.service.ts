@@ -279,7 +279,7 @@ export class AccountLockoutService {
   private async updateUserLockoutStatus(
     identifier: string,
     isLocked: boolean,
-    lockedUntil?: Date,
+    _lockedUntil?: Date,
   ): Promise<void> {
     try {
       // Check if identifier is an email or user ID

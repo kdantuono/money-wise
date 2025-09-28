@@ -1,6 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import { Request } from 'express';
 
@@ -391,7 +389,7 @@ export class AuditLogService {
     return request.headers['x-session-id'] as string || undefined;
   }
 
-  private async getLocationFromIp(ip: string): Promise<{ country?: string; city?: string; region?: string } | undefined> {
+  private async getLocationFromIp(_ip: string): Promise<{ country?: string; city?: string; region?: string } | undefined> {
     // In production, you would use a GeoIP service
     // For now, return undefined
     return undefined;

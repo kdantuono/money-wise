@@ -5,19 +5,3 @@
   ▲ Next.js 14.2.32
 
    Creating an optimized production build ...
- ✓ Compiled successfully
-   Linting and checking validity of types ...
-Failed to compile.
-
-./src/lib/performance.ts:47:12
-Type error: Expected 3-4 arguments, but got 2.
-
-[0m [90m 45 |[39m[0m
-[0m [90m 46 |[39m     [90m// Report to Sentry[39m[0m
-[0m[31m[1m>[22m[39m[90m 47 |[39m     [33mSentry[39m[33m.[39msetMeasurement([32m`performance.${key}`[39m[33m,[39m duration)[33m;[39m[0m
-[0m [90m    |[39m            [31m[1m^[22m[39m[0m
-[0m [90m 48 |[39m[0m
-[0m [90m 49 |[39m     [36mreturn[39m duration[33m;[39m[0m
-[0m [90m 50 |[39m   }[0m
-Next.js build worker exited with code: 1 and signal: null
- ELIFECYCLE  Command failed with exit code 1.

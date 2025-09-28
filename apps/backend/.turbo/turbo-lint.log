@@ -3,6 +3,66 @@
 > eslint "{src,apps,libs,test}/**/*.ts" --fix
 
 
+/home/nemesi/dev/money-wise/apps/backend/src/auth/__tests__/auth.integration.spec.ts
+  175:60  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  423:60  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/nemesi/dev/money-wise/apps/backend/src/auth/__tests__/jwt.strategy.spec.ts
+  164:46  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  168:51  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  254:58  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  265:12  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/nemesi/dev/money-wise/apps/backend/src/auth/__tests__/test-utils/auth-test.factory.ts
+  228:22  warning  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  229:23  warning  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  422:41  warning  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  430:22  error    Do not access Object.prototype method 'hasOwnProperty' from target object  no-prototype-builtins
+  444:43  warning  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  482:42  warning  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  501:38  warning  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+
+/home/nemesi/dev/money-wise/apps/backend/src/auth/auth-security.service.spec.ts
+  50:8  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/nemesi/dev/money-wise/apps/backend/src/auth/auth.controller.ts
+  10:3   error  'Param' is defined but never used                       @typescript-eslint/no-unused-vars
+  10:3   error  'Param' is defined but never used                       no-unused-vars
+  18:3   error  'ApiParam' is defined but never used                    @typescript-eslint/no-unused-vars
+  18:3   error  'ApiParam' is defined but never used                    no-unused-vars
+  71:13  error  'verificationToken' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  71:13  error  'verificationToken' is assigned a value but never used  no-unused-vars
+
+/home/nemesi/dev/money-wise/apps/backend/src/auth/guards/rate-limit.guard.ts
+  27:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/nemesi/dev/money-wise/apps/backend/src/auth/services/account-lockout.service.ts
+  282:5  error  'lockedUntil' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  282:5  error  'lockedUntil' is defined but never used                                        no-unused-vars
+
+/home/nemesi/dev/money-wise/apps/backend/src/auth/services/audit-log.service.ts
+    2:10  error    'InjectRepository' is defined but never used                          @typescript-eslint/no-unused-vars
+    2:10  error    'InjectRepository' is defined but never used                          no-unused-vars
+    3:10  error    'Repository' is defined but never used                                @typescript-eslint/no-unused-vars
+    3:10  error    'Repository' is defined but never used                                no-unused-vars
+   67:27  warning  Unexpected any. Specify a different type                              @typescript-eslint/no-explicit-any
+  113:29  warning  Unexpected any. Specify a different type                              @typescript-eslint/no-explicit-any
+  197:84  warning  Unexpected any. Specify a different type                              @typescript-eslint/no-explicit-any
+  394:35  error    'ip' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  394:35  error    'ip' is defined but never used                                        no-unused-vars
+
+/home/nemesi/dev/money-wise/apps/backend/src/auth/services/email-verification.service.ts
+  344:13  error  'passwordHash' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  344:13  error  'passwordHash' is assigned a value but never used  no-unused-vars
+
+/home/nemesi/dev/money-wise/apps/backend/src/auth/services/password-security.service.ts
+   97:64  error  Unnecessary escape character: \[                                               no-useless-escape
+   97:81  error  Unnecessary escape character: \/                                               no-useless-escape
+  162:29  error  'userId' is defined but never used. Allowed unused args must match /^_/u       @typescript-eslint/no-unused-vars
+  162:29  error  'userId' is defined but never used                                             no-unused-vars
+  162:45  error  'newPassword' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  162:45  error  'newPassword' is defined but never used                                        no-unused-vars
+
 /home/nemesi/dev/money-wise/apps/backend/src/core/database/repositories/__tests__/account.repository.spec.ts
    63:10  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
    71:10  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
@@ -83,8 +143,21 @@
   77:51  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
 
 /home/nemesi/dev/money-wise/apps/backend/src/database/timescaledb.service.ts
-  216:39  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  217:36  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  228:39  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  229:36  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  291:14  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  292:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  343:14  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  344:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  379:14  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  407:14  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  408:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  444:14  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  491:14  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  492:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  522:83  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  559:56  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
 
-✖ 69 problems (0 errors, 69 warnings)
+✖ 121 problems (23 errors, 98 warnings)
 
+ ELIFECYCLE  Command failed with exit code 1.

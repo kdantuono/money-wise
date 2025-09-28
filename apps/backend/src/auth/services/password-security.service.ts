@@ -94,7 +94,7 @@ export class PasswordSecurityService {
       score += 15;
     }
 
-    if (appliedPolicy.requireSpecialChars && !/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
+    if (appliedPolicy.requireSpecialChars && !/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password)) {
       feedback.push('Password must contain at least one special character');
     } else if (appliedPolicy.requireSpecialChars) {
       score += 15;
@@ -159,7 +159,7 @@ export class PasswordSecurityService {
   /**
    * Check if password has been used recently by user
    */
-  async isPasswordInHistory(userId: string, newPassword: string): Promise<boolean> {
+  async isPasswordInHistory(_userId: string, _newPassword: string): Promise<boolean> {
     // In a real implementation, you would store password hashes in a separate table
     // For now, we'll return false (no history check)
     // TODO: Implement password history table and check

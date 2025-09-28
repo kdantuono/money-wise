@@ -7,7 +7,6 @@ import {
   HttpCode,
   HttpStatus,
   Req,
-  Param,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -15,7 +14,6 @@ import {
   ApiResponse,
   ApiBearerAuth,
   ApiBody,
-  ApiParam,
 } from '@nestjs/swagger';
 import { Request } from 'express';
 import { AuthService } from './auth.service';
@@ -68,7 +66,7 @@ export class AuthController {
   async register(@Body() registerDto: RegisterDto, @Req() request: Request): Promise<AuthResponseDto> {
     const result = await this.authSecurityService.register(registerDto, request);
     // Remove verification token from response (used internally for email sending)
-    const { verificationToken, ...response } = result;
+    const { verificationToken: _verificationToken, ...response } = result;
     return response;
   }
 

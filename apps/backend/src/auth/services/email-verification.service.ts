@@ -341,7 +341,7 @@ export class EmailVerificationService {
   }
 
   private sanitizeUser(user: User): Partial<User> {
-    const { passwordHash, ...sanitizedUser } = user;
+    const { passwordHash: _passwordHash, ...sanitizedUser } = user;
     return sanitizedUser;
   }
 
