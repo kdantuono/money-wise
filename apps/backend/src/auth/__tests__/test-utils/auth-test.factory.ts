@@ -1,5 +1,5 @@
 import { JwtService } from '@nestjs/jwt';
-import { Repository } from 'typeorm';
+import { Repository, EntityManager, EntityMetadata } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
 
 import { User, UserStatus, UserRole } from '../../../core/database/entities/user.entity';
@@ -225,8 +225,8 @@ export class AuthTestFactory {
       delete: jest.fn(),
       count: jest.fn(),
       query: jest.fn(),
-      manager: {} as any,
-      metadata: {} as any,
+      manager: {} as EntityManager,
+      metadata: {} as EntityMetadata,
       target: User,
       createQueryBuilder: jest.fn(),
       clear: jest.fn(),
@@ -419,15 +419,23 @@ export class AuthTestUtils {
   /**
    * Verify that a response contains valid auth structure
    */
-  static validateAuthResponse(response: any): boolean {
+  static validateAuthResponse(response: unknown): boolean {
+    if (!response || typeof response !== 'object') {
+      return false;
+    }
+
+    const resp = response as Record<string, unknown>;
+
     return (
-      typeof response.accessToken === 'string' &&
-      typeof response.refreshToken === 'string' &&
-      typeof response.expiresIn === 'number' &&
-      response.user &&
-      typeof response.user.id === 'string' &&
-      typeof response.user.email === 'string' &&
-      !response.user.hasOwnProperty('passwordHash')
+      typeof resp.accessToken === 'string' &&
+      typeof resp.refreshToken === 'string' &&
+      typeof resp.expiresIn === 'number' &&
+      resp.user &&
+      typeof resp.user === 'object' &&
+      resp.user !== null &&
+      typeof (resp.user as Record<string, unknown>).id === 'string' &&
+      typeof (resp.user as Record<string, unknown>).email === 'string' &&
+      !Object.prototype.hasOwnProperty.call(resp.user, 'passwordHash')
     );
   }
 
@@ -441,7 +449,7 @@ export class AuthTestUtils {
   /**
    * Extract JWT payload without verification (for testing)
    */
-  static decodeJwtPayload(token: string): any {
+  static decodeJwtPayload(token: string): Record<string, unknown> {
     const parts = token.split('.');
     if (parts.length !== 3) {
       throw new Error('Invalid JWT format');

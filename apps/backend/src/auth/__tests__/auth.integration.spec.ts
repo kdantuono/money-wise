@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, UpdateResult } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
 import request from 'supertest';
 import * as bcrypt from 'bcryptjs';
@@ -172,7 +172,7 @@ describe('Auth Integration Tests', () => {
 
     it('should login user successfully', async () => {
       userRepository.findOne.mockResolvedValue(mockUser);
-      userRepository.update.mockResolvedValue(undefined as any);
+      userRepository.update.mockResolvedValue({} as UpdateResult);
       mockedBcrypt.compare.mockResolvedValue(true);
 
       const response = await request(app.getHttpServer())
@@ -420,7 +420,7 @@ describe('Auth Integration Tests', () => {
     it('should handle token refresh flow', async () => {
       // 1. Login to get tokens
       userRepository.findOne.mockResolvedValue(mockUser);
-      userRepository.update.mockResolvedValue(undefined as any);
+      userRepository.update.mockResolvedValue({} as UpdateResult);
       mockedBcrypt.compare.mockResolvedValue(true);
 
       const loginResponse = await request(app.getHttpServer())

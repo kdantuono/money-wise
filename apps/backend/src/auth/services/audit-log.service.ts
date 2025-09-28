@@ -390,6 +390,8 @@ export class AuditLogService {
   }
 
   private async getLocationFromIp(_ip: string): Promise<{ country?: string; city?: string; region?: string } | undefined> {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const ip = _ip;
     // In production, you would use a GeoIP service
     // For now, return undefined
     return undefined;

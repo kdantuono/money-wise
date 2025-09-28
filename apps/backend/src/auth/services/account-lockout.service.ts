@@ -281,6 +281,8 @@ export class AccountLockoutService {
     isLocked: boolean,
     _lockedUntil?: Date,
   ): Promise<void> {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const lockedUntil = _lockedUntil;
     try {
       // Check if identifier is an email or user ID
       const isEmail = identifier.includes('@');

@@ -161,11 +161,11 @@ describe('JwtStrategy', () => {
         new UnauthorizedException('Invalid payload'),
       );
 
-      await expect(strategy.validate(null as any)).rejects.toThrow(
+      await expect(strategy.validate(null as never)).rejects.toThrow(
         UnauthorizedException,
       );
 
-      await expect(strategy.validate(undefined as any)).rejects.toThrow(
+      await expect(strategy.validate(undefined as never)).rejects.toThrow(
         UnauthorizedException,
       );
     });
@@ -251,7 +251,7 @@ describe('JwtStrategy', () => {
         role: 'user',
       };
 
-      authService.validateUser.mockResolvedValue(null as any);
+      authService.validateUser.mockResolvedValue(null);
 
       const result = await strategy.validate(validPayload);
       expect(result).toBeNull();
@@ -262,7 +262,7 @@ describe('JwtStrategy', () => {
         id: '1', // wrong field name
         userEmail: 'test@example.com', // wrong field name
         userRole: 'user', // wrong field name
-      } as any;
+      } as JwtPayload;
 
       authService.validateUser.mockRejectedValue(
         new UnauthorizedException('Malformed payload'),
