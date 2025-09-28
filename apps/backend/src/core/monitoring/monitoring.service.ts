@@ -245,7 +245,7 @@ export class MonitoringService implements OnModuleInit {
         await this.cloudWatchService.putMetric(
           metric.name,
           metric.value,
-          metric.unit,
+          'Count', // Default unit as string
           metric.dimensions,
         );
       }

@@ -2,7 +2,6 @@ import {
   PutMetricAlarmCommandInput,
   ComparisonOperator,
   Statistic,
-  TreatMissingData,
 } from '@aws-sdk/client-cloudwatch';
 
 export interface AlarmConfig extends Omit<PutMetricAlarmCommandInput, 'Namespace'> {
@@ -28,7 +27,7 @@ export const CLOUDWATCH_ALARMS: AlarmConfig[] = [
     Period: 300, // 5 minutes
     Statistic: Statistic.Sum,
     Threshold: 10, // 10 errors in 5 minutes
-    TreatMissingData: TreatMissingData.notBreaching,
+    TreatMissingData: 'notBreaching',
     AlarmActions: [
       // SNS topic ARN would be configured here
       // 'arn:aws:sns:us-east-1:123456789012:moneywise-alerts'
@@ -48,7 +47,7 @@ export const CLOUDWATCH_ALARMS: AlarmConfig[] = [
     Period: 300,
     Statistic: Statistic.Average,
     Threshold: 2000, // 2 seconds
-    TreatMissingData: TreatMissingData.notBreaching,
+    TreatMissingData: 'notBreaching',
   },
   {
     enabled: true,
@@ -61,7 +60,7 @@ export const CLOUDWATCH_ALARMS: AlarmConfig[] = [
     Period: 300,
     Statistic: Statistic.Sum,
     Threshold: 1000, // 1000 requests per 5 minutes
-    TreatMissingData: TreatMissingData.notBreaching,
+    TreatMissingData: 'notBreaching',
   },
 
   // System Resource Alarms
@@ -76,7 +75,7 @@ export const CLOUDWATCH_ALARMS: AlarmConfig[] = [
     Period: 300,
     Statistic: Statistic.Average,
     Threshold: 80, // 80%
-    TreatMissingData: TreatMissingData.notBreaching,
+    TreatMissingData: 'notBreaching',
   },
   {
     enabled: true,
@@ -89,7 +88,7 @@ export const CLOUDWATCH_ALARMS: AlarmConfig[] = [
     Period: 300,
     Statistic: Statistic.Average,
     Threshold: 512, // 512MB
-    TreatMissingData: TreatMissingData.notBreaching,
+    TreatMissingData: 'notBreaching',
   },
 
   // Database Performance Alarms
@@ -104,7 +103,7 @@ export const CLOUDWATCH_ALARMS: AlarmConfig[] = [
     Period: 300,
     Statistic: Statistic.Average,
     Threshold: 1000, // 1 second
-    TreatMissingData: TreatMissingData.notBreaching,
+    TreatMissingData: 'notBreaching',
   },
 
   // Business Logic Alarms
@@ -119,7 +118,7 @@ export const CLOUDWATCH_ALARMS: AlarmConfig[] = [
     Period: 900, // 15 minutes
     Statistic: Statistic.Average,
     Threshold: 10, // Less than 10 active users
-    TreatMissingData: TreatMissingData.breaching,
+    TreatMissingData: 'breaching',
   },
   {
     enabled: true,
@@ -132,7 +131,7 @@ export const CLOUDWATCH_ALARMS: AlarmConfig[] = [
     Period: 300,
     Statistic: Statistic.Sum,
     Threshold: 5, // More than 5 transaction errors
-    TreatMissingData: TreatMissingData.notBreaching,
+    TreatMissingData: 'notBreaching',
   },
 
   // Security Alarms
@@ -147,7 +146,7 @@ export const CLOUDWATCH_ALARMS: AlarmConfig[] = [
     Period: 300,
     Statistic: Statistic.Sum,
     Threshold: 20, // More than 20 failed auth attempts
-    TreatMissingData: TreatMissingData.notBreaching,
+    TreatMissingData: 'notBreaching',
   },
 
   // Availability Alarms
@@ -162,7 +161,7 @@ export const CLOUDWATCH_ALARMS: AlarmConfig[] = [
     Period: 60, // 1 minute
     Statistic: Statistic.Sum,
     Threshold: 1, // No successful health checks
-    TreatMissingData: TreatMissingData.breaching,
+    TreatMissingData: 'breaching',
   },
 ];
 

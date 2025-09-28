@@ -12,7 +12,6 @@ import {
   PutMetricAlarmCommandInput,
   ComparisonOperator,
   Statistic,
-  TreatMissingData,
 } from '@aws-sdk/client-cloudwatch';
 import {
   CloudWatchLogsClient,

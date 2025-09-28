@@ -7,9 +7,7 @@ import { AppModule } from './app.module';
 import helmet from 'helmet';
 import compression from 'compression';
 import { AppConfig } from './core/config/app.config';
-import { createSentryConfig, initializeSentry } from './config/sentry.config';
-import { SentryInterceptor } from './common/interceptors/sentry.interceptor';
-import { SentryExceptionFilter } from './common/filters/sentry-exception.filter';
+import { MonitoringInterceptor } from './core/monitoring/monitoring.interceptor';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
@@ -24,13 +22,12 @@ async function bootstrap() {
     const configService = app.get(ConfigService);
     const appConfig = configService.get<AppConfig>('app');
 
-    // Initialize Sentry
-    const sentryConfig = createSentryConfig(configService);
-    initializeSentry(sentryConfig);
+    // Get monitoring service for interceptor
+    const { MonitoringService } = await import('./core/monitoring/monitoring.service');
+    const monitoringService = app.get(MonitoringService);
 
-    // Global error handling and monitoring
-    app.useGlobalInterceptors(new SentryInterceptor());
-    app.useGlobalFilters(new SentryExceptionFilter());
+    // Global monitoring interceptor
+    app.useGlobalInterceptors(new MonitoringInterceptor(monitoringService));
 
     // Validate configuration
     if (!appConfig) {
