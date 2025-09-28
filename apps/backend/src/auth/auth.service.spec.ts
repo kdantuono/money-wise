@@ -172,6 +172,86 @@ describe('AuthService', () => {
     });
   });
 
+  describe('refreshToken', () => {
+    const refreshToken = 'valid-refresh-token';
+    const payload = {
+      sub: '1',
+      email: 'test@example.com',
+      role: 'user',
+    };
+
+    beforeEach(() => {
+      process.env.JWT_REFRESH_SECRET = 'refresh-secret';
+    });
+
+    it('should refresh token successfully with valid refresh token', async () => {
+      jwtService.verify.mockReturnValue(payload);
+      userRepository.findOne.mockResolvedValue(mockUser);
+      jwtService.sign.mockReturnValue('new-jwt-token');
+
+      const result = await service.refreshToken(refreshToken);
+
+      expect(jwtService.verify).toHaveBeenCalledWith(refreshToken, {
+        secret: process.env.JWT_REFRESH_SECRET,
+      });
+      expect(userRepository.findOne).toHaveBeenCalledWith({
+        where: { id: payload.sub },
+      });
+      expect(result).toHaveProperty('accessToken');
+      expect(result).toHaveProperty('refreshToken');
+      expect(result).toHaveProperty('user');
+      expect(result.user).not.toHaveProperty('passwordHash');
+    });
+
+    it('should throw UnauthorizedException with invalid refresh token', async () => {
+      jwtService.verify.mockImplementation(() => {
+        throw new Error('Invalid token');
+      });
+
+      await expect(service.refreshToken(refreshToken)).rejects.toThrow(
+        UnauthorizedException,
+      );
+      expect(jwtService.verify).toHaveBeenCalledWith(refreshToken, {
+        secret: process.env.JWT_REFRESH_SECRET,
+      });
+    });
+
+    it('should throw UnauthorizedException if user not found', async () => {
+      jwtService.verify.mockReturnValue(payload);
+      userRepository.findOne.mockResolvedValue(null);
+
+      await expect(service.refreshToken(refreshToken)).rejects.toThrow(
+        UnauthorizedException,
+      );
+    });
+
+    it('should throw UnauthorizedException if user is not active', async () => {
+      const inactiveUser = {
+        ...mockUser,
+        status: UserStatus.INACTIVE,
+        get isActive() { return this.status === UserStatus.ACTIVE; }
+      } as User;
+      jwtService.verify.mockReturnValue(payload);
+      userRepository.findOne.mockResolvedValue(inactiveUser);
+
+      await expect(service.refreshToken(refreshToken)).rejects.toThrow(
+        UnauthorizedException,
+      );
+    });
+
+    it('should throw UnauthorizedException with expired refresh token', async () => {
+      jwtService.verify.mockImplementation(() => {
+        const error = new Error('Token expired');
+        error.name = 'TokenExpiredError';
+        throw error;
+      });
+
+      await expect(service.refreshToken(refreshToken)).rejects.toThrow(
+        UnauthorizedException,
+      );
+    });
+  });
+
   describe('validateUser', () => {
     const payload = {
       sub: '1',
@@ -209,6 +289,111 @@ describe('AuthService', () => {
       await expect(service.validateUser(payload)).rejects.toThrow(
         UnauthorizedException,
       );
+    });
+  });
+
+  describe('generateAuthResponse', () => {
+    beforeEach(() => {
+      process.env.JWT_ACCESS_SECRET = 'access-secret';
+      process.env.JWT_REFRESH_SECRET = 'refresh-secret';
+      process.env.JWT_ACCESS_EXPIRES_IN = '15m';
+      process.env.JWT_REFRESH_EXPIRES_IN = '7d';
+    });
+
+    it('should generate proper auth response with tokens', async () => {
+      jwtService.sign
+        .mockReturnValueOnce('access-token')
+        .mockReturnValueOnce('refresh-token');
+
+      // Test via register since generateAuthResponse is private
+      userRepository.findOne.mockResolvedValue(null);
+      userRepository.create.mockReturnValue(mockUser);
+      userRepository.save.mockResolvedValue(mockUser);
+      (mockedBcrypt.hash as jest.Mock).mockResolvedValue('hashedPassword');
+
+      const registerDto = {
+        email: 'test@example.com',
+        firstName: 'John',
+        lastName: 'Doe',
+        password: 'Password123!',
+      };
+
+      const result = await service.register(registerDto);
+
+      expect(jwtService.sign).toHaveBeenCalledWith(
+        {
+          sub: mockUser.id,
+          email: mockUser.email,
+          role: mockUser.role,
+        },
+        {
+          secret: process.env.JWT_ACCESS_SECRET,
+          expiresIn: process.env.JWT_ACCESS_EXPIRES_IN,
+        },
+      );
+      expect(jwtService.sign).toHaveBeenCalledWith(
+        {
+          sub: mockUser.id,
+          email: mockUser.email,
+          role: mockUser.role,
+        },
+        {
+          secret: process.env.JWT_REFRESH_SECRET,
+          expiresIn: process.env.JWT_REFRESH_EXPIRES_IN,
+        },
+      );
+      expect(result.accessToken).toBe('access-token');
+      expect(result.refreshToken).toBe('refresh-token');
+      expect(result.expiresIn).toBe(15 * 60);
+      expect(result.user).toBeDefined();
+      expect(result.user).not.toHaveProperty('passwordHash');
+      expect(result.user.fullName).toBe(`${mockUser.firstName} ${mockUser.lastName}`);
+      expect(result.user.isEmailVerified).toBeDefined();
+      expect(result.user.isActive).toBeDefined();
+    });
+  });
+
+  describe('error scenarios', () => {
+    it('should handle bcrypt hashing errors during registration', async () => {
+      const registerDto = {
+        email: 'test@example.com',
+        firstName: 'John',
+        lastName: 'Doe',
+        password: 'Password123!',
+      };
+
+      userRepository.findOne.mockResolvedValue(null);
+      (mockedBcrypt.hash as jest.Mock).mockRejectedValue(new Error('Bcrypt error'));
+
+      await expect(service.register(registerDto)).rejects.toThrow('Bcrypt error');
+    });
+
+    it('should handle database errors during user creation', async () => {
+      const registerDto = {
+        email: 'test@example.com',
+        firstName: 'John',
+        lastName: 'Doe',
+        password: 'Password123!',
+      };
+
+      userRepository.findOne.mockResolvedValue(null);
+      userRepository.create.mockReturnValue(mockUser);
+      userRepository.save.mockRejectedValue(new Error('Database error'));
+      (mockedBcrypt.hash as jest.Mock).mockResolvedValue('hashedPassword');
+
+      await expect(service.register(registerDto)).rejects.toThrow('Database error');
+    });
+
+    it('should handle bcrypt comparison errors during login', async () => {
+      const loginDto = {
+        email: 'test@example.com',
+        password: 'Password123!',
+      };
+
+      userRepository.findOne.mockResolvedValue(mockUser);
+      (mockedBcrypt.compare as jest.Mock).mockRejectedValue(new Error('Bcrypt error'));
+
+      await expect(service.login(loginDto)).rejects.toThrow('Bcrypt error');
     });
   });
 });
