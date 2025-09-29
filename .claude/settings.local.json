@@ -133,7 +133,10 @@
       "Bash(/home/nemesi/dev/money-wise/.claude/scripts/agile-validator.sh validate:*)",
       "Bash(/home/nemesi/dev/money-wise/.claude/scripts/orchestration-dashboard.sh status:*)",
       "Bash(/home/nemesi/dev/money-wise/.claude/scripts/final-integration-orchestrator.sh:*)",
-      "Bash(git resolve:*)"
+      "Bash(git resolve:*)",
+      "Bash(awk:*)",
+      "Bash(head:*)",
+      "Bash(make:*)"
     ],
     "deny": [],
     "ask": []
