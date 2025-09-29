@@ -13,10 +13,23 @@ import { User, UserStatus } from '../core/database/entities/user.entity';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { AuthResponseDto } from './dto/auth-response.dto';
-import { PasswordChangeDto, PasswordChangeResponseDto } from './dto/password-change.dto';
-import { PasswordResetRequestDto, PasswordResetDto, PasswordResetResponseDto } from './dto/password-reset.dto';
-import { EmailVerificationResponseDto, ResendEmailVerificationResponseDto } from './dto/email-verification.dto';
-import { PasswordStrengthCheckDto, PasswordStrengthResponseDto } from './dto/password-strength.dto';
+import {
+  PasswordChangeDto,
+  PasswordChangeResponseDto,
+} from './dto/password-change.dto';
+import {
+  PasswordResetRequestDto,
+  PasswordResetDto,
+  PasswordResetResponseDto,
+} from './dto/password-reset.dto';
+import {
+  EmailVerificationResponseDto,
+  ResendEmailVerificationResponseDto,
+} from './dto/email-verification.dto';
+import {
+  PasswordStrengthCheckDto,
+  PasswordStrengthResponseDto,
+} from './dto/password-strength.dto';
 
 // Security services
 import { PasswordSecurityService } from './services/password-security.service';
@@ -43,13 +56,16 @@ export class AuthSecurityService {
     private accountLockoutService: AccountLockoutService,
     private emailVerificationService: EmailVerificationService,
     private passwordResetService: PasswordResetService,
-    private auditLogService: AuditLogService,
+    private auditLogService: AuditLogService
   ) {}
 
   /**
    * Enhanced registration with email verification
    */
-  async register(registerDto: RegisterDto, request: Request): Promise<AuthResponseDto & { verificationToken?: string }> {
+  async register(
+    registerDto: RegisterDto,
+    request: Request
+  ): Promise<AuthResponseDto & { verificationToken?: string }> {
     const { email, password, firstName, lastName } = registerDto;
 
     try {
@@ -64,7 +80,7 @@ export class AuthSecurityService {
           request,
           { reason: 'email_already_exists' },
           undefined,
-          email,
+          email
         );
         throw new ConflictException('User with this email already exists');
       }
@@ -72,7 +88,7 @@ export class AuthSecurityService {
       // Validate password strength
       const passwordValidation = this.passwordSecurityService.validatePassword(
         password,
-        { email, firstName, lastName },
+        { email, firstName, lastName }
       );
 
       if (!passwordValidation.meets_requirements) {
@@ -81,7 +97,7 @@ export class AuthSecurityService {
           request,
           { reason: 'weak_password', feedback: passwordValidation.feedback },
           undefined,
-          email,
+          email
         );
         throw new BadRequestException({
           message: 'Password does not meet security requirements',
@@ -92,7 +108,8 @@ export class AuthSecurityService {
       }
 
       // Hash password
-      const passwordHash = await this.passwordSecurityService.hashPassword(password);
+      const passwordHash =
+        await this.passwordSecurityService.hashPassword(password);
 
       // Create user (inactive until email verification)
       const user = this.userRepository.create({
@@ -106,10 +123,11 @@ export class AuthSecurityService {
       const savedUser = await this.userRepository.save(user);
 
       // Generate email verification token
-      const verificationToken = await this.emailVerificationService.generateVerificationToken(
-        savedUser.id,
-        savedUser.email,
-      );
+      const verificationToken =
+        await this.emailVerificationService.generateVerificationToken(
+          savedUser.id,
+          savedUser.email
+        );
 
       // Log successful registration
       await this.auditLogService.logEvent(
@@ -117,7 +135,7 @@ export class AuthSecurityService {
         request,
         { requiresVerification: true },
         savedUser.id,
-        savedUser.email,
+        savedUser.email
       );
 
       // Generate tokens for the response
@@ -128,7 +146,10 @@ export class AuthSecurityService {
         verificationToken, // Include verification token for testing/email sending
       };
     } catch (error) {
-      if (error instanceof ConflictException || error instanceof BadRequestException) {
+      if (
+        error instanceof ConflictException ||
+        error instanceof BadRequestException
+      ) {
         throw error;
       }
 
@@ -138,7 +159,7 @@ export class AuthSecurityService {
         request,
         { reason: 'internal_error' },
         undefined,
-        email,
+        email
       );
       throw new Error('Registration failed');
     }
@@ -153,33 +174,57 @@ export class AuthSecurityService {
 
     try {
       // Check for account lockout first
-      const lockoutInfo = await this.accountLockoutService.getLockoutInfo(normalizedEmail);
+      const lockoutInfo =
+        await this.accountLockoutService.getLockoutInfo(normalizedEmail);
       if (lockoutInfo.isLocked) {
         await this.auditLogService.logEvent(
           AuditEventType.LOGIN_FAILED,
           request,
           { reason: 'account_locked', lockedUntil: lockoutInfo.lockedUntil },
           undefined,
-          normalizedEmail,
+          normalizedEmail
         );
-        throw new UnauthorizedException('Account is temporarily locked due to too many failed attempts');
+        throw new UnauthorizedException(
+          'Account is temporarily locked due to too many failed attempts'
+        );
       }
 
       // Find user with password
       const user = await this.userRepository.findOne({
         where: { email: normalizedEmail },
-        select: ['id', 'email', 'firstName', 'lastName', 'passwordHash', 'role', 'status', 'emailVerifiedAt'],
+        select: [
+          'id',
+          'email',
+          'firstName',
+          'lastName',
+          'passwordHash',
+          'role',
+          'status',
+          'emailVerifiedAt',
+        ],
       });
 
       if (!user) {
-        await this.recordFailedLogin(normalizedEmail, 'user_not_found', request);
+        await this.recordFailedLogin(
+          normalizedEmail,
+          'user_not_found',
+          request
+        );
         throw new UnauthorizedException('Invalid email or password');
       }
 
       // Verify password
-      const isPasswordValid = await this.passwordSecurityService.verifyPassword(password, user.passwordHash);
+      const isPasswordValid = await this.passwordSecurityService.verifyPassword(
+        password,
+        user.passwordHash
+      );
       if (!isPasswordValid) {
-        await this.recordFailedLogin(normalizedEmail, 'invalid_password', request, user.id);
+        await this.recordFailedLogin(
+          normalizedEmail,
+          'invalid_password',
+          request,
+          user.id
+        );
         throw new UnauthorizedException('Invalid email or password');
       }
 
@@ -190,7 +235,7 @@ export class AuthSecurityService {
           request,
           { reason: 'account_inactive', status: user.status },
           user.id,
-          user.email,
+          user.email
         );
         throw new UnauthorizedException('Account is not active');
       }
@@ -219,9 +264,9 @@ export class AuthSecurityService {
         request,
         { reason: 'internal_error' },
         undefined,
-        normalizedEmail,
+        normalizedEmail
       );
-      throw new Error('Login failed');
+      throw new UnauthorizedException('Invalid email or password');
     }
   }
 
@@ -231,7 +276,7 @@ export class AuthSecurityService {
   async changePassword(
     userId: string,
     passwordChangeDto: PasswordChangeDto,
-    request: Request,
+    request: Request
   ): Promise<PasswordChangeResponseDto> {
     const { currentPassword, newPassword } = passwordChangeDto;
 
@@ -247,13 +292,19 @@ export class AuthSecurityService {
       }
 
       // Verify current password
-      const isCurrentPasswordValid = await this.passwordSecurityService.verifyPassword(
-        currentPassword,
-        user.passwordHash,
-      );
+      const isCurrentPasswordValid =
+        await this.passwordSecurityService.verifyPassword(
+          currentPassword,
+          user.passwordHash
+        );
 
       if (!isCurrentPasswordValid) {
-        await this.auditLogService.logPasswordChange(request, userId, user.email, false);
+        await this.auditLogService.logPasswordChange(
+          request,
+          userId,
+          user.email,
+          false
+        );
         throw new UnauthorizedException('Current password is incorrect');
       }
 
@@ -264,7 +315,7 @@ export class AuthSecurityService {
           email: user.email,
           firstName: user.firstName,
           lastName: user.lastName,
-        },
+        }
       );
 
       if (!passwordValidation.meets_requirements) {
@@ -279,21 +330,30 @@ export class AuthSecurityService {
       // Check if new password is different from current
       const isSamePassword = await this.passwordSecurityService.verifyPassword(
         newPassword,
-        user.passwordHash,
+        user.passwordHash
       );
 
       if (isSamePassword) {
-        throw new BadRequestException('New password must be different from current password');
+        throw new BadRequestException(
+          'New password must be different from current password'
+        );
       }
 
       // Check password history
-      const isInHistory = await this.passwordSecurityService.isPasswordInHistory(userId, newPassword);
+      const isInHistory =
+        await this.passwordSecurityService.isPasswordInHistory(
+          userId,
+          newPassword
+        );
       if (isInHistory) {
-        throw new BadRequestException('You cannot reuse a recently used password');
+        throw new BadRequestException(
+          'You cannot reuse a recently used password'
+        );
       }
 
       // Hash new password
-      const newPasswordHash = await this.passwordSecurityService.hashPassword(newPassword);
+      const newPasswordHash =
+        await this.passwordSecurityService.hashPassword(newPassword);
 
       // Update password
       await this.userRepository.update(userId, {
@@ -301,7 +361,12 @@ export class AuthSecurityService {
       });
 
       // Log successful password change
-      await this.auditLogService.logPasswordChange(request, userId, user.email, true);
+      await this.auditLogService.logPasswordChange(
+        request,
+        userId,
+        user.email,
+        true
+      );
 
       return {
         success: true,
@@ -313,7 +378,10 @@ export class AuthSecurityService {
         },
       };
     } catch (error) {
-      if (error instanceof UnauthorizedException || error instanceof BadRequestException) {
+      if (
+        error instanceof UnauthorizedException ||
+        error instanceof BadRequestException
+      ) {
         throw error;
       }
 
@@ -327,7 +395,7 @@ export class AuthSecurityService {
    */
   async requestPasswordReset(
     passwordResetRequestDto: PasswordResetRequestDto,
-    request: Request,
+    request: Request
   ): Promise<{ message: string; token?: string }> {
     const { email } = passwordResetRequestDto;
 
@@ -335,7 +403,7 @@ export class AuthSecurityService {
       const result = await this.passwordResetService.requestPasswordReset(
         email.toLowerCase(),
         this.getClientIp(request),
-        request.get('User-Agent') || 'unknown',
+        request.get('User-Agent') || 'unknown'
       );
 
       await this.auditLogService.logEvent(
@@ -343,11 +411,12 @@ export class AuthSecurityService {
         request,
         { email },
         undefined,
-        email,
+        email
       );
 
       return {
-        message: 'If an account with that email exists, a password reset link has been sent.',
+        message:
+          'If an account with that email exists, a password reset link has been sent.',
         token: result.token, // Include token for testing (remove in production)
       };
     } catch (error) {
@@ -361,7 +430,7 @@ export class AuthSecurityService {
    */
   async resetPassword(
     passwordResetDto: PasswordResetDto,
-    request: Request,
+    request: Request
   ): Promise<PasswordResetResponseDto> {
     const { token, newPassword } = passwordResetDto;
 
@@ -370,13 +439,13 @@ export class AuthSecurityService {
         token,
         newPassword,
         this.getClientIp(request),
-        request.get('User-Agent') || 'unknown',
+        request.get('User-Agent') || 'unknown'
       );
 
       await this.auditLogService.logEvent(
         AuditEventType.PASSWORD_RESET_SUCCESS,
         request,
-        { token: token.substring(0, 8) + '...' },
+        { token: token.substring(0, 8) + '...' }
       );
 
       return result;
@@ -384,7 +453,7 @@ export class AuthSecurityService {
       await this.auditLogService.logEvent(
         AuditEventType.PASSWORD_RESET_FAILED,
         request,
-        { token: token.substring(0, 8) + '...', error: error.message },
+        { token: token.substring(0, 8) + '...', error: error.message }
       );
 
       if (error instanceof BadRequestException) {
@@ -399,7 +468,10 @@ export class AuthSecurityService {
   /**
    * Verify email address
    */
-  async verifyEmail(token: string, request: Request): Promise<EmailVerificationResponseDto> {
+  async verifyEmail(
+    token: string,
+    request: Request
+  ): Promise<EmailVerificationResponseDto> {
     try {
       const result = await this.emailVerificationService.verifyEmail(token);
 
@@ -408,7 +480,7 @@ export class AuthSecurityService {
         request,
         { token: token.substring(0, 8) + '...' },
         result.user?.id,
-        result.user?.email,
+        result.user?.email
       );
 
       return result as EmailVerificationResponseDto;
@@ -416,7 +488,7 @@ export class AuthSecurityService {
       await this.auditLogService.logEvent(
         AuditEventType.EMAIL_VERIFICATION_FAILED,
         request,
-        { token: token.substring(0, 8) + '...', error: error.message },
+        { token: token.substring(0, 8) + '...', error: error.message }
       );
 
       if (error instanceof BadRequestException) {
@@ -433,7 +505,7 @@ export class AuthSecurityService {
    */
   async resendEmailVerification(
     userId: string,
-    request: Request,
+    request: Request
   ): Promise<ResendEmailVerificationResponseDto> {
     try {
       await this.emailVerificationService.resendVerificationEmail(userId);
@@ -442,7 +514,7 @@ export class AuthSecurityService {
         AuditEventType.EMAIL_VERIFICATION_SENT,
         request,
         { type: 'resend' },
-        userId,
+        userId
       );
 
       return {
@@ -463,14 +535,15 @@ export class AuthSecurityService {
    * Check password strength
    */
   async checkPasswordStrength(
-    passwordStrengthDto: PasswordStrengthCheckDto,
+    passwordStrengthDto: PasswordStrengthCheckDto
   ): Promise<PasswordStrengthResponseDto> {
     const { password, email, firstName, lastName } = passwordStrengthDto;
 
-    const validation = this.passwordSecurityService.validatePassword(
-      password,
-      { email, firstName, lastName },
-    );
+    const validation = this.passwordSecurityService.validatePassword(password, {
+      email,
+      firstName,
+      lastName,
+    });
 
     return {
       score: validation.score,
@@ -483,7 +556,10 @@ export class AuthSecurityService {
   /**
    * Enhanced token refresh with security checks
    */
-  async refreshToken(refreshToken: string, request: Request): Promise<AuthResponseDto> {
+  async refreshToken(
+    refreshToken: string,
+    request: Request
+  ): Promise<AuthResponseDto> {
     try {
       const payload = this.jwtService.verify(refreshToken, {
         secret: process.env.JWT_REFRESH_SECRET,
@@ -498,7 +574,7 @@ export class AuthSecurityService {
           AuditEventType.TOKEN_REFRESH,
           request,
           { success: false, reason: 'invalid_user' },
-          payload.sub,
+          payload.sub
         );
         throw new UnauthorizedException('Invalid refresh token');
       }
@@ -508,7 +584,7 @@ export class AuthSecurityService {
         request,
         { success: true },
         user.id,
-        user.email,
+        user.email
       );
 
       return this.generateAuthResponse(user);
@@ -516,7 +592,7 @@ export class AuthSecurityService {
       await this.auditLogService.logEvent(
         AuditEventType.TOKEN_REFRESH,
         request,
-        { success: false, error: error.message },
+        { success: false, error: error.message }
       );
       throw new UnauthorizedException('Invalid refresh token');
     }
@@ -530,7 +606,7 @@ export class AuthSecurityService {
       AuditEventType.LOGOUT,
       request,
       {},
-      userId,
+      userId
     );
     // In production, you might want to blacklist the token
   }
@@ -539,10 +615,11 @@ export class AuthSecurityService {
     email: string,
     reason: string,
     request: Request,
-    userId?: string,
+    userId?: string
   ): Promise<void> {
     // Record failed attempt for lockout tracking
-    const lockoutInfo = await this.accountLockoutService.recordFailedAttempt(email);
+    const lockoutInfo =
+      await this.accountLockoutService.recordFailedAttempt(email);
 
     // Log the failed attempt
     await this.auditLogService.logLoginFailed(request, email, reason);
@@ -556,7 +633,7 @@ export class AuthSecurityService {
         {
           failedAttempts: lockoutInfo.failedAttempts,
           lockedUntil: lockoutInfo.lockedUntil,
-        },
+        }
       );
     }
   }

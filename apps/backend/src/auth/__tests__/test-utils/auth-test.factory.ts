@@ -522,3 +522,25 @@ export class AuthTestMatchers {
     }
   }
 }
+
+// Add a basic test to satisfy Jest's requirement for test files
+describe('AuthTestFactory', () => {
+  it('should create mock user with default values', () => {
+    const user = AuthTestFactory.createMockUser();
+    expect(user).toBeDefined();
+    expect(user.email).toBe('test@example.com');
+    expect(user.firstName).toBe('John');
+    expect(user.lastName).toBe('Doe');
+    expect(user.role).toBe(UserRole.USER);
+    expect(user.status).toBe(UserStatus.ACTIVE);
+  });
+
+  it('should create register dto with default values', () => {
+    const dto = AuthTestFactory.createRegisterDto();
+    expect(dto).toBeDefined();
+    expect(dto.email).toBe('test@example.com');
+    expect(dto.firstName).toBe('John');
+    expect(dto.lastName).toBe('Doe');
+    expect(dto.password).toBe('Password123!');
+  });
+});

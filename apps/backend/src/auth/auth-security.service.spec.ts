@@ -3,7 +3,11 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { Repository } from 'typeorm';
-import { BadRequestException, UnauthorizedException, ConflictException } from '@nestjs/common';
+import {
+  BadRequestException,
+  UnauthorizedException,
+  ConflictException,
+} from '@nestjs/common';
 import { Request } from 'express';
 import { AuthSecurityService } from './auth-security.service';
 import { PasswordSecurityService } from './services/password-security.service';
@@ -11,7 +15,11 @@ import { AccountLockoutService } from './services/account-lockout.service';
 import { EmailVerificationService } from './services/email-verification.service';
 import { PasswordResetService } from './services/password-reset.service';
 import { AuditLogService } from './services/audit-log.service';
-import { User, UserStatus, UserRole } from '../core/database/entities/user.entity';
+import {
+  User,
+  UserStatus,
+  UserRole,
+} from '../core/database/entities/user.entity';
 
 describe('AuthSecurityService', () => {
   let service: AuthSecurityService;
@@ -37,9 +45,15 @@ describe('AuthSecurityService', () => {
     createdAt: new Date(),
     updatedAt: new Date(),
     accounts: [],
-    get fullName() { return `${this.firstName} ${this.lastName}`; },
-    get isEmailVerified() { return !!this.emailVerifiedAt; },
-    get isActive() { return this.status === UserStatus.ACTIVE; },
+    get fullName() {
+      return `${this.firstName} ${this.lastName}`;
+    },
+    get isEmailVerified() {
+      return !!this.emailVerifiedAt;
+    },
+    get isActive() {
+      return this.status === UserStatus.ACTIVE;
+    },
   } as User;
 
   const mockRequest = {
@@ -48,7 +62,7 @@ describe('AuthSecurityService', () => {
     headers: {},
     connection: { remoteAddress: '127.0.0.1' },
     socket: { remoteAddress: '127.0.0.1' },
-  } as Request;
+  } as unknown as Request;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -125,10 +139,17 @@ describe('AuthSecurityService', () => {
     service = module.get<AuthSecurityService>(AuthSecurityService);
     userRepository = module.get<Repository<User>>(getRepositoryToken(User));
     jwtService = module.get<JwtService>(JwtService);
-    passwordSecurityService = module.get<PasswordSecurityService>(PasswordSecurityService);
-    accountLockoutService = module.get<AccountLockoutService>(AccountLockoutService);
-    emailVerificationService = module.get<EmailVerificationService>(EmailVerificationService);
-    passwordResetService = module.get<PasswordResetService>(PasswordResetService);
+    passwordSecurityService = module.get<PasswordSecurityService>(
+      PasswordSecurityService
+    );
+    accountLockoutService = module.get<AccountLockoutService>(
+      AccountLockoutService
+    );
+    emailVerificationService = module.get<EmailVerificationService>(
+      EmailVerificationService
+    );
+    passwordResetService =
+      module.get<PasswordResetService>(PasswordResetService);
     auditLogService = module.get<AuditLogService>(AuditLogService);
   });
 
@@ -152,10 +173,30 @@ describe('AuthSecurityService', () => {
         feedback: [],
         meets_requirements: true,
       });
-      jest.spyOn(passwordSecurityService, 'hashPassword').mockResolvedValue('hashedPassword');
-      jest.spyOn(userRepository, 'create').mockReturnValue({ ...mockUser, ...registerDto } as User);
-      jest.spyOn(userRepository, 'save').mockResolvedValue({ ...mockUser, ...registerDto } as User);
-      jest.spyOn(emailVerificationService, 'generateVerificationToken').mockResolvedValue('verification-token');
+      jest
+        .spyOn(passwordSecurityService, 'hashPassword')
+        .mockResolvedValue('hashedPassword');
+      jest
+        .spyOn(userRepository, 'create')
+        .mockReturnValue({
+          ...mockUser,
+          ...registerDto,
+          fullName: `${registerDto.firstName} ${registerDto.lastName}`,
+          isEmailVerified: false,
+          isActive: true
+        } as unknown as User);
+      jest
+        .spyOn(userRepository, 'save')
+        .mockResolvedValue({
+          ...mockUser,
+          ...registerDto,
+          fullName: `${registerDto.firstName} ${registerDto.lastName}`,
+          isEmailVerified: false,
+          isActive: true
+        } as unknown as User);
+      jest
+        .spyOn(emailVerificationService, 'generateVerificationToken')
+        .mockResolvedValue('verification-token');
 
       const result = await service.register(registerDto, mockRequest);
 
@@ -168,7 +209,9 @@ describe('AuthSecurityService', () => {
     it('should throw ConflictException if user already exists', async () => {
       jest.spyOn(userRepository, 'findOne').mockResolvedValue(mockUser);
 
-      await expect(service.register(registerDto, mockRequest)).rejects.toThrow(ConflictException);
+      await expect(service.register(registerDto, mockRequest)).rejects.toThrow(
+        ConflictException
+      );
     });
 
     it('should throw BadRequestException for weak password', async () => {
@@ -180,7 +223,9 @@ describe('AuthSecurityService', () => {
         meets_requirements: false,
       });
 
-      await expect(service.register(registerDto, mockRequest)).rejects.toThrow(BadRequestException);
+      await expect(service.register(registerDto, mockRequest)).rejects.toThrow(
+        BadRequestException
+      );
     });
   });
 
@@ -196,7 +241,9 @@ describe('AuthSecurityService', () => {
         failedAttempts: 0,
       });
       jest.spyOn(userRepository, 'findOne').mockResolvedValue(mockUser);
-      jest.spyOn(passwordSecurityService, 'verifyPassword').mockResolvedValue(true);
+      jest
+        .spyOn(passwordSecurityService, 'verifyPassword')
+        .mockResolvedValue(true);
       jest.spyOn(userRepository, 'update').mockResolvedValue(undefined);
 
       const result = await service.login(loginDto, mockRequest);
@@ -215,7 +262,9 @@ describe('AuthSecurityService', () => {
         lockedUntil: new Date(Date.now() + 3600000),
       });
 
-      await expect(service.login(loginDto, mockRequest)).rejects.toThrow(UnauthorizedException);
+      await expect(service.login(loginDto, mockRequest)).rejects.toThrow(
+        UnauthorizedException
+      );
     });
 
     it('should throw UnauthorizedException for invalid credentials', async () => {
@@ -225,7 +274,9 @@ describe('AuthSecurityService', () => {
       });
       jest.spyOn(userRepository, 'findOne').mockResolvedValue(null);
 
-      await expect(service.login(loginDto, mockRequest)).rejects.toThrow(UnauthorizedException);
+      await expect(service.login(loginDto, mockRequest)).rejects.toThrow(
+        UnauthorizedException
+      );
     });
 
     it('should record failed attempt on invalid password', async () => {
@@ -234,13 +285,19 @@ describe('AuthSecurityService', () => {
         failedAttempts: 0,
       });
       jest.spyOn(userRepository, 'findOne').mockResolvedValue(mockUser);
-      jest.spyOn(passwordSecurityService, 'verifyPassword').mockResolvedValue(false);
-      jest.spyOn(accountLockoutService, 'recordFailedAttempt').mockResolvedValue({
-        isLocked: false,
-        failedAttempts: 1,
-      });
+      jest
+        .spyOn(passwordSecurityService, 'verifyPassword')
+        .mockResolvedValue(false);
+      jest
+        .spyOn(accountLockoutService, 'recordFailedAttempt')
+        .mockResolvedValue({
+          isLocked: false,
+          failedAttempts: 1,
+        });
 
-      await expect(service.login(loginDto, mockRequest)).rejects.toThrow(UnauthorizedException);
+      await expect(service.login(loginDto, mockRequest)).rejects.toThrow(
+        UnauthorizedException
+      );
       expect(accountLockoutService.recordFailedAttempt).toHaveBeenCalled();
     });
   });
@@ -253,7 +310,8 @@ describe('AuthSecurityService', () => {
 
     it('should successfully change password', async () => {
       jest.spyOn(userRepository, 'findOne').mockResolvedValue(mockUser);
-      jest.spyOn(passwordSecurityService, 'verifyPassword')
+      jest
+        .spyOn(passwordSecurityService, 'verifyPassword')
         .mockResolvedValueOnce(true) // current password valid
         .mockResolvedValueOnce(false); // new password is different
       jest.spyOn(passwordSecurityService, 'validatePassword').mockReturnValue({
@@ -262,27 +320,46 @@ describe('AuthSecurityService', () => {
         feedback: [],
         meets_requirements: true,
       });
-      jest.spyOn(passwordSecurityService, 'isPasswordInHistory').mockResolvedValue(false);
-      jest.spyOn(passwordSecurityService, 'hashPassword').mockResolvedValue('newHashedPassword');
+      jest
+        .spyOn(passwordSecurityService, 'isPasswordInHistory')
+        .mockResolvedValue(false);
+      jest
+        .spyOn(passwordSecurityService, 'hashPassword')
+        .mockResolvedValue('newHashedPassword');
       jest.spyOn(userRepository, 'update').mockResolvedValue(undefined);
 
-      const result = await service.changePassword(mockUser.id, passwordChangeDto, mockRequest);
+      const result = await service.changePassword(
+        mockUser.id,
+        passwordChangeDto,
+        mockRequest
+      );
 
       expect(result.success).toBe(true);
       expect(result.message).toBe('Password changed successfully');
-      expect(auditLogService.logPasswordChange).toHaveBeenCalledWith(mockRequest, mockUser.id, mockUser.email, true);
+      expect(auditLogService.logPasswordChange).toHaveBeenCalledWith(
+        mockRequest,
+        mockUser.id,
+        mockUser.email,
+        true
+      );
     });
 
     it('should throw UnauthorizedException for invalid current password', async () => {
       jest.spyOn(userRepository, 'findOne').mockResolvedValue(mockUser);
-      jest.spyOn(passwordSecurityService, 'verifyPassword').mockResolvedValue(false);
+      jest
+        .spyOn(passwordSecurityService, 'verifyPassword')
+        .mockResolvedValue(false);
 
-      await expect(service.changePassword(mockUser.id, passwordChangeDto, mockRequest)).rejects.toThrow(UnauthorizedException);
+      await expect(
+        service.changePassword(mockUser.id, passwordChangeDto, mockRequest)
+      ).rejects.toThrow(UnauthorizedException);
     });
 
     it('should throw BadRequestException for weak new password', async () => {
       jest.spyOn(userRepository, 'findOne').mockResolvedValue(mockUser);
-      jest.spyOn(passwordSecurityService, 'verifyPassword').mockResolvedValue(true);
+      jest
+        .spyOn(passwordSecurityService, 'verifyPassword')
+        .mockResolvedValue(true);
       jest.spyOn(passwordSecurityService, 'validatePassword').mockReturnValue({
         score: 30,
         strength: 'weak',
@@ -290,12 +367,15 @@ describe('AuthSecurityService', () => {
         meets_requirements: false,
       });
 
-      await expect(service.changePassword(mockUser.id, passwordChangeDto, mockRequest)).rejects.toThrow(BadRequestException);
+      await expect(
+        service.changePassword(mockUser.id, passwordChangeDto, mockRequest)
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('should throw BadRequestException if new password is same as current', async () => {
       jest.spyOn(userRepository, 'findOne').mockResolvedValue(mockUser);
-      jest.spyOn(passwordSecurityService, 'verifyPassword')
+      jest
+        .spyOn(passwordSecurityService, 'verifyPassword')
         .mockResolvedValueOnce(true) // current password valid
         .mockResolvedValueOnce(true); // new password is same
       jest.spyOn(passwordSecurityService, 'validatePassword').mockReturnValue({
@@ -305,7 +385,9 @@ describe('AuthSecurityService', () => {
         meets_requirements: true,
       });
 
-      await expect(service.changePassword(mockUser.id, passwordChangeDto, mockRequest)).rejects.toThrow(BadRequestException);
+      await expect(
+        service.changePassword(mockUser.id, passwordChangeDto, mockRequest)
+      ).rejects.toThrow(BadRequestException);
     });
   });
 
@@ -315,12 +397,17 @@ describe('AuthSecurityService', () => {
     };
 
     it('should request password reset', async () => {
-      jest.spyOn(passwordResetService, 'requestPasswordReset').mockResolvedValue({
-        token: 'reset-token',
-        expiresIn: 1800,
-      });
+      jest
+        .spyOn(passwordResetService, 'requestPasswordReset')
+        .mockResolvedValue({
+          token: 'reset-token',
+          expiresIn: 1800,
+        });
 
-      const result = await service.requestPasswordReset(passwordResetRequestDto, mockRequest);
+      const result = await service.requestPasswordReset(
+        passwordResetRequestDto,
+        mockRequest
+      );
 
       expect(result.message).toContain('password reset link has been sent');
       expect(result.token).toBe('reset-token');
@@ -334,9 +421,14 @@ describe('AuthSecurityService', () => {
         message: 'Email verified successfully',
         user: mockUser,
       };
-      jest.spyOn(emailVerificationService, 'verifyEmail').mockResolvedValue(verificationResult);
+      jest
+        .spyOn(emailVerificationService, 'verifyEmail')
+        .mockResolvedValue(verificationResult);
 
-      const result = await service.verifyEmail('verification-token', mockRequest);
+      const result = await service.verifyEmail(
+        'verification-token',
+        mockRequest
+      );
 
       expect(result).toEqual(verificationResult);
     });
@@ -358,7 +450,9 @@ describe('AuthSecurityService', () => {
         meets_requirements: true,
       };
 
-      jest.spyOn(passwordSecurityService, 'validatePassword').mockReturnValue(strengthResult);
+      jest
+        .spyOn(passwordSecurityService, 'validatePassword')
+        .mockReturnValue(strengthResult);
 
       const result = await service.checkPasswordStrength(passwordStrengthDto);
 
@@ -368,7 +462,11 @@ describe('AuthSecurityService', () => {
 
   describe('refreshToken', () => {
     it('should successfully refresh token', async () => {
-      const payload = { sub: mockUser.id, email: mockUser.email, role: mockUser.role };
+      const payload = {
+        sub: mockUser.id,
+        email: mockUser.email,
+        role: mockUser.role,
+      };
       jest.spyOn(jwtService, 'verify').mockReturnValue(payload);
       jest.spyOn(userRepository, 'findOne').mockResolvedValue(mockUser);
 
@@ -383,7 +481,9 @@ describe('AuthSecurityService', () => {
         throw new Error('Invalid token');
       });
 
-      await expect(service.refreshToken('invalid-token', mockRequest)).rejects.toThrow(UnauthorizedException);
+      await expect(
+        service.refreshToken('invalid-token', mockRequest)
+      ).rejects.toThrow(UnauthorizedException);
     });
   });
 });

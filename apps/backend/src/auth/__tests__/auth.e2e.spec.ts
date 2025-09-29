@@ -1,11 +1,16 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { TypeOrmModule, getRepositoryToken } from '@nestjs/typeorm';
+import { ConfigModule } from '@nestjs/config';
 import { Repository } from 'typeorm';
 import request from 'supertest';
 
 import { AuthModule } from '../auth.module';
-import { User, UserStatus, UserRole } from '../../core/database/entities/user.entity';
+import {
+  User,
+  UserStatus,
+  UserRole,
+} from '../../core/database/entities/user.entity';
 
 describe('Auth E2E Tests', () => {
   let app: INestApplication;
@@ -29,19 +34,25 @@ describe('Auth E2E Tests', () => {
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [
+        ConfigModule.forRoot({
+          isGlobal: true,
+          envFilePath: ['.env.test', '.env'],
+        }),
         TypeOrmModule.forRoot(testDbConfig),
         AuthModule,
       ],
     }).compile();
 
     app = moduleFixture.createNestApplication();
-    app.useGlobalPipes(new ValidationPipe({
-      transform: true,
-      whitelist: true,
-      forbidNonWhitelisted: true,
-    }));
+    app.useGlobalPipes(
+      new ValidationPipe({
+        transform: true,
+        whitelist: true,
+        forbidNonWhitelisted: true,
+      })
+    );
 
-    userRepository = moduleFixture.get('UserRepository');
+    userRepository = moduleFixture.get(getRepositoryToken(User));
 
     await app.init();
   });
@@ -249,7 +260,7 @@ describe('Auth E2E Tests', () => {
       // Manually set user status to inactive
       await userRepository.update(
         { email: testUser.email },
-        { status: UserStatus.INACTIVE },
+        { status: UserStatus.INACTIVE }
       );
 
       const response = await request(app.getHttpServer())
@@ -323,7 +334,7 @@ describe('Auth E2E Tests', () => {
       // Deactivate user
       await userRepository.update(
         { email: testUser.email },
-        { status: UserStatus.INACTIVE },
+        { status: UserStatus.INACTIVE }
       );
 
       const response = await request(app.getHttpServer())
@@ -379,9 +390,7 @@ describe('Auth E2E Tests', () => {
     });
 
     it('should reject access without token', async () => {
-      await request(app.getHttpServer())
-        .get('/auth/profile')
-        .expect(401);
+      await request(app.getHttpServer()).get('/auth/profile').expect(401);
     });
 
     it('should reject access with invalid token', async () => {
@@ -430,7 +439,8 @@ describe('Auth E2E Tests', () => {
         .send(user)
         .expect(201);
 
-      const { accessToken: registerAccessToken, refreshToken } = registerResponse.body;
+      const { accessToken: registerAccessToken, refreshToken } =
+        registerResponse.body;
 
       // 2. Access profile with registration token
       await request(app.getHttpServer())
@@ -493,20 +503,20 @@ describe('Auth E2E Tests', () => {
       };
 
       // Simulate concurrent registration attempts
-      const promises = Array(5).fill(null).map(() =>
-        request(app.getHttpServer())
-          .post('/auth/register')
-          .send(user)
-      );
+      const promises = Array(5)
+        .fill(null)
+        .map(() =>
+          request(app.getHttpServer()).post('/auth/register').send(user)
+        );
 
       const responses = await Promise.allSettled(promises);
 
       // Only one should succeed (201), others should fail (409)
-      const successes = responses.filter(r =>
-        r.status === 'fulfilled' && r.value.status === 201
+      const successes = responses.filter(
+        r => r.status === 'fulfilled' && r.value.status === 201
       );
-      const conflicts = responses.filter(r =>
-        r.status === 'fulfilled' && r.value.status === 409
+      const conflicts = responses.filter(
+        r => r.status === 'fulfilled' && r.value.status === 409
       );
 
       expect(successes).toHaveLength(1);
@@ -515,9 +525,21 @@ describe('Auth E2E Tests', () => {
 
     it('should handle malicious payloads', async () => {
       const maliciousPayloads = [
-        { email: 'test@example.com', password: 'Password123!', extraField: 'malicious' },
-        { email: 'test@example.com', password: 'Password123!', __proto__: { isAdmin: true } },
-        { email: 'test@example.com', password: 'Password123!', constructor: { name: 'hack' } },
+        {
+          email: 'test@example.com',
+          password: 'Password123!',
+          extraField: 'malicious',
+        } as any,
+        {
+          email: 'test@example.com',
+          password: 'Password123!',
+          __proto__: { isAdmin: true },
+        } as any,
+        {
+          email: 'test@example.com',
+          password: 'Password123!',
+          constructor: { name: 'hack' },
+        },
       ];
 
       for (const payload of maliciousPayloads) {

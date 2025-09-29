@@ -1,15 +1,24 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConflictException, UnauthorizedException } from '@nestjs/common';
+import { Request } from 'express';
 import { AuthController } from '../auth.controller';
 import { AuthService } from '../auth.service';
+import { AuthSecurityService } from '../auth-security.service';
+import { RateLimitGuard } from '../guards/rate-limit.guard';
 import { RegisterDto } from '../dto/register.dto';
 import { LoginDto } from '../dto/login.dto';
 import { AuthResponseDto } from '../dto/auth-response.dto';
-import { User, UserStatus, UserRole } from '../../core/database/entities/user.entity';
+import {
+  User,
+  UserStatus,
+  UserRole,
+} from '../../core/database/entities/user.entity';
 
 describe('AuthController', () => {
   let controller: AuthController;
   let authService: jest.Mocked<AuthService>;
+  let authSecurityService: jest.Mocked<AuthSecurityService>;
+  let mockRequest: Partial<Request>;
 
   const mockUser: Omit<User, 'passwordHash'> = {
     id: '1',
@@ -22,9 +31,15 @@ describe('AuthController', () => {
     createdAt: new Date(),
     updatedAt: new Date(),
     accounts: [],
-    get fullName() { return `${this.firstName} ${this.lastName}`; },
-    get isEmailVerified() { return this.emailVerifiedAt !== null; },
-    get isActive() { return this.status === UserStatus.ACTIVE; },
+    get fullName() {
+      return `${this.firstName} ${this.lastName}`;
+    },
+    get isEmailVerified() {
+      return this.emailVerifiedAt !== null;
+    },
+    get isActive() {
+      return this.status === UserStatus.ACTIVE;
+    },
   } as Omit<User, 'passwordHash'>;
 
   const mockAuthResponse: AuthResponseDto = {
@@ -35,6 +50,12 @@ describe('AuthController', () => {
   };
 
   beforeEach(async () => {
+    mockRequest = {
+      ip: '127.0.0.1',
+      get: jest.fn().mockReturnValue('test-user-agent'),
+      headers: { 'user-agent': 'test-user-agent' },
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       controllers: [AuthController],
       providers: [
@@ -46,11 +67,24 @@ describe('AuthController', () => {
             refreshToken: jest.fn(),
           },
         },
+        {
+          provide: AuthSecurityService,
+          useValue: {
+            register: jest.fn(),
+            login: jest.fn(),
+            refreshToken: jest.fn(),
+            logout: jest.fn(),
+          },
+        },
       ],
-    }).compile();
+    })
+    .overrideGuard(RateLimitGuard)
+    .useValue({ canActivate: () => true })
+    .compile();
 
     controller = module.get<AuthController>(AuthController);
     authService = module.get(AuthService);
+    authSecurityService = module.get(AuthSecurityService);
   });
 
   afterEach(() => {
@@ -66,24 +100,29 @@ describe('AuthController', () => {
     };
 
     it('should register a new user successfully', async () => {
-      authService.register.mockResolvedValue(mockAuthResponse);
+      const mockResponseWithToken = {
+        ...mockAuthResponse,
+        verificationToken: 'mock-verification-token',
+      };
+      authSecurityService.register.mockResolvedValue(mockResponseWithToken);
 
-      const result = await controller.register(registerDto);
+      const result = await controller.register(registerDto, mockRequest as Request);
 
-      expect(authService.register).toHaveBeenCalledWith(registerDto);
+      expect(authSecurityService.register).toHaveBeenCalledWith(registerDto, mockRequest);
       expect(result).toEqual(mockAuthResponse);
       expect(result.user).not.toHaveProperty('passwordHash');
+      expect(result).not.toHaveProperty('verificationToken');
     });
 
     it('should throw ConflictException when user already exists', async () => {
-      authService.register.mockRejectedValue(
-        new ConflictException('User with this email already exists'),
+      authSecurityService.register.mockRejectedValue(
+        new ConflictException('User with this email already exists')
       );
 
-      await expect(controller.register(registerDto)).rejects.toThrow(
-        ConflictException,
+      await expect(controller.register(registerDto, mockRequest as Request)).rejects.toThrow(
+        ConflictException
       );
-      expect(authService.register).toHaveBeenCalledWith(registerDto);
+      expect(authSecurityService.register).toHaveBeenCalledWith(registerDto, mockRequest);
     });
 
     it('should handle invalid registration data', async () => {
@@ -93,9 +132,11 @@ describe('AuthController', () => {
       };
 
       // This would typically be caught by validation pipes
-      authService.register.mockRejectedValue(new Error('Validation failed'));
+      authSecurityService.register.mockRejectedValue(new Error('Validation failed'));
 
-      await expect(controller.register(invalidDto as RegisterDto)).rejects.toThrow();
+      await expect(
+        controller.register(invalidDto as RegisterDto, mockRequest as Request)
+      ).rejects.toThrow();
     });
   });
 
@@ -106,45 +147,45 @@ describe('AuthController', () => {
     };
 
     it('should login user successfully', async () => {
-      authService.login.mockResolvedValue(mockAuthResponse);
+      authSecurityService.login.mockResolvedValue(mockAuthResponse);
 
-      const result = await controller.login(loginDto);
+      const result = await controller.login(loginDto, mockRequest as Request);
 
-      expect(authService.login).toHaveBeenCalledWith(loginDto);
+      expect(authSecurityService.login).toHaveBeenCalledWith(loginDto, mockRequest);
       expect(result).toEqual(mockAuthResponse);
       expect(result.user).not.toHaveProperty('passwordHash');
     });
 
     it('should throw UnauthorizedException with invalid credentials', async () => {
-      authService.login.mockRejectedValue(
-        new UnauthorizedException('Invalid email or password'),
+      authSecurityService.login.mockRejectedValue(
+        new UnauthorizedException('Invalid email or password')
       );
 
-      await expect(controller.login(loginDto)).rejects.toThrow(
-        UnauthorizedException,
+      await expect(controller.login(loginDto, mockRequest as Request)).rejects.toThrow(
+        UnauthorizedException
       );
-      expect(authService.login).toHaveBeenCalledWith(loginDto);
+      expect(authSecurityService.login).toHaveBeenCalledWith(loginDto, mockRequest);
     });
 
     it('should throw UnauthorizedException for inactive user', async () => {
-      authService.login.mockRejectedValue(
-        new UnauthorizedException('Account is not active'),
+      authSecurityService.login.mockRejectedValue(
+        new UnauthorizedException('Account is not active')
       );
 
-      await expect(controller.login(loginDto)).rejects.toThrow(
-        UnauthorizedException,
+      await expect(controller.login(loginDto, mockRequest as Request)).rejects.toThrow(
+        UnauthorizedException
       );
     });
 
     it('should handle empty credentials', async () => {
       const emptyDto = { email: '', password: '' };
 
-      authService.login.mockRejectedValue(
-        new UnauthorizedException('Invalid email or password'),
+      authSecurityService.login.mockRejectedValue(
+        new UnauthorizedException('Invalid email or password')
       );
 
-      await expect(controller.login(emptyDto as LoginDto)).rejects.toThrow(
-        UnauthorizedException,
+      await expect(controller.login(emptyDto as LoginDto, mockRequest as Request)).rejects.toThrow(
+        UnauthorizedException
       );
     });
   });
@@ -153,44 +194,44 @@ describe('AuthController', () => {
     const refreshToken = 'valid-refresh-token';
 
     it('should refresh token successfully', async () => {
-      authService.refreshToken.mockResolvedValue(mockAuthResponse);
+      authSecurityService.refreshToken.mockResolvedValue(mockAuthResponse);
 
-      const result = await controller.refreshToken(refreshToken);
+      const result = await controller.refreshToken(refreshToken, mockRequest as Request);
 
-      expect(authService.refreshToken).toHaveBeenCalledWith(refreshToken);
+      expect(authSecurityService.refreshToken).toHaveBeenCalledWith(refreshToken, mockRequest);
       expect(result).toEqual(mockAuthResponse);
       expect(result.accessToken).toBeDefined();
       expect(result.refreshToken).toBeDefined();
     });
 
     it('should throw UnauthorizedException with invalid refresh token', async () => {
-      authService.refreshToken.mockRejectedValue(
-        new UnauthorizedException('Invalid refresh token'),
+      authSecurityService.refreshToken.mockRejectedValue(
+        new UnauthorizedException('Invalid refresh token')
       );
 
-      await expect(controller.refreshToken(refreshToken)).rejects.toThrow(
-        UnauthorizedException,
+      await expect(controller.refreshToken(refreshToken, mockRequest as Request)).rejects.toThrow(
+        UnauthorizedException
       );
-      expect(authService.refreshToken).toHaveBeenCalledWith(refreshToken);
+      expect(authSecurityService.refreshToken).toHaveBeenCalledWith(refreshToken, mockRequest);
     });
 
     it('should throw UnauthorizedException with expired refresh token', async () => {
-      authService.refreshToken.mockRejectedValue(
-        new UnauthorizedException('Invalid refresh token'),
+      authSecurityService.refreshToken.mockRejectedValue(
+        new UnauthorizedException('Invalid refresh token')
       );
 
-      await expect(controller.refreshToken('expired-token')).rejects.toThrow(
-        UnauthorizedException,
+      await expect(controller.refreshToken('expired-token', mockRequest as Request)).rejects.toThrow(
+        UnauthorizedException
       );
     });
 
     it('should handle malformed refresh token', async () => {
-      authService.refreshToken.mockRejectedValue(
-        new UnauthorizedException('Invalid refresh token'),
+      authSecurityService.refreshToken.mockRejectedValue(
+        new UnauthorizedException('Invalid refresh token')
       );
 
-      await expect(controller.refreshToken('malformed.token')).rejects.toThrow(
-        UnauthorizedException,
+      await expect(controller.refreshToken('malformed.token', mockRequest as Request)).rejects.toThrow(
+        UnauthorizedException
       );
     });
   });
@@ -206,7 +247,9 @@ describe('AuthController', () => {
 
       expect(result).toEqual(mockUser);
       expect(result).not.toHaveProperty('passwordHash');
-      expect(result.fullName).toBe(`${mockUser.firstName} ${mockUser.lastName}`);
+      expect(result.fullName).toBe(
+        `${mockUser.firstName} ${mockUser.lastName}`
+      );
       expect(result.isActive).toBe(true);
     });
 
@@ -233,7 +276,9 @@ describe('AuthController', () => {
         preferences: null,
         lastLoginAt: null,
         emailVerifiedAt: null,
-        get isEmailVerified() { return this.emailVerifiedAt !== null; },
+        get isEmailVerified() {
+          return this.emailVerifiedAt !== null;
+        },
       } as User;
 
       const result = await controller.getProfile(userWithNulls);
@@ -252,11 +297,12 @@ describe('AuthController', () => {
         passwordHash: 'hashedPassword',
       } as User;
 
-      const result = await controller.logout(user);
+      authSecurityService.logout.mockResolvedValue(undefined);
 
+      const result = await controller.logout(user, mockRequest as Request);
+
+      expect(authSecurityService.logout).toHaveBeenCalledWith(user.id, mockRequest);
       expect(result).toBeUndefined();
-      // Note: In a real implementation, this might blacklist the token
-      // or perform other cleanup operations
     });
 
     it('should handle logout for any authenticated user', async () => {
@@ -266,8 +312,11 @@ describe('AuthController', () => {
         passwordHash: 'hashedPassword',
       } as User;
 
-      const result = await controller.logout(adminUser);
+      authSecurityService.logout.mockResolvedValue(undefined);
 
+      const result = await controller.logout(adminUser, mockRequest as Request);
+
+      expect(authSecurityService.logout).toHaveBeenCalledWith(adminUser.id, mockRequest);
       expect(result).toBeUndefined();
     });
   });
@@ -281,10 +330,12 @@ describe('AuthController', () => {
         password: 'Password123!',
       };
 
-      authService.register.mockRejectedValue(new Error('Database connection failed'));
+      authSecurityService.register.mockRejectedValue(
+        new Error('Database connection failed')
+      );
 
-      await expect(controller.register(registerDto)).rejects.toThrow(
-        'Database connection failed',
+      await expect(controller.register(registerDto, mockRequest as Request)).rejects.toThrow(
+        'Database connection failed'
       );
     });
 
@@ -294,9 +345,11 @@ describe('AuthController', () => {
         password: 'Password123!',
       };
 
-      authService.login.mockRejectedValue(new Error('Unexpected error'));
+      authSecurityService.login.mockRejectedValue(new Error('Unexpected error'));
 
-      await expect(controller.login(loginDto)).rejects.toThrow('Unexpected error');
+      await expect(controller.login(loginDto, mockRequest as Request)).rejects.toThrow(
+        'Unexpected error'
+      );
     });
   });
 });

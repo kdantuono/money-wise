@@ -2,7 +2,11 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { UnauthorizedException } from '@nestjs/common';
 import { JwtStrategy } from '../strategies/jwt.strategy';
 import { AuthService, JwtPayload } from '../auth.service';
-import { User, UserStatus, UserRole } from '../../core/database/entities/user.entity';
+import {
+  User,
+  UserStatus,
+  UserRole,
+} from '../../core/database/entities/user.entity';
 
 describe('JwtStrategy', () => {
   let strategy: JwtStrategy;
@@ -20,9 +24,15 @@ describe('JwtStrategy', () => {
     createdAt: new Date(),
     updatedAt: new Date(),
     accounts: [],
-    get fullName() { return `${this.firstName} ${this.lastName}`; },
-    get isEmailVerified() { return this.emailVerifiedAt !== null; },
-    get isActive() { return this.status === UserStatus.ACTIVE; },
+    get fullName() {
+      return `${this.firstName} ${this.lastName}`;
+    },
+    get isEmailVerified() {
+      return this.emailVerifiedAt !== null;
+    },
+    get isActive() {
+      return this.status === UserStatus.ACTIVE;
+    },
   } as User;
 
   beforeEach(async () => {
@@ -81,11 +91,11 @@ describe('JwtStrategy', () => {
 
     it('should throw UnauthorizedException when user validation fails', async () => {
       authService.validateUser.mockRejectedValue(
-        new UnauthorizedException('User not found or inactive'),
+        new UnauthorizedException('User not found or inactive')
       );
 
       await expect(strategy.validate(validPayload)).rejects.toThrow(
-        UnauthorizedException,
+        UnauthorizedException
       );
       expect(authService.validateUser).toHaveBeenCalledWith(validPayload);
     });
@@ -132,11 +142,11 @@ describe('JwtStrategy', () => {
       } as JwtPayload;
 
       authService.validateUser.mockRejectedValue(
-        new UnauthorizedException('Invalid payload'),
+        new UnauthorizedException('Invalid payload')
       );
 
       await expect(strategy.validate(incompletePayload)).rejects.toThrow(
-        UnauthorizedException,
+        UnauthorizedException
       );
     });
 
@@ -148,25 +158,25 @@ describe('JwtStrategy', () => {
       };
 
       authService.validateUser.mockRejectedValue(
-        new UnauthorizedException('User not found'),
+        new UnauthorizedException('User not found')
       );
 
       await expect(strategy.validate(invalidPayload)).rejects.toThrow(
-        UnauthorizedException,
+        UnauthorizedException
       );
     });
 
     it('should handle null or undefined payload gracefully', async () => {
       authService.validateUser.mockRejectedValue(
-        new UnauthorizedException('Invalid payload'),
+        new UnauthorizedException('Invalid payload')
       );
 
       await expect(strategy.validate(null as never)).rejects.toThrow(
-        UnauthorizedException,
+        UnauthorizedException
       );
 
       await expect(strategy.validate(undefined as never)).rejects.toThrow(
-        UnauthorizedException,
+        UnauthorizedException
       );
     });
 
@@ -174,11 +184,11 @@ describe('JwtStrategy', () => {
       const emptyPayload = {} as JwtPayload;
 
       authService.validateUser.mockRejectedValue(
-        new UnauthorizedException('Invalid payload'),
+        new UnauthorizedException('Invalid payload')
       );
 
       await expect(strategy.validate(emptyPayload)).rejects.toThrow(
-        UnauthorizedException,
+        UnauthorizedException
       );
     });
 
@@ -208,8 +218,16 @@ describe('JwtStrategy', () => {
         role: 'user',
       };
 
-      const user1 = { ...mockUser, id: '1', email: 'test1@example.com' } as User;
-      const user2 = { ...mockUser, id: '2', email: 'test2@example.com' } as User;
+      const user1 = {
+        ...mockUser,
+        id: '1',
+        email: 'test1@example.com',
+      } as User;
+      const user2 = {
+        ...mockUser,
+        id: '2',
+        email: 'test2@example.com',
+      } as User;
 
       authService.validateUser
         .mockResolvedValueOnce(user1)
@@ -262,14 +280,14 @@ describe('JwtStrategy', () => {
         id: '1', // wrong field name
         userEmail: 'test@example.com', // wrong field name
         userRole: 'user', // wrong field name
-      } as JwtPayload;
+      } as unknown as JwtPayload;
 
       authService.validateUser.mockRejectedValue(
-        new UnauthorizedException('Malformed payload'),
+        new UnauthorizedException('Malformed payload')
       );
 
       await expect(strategy.validate(malformedPayload)).rejects.toThrow(
-        UnauthorizedException,
+        UnauthorizedException
       );
     });
   });
