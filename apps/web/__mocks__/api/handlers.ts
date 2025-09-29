@@ -185,6 +185,12 @@ export const handlers = [
       type: 'debit' | 'credit';
     };
 
+    if (body.type !== 'debit' && body.type !== 'credit') {
+      return HttpResponse.json(
+        { error: "Invalid transaction type. Allowed values are 'debit' or 'credit'." },
+        { status: 400 }
+      );
+    }
     return HttpResponse.json({
       id: 3,
       ...body,
