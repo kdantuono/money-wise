@@ -97,7 +97,7 @@ pnpm run test:e2e     # End-to-end tests
 # Quality gates (CI/CD validation)
 .claude/scripts/quality-check.sh # Comprehensive validation
 pnpm run lint         # Linting across workspaces
-pnpm run typecheck    # TypeScript validation
+pnpm --filter '*' run typecheck    # TypeScript validation
 pnpm run test         # Run all tests
 
 # Database (Docker)
