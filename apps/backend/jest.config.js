@@ -24,19 +24,26 @@ module.exports = {
     '^@/(.*)$': '<rootDir>/src/$1',
     '^@money-wise/types$': '<rootDir>/../../packages/types/src',
     '^@money-wise/utils$': '<rootDir>/../../packages/utils/src',
-    '^@money-wise/config$': '<rootDir>/../../packages/config'
+    '^@money-wise/config$': '<rootDir>/../../packages/config',
   },
 
   // Setup files for NestJS testing
-  setupFilesAfterEnv: [
-    '<rootDir>/test/setup.ts'
-  ],
+  setupFilesAfterEnv: ['<rootDir>/test/setup.ts'],
 
   // Test match patterns for backend
   testMatch: [
     '<rootDir>/src/**/__tests__/**/*.{ts,js}',
     '<rootDir>/src/**/*.{test,spec}.{ts,js}',
-    '<rootDir>/test/**/*.{test,spec}.{ts,js}'
+    '<rootDir>/test/**/*.{test,spec}.{ts,js}',
+  ],
+
+  // Ignore OpenAPI spec files and other non-test files
+  testPathIgnorePatterns: [
+    '/node_modules/',
+    '/dist/',
+    '/build/',
+    '/coverage/',
+    '/src/docs/', // Exclude docs directory from test discovery
   ],
 
   // Coverage collection specific to backend
@@ -49,7 +56,7 @@ module.exports = {
     '!src/**/*.module.ts',
     '!src/main.ts',
     '!src/**/__tests__/**',
-    '!src/**/__mocks__/**'
+    '!src/**/__mocks__/**',
   ],
 
   // Coverage thresholds for backend (MVP phase - progressive improvement)
@@ -58,15 +65,8 @@ module.exports = {
       branches: 5,
       functions: 15,
       lines: 15,
-      statements: 15
-    }
+      statements: 15,
+    },
   },
 
-  // Ignore patterns
-  testPathIgnorePatterns: [
-    '/node_modules/',
-    '/dist/',
-    '/build/',
-    '/coverage/'
-  ]
 };
