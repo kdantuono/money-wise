@@ -74,6 +74,23 @@ export const handlers = [
   }),
 
   // User profile endpoints
+  http.get('http://localhost:3001/api/auth/profile', () => {
+    return HttpResponse.json({
+      id: '1',
+      email: 'test@example.com',
+      firstName: 'Test',
+      lastName: 'User',
+      role: 'user',
+      status: 'active',
+      fullName: 'Test User',
+      isEmailVerified: true,
+      isActive: true,
+      avatar: null,
+      createdAt: '2024-01-01T00:00:00Z',
+      updatedAt: '2024-01-01T00:00:00Z',
+    });
+  }),
+
   http.get('http://localhost:3001/api/user/profile', () => {
     return HttpResponse.json({
       id: '1',
