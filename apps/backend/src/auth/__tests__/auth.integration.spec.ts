@@ -7,15 +7,16 @@ import request from 'supertest';
 import * as bcrypt from 'bcryptjs';
 
 import { AuthModule } from '../auth.module';
-import { User, UserStatus, UserRole } from '../../core/database/entities/user.entity';
+import {
+  User,
+  UserStatus,
+  UserRole,
+} from '../../core/database/entities/user.entity';
 import { RegisterDto } from '../dto/register.dto';
 import { LoginDto } from '../dto/login.dto';
 
 // Mock bcrypt
-jest.mock('bcryptjs', () => ({
-  hash: jest.fn(),
-  compare: jest.fn(),
-}));
+jest.mock('bcryptjs');
 const mockedBcrypt = bcrypt as jest.Mocked<typeof bcrypt>;
 
 describe('Auth Integration Tests', () => {
@@ -37,9 +38,15 @@ describe('Auth Integration Tests', () => {
     lastLoginAt: null,
     emailVerifiedAt: null,
     accounts: [],
-    get fullName() { return `${this.firstName} ${this.lastName}`; },
-    get isEmailVerified() { return this.emailVerifiedAt !== null; },
-    get isActive() { return this.status === UserStatus.ACTIVE; },
+    get fullName() {
+      return `${this.firstName} ${this.lastName}`;
+    },
+    get isEmailVerified() {
+      return this.emailVerifiedAt !== null;
+    },
+    get isActive() {
+      return this.status === UserStatus.ACTIVE;
+    },
   } as User;
 
   beforeEach(async () => {
@@ -62,7 +69,9 @@ describe('Auth Integration Tests', () => {
       .compile();
 
     app = moduleFixture.createNestApplication();
-    app.useGlobalPipes(new ValidationPipe({ transform: true, whitelist: true }));
+    app.useGlobalPipes(
+      new ValidationPipe({ transform: true, whitelist: true })
+    );
 
     userRepository = moduleFixture.get(getRepositoryToken(User));
     jwtService = moduleFixture.get(JwtService);
@@ -87,7 +96,7 @@ describe('Auth Integration Tests', () => {
       userRepository.findOne.mockResolvedValue(null); // User doesn't exist
       userRepository.create.mockReturnValue(mockUser);
       userRepository.save.mockResolvedValue(mockUser);
-      mockedBcrypt.hash.mockResolvedValue('hashedPassword123');
+      (mockedBcrypt.hash as jest.Mock).mockResolvedValue('hashedPassword123');
 
       const response = await request(app.getHttpServer())
         .post('/auth/register')
@@ -173,7 +182,7 @@ describe('Auth Integration Tests', () => {
     it('should login user successfully', async () => {
       userRepository.findOne.mockResolvedValue(mockUser);
       userRepository.update.mockResolvedValue({} as UpdateResult);
-      mockedBcrypt.compare.mockResolvedValue(true);
+      (mockedBcrypt.compare as jest.Mock).mockResolvedValue(true);
 
       const response = await request(app.getHttpServer())
         .post('/auth/login')
@@ -200,7 +209,7 @@ describe('Auth Integration Tests', () => {
 
     it('should return 401 for incorrect password', async () => {
       userRepository.findOne.mockResolvedValue(mockUser);
-      mockedBcrypt.compare.mockResolvedValue(false);
+      (mockedBcrypt.compare as jest.Mock).mockResolvedValue(false);
 
       const response = await request(app.getHttpServer())
         .post('/auth/login')
@@ -217,7 +226,7 @@ describe('Auth Integration Tests', () => {
       } as User;
 
       userRepository.findOne.mockResolvedValue(inactiveUser);
-      mockedBcrypt.compare.mockResolvedValue(true);
+      (mockedBcrypt.compare as jest.Mock).mockResolvedValue(true);
 
       const response = await request(app.getHttpServer())
         .post('/auth/login')
@@ -254,7 +263,11 @@ describe('Auth Integration Tests', () => {
 
   describe('POST /auth/refresh', () => {
     it('should refresh token successfully', async () => {
-      const validPayload = { sub: mockUser.id, email: mockUser.email, role: mockUser.role };
+      const validPayload = {
+        sub: mockUser.id,
+        email: mockUser.email,
+        role: mockUser.role,
+      };
       userRepository.findOne.mockResolvedValue(mockUser);
 
       // Mock JWT service to return valid payload
@@ -284,7 +297,11 @@ describe('Auth Integration Tests', () => {
     });
 
     it('should return 401 when user not found', async () => {
-      const validPayload = { sub: 'non-existent-id', email: 'test@example.com', role: 'user' };
+      const validPayload = {
+        sub: 'non-existent-id',
+        email: 'test@example.com',
+        role: 'user',
+      };
       jest.spyOn(jwtService, 'verify').mockReturnValue(validPayload);
       userRepository.findOne.mockResolvedValue(null);
 
@@ -308,7 +325,7 @@ describe('Auth Integration Tests', () => {
     it('should return user profile with valid token', async () => {
       const accessToken = jwtService.sign(
         { sub: mockUser.id, email: mockUser.email, role: mockUser.role },
-        { secret: process.env.JWT_ACCESS_SECRET, expiresIn: '15m' },
+        { secret: process.env.JWT_ACCESS_SECRET, expiresIn: '15m' }
       );
 
       // Mock the validateUser method that gets called by JWT strategy
@@ -326,9 +343,7 @@ describe('Auth Integration Tests', () => {
     });
 
     it('should return 401 without authorization header', async () => {
-      await request(app.getHttpServer())
-        .get('/auth/profile')
-        .expect(401);
+      await request(app.getHttpServer()).get('/auth/profile').expect(401);
     });
 
     it('should return 401 with invalid token', async () => {
@@ -341,7 +356,7 @@ describe('Auth Integration Tests', () => {
     it('should return 401 with expired token', async () => {
       const expiredToken = jwtService.sign(
         { sub: mockUser.id, email: mockUser.email, role: mockUser.role },
-        { secret: process.env.JWT_ACCESS_SECRET, expiresIn: '-1h' }, // expired
+        { secret: process.env.JWT_ACCESS_SECRET, expiresIn: '-1h' } // expired
       );
 
       await request(app.getHttpServer())
@@ -355,7 +370,7 @@ describe('Auth Integration Tests', () => {
     it('should logout successfully with valid token', async () => {
       const accessToken = jwtService.sign(
         { sub: mockUser.id, email: mockUser.email, role: mockUser.role },
-        { secret: process.env.JWT_ACCESS_SECRET, expiresIn: '15m' },
+        { secret: process.env.JWT_ACCESS_SECRET, expiresIn: '15m' }
       );
 
       userRepository.findOne.mockResolvedValue(mockUser);
@@ -367,9 +382,7 @@ describe('Auth Integration Tests', () => {
     });
 
     it('should return 401 without authorization header', async () => {
-      await request(app.getHttpServer())
-        .post('/auth/logout')
-        .expect(401);
+      await request(app.getHttpServer()).post('/auth/logout').expect(401);
     });
 
     it('should return 401 with invalid token', async () => {
@@ -386,7 +399,7 @@ describe('Auth Integration Tests', () => {
       userRepository.findOne.mockResolvedValue(null); // User doesn't exist
       userRepository.create.mockReturnValue(mockUser);
       userRepository.save.mockResolvedValue(mockUser);
-      mockedBcrypt.hash.mockResolvedValue('hashedPassword123');
+      (mockedBcrypt.hash as jest.Mock).mockResolvedValue('hashedPassword123');
 
       const registerResponse = await request(app.getHttpServer())
         .post('/auth/register')
@@ -421,7 +434,7 @@ describe('Auth Integration Tests', () => {
       // 1. Login to get tokens
       userRepository.findOne.mockResolvedValue(mockUser);
       userRepository.update.mockResolvedValue({} as UpdateResult);
-      mockedBcrypt.compare.mockResolvedValue(true);
+      (mockedBcrypt.compare as jest.Mock).mockResolvedValue(true);
 
       const loginResponse = await request(app.getHttpServer())
         .post('/auth/login')
@@ -432,7 +445,11 @@ describe('Auth Integration Tests', () => {
         .expect(200);
 
       // 2. Refresh token
-      const validPayload = { sub: mockUser.id, email: mockUser.email, role: mockUser.role };
+      const validPayload = {
+        sub: mockUser.id,
+        email: mockUser.email,
+        role: mockUser.role,
+      };
       jest.spyOn(jwtService, 'verify').mockReturnValue(validPayload);
       userRepository.findOne.mockResolvedValue(mockUser);
 
@@ -442,7 +459,9 @@ describe('Auth Integration Tests', () => {
         .expect(200);
 
       expect(refreshResponse.body).toHaveProperty('accessToken');
-      expect(refreshResponse.body.accessToken).not.toBe(loginResponse.body.accessToken);
+      expect(refreshResponse.body.accessToken).not.toBe(
+        loginResponse.body.accessToken
+      );
 
       // 3. Use new token to access profile
       const profileResponse = await request(app.getHttpServer())
