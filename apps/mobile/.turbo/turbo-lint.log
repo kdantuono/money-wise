@@ -1,4 +1,4 @@
 
-> @money-wise/mobile@0.1.0 lint /home/nemesi/dev/money-wise/apps/mobile
+> @money-wise/mobile@0.1.0 lint /home/runner/work/money-wise/money-wise/apps/mobile
 > eslint . --ext .js,.jsx,.ts,.tsx
 
