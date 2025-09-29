@@ -126,7 +126,13 @@
       "Bash(git merge-base:*)",
       "Bash(git rebase:*)",
       "Bash(git log:*)",
-      "Bash(docker ps:*)"
+      "Bash(docker ps:*)",
+      "Bash(/home/nemesi/dev/money-wise/.claude/scripts/story-006-validation.sh analyze:*)",
+      "Bash(/home/nemesi/dev/money-wise/.claude/scripts/copilot-orchestrator.sh:*)",
+      "Bash(/home/nemesi/dev/money-wise/.claude/scripts/agile-validator.sh init:*)",
+      "Bash(/home/nemesi/dev/money-wise/.claude/scripts/agile-validator.sh validate:*)",
+      "Bash(/home/nemesi/dev/money-wise/.claude/scripts/orchestration-dashboard.sh status:*)",
+      "Bash(/home/nemesi/dev/money-wise/.claude/scripts/final-integration-orchestrator.sh:*)"
     ],
     "deny": [],
     "ask": []
