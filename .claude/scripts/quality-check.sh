@@ -32,7 +32,8 @@ pnpm run format --check || {
 
 # 4. Unit Tests (with workspace filtering)
 echo "🧪 Running unit tests..."
-# Skip test-utils temporarily due to configuration issues
+# Exclude 'test-utils' from unit tests due to [ISSUE: test-utils does not have a valid test configuration; see https://github.com/your-org/your-repo/issues/123].
+# TODO: Remove this exclusion once test-utils test configuration is fixed.
 pnpm --filter "!test-utils" run test || {
   echo "❌ Unit tests failed!"
   exit 1
