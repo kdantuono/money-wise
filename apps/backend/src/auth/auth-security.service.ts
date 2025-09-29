@@ -1,0 +1,698 @@
+import {
+  Injectable,
+  UnauthorizedException,
+  ConflictException,
+  BadRequestException,
+  Logger,
+} from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Request } from 'express';
+import { User, UserStatus } from '../core/database/entities/user.entity';
+import { RegisterDto } from './dto/register.dto';
+import { LoginDto } from './dto/login.dto';
+import { AuthResponseDto } from './dto/auth-response.dto';
+import {
+  PasswordChangeDto,
+  PasswordChangeResponseDto,
+} from './dto/password-change.dto';
+import {
+  PasswordResetRequestDto,
+  PasswordResetDto,
+  PasswordResetResponseDto,
+} from './dto/password-reset.dto';
+import {
+  EmailVerificationResponseDto,
+  ResendEmailVerificationResponseDto,
+} from './dto/email-verification.dto';
+import {
+  PasswordStrengthCheckDto,
+  PasswordStrengthResponseDto,
+} from './dto/password-strength.dto';
+
+// Security services
+import { PasswordSecurityService } from './services/password-security.service';
+import { AccountLockoutService } from './services/account-lockout.service';
+import { EmailVerificationService } from './services/email-verification.service';
+import { PasswordResetService } from './services/password-reset.service';
+import { AuditLogService, AuditEventType } from './services/audit-log.service';
+
+export interface JwtPayload {
+  sub: string;
+  email: string;
+  role: string;
+}
+
+@Injectable()
+export class AuthSecurityService {
+  private readonly logger = new Logger(AuthSecurityService.name);
+
+  constructor(
+    @InjectRepository(User)
+    private userRepository: Repository<User>,
+    private jwtService: JwtService,
+    private passwordSecurityService: PasswordSecurityService,
+    private accountLockoutService: AccountLockoutService,
+    private emailVerificationService: EmailVerificationService,
+    private passwordResetService: PasswordResetService,
+    private auditLogService: AuditLogService
+  ) {}
+
+  /**
+   * Enhanced registration with email verification
+   */
+  async register(
+    registerDto: RegisterDto,
+    request: Request
+  ): Promise<AuthResponseDto & { verificationToken?: string }> {
+    const { email, password, firstName, lastName } = registerDto;
+
+    try {
+      // Check if user already exists
+      const existingUser = await this.userRepository.findOne({
+        where: { email: email.toLowerCase() },
+      });
+
+      if (existingUser) {
+        await this.auditLogService.logEvent(
+          AuditEventType.REGISTRATION_FAILED,
+          request,
+          { reason: 'email_already_exists' },
+          undefined,
+          email
+        );
+        throw new ConflictException('User with this email already exists');
+      }
+
+      // Validate password strength
+      const passwordValidation = this.passwordSecurityService.validatePassword(
+        password,
+        { email, firstName, lastName }
+      );
+
+      if (!passwordValidation.meets_requirements) {
+        await this.auditLogService.logEvent(
+          AuditEventType.REGISTRATION_FAILED,
+          request,
+          { reason: 'weak_password', feedback: passwordValidation.feedback },
+          undefined,
+          email
+        );
+        throw new BadRequestException({
+          message: 'Password does not meet security requirements',
+          feedback: passwordValidation.feedback,
+          strength: passwordValidation.strength,
+          score: passwordValidation.score,
+        });
+      }
+
+      // Hash password
+      const passwordHash =
+        await this.passwordSecurityService.hashPassword(password);
+
+      // Create user (inactive until email verification)
+      const user = this.userRepository.create({
+        email: email.toLowerCase(),
+        firstName,
+        lastName,
+        passwordHash,
+        status: UserStatus.INACTIVE, // Require email verification
+      });
+
+      const savedUser = await this.userRepository.save(user);
+
+      // Generate email verification token
+      const verificationToken =
+        await this.emailVerificationService.generateVerificationToken(
+          savedUser.id,
+          savedUser.email
+        );
+
+      // Log successful registration
+      await this.auditLogService.logEvent(
+        AuditEventType.REGISTRATION_SUCCESS,
+        request,
+        { requiresVerification: true },
+        savedUser.id,
+        savedUser.email
+      );
+
+      // Generate tokens for the response
+      const authResponse = await this.generateAuthResponse(savedUser);
+
+      return {
+        ...authResponse,
+        verificationToken, // Include verification token for testing/email sending
+      };
+    } catch (error) {
+      if (
+        error instanceof ConflictException ||
+        error instanceof BadRequestException
+      ) {
+        throw error;
+      }
+
+      this.logger.error('Registration error:', error);
+      await this.auditLogService.logEvent(
+        AuditEventType.REGISTRATION_FAILED,
+        request,
+        { reason: 'internal_error' },
+        undefined,
+        email
+      );
+      throw new Error('Registration failed');
+    }
+  }
+
+  /**
+   * Enhanced login with rate limiting and lockout protection
+   */
+  async login(loginDto: LoginDto, request: Request): Promise<AuthResponseDto> {
+    const { email, password } = loginDto;
+    const normalizedEmail = email.toLowerCase();
+
+    try {
+      // Check for account lockout first
+      const lockoutInfo =
+        await this.accountLockoutService.getLockoutInfo(normalizedEmail);
+      if (lockoutInfo.isLocked) {
+        await this.auditLogService.logEvent(
+          AuditEventType.LOGIN_FAILED,
+          request,
+          { reason: 'account_locked', lockedUntil: lockoutInfo.lockedUntil },
+          undefined,
+          normalizedEmail
+        );
+        throw new UnauthorizedException(
+          'Account is temporarily locked due to too many failed attempts'
+        );
+      }
+
+      // Find user with password
+      const user = await this.userRepository.findOne({
+        where: { email: normalizedEmail },
+        select: [
+          'id',
+          'email',
+          'firstName',
+          'lastName',
+          'passwordHash',
+          'role',
+          'status',
+          'emailVerifiedAt',
+        ],
+      });
+
+      if (!user) {
+        await this.recordFailedLogin(
+          normalizedEmail,
+          'user_not_found',
+          request
+        );
+        throw new UnauthorizedException('Invalid email or password');
+      }
+
+      // Verify password
+      const isPasswordValid = await this.passwordSecurityService.verifyPassword(
+        password,
+        user.passwordHash
+      );
+      if (!isPasswordValid) {
+        await this.recordFailedLogin(
+          normalizedEmail,
+          'invalid_password',
+          request,
+          user.id
+        );
+        throw new UnauthorizedException('Invalid email or password');
+      }
+
+      // Check if user account is active
+      if (user.status !== UserStatus.ACTIVE) {
+        await this.auditLogService.logEvent(
+          AuditEventType.LOGIN_FAILED,
+          request,
+          { reason: 'account_inactive', status: user.status },
+          user.id,
+          user.email
+        );
+        throw new UnauthorizedException('Account is not active');
+      }
+
+      // Clear any existing failed attempts
+      await this.accountLockoutService.clearFailedAttempts(normalizedEmail);
+
+      // Update last login
+      await this.userRepository.update(user.id, {
+        lastLoginAt: new Date(),
+      });
+
+      // Log successful login
+      await this.auditLogService.logLoginSuccess(request, user.id, user.email);
+
+      // Generate tokens
+      return this.generateAuthResponse(user);
+    } catch (error) {
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
+
+      this.logger.error('Login error:', error);
+      await this.auditLogService.logEvent(
+        AuditEventType.LOGIN_FAILED,
+        request,
+        { reason: 'internal_error' },
+        undefined,
+        normalizedEmail
+      );
+      throw new UnauthorizedException('Invalid email or password');
+    }
+  }
+
+  /**
+   * Secure password change
+   */
+  async changePassword(
+    userId: string,
+    passwordChangeDto: PasswordChangeDto,
+    request: Request
+  ): Promise<PasswordChangeResponseDto> {
+    const { currentPassword, newPassword } = passwordChangeDto;
+
+    try {
+      // Find user with current password
+      const user = await this.userRepository.findOne({
+        where: { id: userId },
+        select: ['id', 'email', 'firstName', 'lastName', 'passwordHash'],
+      });
+
+      if (!user) {
+        throw new UnauthorizedException('User not found');
+      }
+
+      // Verify current password
+      const isCurrentPasswordValid =
+        await this.passwordSecurityService.verifyPassword(
+          currentPassword,
+          user.passwordHash
+        );
+
+      if (!isCurrentPasswordValid) {
+        await this.auditLogService.logPasswordChange(
+          request,
+          userId,
+          user.email,
+          false
+        );
+        throw new UnauthorizedException('Current password is incorrect');
+      }
+
+      // Validate new password
+      const passwordValidation = this.passwordSecurityService.validatePassword(
+        newPassword,
+        {
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+        }
+      );
+
+      if (!passwordValidation.meets_requirements) {
+        throw new BadRequestException({
+          message: 'New password does not meet security requirements',
+          feedback: passwordValidation.feedback,
+          strength: passwordValidation.strength,
+          score: passwordValidation.score,
+        });
+      }
+
+      // Check if new password is different from current
+      const isSamePassword = await this.passwordSecurityService.verifyPassword(
+        newPassword,
+        user.passwordHash
+      );
+
+      if (isSamePassword) {
+        throw new BadRequestException(
+          'New password must be different from current password'
+        );
+      }
+
+      // Check password history
+      const isInHistory =
+        await this.passwordSecurityService.isPasswordInHistory(
+          userId,
+          newPassword
+        );
+      if (isInHistory) {
+        throw new BadRequestException(
+          'You cannot reuse a recently used password'
+        );
+      }
+
+      // Hash new password
+      const newPasswordHash =
+        await this.passwordSecurityService.hashPassword(newPassword);
+
+      // Update password
+      await this.userRepository.update(userId, {
+        passwordHash: newPasswordHash,
+      });
+
+      // Log successful password change
+      await this.auditLogService.logPasswordChange(
+        request,
+        userId,
+        user.email,
+        true
+      );
+
+      return {
+        success: true,
+        message: 'Password changed successfully',
+        passwordStrength: {
+          score: passwordValidation.score,
+          strength: passwordValidation.strength,
+          feedback: passwordValidation.feedback,
+        },
+      };
+    } catch (error) {
+      if (
+        error instanceof UnauthorizedException ||
+        error instanceof BadRequestException
+      ) {
+        throw error;
+      }
+
+      this.logger.error('Password change error:', error);
+      throw new Error('Failed to change password');
+    }
+  }
+
+  /**
+   * Request password reset
+   */
+  async requestPasswordReset(
+    passwordResetRequestDto: PasswordResetRequestDto,
+    request: Request
+  ): Promise<{ message: string; token?: string }> {
+    const { email } = passwordResetRequestDto;
+
+    try {
+      const result = await this.passwordResetService.requestPasswordReset(
+        email.toLowerCase(),
+        this.getClientIp(request),
+        request.get('User-Agent') || 'unknown'
+      );
+
+      await this.auditLogService.logEvent(
+        AuditEventType.PASSWORD_RESET_REQUESTED,
+        request,
+        { email },
+        undefined,
+        email
+      );
+
+      return {
+        message:
+          'If an account with that email exists, a password reset link has been sent.',
+        token: result.token, // Include token for testing (remove in production)
+      };
+    } catch (error) {
+      this.logger.error('Password reset request error:', error);
+      throw new Error('Failed to process password reset request');
+    }
+  }
+
+  /**
+   * Reset password using token
+   */
+  async resetPassword(
+    passwordResetDto: PasswordResetDto,
+    request: Request
+  ): Promise<PasswordResetResponseDto> {
+    const { token, newPassword } = passwordResetDto;
+
+    try {
+      const result = await this.passwordResetService.resetPassword(
+        token,
+        newPassword,
+        this.getClientIp(request),
+        request.get('User-Agent') || 'unknown'
+      );
+
+      await this.auditLogService.logEvent(
+        AuditEventType.PASSWORD_RESET_SUCCESS,
+        request,
+        { token: token.substring(0, 8) + '...' }
+      );
+
+      return result;
+    } catch (error) {
+      await this.auditLogService.logEvent(
+        AuditEventType.PASSWORD_RESET_FAILED,
+        request,
+        { token: token.substring(0, 8) + '...', error: error.message }
+      );
+
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+
+      this.logger.error('Password reset error:', error);
+      throw new Error('Failed to reset password');
+    }
+  }
+
+  /**
+   * Verify email address
+   */
+  async verifyEmail(
+    token: string,
+    request: Request
+  ): Promise<EmailVerificationResponseDto> {
+    try {
+      const result = await this.emailVerificationService.verifyEmail(token);
+
+      await this.auditLogService.logEvent(
+        AuditEventType.EMAIL_VERIFIED,
+        request,
+        { token: token.substring(0, 8) + '...' },
+        result.user?.id,
+        result.user?.email
+      );
+
+      return result as EmailVerificationResponseDto;
+    } catch (error) {
+      await this.auditLogService.logEvent(
+        AuditEventType.EMAIL_VERIFICATION_FAILED,
+        request,
+        { token: token.substring(0, 8) + '...', error: error.message }
+      );
+
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+
+      this.logger.error('Email verification error:', error);
+      throw new Error('Failed to verify email');
+    }
+  }
+
+  /**
+   * Resend email verification
+   */
+  async resendEmailVerification(
+    userId: string,
+    request: Request
+  ): Promise<ResendEmailVerificationResponseDto> {
+    try {
+      await this.emailVerificationService.resendVerificationEmail(userId);
+
+      await this.auditLogService.logEvent(
+        AuditEventType.EMAIL_VERIFICATION_SENT,
+        request,
+        { type: 'resend' },
+        userId
+      );
+
+      return {
+        success: true,
+        message: 'Verification email sent successfully',
+      };
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+
+      this.logger.error('Resend verification error:', error);
+      throw new Error('Failed to resend verification email');
+    }
+  }
+
+  /**
+   * Check password strength
+   */
+  async checkPasswordStrength(
+    passwordStrengthDto: PasswordStrengthCheckDto
+  ): Promise<PasswordStrengthResponseDto> {
+    const { password, email, firstName, lastName } = passwordStrengthDto;
+
+    const validation = this.passwordSecurityService.validatePassword(password, {
+      email,
+      firstName,
+      lastName,
+    });
+
+    return {
+      score: validation.score,
+      strength: validation.strength,
+      feedback: validation.feedback,
+      meets_requirements: validation.meets_requirements,
+    };
+  }
+
+  /**
+   * Enhanced token refresh with security checks
+   */
+  async refreshToken(
+    refreshToken: string,
+    request: Request
+  ): Promise<AuthResponseDto> {
+    try {
+      const payload = this.jwtService.verify(refreshToken, {
+        secret: process.env.JWT_REFRESH_SECRET,
+      });
+
+      const user = await this.userRepository.findOne({
+        where: { id: payload.sub },
+      });
+
+      if (!user || user.status !== UserStatus.ACTIVE) {
+        await this.auditLogService.logEvent(
+          AuditEventType.TOKEN_REFRESH,
+          request,
+          { success: false, reason: 'invalid_user' },
+          payload.sub
+        );
+        throw new UnauthorizedException('Invalid refresh token');
+      }
+
+      await this.auditLogService.logEvent(
+        AuditEventType.TOKEN_REFRESH,
+        request,
+        { success: true },
+        user.id,
+        user.email
+      );
+
+      return this.generateAuthResponse(user);
+    } catch (error) {
+      await this.auditLogService.logEvent(
+        AuditEventType.TOKEN_REFRESH,
+        request,
+        { success: false, error: error.message }
+      );
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+  }
+
+  /**
+   * Enhanced logout with audit logging
+   */
+  async logout(userId: string, request: Request): Promise<void> {
+    await this.auditLogService.logEvent(
+      AuditEventType.LOGOUT,
+      request,
+      {},
+      userId
+    );
+    // In production, you might want to blacklist the token
+  }
+
+  private async recordFailedLogin(
+    email: string,
+    reason: string,
+    request: Request,
+    userId?: string
+  ): Promise<void> {
+    // Record failed attempt for lockout tracking
+    const lockoutInfo =
+      await this.accountLockoutService.recordFailedAttempt(email);
+
+    // Log the failed attempt
+    await this.auditLogService.logLoginFailed(request, email, reason);
+
+    // If account gets locked, log that too
+    if (lockoutInfo.isLocked) {
+      await this.auditLogService.logAccountLocked(
+        request,
+        userId || 'unknown',
+        email,
+        {
+          failedAttempts: lockoutInfo.failedAttempts,
+          lockedUntil: lockoutInfo.lockedUntil,
+        }
+      );
+    }
+  }
+
+  private async generateAuthResponse(user: User): Promise<AuthResponseDto> {
+    const payload: JwtPayload = {
+      sub: user.id,
+      email: user.email,
+      role: user.role,
+    };
+
+    const accessToken = this.jwtService.sign(payload, {
+      secret: process.env.JWT_ACCESS_SECRET,
+      expiresIn: process.env.JWT_ACCESS_EXPIRES_IN || '15m',
+    });
+
+    const refreshToken = this.jwtService.sign(payload, {
+      secret: process.env.JWT_REFRESH_SECRET,
+      expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
+    });
+
+    // Create user object without password and include virtual properties
+    const userWithoutPassword = {
+      id: user.id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      role: user.role,
+      status: user.status,
+      avatar: user.avatar,
+      timezone: user.timezone,
+      currency: user.currency,
+      preferences: user.preferences,
+      lastLoginAt: user.lastLoginAt,
+      emailVerifiedAt: user.emailVerifiedAt,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+      accounts: user.accounts,
+      // Virtual properties
+      fullName: user.fullName,
+      isEmailVerified: user.isEmailVerified,
+      isActive: user.isActive,
+    };
+
+    return {
+      accessToken,
+      refreshToken,
+      user: userWithoutPassword,
+      expiresIn: 15 * 60, // 15 minutes in seconds
+    };
+  }
+
+  private getClientIp(request: Request): string {
+    return (
+      (request.headers['x-forwarded-for'] as string)?.split(',')[0] ||
+      (request.headers['x-real-ip'] as string) ||
+      request.connection.remoteAddress ||
+      request.socket.remoteAddress ||
+      'unknown'
+    );
+  }
+}

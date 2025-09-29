@@ -21,6 +21,8 @@ on:
 env:
   NODE_VERSION: '18'
   FORCE_COLORS: '1'
+  SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+  SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
 
 # Global permissions for security scanning
 permissions:

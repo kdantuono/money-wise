@@ -1,33 +1,170 @@
 
-> @money-wise/web@0.1.0 build /home/nemesi/dev/money-wise/apps/web
+> @money-wise/web@0.1.0 build /home/runner/work/money-wise/money-wise/apps/web
 > next build
 
-   ▲ Next.js 14.0.3
+  ▲ Next.js 14.2.32
 
    Creating an optimized production build ...
- ✓ Compiled successfully
-   Linting and checking validity of types ...
-   Collecting page data ...
-   Generating static pages (0/7) ...
-   Generating static pages (1/7) 
-   Generating static pages (3/7) 
-   Generating static pages (5/7) 
- ✓ Generating static pages (7/7) 
-   Finalizing page optimization ...
-   Collecting build traces ...
+request to https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa2JL7W0Q5n-wU.woff2 failed, reason: getaddrinfo ENOTFOUND fonts.gstatic.com
 
-Route (app)                              Size     First Load JS
-┌ ○ /                                    138 B          84.1 kB
-├ ○ /_not-found                          872 B          84.8 kB
-├ ○ /auth/login                          3.13 kB         148 kB
-├ ○ /auth/register                       3.41 kB         148 kB
-└ ○ /dashboard                           6.01 kB         129 kB
-+ First Load JS shared by all            83.9 kB
-  ├ chunks/45a9102b-c08f05e3be04edd7.js  53.3 kB
-  ├ chunks/804-4bf4cb4261d26438.js       28.8 kB
-  ├ chunks/main-app-ccd458523d8d3881.js  220 B
-  └ chunks/webpack-591be4b762b6a420.js   1.69 kB
+Retrying 1/3...
+request to https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa0ZL7W0Q5n-wU.woff2 failed, reason: getaddrinfo ENOTFOUND fonts.gstatic.com
+
+Retrying 1/3...
+request to https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa2ZL7W0Q5n-wU.woff2 failed, reason: getaddrinfo ENOTFOUND fonts.gstatic.com
+
+Retrying 1/3...
+request to https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1pL7W0Q5n-wU.woff2 failed, reason: getaddrinfo ENOTFOUND fonts.gstatic.com
+
+Retrying 1/3...
+request to https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa25L7W0Q5n-wU.woff2 failed, reason: getaddrinfo ENOTFOUND fonts.gstatic.com
+
+Retrying 1/3...
+request to https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa2pL7W0Q5n-wU.woff2 failed, reason: getaddrinfo ENOTFOUND fonts.gstatic.com
+
+Retrying 1/3...
+request to https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7W0Q5nw.woff2 failed, reason: getaddrinfo ENOTFOUND fonts.gstatic.com
+
+Retrying 1/3...
+request to https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa0ZL7W0Q5n-wU.woff2 failed, reason: getaddrinfo ENOTFOUND fonts.gstatic.com
+
+Retrying 2/3...
+request to https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa2JL7W0Q5n-wU.woff2 failed, reason: getaddrinfo ENOTFOUND fonts.gstatic.com
+
+Retrying 2/3...
+request to https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1pL7W0Q5n-wU.woff2 failed, reason: getaddrinfo ENOTFOUND fonts.gstatic.com
+
+Retrying 2/3...
+request to https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa2ZL7W0Q5n-wU.woff2 failed, reason: getaddrinfo ENOTFOUND fonts.gstatic.com
+
+Retrying 2/3...
+request to https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa25L7W0Q5n-wU.woff2 failed, reason: getaddrinfo ENOTFOUND fonts.gstatic.com
+
+Retrying 2/3...
+request to https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa2pL7W0Q5n-wU.woff2 failed, reason: getaddrinfo ENOTFOUND fonts.gstatic.com
+
+Retrying 2/3...
+request to https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7W0Q5nw.woff2 failed, reason: getaddrinfo ENOTFOUND fonts.gstatic.com
+
+Retrying 2/3...
+request to https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa0ZL7W0Q5n-wU.woff2 failed, reason: getaddrinfo ENOTFOUND fonts.gstatic.com
+
+Retrying 3/3...
+request to https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa2JL7W0Q5n-wU.woff2 failed, reason: getaddrinfo ENOTFOUND fonts.gstatic.com
+
+Retrying 3/3...
+request to https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1pL7W0Q5n-wU.woff2 failed, reason: getaddrinfo ENOTFOUND fonts.gstatic.com
+
+Retrying 3/3...
+request to https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa25L7W0Q5n-wU.woff2 failed, reason: getaddrinfo ENOTFOUND fonts.gstatic.com
+
+Retrying 3/3...
+request to https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa2ZL7W0Q5n-wU.woff2 failed, reason: getaddrinfo ENOTFOUND fonts.gstatic.com
+
+Retrying 3/3...
+request to https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7W0Q5nw.woff2 failed, reason: getaddrinfo ENOTFOUND fonts.gstatic.com
+
+Retrying 3/3...
+request to https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa2pL7W0Q5n-wU.woff2 failed, reason: getaddrinfo ENOTFOUND fonts.gstatic.com
+
+Retrying 3/3...
+FetchError: request to https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa0ZL7W0Q5n-wU.woff2 failed, reason: getaddrinfo ENOTFOUND fonts.gstatic.com
+    at ClientRequest.<anonymous> (/home/runner/work/money-wise/money-wise/node_modules/.pnpm/next@14.2.32_@babel+core@7.28.4_@opentelemetry+api@1.9.0_@playwright+test@1.55.1_react-dom@18.3.1_react@18.3.1/node_modules/next/dist/compiled/node-fetch/index.js:1:66160)
+    at ClientRequest.emit (node:events:524:28)
+    at emitErrorEvent (node:_http_client:101:11)
+    at TLSSocket.socketErrorListener (node:_http_client:504:5)
+    at TLSSocket.emit (node:events:524:28)
+    at emitErrorNT (node:internal/streams/destroy:169:8)
+    at emitErrorCloseNT (node:internal/streams/destroy:128:3)
+    at process.processTicksAndRejections (node:internal/process/task_queues:82:21) {
+  type: 'system',
+  errno: 'ENOTFOUND',
+  code: 'ENOTFOUND'
+}
+FetchError: request to https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1pL7W0Q5n-wU.woff2 failed, reason: getaddrinfo ENOTFOUND fonts.gstatic.com
+    at ClientRequest.<anonymous> (/home/runner/work/money-wise/money-wise/node_modules/.pnpm/next@14.2.32_@babel+core@7.28.4_@opentelemetry+api@1.9.0_@playwright+test@1.55.1_react-dom@18.3.1_react@18.3.1/node_modules/next/dist/compiled/node-fetch/index.js:1:66160)
+    at ClientRequest.emit (node:events:524:28)
+    at emitErrorEvent (node:_http_client:101:11)
+    at TLSSocket.socketErrorListener (node:_http_client:504:5)
+    at TLSSocket.emit (node:events:524:28)
+    at emitErrorNT (node:internal/streams/destroy:169:8)
+    at emitErrorCloseNT (node:internal/streams/destroy:128:3)
+    at process.processTicksAndRejections (node:internal/process/task_queues:82:21) {
+  type: 'system',
+  errno: 'ENOTFOUND',
+  code: 'ENOTFOUND'
+}
+FetchError: request to https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa2JL7W0Q5n-wU.woff2 failed, reason: getaddrinfo ENOTFOUND fonts.gstatic.com
+    at ClientRequest.<anonymous> (/home/runner/work/money-wise/money-wise/node_modules/.pnpm/next@14.2.32_@babel+core@7.28.4_@opentelemetry+api@1.9.0_@playwright+test@1.55.1_react-dom@18.3.1_react@18.3.1/node_modules/next/dist/compiled/node-fetch/index.js:1:66160)
+    at ClientRequest.emit (node:events:524:28)
+    at emitErrorEvent (node:_http_client:101:11)
+    at TLSSocket.socketErrorListener (node:_http_client:504:5)
+    at TLSSocket.emit (node:events:524:28)
+    at emitErrorNT (node:internal/streams/destroy:169:8)
+    at emitErrorCloseNT (node:internal/streams/destroy:128:3)
+    at process.processTicksAndRejections (node:internal/process/task_queues:82:21) {
+  type: 'system',
+  errno: 'ENOTFOUND',
+  code: 'ENOTFOUND'
+}
+FetchError: request to https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa2ZL7W0Q5n-wU.woff2 failed, reason: getaddrinfo ENOTFOUND fonts.gstatic.com
+    at ClientRequest.<anonymous> (/home/runner/work/money-wise/money-wise/node_modules/.pnpm/next@14.2.32_@babel+core@7.28.4_@opentelemetry+api@1.9.0_@playwright+test@1.55.1_react-dom@18.3.1_react@18.3.1/node_modules/next/dist/compiled/node-fetch/index.js:1:66160)
+    at ClientRequest.emit (node:events:524:28)
+    at emitErrorEvent (node:_http_client:101:11)
+    at TLSSocket.socketErrorListener (node:_http_client:504:5)
+    at TLSSocket.emit (node:events:524:28)
+    at emitErrorNT (node:internal/streams/destroy:169:8)
+    at emitErrorCloseNT (node:internal/streams/destroy:128:3)
+    at process.processTicksAndRejections (node:internal/process/task_queues:82:21) {
+  type: 'system',
+  errno: 'ENOTFOUND',
+  code: 'ENOTFOUND'
+}
+FetchError: request to https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa25L7W0Q5n-wU.woff2 failed, reason: getaddrinfo ENOTFOUND fonts.gstatic.com
+    at ClientRequest.<anonymous> (/home/runner/work/money-wise/money-wise/node_modules/.pnpm/next@14.2.32_@babel+core@7.28.4_@opentelemetry+api@1.9.0_@playwright+test@1.55.1_react-dom@18.3.1_react@18.3.1/node_modules/next/dist/compiled/node-fetch/index.js:1:66160)
+    at ClientRequest.emit (node:events:524:28)
+    at emitErrorEvent (node:_http_client:101:11)
+    at TLSSocket.socketErrorListener (node:_http_client:504:5)
+    at TLSSocket.emit (node:events:524:28)
+    at emitErrorNT (node:internal/streams/destroy:169:8)
+    at emitErrorCloseNT (node:internal/streams/destroy:128:3)
+    at process.processTicksAndRejections (node:internal/process/task_queues:82:21) {
+  type: 'system',
+  errno: 'ENOTFOUND',
+  code: 'ENOTFOUND'
+}
+FetchError: request to https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7W0Q5nw.woff2 failed, reason: getaddrinfo ENOTFOUND fonts.gstatic.com
+    at ClientRequest.<anonymous> (/home/runner/work/money-wise/money-wise/node_modules/.pnpm/next@14.2.32_@babel+core@7.28.4_@opentelemetry+api@1.9.0_@playwright+test@1.55.1_react-dom@18.3.1_react@18.3.1/node_modules/next/dist/compiled/node-fetch/index.js:1:66160)
+    at ClientRequest.emit (node:events:524:28)
+    at emitErrorEvent (node:_http_client:101:11)
+    at TLSSocket.socketErrorListener (node:_http_client:504:5)
+    at TLSSocket.emit (node:events:524:28)
+    at emitErrorNT (node:internal/streams/destroy:169:8)
+    at emitErrorCloseNT (node:internal/streams/destroy:128:3)
+    at process.processTicksAndRejections (node:internal/process/task_queues:82:21) {
+  type: 'system',
+  errno: 'ENOTFOUND',
+  code: 'ENOTFOUND'
+}
+FetchError: request to https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa2pL7W0Q5n-wU.woff2 failed, reason: getaddrinfo ENOTFOUND fonts.gstatic.com
+    at ClientRequest.<anonymous> (/home/runner/work/money-wise/money-wise/node_modules/.pnpm/next@14.2.32_@babel+core@7.28.4_@opentelemetry+api@1.9.0_@playwright+test@1.55.1_react-dom@18.3.1_react@18.3.1/node_modules/next/dist/compiled/node-fetch/index.js:1:66160)
+    at ClientRequest.emit (node:events:524:28)
+    at emitErrorEvent (node:_http_client:101:11)
+    at TLSSocket.socketErrorListener (node:_http_client:504:5)
+    at TLSSocket.emit (node:events:524:28)
+    at emitErrorNT (node:internal/streams/destroy:169:8)
+    at emitErrorCloseNT (node:internal/streams/destroy:128:3)
+    at process.processTicksAndRejections (node:internal/process/task_queues:82:21) {
+  type: 'system',
+  errno: 'ENOTFOUND',
+  code: 'ENOTFOUND'
+}
+Failed to compile.
+
+app/layout.tsx
+`next/font` error:
+Failed to fetch `Inter` from Google Fonts.
 
 
-○  (Static)  prerendered as static content
-
+> Build failed because of webpack errors
+[41m[30m ELIFECYCLE [39m[49m [31mCommand failed with exit code 1.[39m

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { Injectable } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { User, UserStatus, UserRole } from '../../entities';
@@ -11,10 +12,28 @@ import { BaseRepository } from './base.repository';
 export class UserRepository extends BaseRepository<User> implements IUserRepository {
   constructor(dataSource: DataSource) {
     super(dataSource, User, 'UserRepository');
+=======
+/**
+ * User Repository Implementation for MoneyWise Application
+ * Implements User-specific data access operations
+ */
+
+import { Injectable } from '@nestjs/common';
+import { DataSource } from 'typeorm';
+import { User } from '../../entities';
+import { IUserRepository } from '../interfaces/user.repository.interface';
+import { BaseRepository } from './base.repository';
+
+@Injectable()
+export class UserRepository extends BaseRepository<User> implements IUserRepository {
+  constructor(dataSource: DataSource) {
+    super(dataSource, User);
+>>>>>>> origin/epic/milestone-1-foundation
   }
 
   async findByEmail(email: string): Promise<User | null> {
     try {
+<<<<<<< HEAD
       this.logger.debug(`Finding user by email: ${email}`);
 
       const user = await this.repository.findOne({
@@ -25,10 +44,19 @@ export class UserRepository extends BaseRepository<User> implements IUserReposit
       return user;
     } catch (error) {
       this.logger.error(`Error finding user by email ${email}:`, error);
+=======
+      const user = await this.repository.findOne({
+        where: { email: email.toLowerCase() },
+      });
+      return user || null;
+    } catch (error) {
+      this.logger.error(`Failed to find user by email: ${error.message}`, error.stack);
+>>>>>>> origin/epic/milestone-1-foundation
       throw new Error(`Failed to find user by email: ${error.message}`);
     }
   }
 
+<<<<<<< HEAD
   async findByStatus(status: UserStatus): Promise<User[]> {
     try {
       this.logger.debug(`Finding users by status: ${status}`);
@@ -99,11 +127,54 @@ export class UserRepository extends BaseRepository<User> implements IUserReposit
     } catch (error) {
       this.logger.error(`Error updating last login for user ${userId}:`, error);
       throw new Error(`Failed to update last login: ${error.message}`);
+=======
+  async isEmailTaken(email: string, excludeUserId?: string): Promise<boolean> {
+    try {
+      const query = this.repository.createQueryBuilder('user')
+        .where('LOWER(user.email) = LOWER(:email)', { email });
+
+      if (excludeUserId) {
+        query.andWhere('user.id != :excludeUserId', { excludeUserId });
+      }
+
+      const count = await query.getCount();
+      return count > 0;
+    } catch (error) {
+      this.logger.error(`Failed to check if email is taken: ${error.message}`, error.stack);
+      throw new Error(`Failed to check if email is taken: ${error.message}`);
+    }
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
+  async findByEmailVerificationToken(_token: string): Promise<User | null> {
+    try {
+      // Note: emailVerificationToken property doesn't exist in current User entity
+      // This method needs to be updated when token-based verification is implemented
+      this.logger.warn('emailVerificationToken not implemented in current User entity');
+      return null;
+    } catch (error) {
+      this.logger.error(`Failed to find user by verification token: ${error.message}`, error.stack);
+      throw new Error(`Failed to find user by verification token: ${error.message}`);
+    }
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
+  async findByPasswordResetToken(_token: string): Promise<User | null> {
+    try {
+      // Note: passwordResetToken property doesn't exist in current User entity
+      // This method needs to be updated when password reset tokens are implemented
+      this.logger.warn('passwordResetToken not implemented in current User entity');
+      return null;
+    } catch (error) {
+      this.logger.error(`Failed to find user by reset token: ${error.message}`, error.stack);
+      throw new Error(`Failed to find user by reset token: ${error.message}`);
+>>>>>>> origin/epic/milestone-1-foundation
     }
   }
 
   async markEmailAsVerified(userId: string): Promise<boolean> {
     try {
+<<<<<<< HEAD
       this.logger.debug(`Marking email as verified for user: ${userId}`);
 
       const result = await this.repository.update(userId, {
@@ -115,10 +186,19 @@ export class UserRepository extends BaseRepository<User> implements IUserReposit
       return success;
     } catch (error) {
       this.logger.error(`Error marking email as verified for user ${userId}:`, error);
+=======
+      const result = await this.repository.update(userId, {
+        emailVerifiedAt: new Date(),
+      });
+      return !!(result.affected && result.affected > 0);
+    } catch (error) {
+      this.logger.error(`Failed to mark email as verified: ${error.message}`, error.stack);
+>>>>>>> origin/epic/milestone-1-foundation
       throw new Error(`Failed to mark email as verified: ${error.message}`);
     }
   }
 
+<<<<<<< HEAD
   async updateStatus(userId: string, status: UserStatus): Promise<User | null> {
     try {
       this.logger.debug(`Updating status for user ${userId} to: ${status}`);
@@ -209,11 +289,76 @@ export class UserRepository extends BaseRepository<User> implements IUserReposit
     } catch (error) {
       this.logger.error(`Error finding inactive users:`, error);
       throw new Error(`Failed to find inactive users: ${error.message}`);
+=======
+  async updatePasswordHash(userId: string, passwordHash: string): Promise<boolean> {
+    try {
+      const result = await this.repository.update(userId, { passwordHash });
+      return !!(result.affected && result.affected > 0);
+    } catch (error) {
+      this.logger.error(`Failed to update password hash: ${error.message}`, error.stack);
+      throw new Error(`Failed to update password hash: ${error.message}`);
+    }
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
+  async setPasswordResetToken(_userId: string, _token: string, _expiresAt: Date): Promise<boolean> {
+    try {
+      // Note: passwordResetToken and passwordResetExpires not implemented in current User entity
+      // This method needs to be updated when password reset is implemented
+      this.logger.warn('Password reset tokens not implemented in current User entity');
+      return false;
+    } catch (error) {
+      this.logger.error(`Failed to set password reset token: ${error.message}`, error.stack);
+      throw new Error(`Failed to set password reset token: ${error.message}`);
+    }
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
+  async clearPasswordResetToken(_userId: string): Promise<boolean> {
+    try {
+      // Note: passwordResetToken and passwordResetExpires not implemented in current User entity
+      // This method needs to be updated when password reset is implemented
+      this.logger.warn('Password reset tokens not implemented in current User entity');
+      return false;
+    } catch (error) {
+      this.logger.error(`Failed to clear password reset token: ${error.message}`, error.stack);
+      throw new Error(`Failed to clear password reset token: ${error.message}`);
+    }
+  }
+
+  async findWithAccounts(userId: string): Promise<User | null> {
+    try {
+      const user = await this.repository.findOne({
+        where: { id: userId },
+        relations: ['accounts'],
+      });
+      return user || null;
+    } catch (error) {
+      this.logger.error(`Failed to find user with accounts: ${error.message}`, error.stack);
+      throw new Error(`Failed to find user with accounts: ${error.message}`);
+    }
+  }
+
+  async findByDateRange(startDate: Date, endDate: Date): Promise<User[]> {
+    try {
+      const users = await this.repository
+        .createQueryBuilder('user')
+        .where('user.createdAt >= :startDate', { startDate })
+        .andWhere('user.createdAt <= :endDate', { endDate })
+        .orderBy('user.createdAt', 'DESC')
+        .getMany();
+
+      return users;
+    } catch (error) {
+      this.logger.error(`Failed to find users by date range: ${error.message}`, error.stack);
+      throw new Error(`Failed to find users by date range: ${error.message}`);
+>>>>>>> origin/epic/milestone-1-foundation
     }
   }
 
   async getUserStats(): Promise<{
     total: number;
+<<<<<<< HEAD
     byStatus: Record<UserStatus, number>;
     byRole: Record<UserRole, number>;
     verified: number;
@@ -275,6 +420,67 @@ export class UserRepository extends BaseRepository<User> implements IUserReposit
     } catch (error) {
       this.logger.error(`Error getting user statistics:`, error);
       throw new Error(`Failed to get user statistics: ${error.message}`);
+=======
+    verified: number;
+    unverified: number;
+    recentlyCreated: number;
+  }> {
+    try {
+      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+      const [total, verified, recentlyCreated] = await Promise.all([
+        this.repository.count(),
+        this.repository
+          .createQueryBuilder('user')
+          .where('user.emailVerifiedAt IS NOT NULL')
+          .getCount(),
+        this.repository
+          .createQueryBuilder('user')
+          .where('user.createdAt >= :date', { date: sevenDaysAgo })
+          .getCount(),
+      ]);
+
+      return {
+        total,
+        verified,
+        unverified: total - verified,
+        recentlyCreated,
+      };
+    } catch (error) {
+      this.logger.error(`Failed to get user stats: ${error.message}`, error.stack);
+      throw new Error(`Failed to get user stats: ${error.message}`);
+    }
+  }
+
+  async softDelete(userId: string): Promise<boolean> {
+    try {
+      // In a real implementation, you might add an 'isActive' field
+      // For now, we'll just log the soft delete
+      this.logger.warn(`Soft delete requested for user: ${userId}`);
+      return true;
+    } catch (error) {
+      this.logger.error(`Failed to soft delete user: ${error.message}`, error.stack);
+      throw new Error(`Failed to soft delete user: ${error.message}`);
+    }
+  }
+
+  async search(query: string, limit = 10): Promise<User[]> {
+    try {
+      const users = await this.repository
+        .createQueryBuilder('user')
+        .where('LOWER(user.firstName) LIKE LOWER(:query)', { query: `%${query}%` })
+        .orWhere('LOWER(user.lastName) LIKE LOWER(:query)', { query: `%${query}%` })
+        .orWhere('LOWER(user.email) LIKE LOWER(:query)', { query: `%${query}%` })
+        .orderBy('user.firstName', 'ASC')
+        .addOrderBy('user.lastName', 'ASC')
+        .limit(limit)
+        .getMany();
+
+      return users;
+    } catch (error) {
+      this.logger.error(`Failed to search users: ${error.message}`, error.stack);
+      throw new Error(`Failed to search users: ${error.message}`);
+>>>>>>> origin/epic/milestone-1-foundation
     }
   }
 }

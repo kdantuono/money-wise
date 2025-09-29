@@ -3,23 +3,22 @@ import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { RedisModule } from '@liaoliaots/nestjs-redis';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { AuthSecurityService } from './auth-security.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
-import { User } from '../core/database/entities/user.entity';
-import { PasswordHistory } from '../core/database/entities/password-history.entity';
-import { AuditLog } from '../core/database/entities/audit-log.entity';
-import { PasswordController } from './controllers/password.controller';
+import { RateLimitGuard } from './guards/rate-limit.guard';
 import { PasswordSecurityService } from './services/password-security.service';
-import { PasswordStrengthService } from './services/password-strength.service';
+import { AccountLockoutService } from './services/account-lockout.service';
+import { EmailVerificationService } from './services/email-verification.service';
 import { PasswordResetService } from './services/password-reset.service';
-import { RateLimitService } from './services/rate-limit.service';
+import { AuditLogService } from './services/audit-log.service';
+import { User } from '../core/database/entities/user.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User, PasswordHistory, AuditLog]),
+    TypeOrmModule.forFeature([User]),
     PassportModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -31,35 +30,30 @@ import { RateLimitService } from './services/rate-limit.service';
       }),
       inject: [ConfigService],
     }),
-    RedisModule.forRootAsync({
-      imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => ({
-        config: {
-          host: configService.get('REDIS_HOST', 'localhost'),
-          port: configService.get('REDIS_PORT', 6379),
-          password: configService.get('REDIS_PASSWORD'),
-          db: configService.get('REDIS_DB', 0),
-        },
-      }),
-      inject: [ConfigService],
-    }),
   ],
-  controllers: [AuthController, PasswordController],
+  controllers: [AuthController],
   providers: [
     AuthService,
+    AuthSecurityService,
     JwtStrategy,
     JwtAuthGuard,
+    RateLimitGuard,
     PasswordSecurityService,
-    PasswordStrengthService,
+    AccountLockoutService,
+    EmailVerificationService,
     PasswordResetService,
-    RateLimitService,
+    AuditLogService,
   ],
   exports: [
     AuthService,
+    AuthSecurityService,
     JwtAuthGuard,
+    RateLimitGuard,
     PasswordSecurityService,
-    PasswordStrengthService,
-    RateLimitService,
+    AccountLockoutService,
+    EmailVerificationService,
+    PasswordResetService,
+    AuditLogService,
   ],
 })
 export class AuthModule {}

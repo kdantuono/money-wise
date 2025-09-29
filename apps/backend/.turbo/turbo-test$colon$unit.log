@@ -1,40 +1,214 @@
 
-> @money-wise/backend@0.1.0 test:unit /home/nemesi/dev/money-wise/apps/backend
+> @money-wise/backend@0.1.0 test:unit /home/runner/work/money-wise/money-wise/apps/backend
 > jest --passWithNoTests --testPathPattern='src'
 
-PASS @money-wise/backend src/core/health/health.controller.spec.ts
-  HealthController
-    ✓ should be defined (17 ms)
-    getHealth
-      ✓ should return basic health status (4 ms)
-      ✓ should return consistent timestamp format (4 ms)
-      ✓ should return positive uptime (5 ms)
-      ✓ should return memory usage (6 ms)
-    getDetailedHealth
-      ✓ should return detailed health with services status (44 ms)
-      ✓ should include database response time (4 ms)
-    getReadiness
-      ✓ should return readiness status (2 ms)
-    getLiveness
-      ✓ should return liveness status (5 ms)
+[0m[7m[1m[32m PASS [39m[22m[27m[0m [0m[7m[37m @money-wise/backend [39m[27m[0m [2msrc/core/database/repositories/__tests__/[22m[1maccount.repository.spec.ts[22m ([0m[1m[41m11.774 s[49m[22m[0m)
+  AccountRepository
+    findByUserId
+      [32m✓[39m [2mshould find accounts by user ID (15 ms)[22m
+      [32m✓[39m [2mshould handle findByUserId errors (34 ms)[22m
+    findActiveAccountsByUserId
+      [32m✓[39m [2mshould find active accounts by user ID (8 ms)[22m
+      [32m✓[39m [2mshould handle findActiveAccountsByUserId errors (5 ms)[22m
+    updateBalance
+      [32m✓[39m [2mshould update account currentBalance successfully (7 ms)[22m
+      [32m✓[39m [2mshould return false when no account was updated (3 ms)[22m
+      [32m✓[39m [2mshould handle updateBalance errors (4 ms)[22m
+    incrementBalance
+      [32m✓[39m [2mshould increment account currentBalance successfully (5 ms)[22m
+      [32m✓[39m [2mshould return false when no account was updated (4 ms)[22m
+      [32m✓[39m [2mshould handle incrementBalance errors (12 ms)[22m
+    decrementBalance
+      [32m✓[39m [2mshould decrement account currentBalance successfully (3 ms)[22m
+      [32m✓[39m [2mshould handle decrementBalance errors (3 ms)[22m
+    getTotalBalanceForUser
+      [32m✓[39m [2mshould get total currentBalance for user (3 ms)[22m
+      [32m✓[39m [2mshould return 0 when no total found (3 ms)[22m
+      [32m✓[39m [2mshould handle getTotalBalanceForUser errors (3 ms)[22m
+    findByPlaidAccountId
+      [32m✓[39m [2mshould find account by Plaid account ID (2 ms)[22m
+      [32m✓[39m [2mshould return null when Plaid account not found (2 ms)[22m
+      [32m✓[39m [2mshould handle findByPlaidAccountId errors (2 ms)[22m
+    deactivateAccount
+      [32m✓[39m [2mshould deactivate account successfully (2 ms)[22m
+      [32m✓[39m [2mshould return false when no account was deactivated (8 ms)[22m
+      [32m✓[39m [2mshould handle deactivateAccount errors (2 ms)[22m
+    reactivateAccount
+      [32m✓[39m [2mshould reactivate account successfully (2 ms)[22m
+      [32m✓[39m [2mshould handle reactivateAccount errors (2 ms)[22m
+    findAccountsForSync
+      [32m✓[39m [2mshould find accounts for sync with user filter (2 ms)[22m
+      [32m✓[39m [2mshould find all accounts for sync without user filter (3 ms)[22m
+      [32m✓[39m [2mshould handle findAccountsForSync errors (2 ms)[22m
+    getAccountBalancesSummary
+      [32m✓[39m [2mshould get account currentBalances summary by type (3 ms)[22m
+      [32m✓[39m [2mshould handle getAccountBalancesSummary errors (2 ms)[22m
+    findLowBalanceAccounts
+      [32m✓[39m [2mshould find low currentBalance accounts with user filter (2 ms)[22m
+      [32m✓[39m [2mshould handle findLowBalanceAccounts errors (3 ms)[22m
 
-PASS @money-wise/backend src/auth/auth.service.spec.ts
+[0m[7m[1m[32m PASS [39m[22m[27m[0m [0m[7m[37m @money-wise/backend [39m[27m[0m [2msrc/core/database/repositories/__tests__/[22m[1mbase.repository.spec.ts[22m
+  BaseRepository
+    constructor
+      [32m✓[39m [2mshould initialize repository with correct entity (9 ms)[22m
+    create
+      [32m✓[39m [2mshould create and save a new entity successfully (9 ms)[22m
+      [32m✓[39m [2mshould handle creation errors and throw descriptive error (28 ms)[22m
+    save
+      [32m✓[39m [2mshould save an existing entity successfully (3 ms)[22m
+      [32m✓[39m [2mshould handle save errors (4 ms)[22m
+    findById
+      [32m✓[39m [2mshould find entity by ID successfully (3 ms)[22m
+      [32m✓[39m [2mshould return null when entity not found (10 ms)[22m
+      [32m✓[39m [2mshould handle findById errors (3 ms)[22m
+    findOne
+      [32m✓[39m [2mshould find one entity with FindOptionsWhere (2 ms)[22m
+      [32m✓[39m [2mshould find one entity with FindOneOptions (1 ms)[22m
+      [32m✓[39m [2mshould handle findOne errors (2 ms)[22m
+    find
+      [32m✓[39m [2mshould find multiple entities with options (2 ms)[22m
+      [32m✓[39m [2mshould find all entities when no options provided (3 ms)[22m
+      [32m✓[39m [2mshould handle find errors (3 ms)[22m
+    findWithPagination
+      [32m✓[39m [2mshould return paginated results (2 ms)[22m
+      [32m✓[39m [2mshould handle pagination with criteria (2 ms)[22m
+      [32m✓[39m [2mshould handle pagination errors (2 ms)[22m
+    update
+      [32m✓[39m [2mshould update entity successfully (2 ms)[22m
+      [32m✓[39m [2mshould return null when entity to update not found (6 ms)[22m
+      [32m✓[39m [2mshould handle update errors (2 ms)[22m
+    delete
+      [32m✓[39m [2mshould delete entity successfully (2 ms)[22m
+      [32m✓[39m [2mshould return false when no entity was deleted (1 ms)[22m
+      [32m✓[39m [2mshould handle delete errors (2 ms)[22m
+    deleteBy
+      [32m✓[39m [2mshould delete entities by criteria (2 ms)[22m
+      [32m✓[39m [2mshould handle deleteBy errors (3 ms)[22m
+    count
+      [32m✓[39m [2mshould count entities with criteria (2 ms)[22m
+      [32m✓[39m [2mshould count all entities when no criteria provided (2 ms)[22m
+      [32m✓[39m [2mshould handle count errors (3 ms)[22m
+    exists
+      [32m✓[39m [2mshould return true when entity exists (2 ms)[22m
+      [32m✓[39m [2mshould return false when entity does not exist (2 ms)[22m
+      [32m✓[39m [2mshould handle exists errors (2 ms)[22m
+    bulkInsert
+      [32m✓[39m [2mshould perform bulk insert successfully (10 ms)[22m
+      [32m✓[39m [2mshould handle bulk insert errors (2 ms)[22m
+    bulkUpdate
+      [32m✓[39m [2mshould perform bulk update successfully (3 ms)[22m
+      [32m✓[39m [2mshould handle bulk update errors (2 ms)[22m
+    query
+      [32m✓[39m [2mshould execute raw query successfully (2 ms)[22m
+      [32m✓[39m [2mshould execute parameterized query (2 ms)[22m
+      [32m✓[39m [2mshould handle query errors (2 ms)[22m
+
+[0m[7m[1m[32m PASS [39m[22m[27m[0m [0m[7m[37m @money-wise/backend [39m[27m[0m [2msrc/core/database/repositories/__tests__/[22m[1muser.repository.spec.ts[22m
+  UserRepository
+    findByEmail
+      [32m✓[39m [2mshould find user by email with case insensitivity (7 ms)[22m
+      [32m✓[39m [2mshould return null when user not found (6 ms)[22m
+      [32m✓[39m [2mshould handle findByEmail errors (29 ms)[22m
+    isEmailTaken
+      [32m✓[39m [2mshould return true when email is taken (4 ms)[22m
+      [32m✓[39m [2mshould return false when email is not taken (4 ms)[22m
+      [32m✓[39m [2mshould exclude specific user when checking email availability (3 ms)[22m
+      [32m✓[39m [2mshould handle isEmailTaken errors (4 ms)[22m
+    findByEmailVerificationToken
+      [32m✓[39m [2mshould return null for email verification token (not implemented) (12 ms)[22m
+      [32m✓[39m [2mshould handle findByEmailVerificationToken errors (3 ms)[22m
+    findByPasswordResetToken
+      [32m✓[39m [2mshould return null for password reset token (not implemented) (3 ms)[22m
+      [32m✓[39m [2mshould handle findByPasswordResetToken errors (3 ms)[22m
+    markEmailAsVerified
+      [32m✓[39m [2mshould mark email as verified successfully (5 ms)[22m
+      [32m✓[39m [2mshould return false when no user was updated (3 ms)[22m
+      [32m✓[39m [2mshould handle markEmailAsVerified errors (2 ms)[22m
+    updatePasswordHash
+      [32m✓[39m [2mshould update password hash successfully (2 ms)[22m
+      [32m✓[39m [2mshould return false when no user was updated (3 ms)[22m
+      [32m✓[39m [2mshould handle updatePasswordHash errors (3 ms)[22m
+    setPasswordResetToken
+      [32m✓[39m [2mshould return false for password reset token (not implemented) (2 ms)[22m
+      [32m✓[39m [2mshould handle setPasswordResetToken errors (2 ms)[22m
+    clearPasswordResetToken
+      [32m✓[39m [2mshould return false for clear password reset token (not implemented) (2 ms)[22m
+      [32m✓[39m [2mshould handle clearPasswordResetToken errors (2 ms)[22m
+    findWithAccounts
+      [32m✓[39m [2mshould find user with their accounts (2 ms)[22m
+      [32m✓[39m [2mshould return null when user not found (1 ms)[22m
+      [32m✓[39m [2mshould handle findWithAccounts errors (2 ms)[22m
+    findByDateRange
+      [32m✓[39m [2mshould find users within date range (4 ms)[22m
+      [32m✓[39m [2mshould handle findByDateRange errors (2 ms)[22m
+    getUserStats
+      [32m✓[39m [2mshould return user statistics (3 ms)[22m
+      [32m✓[39m [2mshould handle getUserStats errors (2 ms)[22m
+    softDelete
+      [32m✓[39m [2mshould log soft delete request (2 ms)[22m
+      [32m✓[39m [2mshould handle softDelete errors (4 ms)[22m
+    search
+      [32m✓[39m [2mshould search users by first name, last name, and email (13 ms)[22m
+      [32m✓[39m [2mshould use default limit when not provided (2 ms)[22m
+      [32m✓[39m [2mshould handle search errors (2 ms)[22m
+
+[0m[7m[1m[32m PASS [39m[22m[27m[0m [0m[7m[37m @money-wise/backend [39m[27m[0m [2msrc/auth/[22m[1mauth.service.spec.ts[22m
   AuthService
     register
-      ✓ should register a new user successfully (6 ms)
-      ✓ should throw ConflictException if user already exists (12 ms)
+      [32m✓[39m [2mshould register a new user successfully (10 ms)[22m
+      [32m✓[39m [2mshould throw ConflictException if user already exists (13 ms)[22m
     login
-      ✓ should login user successfully (4 ms)
-      ✓ should throw UnauthorizedException if user not found (3 ms)
-      ✓ should throw UnauthorizedException if password is invalid (4 ms)
-      ✓ should throw UnauthorizedException if user is not active (3 ms)
+      [32m✓[39m [2mshould login user successfully (3 ms)[22m
+      [32m✓[39m [2mshould throw UnauthorizedException if user not found (4 ms)[22m
+      [32m✓[39m [2mshould throw UnauthorizedException if password is invalid (3 ms)[22m
+      [32m✓[39m [2mshould throw UnauthorizedException if user is not active (8 ms)[22m
     validateUser
-      ✓ should return user if valid (2 ms)
-      ✓ should throw UnauthorizedException if user not found (2 ms)
-      ✓ should throw UnauthorizedException if user is not active (2 ms)
+      [32m✓[39m [2mshould return user if valid (2 ms)[22m
+      [32m✓[39m [2mshould throw UnauthorizedException if user not found (2 ms)[22m
+      [32m✓[39m [2mshould throw UnauthorizedException if user is not active (2 ms)[22m
 
-Test Suites: 2 passed, 2 total
-Tests:       18 passed, 18 total
-Snapshots:   0 total
-Time:        4.422 s
-Ran all test suites matching /src/i.
+[0m[7m[1m[32m PASS [39m[22m[27m[0m [0m[7m[37m @money-wise/backend [39m[27m[0m [2msrc/core/database/repositories/__tests__/integration/[22m[1mrepositories.integration.spec.ts[22m
+  Repository Integration Tests
+    Repository Pattern Integration
+      [32m✓[39m [2mshould have repositories properly exported from index (290 ms)[22m
+      [32m✓[39m [2mshould have repository module and injection tokens exported (1 ms)[22m
+      [32m✓[39m [2mshould validate repository structure integrity (1 ms)[22m
+      [32m✓[39m [2mshould validate test coverage completeness (1 ms)[22m
+    Repository Pattern Compliance
+      [32m✓[39m [2mshould document zero-tolerance validation achievements[22m
+      [32m✓[39m [2mshould validate atomic commit compliance (1 ms)[22m
+
+[0m[7m[1m[32m PASS [39m[22m[27m[0m [0m[7m[37m @money-wise/backend [39m[27m[0m [2msrc/core/health/[22m[1mhealth.controller.spec.ts[22m
+  HealthController
+    [32m✓[39m [2mshould be defined (5 ms)[22m
+    getHealth
+      [32m✓[39m [2mshould return basic health status (7 ms)[22m
+      [32m✓[39m [2mshould return consistent timestamp format (2 ms)[22m
+      [32m✓[39m [2mshould return positive uptime (1 ms)[22m
+      [32m✓[39m [2mshould return memory usage (3 ms)[22m
+    getDetailedHealth
+      [32m✓[39m [2mshould return detailed health with services status (4 ms)[22m
+      [32m✓[39m [2mshould include database response time (3 ms)[22m
+    getReadiness
+      [32m✓[39m [2mshould return readiness status (2 ms)[22m
+    getLiveness
+      [32m✓[39m [2mshould return liveness status (2 ms)[22m
+
+[0m[7m[1m[32m PASS [39m[22m[27m[0m [0m[7m[37m @money-wise/backend [39m[27m[0m [2msrc/common/decorators/__tests__/[22m[1msentry-transaction.decorator.spec.ts[22m
+  SentryTransactionDecorator
+    withSentryTransaction
+      [32m✓[39m [2mshould wrap function with Sentry transaction (2 ms)[22m
+      [32m✓[39m [2mshould handle errors in wrapped function (4 ms)[22m
+    SentryTransactionManager
+      [32m✓[39m [2mshould manage transaction lifecycle (2 ms)[22m
+
+[0m[7m[1m[32m PASS [39m[22m[27m[0m [0m[7m[37m @money-wise/backend [39m[27m[0m [2msrc/common/interceptors/__tests__/[22m[1msentry.interceptor.spec.ts[22m
+  SentryInterceptor
+    intercept
+      [32m✓[39m [2mshould create interceptor instance (1 ms)[22m
+
+[999D[K[1mTest Suites: [22m[1m[32m8 passed[39m[22m, 8 total
+[1mTests:       [22m[1m[32m129 passed[39m[22m, 129 total
+[1mSnapshots:   [22m0 total
+[1mTime:[22m        17.159 s
+[2mRan all test suites[22m[2m matching [22m/src/i[2m.[22m

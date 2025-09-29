@@ -18,6 +18,9 @@
     "test:e2e": "playwright test",
     "test:e2e:basic": "playwright test --config=playwright.basic.config.ts",
     "test:e2e:mcp": "echo 'Use MCP Playwright tools in Claude Code for enhanced E2E testing. See docs/development/mcp-playwright-integration.md'",
+    "test:visual": "playwright test e2e/visual/",
+    "test:visual:update": "playwright test e2e/visual/ --update-snapshots",
+    "test:visual:ui": "playwright test e2e/visual/ --ui",
     "test:e2e:ui": "playwright test --ui",
     "clean": "rm -rf .next out coverage"
   },
@@ -34,6 +37,9 @@
     "@radix-ui/react-navigation-menu": "^1.2.14",
     "@radix-ui/react-slot": "^1.0.2",
     "@radix-ui/react-toast": "^1.1.5",
+    "@sentry/browser": "^10.15.0",
+    "@sentry/nextjs": "^10.15.0",
+    "@sentry/react": "^10.15.0",
     "autoprefixer": "^10.4.16",
     "axios": "^1.6.2",
     "class-variance-authority": "^0.7.0",
@@ -68,7 +74,13 @@
     "eslint": "^8.54.0",
     "eslint-config-next": "14.2.32",
     "jsdom": "^23.0.1",
+    "msw": "^2.11.3",
     "typescript": "^5.2.2",
     "vitest": "^1.0.4"
+  },
+  "msw": {
+    "workerDirectory": [
+      "public"
+    ]
   }
 }

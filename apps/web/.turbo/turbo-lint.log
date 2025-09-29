@@ -1,5 +1,23 @@
 
-> @money-wise/web@0.1.0 lint /home/nemesi/dev/money-wise/apps/web
+> @money-wise/web@0.1.0 lint /home/runner/work/money-wise/money-wise/apps/web
 > next lint
+
+=============
+
+WARNING: You are currently running a version of TypeScript which is not officially supported by @typescript-eslint/typescript-estree.
+
+You may find that it works just fine, or you may not.
+
+SUPPORTED TYPESCRIPT VERSIONS: >=4.3.5 <5.4.0
+
+YOUR TYPESCRIPT VERSION: 5.9.2
+
+Please only submit bug reports when using the officially supported version.
+
+=============
+Attention: Next.js now collects completely anonymous telemetry regarding usage.
+This information is used to shape Next.js' roadmap and prioritize features.
+You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+https://nextjs.org/telemetry
 
 ✔ No ESLint warnings or errors

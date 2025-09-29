@@ -2,144 +2,3 @@
 > @money-wise/backend@0.1.0 test /home/nemesi/dev/money-wise/apps/backend
 > jest --passWithNoTests
 
-[1m[2mDetermining test suites to run...[22m[22m[999D[K
-[K[1A
-[0m[7m[33m[1m RUNS [22m[39m[27m[0m [0m[7m[37m @money-wise/backend [39m[27m[0m [2msrc/auth/[22m[1mauth.service.spec.ts[22m
-[K[1A[K[1A
-[0m[7m[33m[1m RUNS [22m[39m[27m[0m [0m[7m[37m @money-wise/backend [39m[27m[0m [2msrc/auth/[22m[1mauth.service.spec.ts[22m
-[K[1A[K[1A
-[0m[7m[33m[1m RUNS [22m[39m[27m[0m [0m[7m[37m @money-wise/backend [39m[27m[0m [2msrc/auth/[22m[1mauth.service.spec.ts[22m
-[K[1A[K[1A
-[0m[7m[33m[1m RUNS [22m[39m[27m[0m [0m[7m[37m @money-wise/backend [39m[27m[0m [2msrc/auth/[22m[1mauth.service.spec.ts[22m
-[K[1A[K[1A
-[0m[7m[33m[1m RUNS [22m[39m[27m[0m [0m[7m[37m @money-wise/backend [39m[27m[0m [2msrc/auth/[22m[1mauth.service.spec.ts[22m
-[K[1A[K[1A
-[0m[7m[33m[1m RUNS [22m[39m[27m[0m [0m[7m[37m @money-wise/backend [39m[27m[0m [2msrc/auth/[22m[1mauth.service.spec.ts[22m
-[K[1A[K[1A
-[0m[7m[33m[1m RUNS [22m[39m[27m[0m [0m[7m[37m @money-wise/backend [39m[27m[0m [2msrc/auth/[22m[1mauth.service.spec.ts[22m
-[K[1A[K[1A
-[0m[7m[33m[1m RUNS [22m[39m[27m[0m [0m[7m[37m @money-wise/backend [39m[27m[0m [2msrc/auth/[22m[1mauth.service.spec.ts[22m
-[K[1A[K[1A
-[0m[7m[33m[1m RUNS [22m[39m[27m[0m [0m[7m[37m @money-wise/backend [39m[27m[0m [2msrc/auth/[22m[1mauth.service.spec.ts[22m
-[K[1A[K[1A
-[0m[7m[33m[1m RUNS [22m[39m[27m[0m [0m[7m[37m @money-wise/backend [39m[27m[0m [2msrc/auth/[22m[1mauth.service.spec.ts[22m
-[K[1A[K[1A[0m[7m[1m[32m PASS [39m[22m[27m[0m [0m[7m[37m @money-wise/backend [39m[27m[0m [2msrc/auth/[22m[1mauth.service.spec.ts[22m ([0m[1m[41m5.69 s[49m[22m[0m)
-
-[0m[7m[33m[1m RUNS [22m[39m[27m[0m [0m[7m[37m @money-wise/backend [39m[27m[0m [2msrc/auth/[22m[1mauth.service.spec.ts[22m
-[K[1A[K[1A  AuthService
-
-[0m[7m[33m[1m RUNS [22m[39m[27m[0m [0m[7m[37m @money-wise/backend [39m[27m[0m [2msrc/auth/[22m[1mauth.service.spec.ts[22m
-[K[1A[K[1A    register
-
-[0m[7m[33m[1m RUNS [22m[39m[27m[0m [0m[7m[37m @money-wise/backend [39m[27m[0m [2msrc/auth/[22m[1mauth.service.spec.ts[22m
-[K[1A[K[1A      [32m✓[39m [2mshould register a new user successfully (15 ms)[22m
-
-[0m[7m[33m[1m RUNS [22m[39m[27m[0m [0m[7m[37m @money-wise/backend [39m[27m[0m [2msrc/auth/[22m[1mauth.service.spec.ts[22m
-[K[1A[K[1A      [32m✓[39m [2mshould throw ConflictException if user already exists (13 ms)[22m
-
-[0m[7m[33m[1m RUNS [22m[39m[27m[0m [0m[7m[37m @money-wise/backend [39m[27m[0m [2msrc/auth/[22m[1mauth.service.spec.ts[22m
-[K[1A[K[1A    login
-
-[0m[7m[33m[1m RUNS [22m[39m[27m[0m [0m[7m[37m @money-wise/backend [39m[27m[0m [2msrc/auth/[22m[1mauth.service.spec.ts[22m
-[K[1A[K[1A      [32m✓[39m [2mshould login user successfully (4 ms)[22m
-
-[0m[7m[33m[1m RUNS [22m[39m[27m[0m [0m[7m[37m @money-wise/backend [39m[27m[0m [2msrc/auth/[22m[1mauth.service.spec.ts[22m
-[K[1A[K[1A      [32m✓[39m [2mshould throw UnauthorizedException if user not found (5 ms)[22m
-
-[0m[7m[33m[1m RUNS [22m[39m[27m[0m [0m[7m[37m @money-wise/backend [39m[27m[0m [2msrc/auth/[22m[1mauth.service.spec.ts[22m
-[K[1A[K[1A      [32m✓[39m [2mshould throw UnauthorizedException if password is invalid (5 ms)[22m
-
-[0m[7m[33m[1m RUNS [22m[39m[27m[0m [0m[7m[37m @money-wise/backend [39m[27m[0m [2msrc/auth/[22m[1mauth.service.spec.ts[22m
-[K[1A[K[1A      [32m✓[39m [2mshould throw UnauthorizedException if user is not active (3 ms)[22m
-
-[0m[7m[33m[1m RUNS [22m[39m[27m[0m [0m[7m[37m @money-wise/backend [39m[27m[0m [2msrc/auth/[22m[1mauth.service.spec.ts[22m
-[K[1A[K[1A    validateUser
-
-[0m[7m[33m[1m RUNS [22m[39m[27m[0m [0m[7m[37m @money-wise/backend [39m[27m[0m [2msrc/auth/[22m[1mauth.service.spec.ts[22m
-[K[1A[K[1A      [32m✓[39m [2mshould return user if valid (4 ms)[22m
-
-[0m[7m[33m[1m RUNS [22m[39m[27m[0m [0m[7m[37m @money-wise/backend [39m[27m[0m [2msrc/auth/[22m[1mauth.service.spec.ts[22m
-[K[1A[K[1A      [32m✓[39m [2mshould throw UnauthorizedException if user not found (3 ms)[22m
-
-[0m[7m[33m[1m RUNS [22m[39m[27m[0m [0m[7m[37m @money-wise/backend [39m[27m[0m [2msrc/auth/[22m[1mauth.service.spec.ts[22m
-[K[1A[K[1A      [32m✓[39m [2mshould throw UnauthorizedException if user is not active (4 ms)[22m
-
-[0m[7m[33m[1m RUNS [22m[39m[27m[0m [0m[7m[37m @money-wise/backend [39m[27m[0m [2msrc/auth/[22m[1mauth.service.spec.ts[22m
-[K[1A[K[1A
-
-[0m[7m[33m[1m RUNS [22m[39m[27m[0m [0m[7m[37m @money-wise/backend [39m[27m[0m [2msrc/auth/[22m[1mauth.service.spec.ts[22m
-[K[1A[K[1A
-[0m[7m[33m[1m RUNS [22m[39m[27m[0m [0m[7m[37m @money-wise/backend [39m[27m[0m [2msrc/core/health/[22m[1mhealth.controller.spec.ts[22m
-[K[1A[K[1A
-[0m[7m[33m[1m RUNS [22m[39m[27m[0m [0m[7m[37m @money-wise/backend [39m[27m[0m [2msrc/core/health/[22m[1mhealth.controller.spec.ts[22m
-[K[1A[K[1A
-[0m[7m[33m[1m RUNS [22m[39m[27m[0m [0m[7m[37m @money-wise/backend [39m[27m[0m [2msrc/core/health/[22m[1mhealth.controller.spec.ts[22m
-[K[1A[K[1A
-[0m[7m[33m[1m RUNS [22m[39m[27m[0m [0m[7m[37m @money-wise/backend [39m[27m[0m [2msrc/core/health/[22m[1mhealth.controller.spec.ts[22m
-[K[1A[K[1A
-[0m[7m[33m[1m RUNS [22m[39m[27m[0m [0m[7m[37m @money-wise/backend [39m[27m[0m [2msrc/core/health/[22m[1mhealth.controller.spec.ts[22m
-[K[1A[K[1A
-[0m[7m[33m[1m RUNS [22m[39m[27m[0m [0m[7m[37m @money-wise/backend [39m[27m[0m [2msrc/core/health/[22m[1mhealth.controller.spec.ts[22m
-[K[1A[K[1A
-[0m[7m[33m[1m RUNS [22m[39m[27m[0m [0m[7m[37m @money-wise/backend [39m[27m[0m [2msrc/core/health/[22m[1mhealth.controller.spec.ts[22m
-[K[1A[K[1A
-[0m[7m[33m[1m RUNS [22m[39m[27m[0m [0m[7m[37m @money-wise/backend [39m[27m[0m [2msrc/core/health/[22m[1mhealth.controller.spec.ts[22m
-[K[1A[K[1A
-[0m[7m[33m[1m RUNS [22m[39m[27m[0m [0m[7m[37m @money-wise/backend [39m[27m[0m [2msrc/core/health/[22m[1mhealth.controller.spec.ts[22m
-[K[1A[K[1A
-[0m[7m[33m[1m RUNS [22m[39m[27m[0m [0m[7m[37m @money-wise/backend [39m[27m[0m [2msrc/core/health/[22m[1mhealth.controller.spec.ts[22m
-[K[1A[K[1A
-[0m[7m[33m[1m RUNS [22m[39m[27m[0m [0m[7m[37m @money-wise/backend [39m[27m[0m [2msrc/core/health/[22m[1mhealth.controller.spec.ts[22m
-[K[1A[K[1A[0m[7m[1m[32m PASS [39m[22m[27m[0m [0m[7m[37m @money-wise/backend [39m[27m[0m [2msrc/core/health/[22m[1mhealth.controller.spec.ts[22m
-
-[0m[7m[33m[1m RUNS [22m[39m[27m[0m [0m[7m[37m @money-wise/backend [39m[27m[0m [2msrc/core/health/[22m[1mhealth.controller.spec.ts[22m
-[K[1A[K[1A  HealthController
-
-[0m[7m[33m[1m RUNS [22m[39m[27m[0m [0m[7m[37m @money-wise/backend [39m[27m[0m [2msrc/core/health/[22m[1mhealth.controller.spec.ts[22m
-[K[1A[K[1A    [32m✓[39m [2mshould be defined (6 ms)[22m
-
-[0m[7m[33m[1m RUNS [22m[39m[27m[0m [0m[7m[37m @money-wise/backend [39m[27m[0m [2msrc/core/health/[22m[1mhealth.controller.spec.ts[22m
-[K[1A[K[1A    getHealth
-
-[0m[7m[33m[1m RUNS [22m[39m[27m[0m [0m[7m[37m @money-wise/backend [39m[27m[0m [2msrc/core/health/[22m[1mhealth.controller.spec.ts[22m
-[K[1A[K[1A      [32m✓[39m [2mshould return basic health status (8 ms)[22m
-
-[0m[7m[33m[1m RUNS [22m[39m[27m[0m [0m[7m[37m @money-wise/backend [39m[27m[0m [2msrc/core/health/[22m[1mhealth.controller.spec.ts[22m
-[K[1A[K[1A      [32m✓[39m [2mshould return consistent timestamp format (2 ms)[22m
-
-[0m[7m[33m[1m RUNS [22m[39m[27m[0m [0m[7m[37m @money-wise/backend [39m[27m[0m [2msrc/core/health/[22m[1mhealth.controller.spec.ts[22m
-[K[1A[K[1A      [32m✓[39m [2mshould return positive uptime (2 ms)[22m
-
-[0m[7m[33m[1m RUNS [22m[39m[27m[0m [0m[7m[37m @money-wise/backend [39m[27m[0m [2msrc/core/health/[22m[1mhealth.controller.spec.ts[22m
-[K[1A[K[1A      [32m✓[39m [2mshould return memory usage (3 ms)[22m
-
-[0m[7m[33m[1m RUNS [22m[39m[27m[0m [0m[7m[37m @money-wise/backend [39m[27m[0m [2msrc/core/health/[22m[1mhealth.controller.spec.ts[22m
-[K[1A[K[1A    getDetailedHealth
-
-[0m[7m[33m[1m RUNS [22m[39m[27m[0m [0m[7m[37m @money-wise/backend [39m[27m[0m [2msrc/core/health/[22m[1mhealth.controller.spec.ts[22m
-[K[1A[K[1A      [32m✓[39m [2mshould return detailed health with services status (37 ms)[22m
-
-[0m[7m[33m[1m RUNS [22m[39m[27m[0m [0m[7m[37m @money-wise/backend [39m[27m[0m [2msrc/core/health/[22m[1mhealth.controller.spec.ts[22m
-[K[1A[K[1A      [32m✓[39m [2mshould include database response time (4 ms)[22m
-
-[0m[7m[33m[1m RUNS [22m[39m[27m[0m [0m[7m[37m @money-wise/backend [39m[27m[0m [2msrc/core/health/[22m[1mhealth.controller.spec.ts[22m
-[K[1A[K[1A    getReadiness
-
-[0m[7m[33m[1m RUNS [22m[39m[27m[0m [0m[7m[37m @money-wise/backend [39m[27m[0m [2msrc/core/health/[22m[1mhealth.controller.spec.ts[22m
-[K[1A[K[1A      [32m✓[39m [2mshould return readiness status (2 ms)[22m
-
-[0m[7m[33m[1m RUNS [22m[39m[27m[0m [0m[7m[37m @money-wise/backend [39m[27m[0m [2msrc/core/health/[22m[1mhealth.controller.spec.ts[22m
-[K[1A[K[1A    getLiveness
-
-[0m[7m[33m[1m RUNS [22m[39m[27m[0m [0m[7m[37m @money-wise/backend [39m[27m[0m [2msrc/core/health/[22m[1mhealth.controller.spec.ts[22m
-[K[1A[K[1A      [32m✓[39m [2mshould return liveness status (2 ms)[22m
-
-[0m[7m[33m[1m RUNS [22m[39m[27m[0m [0m[7m[37m @money-wise/backend [39m[27m[0m [2msrc/core/health/[22m[1mhealth.controller.spec.ts[22m
-[K[1A[K[1A
-
-[0m[7m[33m[1m RUNS [22m[39m[27m[0m [0m[7m[37m @money-wise/backend [39m[27m[0m [2msrc/core/health/[22m[1mhealth.controller.spec.ts[22m
-[K[1A[K[1A[999D[K[1mTest Suites: [22m[1m[32m2 passed[39m[22m, 2 total
-[1mTests:       [22m[1m[32m18 passed[39m[22m, 18 total
-[1mSnapshots:   [22m0 total
-[1mTime:[22m        6.55 s
-[2mRan all test suites[22m[2m.[22m
