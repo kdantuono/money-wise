@@ -25,7 +25,7 @@ setup_steps:
       echo "Checking Docker services..."
       docker-compose -f docker-compose.dev.yml ps
       echo "Checking workspace build status..."
-      pnpm run typecheck
+      pnpm --filter "*" run typecheck
       echo "Development environment ready!"
 
 # Optional: Additional setup for specific scenarios
