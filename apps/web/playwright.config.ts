@@ -39,7 +39,6 @@ export default defineConfig({
     navigationTimeout: 30000,
   },
 
-
   /* Configure projects for major browsers */
   projects: [
     {
