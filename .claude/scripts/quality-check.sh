@@ -26,7 +26,7 @@ pnpm run lint || {
 # 3. Formatting
 echo "💅 Prettier check..."
 pnpm run format --check || {
-  echo "❌ Formatting issues found! Run: pnpm run format"
+  echo "❌ Formatting issues found! To fix, run: pnpm run format"
   exit 1
 }
 
