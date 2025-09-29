@@ -266,7 +266,7 @@ export class AuthSecurityService {
         undefined,
         normalizedEmail
       );
-      throw new UnauthorizedException('Login failed');
+      throw new UnauthorizedException('Invalid email or password');
     }
   }
 
