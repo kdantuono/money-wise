@@ -1,24 +1,32 @@
 // User Factory for Testing
 // TASK-003-003: Setup Test Factories
 
-import { faker } from '@faker-js/faker';
-import { User } from '../../src/core/database/entities/user.entity';
+import { User, UserStatus, UserRole } from '../../src/core/database/entities/user.entity';
 
 export class UserFactory {
   static create(overrides: Partial<User> = {}): Partial<User> {
     return {
-      id: faker.string.uuid(),
-      email: faker.internet.email(),
-      firstName: faker.person.firstName(),
-      lastName: faker.person.lastName(),
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      id: 'test-user-id',
+      email: 'test@example.com',
+      firstName: 'John',
+      lastName: 'Doe',
+      passwordHash: 'hashedPassword',
+      role: UserRole.USER,
+      status: UserStatus.ACTIVE,
+      currency: 'USD',
+      createdAt: new Date('2023-01-01'),
+      updatedAt: new Date('2023-01-01'),
+      accounts: [],
       ...overrides
     };
   }
 
   static createMany(count: number, overrides: Partial<User> = {}): Partial<User>[] {
-    return Array.from({ length: count }, () => this.create(overrides));
+    return Array.from({ length: count }, (_, index) => this.create({
+      ...overrides,
+      id: `test-user-id-${index}`,
+      email: `test${index}@example.com`,
+    }));
   }
 
   static build(overrides: Partial<User> = {}): User {
@@ -29,6 +37,10 @@ export class UserFactory {
   }
 
   static buildMany(count: number, overrides: Partial<User> = {}): User[] {
-    return Array.from({ length: count }, () => this.build(overrides));
+    return Array.from({ length: count }, (_, index) => this.build({
+      ...overrides,
+      id: `test-user-id-${index}`,
+      email: `test${index}@example.com`,
+    }));
   }
 }

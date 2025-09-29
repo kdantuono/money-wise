@@ -1,0 +1,488 @@
+/**
+ * Large Dataset Performance Tests
+ * Tests database performance with large datasets and high-volume operations
+ */
+
+import { DataSource } from 'typeorm';
+import { setupTestDatabase, cleanTestDatabase, teardownTestDatabase } from '../database-test.config';
+import { TestDataFactory } from '../factories/test-data.factory';
+import { User } from '../../entities/user.entity';
+import { Account, AccountType } from '../../entities/account.entity';
+import { Transaction, TransactionType } from '../../entities/transaction.entity';
+import { Category } from '../../entities/category.entity';
+
+describe('Large Dataset Performance Tests', () => {
+  let dataSource: DataSource;
+  let factory: TestDataFactory;
+
+  // Performance thresholds (adjust based on hardware)
+  const PERFORMANCE_THRESHOLDS = {
+    BATCH_INSERT_1000: 5000,     // 5 seconds for 1000 records
+    BATCH_INSERT_10000: 30000,   // 30 seconds for 10000 records
+    COMPLEX_QUERY: 2000,         // 2 seconds for complex queries
+    AGGREGATION_QUERY: 3000,     // 3 seconds for aggregations
+    PAGINATION_QUERY: 500,       // 500ms for paginated queries
+  };
+
+  beforeAll(async () => {
+    dataSource = await setupTestDatabase();
+    factory = new TestDataFactory(dataSource);
+
+    // Increase timeout for performance tests
+    jest.setTimeout(120000); // 2 minutes
+  });
+
+  afterAll(async () => {
+    await teardownTestDatabase();
+  });
+
+  beforeEach(async () => {
+    await cleanTestDatabase();
+  });
+
+  describe('Bulk Insert Performance', () => {
+    it('should handle bulk user creation efficiently', async () => {
+      // Arrange
+      const userCount = 1000;
+      const users = factory.users.createMany(userCount);
+
+      // Act
+      const startTime = Date.now();
+      const savedUsers = await dataSource.getRepository(User).save(users);
+      const duration = Date.now() - startTime;
+
+      // Assert
+      expect(savedUsers).toHaveLength(userCount);
+      expect(duration).toBeLessThan(PERFORMANCE_THRESHOLDS.BATCH_INSERT_1000);
+      console.log(`Bulk insert ${userCount} users: ${duration}ms`);
+
+      // Verify data integrity
+      const totalUsers = await dataSource.getRepository(User).count();
+      expect(totalUsers).toBe(userCount);
+    });
+
+    it('should handle bulk transaction creation efficiently', async () => {
+      // Arrange
+      const user = await factory.users.build();
+      const account = await factory.accounts.build({ userId: user.id });
+      const category = await factory.categories.build();
+
+      const transactionCount = 5000;
+      const transactions = factory.transactions.createMany(transactionCount, {
+        accountId: account.id,
+        categoryId: category.id,
+      });
+
+      // Act
+      const startTime = Date.now();
+
+      // Use batch processing for large datasets
+      const batchSize = 500;
+      const savedTransactions = [];
+
+      for (let i = 0; i < transactions.length; i += batchSize) {
+        const batch = transactions.slice(i, i + batchSize);
+        const batchResult = await dataSource.getRepository(Transaction).save(batch);
+        savedTransactions.push(...batchResult);
+      }
+
+      const duration = Date.now() - startTime;
+
+      // Assert
+      expect(savedTransactions).toHaveLength(transactionCount);
+      expect(duration).toBeLessThan(PERFORMANCE_THRESHOLDS.BATCH_INSERT_10000);
+      console.log(`Bulk insert ${transactionCount} transactions: ${duration}ms`);
+
+      // Verify data integrity
+      const totalTransactions = await dataSource.getRepository(Transaction).count();
+      expect(totalTransactions).toBe(transactionCount);
+    });
+
+    it('should handle bulk category hierarchy creation', async () => {
+      // Arrange
+      const parentCategories = factory.categories.createMany(50);
+
+      // Act - Create parent categories first
+      const startTime = Date.now();
+      const savedParents = await dataSource.getRepository(Category).save(parentCategories);
+
+      // Create child categories
+      const childCategories = [];
+      for (const parent of savedParents) {
+        const children = factory.categories.createMany(10, { parentId: parent.id });
+        childCategories.push(...children);
+      }
+
+      const savedChildren = await dataSource.getRepository(Category).save(childCategories);
+      const duration = Date.now() - startTime;
+
+      // Assert
+      expect(savedParents).toHaveLength(50);
+      expect(savedChildren).toHaveLength(500);
+      expect(duration).toBeLessThan(PERFORMANCE_THRESHOLDS.BATCH_INSERT_1000);
+      console.log(`Created category hierarchy (50 parents, 500 children): ${duration}ms`);
+    });
+  });
+
+  describe('Query Performance with Large Datasets', () => {
+    let testUsers: User[];
+    let testAccounts: Account[];
+    let testCategories: Category[];
+
+    beforeEach(async () => {
+      // Setup large dataset for query testing
+      console.log('Setting up large dataset for query performance tests...');
+
+      // Create users
+      testUsers = await factory.users.buildMany(100);
+
+      // Create accounts for each user
+      testAccounts = [];
+      for (const user of testUsers) {
+        const userAccounts = await factory.accounts.buildMany(3, { userId: user.id });
+        testAccounts.push(...userAccounts);
+      }
+
+      // Create categories
+      testCategories = await factory.categories.buildMany(50);
+
+      // Create transactions for each account
+      for (const account of testAccounts.slice(0, 50)) { // Limit to first 50 accounts
+        const transactions = factory.transactions.createMany(200, {
+          accountId: account.id,
+          categoryId: testCategories[Math.floor(Math.random() * testCategories.length)].id,
+        });
+
+        // Insert in batches
+        const batchSize = 100;
+        for (let i = 0; i < transactions.length; i += batchSize) {
+          const batch = transactions.slice(i, i + batchSize);
+          await dataSource.getRepository(Transaction).save(batch);
+        }
+      }
+
+      console.log('Large dataset setup complete');
+    });
+
+    it('should perform complex joins efficiently', async () => {
+      // Act - Complex query with multiple joins
+      const startTime = Date.now();
+      const result = await dataSource
+        .createQueryBuilder(User, 'user')
+        .leftJoinAndSelect('user.accounts', 'account')
+        .leftJoinAndSelect('account.transactions', 'transaction')
+        .leftJoinAndSelect('transaction.category', 'category')
+        .where('user.status = :status', { status: 'active' })
+        .andWhere('account.type = :accountType', { accountType: AccountType.CHECKING })
+        .andWhere('transaction.amount > :minAmount', { minAmount: 100 })
+        .orderBy('user.createdAt', 'DESC')
+        .limit(10)
+        .getMany();
+
+      const duration = Date.now() - startTime;
+
+      // Assert
+      expect(result.length).toBeGreaterThan(0);
+      expect(duration).toBeLessThan(PERFORMANCE_THRESHOLDS.COMPLEX_QUERY);
+      console.log(`Complex join query: ${result.length} results in ${duration}ms`);
+    });
+
+    it('should perform aggregation queries efficiently', async () => {
+      // Act - Multiple aggregation functions
+      const startTime = Date.now();
+      const aggregationResult = await dataSource
+        .createQueryBuilder(Transaction, 'transaction')
+        .select([
+          'COUNT(transaction.id) as transaction_count',
+          'SUM(transaction.amount) as total_amount',
+          'AVG(transaction.amount) as avg_amount',
+          'MIN(transaction.amount) as min_amount',
+          'MAX(transaction.amount) as max_amount',
+          'COUNT(DISTINCT transaction.categoryId) as category_count',
+        ])
+        .innerJoin('transaction.account', 'account')
+        .innerJoin('account.user', 'user')
+        .where('transaction.type = :type', { type: TransactionType.DEBIT })
+        .andWhere('transaction.date >= :startDate', { startDate: new Date('2024-01-01') })
+        .groupBy('account.userId')
+        .having('COUNT(transaction.id) > :minTransactions', { minTransactions: 10 })
+        .orderBy('total_amount', 'DESC')
+        .limit(20)
+        .getRawMany();
+
+      const duration = Date.now() - startTime;
+
+      // Assert
+      expect(aggregationResult.length).toBeGreaterThan(0);
+      expect(duration).toBeLessThan(PERFORMANCE_THRESHOLDS.AGGREGATION_QUERY);
+      console.log(`Aggregation query: ${aggregationResult.length} results in ${duration}ms`);
+
+      // Verify aggregation accuracy
+      expect(aggregationResult[0]).toHaveProperty('transaction_count');
+      expect(aggregationResult[0]).toHaveProperty('total_amount');
+      expect(parseFloat(aggregationResult[0].avg_amount)).toBeGreaterThan(0);
+    });
+
+    it('should handle pagination efficiently with large offsets', async () => {
+      // Test pagination performance with large offsets
+      const pageSize = 50;
+      const largePage = 20; // Page 20 = offset 950
+
+      // Act
+      const startTime = Date.now();
+      const paginatedResult = await dataSource
+        .createQueryBuilder(Transaction, 'transaction')
+        .innerJoin('transaction.account', 'account')
+        .select([
+          'transaction.id',
+          'transaction.amount',
+          'transaction.date',
+          'transaction.description',
+          'account.name as account_name'
+        ])
+        .orderBy('transaction.date', 'DESC')
+        .addOrderBy('transaction.id', 'DESC') // Secondary sort for consistency
+        .limit(pageSize)
+        .offset(largePage * pageSize)
+        .getRawMany();
+
+      const duration = Date.now() - startTime;
+
+      // Assert
+      expect(paginatedResult.length).toBeLessThanOrEqual(pageSize);
+      expect(duration).toBeLessThan(PERFORMANCE_THRESHOLDS.PAGINATION_QUERY);
+      console.log(`Pagination query (page ${largePage}): ${paginatedResult.length} results in ${duration}ms`);
+    });
+
+    it('should perform full-text search efficiently', async () => {
+      // Act - Search across transaction descriptions and merchant names
+      const searchTerm = 'test';
+      const startTime = Date.now();
+
+      const searchResult = await dataSource
+        .createQueryBuilder(Transaction, 'transaction')
+        .leftJoin('transaction.category', 'category')
+        .select([
+          'transaction.id',
+          'transaction.description',
+          'transaction.merchantName',
+          'transaction.amount',
+          'category.name as category_name'
+        ])
+        .where(
+          'transaction.description ILIKE :search OR transaction.merchantName ILIKE :search',
+          { search: `%${searchTerm}%` }
+        )
+        .orderBy('transaction.date', 'DESC')
+        .limit(100)
+        .getRawMany();
+
+      const duration = Date.now() - startTime;
+
+      // Assert
+      expect(duration).toBeLessThan(PERFORMANCE_THRESHOLDS.COMPLEX_QUERY);
+      console.log(`Full-text search: ${searchResult.length} results in ${duration}ms`);
+    });
+  });
+
+  describe('Concurrent Operations Performance', () => {
+    it('should handle concurrent read operations', async () => {
+      // Setup data
+      const user = await factory.users.build();
+      const account = await factory.accounts.build({ userId: user.id });
+      await factory.transactions.buildMany(1000, { accountId: account.id });
+
+      // Act - Multiple concurrent read operations
+      const startTime = Date.now();
+      const promises = Array.from({ length: 10 }, () =>
+        dataSource.getRepository(Transaction).find({
+          where: { accountId: account.id },
+          order: { date: 'DESC' },
+          take: 100
+        })
+      );
+
+      const results = await Promise.all(promises);
+      const duration = Date.now() - startTime;
+
+      // Assert
+      expect(results).toHaveLength(10);
+      results.forEach(result => {
+        expect(result.length).toBeLessThanOrEqual(100);
+      });
+      expect(duration).toBeLessThan(5000); // 5 seconds for 10 concurrent queries
+      console.log(`10 concurrent read operations: ${duration}ms`);
+    });
+
+    it('should handle concurrent write operations', async () => {
+      // Setup
+      const user = await factory.users.build();
+      const accounts = await factory.accounts.buildMany(5, { userId: user.id });
+
+      // Act - Concurrent inserts to different accounts
+      const startTime = Date.now();
+      const promises = accounts.map(account =>
+        factory.transactions.buildMany(100, { accountId: account.id })
+      );
+
+      const results = await Promise.all(promises);
+      const duration = Date.now() - startTime;
+
+      // Assert
+      expect(results).toHaveLength(5);
+      const totalTransactions = results.reduce((sum, batch) => sum + batch.length, 0);
+      expect(totalTransactions).toBe(500);
+      expect(duration).toBeLessThan(10000); // 10 seconds for concurrent inserts
+      console.log(`Concurrent writes (500 transactions): ${duration}ms`);
+    });
+  });
+
+  describe('Memory Usage and Resource Management', () => {
+    it('should handle large result sets with streaming', async () => {
+      // Setup large dataset
+      const user = await factory.users.build();
+      const account = await factory.accounts.build({ userId: user.id });
+
+      // Create large batch of transactions
+      const transactionCount = 10000;
+      console.log(`Creating ${transactionCount} transactions for streaming test...`);
+
+      await factory.createPerformanceTestData(1, transactionCount);
+
+      // Act - Stream large result set
+      const startTime = Date.now();
+      let processedCount = 0;
+
+      const queryBuilder = dataSource
+        .createQueryBuilder(Transaction, 'transaction')
+        .where('transaction.accountId = :accountId', { accountId: account.id })
+        .orderBy('transaction.date', 'ASC');
+
+      // Process in chunks to simulate streaming
+      const chunkSize = 1000;
+      let offset = 0;
+      let hasMoreData = true;
+
+      while (hasMoreData) {
+        const chunk = await queryBuilder
+          .limit(chunkSize)
+          .offset(offset)
+          .getMany();
+
+        processedCount += chunk.length;
+        offset += chunkSize;
+        hasMoreData = chunk.length === chunkSize;
+
+        // Simulate processing
+        chunk.forEach(transaction => {
+          // Simple processing to verify data integrity
+          expect(transaction.id).toBeDefined();
+          expect(transaction.amount).toBeGreaterThan(0);
+        });
+      }
+
+      const duration = Date.now() - startTime;
+
+      // Assert
+      expect(processedCount).toBeGreaterThan(0);
+      expect(duration).toBeLessThan(30000); // 30 seconds for streaming large dataset
+      console.log(`Streamed ${processedCount} transactions in ${duration}ms`);
+    });
+
+    it('should manage connection pool efficiently under load', async () => {
+      // Test connection pool behavior
+      const connectionPool = dataSource.driver.master;
+
+      console.log('Testing connection pool under load...');
+
+      // Act - Create multiple simultaneous connections
+      const promises = Array.from({ length: 20 }, async (_, index) => {
+        const startTime = Date.now();
+
+        // Simple query to test connection acquisition
+        const result = await dataSource.query('SELECT 1 as test, $1 as connection_id', [index]);
+
+        const duration = Date.now() - startTime;
+        return { connectionId: index, duration, result: result[0] };
+      });
+
+      const results = await Promise.all(promises);
+
+      // Assert
+      expect(results).toHaveLength(20);
+      results.forEach((result, index) => {
+        expect(result.connectionId).toBe(index);
+        expect(result.result.test).toBe(1);
+        expect(result.duration).toBeLessThan(1000); // Each query should be fast
+      });
+
+      const totalDuration = Math.max(...results.map(r => r.duration));
+      console.log(`Connection pool test: 20 concurrent connections, max duration: ${totalDuration}ms`);
+    });
+  });
+
+  describe('Database Optimization Validation', () => {
+    it('should verify index usage in query execution plans', async () => {
+      // Setup test data
+      const user = await factory.users.build();
+      const account = await factory.accounts.build({ userId: user.id });
+      await factory.transactions.buildMany(1000, { accountId: account.id });
+
+      // Act - Analyze query execution plan
+      const explainQuery = `
+        EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON)
+        SELECT t.*, a.name as account_name
+        FROM transactions t
+        INNER JOIN accounts a ON t."accountId" = a.id
+        WHERE t."accountId" = $1
+        AND t.date >= $2
+        ORDER BY t.date DESC
+        LIMIT 100
+      `;
+
+      const queryPlan = await dataSource.query(explainQuery, [
+        account.id,
+        new Date('2024-01-01')
+      ]);
+
+      // Assert - Check if indexes are being used
+      const planJson = queryPlan[0]['QUERY PLAN'][0];
+      console.log('Query execution plan:', JSON.stringify(planJson, null, 2));
+
+      // Verify index usage (look for Index Scan or Bitmap Index Scan)
+      const planText = JSON.stringify(planJson);
+      expect(planText).toMatch(/(Index|Bitmap)/i);
+
+      // Check execution time is reasonable
+      const executionTime = planJson['Execution Time'];
+      expect(executionTime).toBeLessThan(100); // Should execute in under 100ms
+    });
+
+    it('should validate database statistics are up to date', async () => {
+      // Check if table statistics are current
+      const statsQuery = `
+        SELECT
+          schemaname,
+          tablename,
+          n_tup_ins as inserts,
+          n_tup_upd as updates,
+          n_tup_del as deletes,
+          n_live_tup as live_tuples,
+          last_analyze,
+          last_autoanalyze
+        FROM pg_stat_user_tables
+        WHERE schemaname = 'public'
+        ORDER BY tablename
+      `;
+
+      const stats = await dataSource.query(statsQuery);
+
+      // Assert
+      expect(stats.length).toBeGreaterThan(0);
+      stats.forEach(table => {
+        console.log(`Table ${table.tablename}: ${table.live_tuples} tuples`);
+        expect(table.live_tuples).toBeGreaterThanOrEqual(0);
+      });
+    });
+  });
+});
