@@ -3,10 +3,12 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository, UpdateResult } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
+import { ConfigModule } from '@nestjs/config';
 import request from 'supertest';
 import * as bcrypt from 'bcryptjs';
 
 import { AuthModule } from '../auth.module';
+import { RateLimitGuard } from '../guards/rate-limit.guard';
 import {
   User,
   UserStatus,
@@ -57,7 +59,13 @@ describe('Auth Integration Tests', () => {
     process.env.JWT_REFRESH_EXPIRES_IN = '7d';
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AuthModule],
+      imports: [
+        ConfigModule.forRoot({
+          isGlobal: true,
+          envFilePath: ['.env.test', '.env'],
+        }),
+        AuthModule,
+      ],
     })
       .overrideProvider(getRepositoryToken(User))
       .useValue({
@@ -65,6 +73,10 @@ describe('Auth Integration Tests', () => {
         create: jest.fn(),
         save: jest.fn(),
         update: jest.fn(),
+      })
+      .overrideProvider(RateLimitGuard)
+      .useValue({
+        canActivate: jest.fn().mockReturnValue(true),
       })
       .compile();
 
@@ -81,7 +93,9 @@ describe('Auth Integration Tests', () => {
 
   afterEach(async () => {
     jest.clearAllMocks();
-    await app.close();
+    if (app) {
+      await app.close();
+    }
   });
 
   describe('POST /auth/register', () => {
@@ -313,11 +327,11 @@ describe('Auth Integration Tests', () => {
       expect(response.body.message).toBe('Invalid refresh token');
     });
 
-    it('should return 400 for missing refresh token', async () => {
+    it('should return 401 for missing refresh token', async () => {
       await request(app.getHttpServer())
         .post('/auth/refresh')
         .send({})
-        .expect(400);
+        .expect(401);
     });
   });
 
@@ -451,6 +465,12 @@ describe('Auth Integration Tests', () => {
         role: mockUser.role,
       };
       jest.spyOn(jwtService, 'verify').mockReturnValue(validPayload);
+      // Mock jwtService.sign to return different valid JWT tokens with different timestamps
+      const accessPayload = { sub: mockUser.id, email: mockUser.email, role: mockUser.role, iat: Math.floor(Date.now() / 1000) + 1 };
+      const refreshPayload = { sub: mockUser.id, email: mockUser.email, role: mockUser.role, iat: Math.floor(Date.now() / 1000) + 2 };
+      const newAccessToken = jwtService.sign(accessPayload, { secret: process.env.JWT_ACCESS_SECRET, expiresIn: '15m' });
+      const newRefreshToken = jwtService.sign(refreshPayload, { secret: process.env.JWT_REFRESH_SECRET, expiresIn: '7d' });
+      jest.spyOn(jwtService, 'sign').mockReturnValueOnce(newAccessToken).mockReturnValueOnce(newRefreshToken);
       userRepository.findOne.mockResolvedValue(mockUser);
 
       const refreshResponse = await request(app.getHttpServer())

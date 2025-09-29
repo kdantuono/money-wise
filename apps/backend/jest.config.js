@@ -44,6 +44,7 @@ module.exports = {
     '/build/',
     '/coverage/',
     '/src/docs/', // Exclude docs directory from test discovery
+    '.*/.*\\.e2e\\.spec\\.ts$', // Exclude E2E tests from unit test runs
   ],
 
   // Coverage collection specific to backend

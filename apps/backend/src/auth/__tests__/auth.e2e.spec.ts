@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { TypeOrmModule, getRepositoryToken } from '@nestjs/typeorm';
+import { ConfigModule } from '@nestjs/config';
 import { Repository } from 'typeorm';
 import request from 'supertest';
 
@@ -32,7 +33,14 @@ describe('Auth E2E Tests', () => {
     process.env.JWT_REFRESH_EXPIRES_IN = '7d';
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [TypeOrmModule.forRoot(testDbConfig), AuthModule],
+      imports: [
+        ConfigModule.forRoot({
+          isGlobal: true,
+          envFilePath: ['.env.test', '.env'],
+        }),
+        TypeOrmModule.forRoot(testDbConfig),
+        AuthModule,
+      ],
     }).compile();
 
     app = moduleFixture.createNestApplication();
@@ -44,7 +52,7 @@ describe('Auth E2E Tests', () => {
       })
     );
 
-    userRepository = moduleFixture.get('UserRepository');
+    userRepository = moduleFixture.get(getRepositoryToken(User));
 
     await app.init();
   });
