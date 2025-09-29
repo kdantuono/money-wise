@@ -1,0 +1,56 @@
+# GitHub Copilot Setup Automation for MoneyWise
+# This file defines automated setup steps for AI coding assistants
+# to quickly configure the development environment
+
+setup_steps:
+  - name: Install dependencies with pnpm
+    description: Install all workspace dependencies using pnpm
+    run: |
+      if ! command -v pnpm &> /dev/null; then
+        npm install -g pnpm
+      fi
+      pnpm install
+
+  - name: Build shared types package
+    description: Build the shared types package that other workspaces depend on
+    run: pnpm --filter @money-wise/types build
+
+  - name: Start Docker development services
+    description: Start PostgreSQL, Redis, and other required services via Docker Compose
+    run: docker-compose -f docker-compose.dev.yml up -d
+
+  - name: Verify development environment
+    description: Run basic checks to ensure everything is working
+    run: |
+      echo "Checking Docker services..."
+      docker-compose -f docker-compose.dev.yml ps
+      echo "Checking workspace build status..."
+      pnpm run typecheck
+      echo "Development environment ready!"
+
+# Optional: Additional setup for specific scenarios
+conditional_steps:
+  - name: Install mobile development tools (if working on mobile)
+    condition: exists("apps/mobile/")
+    run: |
+      if command -v expo &> /dev/null; then
+        echo "Expo CLI already installed"
+      else
+        npm install -g @expo/cli
+      fi
+
+  - name: Setup test database (if running tests)
+    condition: env("NODE_ENV") == "test"
+    run: |
+      docker-compose -f docker-compose.test.yml up -d postgres-test
+      pnpm --filter backend run test:db:setup
+
+# Development shortcuts for common tasks
+quick_commands:
+  dev: "pnpm run dev"
+  test: "pnpm run test"
+  lint: "pnpm run lint"
+  typecheck: "pnpm run typecheck"
+  quality_check: ".claude/scripts/quality-check.sh"
+  docker_logs: "docker-compose -f docker-compose.dev.yml logs -f"
+  clean: "pnpm run clean && docker-compose -f docker-compose.dev.yml down"

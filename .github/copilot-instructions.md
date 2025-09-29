@@ -1,5 +1,17 @@
 # MoneyWise AI Coding Assistant Instructions
 
+<context_optimization> This repository is a monorepo using pnpm workspaces. When exploring files:
+
+- Module boundaries: Each app (backend, web, mobile) has isolated dependencies
+- Type imports: Always use '@money-wise/types' for shared types
+- Path resolution: Backend uses relative, frontend uses '@/' alias
+- Test location: Each app has tests/ directory with unit/, integration/, e2e/ subdirectories
+- Error patterns: NestJS exceptions in backend, toast notifications in frontend </context_optimization>
+
+<tool_calling> When you have multiple independent operations to perform (e.g., reading multiple files, running multiple
+tests, or checking different aspects of the code), execute them in parallel rather than sequentially for improved
+efficiency. </tool_calling>
+
 ## Project Overview
 
 MoneyWise is a personal finance application built as a monorepo with microservices architecture. The project consists of
@@ -56,9 +68,9 @@ a NestJS backend API, Next.js web dashboard, React Native mobile app, and shared
 - **Coverage Requirements**: 80% minimum threshold enforced by CI/CD
 - **Test Commands**:
   ```bash
-  npm run test:backend    # Jest unit tests
-  npm run test:web       # Jest + Playwright tests
-  npm run test:e2e       # End-to-end tests
+  pnpm run test:backend    # Jest unit tests
+  pnpm run test:web       # Jest + Playwright tests
+  pnpm run test:e2e       # End-to-end tests
   ```
 
 ## Development Workflows
@@ -69,24 +81,24 @@ a NestJS backend API, Next.js web dashboard, React Native mobile app, and shared
 # Start all services (uses Docker Compose - REQUIRED)
 docker-compose -f docker-compose.dev.yml up -d
 
-# Alternative: Start with npm (for development)
-npm run dev
+# Alternative: Start with pnpm (for development)
+pnpm run dev
 
 # Individual services
-npm run dev:backend    # NestJS API on :3002
-npm run dev:web       # Next.js on :3000
-npm run dev:mobile    # Expo development server
+pnpm run dev:backend    # NestJS API on :3002
+pnpm run dev:web       # Next.js on :3000
+pnpm run dev:mobile    # Expo development server
 
 # Testing
-npm run test:backend  # Jest unit tests
-npm run test:web     # Jest + Playwright tests
-npm run test:e2e     # End-to-end tests
+pnpm run test:backend  # Jest unit tests
+pnpm run test:web     # Jest + Playwright tests
+pnpm run test:e2e     # End-to-end tests
 
 # Quality gates (CI/CD validation)
-npm run quality:gates # Comprehensive validation
-npm run quality:kiss  # KISS principle compliance
-npm run quality:srp   # Single Responsibility Principle
-npm run quality:tdd   # Test-driven development validation
+.claude/scripts/quality-check.sh # Comprehensive validation
+pnpm run lint         # Linting across workspaces
+pnpm run typecheck    # TypeScript validation
+pnpm run test         # Run all tests
 
 # Database (Docker)
 docker-compose -f docker-compose.dev.yml up postgres redis
@@ -95,10 +107,10 @@ docker-compose -f docker-compose.dev.yml up postgres redis
 ### Critical Setup Requirements
 
 - **Docker Compose**: ALWAYS use `docker-compose.dev.yml` for development
-- **Shared Types**: Must build first (`cd packages/types && npm run build`)
+- **Shared Types**: Must build first (`pnpm --filter @money-wise/types build`)
 - **API Documentation**: Available at `http://localhost:3002/api` (Swagger)
 - **Environment Variables**: Each app has its own `.env` file
-- **Quality Validation**: Run `npm run quality:gates` before committing
+- **Quality Validation**: Run `.claude/scripts/quality-check.sh` before committing
 - **Development Auth**: Frontend supports dev bypass mode with `localStorage.setItem('dev-auth-bypass', 'true')`
 
 ### Database & External Services
@@ -190,3 +202,56 @@ docker-compose -f docker-compose.dev.yml up postgres redis
 
 When working on this codebase, always consider the multi-tenant nature (user-scoped data), maintain consistency with
 established patterns, and ensure type safety across the monorepo boundaries.
+
+## Common Issues & Troubleshooting
+
+### Development Environment Issues
+
+#### Build Failures
+
+- **Issue**: `Cannot find module '@money-wise/types'`
+  - **Solution**: Build types package first: `pnpm --filter @money-wise/types build`
+
+#### Type Errors
+
+- **Issue**: TypeScript compilation errors in monorepo
+  - **Solution**: Clear build cache: `pnpm clean && pnpm install && pnpm build`
+
+#### Docker Issues
+
+- **Issue**: Services not starting
+  - **Solution**: Ensure Docker is running, then:
+    `docker-compose -f docker-compose.dev.yml down && docker-compose -f docker-compose.dev.yml up -d`
+
+### Dependency Issues
+
+#### Installation Problems
+
+- **Issue**: `pnpm install` fails
+  - **Solution**: Clear cache: `pnpm store prune && pnpm install`
+
+#### Workspace Conflicts
+
+- **Issue**: Version mismatches in workspace
+  - **Solution**: Use workspace protocol: `pnpm add -w <package>` for root, `pnpm add --filter <workspace> <package>`
+    for specific workspace
+
+### Performance Guidelines
+
+#### Bundle Size
+
+- Monitor with: `pnpm --filter web analyze`
+- Keep chunks under 250KB
+- Use dynamic imports for large features
+
+#### Database Queries
+
+- Use query builders for complex queries
+- Implement pagination for lists
+- Add indexes for frequently queried fields
+
+#### Error Boundaries
+
+- Frontend: Wrap features in error boundaries
+- Backend: Use NestJS exception filters
+- Always log errors with context
