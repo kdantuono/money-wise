@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -7,31 +6,11 @@ import * as argon2 from 'argon2';
 import { User } from '../../core/database/entities/user.entity';
 import { PasswordHistory } from '../../core/database/entities/password-history.entity';
 import { AuditLog, AuditEventType } from '../../core/database/entities/audit-log.entity';
-import { PasswordStrengthService, PasswordStrengthResult } from './password-strength.service';
-import { PasswordPolicyConfig, DEFAULT_PASSWORD_POLICY } from '../config/password-policy.config';
 
 export enum HashingAlgorithm {
   BCRYPT = 'bcrypt',
   ARGON2 = 'argon2',
 }
-
-export interface PasswordValidationResult {
-  isValid: boolean;
-  strengthResult: PasswordStrengthResult;
-  violations: string[];
-}
-
-export interface PasswordChangeResult {
-  success: boolean;
-  error?: string;
-  passwordExpiry?: Date;
-  mustChangePassword?: boolean;
-=======
-import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import * as bcrypt from 'bcryptjs';
-import { User } from '../../core/database/entities/user.entity';
 
 export interface PasswordStrengthResult {
   score: number; // 0-100
@@ -50,18 +29,31 @@ export interface PasswordPolicy {
   requireNonRepeatChars: boolean;
   preventCommonPasswords: boolean;
   preventUserInfoInPassword: boolean;
-  historyLength: number; // How many previous passwords to check against
->>>>>>> origin/epic/milestone-1-foundation
+  historyLength: number;
+  expirationDays: number;
+  warningDays: number;
+}
+
+export interface PasswordValidationResult {
+  isValid: boolean;
+  strengthResult: PasswordStrengthResult;
+  violations: string[];
+}
+
+export interface PasswordChangeResult {
+  success: boolean;
+  error?: string;
+  passwordExpiry?: Date;
+  mustChangePassword?: boolean;
 }
 
 @Injectable()
 export class PasswordSecurityService {
-<<<<<<< HEAD
   private readonly logger = new Logger(PasswordSecurityService.name);
-  private readonly policy: PasswordPolicyConfig = DEFAULT_PASSWORD_POLICY;
-=======
+
+  // Enhanced security-first policy with 12-character minimum (financial application standard)
   private readonly defaultPolicy: PasswordPolicy = {
-    minLength: 8,
+    minLength: 12, // Enhanced from epic's 8 characters for financial security
     maxLength: 128,
     requireUppercase: true,
     requireLowercase: true,
@@ -71,6 +63,8 @@ export class PasswordSecurityService {
     preventCommonPasswords: true,
     preventUserInfoInPassword: true,
     historyLength: 5,
+    expirationDays: 90,
+    warningDays: 7,
   };
 
   // Common passwords to prevent (in production, this would be a larger list)
@@ -80,36 +74,28 @@ export class PasswordSecurityService {
     'welcome', 'monkey', '1234567890', 'iloveyou', 'sunshine',
     'princess', 'dragon', 'rockyou', 'football', 'master',
   ]);
->>>>>>> origin/epic/milestone-1-foundation
 
   constructor(
     @InjectRepository(User)
     private userRepository: Repository<User>,
-<<<<<<< HEAD
     @InjectRepository(PasswordHistory)
     private passwordHistoryRepository: Repository<PasswordHistory>,
     @InjectRepository(AuditLog)
     private auditLogRepository: Repository<AuditLog>,
-    private passwordStrengthService: PasswordStrengthService,
   ) {}
 
   async validatePassword(
     password: string,
     userInfo?: { firstName?: string; lastName?: string; email?: string },
-    customPolicy?: Partial<PasswordPolicyConfig>
+    customPolicy?: Partial<PasswordPolicy>
   ): Promise<PasswordValidationResult> {
-    const effectivePolicy = { ...this.policy, ...customPolicy };
-
-    // Basic policy validation
-    const policyValidation = this.passwordStrengthService.validatePolicy(password, effectivePolicy);
-
-    // Strength calculation
-    const strengthResult = this.passwordStrengthService.calculateStrength(password, effectivePolicy, userInfo);
+    const effectivePolicy = { ...this.defaultPolicy, ...customPolicy };
+    const strengthResult = this.calculatePasswordStrength(password, userInfo, effectivePolicy);
 
     return {
-      isValid: policyValidation.isValid && strengthResult.score >= 40, // Minimum fair strength
+      isValid: strengthResult.meets_requirements && strengthResult.score >= 60, // Higher security bar for finance
       strengthResult,
-      violations: policyValidation.violations,
+      violations: strengthResult.feedback,
     };
   }
 
@@ -200,7 +186,7 @@ export class PasswordSecurityService {
     if (isReused) {
       return {
         success: false,
-        error: `Password cannot be one of your last ${this.policy.historyCount} passwords`,
+        error: `Password cannot be one of your last ${this.defaultPolicy.historyLength} passwords`,
       };
     }
 
@@ -210,7 +196,7 @@ export class PasswordSecurityService {
 
       // Calculate password expiry
       const passwordExpiry = new Date();
-      passwordExpiry.setDate(passwordExpiry.getDate() + this.policy.expirationDays);
+      passwordExpiry.setDate(passwordExpiry.getDate() + this.defaultPolicy.expirationDays);
 
       // Save old password to history
       await this.savePasswordHistory(userId, user.passwordHash, metadata);
@@ -263,7 +249,7 @@ export class PasswordSecurityService {
       (Date.now() - user.updatedAt.getTime()) / (1000 * 60 * 60 * 24)
     );
 
-    return daysSinceUpdate >= this.policy.expirationDays;
+    return daysSinceUpdate >= this.defaultPolicy.expirationDays;
   }
 
   async getDaysUntilExpiration(userId: string): Promise<number> {
@@ -272,46 +258,48 @@ export class PasswordSecurityService {
       select: ['updatedAt']
     });
 
-    if (!user || !user.updatedAt) return this.policy.expirationDays;
+    if (!user || !user.updatedAt) return this.defaultPolicy.expirationDays;
 
     const daysSinceUpdate = Math.floor(
       (Date.now() - user.updatedAt.getTime()) / (1000 * 60 * 60 * 24)
     );
 
-    return Math.max(0, this.policy.expirationDays - daysSinceUpdate);
+    return Math.max(0, this.defaultPolicy.expirationDays - daysSinceUpdate);
   }
 
   async shouldWarnPasswordExpiry(userId: string): Promise<boolean> {
     const daysUntilExpiry = await this.getDaysUntilExpiration(userId);
-    return daysUntilExpiry <= this.policy.warningDays;
+    return daysUntilExpiry <= this.defaultPolicy.warningDays;
   }
 
   private async isPasswordReused(userId: string, newPassword: string): Promise<boolean> {
     const history = await this.passwordHistoryRepository.find({
       where: { userId },
       order: { createdAt: 'DESC' },
-      take: this.policy.historyCount,
+      take: this.defaultPolicy.historyLength,
     });
 
     for (const record of history) {
       const matches = await this.verifyPassword(newPassword, record.passwordHash);
       if (matches) return true;
-=======
-  ) {}
+    }
+
+    return false;
+  }
 
   /**
-   * Validates password against security policy
+   * Enhanced password strength calculation (hybrid of feature + epic approaches)
    */
-  validatePassword(
+  calculatePasswordStrength(
     password: string,
     userInfo?: { email?: string; firstName?: string; lastName?: string },
-    policy: Partial<PasswordPolicy> = {},
+    policy?: Partial<PasswordPolicy>
   ): PasswordStrengthResult {
     const appliedPolicy = { ...this.defaultPolicy, ...policy };
     const feedback: string[] = [];
     let score = 0;
 
-    // Length checks
+    // Length checks (enhanced for financial applications)
     if (password.length < appliedPolicy.minLength) {
       feedback.push(`Password must be at least ${appliedPolicy.minLength} characters long`);
     } else {
@@ -463,13 +451,46 @@ export class PasswordSecurityService {
       if (lowercasePassword.includes(userInfo.lastName.toLowerCase())) {
         return true;
       }
->>>>>>> origin/epic/milestone-1-foundation
     }
 
     return false;
   }
 
-<<<<<<< HEAD
+  // Enhanced entropy scoring from epic branch
+  private calculateEntropyScore(password: string): number {
+    const charSets = [
+      { regex: /[a-z]/, size: 26 },
+      { regex: /[A-Z]/, size: 26 },
+      { regex: /[0-9]/, size: 10 },
+      { regex: /[^a-zA-Z0-9]/, size: 32 },
+    ];
+
+    let charsetSize = 0;
+    charSets.forEach(set => {
+      if (set.regex.test(password)) {
+        charsetSize += set.size;
+      }
+    });
+
+    if (charsetSize === 0) return 0;
+
+    const entropy = password.length * Math.log2(charsetSize);
+
+    // Scale entropy to 0-20 points
+    return Math.min(20, Math.floor(entropy / 3));
+  }
+
+  private getStrengthLevel(score: number): 'very-weak' | 'weak' | 'fair' | 'good' | 'strong' {
+    if (score < 30) return 'very-weak';
+    if (score < 50) return 'weak';
+    if (score < 70) return 'fair';
+    if (score < 85) return 'good';
+    return 'strong';
+  }
+
+  private getRandomChar(charset: string): string {
+    return charset.charAt(Math.floor(Math.random() * charset.length));
+  }
   private async savePasswordHistory(
     userId: string,
     passwordHash: string,
@@ -519,42 +540,7 @@ export class PasswordSecurityService {
     await this.auditLogRepository.save(auditLog);
   }
 
-  async getPasswordPolicy(): Promise<PasswordPolicyConfig> {
-    return { ...this.policy };
-=======
-  private calculateEntropyScore(password: string): number {
-    const charSets = [
-      { regex: /[a-z]/, size: 26 },
-      { regex: /[A-Z]/, size: 26 },
-      { regex: /[0-9]/, size: 10 },
-      { regex: /[^a-zA-Z0-9]/, size: 32 },
-    ];
-
-    let charsetSize = 0;
-    charSets.forEach(set => {
-      if (set.regex.test(password)) {
-        charsetSize += set.size;
-      }
-    });
-
-    if (charsetSize === 0) return 0;
-
-    const entropy = password.length * Math.log2(charsetSize);
-
-    // Scale entropy to 0-20 points
-    return Math.min(20, Math.floor(entropy / 3));
-  }
-
-  private getStrengthLevel(score: number): 'very-weak' | 'weak' | 'fair' | 'good' | 'strong' {
-    if (score < 30) return 'very-weak';
-    if (score < 50) return 'weak';
-    if (score < 70) return 'fair';
-    if (score < 85) return 'good';
-    return 'strong';
-  }
-
-  private getRandomChar(charset: string): string {
-    return charset.charAt(Math.floor(Math.random() * charset.length));
->>>>>>> origin/epic/milestone-1-foundation
+  async getPasswordPolicy(): Promise<PasswordPolicy> {
+    return { ...this.defaultPolicy };
   }
 }

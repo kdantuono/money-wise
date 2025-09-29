@@ -1,11 +1,3 @@
-<<<<<<< HEAD
-import { IsString, IsOptional } from 'class-validator';
-
-export class CheckPasswordStrengthDto {
-  @IsString()
-  password: string;
-
-=======
 import { IsString, MinLength, IsOptional, IsEmail } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
@@ -32,27 +24,10 @@ export class PasswordStrengthCheckDto {
     example: 'John',
     required: false,
   })
->>>>>>> origin/epic/milestone-1-foundation
   @IsOptional()
   @IsString()
   firstName?: string;
 
-<<<<<<< HEAD
-  @IsOptional()
-  @IsString()
-  lastName?: string;
-
-  @IsOptional()
-  @IsString()
-  email?: string;
-}
-
-export class PasswordStrengthResponseDto {
-  score: number;
-  strength: 'very-weak' | 'weak' | 'fair' | 'good' | 'strong';
-  feedback: string[];
-  isValid: boolean;
-=======
   @ApiProperty({
     description: 'User last name for context (optional)',
     example: 'Doe',
@@ -89,5 +64,4 @@ export class PasswordStrengthResponseDto {
     example: true,
   })
   meets_requirements: boolean;
->>>>>>> origin/epic/milestone-1-foundation
 }
