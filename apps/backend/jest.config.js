@@ -19,9 +19,9 @@ module.exports = {
   // Use TypeScript preset
   preset: 'ts-jest',
 
-  // Transform ES modules from node_modules (allow @faker-js to be transformed)
+  // Transform ES modules from node_modules (allow @faker-js, uuid, and ioredis to be transformed)
   transformIgnorePatterns: [
-    'node_modules/(?!@faker-js)',
+    'node_modules/(?!(@faker-js|uuid|ioredis)/)',
   ],
 
   // Module name mapping specific to backend
@@ -32,6 +32,8 @@ module.exports = {
     '^@money-wise/test-utils$': '<rootDir>/../../packages/test-utils/src',
     // Mock @faker-js/faker as it's an ES module causing issues
     '^@faker-js/faker$': '<rootDir>/__mocks__/@faker-js/faker.ts',
+    // Mock uuid as it's an ES module
+    '^uuid$': '<rootDir>/__mocks__/uuid.ts',
   },
 
   // Setup files for NestJS testing
