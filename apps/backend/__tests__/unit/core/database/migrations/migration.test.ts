@@ -113,8 +113,8 @@ describe('Database Migrations', () => {
       expect(columnNames).toContain('name');
       expect(columnNames).toContain('type');
       expect(columnNames).toContain('currentBalance');
-      expect(columnNames).toContain('plaidAccountId');
-      expect(columnNames).toContain('plaidMetadata');
+      expect(columnNames).toContain('plaid_account_id'); // Explicit snake_case mapping
+      expect(columnNames).toContain('plaidMetadata'); // JSONB column
 
       // Check decimal precision for balance
       const balanceColumn = columns.find((c: any) => c.column_name === 'currentBalance');
@@ -145,8 +145,8 @@ describe('Database Migrations', () => {
       expect(columnNames).toContain('type');
       expect(columnNames).toContain('date');
       expect(columnNames).toContain('description');
-      expect(columnNames).toContain('plaidTransactionId');
-      expect(columnNames).toContain('plaidMetadata');
+      expect(columnNames).toContain('plaid_transaction_id'); // Explicit snake_case mapping
+      expect(columnNames).toContain('plaidMetadata'); // JSONB column
       expect(columnNames).toContain('location');
     });
 
@@ -170,12 +170,13 @@ describe('Database Migrations', () => {
       expect(columnNames).toContain('name');
       expect(columnNames).toContain('slug');
       expect(columnNames).toContain('type');
-      expect(columnNames).toContain('parentId');
+      expect(columnNames).toContain('parentId'); // TreeParent uses camelCase
       expect(columnNames).toContain('rules');
       expect(columnNames).toContain('metadata');
 
-      // Check tree-related columns for nested sets
-      expect(columnNames).toContain('mpath');
+      // Check tree-related columns for nested sets (nsleft, nsright for nested-set strategy)
+      expect(columnNames).toContain('nsleft');
+      expect(columnNames).toContain('nsright');
     });
   });
 
@@ -184,7 +185,7 @@ describe('Database Migrations', () => {
       // Arrange & Act
       dataSource = await setupTestDatabase();
 
-      // Assert - Check indexes exist
+      // Assert - Check indexes exist by definition (not hash, which depends on column names)
       const indexQuery = `
         SELECT
           schemaname,
@@ -197,21 +198,33 @@ describe('Database Migrations', () => {
       `;
 
       const indexes = await dataSource.query(indexQuery);
-      const indexNames = indexes.map((i: any) => i.indexname);
+      const indexDefs = indexes.map((i: any) => ({ table: i.tablename, def: i.indexdef }));
 
       // User indexes
-      expect(indexNames).toContain('IDX_97672ac88f789774dd47f7c8be'); // email unique
-      expect(indexNames).toContain('IDX_a3ffb1c0c8416b9fc6f907b743'); // status + createdAt
+      const userEmailIndex = indexDefs.find(i => i.table === 'users' && i.def.includes('email'));
+      expect(userEmailIndex).toBeDefined();
+
+      const userStatusIndex = indexDefs.find(i => i.table === 'users' && i.def.includes('status') && i.def.includes('createdAt'));
+      expect(userStatusIndex).toBeDefined();
 
       // Account indexes
-      expect(indexNames).toContain('IDX_3aa23c0a6d107393e8b40e3e2a'); // userId + status
+      const accountUserIdIndex = indexDefs.find(i => i.table === 'accounts' && i.def.includes('userId') && i.def.includes('status'));
+      expect(accountUserIdIndex).toBeDefined();
 
       // Transaction indexes
-      expect(indexNames).toContain('IDX_3d6915a33798152a079b8982ed'); // accountId + date
-      expect(indexNames).toContain('IDX_7ff1b7ca84c9450a7c7deec0bc'); // categoryId + date
+      const transactionAccountIndex = indexDefs.find(i => i.table === 'transactions' && i.def.includes('accountId') && i.def.includes('date'));
+      expect(transactionAccountIndex).toBeDefined();
+
+      const transactionCategoryIndex = indexDefs.find(i => i.table === 'transactions' && i.def.includes('categoryId') && i.def.includes('date'));
+      expect(transactionCategoryIndex).toBeDefined();
 
       // Category indexes
-      expect(indexNames).toContain('IDX_420d9f679d41281f282f5bc7d0'); // slug unique
+      const categorySlugIndex = indexDefs.find(i => i.table === 'categories' && i.def.includes('slug') && i.def.includes('UNIQUE'));
+      expect(categorySlugIndex).toBeDefined();
+
+      // Transaction partial unique index
+      const plaidTransactionIndex = indexDefs.find(i => i.table === 'transactions' && i.def.includes('plaid_transaction_id') && i.def.includes('UNIQUE'));
+      expect(plaidTransactionIndex).toBeDefined();
     });
 
     it('should create all foreign key constraints', async () => {
@@ -297,12 +310,8 @@ describe('Database Migrations', () => {
       );
       expect(categorySlugUnique).toBeDefined();
 
-      // Plaid transaction ID should be unique (partial)
-      const plaidTransactionUnique = uniqueConstraints.find((uc: any) =>
-        uc.table_name === 'transactions' &&
-        uc.column_name === 'plaidTransactionId'
-      );
-      expect(plaidTransactionUnique).toBeDefined();
+      // Note: plaid_transaction_id uniqueness is enforced via partial unique INDEX,
+      // not a UNIQUE CONSTRAINT, so we don't check it here (see index tests above)
     });
   });
 

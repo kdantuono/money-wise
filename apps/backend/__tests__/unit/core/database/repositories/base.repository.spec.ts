@@ -406,7 +406,7 @@ describe('BaseRepository', () => {
       const criteria: FindOptionsWhere<TestEntity> = { name: 'Test Entity' };
       mockRepository.count.mockResolvedValue(5);
 
-      const result = await testRepository.count(criteria);
+      const result = await testRepository.count({ where: criteria });
 
       expect(mockRepository.count).toHaveBeenCalledWith({ where: criteria });
       expect(result).toBe(5);
@@ -417,7 +417,7 @@ describe('BaseRepository', () => {
 
       const result = await testRepository.count();
 
-      expect(mockRepository.count).toHaveBeenCalledWith({});
+      expect(mockRepository.count).toHaveBeenCalledWith(undefined);
       expect(result).toBe(10);
     });
 
@@ -435,7 +435,7 @@ describe('BaseRepository', () => {
     it('should return true when entity exists', async () => {
       mockRepository.count.mockResolvedValue(1);
 
-      const result = await testRepository.exists({ name: 'Test Entity' });
+      const result = await testRepository.exists('test-entity-id');
 
       expect(result).toBe(true);
     });
@@ -443,7 +443,7 @@ describe('BaseRepository', () => {
     it('should return false when entity does not exist', async () => {
       mockRepository.count.mockResolvedValue(0);
 
-      const result = await testRepository.exists({ name: 'Non-existent' });
+      const result = await testRepository.exists('non-existent-id');
 
       expect(result).toBe(false);
     });
@@ -452,7 +452,7 @@ describe('BaseRepository', () => {
       const error = new Error('Exists check failed');
       mockRepository.count.mockRejectedValue(error);
 
-      await expect(testRepository.exists({ name: 'test' })).rejects.toThrow(
+      await expect(testRepository.exists('test-id')).rejects.toThrow(
         'Failed to check entity existence: Exists check failed'
       );
     });
