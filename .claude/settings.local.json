@@ -139,7 +139,9 @@
       "Bash(make:*)",
       "Bash(test:*)",
       "Bash(claude doctor)",
-      "Read(///**)"
+      "Read(///**)",
+      "Bash(claude /doctor)",
+      "Bash(do basename \"$file\")"
     ],
     "deny": [],
     "ask": []
