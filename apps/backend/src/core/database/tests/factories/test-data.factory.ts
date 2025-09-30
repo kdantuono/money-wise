@@ -119,8 +119,8 @@ export class AccountFactory extends BaseFactory<Account> {
     const account = new Account();
 
     account.userId = overrides.userId || faker.string.uuid();
-    account.name = overrides.name || faker.finance.accountName();
-    account.type = overrides.type || faker.helpers.enumValue(AccountType);
+    account.name = overrides.name || `${faker.person.firstName()}'s ${faker.helpers.arrayElement(['Checking', 'Savings', 'Investment', 'Credit'])} Account`;
+    account.type = overrides.type || faker.helpers.arrayElement(Object.values(AccountType));
     account.status = overrides.status || AccountStatus.ACTIVE;
     account.source = overrides.source || AccountSource.MANUAL;
     account.currentBalance = overrides.currentBalance || parseFloat(faker.finance.amount());
@@ -129,7 +129,7 @@ export class AccountFactory extends BaseFactory<Account> {
     account.currency = overrides.currency || 'USD';
     account.institutionName = overrides.institutionName || faker.company.name();
     account.accountNumber = overrides.accountNumber || faker.finance.accountNumber();
-    account.routingNumber = overrides.routingNumber || faker.finance.routingNumber();
+    account.routingNumber = overrides.routingNumber || faker.number.int({ min: 100000000, max: 999999999 }).toString();
     account.isActive = overrides.isActive ?? true;
     account.syncEnabled = overrides.syncEnabled ?? true;
     account.lastSyncAt = overrides.lastSyncAt || faker.date.recent();
@@ -155,7 +155,7 @@ export class AccountFactory extends BaseFactory<Account> {
       plaidMetadata: {
         mask: faker.finance.accountNumber().slice(-4),
         subtype: 'checking',
-        officialName: faker.finance.accountName(),
+        officialName: `${faker.company.name()} ${faker.helpers.arrayElement(['Checking', 'Savings'])}`,
         persistentAccountId: faker.string.alphanumeric(26),
       },
       ...overrides,
@@ -190,9 +190,9 @@ export class CategoryFactory extends BaseFactory<Category> {
     category.name = name;
     category.slug = overrides.slug || name.toLowerCase().replace(/\s+/g, '-');
     category.description = overrides.description || faker.lorem.sentence();
-    category.type = overrides.type || faker.helpers.enumValue(CategoryType);
+    category.type = overrides.type || faker.helpers.arrayElement(Object.values(CategoryType));
     category.status = overrides.status || CategoryStatus.ACTIVE;
-    category.color = overrides.color || faker.color.human();
+    category.color = overrides.color || faker.color.rgb({ format: 'hex', casing: 'lower' });
     category.icon = overrides.icon || faker.helpers.arrayElement(['shopping-bag', 'car', 'home', 'food', 'entertainment']);
     category.isDefault = overrides.isDefault ?? false;
     category.isSystem = overrides.isSystem ?? false;
@@ -268,7 +268,7 @@ export class TransactionFactory extends BaseFactory<Transaction> {
     transaction.accountId = overrides.accountId || faker.string.uuid();
     transaction.categoryId = overrides.categoryId || faker.string.uuid();
     transaction.amount = overrides.amount || parseFloat(faker.finance.amount());
-    transaction.type = overrides.type || faker.helpers.enumValue(TransactionType);
+    transaction.type = overrides.type || faker.helpers.arrayElement(Object.values(TransactionType));
     transaction.status = overrides.status || TransactionStatus.POSTED;
     transaction.source = overrides.source || TransactionSource.MANUAL;
     transaction.date = overrides.date || faker.date.recent();
@@ -283,7 +283,7 @@ export class TransactionFactory extends BaseFactory<Transaction> {
     transaction.isHidden = overrides.isHidden ?? false;
     transaction.includeInBudget = overrides.includeInBudget ?? true;
     transaction.notes = overrides.notes || faker.lorem.sentence();
-    transaction.tags = overrides.tags || [faker.word.noun(), faker.word.noun()];
+    transaction.tags = overrides.tags || [faker.lorem.word(), faker.lorem.word()];
 
     return transaction;
   }

@@ -1,5 +1,432 @@
 
 > @money-wise/backend@0.1.0 test:unit /home/nemesi/dev/money-wise/apps/backend
-> jest --passWithNoTests --testPathPattern='src'
+> jest --passWithNoTests --testPathPattern='src' "apps/backend/__tests__/integration/database/repository-operations.test.ts"
 
-No tests found, exiting with code 0
+  console.log
+    🐳 Starting PostgreSQL test container...
+
+      at DatabaseTestManager.start (src/core/database/tests/database-test.config.ts:50:15)
+
+  console.log
+    ✅ Test container started on port 32787
+
+      at DatabaseTestManager.startContainer (src/core/database/tests/database-test.config.ts:84:15)
+
+  console.log
+    ✅ Test database initialized
+
+      at DatabaseTestManager.initializeDataSource (src/core/database/tests/database-test.config.ts:136:15)
+
+  console.warn
+    ⚠️ TimescaleDB extension not available: extension "timescaledb" is not available
+
+      141 |         console.log('✅ TimescaleDB extension enabled');
+      142 |       } catch (error) {
+    > 143 |         console.warn('⚠️ TimescaleDB extension not available:', error.message);
+          |                 ^
+      144 |       }
+      145 |     } catch (error) {
+      146 |       console.error('❌ Failed to initialize test database:', error);
+
+      at DatabaseTestManager.initializeDataSource (src/core/database/tests/database-test.config.ts:143:17)
+      at DatabaseTestManager.start (src/core/database/tests/database-test.config.ts:57:5)
+      at setupTestDatabase (src/core/database/tests/database-test.config.ts:255:22)
+      at Object.<anonymous> (__tests__/integration/database/repository-operations.test.ts:23:18)
+
+  console.log
+    🛑 Test database stopped
+
+      at DatabaseTestManager.stop (src/core/database/tests/database-test.config.ts:226:13)
+
+FAIL @money-wise/backend __tests__/integration/database/repository-operations.test.ts (25.579 s)
+  Repository Operations
+    User Repository Operations
+      Create Operations
+        ✓ should create a new user (431 ms)
+        ✓ should create user with preferences (410 ms)
+        ✓ should validate required fields (469 ms)
+      Read Operations
+        ✓ should find user by id (489 ms)
+        ✓ should find user by email (467 ms)
+        ✕ should find users with relations (430 ms)
+        ✓ should find users with complex queries (554 ms)
+      Update Operations
+        ✓ should update user fields (684 ms)
+        ✓ should update user preferences (436 ms)
+        ✓ should update lastLoginAt timestamp (460 ms)
+      Delete Operations
+        ✓ should soft delete user (427 ms)
+        ✓ should hard delete user and cascade to accounts (430 ms)
+    Account Repository Operations
+      Create Operations
+        ✕ should create account with all fields (437 ms)
+        ✕ should create Plaid account with metadata (480 ms)
+      Query Operations
+        ✕ should find accounts by user (428 ms)
+        ✕ should find accounts by type (450 ms)
+        ✕ should find accounts needing sync (450 ms)
+    Transaction Repository Operations
+      Create Operations
+        ✕ should create transaction with all fields (451 ms)
+        ✕ should create transaction with location data (420 ms)
+      Query Operations
+        ✕ should find transactions by account with pagination (486 ms)
+        ✕ should find transactions by date range (426 ms)
+        ✕ should find transactions by category with aggregations (420 ms)
+        ✕ should find uncategorized transactions (442 ms)
+      Update Operations
+        ✕ should update transaction category (404 ms)
+        ✕ should update transaction notes and tags (425 ms)
+    Category Repository Operations
+      Tree Operations
+        ✕ should create category hierarchy (411 ms)
+        ✕ should find top-level categories (412 ms)
+      Search Operations
+        ✕ should search categories by name (372 ms)
+        ✕ should find active categories only (426 ms)
+    Cross-Repository Operations
+      ✕ should find user with all related data (504 ms)
+      ✕ should calculate user financial summary (443 ms)
+
+  ● Repository Operations › User Repository Operations › Read Operations › should find users with relations
+
+    TypeError: value.toFixed is not a function
+
+      45 |     amount: (min: number = 0, max: number = 1000, dec: number = 2) => {
+      46 |       const value = Math.random() * (max - min) + min;
+    > 47 |       return Number(value.toFixed(dec));
+         |                           ^
+      48 |     },
+      49 |     accountNumber: () => Math.floor(Math.random() * 1000000000).toString().padStart(10, '0'),
+      50 |   },
+
+      at Object.amount (__mocks__/@faker-js/faker.ts:47:27)
+      at AccountFactory.create (src/core/database/tests/factories/test-data.factory.ts:128:121)
+      at src/core/database/tests/factories/test-data.factory.ts:40:53
+          at Function.from (<anonymous>)
+      at AccountFactory.createMany (src/core/database/tests/factories/test-data.factory.ts:40:18)
+      at AccountFactory.buildMany (src/core/database/tests/factories/test-data.factory.ts:44:27)
+      at Object.<anonymous> (__tests__/integration/database/repository-operations.test.ts:130:32)
+
+  ● Repository Operations › Account Repository Operations › Create Operations › should create account with all fields
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 1500.5
+    Received: "1500.50"
+
+      279 |         expect(savedAccount.id).toBeDefined();
+      280 |         expect(savedAccount.userId).toBe(user.id);
+    > 281 |         expect(savedAccount.currentBalance).toBe(1500.50);
+          |                                             ^
+      282 |         expect(savedAccount.displayName).toContain(savedAccount.name);
+      283 |       });
+      284 |
+
+      at Object.<anonymous> (__tests__/integration/database/repository-operations.test.ts:281:45)
+
+  ● Repository Operations › Account Repository Operations › Create Operations › should create Plaid account with metadata
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "1234"
+    Received: undefined
+
+      300 |         // Assert
+      301 |         expect(savedAccount.isPlaidAccount).toBe(true);
+    > 302 |         expect(savedAccount.plaidMetadata?.mask).toBe('1234');
+          |                                                  ^
+      303 |         expect(savedAccount.plaidMetadata?.officialName).toBe('Chase Checking');
+      304 |       });
+      305 |     });
+
+      at Object.<anonymous> (__tests__/integration/database/repository-operations.test.ts:302:50)
+
+  ● Repository Operations › Account Repository Operations › Query Operations › should find accounts by user
+
+    TypeError: value.toFixed is not a function
+
+      45 |     amount: (min: number = 0, max: number = 1000, dec: number = 2) => {
+      46 |       const value = Math.random() * (max - min) + min;
+    > 47 |       return Number(value.toFixed(dec));
+         |                           ^
+      48 |     },
+      49 |     accountNumber: () => Math.floor(Math.random() * 1000000000).toString().padStart(10, '0'),
+      50 |   },
+
+      at Object.amount (__mocks__/@faker-js/faker.ts:47:27)
+      at AccountFactory.create (src/core/database/tests/factories/test-data.factory.ts:128:121)
+      at src/core/database/tests/factories/test-data.factory.ts:40:53
+          at Function.from (<anonymous>)
+      at AccountFactory.createMany (src/core/database/tests/factories/test-data.factory.ts:40:18)
+      at AccountFactory.buildMany (src/core/database/tests/factories/test-data.factory.ts:44:27)
+      at Object.<anonymous> (__tests__/integration/database/repository-operations.test.ts:311:32)
+
+  ● Repository Operations › Account Repository Operations › Query Operations › should find accounts by type
+
+    TypeError: value.toFixed is not a function
+
+      45 |     amount: (min: number = 0, max: number = 1000, dec: number = 2) => {
+      46 |       const value = Math.random() * (max - min) + min;
+    > 47 |       return Number(value.toFixed(dec));
+         |                           ^
+      48 |     },
+      49 |     accountNumber: () => Math.floor(Math.random() * 1000000000).toString().padStart(10, '0'),
+      50 |   },
+
+      at Object.amount (__mocks__/@faker-js/faker.ts:47:27)
+      at AccountFactory.create (src/core/database/tests/factories/test-data.factory.ts:128:121)
+      at AccountFactory.build (src/core/database/tests/factories/test-data.factory.ts:35:25)
+      at Object.<anonymous> (__tests__/integration/database/repository-operations.test.ts:336:32)
+
+  ● Repository Operations › Account Repository Operations › Query Operations › should find accounts needing sync
+
+    expect(received).toHaveLength(expected)
+
+    Expected length: 1
+    Received length: 0
+    Received array:  []
+
+      378 |
+      379 |         // Assert
+    > 380 |         expect(accountsNeedingSync).toHaveLength(1);
+          |                                     ^
+      381 |         expect(accountsNeedingSync[0].needsSync).toBe(true);
+      382 |       });
+      383 |     });
+
+      at Object.<anonymous> (__tests__/integration/database/repository-operations.test.ts:380:37)
+
+  ● Repository Operations › Transaction Repository Operations › Create Operations › should create transaction with all fields
+
+    TypeError: Cannot read properties of undefined (reading 'department')
+
+      187 |     const category = new Category();
+      188 |
+    > 189 |     const name = overrides.name || faker.commerce.department();
+          |                                                   ^
+      190 |     category.name = name;
+      191 |     category.slug = overrides.slug || name.toLowerCase().replace(/\s+/g, '-');
+      192 |     category.description = overrides.description || faker.lorem.sentence();
+
+      at CategoryFactory.create (src/core/database/tests/factories/test-data.factory.ts:189:51)
+      at CategoryFactory.build (src/core/database/tests/factories/test-data.factory.ts:35:25)
+      at Object.<anonymous> (__tests__/integration/database/repository-operations.test.ts:392:51)
+
+  ● Repository Operations › Transaction Repository Operations › Create Operations › should create transaction with location data
+
+    TypeError: faker_1.faker.location.streetAddress is not a function
+
+      334 |       },
+      335 |       location: {
+    > 336 |         address: faker.location.streetAddress(),
+          |                                 ^
+      337 |         city: faker.location.city(),
+      338 |         region: faker.location.state(),
+      339 |         postalCode: faker.location.zipCode(),
+
+      at TransactionFactory.createPlaidTransaction (src/core/database/tests/factories/test-data.factory.ts:336:33)
+      at Object.<anonymous> (__tests__/integration/database/repository-operations.test.ts:418:54)
+
+  ● Repository Operations › Transaction Repository Operations › Query Operations › should find transactions by account with pagination
+
+    TypeError: Cannot read properties of undefined (reading 'productDescription')
+
+      274 |     transaction.date = overrides.date || faker.date.recent();
+      275 |     transaction.authorizedDate = overrides.authorizedDate || transaction.date;
+    > 276 |     transaction.description = overrides.description || faker.commerce.productDescription();
+          |                                                                       ^
+      277 |     transaction.merchantName = overrides.merchantName || faker.company.name();
+      278 |     transaction.originalDescription = overrides.originalDescription || transaction.description;
+      279 |     transaction.currency = overrides.currency || 'USD';
+
+      at TransactionFactory.create (src/core/database/tests/factories/test-data.factory.ts:276:71)
+      at src/core/database/tests/factories/test-data.factory.ts:40:53
+          at Function.from (<anonymous>)
+      at TransactionFactory.createMany (src/core/database/tests/factories/test-data.factory.ts:40:18)
+      at TransactionFactory.buildMany (src/core/database/tests/factories/test-data.factory.ts:44:27)
+      at Object.<anonymous> (__tests__/integration/database/repository-operations.test.ts:446:36)
+
+  ● Repository Operations › Transaction Repository Operations › Query Operations › should find transactions by date range
+
+    TypeError: Cannot read properties of undefined (reading 'productDescription')
+
+      274 |     transaction.date = overrides.date || faker.date.recent();
+      275 |     transaction.authorizedDate = overrides.authorizedDate || transaction.date;
+    > 276 |     transaction.description = overrides.description || faker.commerce.productDescription();
+          |                                                                       ^
+      277 |     transaction.merchantName = overrides.merchantName || faker.company.name();
+      278 |     transaction.originalDescription = overrides.originalDescription || transaction.description;
+      279 |     transaction.currency = overrides.currency || 'USD';
+
+      at TransactionFactory.create (src/core/database/tests/factories/test-data.factory.ts:276:71)
+      at TransactionFactory.build (src/core/database/tests/factories/test-data.factory.ts:35:25)
+      at Object.<anonymous> (__tests__/integration/database/repository-operations.test.ts:478:36)
+
+  ● Repository Operations › Transaction Repository Operations › Query Operations › should find transactions by category with aggregations
+
+    TypeError: Cannot read properties of undefined (reading 'department')
+
+      187 |     const category = new Category();
+      188 |
+    > 189 |     const name = overrides.name || faker.commerce.department();
+          |                                                   ^
+      190 |     category.name = name;
+      191 |     category.slug = overrides.slug || name.toLowerCase().replace(/\s+/g, '-');
+      192 |     category.description = overrides.description || faker.lorem.sentence();
+
+      at CategoryFactory.create (src/core/database/tests/factories/test-data.factory.ts:189:51)
+      at CategoryFactory.build (src/core/database/tests/factories/test-data.factory.ts:35:25)
+      at Object.<anonymous> (__tests__/integration/database/repository-operations.test.ts:506:51)
+
+  ● Repository Operations › Transaction Repository Operations › Query Operations › should find uncategorized transactions
+
+    TypeError: Cannot read properties of undefined (reading 'productDescription')
+
+      274 |     transaction.date = overrides.date || faker.date.recent();
+      275 |     transaction.authorizedDate = overrides.authorizedDate || transaction.date;
+    > 276 |     transaction.description = overrides.description || faker.commerce.productDescription();
+          |                                                                       ^
+      277 |     transaction.merchantName = overrides.merchantName || faker.company.name();
+      278 |     transaction.originalDescription = overrides.originalDescription || transaction.description;
+      279 |     transaction.currency = overrides.currency || 'USD';
+
+      at TransactionFactory.create (src/core/database/tests/factories/test-data.factory.ts:276:71)
+      at TransactionFactory.build (src/core/database/tests/factories/test-data.factory.ts:35:25)
+      at Object.<anonymous> (__tests__/integration/database/repository-operations.test.ts:540:36)
+
+  ● Repository Operations › Transaction Repository Operations › Update Operations › should update transaction category
+
+    TypeError: Cannot read properties of undefined (reading 'department')
+
+      187 |     const category = new Category();
+      188 |
+    > 189 |     const name = overrides.name || faker.commerce.department();
+          |                                                   ^
+      190 |     category.name = name;
+      191 |     category.slug = overrides.slug || name.toLowerCase().replace(/\s+/g, '-');
+      192 |     category.description = overrides.description || faker.lorem.sentence();
+
+      at CategoryFactory.create (src/core/database/tests/factories/test-data.factory.ts:189:51)
+      at CategoryFactory.build (src/core/database/tests/factories/test-data.factory.ts:35:25)
+      at Object.<anonymous> (__tests__/integration/database/repository-operations.test.ts:571:54)
+
+  ● Repository Operations › Transaction Repository Operations › Update Operations › should update transaction notes and tags
+
+    TypeError: Cannot read properties of undefined (reading 'productDescription')
+
+      274 |     transaction.date = overrides.date || faker.date.recent();
+      275 |     transaction.authorizedDate = overrides.authorizedDate || transaction.date;
+    > 276 |     transaction.description = overrides.description || faker.commerce.productDescription();
+          |                                                                       ^
+      277 |     transaction.merchantName = overrides.merchantName || faker.company.name();
+      278 |     transaction.originalDescription = overrides.originalDescription || transaction.description;
+      279 |     transaction.currency = overrides.currency || 'USD';
+
+      at TransactionFactory.create (src/core/database/tests/factories/test-data.factory.ts:276:71)
+      at TransactionFactory.build (src/core/database/tests/factories/test-data.factory.ts:35:25)
+      at Object.<anonymous> (__tests__/integration/database/repository-operations.test.ts:598:56)
+
+  ● Repository Operations › Category Repository Operations › Tree Operations › should create category hierarchy
+
+    TypeError: Cannot read properties of undefined (reading 'rgb')
+
+      193 |     category.type = overrides.type || faker.helpers.arrayElement(Object.values(CategoryType));
+      194 |     category.status = overrides.status || CategoryStatus.ACTIVE;
+    > 195 |     category.color = overrides.color || faker.color.rgb({ format: 'hex', casing: 'lower' });
+          |                                                     ^
+      196 |     category.icon = overrides.icon || faker.helpers.arrayElement(['shopping-bag', 'car', 'home', 'food', 'entertainment']);
+      197 |     category.isDefault = overrides.isDefault ?? false;
+      198 |     category.isSystem = overrides.isSystem ?? false;
+
+      at CategoryFactory.create (src/core/database/tests/factories/test-data.factory.ts:195:53)
+      at CategoryFactory.build (src/core/database/tests/factories/test-data.factory.ts:35:25)
+      at Object.<anonymous> (__tests__/integration/database/repository-operations.test.ts:625:57)
+
+  ● Repository Operations › Category Repository Operations › Tree Operations › should find top-level categories
+
+    TypeError: Cannot read properties of undefined (reading 'rgb')
+
+      193 |     category.type = overrides.type || faker.helpers.arrayElement(Object.values(CategoryType));
+      194 |     category.status = overrides.status || CategoryStatus.ACTIVE;
+    > 195 |     category.color = overrides.color || faker.color.rgb({ format: 'hex', casing: 'lower' });
+          |                                                     ^
+      196 |     category.icon = overrides.icon || faker.helpers.arrayElement(['shopping-bag', 'car', 'home', 'food', 'entertainment']);
+      197 |     category.isDefault = overrides.isDefault ?? false;
+      198 |     category.isSystem = overrides.isSystem ?? false;
+
+      at CategoryFactory.create (src/core/database/tests/factories/test-data.factory.ts:195:53)
+      at CategoryFactory.build (src/core/database/tests/factories/test-data.factory.ts:35:25)
+      at Object.<anonymous> (__tests__/integration/database/repository-operations.test.ts:656:51)
+
+  ● Repository Operations › Category Repository Operations › Search Operations › should search categories by name
+
+    TypeError: Cannot read properties of undefined (reading 'rgb')
+
+      193 |     category.type = overrides.type || faker.helpers.arrayElement(Object.values(CategoryType));
+      194 |     category.status = overrides.status || CategoryStatus.ACTIVE;
+    > 195 |     category.color = overrides.color || faker.color.rgb({ format: 'hex', casing: 'lower' });
+          |                                                     ^
+      196 |     category.icon = overrides.icon || faker.helpers.arrayElement(['shopping-bag', 'car', 'home', 'food', 'entertainment']);
+      197 |     category.isDefault = overrides.isDefault ?? false;
+      198 |     category.isSystem = overrides.isSystem ?? false;
+
+      at CategoryFactory.create (src/core/database/tests/factories/test-data.factory.ts:195:53)
+      at CategoryFactory.build (src/core/database/tests/factories/test-data.factory.ts:35:25)
+      at Object.<anonymous> (__tests__/integration/database/repository-operations.test.ts:685:34)
+
+  ● Repository Operations › Category Repository Operations › Search Operations › should find active categories only
+
+    TypeError: Cannot read properties of undefined (reading 'rgb')
+
+      193 |     category.type = overrides.type || faker.helpers.arrayElement(Object.values(CategoryType));
+      194 |     category.status = overrides.status || CategoryStatus.ACTIVE;
+    > 195 |     category.color = overrides.color || faker.color.rgb({ format: 'hex', casing: 'lower' });
+          |                                                     ^
+      196 |     category.icon = overrides.icon || faker.helpers.arrayElement(['shopping-bag', 'car', 'home', 'food', 'entertainment']);
+      197 |     category.isDefault = overrides.isDefault ?? false;
+      198 |     category.isSystem = overrides.isSystem ?? false;
+
+      at CategoryFactory.create (src/core/database/tests/factories/test-data.factory.ts:195:53)
+      at CategoryFactory.build (src/core/database/tests/factories/test-data.factory.ts:35:25)
+      at Object.<anonymous> (__tests__/integration/database/repository-operations.test.ts:703:34)
+
+  ● Repository Operations › Cross-Repository Operations › should find user with all related data
+
+    TypeError: Cannot read properties of undefined (reading 'department')
+
+      187 |     const category = new Category();
+      188 |
+    > 189 |     const name = overrides.name || faker.commerce.department();
+          |                                                   ^
+      190 |     category.name = name;
+      191 |     category.slug = overrides.slug || name.toLowerCase().replace(/\s+/g, '-');
+      192 |     category.description = overrides.description || faker.lorem.sentence();
+
+      at CategoryFactory.create (src/core/database/tests/factories/test-data.factory.ts:189:51)
+      at CategoryFactory.build (src/core/database/tests/factories/test-data.factory.ts:35:25)
+      at Object.<anonymous> (__tests__/integration/database/repository-operations.test.ts:730:49)
+
+  ● Repository Operations › Cross-Repository Operations › should calculate user financial summary
+
+    TypeError: value.toFixed is not a function
+
+      45 |     amount: (min: number = 0, max: number = 1000, dec: number = 2) => {
+      46 |       const value = Math.random() * (max - min) + min;
+    > 47 |       return Number(value.toFixed(dec));
+         |                           ^
+      48 |     },
+      49 |     accountNumber: () => Math.floor(Math.random() * 1000000000).toString().padStart(10, '0'),
+      50 |   },
+
+      at Object.amount (__mocks__/@faker-js/faker.ts:47:27)
+      at AccountFactory.create (src/core/database/tests/factories/test-data.factory.ts:128:121)
+      at AccountFactory.build (src/core/database/tests/factories/test-data.factory.ts:35:25)
+      at Object.<anonymous> (__tests__/integration/database/repository-operations.test.ts:760:52)
+
+Test Suites: 1 failed, 1 total
+Tests:       20 failed, 11 passed, 31 total
+Snapshots:   0 total
+Time:        25.841 s
+Ran all test suites matching /src|apps\/backend\/__tests__\/integration\/database\/repository-operations.test.ts/i.
+ ELIFECYCLE  Command failed with exit code 1.
