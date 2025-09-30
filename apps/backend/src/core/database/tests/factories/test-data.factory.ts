@@ -153,7 +153,7 @@ export class AccountFactory extends BaseFactory<Account> {
       plaidItemId: faker.string.alphanumeric(26),
       plaidAccessToken: `access-sandbox-${faker.string.alphanumeric(26)}`,
       plaidMetadata: {
-        mask: faker.finance.accountNumber().slice(-4),
+        mask: Math.floor(Math.random() * 10000).toString().padStart(4, '0'),
         subtype: 'checking',
         officialName: `${faker.company.name()} ${faker.helpers.arrayElement(['Checking', 'Savings'])}`,
         persistentAccountId: faker.string.alphanumeric(26),

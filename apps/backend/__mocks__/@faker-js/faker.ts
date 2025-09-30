@@ -52,7 +52,7 @@ const createFaker = () => ({
     recent: () => new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000),
   },
   finance: {
-    amount: (minOrOptions?: number | { min?: number; max?: number; dec?: number }, max?: number, dec?: number): string => {
+    amount: (minOrOptions?: number | { min?: number; max?: number; dec?: number }, max?: number, dec?: number): number => {
       // Support both signatures: amount(min, max, dec) and amount({ min, max, dec })
       let minVal: number;
       let maxVal: number;
@@ -69,7 +69,7 @@ const createFaker = () => ({
       }
 
       const value = Math.random() * (maxVal - minVal) + minVal;
-      return value.toFixed(decVal);
+      return Number(value.toFixed(decVal));
     },
     accountNumber: () => Math.floor(Math.random() * 1000000000).toString().padStart(10, '0'),
     transactionDescription: () => {
