@@ -123,9 +123,10 @@ export class AccountFactory extends BaseFactory<Account> {
     account.type = overrides.type || faker.helpers.arrayElement(Object.values(AccountType));
     account.status = overrides.status || AccountStatus.ACTIVE;
     account.source = overrides.source || AccountSource.MANUAL;
-    account.currentBalance = overrides.currentBalance || parseFloat(faker.finance.amount());
-    account.availableBalance = overrides.availableBalance || account.currentBalance;
-    account.creditLimit = overrides.creditLimit || (account.type === AccountType.CREDIT_CARD ? parseFloat(faker.finance.amount({ min: 1000, max: 50000 })) : null);
+    // Use ?? to properly handle 0 and negative balances
+    account.currentBalance = overrides.currentBalance ?? parseFloat(faker.finance.amount());
+    account.availableBalance = overrides.availableBalance ?? account.currentBalance;
+    account.creditLimit = overrides.creditLimit ?? (account.type === AccountType.CREDIT_CARD ? parseFloat(faker.finance.amount({ min: 1000, max: 50000 })) : null);
     account.currency = overrides.currency || 'USD';
     account.institutionName = overrides.institutionName || faker.company.name();
     account.accountNumber = overrides.accountNumber || faker.finance.accountNumber();
@@ -139,6 +140,12 @@ export class AccountFactory extends BaseFactory<Account> {
       notifications: true,
       budgetIncluded: true,
     };
+
+    // Plaid-specific fields
+    if (overrides.plaidAccountId) account.plaidAccountId = overrides.plaidAccountId;
+    if (overrides.plaidItemId) account.plaidItemId = overrides.plaidItemId;
+    if (overrides.plaidAccessToken) account.plaidAccessToken = overrides.plaidAccessToken;
+    if (overrides.plaidMetadata) account.plaidMetadata = overrides.plaidMetadata;
 
     return account;
   }
@@ -182,7 +189,8 @@ export class CategoryFactory extends BaseFactory<Category> {
   private rootCategoryPromise: Promise<Category> | null = null;
 
   constructor(dataSource: DataSource) {
-    super(dataSource, dataSource.getRepository(Category));
+    // CRITICAL: Use TreeRepository for NestedSet entities
+    super(dataSource, dataSource.getTreeRepository(Category));
   }
 
   /**
@@ -233,13 +241,23 @@ export class CategoryFactory extends BaseFactory<Category> {
         root.isSystem = true;
         root.sortOrder = 0;
         root.parent = null; // TypeORM NestedSet requires parent relation set to null
+        root.parentId = null; // Explicitly set parentId to null for root
         root.rules = {};
         root.metadata = {};
 
         const saved = await this.repository.save(root);
+
+        // CRITICAL: Re-query to get the full entity with all NestedSet fields populated
+        const refreshed = await this.repository.findOne({ where: { id: saved.id } });
+
         // Clear promise after save so next call will re-query
         this.rootCategoryPromise = null;
-        return saved;
+
+        if (!refreshed) {
+          throw new Error('Failed to refresh root category after creation');
+        }
+
+        return refreshed;
       })();
     }
 
@@ -251,7 +269,8 @@ export class CategoryFactory extends BaseFactory<Category> {
 
     const name = overrides.name || faker.commerce.department();
     category.name = name;
-    category.slug = overrides.slug || name.toLowerCase().replace(/\s+/g, '-');
+    // Add unique suffix to slug to avoid duplicates
+    category.slug = overrides.slug || `${name.toLowerCase().replace(/\s+/g, '-')}-${faker.string.alphanumeric(6)}`;
     category.description = overrides.description || faker.lorem.sentence();
     category.type = overrides.type || faker.helpers.arrayElement(Object.values(CategoryType));
     category.status = overrides.status || CategoryStatus.ACTIVE;
@@ -295,14 +314,20 @@ export class CategoryFactory extends BaseFactory<Category> {
     // Create entity
     const entity = this.create(overrides);
 
-    // CRITICAL: TypeORM NestedSet requires all non-root entities to have a parent
-    // Set parent relation (not parentId) for better TypeORM NestedSet compatibility
+    // CRITICAL: TypeORM NestedSet requires setting the parent RELATION, not just parentId
+    // NEVER allow parent: null (would create multiple roots)
     if (overrides?.parent) {
+      // If parent object provided, use it directly
       entity.parent = overrides.parent;
-    } else if (overrides?.parentId) {
-      entity.parentId = overrides.parentId;
+    } else if (overrides?.parentId && overrides.parentId !== null) {
+      // If explicit parentId provided, load the parent entity
+      const parentEntity = await this.repository.findOne({ where: { id: overrides.parentId } });
+      if (!parentEntity) {
+        throw new Error(`Parent category with ID ${overrides.parentId} not found`);
+      }
+      entity.parent = parentEntity;
     } else {
-      // No parent specified - use root as default parent
+      // No parent specified OR parentId explicitly null - use root as default parent
       entity.parent = root;
     }
 
@@ -407,6 +432,12 @@ export class TransactionFactory extends BaseFactory<Transaction> {
     transaction.includeInBudget = overrides.includeInBudget ?? true;
     transaction.notes = overrides.notes || faker.lorem.sentence();
     transaction.tags = overrides.tags || [faker.lorem.word(), faker.lorem.word()];
+
+    // Optional fields that need explicit override handling
+    if (overrides.location) transaction.location = overrides.location;
+    if (overrides.plaidTransactionId) transaction.plaidTransactionId = overrides.plaidTransactionId;
+    if (overrides.plaidAccountId) transaction.plaidAccountId = overrides.plaidAccountId;
+    if (overrides.plaidMetadata) transaction.plaidMetadata = overrides.plaidMetadata;
 
     return transaction;
   }

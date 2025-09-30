@@ -4,10 +4,11 @@
  */
 
 import { DataSource, Repository } from 'typeorm';
+import { faker } from '@faker-js/faker';
 import { setupTestDatabase, cleanTestDatabase, teardownTestDatabase } from '../../../src/core/database/tests/database-test.config';
 import { TestDataFactory } from '../../../src/core/database/tests/factories/test-data.factory';
 import { User, UserRole, UserStatus } from '../../../src/core/database/entities/user.entity';
-import { Account, AccountType, AccountStatus } from '../../../src/core/database/entities/account.entity';
+import { Account, AccountType, AccountStatus, AccountSource } from '../../../src/core/database/entities/account.entity';
 import { Category, CategoryType, CategoryStatus } from '../../../src/core/database/entities/category.entity';
 import { Transaction, TransactionType, TransactionStatus } from '../../../src/core/database/entities/transaction.entity';
 
@@ -356,16 +357,22 @@ describe('Repository Operations', () => {
         const oldSyncDate = new Date();
         oldSyncDate.setHours(oldSyncDate.getHours() - 2); // 2 hours ago
 
-        await factory.accounts.createPlaidAccount({
+        await factory.accounts.build({
           userId: user.id,
+          source: AccountSource.PLAID,
           syncEnabled: true,
-          lastSyncAt: oldSyncDate
+          lastSyncAt: oldSyncDate,
+          plaidAccountId: faker.string.alphanumeric(26),
+          plaidItemId: faker.string.alphanumeric(26)
         });
 
-        await factory.accounts.createPlaidAccount({
+        await factory.accounts.build({
           userId: user.id,
+          source: AccountSource.PLAID,
           syncEnabled: false,
-          lastSyncAt: oldSyncDate
+          lastSyncAt: oldSyncDate,
+          plaidAccountId: faker.string.alphanumeric(26),
+          plaidItemId: faker.string.alphanumeric(26)
         });
 
         // Act
@@ -498,7 +505,11 @@ describe('Repository Operations', () => {
 
         // Assert
         expect(transactionsInRange).toHaveLength(1);
-        expect(transactionsInRange[0].date.getMonth()).toBe(0); // January
+        // Query builders may return dates as strings, so we need to convert
+        const date = transactionsInRange[0].date instanceof Date
+          ? transactionsInRange[0].date
+          : new Date(transactionsInRange[0].date);
+        expect(date.getMonth()).toBe(0); // January
       });
 
       it('should find transactions by category with aggregations', async () => {
@@ -655,23 +666,31 @@ describe('Repository Operations', () => {
 
       it('should find top-level categories', async () => {
         // Arrange
+        // Create categories at top level (children of root)
         const topLevel = await factory.categories.build({
-          name: 'Top Level',
-          parentId: null
+          name: 'Top Level'
         });
 
         const parent = await factory.categories.build({
           name: 'Parent'
         });
 
+        // Create child of parent (not top-level)
         await factory.categories.build({
           name: 'Child',
           parentId: parent.id
         });
 
-        // Act
+        // Get root category to query its children
+        const root = await categoryRepository
+          .createQueryBuilder('category')
+          .where('category.isSystem = :isSystem', { isSystem: true })
+          .andWhere('category.name = :name', { name: 'Root' })
+          .getOne();
+
+        // Act - Find direct children of root (top-level user categories)
         const topLevelCategories = await categoryRepository.find({
-          where: { parentId: null }
+          where: { parentId: root!.id }
         });
 
         // Assert
@@ -712,8 +731,12 @@ describe('Repository Operations', () => {
         });
 
         // Act
+        // Find active categories (excluding system categories like root)
         const activeCategories = await categoryRepository.find({
-          where: { status: CategoryStatus.ACTIVE }
+          where: {
+            status: CategoryStatus.ACTIVE,
+            isSystem: false
+          }
         });
 
         // Assert
@@ -777,15 +800,27 @@ describe('Repository Operations', () => {
       });
 
       // Act
-      const summary = await dataSource
+      // Get account summary (without JOIN to avoid counting balances multiple times)
+      const accountSummary = await dataSource
         .createQueryBuilder()
         .select('SUM(account.currentBalance)', 'totalBalance')
-        .addSelect('COUNT(DISTINCT account.id)', 'accountCount')
-        .addSelect('COUNT(DISTINCT transaction.id)', 'transactionCount')
+        .addSelect('COUNT(account.id)', 'accountCount')
         .from(Account, 'account')
-        .leftJoin('account.transactions', 'transaction')
         .where('account.userId = :userId', { userId: user.id })
         .getRawOne();
+
+      // Get transaction count separately
+      const transactionCount = await dataSource
+        .getRepository(Transaction)
+        .createQueryBuilder('transaction')
+        .innerJoin('transaction.account', 'account')
+        .where('account.userId = :userId', { userId: user.id })
+        .getCount();
+
+      const summary = {
+        ...accountSummary,
+        transactionCount: transactionCount.toString()
+      };
 
       // Assert
       expect(parseFloat(summary.totalBalance)).toBe(500); // 1000 + (-500)
