@@ -1,8 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { Repository } from 'typeorm';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { PasswordSecurityService, HashingAlgorithm } from './password-security.service';
-import { PasswordStrengthService } from './password-strength.service';
+import { PasswordSecurityService, HashingAlgorithm } from '@/auth/services/password-security.service';
+import { PasswordStrengthService } from '@/auth/services/password-strength.service';
 import { User } from '@/core/database/entities/user.entity';
 import { PasswordHistory } from '@/core/database/entities/password-history.entity';
 import { AuditLog } from '@/core/database/entities/audit-log.entity';
@@ -71,7 +71,8 @@ describe('PasswordSecurityService', () => {
 
       expect(hash).toBeDefined();
       expect(hash).not.toBe(password);
-      expect(hash.startsWith('$2b$')).toBe(true);
+      // Bcrypt hashes start with $2a$, $2b$, or $2y$
+      expect(hash.startsWith('$2')).toBe(true);
     });
 
     it('should hash password with argon2', async () => {
