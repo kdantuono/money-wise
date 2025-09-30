@@ -4,12 +4,12 @@
  */
 
 import { DataSource, Repository } from 'typeorm';
-import { setupTestDatabase, cleanTestDatabase, teardownTestDatabase } from '../database-test.config';
-import { TestDataFactory } from '../factories/test-data.factory';
-import { User, UserRole, UserStatus } from '../../entities/user.entity';
-import { Account, AccountType, AccountStatus } from '../../entities/account.entity';
-import { Category, CategoryType, CategoryStatus } from '../../entities/category.entity';
-import { Transaction, TransactionType, TransactionStatus } from '../../entities/transaction.entity';
+import { setupTestDatabase, cleanTestDatabase, teardownTestDatabase } from '../../../src/core/database/tests/database-test.config';
+import { TestDataFactory } from '../../../src/core/database/tests/factories/test-data.factory';
+import { User, UserRole, UserStatus } from '../../../src/core/database/entities/user.entity';
+import { Account, AccountType, AccountStatus } from '../../../src/core/database/entities/account.entity';
+import { Category, CategoryType, CategoryStatus } from '../../../src/core/database/entities/category.entity';
+import { Transaction, TransactionType, TransactionStatus } from '../../../src/core/database/entities/transaction.entity';
 
 describe('Repository Operations', () => {
   let dataSource: DataSource;
