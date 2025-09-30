@@ -34,6 +34,8 @@ describe('Repository Operations', () => {
 
   beforeEach(async () => {
     await cleanTestDatabase();
+    // Reset category root after database cleanup (NestedSet requires single root)
+    factory.categories.resetRoot();
   });
 
   describe('User Repository Operations', () => {

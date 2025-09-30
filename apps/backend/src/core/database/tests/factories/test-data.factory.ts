@@ -179,8 +179,55 @@ export class AccountFactory extends BaseFactory<Account> {
  * Category Factory
  */
 export class CategoryFactory extends BaseFactory<Category> {
+  private rootCategoryPromise: Promise<Category> | null = null;
+
   constructor(dataSource: DataSource) {
     super(dataSource, dataSource.getRepository(Category));
+  }
+
+  /**
+   * Reset root category (call after database cleanup)
+   */
+  resetRoot(): void {
+    this.rootCategoryPromise = null;
+  }
+
+  /**
+   * Ensure root category exists (TypeORM NestedSet requires single root)
+   */
+  private async ensureRootCategory(): Promise<Category> {
+    if (!this.rootCategoryPromise) {
+      this.rootCategoryPromise = (async () => {
+        // Check if root already exists using IS NULL query
+        const existing = await this.repository
+          .createQueryBuilder('category')
+          .where('category.parentId IS NULL')
+          .getOne();
+
+        if (existing) {
+          return existing;
+        }
+
+        const root = new Category();
+        root.name = 'Root';
+        root.slug = 'root';
+        root.description = 'Root category for nested set';
+        root.type = CategoryType.EXPENSE;
+        root.status = CategoryStatus.ACTIVE;
+        root.color = '#000000';
+        root.icon = 'folder';
+        root.isDefault = false;
+        root.isSystem = true;
+        root.sortOrder = 0;
+        root.parentId = null;
+        root.rules = {};
+        root.metadata = {};
+
+        return await this.repository.save(root);
+      })();
+    }
+
+    return this.rootCategoryPromise;
   }
 
   create(overrides: Partial<Category> = {}): Category {
@@ -197,7 +244,7 @@ export class CategoryFactory extends BaseFactory<Category> {
     category.isDefault = overrides.isDefault ?? false;
     category.isSystem = overrides.isSystem ?? false;
     category.sortOrder = overrides.sortOrder || faker.number.int({ min: 0, max: 100 });
-    category.parentId = overrides.parentId || null;
+    category.parentId = overrides.parentId !== undefined ? overrides.parentId : null;
     category.rules = overrides.rules || {
       keywords: [faker.commerce.productName()],
       merchantPatterns: [faker.company.name()],
@@ -215,7 +262,51 @@ export class CategoryFactory extends BaseFactory<Category> {
   }
 
   /**
-   * Create expense category
+   * Build and save category (ensures root exists for NestedSet)
+   */
+  async build(overrides?: Partial<Category>): Promise<Category> {
+    // Ensure root exists
+    const root = await this.ensureRootCategory();
+
+    // If no parentId specified, use root as parent (never create new roots)
+    if (!overrides || overrides.parentId === undefined || overrides.parentId === null) {
+      overrides = { ...overrides, parentId: root.id };
+    }
+
+    const entity = this.create(overrides);
+    return await this.repository.save(entity);
+  }
+
+  /**
+   * Build and save expense category
+   */
+  async buildExpenseCategory(overrides: Partial<Category> = {}): Promise<Category> {
+    return this.build({
+      type: CategoryType.EXPENSE,
+      name: 'Food & Dining',
+      slug: 'food-dining',
+      color: '#ef4444',
+      icon: 'utensils',
+      ...overrides,
+    });
+  }
+
+  /**
+   * Build and save income category
+   */
+  async buildIncomeCategory(overrides: Partial<Category> = {}): Promise<Category> {
+    return this.build({
+      type: CategoryType.INCOME,
+      name: 'Salary',
+      slug: 'salary',
+      color: '#22c55e',
+      icon: 'briefcase',
+      ...overrides,
+    });
+  }
+
+  /**
+   * @deprecated Use buildExpenseCategory() instead
    */
   createExpenseCategory(overrides: Partial<Category> = {}): Category {
     return this.create({
@@ -229,7 +320,7 @@ export class CategoryFactory extends BaseFactory<Category> {
   }
 
   /**
-   * Create income category
+   * @deprecated Use buildIncomeCategory() instead
    */
   createIncomeCategory(overrides: Partial<Category> = {}): Category {
     return this.create({
@@ -266,7 +357,7 @@ export class TransactionFactory extends BaseFactory<Transaction> {
     const transaction = new Transaction();
 
     transaction.accountId = overrides.accountId || faker.string.uuid();
-    transaction.categoryId = overrides.categoryId || faker.string.uuid();
+    transaction.categoryId = overrides.categoryId || null;
     transaction.amount = overrides.amount || parseFloat(faker.finance.amount());
     transaction.type = overrides.type || faker.helpers.arrayElement(Object.values(TransactionType));
     transaction.status = overrides.status || TransactionStatus.POSTED;
@@ -415,12 +506,12 @@ export class TestDataFactory {
     });
 
     // Create categories
-    const foodCategory = await this.categories.createExpenseCategory({
+    const foodCategory = await this.categories.buildExpenseCategory({
       name: 'Food & Dining',
       slug: 'food-dining',
     });
 
-    const salaryCategory = await this.categories.createIncomeCategory({
+    const salaryCategory = await this.categories.buildIncomeCategory({
       name: 'Salary',
       slug: 'salary',
     });

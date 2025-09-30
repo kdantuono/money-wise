@@ -6,37 +6,37 @@
 
  RUN  v1.6.1 /home/nemesi/dev/money-wise/apps/web
 
-[90m18:15:07:697[0m [34m[websocket][0m constructing the interceptor...
-[90m18:15:07:752[0m [34m[client-request-interceptor][0m constructing the interceptor...
-[90m18:15:07:753[0m [34m[xhr][0m constructing the interceptor...
-[90m18:15:07:753[0m [34m[fetch][0m constructing the interceptor...
-[90m18:15:07:753[0m [34m[setup-server][0m constructing the interceptor...
-[90m18:15:07:756[0m [34m[setup-server:apply][0m applying the interceptor...
-[90m18:15:07:756[0m [34m[setup-server][0m retrieved global instance: undefined
-[90m18:15:07:756[0m [34m[setup-server:apply][0m no running instance found, setting up a new instance...
-[90m18:15:07:756[0m [34m[setup-server:setup][0m applying all 3 interceptors...
-[90m18:15:07:757[0m [34m[setup-server:setup][0m applying "_ClientRequestInterceptor" interceptor...
-[90m18:15:07:757[0m [34m[client-request-interceptor:apply][0m applying the interceptor...
-[90m18:15:07:757[0m [34m[client-request-interceptor][0m retrieved global instance: undefined
-[90m18:15:07:757[0m [34m[client-request-interceptor:apply][0m no running instance found, setting up a new instance...
-[90m18:15:07:757[0m [34m[client-request-interceptor][0m set global instance! client-request-interceptor
-[90m18:15:07:757[0m [34m[setup-server:setup][0m adding interceptor dispose subscription
-[90m18:15:07:757[0m [34m[setup-server:setup][0m applying "_XMLHttpRequestInterceptor" interceptor...
-[90m18:15:07:757[0m [34m[xhr:apply][0m applying the interceptor...
-[90m18:15:07:757[0m [34m[xhr][0m retrieved global instance: undefined
-[90m18:15:07:758[0m [34m[xhr:apply][0m no running instance found, setting up a new instance...
-[90m18:15:07:758[0m [34m[xhr:setup][0m patching "XMLHttpRequest" module...
-[90m18:15:07:758[0m [34m[xhr:setup][0m native "XMLHttpRequest" module patched! XMLHttpRequest
-[90m18:15:07:758[0m [34m[xhr][0m set global instance! xhr
-[90m18:15:07:758[0m [34m[setup-server:setup][0m adding interceptor dispose subscription
-[90m18:15:07:758[0m [34m[setup-server:setup][0m applying "_FetchInterceptor" interceptor...
-[90m18:15:07:758[0m [34m[fetch:apply][0m applying the interceptor...
-[90m18:15:07:758[0m [34m[fetch][0m retrieved global instance: undefined
-[90m18:15:07:758[0m [34m[fetch:apply][0m no running instance found, setting up a new instance...
-[90m18:15:07:758[0m [34m[fetch][0m set global instance! fetch
-[90m18:15:07:758[0m [34m[setup-server:setup][0m adding interceptor dispose subscription
-[90m18:15:07:758[0m [34m[setup-server][0m set global instance! setup-server
-[90m18:15:07:758[0m [34m[client-request-interceptor:on][0m adding "request" event listener: async ({ request, requestId, controller }) => {
+[90m21:15:27:218[0m [34m[websocket][0m constructing the interceptor...
+[90m21:15:27:272[0m [34m[client-request-interceptor][0m constructing the interceptor...
+[90m21:15:27:272[0m [34m[xhr][0m constructing the interceptor...
+[90m21:15:27:272[0m [34m[fetch][0m constructing the interceptor...
+[90m21:15:27:273[0m [34m[setup-server][0m constructing the interceptor...
+[90m21:15:27:280[0m [34m[setup-server:apply][0m applying the interceptor...
+[90m21:15:27:280[0m [34m[setup-server][0m retrieved global instance: undefined
+[90m21:15:27:280[0m [34m[setup-server:apply][0m no running instance found, setting up a new instance...
+[90m21:15:27:280[0m [34m[setup-server:setup][0m applying all 3 interceptors...
+[90m21:15:27:280[0m [34m[setup-server:setup][0m applying "_ClientRequestInterceptor" interceptor...
+[90m21:15:27:280[0m [34m[client-request-interceptor:apply][0m applying the interceptor...
+[90m21:15:27:280[0m [34m[client-request-interceptor][0m retrieved global instance: undefined
+[90m21:15:27:280[0m [34m[client-request-interceptor:apply][0m no running instance found, setting up a new instance...
+[90m21:15:27:281[0m [34m[client-request-interceptor][0m set global instance! client-request-interceptor
+[90m21:15:27:281[0m [34m[setup-server:setup][0m adding interceptor dispose subscription
+[90m21:15:27:281[0m [34m[setup-server:setup][0m applying "_XMLHttpRequestInterceptor" interceptor...
+[90m21:15:27:281[0m [34m[xhr:apply][0m applying the interceptor...
+[90m21:15:27:281[0m [34m[xhr][0m retrieved global instance: undefined
+[90m21:15:27:281[0m [34m[xhr:apply][0m no running instance found, setting up a new instance...
+[90m21:15:27:281[0m [34m[xhr:setup][0m patching "XMLHttpRequest" module...
+[90m21:15:27:281[0m [34m[xhr:setup][0m native "XMLHttpRequest" module patched! XMLHttpRequest
+[90m21:15:27:281[0m [34m[xhr][0m set global instance! xhr
+[90m21:15:27:281[0m [34m[setup-server:setup][0m adding interceptor dispose subscription
+[90m21:15:27:281[0m [34m[setup-server:setup][0m applying "_FetchInterceptor" interceptor...
+[90m21:15:27:281[0m [34m[fetch:apply][0m applying the interceptor...
+[90m21:15:27:281[0m [34m[fetch][0m retrieved global instance: undefined
+[90m21:15:27:281[0m [34m[fetch:apply][0m no running instance found, setting up a new instance...
+[90m21:15:27:281[0m [34m[fetch][0m set global instance! fetch
+[90m21:15:27:281[0m [34m[setup-server:setup][0m adding interceptor dispose subscription
+[90m21:15:27:281[0m [34m[setup-server][0m set global instance! setup-server
+[90m21:15:27:281[0m [34m[client-request-interceptor:on][0m adding "request" event listener: async ({ request, requestId, controller }) => {
         const response = await handleRequest(
           request,
           requestId,
@@ -65,7 +65,7 @@
         }
         return;
       }
-[90m18:15:07:758[0m [34m[xhr:on][0m adding "request" event listener: async ({ request, requestId, controller }) => {
+[90m21:15:27:281[0m [34m[xhr:on][0m adding "request" event listener: async ({ request, requestId, controller }) => {
         const response = await handleRequest(
           request,
           requestId,
@@ -94,7 +94,7 @@
         }
         return;
       }
-[90m18:15:07:758[0m [34m[fetch:on][0m adding "request" event listener: async ({ request, requestId, controller }) => {
+[90m21:15:27:282[0m [34m[fetch:on][0m adding "request" event listener: async ({ request, requestId, controller }) => {
         const response = await handleRequest(
           request,
           requestId,
@@ -123,22 +123,22 @@
         }
         return;
       }
-[90m18:15:07:758[0m [34m[client-request-interceptor:on][0m adding "unhandledException" event listener: ({ error }) => {
+[90m21:15:27:282[0m [34m[client-request-interceptor:on][0m adding "unhandledException" event listener: ({ error }) => {
       if (error instanceof InternalError) {
         throw error;
       }
     }
-[90m18:15:07:758[0m [34m[xhr:on][0m adding "unhandledException" event listener: ({ error }) => {
+[90m21:15:27:282[0m [34m[xhr:on][0m adding "unhandledException" event listener: ({ error }) => {
       if (error instanceof InternalError) {
         throw error;
       }
     }
-[90m18:15:07:758[0m [34m[fetch:on][0m adding "unhandledException" event listener: ({ error }) => {
+[90m21:15:27:282[0m [34m[fetch:on][0m adding "unhandledException" event listener: ({ error }) => {
       if (error instanceof InternalError) {
         throw error;
       }
     }
-[90m18:15:07:758[0m [34m[client-request-interceptor:on][0m adding "response" event listener: ({ response, isMockedResponse, request, requestId }) => {
+[90m21:15:27:282[0m [34m[client-request-interceptor:on][0m adding "response" event listener: ({ response, isMockedResponse, request, requestId }) => {
         this.emitter.emit(
           isMockedResponse ? "response:mocked" : "response:bypass",
           {
@@ -148,7 +148,7 @@
           }
         );
       }
-[90m18:15:07:758[0m [34m[xhr:on][0m adding "response" event listener: ({ response, isMockedResponse, request, requestId }) => {
+[90m21:15:27:282[0m [34m[xhr:on][0m adding "response" event listener: ({ response, isMockedResponse, request, requestId }) => {
         this.emitter.emit(
           isMockedResponse ? "response:mocked" : "response:bypass",
           {
@@ -158,7 +158,7 @@
           }
         );
       }
-[90m18:15:07:759[0m [34m[fetch:on][0m adding "response" event listener: ({ response, isMockedResponse, request, requestId }) => {
+[90m21:15:27:282[0m [34m[fetch:on][0m adding "response" event listener: ({ response, isMockedResponse, request, requestId }) => {
         this.emitter.emit(
           isMockedResponse ? "response:mocked" : "response:bypass",
           {
@@ -168,7 +168,7 @@
           }
         );
       }
-[90m18:15:07:759[0m [34m[websocket:on][0m adding "connection" event listener: async (connection) => {
+[90m21:15:27:282[0m [34m[websocket:on][0m adding "connection" event listener: async (connection) => {
     const handlers = options.getHandlers().filter(isHandlerKind("EventHandler"));
     if (handlers.length > 0) {
       options?.onMockedConnection(connection);
@@ -200,122 +200,77 @@
     options?.onPassthroughConnection(connection);
     connection.server.connect();
   }
-[90m18:15:07:759[0m [34m[websocket:apply][0m applying the interceptor...
-[90m18:15:07:759[0m [34m[websocket][0m retrieved global instance: undefined
-[90m18:15:07:759[0m [34m[websocket:apply][0m no running instance found, setting up a new instance...
-[90m18:15:07:759[0m [34m[websocket][0m set global instance! websocket
-[90m18:15:07:765[0m [34m[fetch][0m [POST] http://localhost:3000/api/auth/login
-[90m18:15:07:765[0m [34m[fetch][0m awaiting for the mocked response...
-[90m18:15:07:765[0m [34m[fetch][0m emitting the "request" event for 1 listener(s)...
-[90m18:15:07:790[0m [34m[fetch][0m received mocked response! {"rawResponse":{}}
-[90m18:15:07:791[0m [34m[fetch][0m emitting the "response" event...
-[90m18:15:07:791[0m [34m[fetch][0m request has been handled, returning mock promise...
-[90m18:15:07:797[0m [34m[fetch][0m [POST] http://localhost:3000/api/auth/login
-[90m18:15:07:797[0m [34m[fetch][0m awaiting for the mocked response...
-[90m18:15:07:797[0m [34m[fetch][0m emitting the "request" event for 1 listener(s)...
-[90m18:15:07:801[0m [34m[fetch][0m received mocked response! {"rawResponse":{}}
-[90m18:15:07:801[0m [34m[fetch][0m emitting the "response" event...
-[90m18:15:07:801[0m [34m[fetch][0m request has been handled, returning mock promise...
-[90m18:15:07:802[0m [34m[fetch][0m [POST] http://localhost:3000/api/auth/register
-[90m18:15:07:802[0m [34m[fetch][0m awaiting for the mocked response...
-[90m18:15:07:802[0m [34m[fetch][0m emitting the "request" event for 1 listener(s)...
-[90m18:15:07:808[0m [34m[fetch][0m received mocked response! {"rawResponse":{}}
-[90m18:15:07:808[0m [34m[fetch][0m emitting the "response" event...
-[90m18:15:07:808[0m [34m[fetch][0m request has been handled, returning mock promise...
-[90m18:15:07:810[0m [34m[fetch][0m [POST] http://localhost:3000/api/auth/login
-[90m18:15:07:810[0m [34m[fetch][0m awaiting for the mocked response...
-[90m18:15:07:810[0m [34m[fetch][0m emitting the "request" event for 1 listener(s)...
-[90m18:15:07:812[0m [34m[fetch][0m received mocked response! {"rawResponse":{}}
-[90m18:15:07:812[0m [34m[fetch][0m emitting the "response" event...
-[90m18:15:07:812[0m [34m[fetch][0m request has been handled, returning mock promise...
-[90m18:15:07:813[0m [34m[setup-server:dispose][0m disposing the interceptor...
-[90m18:15:07:813[0m [34m[setup-server][0m retrieved global instance: BatchInterceptor
-[90m18:15:07:813[0m [34m[setup-server][0m cleared global instance! setup-server
-[90m18:15:07:813[0m [34m[setup-server:dispose][0m global symbol deleted: undefined
-[90m18:15:07:813[0m [34m[setup-server:dispose][0m disposing of 3 subscriptions...
-[90m18:15:07:813[0m [34m[client-request-interceptor:dispose][0m disposing the interceptor...
-[90m18:15:07:813[0m [34m[client-request-interceptor][0m retrieved global instance: _ClientRequestInterceptor
-[90m18:15:07:813[0m [34m[client-request-interceptor][0m cleared global instance! client-request-interceptor
-[90m18:15:07:813[0m [34m[client-request-interceptor:dispose][0m global symbol deleted: undefined
-[90m18:15:07:813[0m [34m[client-request-interceptor:dispose][0m disposing of 1 subscriptions...
-[90m18:15:07:813[0m [34m[client-request-interceptor:dispose][0m disposed of all subscriptions! 0
-[90m18:15:07:813[0m [34m[client-request-interceptor:dispose][0m destroyed the listener!
-[90m18:15:07:813[0m [34m[xhr:dispose][0m disposing the interceptor...
-[90m18:15:07:813[0m [34m[xhr][0m retrieved global instance: _XMLHttpRequestInterceptor
-[90m18:15:07:813[0m [34m[xhr][0m cleared global instance! xhr
-[90m18:15:07:813[0m [34m[xhr:dispose][0m global symbol deleted: undefined
-[90m18:15:07:813[0m [34m[xhr:dispose][0m disposing of 1 subscriptions...
-[90m18:15:07:814[0m [34m[xhr:setup][0m native "XMLHttpRequest" module restored! XMLHttpRequest
-[90m18:15:07:814[0m [34m[xhr:dispose][0m disposed of all subscriptions! 0
-[90m18:15:07:814[0m [34m[xhr:dispose][0m destroyed the listener!
-[90m18:15:07:814[0m [34m[fetch:dispose][0m disposing the interceptor...
-[90m18:15:07:814[0m [34m[fetch][0m retrieved global instance: _FetchInterceptor
-[90m18:15:07:814[0m [34m[fetch][0m cleared global instance! fetch
-[90m18:15:07:814[0m [34m[fetch:dispose][0m global symbol deleted: undefined
-[90m18:15:07:814[0m [34m[fetch:dispose][0m disposing of 1 subscriptions...
-[90m18:15:07:814[0m [34m[fetch][0m restored native "globalThis.fetch"! fetch
-[90m18:15:07:814[0m [34m[fetch:dispose][0m disposed of all subscriptions! 0
-[90m18:15:07:814[0m [34m[fetch:dispose][0m destroyed the listener!
-[90m18:15:07:814[0m [34m[setup-server:dispose][0m disposed of all subscriptions! 0
-[90m18:15:07:814[0m [34m[setup-server:dispose][0m destroyed the listener!
-[90m18:15:07:814[0m [34m[websocket:dispose][0m disposing the interceptor...
-[90m18:15:07:814[0m [34m[websocket][0m retrieved global instance: _WebSocketInterceptor
-[90m18:15:07:814[0m [34m[websocket][0m cleared global instance! websocket
-[90m18:15:07:814[0m [34m[websocket:dispose][0m global symbol deleted: undefined
-[90m18:15:07:814[0m [34m[websocket:dispose][0m disposing of 1 subscriptions...
-[90m18:15:07:814[0m [34m[websocket:dispose][0m disposed of all subscriptions! 0
-[90m18:15:07:814[0m [34m[websocket:dispose][0m destroyed the listener!
- ❯ |@money-wise/web| __tests__/api/auth.test.tsx  (4 tests | 2 failed) 59ms
-   ❯ __tests__/api/auth.test.tsx > Authentication API > should login with valid credentials
-     → expected undefined to be 'mock-jwt-token' // Object.is equality
-   ❯ __tests__/api/auth.test.tsx > Authentication API > should register a new user
-     → expected undefined to be 'mock-jwt-token-new-user' // Object.is equality
- ✓ |@money-wise/web| __tests__/pages/home.test.tsx  (4 tests) 217ms
- ✓ |@money-wise/web| __tests__/components/ui/button.test.tsx  (9 tests) 457ms
+[90m21:15:27:282[0m [34m[websocket:apply][0m applying the interceptor...
+[90m21:15:27:282[0m [34m[websocket][0m retrieved global instance: undefined
+[90m21:15:27:282[0m [34m[websocket:apply][0m no running instance found, setting up a new instance...
+[90m21:15:27:282[0m [34m[websocket][0m set global instance! websocket
+[90m21:15:27:289[0m [34m[fetch][0m [POST] http://localhost:3000/api/auth/login
+[90m21:15:27:290[0m [34m[fetch][0m awaiting for the mocked response...
+[90m21:15:27:290[0m [34m[fetch][0m emitting the "request" event for 1 listener(s)...
+[90m21:15:27:315[0m [34m[fetch][0m received mocked response! {"rawResponse":{}}
+[90m21:15:27:316[0m [34m[fetch][0m emitting the "response" event...
+[90m21:15:27:316[0m [34m[fetch][0m request has been handled, returning mock promise...
+[90m21:15:27:320[0m [34m[fetch][0m [POST] http://localhost:3000/api/auth/login
+[90m21:15:27:320[0m [34m[fetch][0m awaiting for the mocked response...
+[90m21:15:27:320[0m [34m[fetch][0m emitting the "request" event for 1 listener(s)...
+[90m21:15:27:324[0m [34m[fetch][0m received mocked response! {"rawResponse":{}}
+[90m21:15:27:324[0m [34m[fetch][0m emitting the "response" event...
+[90m21:15:27:325[0m [34m[fetch][0m request has been handled, returning mock promise...
+[90m21:15:27:327[0m [34m[fetch][0m [POST] http://localhost:3000/api/auth/register
+[90m21:15:27:327[0m [34m[fetch][0m awaiting for the mocked response...
+[90m21:15:27:327[0m [34m[fetch][0m emitting the "request" event for 1 listener(s)...
+[90m21:15:27:333[0m [34m[fetch][0m received mocked response! {"rawResponse":{}}
+[90m21:15:27:333[0m [34m[fetch][0m emitting the "response" event...
+[90m21:15:27:334[0m [34m[fetch][0m request has been handled, returning mock promise...
+[90m21:15:27:336[0m [34m[fetch][0m [POST] http://localhost:3000/api/auth/login
+[90m21:15:27:336[0m [34m[fetch][0m awaiting for the mocked response...
+[90m21:15:27:336[0m [34m[fetch][0m emitting the "request" event for 1 listener(s)...
+[90m21:15:27:338[0m [34m[fetch][0m received mocked response! {"rawResponse":{}}
+[90m21:15:27:339[0m [34m[fetch][0m emitting the "response" event...
+[90m21:15:27:339[0m [34m[fetch][0m request has been handled, returning mock promise...
+[90m21:15:27:340[0m [34m[setup-server:dispose][0m disposing the interceptor...
+[90m21:15:27:340[0m [34m[setup-server][0m retrieved global instance: BatchInterceptor
+[90m21:15:27:340[0m [34m[setup-server][0m cleared global instance! setup-server
+[90m21:15:27:340[0m [34m[setup-server:dispose][0m global symbol deleted: undefined
+[90m21:15:27:340[0m [34m[setup-server:dispose][0m disposing of 3 subscriptions...
+[90m21:15:27:340[0m [34m[client-request-interceptor:dispose][0m disposing the interceptor...
+[90m21:15:27:340[0m [34m[client-request-interceptor][0m retrieved global instance: _ClientRequestInterceptor
+[90m21:15:27:340[0m [34m[client-request-interceptor][0m cleared global instance! client-request-interceptor
+[90m21:15:27:340[0m [34m[client-request-interceptor:dispose][0m global symbol deleted: undefined
+[90m21:15:27:340[0m [34m[client-request-interceptor:dispose][0m disposing of 1 subscriptions...
+[90m21:15:27:340[0m [34m[client-request-interceptor:dispose][0m disposed of all subscriptions! 0
+[90m21:15:27:340[0m [34m[client-request-interceptor:dispose][0m destroyed the listener!
+[90m21:15:27:340[0m [34m[xhr:dispose][0m disposing the interceptor...
+[90m21:15:27:340[0m [34m[xhr][0m retrieved global instance: _XMLHttpRequestInterceptor
+[90m21:15:27:340[0m [34m[xhr][0m cleared global instance! xhr
+[90m21:15:27:341[0m [34m[xhr:dispose][0m global symbol deleted: undefined
+[90m21:15:27:341[0m [34m[xhr:dispose][0m disposing of 1 subscriptions...
+[90m21:15:27:341[0m [34m[xhr:setup][0m native "XMLHttpRequest" module restored! XMLHttpRequest
+[90m21:15:27:341[0m [34m[xhr:dispose][0m disposed of all subscriptions! 0
+[90m21:15:27:341[0m [34m[xhr:dispose][0m destroyed the listener!
+[90m21:15:27:341[0m [34m[fetch:dispose][0m disposing the interceptor...
+[90m21:15:27:341[0m [34m[fetch][0m retrieved global instance: _FetchInterceptor
+[90m21:15:27:341[0m [34m[fetch][0m cleared global instance! fetch
+[90m21:15:27:341[0m [34m[fetch:dispose][0m global symbol deleted: undefined
+[90m21:15:27:341[0m [34m[fetch:dispose][0m disposing of 1 subscriptions...
+[90m21:15:27:341[0m [34m[fetch][0m restored native "globalThis.fetch"! fetch
+[90m21:15:27:341[0m [34m[fetch:dispose][0m disposed of all subscriptions! 0
+[90m21:15:27:341[0m [34m[fetch:dispose][0m destroyed the listener!
+[90m21:15:27:341[0m [34m[setup-server:dispose][0m disposed of all subscriptions! 0
+[90m21:15:27:341[0m [34m[setup-server:dispose][0m destroyed the listener!
+[90m21:15:27:341[0m [34m[websocket:dispose][0m disposing the interceptor...
+[90m21:15:27:341[0m [34m[websocket][0m retrieved global instance: _WebSocketInterceptor
+[90m21:15:27:341[0m [34m[websocket][0m cleared global instance! websocket
+[90m21:15:27:341[0m [34m[websocket:dispose][0m global symbol deleted: undefined
+[90m21:15:27:341[0m [34m[websocket:dispose][0m disposing of 1 subscriptions...
+[90m21:15:27:341[0m [34m[websocket:dispose][0m disposed of all subscriptions! 0
+[90m21:15:27:341[0m [34m[websocket:dispose][0m destroyed the listener!
+ ✓ |@money-wise/web| __tests__/api/auth.test.tsx  (4 tests) 63ms
+ ✓ |@money-wise/web| __tests__/pages/home.test.tsx  (4 tests) 225ms
+ ✓ |@money-wise/web| __tests__/components/ui/button.test.tsx  (9 tests) 458ms
 
-⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+ Test Files  3 passed (3)
+      Tests  17 passed (17)
+   Start at  21:15:26
+   Duration  1.90s (transform 125ms, setup 311ms, collect 772ms, tests 746ms, environment 1.48s, prepare 621ms)
 
- FAIL  |@money-wise/web| __tests__/api/auth.test.tsx > Authentication API > should login with valid credentials
-AssertionError: expected undefined to be 'mock-jwt-token' // Object.is equality
-
-- Expected: 
-"mock-jwt-token"
-
-+ Received: 
-undefined
-
- ❯ __tests__/api/auth.test.tsx:26:24
-     24|       fullName: expect.any(String),
-     25|     });
-     26|     expect(data.token).toBe('mock-jwt-token');
-       |                        ^
-     27|   });
-     28| 
-
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
-
- FAIL  |@money-wise/web| __tests__/api/auth.test.tsx > Authentication API > should register a new user
-AssertionError: expected undefined to be 'mock-jwt-token-new-user' // Object.is equality
-
-- Expected: 
-"mock-jwt-token-new-user"
-
-+ Received: 
-undefined
-
- ❯ __tests__/api/auth.test.tsx:67:24
-     65|       email: 'newuser@example.com',
-     66|     });
-     67|     expect(data.token).toBe('mock-jwt-token-new-user');
-       |                        ^
-     68|   });
-     69| 
-
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
-
- Test Files  1 failed | 2 passed (3)
-      Tests  2 failed | 15 passed (17)
-   Start at  18:15:06
-   Duration  1.94s (transform 154ms, setup 285ms, collect 773ms, tests 733ms, environment 1.43s, prepare 701ms)
-
- ELIFECYCLE  Command failed with exit code 1.

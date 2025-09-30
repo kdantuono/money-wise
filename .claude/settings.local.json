@@ -141,7 +141,8 @@
       "Bash(claude doctor)",
       "Read(///**)",
       "Bash(claude /doctor)",
-      "Bash(do basename \"$file\")"
+      "Bash(do basename \"$file\")",
+      "Bash(1)"
     ],
     "deny": [],
     "ask": []
