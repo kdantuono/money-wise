@@ -1,2 +1,2 @@
-# Exclude README files from agent parsing
-agents/README.md
+# Exclude documentation files from agent parsing (underscore prefix convention)
+agents/_README.md

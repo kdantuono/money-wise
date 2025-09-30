@@ -124,7 +124,7 @@ gh run watch [run-id]                     # Wait for completion
 ## 📚 References
 
 ### 🤖 AI Orchestration (Operational Instructions)
-- **Agent Details**: `.claude/agents/README.md`
+- **Agent Details**: `.claude/agents/_README.md`
 - **Process Agents**: `.claude/agents/[analytics|documentation|quality]-specialist.md`
 - **Board Integration**: `.claude/orchestration/board-integration.md`
 - **Commands**: `.claude/commands/README.md`
