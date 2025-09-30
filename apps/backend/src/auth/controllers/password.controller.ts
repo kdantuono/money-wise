@@ -18,8 +18,8 @@ import { PasswordSecurityService } from '../services/password-security.service';
 import { PasswordResetService } from '../services/password-reset.service';
 import { RateLimitService } from '../services/rate-limit.service';
 import { ChangePasswordDto } from '../dto/change-password.dto';
-import { RequestPasswordResetDto, ResetPasswordDto, ValidateResetTokenDto } from '../dto/password-reset.dto';
-import { CheckPasswordStrengthDto, PasswordStrengthResponseDto } from '../dto/password-strength.dto';
+import { PasswordResetRequestDto, ResetPasswordDto, ValidateResetTokenDto } from '../dto/password-reset.dto';
+import { PasswordStrengthCheckDto, PasswordStrengthResponseDto } from '../dto/password-strength.dto';
 
 @Controller('auth/password')
 export class PasswordController {
@@ -32,7 +32,7 @@ export class PasswordController {
   @Post('check-strength')
   @HttpCode(HttpStatus.OK)
   async checkPasswordStrength(
-    @Body() checkPasswordStrengthDto: CheckPasswordStrengthDto,
+    @Body() checkPasswordStrengthDto: PasswordStrengthCheckDto,
   ): Promise<PasswordStrengthResponseDto> {
     const { password, firstName, lastName, email } = checkPasswordStrengthDto;
 
@@ -46,7 +46,7 @@ export class PasswordController {
       score: validation.strengthResult.score,
       strength: validation.strengthResult.strength,
       feedback: validation.strengthResult.feedback,
-      isValid: validation.isValid,
+      meets_requirements: validation.strengthResult.meets_requirements,
     };
   }
 
@@ -122,7 +122,7 @@ export class PasswordController {
   @Post('reset/request')
   @HttpCode(HttpStatus.OK)
   async requestPasswordReset(
-    @Body() requestPasswordResetDto: RequestPasswordResetDto,
+    @Body() requestPasswordResetDto: PasswordResetRequestDto,
     @Req() request: Request,
   ): Promise<{ success: boolean; message: string; token?: string }> {
     const { email } = requestPasswordResetDto;

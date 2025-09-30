@@ -3,24 +3,17 @@
 > eslint "{src,apps,libs,test}/**/*.ts" --fix
 
 
-/home/nemesi/dev/money-wise/apps/backend/src/auth/__tests__/auth.controller.spec.ts
-  19:7  error  'authService' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
-
-/home/nemesi/dev/money-wise/apps/backend/src/auth/__tests__/auth.e2e.spec.ts
-  532:14  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  537:14  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-
-/home/nemesi/dev/money-wise/apps/backend/src/auth/auth.security.spec.ts
-  343:40  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  427:57  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-
 /home/nemesi/dev/money-wise/apps/backend/src/auth/auth.service.ts
    10:13  error    'bcrypt' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
   225:24  warning  Unexpected any. Specify a different type                                  @typescript-eslint/no-explicit-any
   320:16  warning  Unexpected any. Specify a different type                                  @typescript-eslint/no-explicit-any
 
-/home/nemesi/dev/money-wise/apps/backend/src/auth/controllers/password.controller.spec.ts
-  43:8  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+/home/nemesi/dev/money-wise/apps/backend/src/auth/services/audit-log.service.ts
+  263:68  warning  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+  267:68  warning  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+
+/home/nemesi/dev/money-wise/apps/backend/src/auth/services/email-verification.service.ts
+  150:33  warning  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
 
 /home/nemesi/dev/money-wise/apps/backend/src/auth/services/password-reset.service.ts
     1:30  error    'BadRequestException' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
@@ -28,75 +21,17 @@
     6:13  error    'crypto' is defined but never used. Allowed unused vars must match /^_/u               @typescript-eslint/no-unused-vars
   458:16  warning  Unexpected any. Specify a different type                                               @typescript-eslint/no-explicit-any
 
-/home/nemesi/dev/money-wise/apps/backend/src/auth/services/password-security.service.spec.ts
-  13:7  error  'passwordHistoryRepository' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
-  14:7  error  'auditLogRepository' is assigned a value but never used. Allowed unused vars must match /^_/u         @typescript-eslint/no-unused-vars
-  15:7  error  'passwordStrengthService' is assigned a value but never used. Allowed unused vars must match /^_/u    @typescript-eslint/no-unused-vars
-
 /home/nemesi/dev/money-wise/apps/backend/src/auth/services/password-security.service.ts
   382:3   error    Duplicate name 'hashPassword'             no-dupe-class-members
   390:3   error    Duplicate name 'verifyPassword'           no-dupe-class-members
   528:16  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
 
+/home/nemesi/dev/money-wise/apps/backend/src/auth/services/two-factor-auth.service.ts
+  74:48  warning  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+  94:17  warning  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+
 /home/nemesi/dev/money-wise/apps/backend/src/core/database/entities/audit-log.entity.ts
   56:20  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-
-/home/nemesi/dev/money-wise/apps/backend/src/core/database/repositories/__tests__/account.repository.spec.ts
-  107:10  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  120:27  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  184:63  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  199:63  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  233:35  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  277:35  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  382:63  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  395:63  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  416:63  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-
-/home/nemesi/dev/money-wise/apps/backend/src/core/database/repositories/__tests__/base.repository.spec.ts
-   55:10  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-   60:10  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-   68:10  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-   85:24  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  105:62  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  106:60  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  120:51  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  136:59  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  162:62  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  167:41  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  193:62  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  206:62  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  233:57  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  243:57  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  265:66  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  289:66  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  319:63  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  320:65  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  326:41  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  333:63  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  354:63  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  365:63  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  386:63  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  476:64  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  477:62  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  503:63  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-
-/home/nemesi/dev/money-wise/apps/backend/src/core/database/repositories/__tests__/user.repository.spec.ts
-   58:10  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-   70:10  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-   75:10  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-   83:10  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-   96:24  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  196:36  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  211:36  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  222:63  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  234:63  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  254:63  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  266:63  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  297:36  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  312:36  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  329:68  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  405:58  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  406:56  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
 
 /home/nemesi/dev/money-wise/apps/backend/src/core/database/repositories/impl/account.repository.ts
    46:29  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
@@ -150,70 +85,120 @@
   15:26  error  'ITransactionRepository' is not defined  no-undef
 
 /home/nemesi/dev/money-wise/apps/backend/src/core/database/tests/database-test-suite.ts
-  346:9  error  Unexpected lexical declaration in case block  no-case-declarations
-  347:9  error  Unexpected lexical declaration in case block  no-case-declarations
-  352:9  error  Unexpected lexical declaration in case block  no-case-declarations
-  353:9  error  Unexpected lexical declaration in case block  no-case-declarations
-  354:9  error  Unexpected lexical declaration in case block  no-case-declarations
-  359:9  error  Unexpected lexical declaration in case block  no-case-declarations
-  360:9  error  Unexpected lexical declaration in case block  no-case-declarations
-  365:9  error  Unexpected lexical declaration in case block  no-case-declarations
-  366:9  error  Unexpected lexical declaration in case block  no-case-declarations
-  367:9  error  Unexpected lexical declaration in case block  no-case-declarations
-  368:9  error  Unexpected lexical declaration in case block  no-case-declarations
-  380:9  error  Unexpected lexical declaration in case block  no-case-declarations
-  382:9  error  Unexpected lexical declaration in case block  no-case-declarations
-  392:9  error  Unexpected lexical declaration in case block  no-case-declarations
-  393:9  error  Unexpected lexical declaration in case block  no-case-declarations
-  395:9  error  Unexpected lexical declaration in case block  no-case-declarations
-  405:9  error  Unexpected lexical declaration in case block  no-case-declarations
-  406:9  error  Unexpected lexical declaration in case block  no-case-declarations
-  407:9  error  Unexpected lexical declaration in case block  no-case-declarations
-  409:9  error  Unexpected lexical declaration in case block  no-case-declarations
-  428:9  error  Unexpected lexical declaration in case block  no-case-declarations
-  434:9  error  Unexpected lexical declaration in case block  no-case-declarations
+   57:5  warning  Unexpected console statement                  no-console
+   63:5  warning  Unexpected console statement                  no-console
+   98:7  warning  Unexpected console statement                  no-console
+  120:7  warning  Unexpected console statement                  no-console
+  133:5  warning  Unexpected console statement                  no-console
+  155:7  warning  Unexpected console statement                  no-console
+  156:7  warning  Unexpected console statement                  no-console
+  157:7  warning  Unexpected console statement                  no-console
+  168:5  warning  Unexpected console statement                  no-console
+  190:5  warning  Unexpected console statement                  no-console
+  197:5  warning  Unexpected console statement                  no-console
+  223:5  warning  Unexpected console statement                  no-console
+  230:5  warning  Unexpected console statement                  no-console
+  252:9  warning  Unexpected console statement                  no-console
+  266:5  warning  Unexpected console statement                  no-console
+  273:5  warning  Unexpected console statement                  no-console
+  295:5  warning  Unexpected console statement                  no-console
+  296:5  warning  Unexpected console statement                  no-console
+  297:5  warning  Unexpected console statement                  no-console
+  298:5  warning  Unexpected console statement                  no-console
+  299:5  warning  Unexpected console statement                  no-console
+  300:5  warning  Unexpected console statement                  no-console
+  307:5  warning  Unexpected console statement                  no-console
+  337:5  warning  Unexpected console statement                  no-console
+  346:9  error    Unexpected lexical declaration in case block  no-case-declarations
+  347:9  error    Unexpected lexical declaration in case block  no-case-declarations
+  352:9  error    Unexpected lexical declaration in case block  no-case-declarations
+  353:9  error    Unexpected lexical declaration in case block  no-case-declarations
+  354:9  error    Unexpected lexical declaration in case block  no-case-declarations
+  359:9  error    Unexpected lexical declaration in case block  no-case-declarations
+  360:9  error    Unexpected lexical declaration in case block  no-case-declarations
+  365:9  error    Unexpected lexical declaration in case block  no-case-declarations
+  366:9  error    Unexpected lexical declaration in case block  no-case-declarations
+  367:9  error    Unexpected lexical declaration in case block  no-case-declarations
+  368:9  error    Unexpected lexical declaration in case block  no-case-declarations
+  380:9  error    Unexpected lexical declaration in case block  no-case-declarations
+  382:9  error    Unexpected lexical declaration in case block  no-case-declarations
+  392:9  error    Unexpected lexical declaration in case block  no-case-declarations
+  393:9  error    Unexpected lexical declaration in case block  no-case-declarations
+  395:9  error    Unexpected lexical declaration in case block  no-case-declarations
+  405:9  error    Unexpected lexical declaration in case block  no-case-declarations
+  406:9  error    Unexpected lexical declaration in case block  no-case-declarations
+  407:9  error    Unexpected lexical declaration in case block  no-case-declarations
+  409:9  error    Unexpected lexical declaration in case block  no-case-declarations
+  428:9  error    Unexpected lexical declaration in case block  no-case-declarations
+  434:9  error    Unexpected lexical declaration in case block  no-case-declarations
+  451:5  warning  Unexpected console statement                  no-console
+  453:5  warning  Unexpected console statement                  no-console
+  460:5  warning  Unexpected console statement                  no-console
+  461:5  warning  Unexpected console statement                  no-console
+  463:5  warning  Unexpected console statement                  no-console
+  464:5  warning  Unexpected console statement                  no-console
+  465:5  warning  Unexpected console statement                  no-console
+  466:5  warning  Unexpected console statement                  no-console
+  467:5  warning  Unexpected console statement                  no-console
+  468:5  warning  Unexpected console statement                  no-console
+  469:5  warning  Unexpected console statement                  no-console
+  471:5  warning  Unexpected console statement                  no-console
+  472:5  warning  Unexpected console statement                  no-console
+  473:5  warning  Unexpected console statement                  no-console
+  475:5  warning  Unexpected console statement                  no-console
+  476:5  warning  Unexpected console statement                  no-console
+  477:5  warning  Unexpected console statement                  no-console
+  478:5  warning  Unexpected console statement                  no-console
+  480:5  warning  Unexpected console statement                  no-console
+  481:5  warning  Unexpected console statement                  no-console
+  482:5  warning  Unexpected console statement                  no-console
+  483:5  warning  Unexpected console statement                  no-console
+  486:7  warning  Unexpected console statement                  no-console
+  488:9  warning  Unexpected console statement                  no-console
+  492:5  warning  Unexpected console statement                  no-console
 
-/home/nemesi/dev/money-wise/apps/backend/src/core/database/tests/entities/entity-relationships.test.ts
-    9:16  error    'UserStatus' is defined but never used. Allowed unused vars must match /^_/u                @typescript-eslint/no-unused-vars
-   37:13  error    'checkingAccount' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
-   42:13  error    'savingsAccount' is assigned a value but never used. Allowed unused vars must match /^_/u   @typescript-eslint/no-unused-vars
-   95:13  error    'transactions' is assigned a value but never used. Allowed unused vars must match /^_/u     @typescript-eslint/no-unused-vars
-  406:13  error    'user' is assigned a value but never used. Allowed unused vars must match /^_/u             @typescript-eslint/no-unused-vars
-  410:37  warning  Unexpected any. Specify a different type                                                    @typescript-eslint/no-explicit-any
+/home/nemesi/dev/money-wise/apps/backend/src/core/database/tests/database-test.config.ts
+   50:7   warning  Unexpected console statement  no-console
+   53:7   warning  Unexpected console statement  no-console
+   58:12  warning  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+   83:7   warning  Unexpected console statement  no-console
+  135:7   warning  Unexpected console statement  no-console
+  140:9   warning  Unexpected console statement  no-console
+  190:11  warning  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+  225:5   warning  Unexpected console statement  no-console
+  242:7   warning  Unexpected console statement  no-console
+
+/home/nemesi/dev/money-wise/apps/backend/src/core/database/tests/factories/test-data.factory.ts
+  455:5  warning  Unexpected console statement  no-console
+  479:5  warning  Unexpected console statement  no-console
+
+/home/nemesi/dev/money-wise/apps/backend/src/core/database/tests/jest.database.global-setup.ts
+   7:3   warning  Unexpected console statement                    no-console
+  16:26  error    Require statement not part of import statement  @typescript-eslint/no-var-requires
+  19:5   warning  Unexpected console statement                    no-console
+  22:5   warning  Unexpected console statement                    no-console
+  35:3   warning  Unexpected console statement                    no-console
+
+/home/nemesi/dev/money-wise/apps/backend/src/core/database/tests/jest.database.global-teardown.ts
+   7:3  warning  Unexpected console statement  no-console
+  17:3  warning  Unexpected console statement  no-console
 
 /home/nemesi/dev/money-wise/apps/backend/src/core/database/tests/jest.database.setup.ts
   18:14  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  20:3   warning  Unexpected console statement              no-console
+  29:3   warning  Unexpected console statement              no-console
 
-/home/nemesi/dev/money-wise/apps/backend/src/core/database/tests/migrations/migration.test.ts
-   12:7   error    'manager' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
-   50:41  warning  Unexpected any. Specify a different type                                            @typescript-eslint/no-explicit-any
-   72:43  warning  Unexpected any. Specify a different type                                            @typescript-eslint/no-explicit-any
-   88:44  warning  Unexpected any. Specify a different type                                            @typescript-eslint/no-explicit-any
-   91:50  warning  Unexpected any. Specify a different type                                            @typescript-eslint/no-explicit-any
-  109:43  warning  Unexpected any. Specify a different type                                            @typescript-eslint/no-explicit-any
-  120:46  warning  Unexpected any. Specify a different type                                            @typescript-eslint/no-explicit-any
-  139:43  warning  Unexpected any. Specify a different type                                            @typescript-eslint/no-explicit-any
-  167:43  warning  Unexpected any. Specify a different type                                            @typescript-eslint/no-explicit-any
-  200:42  warning  Unexpected any. Specify a different type                                            @typescript-eslint/no-explicit-any
-  242:51  warning  Unexpected any. Specify a different type                                            @typescript-eslint/no-explicit-any
-  250:58  warning  Unexpected any. Specify a different type                                            @typescript-eslint/no-explicit-any
-  258:59  warning  Unexpected any. Specify a different type                                            @typescript-eslint/no-explicit-any
-  287:59  warning  Unexpected any. Specify a different type                                            @typescript-eslint/no-explicit-any
-  294:62  warning  Unexpected any. Specify a different type                                            @typescript-eslint/no-explicit-any
-  301:66  warning  Unexpected any. Specify a different type                                            @typescript-eslint/no-explicit-any
-
-/home/nemesi/dev/money-wise/apps/backend/src/core/database/tests/performance/large-dataset.test.ts
-  394:13  error  'connectionPool' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
-
-/home/nemesi/dev/money-wise/apps/backend/src/core/database/tests/performance/timescale-performance.test.ts
-  10:19  error  'AccountType' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
-
-/home/nemesi/dev/money-wise/apps/backend/src/core/database/tests/repositories/repository-operations.test.ts
-   10:32  error  'AccountStatus' is defined but never used. Allowed unused vars must match /^_/u           @typescript-eslint/no-unused-vars
-   12:40  error  'TransactionStatus' is defined but never used. Allowed unused vars must match /^_/u       @typescript-eslint/no-unused-vars
-  115:15  error  'user' is assigned a value but never used. Allowed unused vars must match /^_/u           @typescript-eslint/no-unused-vars
-  656:15  error  'topLevel' is assigned a value but never used. Allowed unused vars must match /^_/u       @typescript-eslint/no-unused-vars
-  760:13  error  'creditAccount' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+/home/nemesi/dev/money-wise/apps/backend/src/core/database/tests/run-database-tests.ts
+  11:3   warning  Unexpected console statement                    no-console
+  12:3   warning  Unexpected console statement                    no-console
+  22:7   warning  Unexpected console statement                    no-console
+  24:7   warning  Unexpected console statement                    no-console
+  25:7   warning  Unexpected console statement                    no-console
+  29:16  error    Require statement not part of import statement  @typescript-eslint/no-var-requires
+  30:18  error    Require statement not part of import statement  @typescript-eslint/no-var-requires
+  34:5   warning  Unexpected console statement                    no-console
+  46:3   warning  Unexpected console statement                    no-console
+  51:3   warning  Unexpected console statement                    no-console
 
 /home/nemesi/dev/money-wise/apps/backend/src/database/timescaledb.service.ts
   228:39  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
@@ -231,6 +216,6 @@
   522:83  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
   559:56  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
 
-✖ 176 problems (61 errors, 115 warnings)
+✖ 171 problems (47 errors, 124 warnings)
 
  ELIFECYCLE  Command failed with exit code 1.

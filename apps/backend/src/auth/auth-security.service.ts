@@ -19,7 +19,7 @@ import {
 } from './dto/password-change.dto';
 import {
   PasswordResetRequestDto,
-  PasswordResetDto,
+  ResetPasswordDto,
   PasswordResetResponseDto,
 } from './dto/password-reset.dto';
 import {
@@ -86,24 +86,24 @@ export class AuthSecurityService {
       }
 
       // Validate password strength
-      const passwordValidation = this.passwordSecurityService.validatePassword(
+      const passwordValidation = await this.passwordSecurityService.validatePassword(
         password,
         { email, firstName, lastName }
       );
 
-      if (!passwordValidation.meets_requirements) {
+      if (!passwordValidation.strengthResult.meets_requirements) {
         await this.auditLogService.logEvent(
           AuditEventType.REGISTRATION_FAILED,
           request,
-          { reason: 'weak_password', feedback: passwordValidation.feedback },
+          { reason: 'weak_password', feedback: passwordValidation.strengthResult.feedback },
           undefined,
           email
         );
         throw new BadRequestException({
           message: 'Password does not meet security requirements',
-          feedback: passwordValidation.feedback,
-          strength: passwordValidation.strength,
-          score: passwordValidation.score,
+          feedback: passwordValidation.strengthResult.feedback,
+          strength: passwordValidation.strengthResult.strength,
+          score: passwordValidation.strengthResult.score,
         });
       }
 
@@ -309,7 +309,7 @@ export class AuthSecurityService {
       }
 
       // Validate new password
-      const passwordValidation = this.passwordSecurityService.validatePassword(
+      const passwordValidation = await this.passwordSecurityService.validatePassword(
         newPassword,
         {
           email: user.email,
@@ -318,12 +318,12 @@ export class AuthSecurityService {
         }
       );
 
-      if (!passwordValidation.meets_requirements) {
+      if (!passwordValidation.strengthResult.meets_requirements) {
         throw new BadRequestException({
           message: 'New password does not meet security requirements',
-          feedback: passwordValidation.feedback,
-          strength: passwordValidation.strength,
-          score: passwordValidation.score,
+          feedback: passwordValidation.strengthResult.feedback,
+          strength: passwordValidation.strengthResult.strength,
+          score: passwordValidation.strengthResult.score,
         });
       }
 
@@ -372,9 +372,9 @@ export class AuthSecurityService {
         success: true,
         message: 'Password changed successfully',
         passwordStrength: {
-          score: passwordValidation.score,
-          strength: passwordValidation.strength,
-          feedback: passwordValidation.feedback,
+          score: passwordValidation.strengthResult.score,
+          strength: passwordValidation.strengthResult.strength,
+          feedback: passwordValidation.strengthResult.feedback,
         },
       };
     } catch (error) {
@@ -402,8 +402,10 @@ export class AuthSecurityService {
     try {
       const result = await this.passwordResetService.requestPasswordReset(
         email.toLowerCase(),
-        this.getClientIp(request),
-        request.get('User-Agent') || 'unknown'
+        {
+          ipAddress: this.getClientIp(request),
+          userAgent: request.get('User-Agent') || 'unknown'
+        }
       );
 
       await this.auditLogService.logEvent(
@@ -429,7 +431,7 @@ export class AuthSecurityService {
    * Reset password using token
    */
   async resetPassword(
-    passwordResetDto: PasswordResetDto,
+    passwordResetDto: ResetPasswordDto,
     request: Request
   ): Promise<PasswordResetResponseDto> {
     const { token, newPassword } = passwordResetDto;
@@ -539,17 +541,17 @@ export class AuthSecurityService {
   ): Promise<PasswordStrengthResponseDto> {
     const { password, email, firstName, lastName } = passwordStrengthDto;
 
-    const validation = this.passwordSecurityService.validatePassword(password, {
+    const validation = await this.passwordSecurityService.validatePassword(password, {
       email,
       firstName,
       lastName,
     });
 
     return {
-      score: validation.score,
-      strength: validation.strength,
-      feedback: validation.feedback,
-      meets_requirements: validation.meets_requirements,
+      score: validation.strengthResult.score,
+      strength: validation.strengthResult.strength,
+      feedback: validation.strengthResult.feedback,
+      meets_requirements: validation.strengthResult.meets_requirements,
     };
   }
 

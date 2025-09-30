@@ -22,7 +22,7 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { AuthResponseDto } from './dto/auth-response.dto';
 import { PasswordChangeDto, PasswordChangeResponseDto } from './dto/password-change.dto';
-import { PasswordResetRequestDto, PasswordResetDto, PasswordResetResponseDto, PasswordResetTokenValidationDto, PasswordResetTokenResponseDto } from './dto/password-reset.dto';
+import { PasswordResetRequestDto, ResetPasswordDto, PasswordResetResponseDto, PasswordResetTokenValidationDto, PasswordResetTokenResponseDto } from './dto/password-reset.dto';
 import { EmailVerificationDto, EmailVerificationResponseDto, ResendEmailVerificationResponseDto } from './dto/email-verification.dto';
 import { PasswordStrengthCheckDto, PasswordStrengthResponseDto } from './dto/password-strength.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
@@ -234,7 +234,7 @@ export class AuthController {
   @Post('password-reset/confirm')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Reset password using token' })
-  @ApiBody({ type: PasswordResetDto })
+  @ApiBody({ type: ResetPasswordDto })
   @ApiResponse({
     status: 200,
     description: 'Password reset successfully',
@@ -245,7 +245,7 @@ export class AuthController {
     description: 'Invalid token or weak password',
   })
   async resetPassword(
-    @Body() passwordResetDto: PasswordResetDto,
+    @Body() passwordResetDto: ResetPasswordDto,
     @Req() request: Request,
   ): Promise<PasswordResetResponseDto> {
     return this.authSecurityService.resetPassword(passwordResetDto, request);

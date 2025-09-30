@@ -10,7 +10,7 @@ import { BaseRepository } from './base.repository';
 @Injectable()
 export class TransactionRepository extends BaseRepository<Transaction> implements ITransactionRepository {
   constructor(dataSource: DataSource) {
-    super(dataSource, Transaction, 'TransactionRepository');
+    super(dataSource, Transaction);
   }
 
   async findByAccountId(

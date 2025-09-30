@@ -22,7 +22,7 @@ export interface DatabaseTestConfig {
  */
 export class DatabaseTestManager {
   private static instance: DatabaseTestManager;
-  private container: PostgreSqlContainer | null = null;
+  private container: any = null;
   private dataSource: DataSource | null = null;
   private config: DatabaseTestConfig | null = null;
 
@@ -63,20 +63,21 @@ export class DatabaseTestManager {
    */
   private async startContainer(): Promise<void> {
     try {
-      this.container = new PostgreSqlContainer('postgres:15-alpine')
+      const container = await new PostgreSqlContainer('postgres:15-alpine')
         .withDatabase('moneywise_test')
         .withUsername('test_user')
         .withPassword('test_password')
-        .withExposedPorts(5432);
+        .withExposedPorts(5432)
+        .start();
 
-      await this.container.start();
+      this.container = container;
 
       this.config = {
-        host: this.container.getHost(),
-        port: this.container.getMappedPort(5432),
-        username: this.container.getUsername(),
-        password: this.container.getPassword(),
-        database: this.container.getDatabase(),
+        host: container.getHost(),
+        port: container.getMappedPort(5432),
+        username: 'test_user',
+        password: 'test_password',
+        database: 'moneywise_test',
         schema: 'public',
       };
 

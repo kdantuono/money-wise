@@ -10,7 +10,7 @@ import { BaseRepository } from './base.repository';
 @Injectable()
 export class CategoryRepository extends BaseRepository<Category> implements ICategoryRepository {
   constructor(dataSource: DataSource) {
-    super(dataSource, Category, 'CategoryRepository');
+    super(dataSource, Category);
   }
 
   async findBySlug(slug: string): Promise<Category | null> {

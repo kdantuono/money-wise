@@ -377,21 +377,6 @@ export class PasswordSecurityService {
   }
 
   /**
-   * Hash password with secure salt
-   */
-  async hashPassword(password: string): Promise<string> {
-    const saltRounds = 12;
-    return bcrypt.hash(password, saltRounds);
-  }
-
-  /**
-   * Verify password against hash
-   */
-  async verifyPassword(password: string, hash: string): Promise<boolean> {
-    return bcrypt.compare(password, hash);
-  }
-
-  /**
    * Check if password has been used recently by user
    */
   async isPasswordInHistory(_userId: string, _newPassword: string): Promise<boolean> {
@@ -498,11 +483,11 @@ export class PasswordSecurityService {
   ): Promise<void> {
     // Clean up old history beyond the limit
     const historyCount = await this.passwordHistoryRepository.count({ where: { userId } });
-    if (historyCount >= this.policy.historyCount) {
+    if (historyCount >= this.defaultPolicy.historyLength) {
       const oldRecords = await this.passwordHistoryRepository.find({
         where: { userId },
         order: { createdAt: 'ASC' },
-        take: historyCount - this.policy.historyCount + 1,
+        take: historyCount - this.defaultPolicy.historyLength + 1,
       });
 
       await this.passwordHistoryRepository.remove(oldRecords);

@@ -199,4 +199,18 @@ export abstract class BaseRepository<T> implements IBaseRepository<T> {
       throw new Error(`Failed to execute query: ${error.message}`);
     }
   }
+
+  /**
+   * Create a query builder for advanced queries
+   */
+  protected createQueryBuilder(alias?: string) {
+    return this.repository.createQueryBuilder(alias);
+  }
+
+  /**
+   * Get the entity manager for transactions
+   */
+  protected get manager() {
+    return this.repository.manager;
+  }
 }
