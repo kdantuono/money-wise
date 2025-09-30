@@ -194,17 +194,19 @@ describe('Entity Relationships', () => {
 
   describe('Category Tree Structure', () => {
     it('should create parent-child category relationships', async () => {
-      // Arrange
+      // Arrange - Create parent as child of root
       const parentCategory = await factory.categories.build({
         name: 'Expenses',
         type: CategoryType.EXPENSE,
+        slug: 'expenses-test',
       });
 
-      // Act
+      // Act - Create child with explicit parent
       const childCategory = await factory.categories.build({
         name: 'Food',
         type: CategoryType.EXPENSE,
-        parentId: parentCategory.id,
+        slug: 'food-test',
+        parent: parentCategory,
       });
 
       // Assert
@@ -235,11 +237,13 @@ describe('Entity Relationships', () => {
       // Arrange
       const parentCategory = await factory.categories.build({
         name: 'Expenses',
+        slug: 'expenses-cascade-test',
       });
 
       const childCategory = await factory.categories.build({
         name: 'Food',
-        parentId: parentCategory.id,
+        slug: 'food-cascade-test',
+        parent: parentCategory,
       });
 
       // Act
@@ -255,14 +259,19 @@ describe('Entity Relationships', () => {
 
     it('should validate category tree depth', async () => {
       // Create a deep category tree (testing tree constraints)
-      const level1 = await factory.categories.build({ name: 'Level 1' });
+      const level1 = await factory.categories.build({
+        name: 'Level 1',
+        slug: 'level-1-depth-test'
+      });
       const level2 = await factory.categories.build({
         name: 'Level 2',
-        parentId: level1.id
+        slug: 'level-2-depth-test',
+        parent: level1,
       });
       const level3 = await factory.categories.build({
         name: 'Level 3',
-        parentId: level2.id
+        slug: 'level-3-depth-test',
+        parent: level2,
       });
 
       // Verify tree structure
@@ -436,12 +445,17 @@ describe('Entity Relationships', () => {
       expect(transactions.length).toBeGreaterThan(0);
 
       // Verify query uses index (basic check)
+      // Get query and parameters separately for proper EXPLAIN execution
+      const [sql, params] = queryBuilder.getQueryAndParameters();
+
+      // Execute EXPLAIN with proper parameter substitution
       const queryPlan = await dataSource.query(
-        `EXPLAIN (FORMAT JSON) ${queryBuilder.getQuery()}`,
-        Object.values(queryBuilder.getParameters())
+        `EXPLAIN (FORMAT JSON) ${sql}`,
+        params
       );
 
       expect(queryPlan).toBeDefined();
+      expect(Array.isArray(queryPlan)).toBe(true);
     });
   });
 });

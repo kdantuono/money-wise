@@ -89,8 +89,13 @@ class AccountFactoryBuilder implements FactoryBuilder<Account> {
 
 /**
  * Category Factory
+ *
+ * Note: Category uses TypeORM nested-set tree which requires a single root.
+ * This factory manages the root category automatically.
  */
 class CategoryFactoryBuilder implements FactoryBuilder<Category> {
+  private rootCategory: Category | null = null;
+
   constructor(private dataSource: DataSource) {}
 
   create(overrides: Partial<Category> = {}): Category {
@@ -110,14 +115,80 @@ class CategoryFactoryBuilder implements FactoryBuilder<Category> {
     return category;
   }
 
+  /**
+   * Get or create the root category for nested-set tree
+   * TypeORM nested-set requires a single root category
+   */
+  async ensureRootCategory(): Promise<Category> {
+    if (this.rootCategory) {
+      return this.rootCategory;
+    }
+
+    const treeRepo = this.dataSource.getTreeRepository(Category);
+
+    // Check if root already exists in database
+    const existingRoot = await this.dataSource
+      .getRepository(Category)
+      .findOne({ where: { slug: 'test-root' } });
+
+    if (existingRoot) {
+      this.rootCategory = existingRoot;
+      return existingRoot;
+    }
+
+    // Create new root category
+    const root = new Category();
+    root.id = uuidv4();
+    root.name = 'Test Root';
+    root.slug = 'test-root';
+    root.type = CategoryType.EXPENSE;
+    root.status = CategoryStatus.ACTIVE;
+    root.icon = '🌳';
+    root.color = '#000000';
+    root.isSystem = true;
+    root.createdAt = new Date();
+    root.updatedAt = new Date();
+
+    this.rootCategory = await treeRepo.save(root);
+    return this.rootCategory;
+  }
+
   async build(overrides: Partial<Category> = {}): Promise<Category> {
     const category = this.create(overrides);
+    const treeRepo = this.dataSource.getTreeRepository(Category);
+
+    // If parent entity is explicitly provided, use tree repository
+    if (overrides.parent) {
+      category.parent = overrides.parent;
+      return await treeRepo.save(category);
+    }
+
+    // For standalone categories (no parent), just save normally
+    // Nested-set tree will handle them as orphaned nodes
     return await this.dataSource.getRepository(Category).save(category);
   }
 
   async buildMany(count: number, overrides: Partial<Category> = {}): Promise<Category[]> {
     const categories = Array.from({ length: count }, () => this.create(overrides));
+
+    // If parent is specified, use tree repository
+    if (overrides.parent) {
+      const treeRepo = this.dataSource.getTreeRepository(Category);
+      categories.forEach(cat => {
+        cat.parent = overrides.parent!;
+      });
+      return await treeRepo.save(categories);
+    }
+
+    // Otherwise, save as standalone categories
     return await this.dataSource.getRepository(Category).save(categories);
+  }
+
+  /**
+   * Reset the cached root category (useful for test cleanup)
+   */
+  resetRoot(): void {
+    this.rootCategory = null;
   }
 }
 
