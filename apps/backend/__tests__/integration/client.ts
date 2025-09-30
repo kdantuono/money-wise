@@ -3,13 +3,14 @@
 
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { AppModule } from '../src/app.module';
-import * as request from 'supertest';
+import { AppModule } from '@/app.module';
+import request from 'supertest';
+import { SuperTest, Test as SuperTestType } from 'supertest';
 import { createTestModule } from './setup';
 
 export class TestClient {
   private app: INestApplication;
-  private agent: request.SuperTest<request.Test>;
+  private agent: SuperTest<SuperTestType>;
 
   async initialize(): Promise<void> {
     const moduleFixture: TestingModule = await createTestModule({
@@ -28,7 +29,7 @@ export class TestClient {
     }
   }
 
-  get request(): request.SuperTest<request.Test> {
+  get request(): SuperTest<SuperTestType> {
     return this.agent;
   }
 
@@ -37,7 +38,7 @@ export class TestClient {
   }
 
   // Convenience methods for common HTTP operations
-  async get(url: string, token?: string): Promise<request.Response> {
+  async get(url: string, token?: string): Promise<any> {
     const req = this.agent.get(url);
     if (token) {
       req.set('Authorization', `Bearer ${token}`);
@@ -45,7 +46,7 @@ export class TestClient {
     return req;
   }
 
-  async post(url: string, data?: any, token?: string): Promise<request.Response> {
+  async post(url: string, data?: any, token?: string): Promise<any> {
     const req = this.agent.post(url);
     if (token) {
       req.set('Authorization', `Bearer ${token}`);
@@ -56,7 +57,7 @@ export class TestClient {
     return req;
   }
 
-  async put(url: string, data?: any, token?: string): Promise<request.Response> {
+  async put(url: string, data?: any, token?: string): Promise<any> {
     const req = this.agent.put(url);
     if (token) {
       req.set('Authorization', `Bearer ${token}`);
@@ -67,7 +68,7 @@ export class TestClient {
     return req;
   }
 
-  async delete(url: string, token?: string): Promise<request.Response> {
+  async delete(url: string, token?: string): Promise<any> {
     const req = this.agent.delete(url);
     if (token) {
       req.set('Authorization', `Bearer ${token}`);

@@ -1,10 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException, UnauthorizedException } from '@nestjs/common';
 import { PasswordController } from './password.controller';
-import { PasswordSecurityService } from '../services/password-security.service';
-import { PasswordResetService } from '../services/password-reset.service';
-import { RateLimitService } from '../services/rate-limit.service';
-import { User, UserRole, UserStatus } from '../../core/database/entities/user.entity';
+import { PasswordSecurityService } from '@/auth/services/password-security.service';
+import { PasswordResetService } from '@/auth/services/password-reset.service';
+import { RateLimitService } from '@/auth/services/rate-limit.service';
+import { User, UserRole, UserStatus } from '@/core/database/entities/user.entity';
 
 describe('PasswordController', () => {
   let controller: PasswordController;
@@ -121,7 +121,7 @@ describe('PasswordController', () => {
       jest.spyOn(rateLimitService, 'checkRateLimit').mockResolvedValue(mockRateLimit);
       jest.spyOn(passwordSecurityService, 'verifyPassword').mockResolvedValue(true);
       jest.spyOn(passwordSecurityService, 'changePassword').mockResolvedValue(mockChangeResult);
-      jest.spyOn(rateLimitService, 'recordAttempt').mockResolvedValue();
+      jest.spyOn(rateLimitService, 'recordAttempt').mockResolvedValue(undefined);
 
       const result = await controller.changePassword(
         mockUser,
@@ -161,7 +161,7 @@ describe('PasswordController', () => {
       };
 
       jest.spyOn(rateLimitService, 'checkRateLimit').mockResolvedValue(mockRateLimit);
-      jest.spyOn(rateLimitService, 'recordAttempt').mockResolvedValue();
+      jest.spyOn(rateLimitService, 'recordAttempt').mockResolvedValue(undefined);
 
       await expect(
         controller.changePassword(
@@ -181,7 +181,7 @@ describe('PasswordController', () => {
 
       jest.spyOn(rateLimitService, 'checkRateLimit').mockResolvedValue(mockRateLimit);
       jest.spyOn(passwordSecurityService, 'verifyPassword').mockResolvedValue(false);
-      jest.spyOn(rateLimitService, 'recordAttempt').mockResolvedValue();
+      jest.spyOn(rateLimitService, 'recordAttempt').mockResolvedValue(undefined);
 
       await expect(
         controller.changePassword(

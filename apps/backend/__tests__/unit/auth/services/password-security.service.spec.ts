@@ -3,9 +3,9 @@ import { Repository } from 'typeorm';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { PasswordSecurityService, HashingAlgorithm } from './password-security.service';
 import { PasswordStrengthService } from './password-strength.service';
-import { User } from '../../core/database/entities/user.entity';
-import { PasswordHistory } from '../../core/database/entities/password-history.entity';
-import { AuditLog } from '../../core/database/entities/audit-log.entity';
+import { User } from '@/core/database/entities/user.entity';
+import { PasswordHistory } from '@/core/database/entities/password-history.entity';
+import { AuditLog } from '@/core/database/entities/audit-log.entity';
 
 describe('PasswordSecurityService', () => {
   let service: PasswordSecurityService;

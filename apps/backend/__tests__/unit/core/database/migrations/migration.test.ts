@@ -4,8 +4,8 @@
  */
 
 import { DataSource } from 'typeorm';
-import { setupTestDatabase, teardownTestDatabase, DatabaseTestManager } from '../database-test.config';
-import { entities } from '../../entities';
+import { setupTestDatabase, teardownTestDatabase, DatabaseTestManager } from '@/core/database/tests/database-test.config';
+import { entities } from '@/core/database/entities';
 
 describe('Database Migrations', () => {
   let dataSource: DataSource;

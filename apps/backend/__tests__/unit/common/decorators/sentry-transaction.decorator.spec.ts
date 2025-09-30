@@ -2,7 +2,7 @@ import * as Sentry from '@sentry/nestjs';
 import {
   withSentryTransaction,
   SentryTransactionManager,
-} from '../sentry-transaction.decorator';
+} from '@/common/decorators/sentry-transaction.decorator';
 
 // Mock Sentry
 jest.mock('@sentry/nestjs', () => ({

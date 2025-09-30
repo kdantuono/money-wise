@@ -4,10 +4,10 @@
  */
 
 import { DataSource } from 'typeorm';
-import { setupTestDatabase, cleanTestDatabase, teardownTestDatabase, DatabaseTestManager } from '../database-test.config';
-import { TestDataFactory } from '../factories/test-data.factory';
-import { Transaction, TransactionType } from '../../entities/transaction.entity';
-import { Account, AccountType } from '../../entities/account.entity';
+import { setupTestDatabase, cleanTestDatabase, teardownTestDatabase, DatabaseTestManager } from '@/core/database/tests/database-test.config';
+import { TestDataFactory } from '@/core/database/tests/factories/test-data.factory';
+import { Transaction, TransactionType } from '@/core/database/entities/transaction.entity';
+import { Account, AccountType } from '@/core/database/entities/account.entity';
 
 describe('TimescaleDB Time-Series Performance', () => {
   let dataSource: DataSource;

@@ -1,7 +1,7 @@
 import jestOpenAPI from 'jest-openapi'
 import { Test, TestingModule } from '@nestjs/testing'
 import { INestApplication } from '@nestjs/common'
-import { spec } from '../../docs/openapi.spec'
+import { spec } from '@/docs/openapi.spec'
 
 // Load OpenAPI spec for contract testing
 jestOpenAPI(spec)

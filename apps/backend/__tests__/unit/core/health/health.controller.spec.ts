@@ -4,7 +4,7 @@
  */
 
 import { Test, TestingModule } from '@nestjs/testing';
-import { HealthController } from './health.controller';
+import { HealthController } from '@/core/health/health.controller';
 import { ConfigService } from '@nestjs/config';
 
 describe('HealthController', () => {

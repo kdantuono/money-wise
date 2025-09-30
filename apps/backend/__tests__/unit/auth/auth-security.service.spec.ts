@@ -9,17 +9,17 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { Request } from 'express';
-import { AuthSecurityService } from './auth-security.service';
-import { PasswordSecurityService } from './services/password-security.service';
-import { AccountLockoutService } from './services/account-lockout.service';
-import { EmailVerificationService } from './services/email-verification.service';
-import { PasswordResetService } from './services/password-reset.service';
-import { AuditLogService } from './services/audit-log.service';
+import { AuthSecurityService } from '@/auth/auth-security.service';
+import { PasswordSecurityService } from '@/auth/services/password-security.service';
+import { AccountLockoutService } from '@/auth/services/account-lockout.service';
+import { EmailVerificationService } from '@/auth/services/email-verification.service';
+import { PasswordResetService } from '@/auth/services/password-reset.service';
+import { AuditLogService } from '@/auth/services/audit-log.service';
 import {
   User,
   UserStatus,
   UserRole,
-} from '../core/database/entities/user.entity';
+} from '@/core/database/entities/user.entity';
 
 describe('AuthSecurityService', () => {
   let service: AuthSecurityService;

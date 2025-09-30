@@ -6,10 +6,10 @@
 import { DataSource } from 'typeorm';
 import { setupTestDatabase, cleanTestDatabase, teardownTestDatabase } from '../database-test.config';
 import { TestDataFactory } from '../factories/test-data.factory';
-import { User, UserStatus } from '../../entities/user.entity';
-import { Account, AccountType } from '../../entities/account.entity';
-import { Category, CategoryType } from '../../entities/category.entity';
-import { Transaction, TransactionType } from '../../entities/transaction.entity';
+import { User, UserStatus } from '@/core/database/entities/user.entity';
+import { Account, AccountType } from '@/core/database/entities/account.entity';
+import { Category, CategoryType } from '@/core/database/entities/category.entity';
+import { Transaction, TransactionType } from '@/core/database/entities/transaction.entity';
 
 describe('Entity Relationships', () => {
   let dataSource: DataSource;

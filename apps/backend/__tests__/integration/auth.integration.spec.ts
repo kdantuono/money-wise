@@ -7,15 +7,15 @@ import { ConfigModule } from '@nestjs/config';
 import request from 'supertest';
 import * as bcrypt from 'bcryptjs';
 
-import { AuthModule } from '../auth.module';
-import { RateLimitGuard } from '../guards/rate-limit.guard';
+import { AuthModule } from '@/auth/auth.module';
+import { RateLimitGuard } from '@/auth/guards/rate-limit.guard';
 import {
   User,
   UserStatus,
   UserRole,
-} from '../../core/database/entities/user.entity';
-import { RegisterDto } from '../dto/register.dto';
-import { LoginDto } from '../dto/login.dto';
+} from '@/core/database/entities/user.entity';
+import { RegisterDto } from '@/auth/dto/register.dto';
+import { LoginDto } from '@/auth/dto/login.dto';
 
 // Mock bcrypt
 jest.mock('bcryptjs');

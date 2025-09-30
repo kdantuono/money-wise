@@ -4,12 +4,12 @@
  */
 
 import { DataSource } from 'typeorm';
-import { setupTestDatabase, cleanTestDatabase, teardownTestDatabase } from '../database-test.config';
-import { TestDataFactory } from '../factories/test-data.factory';
-import { User } from '../../entities/user.entity';
-import { Account, AccountType } from '../../entities/account.entity';
-import { Transaction, TransactionType } from '../../entities/transaction.entity';
-import { Category } from '../../entities/category.entity';
+import { setupTestDatabase, cleanTestDatabase, teardownTestDatabase } from '@/core/database/tests/database-test.config';
+import { TestDataFactory } from '@/core/database/tests/factories/test-data.factory';
+import { User } from '@/core/database/entities/user.entity';
+import { Account, AccountType } from '@/core/database/entities/account.entity';
+import { Transaction, TransactionType } from '@/core/database/entities/transaction.entity';
+import { Category } from '@/core/database/entities/category.entity';
 
 describe('Large Dataset Performance Tests', () => {
   let dataSource: DataSource;
@@ -391,7 +391,8 @@ describe('Large Dataset Performance Tests', () => {
 
     it('should manage connection pool efficiently under load', async () => {
       // Test connection pool behavior
-      const connectionPool = dataSource.driver.master;
+      // Note: driver.master access varies by TypeORM version, using query instead
+      const testConnection = dataSource;
 
       console.log('Testing connection pool under load...');
 

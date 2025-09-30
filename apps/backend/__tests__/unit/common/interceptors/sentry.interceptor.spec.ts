@@ -1,4 +1,4 @@
-import { SentryInterceptor } from '../sentry.interceptor';
+import { SentryInterceptor } from '@/common/interceptors/sentry.interceptor';
 
 describe('SentryInterceptor', () => {
   let interceptor: SentryInterceptor;

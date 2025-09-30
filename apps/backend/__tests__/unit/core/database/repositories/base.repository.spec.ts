@@ -6,7 +6,7 @@
 import { Test } from '@nestjs/testing';
 import { DataSource, Repository, FindManyOptions, FindOneOptions, FindOptionsWhere } from 'typeorm';
 import { Logger } from '@nestjs/common';
-import { BaseRepository } from '../impl/base.repository';
+import { BaseRepository } from '@/core/database/repositories/impl/base.repository';
 
 // Mock entity for testing
 class TestEntity {

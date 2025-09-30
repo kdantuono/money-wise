@@ -3,9 +3,9 @@ import { JwtService } from '@nestjs/jwt';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
-import { AuthService } from './auth.service';
-import { User, UserStatus, UserRole } from '../core/database/entities/user.entity';
-import { UserFactory } from '../../tests/factories/user.factory';
+import { AuthService } from '@/auth/auth.service';
+import { User, UserStatus, UserRole } from '@/core/database/entities/user.entity';
+import { UserFactory } from '@/core/database/tests/factories/test-data.factory';
 import { UnauthorizedException, ConflictException } from '@nestjs/common';
 
 // Mock bcrypt

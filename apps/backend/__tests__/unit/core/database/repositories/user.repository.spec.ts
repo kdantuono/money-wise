@@ -6,8 +6,8 @@
 import { Test } from '@nestjs/testing';
 import { DataSource, Repository, SelectQueryBuilder } from 'typeorm';
 import { Logger } from '@nestjs/common';
-import { UserRepository } from '../impl/user.repository';
-import { User, UserRole, UserStatus } from '../../entities';
+import { UserRepository } from '@/core/database/repositories/impl/user.repository';
+import { User, UserRole, UserStatus } from '@/core/database/entities';
 
 describe('UserRepository', () => {
   let userRepository: UserRepository;

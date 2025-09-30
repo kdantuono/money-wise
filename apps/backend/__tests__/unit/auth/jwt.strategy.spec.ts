@@ -1,12 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { UnauthorizedException } from '@nestjs/common';
-import { JwtStrategy } from '../strategies/jwt.strategy';
-import { AuthService, JwtPayload } from '../auth.service';
+import { JwtStrategy } from '@/auth/strategies/jwt.strategy';
+import { AuthService, JwtPayload } from '@/auth/auth.service';
 import {
   User,
   UserStatus,
   UserRole,
-} from '../../core/database/entities/user.entity';
+} from '@/core/database/entities/user.entity';
 
 describe('JwtStrategy', () => {
   let strategy: JwtStrategy;

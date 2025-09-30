@@ -1,18 +1,18 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConflictException, UnauthorizedException } from '@nestjs/common';
 import { Request } from 'express';
-import { AuthController } from '../auth.controller';
-import { AuthService } from '../auth.service';
-import { AuthSecurityService } from '../auth-security.service';
-import { RateLimitGuard } from '../guards/rate-limit.guard';
-import { RegisterDto } from '../dto/register.dto';
-import { LoginDto } from '../dto/login.dto';
-import { AuthResponseDto } from '../dto/auth-response.dto';
+import { AuthController } from '@/auth/auth.controller';
+import { AuthService } from '@/auth/auth.service';
+import { AuthSecurityService } from '@/auth/auth-security.service';
+import { RateLimitGuard } from '@/auth/guards/rate-limit.guard';
+import { RegisterDto } from '@/auth/dto/register.dto';
+import { LoginDto } from '@/auth/dto/login.dto';
+import { AuthResponseDto } from '@/auth/dto/auth-response.dto';
 import {
   User,
   UserStatus,
   UserRole,
-} from '../../core/database/entities/user.entity';
+} from '@/core/database/entities/user.entity';
 
 describe('AuthController', () => {
   let controller: AuthController;
