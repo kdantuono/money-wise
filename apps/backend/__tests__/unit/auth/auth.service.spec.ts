@@ -5,7 +5,10 @@ import { Repository } from 'typeorm';
 import { ConflictException, UnauthorizedException } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
 import { AuthService } from '@/auth/auth.service';
+import { PasswordSecurityService } from '@/auth/services/password-security.service';
+import { RateLimitService } from '@/auth/services/rate-limit.service';
 import { User, UserStatus, UserRole } from '@/core/database/entities/user.entity';
+import { AuditLog } from '@/core/database/entities/audit-log.entity';
 import { RegisterDto } from '@/auth/dto/register.dto';
 import { LoginDto } from '@/auth/dto/login.dto';
 
@@ -52,10 +55,31 @@ describe('AuthService', () => {
           },
         },
         {
+          provide: getRepositoryToken(AuditLog),
+          useValue: {
+            create: jest.fn(),
+            save: jest.fn(),
+          },
+        },
+        {
           provide: JwtService,
           useValue: {
             sign: jest.fn(),
             verify: jest.fn(),
+          },
+        },
+        {
+          provide: PasswordSecurityService,
+          useValue: {
+            validatePasswordStrength: jest.fn().mockResolvedValue({ isValid: true }),
+            hashPassword: jest.fn(),
+          },
+        },
+        {
+          provide: RateLimitService,
+          useValue: {
+            checkLimit: jest.fn().mockResolvedValue(true),
+            increment: jest.fn(),
           },
         },
       ],
