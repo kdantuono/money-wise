@@ -35,7 +35,7 @@ describe('JwtAuthGuard', () => {
       getArgByIndex: jest.fn(),
       switchToRpc: jest.fn(),
       switchToWs: jest.fn(),
-    } as jest.Mocked<ExecutionContext>;
+    } as unknown as jest.Mocked<ExecutionContext>;
   });
 
   afterEach(() => {
