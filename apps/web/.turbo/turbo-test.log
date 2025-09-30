@@ -4,13 +4,230 @@
 
 [33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
 
- RUN  v1.6.1 /home/nemesi/dev/money-wise/apps/web
+[7m[1m[36m RUN [39m[22m[27m [36mv1.6.1[39m [90m/home/nemesi/dev/money-wise/apps/web[39m
 
- ✓ |@money-wise/web| __tests__/pages/home.test.tsx  (4 tests) 245ms
- ✓ |@money-wise/web| __tests__/components/ui/button.test.tsx  (9 tests) 516ms
+[?25l [90m·[39m [33m|@money-wise/web|[39m [2m__tests__/api/[22mauth[2m.test.tsx[22m[2m (4)[22m
+[?25l[?25l[?25l[?25l[?25l[2K[1A[2K[G [33m❯[39m [33m|@money-wise/web|[39m [2m__tests__/api/[22mauth[2m.test.tsx[22m[2m (4)[22m
+   [33m❯[39m Authentication API[2m (4)[22m
+     [31m×[39m should login with valid credentials
+     [32m✓[39m should reject invalid credentials
+     [31m×[39m should register a new user
+     [32m✓[39m should handle server errors
+[?25l[?25l[?25l[?25l[?25l[?25l[?25l[?25l[?25l[?25l[?25l[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[G [33m❯[39m [33m|@money-wise/web|[39m [2m__tests__/api/[22mauth[2m.test.tsx[22m[2m (4)[22m
+   [33m❯[39m Authentication API[2m (4)[22m
+     [31m×[39m should login with valid credentials
+     [32m✓[39m should reject invalid credentials
+     [31m×[39m should register a new user
+     [32m✓[39m should handle server errors
+ [90m·[39m [33m|@money-wise/web|[39m [2m__tests__/pages/[22mhome[2m.test.tsx[22m[2m (4)[22m
+[?25l[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[G [33m❯[39m [33m|@money-wise/web|[39m [2m__tests__/api/[22mauth[2m.test.tsx[22m[2m (4)[22m
+   [33m❯[39m Authentication API[2m (4)[22m
+     [31m×[39m should login with valid credentials
+     [32m✓[39m should reject invalid credentials
+     [31m×[39m should register a new user
+     [32m✓[39m should handle server errors
+ [90m·[39m [33m|@money-wise/web|[39m [2m__tests__/pages/[22mhome[2m.test.tsx[22m[2m (4)[22m
+ [90m·[39m [33m|@money-wise/web|[39m [2m__tests__/components/ui/[22mbutton[2m.test.tsx[22m[2m (9)[22m
+[?25l[?25l[?25l[?25l[?25l[?25l[?25l[?25l[?25l[?25l[?25l[?25l[?25l[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[G [33m❯[39m [33m|@money-wise/web|[39m [2m__tests__/api/[22mauth[2m.test.tsx[22m[2m (4)[22m
+   [33m❯[39m Authentication API[2m (4)[22m
+     [31m×[39m should login with valid credentials
+     [32m✓[39m should reject invalid credentials
+     [31m×[39m should register a new user
+     [32m✓[39m should handle server errors
+ [32m✓[39m [33m|@money-wise/web|[39m [2m__tests__/pages/[22mhome[2m.test.tsx[22m[2m (4)[22m
+ [90m·[39m [33m|@money-wise/web|[39m [2m__tests__/components/ui/[22mbutton[2m.test.tsx[22m[2m (9)[22m
+[?25l[?25l[?25l[?25l[?25l[?25l[?25l[?25l[?25l[?25l[?25l[?25l[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[G [33m❯[39m [33m|@money-wise/web|[39m [2m__tests__/api/[22mauth[2m.test.tsx[22m[2m (4)[22m
+   [33m❯[39m Authentication API[2m (4)[22m
+     [31m×[39m should login with valid credentials
+     [32m✓[39m should reject invalid credentials
+     [31m×[39m should register a new user
+     [32m✓[39m should handle server errors
+ [32m✓[39m [33m|@money-wise/web|[39m [2m__tests__/pages/[22mhome[2m.test.tsx[22m[2m (4)[22m
+ [33m❯[39m [33m|@money-wise/web|[39m [2m__tests__/components/ui/[22mbutton[2m.test.tsx[22m[2m (9)[22m
+   [33m❯[39m Button Component[2m (9)[22m
+     [32m✓[39m renders with default props
+     [32m✓[39m applies default variant and size classes
+     [32m✓[39m renders different variants correctly
+     [32m✓[39m renders different sizes correctly
+     [33m⠙[39m handles click events
+     [90m·[39m is disabled when disabled prop is true
+     [90m·[39m forwards ref correctly
+     [90m·[39m applies custom className
+     [90m·[39m spreads additional props
+[?25l[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[G [33m❯[39m [33m|@money-wise/web|[39m [2m__tests__/api/[22mauth[2m.test.tsx[22m[2m (4)[22m
+   [33m❯[39m Authentication API[2m (4)[22m
+     [31m×[39m should login with valid credentials
+     [32m✓[39m should reject invalid credentials
+     [31m×[39m should register a new user
+     [32m✓[39m should handle server errors
+ [32m✓[39m [33m|@money-wise/web|[39m [2m__tests__/pages/[22mhome[2m.test.tsx[22m[2m (4)[22m
+ [33m❯[39m [33m|@money-wise/web|[39m [2m__tests__/components/ui/[22mbutton[2m.test.tsx[22m[2m (9)[22m
+   [33m❯[39m Button Component[2m (9)[22m
+     [32m✓[39m renders with default props
+     [32m✓[39m applies default variant and size classes
+     [32m✓[39m renders different variants correctly
+     [32m✓[39m renders different sizes correctly
+     [33m⠹[39m handles click events
+     [90m·[39m is disabled when disabled prop is true
+     [90m·[39m forwards ref correctly
+     [90m·[39m applies custom className
+     [90m·[39m spreads additional props
+[?25l[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[G [33m❯[39m [33m|@money-wise/web|[39m [2m__tests__/api/[22mauth[2m.test.tsx[22m[2m (4)[22m
+   [33m❯[39m Authentication API[2m (4)[22m
+     [31m×[39m should login with valid credentials
+     [32m✓[39m should reject invalid credentials
+     [31m×[39m should register a new user
+     [32m✓[39m should handle server errors
+ [32m✓[39m [33m|@money-wise/web|[39m [2m__tests__/pages/[22mhome[2m.test.tsx[22m[2m (4)[22m
+ [33m❯[39m [33m|@money-wise/web|[39m [2m__tests__/components/ui/[22mbutton[2m.test.tsx[22m[2m (9)[22m
+   [33m❯[39m Button Component[2m (9)[22m
+     [32m✓[39m renders with default props
+     [32m✓[39m applies default variant and size classes
+     [32m✓[39m renders different variants correctly
+     [32m✓[39m renders different sizes correctly
+     [33m⠸[39m handles click events
+     [90m·[39m is disabled when disabled prop is true
+     [90m·[39m forwards ref correctly
+     [90m·[39m applies custom className
+     [90m·[39m spreads additional props
+[?25l[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[G [33m❯[39m [33m|@money-wise/web|[39m [2m__tests__/api/[22mauth[2m.test.tsx[22m[2m (4)[22m
+   [33m❯[39m Authentication API[2m (4)[22m
+     [31m×[39m should login with valid credentials
+     [32m✓[39m should reject invalid credentials
+     [31m×[39m should register a new user
+     [32m✓[39m should handle server errors
+ [32m✓[39m [33m|@money-wise/web|[39m [2m__tests__/pages/[22mhome[2m.test.tsx[22m[2m (4)[22m
+ [33m❯[39m [33m|@money-wise/web|[39m [2m__tests__/components/ui/[22mbutton[2m.test.tsx[22m[2m (9)[22m
+   [33m❯[39m Button Component[2m (9)[22m
+     [32m✓[39m renders with default props
+     [32m✓[39m applies default variant and size classes
+     [32m✓[39m renders different variants correctly
+     [32m✓[39m renders different sizes correctly
+     [33m⠼[39m handles click events
+     [90m·[39m is disabled when disabled prop is true
+     [90m·[39m forwards ref correctly
+     [90m·[39m applies custom className
+     [90m·[39m spreads additional props
+[?25l[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[G [33m❯[39m [33m|@money-wise/web|[39m [2m__tests__/api/[22mauth[2m.test.tsx[22m[2m (4)[22m
+   [33m❯[39m Authentication API[2m (4)[22m
+     [31m×[39m should login with valid credentials
+     [32m✓[39m should reject invalid credentials
+     [31m×[39m should register a new user
+     [32m✓[39m should handle server errors
+ [32m✓[39m [33m|@money-wise/web|[39m [2m__tests__/pages/[22mhome[2m.test.tsx[22m[2m (4)[22m
+ [33m❯[39m [33m|@money-wise/web|[39m [2m__tests__/components/ui/[22mbutton[2m.test.tsx[22m[2m (9)[22m
+   [33m❯[39m Button Component[2m (9)[22m
+     [32m✓[39m renders with default props
+     [32m✓[39m applies default variant and size classes
+     [32m✓[39m renders different variants correctly
+     [32m✓[39m renders different sizes correctly
+     [32m✓[39m handles click events
+     [33m⠙[39m is disabled when disabled prop is true
+     [90m·[39m forwards ref correctly
+     [90m·[39m applies custom className
+     [90m·[39m spreads additional props
+[?25l[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[G [33m❯[39m [33m|@money-wise/web|[39m [2m__tests__/api/[22mauth[2m.test.tsx[22m[2m (4)[22m
+   [33m❯[39m Authentication API[2m (4)[22m
+     [31m×[39m should login with valid credentials
+     [32m✓[39m should reject invalid credentials
+     [31m×[39m should register a new user
+     [32m✓[39m should handle server errors
+ [32m✓[39m [33m|@money-wise/web|[39m [2m__tests__/pages/[22mhome[2m.test.tsx[22m[2m (4)[22m
+ [33m❯[39m [33m|@money-wise/web|[39m [2m__tests__/components/ui/[22mbutton[2m.test.tsx[22m[2m (9)[22m
+   [33m❯[39m Button Component[2m (9)[22m
+     [32m✓[39m renders with default props
+     [32m✓[39m applies default variant and size classes
+     [32m✓[39m renders different variants correctly
+     [32m✓[39m renders different sizes correctly
+     [32m✓[39m handles click events
+     [33m⠹[39m is disabled when disabled prop is true
+     [90m·[39m forwards ref correctly
+     [90m·[39m applies custom className
+     [90m·[39m spreads additional props
+[?25l[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[G [33m❯[39m [33m|@money-wise/web|[39m [2m__tests__/api/[22mauth[2m.test.tsx[22m[2m (4)[22m
+   [33m❯[39m Authentication API[2m (4)[22m
+     [31m×[39m should login with valid credentials
+     [32m✓[39m should reject invalid credentials
+     [31m×[39m should register a new user
+     [32m✓[39m should handle server errors
+ [32m✓[39m [33m|@money-wise/web|[39m [2m__tests__/pages/[22mhome[2m.test.tsx[22m[2m (4)[22m
+ [32m✓[39m [33m|@money-wise/web|[39m [2m__tests__/components/ui/[22mbutton[2m.test.tsx[22m[2m (9)[22m[33m 509[2mms[22m[39m
+[?25l[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[G [33m❯[39m [33m|@money-wise/web|[39m [2m__tests__/api/[22mauth[2m.test.tsx[22m[2m (4)[22m
+   [33m❯[39m Authentication API[2m (4)[22m
+     [31m×[39m should login with valid credentials
+     [32m✓[39m should reject invalid credentials
+     [31m×[39m should register a new user
+     [32m✓[39m should handle server errors
+ [32m✓[39m [33m|@money-wise/web|[39m [2m__tests__/pages/[22mhome[2m.test.tsx[22m[2m (4)[22m
+ [32m✓[39m [33m|@money-wise/web|[39m [2m__tests__/components/ui/[22mbutton[2m.test.tsx[22m[2m (9)[22m[33m 509[2mms[22m[39m
 
- Test Files  2 passed (2)
-      Tests  13 passed (13)
-   Start at  20:33:48
-   Duration  2.99s (transform 114ms, setup 335ms, collect 939ms, tests 761ms, environment 1.79s, prepare 1.04s)
+[31m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 2 [27m[22m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[39m
 
+[31m[1m[7m FAIL [27m[22m[39m [33m|@money-wise/web|[39m __tests__/api/auth.test.tsx[2m > [22mAuthentication API[2m > [22mshould login with valid credentials
+[31m[1mAssertionError[22m: expected { id: '1', …(10) } to deeply equal { id: 1, …(2) }[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[2m  Object {[22m
+[31m+   "createdAt": "2024-01-01T00:00:00Z",[39m
+[2m    "email": "test@example.com",[22m
+[32m-   "id": 1,[39m
+[32m-   "name": "Test User",[39m
+[31m+   "firstName": "Test",[39m
+[31m+   "fullName": "Test User",[39m
+[31m+   "id": "1",[39m
+[31m+   "isActive": true,[39m
+[31m+   "isEmailVerified": true,[39m
+[31m+   "lastName": "User",[39m
+[31m+   "role": "user",[39m
+[31m+   "status": "active",[39m
+[31m+   "updatedAt": "2024-01-01T00:00:00Z",[39m
+[2m  }[22m
+
+[36m [2m❯[22m __tests__/api/auth.test.tsx:[2m21:23[22m[39m
+    [90m 19| [39m
+    [90m 20| [39m    [34mexpect[39m(response[33m.[39mstatus)[33m.[39m[34mtoBe[39m([34m200[39m)[33m;[39m
+    [90m 21| [39m    [34mexpect[39m(data[33m.[39muser)[33m.[39m[34mtoEqual[39m({
+    [90m   | [39m                      [31m^[39m
+    [90m 22| [39m      id[33m:[39m [34m1[39m[33m,[39m
+    [90m 23| [39m      email[33m:[39m [32m'test@example.com'[39m[33m,[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m [33m|@money-wise/web|[39m __tests__/api/auth.test.tsx[2m > [22mAuthentication API[2m > [22mshould register a new user
+[31m[1mAssertionError[22m: expected { id: '2', …(8) } to deeply equal { id: 2, …(2) }[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[2m  Object {[22m
+[31m+   "createdAt": "2025-09-30T16:04:54.530Z",[39m
+[2m    "email": "newuser@example.com",[22m
+[32m-   "id": 2,[39m
+[32m-   "name": "New User",[39m
+[31m+   "fullName": "undefined undefined",[39m
+[31m+   "id": "2",[39m
+[31m+   "isActive": true,[39m
+[31m+   "isEmailVerified": false,[39m
+[31m+   "role": "user",[39m
+[31m+   "status": "active",[39m
+[31m+   "updatedAt": "2025-09-30T16:04:54.530Z",[39m
+[2m  }[22m
+
+[36m [2m❯[22m __tests__/api/auth.test.tsx:[2m63:23[22m[39m
+    [90m 61| [39m
+    [90m 62| [39m    [34mexpect[39m(response[33m.[39mstatus)[33m.[39m[34mtoBe[39m([34m200[39m)[33m;[39m
+    [90m 63| [39m    [34mexpect[39m(data[33m.[39muser)[33m.[39m[34mtoEqual[39m({
+    [90m   | [39m                      [31m^[39m
+    [90m 64| [39m      id[33m:[39m [34m2[39m[33m,[39m
+    [90m 65| [39m      email[33m:[39m [32m'newuser@example.com'[39m[33m,[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m2 passed[39m[22m[90m (3)[39m
+[2m      Tests [22m [1m[31m2 failed[39m[22m[2m | [22m[1m[32m15 passed[39m[22m[90m (17)[39m
+[2m   Start at [22m 18:04:52
+[2m   Duration [22m 2.70s[2m (transform 149ms, setup 342ms, collect 1.05s, tests 815ms, environment 2.47s, prepare 1.53s)[22m
+
+[?25h[?25h[41m[30m ELIFECYCLE [39m[49m [31mTest failed. See above for more details.[39m

@@ -380,7 +380,7 @@ export class DatabaseTestSuite {
    */
   private async testRelationshipIntegrity(relationship: string): Promise<void> {
     switch (relationship) {
-      case 'User_Account_OneToMany':
+      case 'User_Account_OneToMany': {
         const user = await this.factory.users.build();
         await this.factory.accounts.buildMany(3, { userId: user.id });
         const userWithAccounts = await this.dataSource.getRepository('User').findOne({
@@ -391,8 +391,9 @@ export class DatabaseTestSuite {
           throw new Error('User-Account relationship test failed');
         }
         break;
+      }
 
-      case 'Account_Transaction_OneToMany':
+      case 'Account_Transaction_OneToMany': {
         const accUser = await this.factory.users.build();
         const account = await this.factory.accounts.build({ userId: accUser.id });
         await this.factory.transactions.buildMany(5, { accountId: account.id });
@@ -404,8 +405,9 @@ export class DatabaseTestSuite {
           throw new Error('Account-Transaction relationship test failed');
         }
         break;
+      }
 
-      case 'Category_Transaction_OneToMany':
+      case 'Category_Transaction_OneToMany': {
         const catUser = await this.factory.users.build();
         const catAccount = await this.factory.accounts.build({ userId: catUser.id });
         const category = await this.factory.categories.build();
@@ -418,6 +420,7 @@ export class DatabaseTestSuite {
           throw new Error('Category-Transaction relationship test failed');
         }
         break;
+      }
 
       // Add more relationship tests as needed
     }
@@ -428,12 +431,13 @@ export class DatabaseTestSuite {
    */
   private async runPerformanceTest(testName: string, size: number): Promise<void> {
     switch (testName) {
-      case 'Bulk Insert':
+      case 'Bulk Insert': {
         const users = await this.factory.users.buildMany(size);
         if (users.length !== size) throw new Error('Bulk insert test failed');
         break;
+      }
 
-      case 'Complex Query':
+      case 'Complex Query': {
         // Run a complex query with the existing data
         const result = await this.dataSource.query(`
           SELECT COUNT(*) FROM users u
@@ -443,6 +447,7 @@ export class DatabaseTestSuite {
         `);
         if (!result || result.length === 0) throw new Error('Complex query test failed');
         break;
+      }
 
       // Add more performance tests as needed
     }

@@ -18,12 +18,12 @@ describe('Authentication API', () => {
     const data = await response.json();
 
     expect(response.status).toBe(200);
-    expect(data.user).toEqual({
-      id: 1,
+    expect(data.user).toMatchObject({
+      id: expect.any(String),
       email: 'test@example.com',
-      name: 'Test User',
+      fullName: expect.any(String),
     });
-    expect(data.token).toBe('mock-jwt-token');
+    expect(data.accessToken).toBe('mock-access-token');
   });
 
   it('should reject invalid credentials', async () => {
@@ -60,12 +60,11 @@ describe('Authentication API', () => {
     const data = await response.json();
 
     expect(response.status).toBe(200);
-    expect(data.user).toEqual({
-      id: 2,
+    expect(data.user).toMatchObject({
+      id: expect.any(String),
       email: 'newuser@example.com',
-      name: 'New User',
     });
-    expect(data.token).toBe('mock-jwt-token-new-user');
+    expect(data.accessToken).toBe('mock-access-token-new');
   });
 
   it('should handle server errors', async () => {

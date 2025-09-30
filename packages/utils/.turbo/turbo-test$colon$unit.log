@@ -1,6 +1,5 @@
 
-> @money-wise/utils@0.1.0 test:unit /home/runner/work/money-wise/money-wise/packages/utils
+> @money-wise/utils@0.1.0 test:unit /home/nemesi/dev/money-wise/packages/utils
 > jest --passWithNoTests
 
-[999D[K[1mNo tests found, exiting with code 0[22m
-[999D[K
+No tests found, exiting with code 0

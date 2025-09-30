@@ -48,9 +48,10 @@ export abstract class BaseRepository<T> implements IBaseRepository<T> {
     }
   }
 
-  async findById(id: string): Promise<T | null> {
+  async findById(id: string, options?: FindOneOptions<T>): Promise<T | null> {
     try {
       const entity = await this.repository.findOne({
+        ...options,
         where: { id } as any,
       });
       return entity || null;
@@ -78,6 +79,17 @@ export abstract class BaseRepository<T> implements IBaseRepository<T> {
     } catch (error) {
       this.logger.error(`Failed to find entities: ${error.message}`, error.stack);
       throw new Error(`Failed to find entities: ${error.message}`);
+    }
+  }
+
+  async findAndCount(options?: FindManyOptions<T>): Promise<[T[], number]> {
+    try {
+      const result = await this.repository.findAndCount(options);
+      this.logger.debug(`Found ${result[0].length} entities, total ${result[1]}`);
+      return result;
+    } catch (error) {
+      this.logger.error(`Failed to find and count entities: ${error.message}`, error.stack);
+      throw new Error(`Failed to find and count entities: ${error.message}`);
     }
   }
 
@@ -121,6 +133,18 @@ export abstract class BaseRepository<T> implements IBaseRepository<T> {
     }
   }
 
+  async softDelete(id: string): Promise<boolean> {
+    try {
+      const result = await this.repository.softDelete(id);
+      const deleted = !!(result.affected && result.affected > 0);
+      this.logger.debug(`Soft deleted entity with ID: ${id} - Success: ${deleted}`);
+      return deleted;
+    } catch (error) {
+      this.logger.error(`Failed to soft delete entity with ID ${id}: ${error.message}`, error.stack);
+      throw new Error(`Failed to soft delete entity: ${error.message}`);
+    }
+  }
+
   async delete(id: string): Promise<boolean> {
     try {
       const result = await this.repository.delete(id);
@@ -130,6 +154,17 @@ export abstract class BaseRepository<T> implements IBaseRepository<T> {
     } catch (error) {
       this.logger.error(`Failed to delete entity with ID ${id}: ${error.message}`, error.stack);
       throw new Error(`Failed to delete entity: ${error.message}`);
+    }
+  }
+
+  async deleteMany(where: FindOptionsWhere<T>) {
+    try {
+      const result = await this.repository.delete(where);
+      this.logger.debug(`Deleted ${result.affected || 0} entities`);
+      return result;
+    } catch (error) {
+      this.logger.error(`Failed to delete many entities: ${error.message}`, error.stack);
+      throw new Error(`Failed to delete many entities: ${error.message}`);
     }
   }
 
@@ -145,9 +180,21 @@ export abstract class BaseRepository<T> implements IBaseRepository<T> {
     }
   }
 
-  async count(criteria?: FindOptionsWhere<T>): Promise<number> {
+  async restore(id: string): Promise<boolean> {
     try {
-      const count = await this.repository.count({ where: criteria });
+      const result = await this.repository.restore(id);
+      const restored = !!(result.affected && result.affected > 0);
+      this.logger.debug(`Restored entity with ID: ${id} - Success: ${restored}`);
+      return restored;
+    } catch (error) {
+      this.logger.error(`Failed to restore entity with ID ${id}: ${error.message}`, error.stack);
+      throw new Error(`Failed to restore entity: ${error.message}`);
+    }
+  }
+
+  async count(options?: FindManyOptions<T>): Promise<number> {
+    try {
+      const count = await this.repository.count(options);
       return count;
     } catch (error) {
       this.logger.error(`Failed to count entities: ${error.message}`, error.stack);
@@ -155,13 +202,35 @@ export abstract class BaseRepository<T> implements IBaseRepository<T> {
     }
   }
 
-  async exists(criteria: FindOptionsWhere<T>): Promise<boolean> {
+  async exists(id: string): Promise<boolean> {
+    try {
+      const count = await this.repository.count({ where: { id } as any });
+      return count > 0;
+    } catch (error) {
+      this.logger.error(`Failed to check entity existence: ${error.message}`, error.stack);
+      throw new Error(`Failed to check entity existence: ${error.message}`);
+    }
+  }
+
+  async existsBy(criteria: FindOptionsWhere<T>): Promise<boolean> {
     try {
       const count = await this.repository.count({ where: criteria });
       return count > 0;
     } catch (error) {
       this.logger.error(`Failed to check entity existence: ${error.message}`, error.stack);
       throw new Error(`Failed to check entity existence: ${error.message}`);
+    }
+  }
+
+  async createBulk(entitiesData: Partial<T>[]): Promise<T[]> {
+    try {
+      const createdEntities = this.repository.create(entitiesData as any[]);
+      const savedEntities = await this.repository.save(createdEntities);
+      this.logger.debug(`Bulk created ${savedEntities.length} entities`);
+      return savedEntities;
+    } catch (error) {
+      this.logger.error(`Failed to bulk create entities: ${error.message}`, error.stack);
+      throw new Error(`Failed to bulk create entities: ${error.message}`);
     }
   }
 
@@ -174,6 +243,17 @@ export abstract class BaseRepository<T> implements IBaseRepository<T> {
     } catch (error) {
       this.logger.error(`Failed to bulk insert entities: ${error.message}`, error.stack);
       throw new Error(`Failed to bulk insert entities: ${error.message}`);
+    }
+  }
+
+  async updateMany(where: FindOptionsWhere<T>, updateData: Partial<T>) {
+    try {
+      const result = await this.repository.update(where, updateData as any);
+      this.logger.debug(`Updated ${result.affected || 0} entities`);
+      return result;
+    } catch (error) {
+      this.logger.error(`Failed to update many entities: ${error.message}`, error.stack);
+      throw new Error(`Failed to update many entities: ${error.message}`);
     }
   }
 

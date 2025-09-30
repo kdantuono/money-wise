@@ -434,14 +434,17 @@ export class AuthSecurityService {
     passwordResetDto: ResetPasswordDto,
     request: Request
   ): Promise<PasswordResetResponseDto> {
-    const { token, newPassword } = passwordResetDto;
+    const { token, newPassword, confirmPassword } = passwordResetDto;
 
     try {
       const result = await this.passwordResetService.resetPassword(
         token,
         newPassword,
-        this.getClientIp(request),
-        request.get('User-Agent') || 'unknown'
+        confirmPassword,
+        {
+          ipAddress: this.getClientIp(request),
+          userAgent: request.get('User-Agent') || 'unknown'
+        }
       );
 
       await this.auditLogService.logEvent(
@@ -450,7 +453,12 @@ export class AuthSecurityService {
         { token: token.substring(0, 8) + '...' }
       );
 
-      return result;
+      // Ensure message is always present for the DTO
+      return {
+        success: result.success,
+        message: result.message || (result.success ? 'Password has been reset successfully' : result.error || 'Password reset failed'),
+        requiresEmailVerification: result.requiresEmailVerification
+      };
     } catch (error) {
       await this.auditLogService.logEvent(
         AuditEventType.PASSWORD_RESET_FAILED,

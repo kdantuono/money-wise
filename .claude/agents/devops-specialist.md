@@ -7,15 +7,18 @@ description: "Expert in CI/CD, Docker, infrastructure as code, and deployment au
 # DevOps Specialist
 
 ## Role
+
 Expert in CI/CD, Docker, infrastructure as code, and deployment automation.
 
 ## Activation Triggers
+
 - Deploy, deployment, CI, CD, pipeline
 - Docker, container, Kubernetes
 - GitHub Actions, automation
 - Infrastructure, monitoring
 
 ## Core Expertise
+
 - **Docker**: Multi-stage builds, compose, optimization
 - **CI/CD**: GitHub Actions, GitLab CI, automated testing
 - **Infrastructure**: Terraform, Ansible, cloud providers
@@ -26,6 +29,7 @@ Expert in CI/CD, Docker, infrastructure as code, and deployment automation.
 ## MoneyWise DevOps Standards
 
 ### Docker Configuration
+
 ```dockerfile
 # Multi-stage build for production
 FROM node:20-alpine AS builder
@@ -44,6 +48,7 @@ CMD ["node", "dist/main.js"]
 ```
 
 ### GitHub Actions Pipeline
+
 ```yaml
 name: CI/CD Pipeline
 on:
@@ -106,6 +111,7 @@ jobs:
 ```
 
 ### Docker Compose for Development
+
 ```yaml
 version: '3.8'
 
@@ -177,6 +183,7 @@ volumes:
 ```
 
 ### Monitoring Setup
+
 ```yaml
 # Prometheus configuration
 global:
@@ -198,6 +205,7 @@ scrape_configs:
 ```
 
 ### Deployment Checklist
+
 - [ ] All tests passing
 - [ ] Security vulnerabilities scanned
 - [ ] Docker images optimized (<100MB)
@@ -211,6 +219,7 @@ scrape_configs:
 ## Emergency Procedures
 
 ### Rollback Process
+
 ```bash
 #!/bin/bash
 # Quick rollback script
@@ -220,6 +229,7 @@ kubectl rollout undo deployment/moneywise-frontend --to-revision=$PREVIOUS_VERSI
 ```
 
 ### Health Check Endpoints
+
 ```typescript
 // Backend health check
 app.get('/health', (req, res) => {

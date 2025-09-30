@@ -21,6 +21,7 @@ Specialized AI agents that handle specific domains of the MoneyWise application 
 | `quality-evolution-specialist` | Continuous Improvement | 1 | quality, review, incident, debt |
 
 ### Core Development
+
 | Agent | Specialization | Max Instances | Trigger Keywords |
 |-------|---------------|---------------|------------------|
 | `backend-specialist` | NestJS, API, Services | 3 | api, endpoint, service, backend |
@@ -28,12 +29,14 @@ Specialized AI agents that handle specific domains of the MoneyWise application 
 | `database-specialist` | PostgreSQL, TypeORM | 1 | database, schema, migration, query |
 
 ### Quality & Security
+
 | Agent | Specialization | Max Instances | Trigger Keywords |
 |-------|---------------|---------------|------------------|
 | `test-specialist` | Jest, Playwright, Coverage | 3 | test, coverage, e2e, jest |
 | `security-specialist` | OWASP, Auth, Vulnerabilities | 1 | security, vulnerability, auth |
 
 ### Operations
+
 | Agent | Specialization | Max Instances | Trigger Keywords |
 |-------|---------------|---------------|------------------|
 | `devops-specialist` | Docker, CI/CD, Deployment | 1 | deploy, docker, ci, pipeline |
@@ -43,6 +46,7 @@ Specialized AI agents that handle specific domains of the MoneyWise application 
 ## Agent Capabilities
 
 ### Architect
+
 - ✅ System architecture design and review
 - ✅ Technology stack evaluation and ADRs
 - ✅ Scalability and performance planning
@@ -51,6 +55,7 @@ Specialized AI agents that handle specific domains of the MoneyWise application 
 - ✅ Cloud architecture frameworks
 
 ### Analytics Specialist
+
 - ✅ Event tracking architecture for financial apps
 - ✅ Performance metrics implementation
 - ✅ User behavior analysis and conversion funnels
@@ -59,6 +64,7 @@ Specialized AI agents that handle specific domains of the MoneyWise application 
 - ✅ Financial domain-specific KPIs
 
 ### Documentation Specialist
+
 - ✅ Auto-documentation generation from code
 - ✅ README/CHANGELOG maintenance automation
 - ✅ Newcomer accessibility testing and improvement
@@ -67,6 +73,7 @@ Specialized AI agents that handle specific domains of the MoneyWise application 
 - ✅ Feature documentation templates
 
 ### Quality Evolution Specialist
+
 - ✅ Incident tracking and systematic learning
 - ✅ Technical debt identification and prioritization
 - ✅ PR checklist automation and quality analysis
@@ -75,6 +82,7 @@ Specialized AI agents that handle specific domains of the MoneyWise application 
 - ✅ Code review standards enforcement
 
 ### Backend Specialist
+
 - ✅ API design and implementation
 - ✅ Business logic development
 - ✅ Database integration
@@ -83,6 +91,7 @@ Specialized AI agents that handle specific domains of the MoneyWise application 
 - ✅ Unit and integration testing
 
 ### Frontend Specialist
+
 - ✅ React component development
 - ✅ Next.js page routing
 - ✅ State management (Zustand)
@@ -91,6 +100,7 @@ Specialized AI agents that handle specific domains of the MoneyWise application 
 - ✅ Component testing
 
 ### Database Specialist
+
 - ✅ Schema design
 - ✅ Migration creation
 - ✅ Query optimization
@@ -99,6 +109,7 @@ Specialized AI agents that handle specific domains of the MoneyWise application 
 - ✅ Redis caching
 
 ### Test Specialist
+
 - ✅ Test strategy design
 - ✅ Unit test creation
 - ✅ Integration testing
@@ -107,6 +118,7 @@ Specialized AI agents that handle specific domains of the MoneyWise application 
 - ✅ Performance testing
 
 ### Security Specialist
+
 - ✅ Vulnerability assessment
 - ✅ OWASP Top 10 validation
 - ✅ Authentication review
@@ -115,6 +127,7 @@ Specialized AI agents that handle specific domains of the MoneyWise application 
 - ✅ Security best practices
 
 ### DevOps Specialist
+
 - ✅ Docker containerization
 - ✅ CI/CD pipeline setup
 - ✅ GitHub Actions workflows
@@ -123,6 +136,7 @@ Specialized AI agents that handle specific domains of the MoneyWise application 
 - ✅ Monitoring setup
 
 ### Orchestrator
+
 - ✅ Epic decomposition
 - ✅ Multi-agent coordination
 - ✅ Parallel task execution
@@ -131,6 +145,7 @@ Specialized AI agents that handle specific domains of the MoneyWise application 
 - ✅ Merge orchestration
 
 ### Product Manager
+
 - ✅ User story creation
 - ✅ Acceptance criteria
 - ✅ GitHub issue management
@@ -141,18 +156,21 @@ Specialized AI agents that handle specific domains of the MoneyWise application 
 ## Usage Examples
 
 ### Single Agent
+
 ```bash
 # Direct agent invocation
 claude "As backend-specialist, implement user authentication API"
 ```
 
 ### Multiple Agents
+
 ```bash
 # Coordinated agents
 claude "Use backend and frontend specialists to implement transaction feature"
 ```
 
 ### Epic Orchestration
+
 ```bash
 # Full orchestration
 claude "/epic:init user-authentication"
@@ -162,6 +180,7 @@ claude "/epic:execute user-authentication"
 ## Agent Communication
 
 Agents communicate through:
+
 1. **Shared context store** (read-only)
 2. **Task handoffs** via orchestrator
 3. **Merge events** in git workflow
@@ -229,6 +248,7 @@ IF contains("security", "vulnerability"):
 ## Extension
 
 To add a new agent:
+
 1. Create `.claude/agents/[agent-name].md`
 2. Add to `agent-matrix.yaml`
 3. Define capabilities and triggers

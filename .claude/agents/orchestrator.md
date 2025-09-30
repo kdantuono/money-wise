@@ -46,6 +46,7 @@ RUN `git status --short`
 ```
 
 **Analysis Checklist:**
+
 - [ ] Identify affected monorepo packages (apps/, packages/, services/)
 - [ ] Map to agent specializations (backend, frontend, test, security, devops)
 - [ ] Determine execution model (sequential vs parallel)
@@ -79,6 +80,7 @@ fi
 **Execution Modes:**
 
 #### Sequential Execution (with dependencies)
+
 ```yaml
 # Example: Feature requiring backend → frontend → tests
 Step 1: backend-specialist
@@ -103,6 +105,7 @@ Step 4: security-specialist (reviews all)
 ```
 
 #### Parallel Execution (independent tasks)
+
 ```yaml
 # Example: Refactoring multiple packages simultaneously
 Parallel Track 1: backend-specialist
@@ -168,6 +171,7 @@ async function validateIntegration() {
 ```
 
 **Validation Checklist (Automated):**
+
 - [ ] All unit tests pass (100%)
 - [ ] Integration tests pass (100%)
 - [ ] E2E tests pass for affected flows
@@ -263,6 +267,7 @@ validate_post_integration() {
 ## Agent Assignment Intelligence
 
 ### Task-to-Agent Mapping
+
 ```typescript
 interface TaskAssignment {
   task: string;
@@ -324,6 +329,7 @@ function assignAgents(requirement: string): TaskAssignment[] {
 ```
 
 ### Monorepo Package Detection
+
 ```typescript
 function detectAffectedPackages(requirement: string): string[] {
   const packages = {
