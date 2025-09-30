@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException, UnauthorizedException } from '@nestjs/common';
-import { PasswordController } from './password.controller';
+import { PasswordController } from '@/auth/controllers/password.controller';
 import { PasswordSecurityService } from '@/auth/services/password-security.service';
 import { PasswordResetService } from '@/auth/services/password-reset.service';
 import { RateLimitService } from '@/auth/services/rate-limit.service';
@@ -90,7 +90,7 @@ describe('PasswordController', () => {
           score: 85,
           strength: 'strong' as const,
           feedback: ['Excellent! This is a strong password'],
-          isValid: true,
+          meets_requirements: true,
         },
         violations: [],
       };
@@ -108,7 +108,7 @@ describe('PasswordController', () => {
         score: 85,
         strength: 'strong',
         feedback: ['Excellent! This is a strong password'],
-        isValid: true,
+        meets_requirements: true,
       });
     });
   });
@@ -290,11 +290,10 @@ describe('PasswordController', () => {
         requireLowercase: true,
         requireNumbers: true,
         requireSpecialChars: true,
-        minSpecialChars: 1,
-        maxRepeatingChars: 2,
+        requireNonRepeatChars: true,
         preventCommonPasswords: true,
-        preventPersonalInfo: true,
-        historyCount: 5,
+        preventUserInfoInPassword: true,
+        historyLength: 5,
         expirationDays: 90,
         warningDays: 7,
       };

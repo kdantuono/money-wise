@@ -167,11 +167,15 @@ describe('AuthSecurityService', () => {
 
     it('should successfully register a new user', async () => {
       jest.spyOn(userRepository, 'findOne').mockResolvedValue(null);
-      jest.spyOn(passwordSecurityService, 'validatePassword').mockReturnValue({
-        score: 85,
-        strength: 'strong',
-        feedback: [],
-        meets_requirements: true,
+      jest.spyOn(passwordSecurityService, 'validatePassword').mockResolvedValue({
+        isValid: true,
+        strengthResult: {
+          score: 85,
+          strength: 'strong',
+          feedback: [],
+          meets_requirements: true,
+        },
+        violations: [],
       });
       jest
         .spyOn(passwordSecurityService, 'hashPassword')
@@ -216,11 +220,15 @@ describe('AuthSecurityService', () => {
 
     it('should throw BadRequestException for weak password', async () => {
       jest.spyOn(userRepository, 'findOne').mockResolvedValue(null);
-      jest.spyOn(passwordSecurityService, 'validatePassword').mockReturnValue({
-        score: 30,
-        strength: 'weak',
-        feedback: ['Password is too weak'],
-        meets_requirements: false,
+      jest.spyOn(passwordSecurityService, 'validatePassword').mockResolvedValue({
+        isValid: false,
+        strengthResult: {
+          score: 30,
+          strength: 'weak',
+          feedback: ['Password is too weak'],
+          meets_requirements: false,
+        },
+        violations: ['Password is too weak'],
       });
 
       await expect(service.register(registerDto, mockRequest)).rejects.toThrow(
@@ -314,11 +322,15 @@ describe('AuthSecurityService', () => {
         .spyOn(passwordSecurityService, 'verifyPassword')
         .mockResolvedValueOnce(true) // current password valid
         .mockResolvedValueOnce(false); // new password is different
-      jest.spyOn(passwordSecurityService, 'validatePassword').mockReturnValue({
-        score: 85,
-        strength: 'strong',
-        feedback: [],
-        meets_requirements: true,
+      jest.spyOn(passwordSecurityService, 'validatePassword').mockResolvedValue({
+        isValid: true,
+        strengthResult: {
+          score: 85,
+          strength: 'strong',
+          feedback: [],
+          meets_requirements: true,
+        },
+        violations: [],
       });
       jest
         .spyOn(passwordSecurityService, 'isPasswordInHistory')
@@ -360,11 +372,15 @@ describe('AuthSecurityService', () => {
       jest
         .spyOn(passwordSecurityService, 'verifyPassword')
         .mockResolvedValue(true);
-      jest.spyOn(passwordSecurityService, 'validatePassword').mockReturnValue({
-        score: 30,
-        strength: 'weak',
-        feedback: ['Password is too weak'],
-        meets_requirements: false,
+      jest.spyOn(passwordSecurityService, 'validatePassword').mockResolvedValue({
+        isValid: false,
+        strengthResult: {
+          score: 30,
+          strength: 'weak',
+          feedback: ['Password is too weak'],
+          meets_requirements: false,
+        },
+        violations: ['Password is too weak'],
       });
 
       await expect(
@@ -378,11 +394,15 @@ describe('AuthSecurityService', () => {
         .spyOn(passwordSecurityService, 'verifyPassword')
         .mockResolvedValueOnce(true) // current password valid
         .mockResolvedValueOnce(true); // new password is same
-      jest.spyOn(passwordSecurityService, 'validatePassword').mockReturnValue({
-        score: 85,
-        strength: 'strong',
-        feedback: [],
-        meets_requirements: true,
+      jest.spyOn(passwordSecurityService, 'validatePassword').mockResolvedValue({
+        isValid: true,
+        strengthResult: {
+          score: 85,
+          strength: 'strong',
+          feedback: [],
+          meets_requirements: true,
+        },
+        violations: [],
       });
 
       await expect(
@@ -400,8 +420,9 @@ describe('AuthSecurityService', () => {
       jest
         .spyOn(passwordResetService, 'requestPasswordReset')
         .mockResolvedValue({
+          success: true,
+          message: 'If an account with that email exists, you will receive a password reset link shortly.',
           token: 'reset-token',
-          expiresIn: 1800,
         });
 
       const result = await service.requestPasswordReset(
@@ -444,19 +465,23 @@ describe('AuthSecurityService', () => {
       };
 
       const strengthResult = {
-        score: 85,
-        strength: 'strong' as const,
-        feedback: [],
-        meets_requirements: true,
+        isValid: true,
+        strengthResult: {
+          score: 85,
+          strength: 'strong' as const,
+          feedback: [],
+          meets_requirements: true,
+        },
+        violations: [],
       };
 
       jest
         .spyOn(passwordSecurityService, 'validatePassword')
-        .mockReturnValue(strengthResult);
+        .mockResolvedValue(strengthResult);
 
       const result = await service.checkPasswordStrength(passwordStrengthDto);
 
-      expect(result).toEqual(strengthResult);
+      expect(result).toEqual(strengthResult.strengthResult);
     });
   });
 
