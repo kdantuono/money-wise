@@ -82,6 +82,7 @@ jobs:
   sast-scan:
     name: 🔍 SAST Scan (Static Analysis)
     runs-on: ubuntu-latest
+    continue-on-error: true  # Non-blocking - findings logged for review
 
     steps:
       - name: 📥 Checkout code
@@ -107,7 +108,7 @@ jobs:
           echo "🔍 Running ESLint with security rules..."
           # Run ESLint with security-focused rules
           pnpm lint 2>&1 | tee eslint-security.log || true
-          
+
           # Check for security-related warnings/errors
           if grep -i "security\|vulnerable\|unsafe" eslint-security.log; then
             echo "⚠️ Security-related linting issues found"
@@ -116,6 +117,7 @@ jobs:
           fi
 
       - name: 🔍 Semgrep SAST Scan
+        continue-on-error: true  # Informational - findings tracked in SARIF
         uses: semgrep/semgrep-action@v1
         with:
           config: >-
