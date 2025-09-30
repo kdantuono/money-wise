@@ -1,7 +1,0 @@
-
-> @money-wise/backend@0.1.0 test /home/nemesi/dev/money-wise/apps/backend
-> jest --passWithNoTests
-
-[1m[2mDetermining test suites to run...[22m[22m[999D[K
-[K[1A
-[0m[7m[33m[1m RUNS [22m[39m[27m[0m [0m[7m[37m @money-wise/backend [39m[27m[0m [2m__tests__/integration/database/[22m[1mrepository-operations.test.ts[22m
