@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { PasswordStrengthService } from './password-strength.service';
+import { PasswordStrengthService } from '@/auth/services/password-strength.service';
 import { DEFAULT_PASSWORD_POLICY } from '@/auth/config/password-policy.config';
 
 describe('PasswordStrengthService', () => {
@@ -36,7 +36,7 @@ describe('PasswordStrengthService', () => {
     it('should detect common passwords', () => {
       const result = service.calculateStrength('Password123!', DEFAULT_PASSWORD_POLICY);
 
-      expect(result.feedback).toContain('This password is too common');
+      expect(result.feedback).toContain('This password is too common. Please choose a more unique password');
       expect(result.score).toBeLessThan(60);
     });
 
@@ -62,7 +62,7 @@ describe('PasswordStrengthService', () => {
         DEFAULT_PASSWORD_POLICY
       );
 
-      expect(result.feedback).toContain('Avoid repeating characters');
+      expect(result.feedback).toContain('Avoid repeating characters more than 2 times');
     });
 
     it('should detect sequential characters', () => {
@@ -71,7 +71,7 @@ describe('PasswordStrengthService', () => {
         DEFAULT_PASSWORD_POLICY
       );
 
-      expect(result.feedback).toContain('Avoid sequential characters');
+      expect(result.feedback).toContain('Avoid sequential characters (e.g., abc, 123)');
     });
   });
 
@@ -89,7 +89,7 @@ describe('PasswordStrengthService', () => {
       expect(result.isValid).toBe(false);
       expect(result.violations).toContain('Password must contain at least one uppercase letter');
       expect(result.violations).toContain('Password must contain at least one number');
-      expect(result.violations).toContain('Password must contain at least one special character');
+      expect(result.violations).toContain('Password must contain at least 1 special character(s)');
     });
 
     it('should pass for valid passwords', () => {
