@@ -3,7 +3,6 @@ import { JwtService } from '@nestjs/jwt';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ConflictException, UnauthorizedException } from '@nestjs/common';
-import * as bcrypt from 'bcryptjs';
 import { AuthService } from '@/auth/auth.service';
 import { PasswordSecurityService } from '@/auth/services/password-security.service';
 import { RateLimitService } from '@/auth/services/rate-limit.service';
@@ -12,17 +11,12 @@ import { AuditLog } from '@/core/database/entities/audit-log.entity';
 import { RegisterDto } from '@/auth/dto/register.dto';
 import { LoginDto } from '@/auth/dto/login.dto';
 
-// Mock bcrypt
-jest.mock('bcryptjs', () => ({
-  hash: jest.fn(),
-  compare: jest.fn(),
-}));
-const mockedBcrypt = bcrypt as unknown as jest.Mocked<typeof bcrypt>;
-
 describe('AuthService', () => {
   let service: AuthService;
   let userRepository: jest.Mocked<Repository<User>>;
   let jwtService: jest.Mocked<JwtService>;
+  let passwordSecurityService: jest.Mocked<PasswordSecurityService>;
+  let rateLimitService: jest.Mocked<RateLimitService>;
 
   const mockUser: User = {
     id: '1',
@@ -71,15 +65,23 @@ describe('AuthService', () => {
         {
           provide: PasswordSecurityService,
           useValue: {
-            validatePasswordStrength: jest.fn().mockResolvedValue({ isValid: true }),
-            hashPassword: jest.fn(),
+            validatePassword: jest.fn().mockResolvedValue({
+              isValid: true,
+              strengthResult: { score: 80, meets_requirements: true, feedback: [] },
+              violations: []
+            }),
+            hashPassword: jest.fn().mockResolvedValue('hashedPassword'),
+            verifyPassword: jest.fn().mockResolvedValue(true),
+            isPasswordExpired: jest.fn().mockResolvedValue(false),
+            shouldWarnPasswordExpiry: jest.fn().mockResolvedValue(false),
+            getDaysUntilExpiration: jest.fn().mockResolvedValue(90),
           },
         },
         {
           provide: RateLimitService,
           useValue: {
-            checkLimit: jest.fn().mockResolvedValue(true),
-            increment: jest.fn(),
+            checkRateLimit: jest.fn().mockResolvedValue({ allowed: true, remaining: 5 }),
+            recordAttempt: jest.fn().mockResolvedValue(undefined),
           },
         },
       ],
@@ -88,6 +90,8 @@ describe('AuthService', () => {
     service = module.get<AuthService>(AuthService);
     userRepository = module.get(getRepositoryToken(User));
     jwtService = module.get(JwtService);
+    passwordSecurityService = module.get(PasswordSecurityService);
+    rateLimitService = module.get(RateLimitService);
   });
 
   afterEach(() => {
@@ -106,7 +110,6 @@ describe('AuthService', () => {
       userRepository.findOne.mockResolvedValue(null);
       userRepository.create.mockReturnValue(mockUser);
       userRepository.save.mockResolvedValue(mockUser);
-      (mockedBcrypt.hash as jest.Mock).mockResolvedValue('hashedPassword');
       jwtService.sign.mockReturnValue('jwt-token');
 
       const result = await service.register(registerDto);
@@ -114,7 +117,6 @@ describe('AuthService', () => {
       expect(userRepository.findOne).toHaveBeenCalledWith({
         where: { email: registerDto.email },
       });
-      expect(mockedBcrypt.hash).toHaveBeenCalledWith(registerDto.password, 12);
       expect(userRepository.create).toHaveBeenCalled();
       expect(userRepository.save).toHaveBeenCalled();
       expect(result).toHaveProperty('accessToken');
@@ -144,19 +146,14 @@ describe('AuthService', () => {
     it('should login user successfully', async () => {
       userRepository.findOne.mockResolvedValue(mockUser);
       userRepository.update.mockResolvedValue(undefined);
-      (mockedBcrypt.compare as jest.Mock).mockResolvedValue(true);
       jwtService.sign.mockReturnValue('jwt-token');
 
       const result = await service.login(loginDto);
 
       expect(userRepository.findOne).toHaveBeenCalledWith({
         where: { email: loginDto.email },
-        select: ['id', 'email', 'firstName', 'lastName', 'passwordHash', 'role', 'status'],
+        select: ['id', 'email', 'firstName', 'lastName', 'passwordHash', 'role', 'status', 'updatedAt'],
       });
-      expect(mockedBcrypt.compare).toHaveBeenCalledWith(
-        loginDto.password,
-        mockUser.passwordHash,
-      );
       expect(userRepository.update).toHaveBeenCalledWith(mockUser.id, {
         lastLoginAt: expect.any(Date),
       });
@@ -175,7 +172,7 @@ describe('AuthService', () => {
 
     it('should throw UnauthorizedException if password is invalid', async () => {
       userRepository.findOne.mockResolvedValue(mockUser);
-      (mockedBcrypt.compare as jest.Mock).mockResolvedValue(false);
+      passwordSecurityService.verifyPassword.mockResolvedValueOnce(false);
 
       await expect(service.login(loginDto)).rejects.toThrow(
         UnauthorizedException,
@@ -333,7 +330,6 @@ describe('AuthService', () => {
       userRepository.findOne.mockResolvedValue(null);
       userRepository.create.mockReturnValue(mockUser);
       userRepository.save.mockResolvedValue(mockUser);
-      (mockedBcrypt.hash as jest.Mock).mockResolvedValue('hashedPassword');
 
       const registerDto = {
         email: 'test@example.com',
@@ -378,7 +374,7 @@ describe('AuthService', () => {
   });
 
   describe('error scenarios', () => {
-    it('should handle bcrypt hashing errors during registration', async () => {
+    it('should handle password hashing errors during registration', async () => {
       const registerDto = {
         email: 'test@example.com',
         firstName: 'John',
@@ -387,9 +383,9 @@ describe('AuthService', () => {
       };
 
       userRepository.findOne.mockResolvedValue(null);
-      (mockedBcrypt.hash as jest.Mock).mockRejectedValue(new Error('Bcrypt error'));
+      passwordSecurityService.hashPassword.mockRejectedValueOnce(new Error('Hashing error'));
 
-      await expect(service.register(registerDto)).rejects.toThrow('Bcrypt error');
+      await expect(service.register(registerDto)).rejects.toThrow('Hashing error');
     });
 
     it('should handle database errors during user creation', async () => {
@@ -403,21 +399,20 @@ describe('AuthService', () => {
       userRepository.findOne.mockResolvedValue(null);
       userRepository.create.mockReturnValue(mockUser);
       userRepository.save.mockRejectedValue(new Error('Database error'));
-      (mockedBcrypt.hash as jest.Mock).mockResolvedValue('hashedPassword');
 
       await expect(service.register(registerDto)).rejects.toThrow('Database error');
     });
 
-    it('should handle bcrypt comparison errors during login', async () => {
+    it('should handle password verification errors during login', async () => {
       const loginDto = {
         email: 'test@example.com',
         password: 'Password123!',
       };
 
       userRepository.findOne.mockResolvedValue(mockUser);
-      (mockedBcrypt.compare as jest.Mock).mockRejectedValue(new Error('Bcrypt error'));
+      passwordSecurityService.verifyPassword.mockRejectedValueOnce(new Error('Verification error'));
 
-      await expect(service.login(loginDto)).rejects.toThrow('Bcrypt error');
+      await expect(service.login(loginDto)).rejects.toThrow('Verification error');
     });
   });
 });
