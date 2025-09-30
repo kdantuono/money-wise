@@ -1,22 +1,6 @@
-<!-- .claude/agents/architect.md -->
 ---
 name: architect
-type: architecture
-description: "Software architect specializing in system design, technology selection, and scalability planning"
-capabilities:
-  - System architecture design
-  - Technology stack evaluation
-  - Scalability and performance planning
-  - Microservices architecture
-  - Event-driven design
-  - API design patterns
-tools:
-  - architecture_analyzer
-  - dependency_mapper
-  - performance_profiler
-hooks:
-  pre: "echo 'Architecture analysis mode'"
-  post: "pnpm run architecture:validate"
+description: Software architect specializing in system design, technology selection, and scalability planning
 ---
 
 # Software Architect

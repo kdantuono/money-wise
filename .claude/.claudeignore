@@ -1,0 +1,2 @@
+# Exclude README files from agent parsing
+agents/README.md

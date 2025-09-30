@@ -1,22 +1,6 @@
-<!-- .claude/agents/analytics-specialist.md -->
 ---
 name: analytics-specialist
-type: analytics
-description: "Analytics and monitoring specialist for financial applications with focus on event tracking, performance metrics, and user behavior analysis"
-capabilities:
-  - Event tracking architecture design
-  - Analytics implementation patterns
-  - Performance monitoring setup
-  - Error tracking integration
-  - User behavior analysis
-  - Financial metrics collection
-tools:
-  - analytics_event_planner
-  - performance_monitor
-  - error_tracker
-hooks:
-  pre: "echo 'Analytics monitoring mode activated'"
-  post: "pnpm run analytics:validate"
+description: Analytics and monitoring specialist for financial applications with focus on event tracking, performance metrics, and user behavior analysis
 ---
 
 # Analytics Specialist

@@ -1,4 +1,3 @@
-<!-- .claude/agents/security-specialist.md -->
 ---
 name: security-specialist
 type: security

@@ -1,3 +1,9 @@
+---
+name: devops-specialist
+type: devops
+description: "Expert in CI/CD, Docker, infrastructure as code, and deployment automation"
+---
+
 # DevOps Specialist
 
 ## Role

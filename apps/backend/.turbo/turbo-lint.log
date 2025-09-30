@@ -1,112 +1,236 @@
 
-> @money-wise/backend@0.1.0 lint /home/runner/work/money-wise/money-wise/apps/backend
+> @money-wise/backend@0.1.0 lint /home/nemesi/dev/money-wise/apps/backend
 > eslint "{src,apps,libs,test}/**/*.ts" --fix
 
-=============
 
-WARNING: You are currently running a version of TypeScript which is not officially supported by @typescript-eslint/typescript-estree.
+/home/nemesi/dev/money-wise/apps/backend/src/auth/__tests__/auth.controller.spec.ts
+  19:7  error  'authService' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
 
-You may find that it works just fine, or you may not.
+/home/nemesi/dev/money-wise/apps/backend/src/auth/__tests__/auth.e2e.spec.ts
+  532:14  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  537:14  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
 
-SUPPORTED TYPESCRIPT VERSIONS: >=4.3.5 <5.4.0
+/home/nemesi/dev/money-wise/apps/backend/src/auth/auth.security.spec.ts
+  343:40  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  427:57  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
 
-YOUR TYPESCRIPT VERSION: 5.9.2
+/home/nemesi/dev/money-wise/apps/backend/src/auth/auth.service.ts
+   10:13  error    'bcrypt' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  225:24  warning  Unexpected any. Specify a different type                                  @typescript-eslint/no-explicit-any
+  320:16  warning  Unexpected any. Specify a different type                                  @typescript-eslint/no-explicit-any
 
-Please only submit bug reports when using the officially supported version.
+/home/nemesi/dev/money-wise/apps/backend/src/auth/controllers/password.controller.spec.ts
+  43:8  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
 
-=============
-[0m[0m
-[0m[4m/home/runner/work/money-wise/money-wise/apps/backend/src/core/database/repositories/__tests__/account.repository.spec.ts[24m[0m
-[0m   [2m84:10[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m   [2m97:27[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m  [2m155:63[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m  [2m165:63[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m  [2m191:35[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m  [2m225:35[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m  [2m308:63[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m  [2m318:63[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m  [2m338:63[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m[0m
-[0m[4m/home/runner/work/money-wise/money-wise/apps/backend/src/core/database/repositories/__tests__/base.repository.spec.ts[24m[0m
-[0m   [2m55:10[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m   [2m60:10[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m   [2m68:10[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m   [2m85:24[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m  [2m105:62[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m  [2m106:60[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m  [2m120:51[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m  [2m136:59[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m  [2m162:62[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m  [2m167:41[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m  [2m193:62[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m  [2m206:62[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m  [2m233:57[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m  [2m243:57[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m  [2m265:66[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m  [2m289:66[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m  [2m319:63[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m  [2m320:65[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m  [2m326:41[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m  [2m333:63[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m  [2m354:63[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m  [2m365:63[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m  [2m386:63[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m  [2m476:64[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m  [2m477:62[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m  [2m503:63[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m[0m
-[0m[4m/home/runner/work/money-wise/money-wise/apps/backend/src/core/database/repositories/__tests__/user.repository.spec.ts[24m[0m
-[0m   [2m58:10[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m   [2m70:10[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m   [2m75:10[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m   [2m83:10[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m   [2m96:24[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m  [2m196:36[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m  [2m211:36[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m  [2m222:63[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m  [2m234:63[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m  [2m254:63[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m  [2m266:63[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m  [2m297:36[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m  [2m312:36[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m  [2m329:68[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m  [2m405:58[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m  [2m406:56[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m[0m
-[0m[4m/home/runner/work/money-wise/money-wise/apps/backend/src/core/database/repositories/impl/account.repository.ts[24m[0m
-[0m   [2m46:29[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m  [2m242:29[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m[0m
-[0m[4m/home/runner/work/money-wise/money-wise/apps/backend/src/core/database/repositories/impl/base.repository.ts[24m[0m
-[0m   [2m30:59[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m   [2m32:68[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m   [2m43:66[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m   [2m54:26[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m  [2m114:54[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m  [2m170:66[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m  [2m182:75[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m  [2m192:41[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m  [2m192:57[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m[0m
-[0m[4m/home/runner/work/money-wise/money-wise/apps/backend/src/core/database/repositories/interfaces/base.repository.interface.ts[24m[0m
-[0m  [2m77:35[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m  [2m77:51[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m[0m
-[0m[4m/home/runner/work/money-wise/money-wise/apps/backend/src/database/timescaledb.service.ts[24m[0m
-[0m  [2m228:39[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m  [2m229:36[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m  [2m291:14[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m  [2m292:19[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m  [2m343:14[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m  [2m344:19[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m  [2m379:14[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m  [2m407:14[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m  [2m408:19[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m  [2m444:14[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m  [2m491:14[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m  [2m492:19[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m  [2m522:83[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m  [2m559:56[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m[0m
-[0m[33m[1m✖ 78 problems (0 errors, 78 warnings)[22m[39m[0m
-[0m[33m[1m[22m[39m[0m
+/home/nemesi/dev/money-wise/apps/backend/src/auth/services/password-reset.service.ts
+    1:30  error    'BadRequestException' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+    1:51  error    'NotFoundException' is defined but never used. Allowed unused vars must match /^_/u    @typescript-eslint/no-unused-vars
+    6:13  error    'crypto' is defined but never used. Allowed unused vars must match /^_/u               @typescript-eslint/no-unused-vars
+  458:16  warning  Unexpected any. Specify a different type                                               @typescript-eslint/no-explicit-any
+
+/home/nemesi/dev/money-wise/apps/backend/src/auth/services/password-security.service.spec.ts
+  13:7  error  'passwordHistoryRepository' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  14:7  error  'auditLogRepository' is assigned a value but never used. Allowed unused vars must match /^_/u         @typescript-eslint/no-unused-vars
+  15:7  error  'passwordStrengthService' is assigned a value but never used. Allowed unused vars must match /^_/u    @typescript-eslint/no-unused-vars
+
+/home/nemesi/dev/money-wise/apps/backend/src/auth/services/password-security.service.ts
+  382:3   error    Duplicate name 'hashPassword'             no-dupe-class-members
+  390:3   error    Duplicate name 'verifyPassword'           no-dupe-class-members
+  528:16  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/nemesi/dev/money-wise/apps/backend/src/core/database/entities/audit-log.entity.ts
+  56:20  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/nemesi/dev/money-wise/apps/backend/src/core/database/repositories/__tests__/account.repository.spec.ts
+  107:10  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  120:27  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  184:63  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  199:63  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  233:35  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  277:35  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  382:63  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  395:63  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  416:63  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/nemesi/dev/money-wise/apps/backend/src/core/database/repositories/__tests__/base.repository.spec.ts
+   55:10  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   60:10  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   68:10  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   85:24  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  105:62  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  106:60  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  120:51  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  136:59  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  162:62  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  167:41  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  193:62  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  206:62  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  233:57  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  243:57  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  265:66  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  289:66  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  319:63  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  320:65  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  326:41  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  333:63  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  354:63  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  365:63  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  386:63  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  476:64  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  477:62  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  503:63  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/nemesi/dev/money-wise/apps/backend/src/core/database/repositories/__tests__/user.repository.spec.ts
+   58:10  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   70:10  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   75:10  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   83:10  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   96:24  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  196:36  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  211:36  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  222:63  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  234:63  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  254:63  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  266:63  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  297:36  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  312:36  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  329:68  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  405:58  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  406:56  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/nemesi/dev/money-wise/apps/backend/src/core/database/repositories/impl/account.repository.ts
+   46:29  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  242:29  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/nemesi/dev/money-wise/apps/backend/src/core/database/repositories/impl/base.repository.ts
+   30:59  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   32:68  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   43:66  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   54:26  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  114:54  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  170:66  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  182:75  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  192:41  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  192:57  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/nemesi/dev/money-wise/apps/backend/src/core/database/repositories/impl/category.repository.ts
+  137:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  170:43  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  381:47  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  455:24  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  461:48  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  461:80  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/nemesi/dev/money-wise/apps/backend/src/core/database/repositories/impl/transaction.repository.ts
+  676:46  warning  Unexpected any. Specify a different type                                               @typescript-eslint/no-explicit-any
+  683:44  warning  Unexpected any. Specify a different type                                               @typescript-eslint/no-explicit-any
+  689:38  warning  Unexpected any. Specify a different type                                               @typescript-eslint/no-explicit-any
+  710:36  warning  Unexpected any. Specify a different type                                               @typescript-eslint/no-explicit-any
+  809:38  error    'userId' is defined but never used. Allowed unused args must match /^_/u               @typescript-eslint/no-unused-vars
+  809:54  error    'year' is defined but never used. Allowed unused args must match /^_/u                 @typescript-eslint/no-unused-vars
+  809:68  error    'month' is defined but never used. Allowed unused args must match /^_/u                @typescript-eslint/no-unused-vars
+  821:21  error    'transactionId' is defined but never used. Allowed unused args must match /^_/u        @typescript-eslint/no-unused-vars
+  821:44  error    'splits' is defined but never used. Allowed unused args must match /^_/u               @typescript-eslint/no-unused-vars
+  830:24  error    'updates' is defined but never used. Allowed unused args must match /^_/u              @typescript-eslint/no-unused-vars
+  838:35  error    'userId' is defined but never used. Allowed unused args must match /^_/u               @typescript-eslint/no-unused-vars
+  838:51  error    'confidenceThreshold' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  844:5   error    'userId' is defined but never used. Allowed unused args must match /^_/u               @typescript-eslint/no-unused-vars
+  845:5   error    'startDate' is defined but never used. Allowed unused args must match /^_/u            @typescript-eslint/no-unused-vars
+  846:5   error    'endDate' is defined but never used. Allowed unused args must match /^_/u              @typescript-eslint/no-unused-vars
+  847:5   error    'groupBy' is defined but never used. Allowed unused args must match /^_/u              @typescript-eslint/no-unused-vars
+
+/home/nemesi/dev/money-wise/apps/backend/src/core/database/repositories/interfaces/base.repository.interface.ts
+  77:35  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  77:51  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/nemesi/dev/money-wise/apps/backend/src/core/database/repositories/interfaces/index.ts
+  12:19  error  'IUserRepository' is not defined         no-undef
+  13:22  error  'IAccountRepository' is not defined      no-undef
+  14:23  error  'ICategoryRepository' is not defined     no-undef
+  15:26  error  'ITransactionRepository' is not defined  no-undef
+
+/home/nemesi/dev/money-wise/apps/backend/src/core/database/tests/database-test-suite.ts
+  346:9  error  Unexpected lexical declaration in case block  no-case-declarations
+  347:9  error  Unexpected lexical declaration in case block  no-case-declarations
+  352:9  error  Unexpected lexical declaration in case block  no-case-declarations
+  353:9  error  Unexpected lexical declaration in case block  no-case-declarations
+  354:9  error  Unexpected lexical declaration in case block  no-case-declarations
+  359:9  error  Unexpected lexical declaration in case block  no-case-declarations
+  360:9  error  Unexpected lexical declaration in case block  no-case-declarations
+  365:9  error  Unexpected lexical declaration in case block  no-case-declarations
+  366:9  error  Unexpected lexical declaration in case block  no-case-declarations
+  367:9  error  Unexpected lexical declaration in case block  no-case-declarations
+  368:9  error  Unexpected lexical declaration in case block  no-case-declarations
+  380:9  error  Unexpected lexical declaration in case block  no-case-declarations
+  382:9  error  Unexpected lexical declaration in case block  no-case-declarations
+  392:9  error  Unexpected lexical declaration in case block  no-case-declarations
+  393:9  error  Unexpected lexical declaration in case block  no-case-declarations
+  395:9  error  Unexpected lexical declaration in case block  no-case-declarations
+  405:9  error  Unexpected lexical declaration in case block  no-case-declarations
+  406:9  error  Unexpected lexical declaration in case block  no-case-declarations
+  407:9  error  Unexpected lexical declaration in case block  no-case-declarations
+  409:9  error  Unexpected lexical declaration in case block  no-case-declarations
+  428:9  error  Unexpected lexical declaration in case block  no-case-declarations
+  434:9  error  Unexpected lexical declaration in case block  no-case-declarations
+
+/home/nemesi/dev/money-wise/apps/backend/src/core/database/tests/entities/entity-relationships.test.ts
+    9:16  error    'UserStatus' is defined but never used. Allowed unused vars must match /^_/u                @typescript-eslint/no-unused-vars
+   37:13  error    'checkingAccount' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+   42:13  error    'savingsAccount' is assigned a value but never used. Allowed unused vars must match /^_/u   @typescript-eslint/no-unused-vars
+   95:13  error    'transactions' is assigned a value but never used. Allowed unused vars must match /^_/u     @typescript-eslint/no-unused-vars
+  406:13  error    'user' is assigned a value but never used. Allowed unused vars must match /^_/u             @typescript-eslint/no-unused-vars
+  410:37  warning  Unexpected any. Specify a different type                                                    @typescript-eslint/no-explicit-any
+
+/home/nemesi/dev/money-wise/apps/backend/src/core/database/tests/jest.database.setup.ts
+  18:14  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/nemesi/dev/money-wise/apps/backend/src/core/database/tests/migrations/migration.test.ts
+   12:7   error    'manager' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+   50:41  warning  Unexpected any. Specify a different type                                            @typescript-eslint/no-explicit-any
+   72:43  warning  Unexpected any. Specify a different type                                            @typescript-eslint/no-explicit-any
+   88:44  warning  Unexpected any. Specify a different type                                            @typescript-eslint/no-explicit-any
+   91:50  warning  Unexpected any. Specify a different type                                            @typescript-eslint/no-explicit-any
+  109:43  warning  Unexpected any. Specify a different type                                            @typescript-eslint/no-explicit-any
+  120:46  warning  Unexpected any. Specify a different type                                            @typescript-eslint/no-explicit-any
+  139:43  warning  Unexpected any. Specify a different type                                            @typescript-eslint/no-explicit-any
+  167:43  warning  Unexpected any. Specify a different type                                            @typescript-eslint/no-explicit-any
+  200:42  warning  Unexpected any. Specify a different type                                            @typescript-eslint/no-explicit-any
+  242:51  warning  Unexpected any. Specify a different type                                            @typescript-eslint/no-explicit-any
+  250:58  warning  Unexpected any. Specify a different type                                            @typescript-eslint/no-explicit-any
+  258:59  warning  Unexpected any. Specify a different type                                            @typescript-eslint/no-explicit-any
+  287:59  warning  Unexpected any. Specify a different type                                            @typescript-eslint/no-explicit-any
+  294:62  warning  Unexpected any. Specify a different type                                            @typescript-eslint/no-explicit-any
+  301:66  warning  Unexpected any. Specify a different type                                            @typescript-eslint/no-explicit-any
+
+/home/nemesi/dev/money-wise/apps/backend/src/core/database/tests/performance/large-dataset.test.ts
+  394:13  error  'connectionPool' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/home/nemesi/dev/money-wise/apps/backend/src/core/database/tests/performance/timescale-performance.test.ts
+  10:19  error  'AccountType' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/home/nemesi/dev/money-wise/apps/backend/src/core/database/tests/repositories/repository-operations.test.ts
+   10:32  error  'AccountStatus' is defined but never used. Allowed unused vars must match /^_/u           @typescript-eslint/no-unused-vars
+   12:40  error  'TransactionStatus' is defined but never used. Allowed unused vars must match /^_/u       @typescript-eslint/no-unused-vars
+  115:15  error  'user' is assigned a value but never used. Allowed unused vars must match /^_/u           @typescript-eslint/no-unused-vars
+  656:15  error  'topLevel' is assigned a value but never used. Allowed unused vars must match /^_/u       @typescript-eslint/no-unused-vars
+  760:13  error  'creditAccount' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/home/nemesi/dev/money-wise/apps/backend/src/database/timescaledb.service.ts
+  228:39  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  229:36  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  291:14  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  292:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  343:14  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  344:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  379:14  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  407:14  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  408:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  444:14  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  491:14  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  492:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  522:83  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  559:56  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+✖ 176 problems (61 errors, 115 warnings)
+
+ ELIFECYCLE  Command failed with exit code 1.

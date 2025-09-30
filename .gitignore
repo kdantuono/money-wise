@@ -131,4 +131,7 @@ pids/
 .env.production
 .env.staging
 .claude/worktrees/
-*.turbo/turbo-*.log
+
+# Turbo logs
+**/.turbo/*.log
+**/.turbo/turbo-*.log

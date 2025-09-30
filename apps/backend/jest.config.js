@@ -24,17 +24,15 @@ module.exports = {
     '^@/(.*)$': '<rootDir>/src/$1',
     '^@money-wise/types$': '<rootDir>/../../packages/types/src',
     '^@money-wise/utils$': '<rootDir>/../../packages/utils/src',
-    '^@money-wise/config$': '<rootDir>/../../packages/config',
+    '^@money-wise/test-utils$': '<rootDir>/../../packages/test-utils/src',
   },
 
   // Setup files for NestJS testing
-  setupFilesAfterEnv: ['<rootDir>/test/setup.ts'],
+  setupFilesAfterEnv: ['<rootDir>/__tests__/setup.ts'],
 
-  // Test match patterns for backend
+  // Test match patterns for backend (consolidated __tests__ structure)
   testMatch: [
-    '<rootDir>/src/**/__tests__/**/*.{ts,js}',
-    '<rootDir>/src/**/*.{test,spec}.{ts,js}',
-    '<rootDir>/test/**/*.{test,spec}.{ts,js}',
+    '<rootDir>/__tests__/**/*.{test,spec}.{ts,js}',
   ],
 
   // Ignore OpenAPI spec files and other non-test files

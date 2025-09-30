@@ -63,7 +63,20 @@ pnpm --filter @money-wise/backend test:watch
 pnpm --filter @money-wise/backend test:coverage
 ```
 
-**Location**: `apps/backend/src/**/*.test.ts`
+**Location**: `apps/backend/__tests__/**/*.{test,spec}.ts`
+
+**Test Structure** (Milestone 1 compliant):
+```
+apps/backend/__tests__/
+├── unit/              # Unit tests (mirror src/ structure)
+│   ├── auth/
+│   ├── core/
+│   └── common/
+├── integration/       # Integration tests
+├── e2e/              # End-to-end tests
+├── contracts/        # API contract tests
+└── performance/      # Performance tests
+```
 
 ### 2. End-to-End Testing (Playwright)
 

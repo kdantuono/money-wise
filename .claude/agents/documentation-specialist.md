@@ -1,4 +1,3 @@
-<!-- .claude/agents/documentation-specialist.md -->
 ---
 name: documentation-specialist
 type: documentation

@@ -1,4 +1,3 @@
-<!-- .claude/agents/product-manager.md -->
 ---
 name: product-manager
 type: product

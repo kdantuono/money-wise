@@ -1,4 +1,3 @@
-<!-- .claude/agents/quality-evolution-specialist.md -->
 ---
 name: quality-evolution-specialist
 type: quality

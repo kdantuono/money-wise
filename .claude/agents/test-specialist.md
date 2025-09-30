@@ -1,4 +1,3 @@
-<!-- .claude/agents/test-specialist.md -->
 ---
 name: test-specialist
 type: quality-assurance

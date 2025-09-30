@@ -63,10 +63,13 @@ money-wise/
 │   ├── mobile/       # React Native mobile app
 │   └── backend/      # NestJS API server
 ├── packages/         # Shared packages
-│   ├── ui/          # Shared UI components
-│   ├── types/       # TypeScript definitions
-│   └── utils/       # Utility functions
-└── docs/            # Documentation
+│   ├── ui/           # Shared UI components
+│   ├── types/        # TypeScript definitions
+│   ├── utils/        # Utility functions
+│   └── test-utils/   # Shared testing utilities
+├── docs/             # Documentation
+├── infrastructure/   # Docker configs & deployment
+└── scripts/          # Development scripts
 ```
 
 ### **Technology Stack**

@@ -1,4 +1,3 @@
-<!-- .claude/agents/orchestrator.md -->
 ---
 name: orchestrator
 type: meta-agent

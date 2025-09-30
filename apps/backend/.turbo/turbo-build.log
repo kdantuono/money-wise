@@ -1,4 +1,312 @@
 
-> @money-wise/backend@0.1.0 build /home/runner/work/money-wise/money-wise/apps/backend
+> @money-wise/backend@0.1.0 build /home/nemesi/dev/money-wise/apps/backend
 > nest build
 
+[96msrc/auth/auth-security.service.ts[0m:[93m22[0m:[93m3[0m - [91merror[0m[90m TS2305: [0mModule '"./dto/password-reset.dto"' has no exported member 'PasswordResetDto'.
+
+[7m22[0m   PasswordResetDto,
+[7m  [0m [91m  ~~~~~~~~~~~~~~~~[0m
+[96msrc/auth/auth-security.service.ts[0m:[93m94[0m:[93m31[0m - [91merror[0m[90m TS2339: [0mProperty 'meets_requirements' does not exist on type 'Promise<PasswordValidationResult>'.
+
+[7m94[0m       if (!passwordValidation.meets_requirements) {
+[7m  [0m [91m                              ~~~~~~~~~~~~~~~~~~[0m
+[96msrc/auth/auth-security.service.ts[0m:[93m98[0m:[93m67[0m - [91merror[0m[90m TS2339: [0mProperty 'feedback' does not exist on type 'Promise<PasswordValidationResult>'.
+
+[7m98[0m           { reason: 'weak_password', feedback: passwordValidation.feedback },
+[7m  [0m [91m                                                                  ~~~~~~~~[0m
+[96msrc/auth/auth-security.service.ts[0m:[93m104[0m:[93m40[0m - [91merror[0m[90m TS2339: [0mProperty 'feedback' does not exist on type 'Promise<PasswordValidationResult>'.
+
+[7m104[0m           feedback: passwordValidation.feedback,
+[7m   [0m [91m                                       ~~~~~~~~[0m
+[96msrc/auth/auth-security.service.ts[0m:[93m105[0m:[93m40[0m - [91merror[0m[90m TS2339: [0mProperty 'strength' does not exist on type 'Promise<PasswordValidationResult>'.
+
+[7m105[0m           strength: passwordValidation.strength,
+[7m   [0m [91m                                       ~~~~~~~~[0m
+[96msrc/auth/auth-security.service.ts[0m:[93m106[0m:[93m37[0m - [91merror[0m[90m TS2339: [0mProperty 'score' does not exist on type 'Promise<PasswordValidationResult>'.
+
+[7m106[0m           score: passwordValidation.score,
+[7m   [0m [91m                                    ~~~~~[0m
+[96msrc/auth/auth-security.service.ts[0m:[93m321[0m:[93m31[0m - [91merror[0m[90m TS2339: [0mProperty 'meets_requirements' does not exist on type 'Promise<PasswordValidationResult>'.
+
+[7m321[0m       if (!passwordValidation.meets_requirements) {
+[7m   [0m [91m                              ~~~~~~~~~~~~~~~~~~[0m
+[96msrc/auth/auth-security.service.ts[0m:[93m324[0m:[93m40[0m - [91merror[0m[90m TS2339: [0mProperty 'feedback' does not exist on type 'Promise<PasswordValidationResult>'.
+
+[7m324[0m           feedback: passwordValidation.feedback,
+[7m   [0m [91m                                       ~~~~~~~~[0m
+[96msrc/auth/auth-security.service.ts[0m:[93m325[0m:[93m40[0m - [91merror[0m[90m TS2339: [0mProperty 'strength' does not exist on type 'Promise<PasswordValidationResult>'.
+
+[7m325[0m           strength: passwordValidation.strength,
+[7m   [0m [91m                                       ~~~~~~~~[0m
+[96msrc/auth/auth-security.service.ts[0m:[93m326[0m:[93m37[0m - [91merror[0m[90m TS2339: [0mProperty 'score' does not exist on type 'Promise<PasswordValidationResult>'.
+
+[7m326[0m           score: passwordValidation.score,
+[7m   [0m [91m                                    ~~~~~[0m
+[96msrc/auth/auth-security.service.ts[0m:[93m375[0m:[93m37[0m - [91merror[0m[90m TS2339: [0mProperty 'score' does not exist on type 'Promise<PasswordValidationResult>'.
+
+[7m375[0m           score: passwordValidation.score,
+[7m   [0m [91m                                    ~~~~~[0m
+[96msrc/auth/auth-security.service.ts[0m:[93m376[0m:[93m40[0m - [91merror[0m[90m TS2339: [0mProperty 'strength' does not exist on type 'Promise<PasswordValidationResult>'.
+
+[7m376[0m           strength: passwordValidation.strength,
+[7m   [0m [91m                                       ~~~~~~~~[0m
+[96msrc/auth/auth-security.service.ts[0m:[93m377[0m:[93m40[0m - [91merror[0m[90m TS2339: [0mProperty 'feedback' does not exist on type 'Promise<PasswordValidationResult>'.
+
+[7m377[0m           feedback: passwordValidation.feedback,
+[7m   [0m [91m                                       ~~~~~~~~[0m
+[96msrc/auth/auth-security.service.ts[0m:[93m406[0m:[93m9[0m - [91merror[0m[90m TS2554: [0mExpected 1-2 arguments, but got 3.
+
+[7m406[0m         request.get('User-Agent') || 'unknown'
+[7m   [0m [91m        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+[96msrc/auth/auth-security.service.ts[0m:[93m442[0m:[93m9[0m - [91merror[0m[90m TS2559: [0mType 'string' has no properties in common with type '{ ipAddress?: string; userAgent?: string; }'.
+
+[7m442[0m         request.get('User-Agent') || 'unknown'
+[7m   [0m [91m        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+[96msrc/auth/auth-security.service.ts[0m:[93m451[0m:[93m7[0m - [91merror[0m[90m TS2322: [0mType '{ success: boolean; error?: string; message?: string; requiresEmailVerification?: boolean; }' is not assignable to type 'PasswordResetResponseDto'.
+  Property 'message' is optional in type '{ success: boolean; error?: string; message?: string; requiresEmailVerification?: boolean; }' but required in type 'PasswordResetResponseDto'.
+
+[7m451[0m       return result;
+[7m   [0m [91m      ~~~~~~[0m
+[96msrc/auth/auth-security.service.ts[0m:[93m549[0m:[93m25[0m - [91merror[0m[90m TS2339: [0mProperty 'score' does not exist on type 'Promise<PasswordValidationResult>'.
+
+[7m549[0m       score: validation.score,
+[7m   [0m [91m                        ~~~~~[0m
+[96msrc/auth/auth-security.service.ts[0m:[93m550[0m:[93m28[0m - [91merror[0m[90m TS2339: [0mProperty 'strength' does not exist on type 'Promise<PasswordValidationResult>'.
+
+[7m550[0m       strength: validation.strength,
+[7m   [0m [91m                           ~~~~~~~~[0m
+[96msrc/auth/auth-security.service.ts[0m:[93m551[0m:[93m28[0m - [91merror[0m[90m TS2339: [0mProperty 'feedback' does not exist on type 'Promise<PasswordValidationResult>'.
+
+[7m551[0m       feedback: validation.feedback,
+[7m   [0m [91m                           ~~~~~~~~[0m
+[96msrc/auth/auth-security.service.ts[0m:[93m552[0m:[93m38[0m - [91merror[0m[90m TS2339: [0mProperty 'meets_requirements' does not exist on type 'Promise<PasswordValidationResult>'.
+
+[7m552[0m       meets_requirements: validation.meets_requirements,
+[7m   [0m [91m                                     ~~~~~~~~~~~~~~~~~~[0m
+[96msrc/auth/auth.controller.ts[0m:[93m25[0m:[93m35[0m - [91merror[0m[90m TS2305: [0mModule '"./dto/password-reset.dto"' has no exported member 'PasswordResetDto'.
+
+[7m25[0m import { PasswordResetRequestDto, PasswordResetDto, PasswordResetResponseDto, PasswordResetTokenValidationDto, PasswordResetTokenResponseDto } from './dto/password-reset.dto';
+[7m  [0m [91m                                  ~~~~~~~~~~~~~~~~[0m
+[96msrc/auth/controllers/password.controller.ts[0m:[93m21[0m:[93m10[0m - [91merror[0m[90m TS2724: [0m'"../dto/password-reset.dto"' has no exported member named 'RequestPasswordResetDto'. Did you mean 'ResetPasswordDto'?
+
+[7m21[0m import { RequestPasswordResetDto, ResetPasswordDto, ValidateResetTokenDto } from '../dto/password-reset.dto';
+[7m  [0m [91m         ~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  [96msrc/auth/dto/password-reset.dto.ts[0m:[93m23[0m:[93m14[0m
+    [7m23[0m export class ResetPasswordDto {
+    [7m  [0m [96m             ~~~~~~~~~~~~~~~~[0m
+    'ResetPasswordDto' is declared here.
+[96msrc/auth/controllers/password.controller.ts[0m:[93m22[0m:[93m10[0m - [91merror[0m[90m TS2305: [0mModule '"../dto/password-strength.dto"' has no exported member 'CheckPasswordStrengthDto'.
+
+[7m22[0m import { CheckPasswordStrengthDto, PasswordStrengthResponseDto } from '../dto/password-strength.dto';
+[7m  [0m [91m         ~~~~~~~~~~~~~~~~~~~~~~~~[0m
+[96msrc/auth/controllers/password.controller.ts[0m:[93m49[0m:[93m7[0m - [91merror[0m[90m TS2353: [0mObject literal may only specify known properties, and 'isValid' does not exist in type 'PasswordStrengthResponseDto'.
+
+[7m49[0m       isValid: validation.isValid,
+[7m  [0m [91m      ~~~~~~~[0m
+[96msrc/auth/services/password-security.service.ts[0m:[93m102[0m:[93m9[0m - [91merror[0m[90m TS2393: [0mDuplicate function implementation.
+
+[7m102[0m   async hashPassword(
+[7m   [0m [91m        ~~~~~~~~~~~~[0m
+[96msrc/auth/services/password-security.service.ts[0m:[93m128[0m:[93m9[0m - [91merror[0m[90m TS2393: [0mDuplicate function implementation.
+
+[7m128[0m   async verifyPassword(
+[7m   [0m [91m        ~~~~~~~~~~~~~~[0m
+[96msrc/auth/services/password-security.service.ts[0m:[93m382[0m:[93m9[0m - [91merror[0m[90m TS2393: [0mDuplicate function implementation.
+
+[7m382[0m   async hashPassword(password: string): Promise<string> {
+[7m   [0m [91m        ~~~~~~~~~~~~[0m
+[96msrc/auth/services/password-security.service.ts[0m:[93m390[0m:[93m9[0m - [91merror[0m[90m TS2393: [0mDuplicate function implementation.
+
+[7m390[0m   async verifyPassword(password: string, hash: string): Promise<boolean> {
+[7m   [0m [91m        ~~~~~~~~~~~~~~[0m
+[96msrc/auth/services/password-security.service.ts[0m:[93m501[0m:[93m30[0m - [91merror[0m[90m TS2339: [0mProperty 'policy' does not exist on type 'PasswordSecurityService'.
+
+[7m501[0m     if (historyCount >= this.policy.historyCount) {
+[7m   [0m [91m                             ~~~~~~[0m
+[96msrc/auth/services/password-security.service.ts[0m:[93m505[0m:[93m35[0m - [91merror[0m[90m TS2339: [0mProperty 'policy' does not exist on type 'PasswordSecurityService'.
+
+[7m505[0m         take: historyCount - this.policy.historyCount + 1,
+[7m   [0m [91m                                  ~~~~~~[0m
+[96msrc/core/database/repositories/impl/category.repository.ts[0m:[93m11[0m:[93m14[0m - [91merror[0m[90m TS2420: [0mClass 'CategoryRepository' incorrectly implements interface 'ICategoryRepository'.
+  Type 'CategoryRepository' is missing the following properties from type 'ICategoryRepository': findAndCount, createBulk, updateMany, softDelete, and 3 more.
+
+[7m11[0m export class CategoryRepository extends BaseRepository<Category> implements ICategoryRepository {
+[7m  [0m [91m             ~~~~~~~~~~~~~~~~~~[0m
+[96msrc/core/database/repositories/impl/category.repository.ts[0m:[93m13[0m:[93m33[0m - [91merror[0m[90m TS2554: [0mExpected 2 arguments, but got 3.
+
+[7m13[0m     super(dataSource, Category, 'CategoryRepository');
+[7m  [0m [91m                                ~~~~~~~~~~~~~~~~~~~~[0m
+[96msrc/core/database/repositories/impl/category.repository.ts[0m:[93m36[0m:[93m33[0m - [91merror[0m[90m TS2339: [0mProperty 'createQueryBuilder' does not exist on type 'CategoryRepository'.
+
+[7m36[0m       const queryBuilder = this.createQueryBuilder('category')
+[7m  [0m [91m                                ~~~~~~~~~~~~~~~~~~[0m
+[96msrc/core/database/repositories/impl/category.repository.ts[0m:[93m76[0m:[93m33[0m - [91merror[0m[90m TS2339: [0mProperty 'createQueryBuilder' does not exist on type 'CategoryRepository'.
+
+[7m76[0m       const queryBuilder = this.createQueryBuilder('category')
+[7m  [0m [91m                                ~~~~~~~~~~~~~~~~~~[0m
+[96msrc/core/database/repositories/impl/category.repository.ts[0m:[93m100[0m:[93m33[0m - [91merror[0m[90m TS2339: [0mProperty 'createQueryBuilder' does not exist on type 'CategoryRepository'.
+
+[7m100[0m       const queryBuilder = this.createQueryBuilder('category')
+[7m   [0m [91m                                ~~~~~~~~~~~~~~~~~~[0m
+[96msrc/core/database/repositories/impl/category.repository.ts[0m:[93m167[0m:[93m33[0m - [91merror[0m[90m TS2339: [0mProperty 'manager' does not exist on type 'CategoryRepository'.
+
+[7m167[0m       const result = await this.manager.query(query, queryParams);
+[7m   [0m [91m                                ~~~~~~~[0m
+[96msrc/core/database/repositories/impl/category.repository.ts[0m:[93m188[0m:[93m33[0m - [91merror[0m[90m TS2339: [0mProperty 'createQueryBuilder' does not exist on type 'CategoryRepository'.
+
+[7m188[0m       const queryBuilder = this.createQueryBuilder('category')
+[7m   [0m [91m                                ~~~~~~~~~~~~~~~~~~[0m
+[96msrc/core/database/repositories/impl/category.repository.ts[0m:[93m211[0m:[93m33[0m - [91merror[0m[90m TS2339: [0mProperty 'createQueryBuilder' does not exist on type 'CategoryRepository'.
+
+[7m211[0m       const queryBuilder = this.createQueryBuilder('category')
+[7m   [0m [91m                                ~~~~~~~~~~~~~~~~~~[0m
+[96msrc/core/database/repositories/impl/category.repository.ts[0m:[93m234[0m:[93m33[0m - [91merror[0m[90m TS2339: [0mProperty 'createQueryBuilder' does not exist on type 'CategoryRepository'.
+
+[7m234[0m       const queryBuilder = this.createQueryBuilder('category')
+[7m   [0m [91m                                ~~~~~~~~~~~~~~~~~~[0m
+[96msrc/core/database/repositories/impl/category.repository.ts[0m:[93m256[0m:[93m33[0m - [91merror[0m[90m TS2339: [0mProperty 'createQueryBuilder' does not exist on type 'CategoryRepository'.
+
+[7m256[0m       const queryBuilder = this.createQueryBuilder('category')
+[7m   [0m [91m                                ~~~~~~~~~~~~~~~~~~[0m
+[96msrc/core/database/repositories/impl/category.repository.ts[0m:[93m281[0m:[93m33[0m - [91merror[0m[90m TS2339: [0mProperty 'createQueryBuilder' does not exist on type 'CategoryRepository'.
+
+[7m281[0m       const queryBuilder = this.createQueryBuilder('category')
+[7m   [0m [91m                                ~~~~~~~~~~~~~~~~~~[0m
+[96msrc/core/database/repositories/impl/category.repository.ts[0m:[93m354[0m:[93m37[0m - [91merror[0m[90m TS2339: [0mProperty 'manager' does not exist on type 'CategoryRepository'.
+
+[7m354[0m       const basicStats = await this.manager.query(`
+[7m   [0m [91m                                    ~~~~~~~[0m
+[96msrc/core/database/repositories/impl/category.repository.ts[0m:[93m364[0m:[93m39[0m - [91merror[0m[90m TS2339: [0mProperty 'manager' does not exist on type 'CategoryRepository'.
+
+[7m364[0m       const monthlyStats = await this.manager.query(`
+[7m   [0m [91m                                      ~~~~~~~[0m
+[96msrc/core/database/repositories/impl/category.repository.ts[0m:[93m402[0m:[93m37[0m - [91merror[0m[90m TS2339: [0mProperty 'createQueryBuilder' does not exist on type 'CategoryRepository'.
+
+[7m402[0m       const categories = await this.createQueryBuilder('category')
+[7m   [0m [91m                                    ~~~~~~~~~~~~~~~~~~[0m
+[96msrc/core/database/repositories/impl/category.repository.ts[0m:[93m475[0m:[93m18[0m - [91merror[0m[90m TS2339: [0mProperty 'manager' does not exist on type 'CategoryRepository'.
+
+[7m475[0m       await this.manager.transaction(async (transactionalEntityManager) => {
+[7m   [0m [91m                 ~~~~~~~[0m
+[96msrc/core/database/repositories/impl/category.repository.ts[0m:[93m501[0m:[93m37[0m - [91merror[0m[90m TS2339: [0mProperty 'createBulk' does not exist on type 'CategoryRepository'.
+
+[7m501[0m       const categories = await this.createBulk(defaultCategoriesData);
+[7m   [0m [91m                                    ~~~~~~~~~~[0m
+[96msrc/core/database/repositories/impl/category.repository.ts[0m:[93m545[0m:[93m18[0m - [91merror[0m[90m TS2339: [0mProperty 'manager' does not exist on type 'CategoryRepository'.
+
+[7m545[0m       await this.manager.transaction(async (transactionalEntityManager) => {
+[7m   [0m [91m                 ~~~~~~~[0m
+[96msrc/core/database/repositories/impl/transaction.repository.ts[0m:[93m11[0m:[93m14[0m - [91merror[0m[90m TS2420: [0mClass 'TransactionRepository' incorrectly implements interface 'ITransactionRepository'.
+  Type 'TransactionRepository' is missing the following properties from type 'ITransactionRepository': findAndCount, createBulk, updateMany, softDelete, and 3 more.
+
+[7m11[0m export class TransactionRepository extends BaseRepository<Transaction> implements ITransactionRepository {
+[7m  [0m [91m             ~~~~~~~~~~~~~~~~~~~~~[0m
+[96msrc/core/database/repositories/impl/transaction.repository.ts[0m:[93m13[0m:[93m36[0m - [91merror[0m[90m TS2554: [0mExpected 2 arguments, but got 3.
+
+[7m13[0m     super(dataSource, Transaction, 'TransactionRepository');
+[7m  [0m [91m                                   ~~~~~~~~~~~~~~~~~~~~~~~[0m
+[96msrc/core/database/repositories/impl/transaction.repository.ts[0m:[93m29[0m:[93m33[0m - [91merror[0m[90m TS2339: [0mProperty 'createQueryBuilder' does not exist on type 'TransactionRepository'.
+
+[7m29[0m       const queryBuilder = this.createQueryBuilder('transaction')
+[7m  [0m [91m                                ~~~~~~~~~~~~~~~~~~[0m
+[96msrc/core/database/repositories/impl/transaction.repository.ts[0m:[93m78[0m:[93m33[0m - [91merror[0m[90m TS2339: [0mProperty 'createQueryBuilder' does not exist on type 'TransactionRepository'.
+
+[7m78[0m       const queryBuilder = this.createQueryBuilder('transaction')
+[7m  [0m [91m                                ~~~~~~~~~~~~~~~~~~[0m
+[96msrc/core/database/repositories/impl/transaction.repository.ts[0m:[93m126[0m:[93m33[0m - [91merror[0m[90m TS2339: [0mProperty 'createQueryBuilder' does not exist on type 'TransactionRepository'.
+
+[7m126[0m       const queryBuilder = this.createQueryBuilder('transaction')
+[7m   [0m [91m                                ~~~~~~~~~~~~~~~~~~[0m
+[96msrc/core/database/repositories/impl/transaction.repository.ts[0m:[93m202[0m:[93m33[0m - [91merror[0m[90m TS2339: [0mProperty 'createQueryBuilder' does not exist on type 'TransactionRepository'.
+
+[7m202[0m       const queryBuilder = this.createQueryBuilder('transaction')
+[7m   [0m [91m                                ~~~~~~~~~~~~~~~~~~[0m
+[96msrc/core/database/repositories/impl/transaction.repository.ts[0m:[93m247[0m:[93m33[0m - [91merror[0m[90m TS2339: [0mProperty 'createQueryBuilder' does not exist on type 'TransactionRepository'.
+
+[7m247[0m       const queryBuilder = this.createQueryBuilder('transaction')
+[7m   [0m [91m                                ~~~~~~~~~~~~~~~~~~[0m
+[96msrc/core/database/repositories/impl/transaction.repository.ts[0m:[93m292[0m:[93m33[0m - [91merror[0m[90m TS2339: [0mProperty 'createQueryBuilder' does not exist on type 'TransactionRepository'.
+
+[7m292[0m       const queryBuilder = this.createQueryBuilder('transaction')
+[7m   [0m [91m                                ~~~~~~~~~~~~~~~~~~[0m
+[96msrc/core/database/repositories/impl/transaction.repository.ts[0m:[93m336[0m:[93m33[0m - [91merror[0m[90m TS2339: [0mProperty 'createQueryBuilder' does not exist on type 'TransactionRepository'.
+
+[7m336[0m       const queryBuilder = this.createQueryBuilder('transaction')
+[7m   [0m [91m                                ~~~~~~~~~~~~~~~~~~[0m
+[96msrc/core/database/repositories/impl/transaction.repository.ts[0m:[93m430[0m:[93m34[0m - [91merror[0m[90m TS2339: [0mProperty 'manager' does not exist on type 'TransactionRepository'.
+
+[7m430[0m       const results = await this.manager.query(query, params);
+[7m   [0m [91m                                 ~~~~~~~[0m
+[96msrc/core/database/repositories/impl/transaction.repository.ts[0m:[93m476[0m:[93m39[0m - [91merror[0m[90m TS2339: [0mProperty 'createQueryBuilder' does not exist on type 'TransactionRepository'.
+
+[7m476[0m       const transactions = await this.createQueryBuilder('transaction')
+[7m   [0m [91m                                      ~~~~~~~~~~~~~~~~~~[0m
+[96msrc/core/database/repositories/impl/transaction.repository.ts[0m:[93m511[0m:[93m33[0m - [91merror[0m[90m TS2339: [0mProperty 'createQueryBuilder' does not exist on type 'TransactionRepository'.
+
+[7m511[0m       const queryBuilder = this.createQueryBuilder('transaction')
+[7m   [0m [91m                                ~~~~~~~~~~~~~~~~~~[0m
+[96msrc/core/database/repositories/impl/transaction.repository.ts[0m:[93m596[0m:[93m37[0m - [91merror[0m[90m TS2339: [0mProperty 'manager' does not exist on type 'TransactionRepository'.
+
+[7m596[0m       const basicStats = await this.manager.query(`
+[7m   [0m [91m                                    ~~~~~~~[0m
+[96msrc/core/database/repositories/impl/transaction.repository.ts[0m:[93m612[0m:[93m40[0m - [91merror[0m[90m TS2339: [0mProperty 'manager' does not exist on type 'TransactionRepository'.
+
+[7m612[0m       const categoryStats = await this.manager.query(`
+[7m   [0m [91m                                       ~~~~~~~[0m
+[96msrc/core/database/repositories/impl/transaction.repository.ts[0m:[93m631[0m:[93m39[0m - [91merror[0m[90m TS2339: [0mProperty 'manager' does not exist on type 'TransactionRepository'.
+
+[7m631[0m       const accountStats = await this.manager.query(`
+[7m   [0m [91m                                      ~~~~~~~[0m
+[96msrc/core/database/repositories/impl/transaction.repository.ts[0m:[93m649[0m:[93m37[0m - [91merror[0m[90m TS2339: [0mProperty 'manager' does not exist on type 'TransactionRepository'.
+
+[7m649[0m       const dailyStats = await this.manager.query(`
+[7m   [0m [91m                                    ~~~~~~~[0m
+[96msrc/core/database/repositories/impl/transaction.repository.ts[0m:[93m731[0m:[93m62[0m - [91merror[0m[90m TS2554: [0mExpected 1 arguments, but got 2.
+
+[7m731[0m       const transaction = await this.findById(transactionId, { relations: ['category'] });
+[7m   [0m [91m                                                             ~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+[96msrc/core/database/repositories/interfaces/index.ts[0m:[93m12[0m:[93m19[0m - [91merror[0m[90m TS2304: [0mCannot find name 'IUserRepository'.
+
+[7m12[0m   userRepository: IUserRepository;
+[7m  [0m [91m                  ~~~~~~~~~~~~~~~[0m
+[96msrc/core/database/repositories/interfaces/index.ts[0m:[93m13[0m:[93m22[0m - [91merror[0m[90m TS2304: [0mCannot find name 'IAccountRepository'.
+
+[7m13[0m   accountRepository: IAccountRepository;
+[7m  [0m [91m                     ~~~~~~~~~~~~~~~~~~[0m
+[96msrc/core/database/repositories/interfaces/index.ts[0m:[93m14[0m:[93m23[0m - [91merror[0m[90m TS2304: [0mCannot find name 'ICategoryRepository'.
+
+[7m14[0m   categoryRepository: ICategoryRepository;
+[7m  [0m [91m                      ~~~~~~~~~~~~~~~~~~~[0m
+[96msrc/core/database/repositories/interfaces/index.ts[0m:[93m15[0m:[93m26[0m - [91merror[0m[90m TS2304: [0mCannot find name 'ITransactionRepository'.
+
+[7m15[0m   transactionRepository: ITransactionRepository;
+[7m  [0m [91m                         ~~~~~~~~~~~~~~~~~~~~~~[0m
+[96msrc/core/database/tests/database-test.config.ts[0m:[93m75[0m:[93m30[0m - [91merror[0m[90m TS2339: [0mProperty 'getHost' does not exist on type 'PostgreSqlContainer'.
+
+[7m75[0m         host: this.container.getHost(),
+[7m  [0m [91m                             ~~~~~~~[0m
+[96msrc/core/database/tests/database-test.config.ts[0m:[93m76[0m:[93m30[0m - [91merror[0m[90m TS2339: [0mProperty 'getMappedPort' does not exist on type 'PostgreSqlContainer'.
+
+[7m76[0m         port: this.container.getMappedPort(5432),
+[7m  [0m [91m                             ~~~~~~~~~~~~~[0m
+[96msrc/core/database/tests/database-test.config.ts[0m:[93m77[0m:[93m34[0m - [91merror[0m[90m TS2339: [0mProperty 'getUsername' does not exist on type 'PostgreSqlContainer'.
+
+[7m77[0m         username: this.container.getUsername(),
+[7m  [0m [91m                                 ~~~~~~~~~~~[0m
+[96msrc/core/database/tests/database-test.config.ts[0m:[93m78[0m:[93m34[0m - [91merror[0m[90m TS2339: [0mProperty 'getPassword' does not exist on type 'PostgreSqlContainer'.
+
+[7m78[0m         password: this.container.getPassword(),
+[7m  [0m [91m                                 ~~~~~~~~~~~[0m
+[96msrc/core/database/tests/database-test.config.ts[0m:[93m79[0m:[93m34[0m - [91merror[0m[90m TS2339: [0mProperty 'getDatabase' does not exist on type 'PostgreSqlContainer'.
+
+[7m79[0m         database: this.container.getDatabase(),
+[7m  [0m [91m                                 ~~~~~~~~~~~[0m
+[96msrc/core/database/tests/database-test.config.ts[0m:[93m220[0m:[93m28[0m - [91merror[0m[90m TS2339: [0mProperty 'stop' does not exist on type 'PostgreSqlContainer'.
+
+[7m220[0m       await this.container.stop();
+[7m   [0m [91m                           ~~~~[0m
+
+Found 74 error(s).
+
+ ELIFECYCLE  Command failed with exit code 1.

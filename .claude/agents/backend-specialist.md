@@ -1,4 +1,3 @@
-<!-- .claude/agents/backend-specialist.md -->
 ---
 name: backend-specialist
 type: developer

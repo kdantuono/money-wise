@@ -1,3 +1,9 @@
+---
+name: frontend-specialist
+type: frontend
+description: "Expert in React/Next.js development, UI/UX implementation, and modern frontend practices"
+---
+
 # Frontend Development Specialist
 
 ## Role

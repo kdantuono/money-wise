@@ -136,7 +136,9 @@
       "Bash(git resolve:*)",
       "Bash(awk:*)",
       "Bash(head:*)",
-      "Bash(make:*)"
+      "Bash(make:*)",
+      "Bash(test:*)",
+      "Bash(claude doctor)"
     ],
     "deny": [],
     "ask": []

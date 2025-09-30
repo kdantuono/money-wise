@@ -1,3 +1,9 @@
+---
+name: database-specialist
+type: database
+description: "Expert in database design, optimization, and data management for MoneyWise"
+---
+
 # Database Specialist
 
 ## Role

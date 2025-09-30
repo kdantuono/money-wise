@@ -32,7 +32,7 @@ export class PerformanceMonitor {
    * @param tags Additional tags for the measurement
    * @returns Duration in milliseconds
    */
-  static end(key: string, tags?: Record<string, string>): number {
+  static end(key: string, _tags?: Record<string, string>): number {
     const startTime = this.measurements.get(key);
     if (!startTime) {
       console.warn(`No start time found for measurement key: ${key}`);
