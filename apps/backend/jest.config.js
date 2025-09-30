@@ -19,12 +19,19 @@ module.exports = {
   // Use TypeScript preset
   preset: 'ts-jest',
 
+  // Transform ES modules from node_modules (allow @faker-js to be transformed)
+  transformIgnorePatterns: [
+    'node_modules/(?!@faker-js)',
+  ],
+
   // Module name mapping specific to backend
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
     '^@money-wise/types$': '<rootDir>/../../packages/types/src',
     '^@money-wise/utils$': '<rootDir>/../../packages/utils/src',
     '^@money-wise/test-utils$': '<rootDir>/../../packages/test-utils/src',
+    // Mock @faker-js/faker as it's an ES module causing issues
+    '^@faker-js/faker$': '<rootDir>/__mocks__/@faker-js/faker.ts',
   },
 
   // Setup files for NestJS testing
