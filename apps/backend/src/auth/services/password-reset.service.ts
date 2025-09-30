@@ -1,9 +1,8 @@
-import { Injectable, Logger, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import { Redis } from 'ioredis';
-import * as crypto from 'crypto';
 import { v4 as uuidv4 } from 'uuid';
 import { User, UserStatus } from '../../core/database/entities/user.entity';
 import { AuditLog, AuditEventType } from '../../core/database/entities/audit-log.entity';

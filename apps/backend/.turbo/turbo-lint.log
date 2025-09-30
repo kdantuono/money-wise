@@ -22,9 +22,7 @@
   458:16  warning  Unexpected any. Specify a different type                                               @typescript-eslint/no-explicit-any
 
 /home/nemesi/dev/money-wise/apps/backend/src/auth/services/password-security.service.ts
-  382:3   error    Duplicate name 'hashPassword'             no-dupe-class-members
-  390:3   error    Duplicate name 'verifyPassword'           no-dupe-class-members
-  528:16  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  513:16  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
 
 /home/nemesi/dev/money-wise/apps/backend/src/auth/services/two-factor-auth.service.ts
   74:48  warning  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
@@ -77,12 +75,6 @@
 /home/nemesi/dev/money-wise/apps/backend/src/core/database/repositories/interfaces/base.repository.interface.ts
   77:35  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
   77:51  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-
-/home/nemesi/dev/money-wise/apps/backend/src/core/database/repositories/interfaces/index.ts
-  12:19  error  'IUserRepository' is not defined         no-undef
-  13:22  error  'IAccountRepository' is not defined      no-undef
-  14:23  error  'ICategoryRepository' is not defined     no-undef
-  15:26  error  'ITransactionRepository' is not defined  no-undef
 
 /home/nemesi/dev/money-wise/apps/backend/src/core/database/tests/database-test-suite.ts
    57:5  warning  Unexpected console statement                  no-console
@@ -158,15 +150,16 @@
   492:5  warning  Unexpected console statement                  no-console
 
 /home/nemesi/dev/money-wise/apps/backend/src/core/database/tests/database-test.config.ts
-   50:7   warning  Unexpected console statement  no-console
-   53:7   warning  Unexpected console statement  no-console
-   58:12  warning  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
-   83:7   warning  Unexpected console statement  no-console
-  135:7   warning  Unexpected console statement  no-console
-  140:9   warning  Unexpected console statement  no-console
-  190:11  warning  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
-  225:5   warning  Unexpected console statement  no-console
-  242:7   warning  Unexpected console statement  no-console
+   25:22  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   50:7   warning  Unexpected console statement              no-console
+   53:7   warning  Unexpected console statement              no-console
+   58:12  warning  Forbidden non-null assertion              @typescript-eslint/no-non-null-assertion
+   84:7   warning  Unexpected console statement              no-console
+  136:7   warning  Unexpected console statement              no-console
+  141:9   warning  Unexpected console statement              no-console
+  191:11  warning  Forbidden non-null assertion              @typescript-eslint/no-non-null-assertion
+  226:5   warning  Unexpected console statement              no-console
+  243:7   warning  Unexpected console statement              no-console
 
 /home/nemesi/dev/money-wise/apps/backend/src/core/database/tests/factories/test-data.factory.ts
   455:5  warning  Unexpected console statement  no-console
@@ -216,6 +209,6 @@
   522:83  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
   559:56  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
 
-✖ 171 problems (47 errors, 124 warnings)
+✖ 166 problems (41 errors, 125 warnings)
 
  ELIFECYCLE  Command failed with exit code 1.

@@ -806,7 +806,7 @@ export class TransactionRepository extends BaseRepository<Transaction> implement
   // Implement remaining methods as needed...
   // For brevity, I'm including stubs for the remaining interface methods
 
-  async getMonthlySpendingByCategory(userId: string, year: number, month: number): Promise<Array<{
+  async getMonthlySpendingByCategory(_userId: string, _year: number, _month: number): Promise<Array<{
     categoryId: string;
     categoryName: string;
     amount: number;
@@ -818,7 +818,7 @@ export class TransactionRepository extends BaseRepository<Transaction> implement
     throw new Error('Method not implemented yet');
   }
 
-  async createSplit(transactionId: string, splits: Array<{
+  async createSplit(_transactionId: string, _splits: Array<{
     amount: number;
     categoryId?: string;
     description?: string;
@@ -827,7 +827,7 @@ export class TransactionRepository extends BaseRepository<Transaction> implement
     throw new Error('Method not implemented yet');
   }
 
-  async bulkCategorize(updates: Array<{
+  async bulkCategorize(_updates: Array<{
     transactionId: string;
     categoryId: string;
   }>): Promise<number> {
@@ -835,16 +835,16 @@ export class TransactionRepository extends BaseRepository<Transaction> implement
     throw new Error('Method not implemented yet');
   }
 
-  async findNeedingCategorization(userId: string, confidenceThreshold?: number): Promise<Transaction[]> {
+  async findNeedingCategorization(_userId: string, _confidenceThreshold?: number): Promise<Transaction[]> {
     // Implementation would go here
     throw new Error('Method not implemented yet');
   }
 
   async getCashFlow(
-    userId: string,
-    startDate: Date,
-    endDate: Date,
-    groupBy: 'day' | 'week' | 'month',
+    _userId: string,
+    _startDate: Date,
+    _endDate: Date,
+    _groupBy: 'day' | 'week' | 'month',
   ): Promise<Array<{
     period: string;
     income: number;

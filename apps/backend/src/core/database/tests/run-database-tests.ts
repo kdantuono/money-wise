@@ -5,6 +5,8 @@
  * Standalone script to run comprehensive database tests
  */
 
+import * as fs from 'fs';
+import * as path from 'path';
 import { runDatabaseTestSuite, TestSuiteResults } from './database-test-suite';
 
 async function main() {
@@ -26,9 +28,6 @@ async function main() {
     }
 
     // Write results to file for CI/CD
-    const fs = require('fs');
-    const path = require('path');
-
     const resultsPath = path.join(__dirname, 'test-results.json');
     fs.writeFileSync(resultsPath, JSON.stringify(results, null, 2));
     console.log(`📄 Test results written to: ${resultsPath}`);

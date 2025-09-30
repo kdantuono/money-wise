@@ -3,6 +3,8 @@
  * Runs once before all database tests
  */
 
+import { execSync } from 'child_process';
+
 export default async function globalSetup() {
   console.log('🚀 Starting global database test setup...');
 
@@ -13,7 +15,6 @@ export default async function globalSetup() {
 
   // Check if Docker is available for TestContainers
   try {
-    const { execSync } = require('child_process');
     execSync('docker --version', { stdio: 'ignore' });
     process.env.USE_TEST_CONTAINERS = 'true';
     console.log('✅ Docker available - will use TestContainers');

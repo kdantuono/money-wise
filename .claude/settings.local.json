@@ -138,7 +138,8 @@
       "Bash(head:*)",
       "Bash(make:*)",
       "Bash(test:*)",
-      "Bash(claude doctor)"
+      "Bash(claude doctor)",
+      "Read(///**)"
     ],
     "deny": [],
     "ask": []

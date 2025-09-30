@@ -7,7 +7,6 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import * as bcrypt from 'bcryptjs';
 import { User, UserStatus } from '../core/database/entities/user.entity';
 import { AuditLog, AuditEventType } from '../core/database/entities/audit-log.entity';
 import { RegisterDto } from './dto/register.dto';

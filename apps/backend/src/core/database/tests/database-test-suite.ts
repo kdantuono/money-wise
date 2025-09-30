@@ -342,32 +342,36 @@ export class DatabaseTestSuite {
    */
   private async testEntityCRUD(entityName: string): Promise<void> {
     switch (entityName) {
-      case 'User':
+      case 'User': {
         const user = await this.factory.users.build();
         const foundUser = await this.dataSource.getRepository('User').findOne({ where: { id: user.id } });
         if (!foundUser) throw new Error('User CRUD test failed');
         break;
+      }
 
-      case 'Account':
+      case 'Account': {
         const testUser = await this.factory.users.build();
         const account = await this.factory.accounts.build({ userId: testUser.id });
         const foundAccount = await this.dataSource.getRepository('Account').findOne({ where: { id: account.id } });
         if (!foundAccount) throw new Error('Account CRUD test failed');
         break;
+      }
 
-      case 'Category':
+      case 'Category': {
         const category = await this.factory.categories.build();
         const foundCategory = await this.dataSource.getRepository('Category').findOne({ where: { id: category.id } });
         if (!foundCategory) throw new Error('Category CRUD test failed');
         break;
+      }
 
-      case 'Transaction':
+      case 'Transaction': {
         const txUser = await this.factory.users.build();
         const txAccount = await this.factory.accounts.build({ userId: txUser.id });
         const transaction = await this.factory.transactions.build({ accountId: txAccount.id });
         const foundTransaction = await this.dataSource.getRepository('Transaction').findOne({ where: { id: transaction.id } });
         if (!foundTransaction) throw new Error('Transaction CRUD test failed');
         break;
+      }
     }
   }
 

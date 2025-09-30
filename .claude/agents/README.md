@@ -1,16 +1,19 @@
 # MoneyWise Agent System
 
 ## Overview
+
 Specialized AI agents that handle specific domains of the MoneyWise application development.
 
 ## Available Agents
 
 ### Architecture & Design
+
 | Agent | Specialization | Max Instances | Trigger Keywords |
 |-------|---------------|---------------|------------------|
 | `architect` | System Design, Scalability | 1 | architecture, design, scalability, pattern |
 
 ### Process & Quality Evolution
+
 | Agent | Specialization | Max Instances | Trigger Keywords |
 |-------|---------------|---------------|------------------|
 | `analytics-specialist` | Metrics, Event Tracking | 1 | analytics, monitoring, events, metrics |
