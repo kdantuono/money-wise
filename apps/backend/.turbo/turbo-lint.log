@@ -127,8 +127,8 @@
   243:7   warning  Unexpected console statement              no-console
 
 /home/nemesi/dev/money-wise/apps/backend/src/core/database/tests/factories/test-data.factory.ts
-  455:5  warning  Unexpected console statement  no-console
-  479:5  warning  Unexpected console statement  no-console
+  546:5  warning  Unexpected console statement  no-console
+  570:5  warning  Unexpected console statement  no-console
 
 /home/nemesi/dev/money-wise/apps/backend/src/core/database/tests/jest.database.global-setup.ts
    9:3  warning  Unexpected console statement  no-console

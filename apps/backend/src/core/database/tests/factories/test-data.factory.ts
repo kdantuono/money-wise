@@ -194,20 +194,33 @@ export class CategoryFactory extends BaseFactory<Category> {
 
   /**
    * Ensure root category exists (TypeORM NestedSet requires single root)
+   * ALWAYS re-queries to ensure we have the current database state
    */
   private async ensureRootCategory(): Promise<Category> {
+    // ALWAYS check database for existing root (don't rely on cache across database cleanups)
+    const existing = await this.repository
+      .createQueryBuilder('category')
+      .where('category.parentId IS NULL')
+      .getOne();
+
+    if (existing) {
+      return existing;
+    }
+
+    // No root exists - create one (only if promise not in flight)
     if (!this.rootCategoryPromise) {
       this.rootCategoryPromise = (async () => {
-        // Check if root already exists using IS NULL query
-        const existing = await this.repository
+        // Double-check after acquiring lock
+        const doubleCheck = await this.repository
           .createQueryBuilder('category')
           .where('category.parentId IS NULL')
           .getOne();
 
-        if (existing) {
-          return existing;
+        if (doubleCheck) {
+          return doubleCheck;
         }
 
+        // Create root with parent explicitly set to null (required for NestedSet root)
         const root = new Category();
         root.name = 'Root';
         root.slug = 'root';
@@ -219,11 +232,14 @@ export class CategoryFactory extends BaseFactory<Category> {
         root.isDefault = false;
         root.isSystem = true;
         root.sortOrder = 0;
-        root.parentId = null;
+        root.parent = null; // TypeORM NestedSet requires parent relation set to null
         root.rules = {};
         root.metadata = {};
 
-        return await this.repository.save(root);
+        const saved = await this.repository.save(root);
+        // Clear promise after save so next call will re-query
+        this.rootCategoryPromise = null;
+        return saved;
       })();
     }
 
@@ -244,7 +260,7 @@ export class CategoryFactory extends BaseFactory<Category> {
     category.isDefault = overrides.isDefault ?? false;
     category.isSystem = overrides.isSystem ?? false;
     category.sortOrder = overrides.sortOrder || faker.number.int({ min: 0, max: 100 });
-    category.parentId = overrides.parentId !== undefined ? overrides.parentId : null;
+    // NOTE: parentId/parent will be set in build() method to ensure NestedSet compliance
     category.rules = overrides.rules || {
       keywords: [faker.commerce.productName()],
       merchantPatterns: [faker.company.name()],
@@ -258,22 +274,38 @@ export class CategoryFactory extends BaseFactory<Category> {
       businessExpense: faker.datatype.boolean(),
     };
 
+    // Apply overrides last (except parent/parentId which are handled in build())
+    Object.keys(overrides).forEach(key => {
+      if (key !== 'parent' && key !== 'parentId') {
+        (category as any)[key] = overrides[key as keyof Category];
+      }
+    });
+
     return category;
   }
 
   /**
    * Build and save category (ensures root exists for NestedSet)
+   * TypeORM NestedSet REQUIRES that all non-root categories have a parent
    */
   async build(overrides?: Partial<Category>): Promise<Category> {
-    // Ensure root exists
+    // Ensure root exists first
     const root = await this.ensureRootCategory();
 
-    // If no parentId specified, use root as parent (never create new roots)
-    if (!overrides || overrides.parentId === undefined || overrides.parentId === null) {
-      overrides = { ...overrides, parentId: root.id };
+    // Create entity
+    const entity = this.create(overrides);
+
+    // CRITICAL: TypeORM NestedSet requires all non-root entities to have a parent
+    // Set parent relation (not parentId) for better TypeORM NestedSet compatibility
+    if (overrides?.parent) {
+      entity.parent = overrides.parent;
+    } else if (overrides?.parentId) {
+      entity.parentId = overrides.parentId;
+    } else {
+      // No parent specified - use root as default parent
+      entity.parent = root;
     }
 
-    const entity = this.create(overrides);
     return await this.repository.save(entity);
   }
 
