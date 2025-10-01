@@ -53,10 +53,10 @@ describe('Auth E2E Tests', () => {
           firstName: validUser.firstName,
           lastName: validUser.lastName,
           role: UserRole.USER,
-          status: UserStatus.ACTIVE,
+          status: UserStatus.INACTIVE, // New users start inactive until email verified
           currency: 'USD',
           fullName: 'E2E Test',
-          isActive: true,
+          isActive: false, // New users start inactive until email verified
         },
       });
 
@@ -172,6 +172,13 @@ describe('Auth E2E Tests', () => {
         .post('/auth/register')
         .send(testUser)
         .expect(201);
+
+      // Activate user manually for login tests (bypass email verification)
+      const userRepo = testApp.getDataSource().getRepository('User');
+      await userRepo.update(
+        { email: testUser.email },
+        { status: UserStatus.ACTIVE }
+      );
     });
 
     it('should login with valid credentials', async () => {
@@ -266,6 +273,13 @@ describe('Auth E2E Tests', () => {
         .send(testUser)
         .expect(201);
 
+      // Activate user for login
+      const userRepo = testApp.getDataSource().getRepository('User');
+      await userRepo.update(
+        { email: testUser.email },
+        { status: UserStatus.ACTIVE }
+      );
+
       const loginResponse = await testApp.request()
         .post('/auth/login')
         .send({
@@ -336,6 +350,13 @@ describe('Auth E2E Tests', () => {
         .post('/auth/register')
         .send(testUser)
         .expect(201);
+
+      // Activate user for login
+      const userRepo = testApp.getDataSource().getRepository('User');
+      await userRepo.update(
+        { email: testUser.email },
+        { status: UserStatus.ACTIVE }
+      );
 
       const loginResponse = await testApp.request()
         .post('/auth/login')
