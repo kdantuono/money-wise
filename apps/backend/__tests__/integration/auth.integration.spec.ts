@@ -121,7 +121,12 @@ describe('Auth Integration Tests', () => {
   });
 
   afterEach(async () => {
-    jest.clearAllMocks();
+    // Don't clear guard mocks - they need to persist
+    userRepository.findOne.mockClear();
+    userRepository.create.mockClear();
+    userRepository.save.mockClear();
+    userRepository.update.mockClear();
+
     if (app) {
       await app.close();
     }
