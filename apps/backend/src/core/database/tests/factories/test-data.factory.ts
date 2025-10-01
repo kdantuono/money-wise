@@ -41,8 +41,13 @@ export abstract class BaseFactory<T> implements Factory<T> {
   }
 
   async buildMany(count: number, overrides?: Partial<T>): Promise<T[]> {
-    const entities = this.createMany(count, overrides);
-    return await this.repository.save(entities);
+    const results: T[] = [];
+    // Build sequentially to ensure unique constraints and relationships (e.g., NestedSet)
+    for (let i = 0; i < count; i++) {
+      const entity = await this.build(overrides);
+      results.push(entity);
+    }
+    return results;
   }
 }
 
@@ -50,6 +55,8 @@ export abstract class BaseFactory<T> implements Factory<T> {
  * User Factory
  */
 export class UserFactory extends BaseFactory<User> {
+  private static emailCounter = 0;
+
   constructor(dataSource: DataSource) {
     super(dataSource, dataSource.getRepository(User));
   }
@@ -57,7 +64,10 @@ export class UserFactory extends BaseFactory<User> {
   create(overrides: Partial<User> = {}): User {
     const user = new User();
 
-    user.email = overrides.email || faker.internet.email();
+    // Ensure unique email with timestamp + counter for test isolation
+    const timestamp = Date.now();
+    UserFactory.emailCounter++;
+    user.email = overrides.email || `test-${timestamp}-${UserFactory.emailCounter}@moneywise-test.com`;
     user.firstName = overrides.firstName || faker.person.firstName();
     user.lastName = overrides.lastName || faker.person.lastName();
     user.passwordHash = overrides.passwordHash || '$2a$10$hashedpassword';
@@ -269,8 +279,9 @@ export class CategoryFactory extends BaseFactory<Category> {
 
     const name = overrides.name || faker.commerce.department();
     category.name = name;
-    // Add unique suffix to slug to avoid duplicates
-    category.slug = overrides.slug || `${name.toLowerCase().replace(/\s+/g, '-')}-${faker.string.alphanumeric(6)}`;
+    // Add unique timestamp + random suffix to slug for guaranteed uniqueness
+    const timestamp = Date.now();
+    category.slug = overrides.slug || `${name.toLowerCase().replace(/\s+/g, '-')}-${timestamp}-${faker.string.alphanumeric(4)}`;
     category.description = overrides.description || faker.lorem.sentence();
     category.type = overrides.type || faker.helpers.arrayElement(Object.values(CategoryType));
     category.status = overrides.status || CategoryStatus.ACTIVE;

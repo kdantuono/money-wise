@@ -489,10 +489,10 @@ describe('TimescaleDB Time-Series Performance', () => {
       // Simple linear regression for trend analysis
       const trendQuery = `
         SELECT
-          EXTRACT(EPOCH FROM date - DATE '2024-01-01') / 86400 AS day_number,
+          EXTRACT(EPOCH FROM (date::timestamp - '2024-01-01'::timestamp)) / 86400 AS day_number,
           amount,
           COUNT(*) OVER () AS total_points,
-          AVG(EXTRACT(EPOCH FROM date - DATE '2024-01-01') / 86400) OVER () AS avg_day,
+          AVG(EXTRACT(EPOCH FROM (date::timestamp - '2024-01-01'::timestamp)) / 86400) OVER () AS avg_day,
           AVG(amount) OVER () AS avg_amount
         FROM transactions
         WHERE "accountId" = $1

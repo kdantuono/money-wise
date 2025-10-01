@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication, ValidationPipe, Module, Global } from '@nestjs/common';
+import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository, UpdateResult } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
@@ -8,6 +8,7 @@ import request from 'supertest';
 import * as bcrypt from 'bcryptjs';
 
 import { AuthModule } from '@/auth/auth.module';
+import { RedisModule } from '@/core/redis/redis.module';
 import { RateLimitGuard } from '@/auth/guards/rate-limit.guard';
 import {
   User,
@@ -27,25 +28,17 @@ import { LoginDto } from '@/auth/dto/login.dto';
 jest.mock('bcryptjs');
 const mockedBcrypt = bcrypt as jest.Mocked<typeof bcrypt>;
 
-// Global test Redis module to make Redis available to imported modules
-@Global()
-@Module({
-  providers: [
-    {
-      provide: 'default',
-      useValue: {
-        get: jest.fn(),
-        set: jest.fn(),
-        del: jest.fn(),
-        incr: jest.fn(),
-        expire: jest.fn(),
-        ttl: jest.fn(),
-      },
-    },
-  ],
-  exports: ['default'],
-})
-class TestRedisModule {}
+// Mock Redis client for tests
+const mockRedisClient = {
+  get: jest.fn(),
+  set: jest.fn(),
+  del: jest.fn(),
+  incr: jest.fn(),
+  expire: jest.fn(),
+  ttl: jest.fn(),
+  setex: jest.fn(),
+  exists: jest.fn(),
+};
 
 describe('Auth Integration Tests', () => {
   let app: INestApplication;
@@ -86,7 +79,7 @@ describe('Auth Integration Tests', () => {
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [
-        TestRedisModule, // Global module providing Redis mock
+        RedisModule.forTest(mockRedisClient), // Use testable Redis module
         ConfigModule.forRoot({
           isGlobal: true,
           envFilePath: ['.env.test', '.env'],
@@ -94,33 +87,7 @@ describe('Auth Integration Tests', () => {
         AuthModule,
       ],
     })
-      // Override services FIRST to avoid instantiation errors
-      .overrideProvider(RateLimitService)
-      .useValue({
-        checkRateLimit: jest.fn().mockResolvedValue({ allowed: true, remaining: 10 }),
-        recordAttempt: jest.fn().mockResolvedValue(undefined),
-        resetAttempts: jest.fn().mockResolvedValue(undefined),
-      })
-      .overrideProvider(AccountLockoutService)
-      .useValue({
-        isAccountLocked: jest.fn().mockResolvedValue(false),
-        recordFailedAttempt: jest.fn().mockResolvedValue(undefined),
-        resetFailedAttempts: jest.fn().mockResolvedValue(undefined),
-        getLockoutStatus: jest.fn().mockResolvedValue({ isLocked: false, remainingAttempts: 5 }),
-      })
-      .overrideProvider(EmailVerificationService)
-      .useValue({
-        sendVerificationEmail: jest.fn().mockResolvedValue(undefined),
-        verifyEmail: jest.fn().mockResolvedValue(true),
-        resendVerificationEmail: jest.fn().mockResolvedValue(undefined),
-      })
-      .overrideProvider(PasswordSecurityService)
-      .useValue({
-        validatePasswordStrength: jest.fn().mockResolvedValue({ isValid: true, issues: [] }),
-        checkPasswordHistory: jest.fn().mockResolvedValue(false),
-        addPasswordToHistory: jest.fn().mockResolvedValue(undefined),
-        isPasswordExpired: jest.fn().mockReturnValue(false),
-      })
+      // Let services use the injected Redis from RedisModule.forTest()
       .overrideProvider(getRepositoryToken(User))
       .useValue({
         findOne: jest.fn(),

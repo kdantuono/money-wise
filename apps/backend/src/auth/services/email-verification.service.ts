@@ -1,4 +1,4 @@
-import { Injectable, Logger, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException, NotFoundException, Inject } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
@@ -23,23 +23,14 @@ export interface EmailVerificationResult {
 @Injectable()
 export class EmailVerificationService {
   private readonly logger = new Logger(EmailVerificationService.name);
-  private redis: Redis;
 
   constructor(
     @InjectRepository(User)
     private userRepository: Repository<User>,
     private configService: ConfigService,
+    @Inject('default')
+    private readonly redis: Redis,
   ) {
-    // Initialize Redis connection
-    this.redis = new Redis({
-      host: this.configService.get('REDIS_HOST', 'localhost'),
-      port: this.configService.get('REDIS_PORT', 6379),
-      password: this.configService.get('REDIS_PASSWORD'),
-      db: this.configService.get('REDIS_DB', 0),
-      // retryDelayOnFailover: removed in ioredis v5,
-      maxRetriesPerRequest: 3,
-    });
-
     this.redis.on('error', (error) => {
       this.logger.error('Redis connection error:', error);
     });

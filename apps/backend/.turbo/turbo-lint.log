@@ -127,9 +127,9 @@
   243:7   warning  Unexpected console statement              no-console
 
 /home/nemesi/dev/money-wise/apps/backend/src/core/database/tests/factories/test-data.factory.ts
-  299:22  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  609:5   warning  Unexpected console statement              no-console
-  633:5   warning  Unexpected console statement              no-console
+  310:22  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  620:5   warning  Unexpected console statement              no-console
+  644:5   warning  Unexpected console statement              no-console
 
 /home/nemesi/dev/money-wise/apps/backend/src/core/database/tests/jest.database.global-setup.ts
    9:3  warning  Unexpected console statement  no-console

@@ -142,7 +142,12 @@
       "Read(///**)",
       "Bash(claude /doctor)",
       "Bash(do basename \"$file\")",
-      "Bash(1)"
+      "Bash(1)",
+      "Bash(tee:*)",
+      "Read(//tmp/**)",
+      "Bash(paste:*)",
+      "Bash(while read file)",
+      "Bash(do grep -c \"it(\" \"$file\")"
     ],
     "deny": [],
     "ask": []
