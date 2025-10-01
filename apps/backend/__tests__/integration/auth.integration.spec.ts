@@ -24,21 +24,14 @@ import { EmailVerificationService } from '@/auth/services/email-verification.ser
 import { RegisterDto } from '@/auth/dto/register.dto';
 import { LoginDto } from '@/auth/dto/login.dto';
 
+import { createMockRedis } from '../mocks/redis.mock';
+
 // Mock bcrypt
 jest.mock('bcryptjs');
 const mockedBcrypt = bcrypt as jest.Mocked<typeof bcrypt>;
 
-// Mock Redis client for tests
-const mockRedisClient = {
-  get: jest.fn(),
-  set: jest.fn(),
-  del: jest.fn(),
-  incr: jest.fn(),
-  expire: jest.fn(),
-  ttl: jest.fn(),
-  setex: jest.fn(),
-  exists: jest.fn(),
-};
+// Create proper Redis mock with EventEmitter
+const mockRedisClient = createMockRedis();
 
 describe('Auth Integration Tests', () => {
   let app: INestApplication;

@@ -13,7 +13,7 @@
       at DatabaseTestManager.start (src/core/database/tests/database-test.config.ts:50:15)
 
   console.log
-    ✅ Test container started on port 33314
+    ✅ Test container started on port 33345
 
       at DatabaseTestManager.startContainer (src/core/database/tests/database-test.config.ts:84:15)
 
@@ -44,7 +44,7 @@
       at DatabaseTestManager.start (src/core/database/tests/database-test.config.ts:50:15)
 
   console.log
-    ✅ Test container started on port 33315
+    ✅ Test container started on port 33346
 
       at DatabaseTestManager.startContainer (src/core/database/tests/database-test.config.ts:84:15)
 
@@ -75,7 +75,7 @@
       at DatabaseTestManager.start (src/core/database/tests/database-test.config.ts:50:15)
 
   console.log
-    ✅ Test container started on port 33316
+    ✅ Test container started on port 33347
 
       at DatabaseTestManager.startContainer (src/core/database/tests/database-test.config.ts:84:15)
 
@@ -106,7 +106,7 @@
       at DatabaseTestManager.start (src/core/database/tests/database-test.config.ts:50:15)
 
   console.log
-    ✅ Test container started on port 33317
+    ✅ Test container started on port 33348
 
       at DatabaseTestManager.startContainer (src/core/database/tests/database-test.config.ts:84:15)
 
@@ -137,7 +137,7 @@
       at DatabaseTestManager.start (src/core/database/tests/database-test.config.ts:50:15)
 
   console.log
-    ✅ Test container started on port 33318
+    ✅ Test container started on port 33349
 
       at DatabaseTestManager.startContainer (src/core/database/tests/database-test.config.ts:84:15)
 
@@ -168,7 +168,7 @@
       at DatabaseTestManager.start (src/core/database/tests/database-test.config.ts:50:15)
 
   console.log
-    ✅ Test container started on port 33319
+    ✅ Test container started on port 33350
 
       at DatabaseTestManager.startContainer (src/core/database/tests/database-test.config.ts:84:15)
 
