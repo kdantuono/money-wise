@@ -19,7 +19,7 @@ describe('Auth E2E Tests', () => {
 
   beforeAll(async () => {
     testApp = await TestApp.create();
-  });
+  }, 120000); // 2 min timeout for container startup + app bootstrap
 
   afterEach(async () => {
     await testApp.cleanup();

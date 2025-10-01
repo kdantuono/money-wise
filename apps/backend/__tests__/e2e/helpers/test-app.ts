@@ -123,20 +123,42 @@ export class TestApp {
    * Setup Redis mock methods
    */
   private setupRedisMocks(): void {
-    // Mock common Redis operations
+    // String operations
     this.mockRedis.get = jest.fn().mockResolvedValue(null);
     this.mockRedis.set = jest.fn().mockResolvedValue('OK');
     this.mockRedis.setex = jest.fn().mockResolvedValue('OK');
     this.mockRedis.del = jest.fn().mockResolvedValue(1);
     this.mockRedis.exists = jest.fn().mockResolvedValue(0);
+
+    // Number operations
     this.mockRedis.incr = jest.fn().mockResolvedValue(1);
+    this.mockRedis.decr = jest.fn().mockResolvedValue(0);
+    this.mockRedis.incrby = jest.fn().mockResolvedValue(1);
+
+    // Hash operations (critical for AccountLockoutService)
+    this.mockRedis.hset = jest.fn().mockResolvedValue(1);
+    this.mockRedis.hget = jest.fn().mockResolvedValue(null);
+    this.mockRedis.hgetall = jest.fn().mockResolvedValue({});
+    this.mockRedis.hmget = jest.fn().mockResolvedValue([]);
+    this.mockRedis.hmset = jest.fn().mockResolvedValue('OK');
+    this.mockRedis.hdel = jest.fn().mockResolvedValue(1);
+
+    // Expiration
     this.mockRedis.expire = jest.fn().mockResolvedValue(1);
     this.mockRedis.ttl = jest.fn().mockResolvedValue(-1);
+
+    // Keys
     this.mockRedis.keys = jest.fn().mockResolvedValue([]);
     this.mockRedis.flushdb = jest.fn().mockResolvedValue('OK');
+
+    // Pipeline
     this.mockRedis.pipeline = jest.fn().mockReturnValue({
       exec: jest.fn().mockResolvedValue([]),
     });
+
+    // Connection lifecycle
+    this.mockRedis.quit = jest.fn().mockResolvedValue('OK');
+    this.mockRedis.disconnect = jest.fn();
   }
 
   /**

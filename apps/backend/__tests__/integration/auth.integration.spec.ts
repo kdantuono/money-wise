@@ -1,3 +1,6 @@
+// Mock bcrypt - MUST be before imports for Jest hoisting
+jest.mock('bcryptjs');
+
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
@@ -26,8 +29,6 @@ import { LoginDto } from '@/auth/dto/login.dto';
 
 import { createMockRedis } from '../mocks/redis.mock';
 
-// Mock bcrypt
-jest.mock('bcryptjs');
 const mockedBcrypt = bcrypt as jest.Mocked<typeof bcrypt>;
 
 // Create proper Redis mock with EventEmitter
