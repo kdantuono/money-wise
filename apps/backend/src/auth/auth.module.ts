@@ -9,6 +9,7 @@ import { AuthSecurityService } from './auth-security.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RateLimitGuard } from './guards/rate-limit.guard';
+import { RateLimitService } from './services/rate-limit.service';
 import { PasswordSecurityService } from './services/password-security.service';
 import { AccountLockoutService } from './services/account-lockout.service';
 import { EmailVerificationService } from './services/email-verification.service';
@@ -40,6 +41,7 @@ import { PasswordHistory } from '../core/database/entities/password-history.enti
     JwtStrategy,
     JwtAuthGuard,
     RateLimitGuard,
+    RateLimitService,
     PasswordSecurityService,
     AccountLockoutService,
     EmailVerificationService,
