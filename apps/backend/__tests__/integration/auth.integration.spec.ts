@@ -14,6 +14,12 @@ import {
   UserStatus,
   UserRole,
 } from '@/core/database/entities/user.entity';
+import { AuditLog } from '@/core/database/entities/audit-log.entity';
+import { PasswordHistory } from '@/core/database/entities/password-history.entity';
+import { PasswordSecurityService } from '@/auth/services/password-security.service';
+import { RateLimitService } from '@/auth/services/rate-limit.service';
+import { AccountLockoutService } from '@/auth/services/account-lockout.service';
+import { EmailVerificationService } from '@/auth/services/email-verification.service';
 import { RegisterDto } from '@/auth/dto/register.dto';
 import { LoginDto } from '@/auth/dto/login.dto';
 
@@ -66,6 +72,19 @@ describe('Auth Integration Tests', () => {
         }),
         AuthModule,
       ],
+      providers: [
+        {
+          provide: 'default', // Redis mock provider
+          useValue: {
+            get: jest.fn(),
+            set: jest.fn(),
+            del: jest.fn(),
+            incr: jest.fn(),
+            expire: jest.fn(),
+            ttl: jest.fn(),
+          },
+        },
+      ],
     })
       .overrideProvider(getRepositoryToken(User))
       .useValue({
@@ -73,6 +92,46 @@ describe('Auth Integration Tests', () => {
         create: jest.fn(),
         save: jest.fn(),
         update: jest.fn(),
+      })
+      .overrideProvider(getRepositoryToken(AuditLog))
+      .useValue({
+        create: jest.fn(),
+        save: jest.fn(),
+        find: jest.fn(),
+        findOne: jest.fn(),
+      })
+      .overrideProvider(getRepositoryToken(PasswordHistory))
+      .useValue({
+        create: jest.fn(),
+        save: jest.fn(),
+        find: jest.fn(),
+        findOne: jest.fn(),
+      })
+      .overrideProvider(PasswordSecurityService)
+      .useValue({
+        validatePasswordStrength: jest.fn().mockResolvedValue({ isValid: true, issues: [] }),
+        checkPasswordHistory: jest.fn().mockResolvedValue(false),
+        addPasswordToHistory: jest.fn().mockResolvedValue(undefined),
+        isPasswordExpired: jest.fn().mockReturnValue(false),
+      })
+      .overrideProvider(RateLimitService)
+      .useValue({
+        checkRateLimit: jest.fn().mockResolvedValue({ allowed: true, remaining: 10 }),
+        recordAttempt: jest.fn().mockResolvedValue(undefined),
+        resetAttempts: jest.fn().mockResolvedValue(undefined),
+      })
+      .overrideProvider(AccountLockoutService)
+      .useValue({
+        isAccountLocked: jest.fn().mockResolvedValue(false),
+        recordFailedAttempt: jest.fn().mockResolvedValue(undefined),
+        resetFailedAttempts: jest.fn().mockResolvedValue(undefined),
+        getLockoutStatus: jest.fn().mockResolvedValue({ isLocked: false, remainingAttempts: 5 }),
+      })
+      .overrideProvider(EmailVerificationService)
+      .useValue({
+        sendVerificationEmail: jest.fn().mockResolvedValue(undefined),
+        verifyEmail: jest.fn().mockResolvedValue(true),
+        resendVerificationEmail: jest.fn().mockResolvedValue(undefined),
       })
       .overrideProvider(RateLimitGuard)
       .useValue({

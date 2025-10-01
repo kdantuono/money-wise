@@ -15,10 +15,12 @@ import { EmailVerificationService } from './services/email-verification.service'
 import { PasswordResetService } from './services/password-reset.service';
 import { AuditLogService } from './services/audit-log.service';
 import { User } from '../core/database/entities/user.entity';
+import { AuditLog } from '../core/database/entities/audit-log.entity';
+import { PasswordHistory } from '../core/database/entities/password-history.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User]),
+    TypeOrmModule.forFeature([User, AuditLog, PasswordHistory]),
     PassportModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
