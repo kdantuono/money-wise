@@ -9,7 +9,7 @@ import { SuperTest, Test as SuperTestType } from 'supertest';
 import { createTestModule } from './setup';
 
 export class TestClient {
-  private app: INestApplication;
+  private _app: INestApplication;
   private agent: SuperTest<SuperTestType>;
 
   async initialize(): Promise<void> {
@@ -17,15 +17,15 @@ export class TestClient {
       imports: [AppModule]
     });
 
-    this.app = moduleFixture.createNestApplication();
-    await this.app.init();
+    this._app = moduleFixture.createNestApplication();
+    await this._app.init();
 
-    this.agent = request(this.app.getHttpServer());
+    this.agent = request(this._app.getHttpServer());
   }
 
   async close(): Promise<void> {
-    if (this.app) {
-      await this.app.close();
+    if (this._app) {
+      await this._app.close();
     }
   }
 
@@ -34,7 +34,7 @@ export class TestClient {
   }
 
   get app(): INestApplication {
-    return this.app;
+    return this._app;
   }
 
   // Convenience methods for common HTTP operations
