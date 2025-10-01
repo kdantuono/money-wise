@@ -39,10 +39,20 @@ module.exports = {
   // Setup files for NestJS testing
   setupFilesAfterEnv: ['<rootDir>/__tests__/setup.ts'],
 
+  // Global setup/teardown for shared test infrastructure
+  globalSetup: '<rootDir>/__tests__/setup/global-setup.ts',
+  globalTeardown: '<rootDir>/__tests__/setup/global-teardown.ts',
+
   // Test match patterns for backend (consolidated __tests__ structure)
   testMatch: [
     '<rootDir>/__tests__/**/*.{test,spec}.{ts,js}',
   ],
+
+  // Parallel execution for faster test runs
+  maxWorkers: '50%', // Use 50% of available CPU cores
+
+  // Timeout configuration
+  testTimeout: 30000, // 30 seconds max per test
 
   // Ignore OpenAPI spec files and other non-test files
   testPathIgnorePatterns: [
