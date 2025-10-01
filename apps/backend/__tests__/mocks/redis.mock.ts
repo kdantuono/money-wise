@@ -256,6 +256,23 @@ export class MockRedis extends EventEmitter {
     return Promise.resolve(fields.map(field => hash[field] || null));
   });
 
+  hmset = jest.fn((key: string, ...fieldValues: any[]) => {
+    this.recordCall('hmset', [key, ...fieldValues]);
+    const hash = JSON.parse(this.storage.get(key) || '{}');
+
+    // Handle both array and object formats
+    if (typeof fieldValues[0] === 'object' && !Array.isArray(fieldValues[0])) {
+      Object.assign(hash, fieldValues[0]);
+    } else {
+      for (let i = 0; i < fieldValues.length; i += 2) {
+        hash[fieldValues[i]] = fieldValues[i + 1];
+      }
+    }
+
+    this.storage.set(key, JSON.stringify(hash));
+    return Promise.resolve('OK');
+  });
+
   hdel = jest.fn((key: string, ...fields: string[]) => {
     this.recordCall('hdel', [key, ...fields]);
     const hash = JSON.parse(this.storage.get(key) || '{}');
