@@ -41,30 +41,35 @@ export class TestDatabaseModule {
       module: TestDatabaseModule,
       global: true,
       imports: [
-        TypeOrmModule.forRoot({
-          type: 'postgres',
-          host: this.container.getHost(),
-          port: this.container.getPort(),
-          database: this.container.getDatabase(),
-          username: this.container.getUsername(),
-          password: this.container.getPassword(),
-          entities: [User, Account, Transaction, Category, AuditLog, PasswordHistory],
-          synchronize: true, // OK for tests - auto-create schema
-          logging: false, // Reduce noise in test output
-          dropSchema: false, // Keep schema, just cleanup data
-          poolSize: 10, // Connection pooling for performance
+        TypeOrmModule.forRootAsync({
+          useFactory: async () => ({
+            type: 'postgres',
+            host: this.container.getHost(),
+            port: this.container.getPort(),
+            database: this.container.getDatabase(),
+            username: this.container.getUsername(),
+            password: this.container.getPassword(),
+            entities: [User, Account, Transaction, Category, AuditLog, PasswordHistory],
+            synchronize: true, // OK for tests - auto-create schema
+            logging: false, // Reduce noise in test output
+            dropSchema: false, // Keep schema, just cleanup data
+            poolSize: 10, // Connection pooling for performance
+          }),
         }),
         TypeOrmModule.forFeature([User, Account, Transaction, Category, AuditLog, PasswordHistory]),
       ],
       providers: [
         {
-          provide: DataSource,
-          useFactory: async () => {
-            return this.dataSource;
+          provide: 'TEST_DATA_SOURCE',
+          useFactory: async (dataSource: DataSource) => {
+            // Capture DataSource instance for cleanup operations
+            TestDatabaseModule.dataSource = dataSource;
+            return dataSource;
           },
+          inject: [DataSource],
         },
       ],
-      exports: [DataSource, TypeOrmModule],
+      exports: [DataSource, TypeOrmModule, 'TEST_DATA_SOURCE'],
     };
   }
 
