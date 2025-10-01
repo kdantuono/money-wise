@@ -69,7 +69,7 @@ export class TestDatabaseModule {
           inject: [DataSource],
         },
       ],
-      exports: [DataSource, TypeOrmModule, 'TEST_DATA_SOURCE'],
+      exports: [TypeOrmModule, 'TEST_DATA_SOURCE'],
     };
   }
 

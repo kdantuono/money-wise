@@ -12,7 +12,7 @@
   267:68  warning  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
 
 /home/nemesi/dev/money-wise/apps/backend/src/auth/services/email-verification.service.ts
-  150:33  warning  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+  141:33  warning  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
 
 /home/nemesi/dev/money-wise/apps/backend/src/auth/services/password-reset.service.ts
   457:16  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
@@ -62,6 +62,13 @@
 /home/nemesi/dev/money-wise/apps/backend/src/core/database/repositories/interfaces/base.repository.interface.ts
   98:35  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
   98:51  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/nemesi/dev/money-wise/apps/backend/src/core/database/test-database.module.ts
+   84:5  warning  Unexpected console statement  no-console
+   96:5  warning  Unexpected console statement  no-console
+   97:5  warning  Unexpected console statement  no-console
+  152:7  warning  Unexpected console statement  no-console
+  154:7  warning  Unexpected console statement  no-console
 
 /home/nemesi/dev/money-wise/apps/backend/src/core/database/tests/database-test-suite.ts
    57:5  warning  Unexpected console statement  no-console
@@ -156,6 +163,9 @@
   45:3  warning  Unexpected console statement  no-console
   50:3  warning  Unexpected console statement  no-console
 
+/home/nemesi/dev/money-wise/apps/backend/src/core/redis/redis.module.ts
+  40:29  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
 /home/nemesi/dev/money-wise/apps/backend/src/database/timescaledb.service.ts
   228:39  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
   229:36  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
@@ -172,5 +182,5 @@
   522:83  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
   559:56  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
 
-✖ 129 problems (0 errors, 129 warnings)
+✖ 135 problems (0 errors, 135 warnings)
 

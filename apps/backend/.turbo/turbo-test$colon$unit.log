@@ -2,13 +2,18 @@
 > @money-wise/backend@0.1.0 test:unit /home/nemesi/dev/money-wise/apps/backend
 > jest --passWithNoTests --testPathPattern='__tests__/unit'
 
+
+🚀 Global Test Setup - Preparing test infrastructure
+
+✅ Global test setup complete
+
   console.log
     🐳 Starting PostgreSQL test container...
 
       at DatabaseTestManager.start (src/core/database/tests/database-test.config.ts:50:15)
 
   console.log
-    ✅ Test container started on port 33269
+    ✅ Test container started on port 33314
 
       at DatabaseTestManager.startContainer (src/core/database/tests/database-test.config.ts:84:15)
 
@@ -39,7 +44,7 @@
       at DatabaseTestManager.start (src/core/database/tests/database-test.config.ts:50:15)
 
   console.log
-    ✅ Test container started on port 33270
+    ✅ Test container started on port 33315
 
       at DatabaseTestManager.startContainer (src/core/database/tests/database-test.config.ts:84:15)
 
@@ -70,7 +75,7 @@
       at DatabaseTestManager.start (src/core/database/tests/database-test.config.ts:50:15)
 
   console.log
-    ✅ Test container started on port 33271
+    ✅ Test container started on port 33316
 
       at DatabaseTestManager.startContainer (src/core/database/tests/database-test.config.ts:84:15)
 
@@ -101,7 +106,7 @@
       at DatabaseTestManager.start (src/core/database/tests/database-test.config.ts:50:15)
 
   console.log
-    ✅ Test container started on port 33272
+    ✅ Test container started on port 33317
 
       at DatabaseTestManager.startContainer (src/core/database/tests/database-test.config.ts:84:15)
 
@@ -132,7 +137,7 @@
       at DatabaseTestManager.start (src/core/database/tests/database-test.config.ts:50:15)
 
   console.log
-    ✅ Test container started on port 33273
+    ✅ Test container started on port 33318
 
       at DatabaseTestManager.startContainer (src/core/database/tests/database-test.config.ts:84:15)
 
@@ -163,7 +168,7 @@
       at DatabaseTestManager.start (src/core/database/tests/database-test.config.ts:50:15)
 
   console.log
-    ✅ Test container started on port 33274
+    ✅ Test container started on port 33319
 
       at DatabaseTestManager.startContainer (src/core/database/tests/database-test.config.ts:84:15)
 
@@ -189,5 +194,3 @@
       at Object.<anonymous> (__tests__/unit/core/database/migrations/migration.test.ts:186:20)
 
   console.log
-    🐳 Starting PostgreSQL test container...
-
