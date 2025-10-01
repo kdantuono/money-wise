@@ -2,10 +2,10 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { DataSource } from 'typeorm';
 import request from 'supertest';
-import Redis from 'ioredis';
 import { AppModule } from '@/app.module';
 import { TestDatabaseModule } from '@/core/database/test-database.module';
 import { RedisModule } from '@/core/redis/redis.module';
+import { createMockRedis } from '../../mocks/redis.mock';
 
 /**
  * TestApp - E2E Test Helper
@@ -48,7 +48,7 @@ export class TestApp {
   private app: INestApplication;
   private moduleRef: TestingModule;
   private dataSource: DataSource;
-  private mockRedis: Redis;
+  private mockRedis: any;
 
   /**
    * Create and initialize test application
@@ -70,16 +70,8 @@ export class TestApp {
     process.env.JWT_ACCESS_EXPIRES_IN = '15m';
     process.env.JWT_REFRESH_EXPIRES_IN = '7d';
 
-    // Create mock Redis client
-    this.mockRedis = new Redis({
-      host: 'localhost',
-      port: 6379,
-      lazyConnect: true,
-      retryStrategy: () => null, // Disable reconnection
-    });
-
-    // Mock Redis methods for testing
-    this.setupRedisMocks();
+    // Create mock Redis client using our comprehensive mock
+    this.mockRedis = createMockRedis();
 
     // Create testing module - DO NOT import AppModule (it has production configs)
     // Instead, build the module structure manually with test overrides
@@ -119,47 +111,6 @@ export class TestApp {
     this.dataSource = this.moduleRef.get(DataSource);
   }
 
-  /**
-   * Setup Redis mock methods
-   */
-  private setupRedisMocks(): void {
-    // String operations
-    this.mockRedis.get = jest.fn().mockResolvedValue(null);
-    this.mockRedis.set = jest.fn().mockResolvedValue('OK');
-    this.mockRedis.setex = jest.fn().mockResolvedValue('OK');
-    this.mockRedis.del = jest.fn().mockResolvedValue(1);
-    this.mockRedis.exists = jest.fn().mockResolvedValue(0);
-
-    // Number operations
-    this.mockRedis.incr = jest.fn().mockResolvedValue(1);
-    this.mockRedis.decr = jest.fn().mockResolvedValue(0);
-    this.mockRedis.incrby = jest.fn().mockResolvedValue(1);
-
-    // Hash operations (critical for AccountLockoutService)
-    this.mockRedis.hset = jest.fn().mockResolvedValue(1);
-    this.mockRedis.hget = jest.fn().mockResolvedValue(null);
-    this.mockRedis.hgetall = jest.fn().mockResolvedValue({});
-    this.mockRedis.hmget = jest.fn().mockResolvedValue([]);
-    this.mockRedis.hmset = jest.fn().mockResolvedValue('OK');
-    this.mockRedis.hdel = jest.fn().mockResolvedValue(1);
-
-    // Expiration
-    this.mockRedis.expire = jest.fn().mockResolvedValue(1);
-    this.mockRedis.ttl = jest.fn().mockResolvedValue(-1);
-
-    // Keys
-    this.mockRedis.keys = jest.fn().mockResolvedValue([]);
-    this.mockRedis.flushdb = jest.fn().mockResolvedValue('OK');
-
-    // Pipeline
-    this.mockRedis.pipeline = jest.fn().mockReturnValue({
-      exec: jest.fn().mockResolvedValue([]),
-    });
-
-    // Connection lifecycle
-    this.mockRedis.quit = jest.fn().mockResolvedValue('OK');
-    this.mockRedis.disconnect = jest.fn();
-  }
 
   /**
    * Get supertest request instance for HTTP testing
@@ -192,7 +143,7 @@ export class TestApp {
   /**
    * Get mock Redis client
    */
-  getRedis(): Redis {
+  getRedis(): any {
     return this.mockRedis;
   }
 
@@ -200,8 +151,7 @@ export class TestApp {
    * Reset Redis mocks between tests
    */
   resetRedisMocks(): void {
-    jest.clearAllMocks();
-    this.setupRedisMocks();
+    this.mockRedis.__reset();
   }
 
   /**
