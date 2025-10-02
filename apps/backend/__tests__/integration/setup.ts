@@ -5,6 +5,7 @@ import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
+import { createMockRedis } from '../mocks/redis.mock';
 
 // Global test variables
 declare global {
@@ -60,6 +61,8 @@ async function clearTestData() {
 
 // Helper to create test module with database
 export async function createTestModule(moduleConfig: any): Promise<TestingModule> {
+  const mockRedis = createMockRedis();
+
   return await Test.createTestingModule({
     imports: [
       TypeOrmModule.forRoot(testDbConfig),
@@ -67,5 +70,8 @@ export async function createTestModule(moduleConfig: any): Promise<TestingModule
     ],
     controllers: moduleConfig.controllers || [],
     providers: moduleConfig.providers || [],
-  }).compile();
+  })
+  .overrideProvider('default')  // Redis token from RedisModule
+  .useValue(mockRedis)
+  .compile();
 }

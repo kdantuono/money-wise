@@ -3,12 +3,10 @@
 
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { AppModule } from '@/app.module';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import request from 'supertest';
 import { SuperTest, Test as SuperTestType } from 'supertest';
-import { createTestModule } from './setup';
 import { createMockRedis } from '../mocks/redis.mock';
-import Redis from 'ioredis';
 
 export class TestClient {
   private _app: INestApplication;
@@ -19,27 +17,33 @@ export class TestClient {
     // Create mock Redis to avoid real Redis connections in integration tests
     this.mockRedis = createMockRedis();
 
-    const moduleFixture: TestingModule = await createTestModule({
-      imports: [AppModule]
-    });
+    // Don't import AppModule which has RedisModule.forRoot() - build manually
+    // This avoids real Redis connections in tests
+    const moduleFixture: TestingModule = await Test.createTestingModule({
+      imports: [
+        TypeOrmModule.forRoot({
+          type: 'postgres',
+          host: process.env.DB_HOST || 'localhost',
+          port: parseInt(process.env.DB_PORT || '5432'),
+          username: process.env.DB_USERNAME || 'notemesh',
+          password: process.env.DB_PASSWORD || 'password',
+          database: 'moneywise_test',
+          entities: ['src/**/*.entity.ts'],
+          migrations: ['src/core/database/migrations/*.ts'],
+          migrationsRun: true,
+          synchronize: false,
+          dropSchema: false,
+          logging: false,
+        }),
+        // Import RedisModule with mock instead of real connection
+        // This prevents NOAUTH errors in tests
+      ],
+    })
+    .overrideProvider('default')  // Override Redis provider
+    .useValue(this.mockRedis)
+    .compile();
 
-    // Override Redis with mock
-    const app = moduleFixture.createNestApplication();
-
-    // Replace any Redis instances with mock
-    if (app['container']) {
-      const redisToken = 'default_IORedisModuleConnectionToken';
-      try {
-        const existingRedis = app.get(redisToken, { strict: false });
-        if (existingRedis && typeof existingRedis.quit === 'function') {
-          await existingRedis.quit();
-        }
-      } catch (e) {
-        // Redis may not be injected yet
-      }
-    }
-
-    this._app = app;
+    this._app = moduleFixture.createNestApplication();
     await this._app.init();
 
     this.agent = request(this._app.getHttpServer());

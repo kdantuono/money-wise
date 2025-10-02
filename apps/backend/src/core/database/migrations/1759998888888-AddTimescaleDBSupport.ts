@@ -4,8 +4,16 @@ export class AddTimescaleDBSupport1759998888888 implements MigrationInterface {
     name = 'AddTimescaleDBSupport1759998888888'
 
     public async up(queryRunner: QueryRunner): Promise<void> {
-        // Enable TimescaleDB extension
-        await queryRunner.query(`CREATE EXTENSION IF NOT EXISTS timescaledb CASCADE;`);
+        // Enable TimescaleDB extension (skip if not available - e.g. local dev without TimescaleDB)
+        try {
+            await queryRunner.query(`CREATE EXTENSION IF NOT EXISTS timescaledb CASCADE;`);
+        } catch (error) {
+            if (error.message?.includes('is not available') || error.message?.includes('could not open extension')) {
+                console.log('⚠️  TimescaleDB extension not available - skipping TimescaleDB features');
+                return; // Skip entire migration if TimescaleDB not available
+            }
+            throw error; // Re-throw other errors
+        }
 
         // Convert transactions table to hypertable for time-series optimization
         // Check if already a hypertable to avoid "table not empty" errors
