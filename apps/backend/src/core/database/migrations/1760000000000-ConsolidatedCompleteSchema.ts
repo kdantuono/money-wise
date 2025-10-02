@@ -78,7 +78,7 @@ export class ConsolidatedCompleteSchema1760000000000 implements MigrationInterfa
 
         // Create Users table
         await queryRunner.query(`
-            CREATE TABLE "users" (
+            CREATE TABLE IF NOT EXISTS "users" (
                 "id" uuid NOT NULL DEFAULT uuid_generate_v4(),
                 "email" character varying(255) NOT NULL,
                 "firstName" character varying(255) NOT NULL,
@@ -101,7 +101,7 @@ export class ConsolidatedCompleteSchema1760000000000 implements MigrationInterfa
 
         // Create Accounts table
         await queryRunner.query(`
-            CREATE TABLE "accounts" (
+            CREATE TABLE IF NOT EXISTS "accounts" (
                 "id" uuid NOT NULL DEFAULT uuid_generate_v4(),
                 "userId" uuid NOT NULL,
                 "name" character varying(255) NOT NULL,
@@ -132,7 +132,7 @@ export class ConsolidatedCompleteSchema1760000000000 implements MigrationInterfa
 
         // Create Categories table with nested set model support
         await queryRunner.query(`
-            CREATE TABLE "categories" (
+            CREATE TABLE IF NOT EXISTS "categories" (
                 "id" uuid NOT NULL DEFAULT uuid_generate_v4(),
                 "name" character varying(255) NOT NULL,
                 "slug" character varying(255) NOT NULL,
@@ -158,7 +158,7 @@ export class ConsolidatedCompleteSchema1760000000000 implements MigrationInterfa
 
         // Create Transactions table
         await queryRunner.query(`
-            CREATE TABLE "transactions" (
+            CREATE TABLE IF NOT EXISTS "transactions" (
                 "id" uuid NOT NULL DEFAULT uuid_generate_v4(),
                 "accountId" uuid NOT NULL,
                 "categoryId" uuid,
