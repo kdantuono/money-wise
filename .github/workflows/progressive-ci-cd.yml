@@ -329,6 +329,7 @@ jobs:
           DATABASE_PORT: 5432
           REDIS_HOST: localhost
           REDIS_PORT: 6379
+          JWT_SECRET: test-jwt-secret-for-ci-only
           NODE_ENV: test
         run: |
           echo "🧪 Running unit tests..."
