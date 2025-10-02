@@ -7,7 +7,18 @@
       "Bash(git commit:*)",
       "Bash(gh run watch:*)",
       "Bash(gh run view:*)",
-      "Bash(git describe:*)"
+      "Bash(git describe:*)",
+      "Bash(gh project list:*)",
+      "Bash(find:*)",
+      "Bash(docker compose:*)",
+      "Bash(pnpm test:unit:*)",
+      "Bash(pnpm --filter @money-wise/web test:unit -- --coverage)",
+      "Bash(cat:*)",
+      "Bash(pnpm test:coverage:*)",
+      "Bash(tee:*)",
+      "Read(//tmp/**)",
+      "Read(//home/nemesi/.claude/todos/**)",
+      "Bash(awk:*)"
     ],
     "deny": [],
     "ask": []

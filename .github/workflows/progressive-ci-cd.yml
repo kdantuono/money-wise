@@ -338,9 +338,46 @@ jobs:
           pnpm test
 
       - name: 📊 Test Coverage
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_USERNAME: postgres
+          DB_PASSWORD: testpassword
+          DB_NAME: moneywise_test
+          DATABASE_HOST: localhost
+          DATABASE_PORT: 5432
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+          REDIS_PASSWORD: ""
+          JWT_ACCESS_SECRET: test-jwt-access-secret-for-ci-only
+          JWT_REFRESH_SECRET: test-jwt-refresh-secret-for-ci-only
+          NODE_ENV: test
         run: |
-          echo "📊 Generating test coverage..."
-          pnpm test:coverage || echo "⚠️ Coverage not configured"
+          echo "📊 Generating test coverage (unit tests only)..."
+          pnpm test:coverage
+
+      - name: 📈 Upload Coverage Reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-reports
+          path: |
+            apps/backend/coverage/
+            apps/web/coverage/
+            packages/*/coverage/
+          retention-days: 30
+
+      - name: 📊 Coverage Summary
+        if: always()
+        run: |
+          echo "## 📊 Test Coverage Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -f "apps/backend/coverage/coverage-summary.json" ]; then
+            echo "### Backend Coverage" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            cat apps/backend/coverage/coverage-summary.json | jq -r '.total | "Statements: \(.statements.pct)% | Branches: \(.branches.pct)% | Functions: \(.functions.pct)% | Lines: \(.lines.pct)%"' >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          fi
 
   # ===================================================================
   # 🏗️ BUILD: Conditional - Active when apps exist

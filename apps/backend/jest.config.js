@@ -88,4 +88,16 @@ module.exports = {
     },
   },
 
+  // Coverage reporters - include json-summary for CI/CD
+  coverageReporters: [
+    'text',
+    'text-summary',
+    'lcov',
+    'json-summary',
+    'html',
+  ],
+
+  // Coverage directory for output
+  coverageDirectory: '<rootDir>/coverage',
+
 };
