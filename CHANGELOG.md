@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.3] - 2025-10-02
+
+### Added
+- Comprehensive unit test suite for Category Repository with 64 new tests covering 23 methods
+- Test coverage for hierarchical query methods (11 tests): findBySlug, findByType, findByStatus, findRootCategories, findChildCategories, findCategoryTree, findCategoriesWithRules, findDefaultCategories, findSystemCategories, searchCategories, isSlugAvailable
+- Test coverage for update operations (6 tests): updateStatus, moveCategory, updateSortOrder, updateRules, updateMetadata, reorderCategories
+- Test coverage for analytics and utility methods (6 tests): getCategoryUsageStats, findMatchingCategories, archiveAndReassign, createDefaultCategories
+- Tree structure testing including parent-child relationships, hierarchical queries, and complex category operations
+
+### Changed
+- Category Repository test coverage increased from 0% to 99.15%
+  - Statements: 99.15%
+  - Branches: 80.59%
+  - Functions: 100% (23/23)
+  - Lines: 99.57%
+- Total test count increased from 547 to 611 tests (64 new tests)
+- All CI/CD pipelines passing: Foundation Health Check, Security, Development, Testing, Build (web/backend/mobile), Pipeline Summary
+
 ## [0.3.2] - 2025-01-02
 
 ### Fixed
