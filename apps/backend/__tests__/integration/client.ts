@@ -7,23 +7,48 @@ import { AppModule } from '@/app.module';
 import request from 'supertest';
 import { SuperTest, Test as SuperTestType } from 'supertest';
 import { createTestModule } from './setup';
+import { createMockRedis } from '../mocks/redis.mock';
+import Redis from 'ioredis';
 
 export class TestClient {
   private _app: INestApplication;
   private agent: SuperTest<SuperTestType>;
+  private mockRedis: any;
 
   async initialize(): Promise<void> {
+    // Create mock Redis to avoid real Redis connections in integration tests
+    this.mockRedis = createMockRedis();
+
     const moduleFixture: TestingModule = await createTestModule({
       imports: [AppModule]
     });
 
-    this._app = moduleFixture.createNestApplication();
+    // Override Redis with mock
+    const app = moduleFixture.createNestApplication();
+
+    // Replace any Redis instances with mock
+    if (app['container']) {
+      const redisToken = 'default_IORedisModuleConnectionToken';
+      try {
+        const existingRedis = app.get(redisToken, { strict: false });
+        if (existingRedis && typeof existingRedis.quit === 'function') {
+          await existingRedis.quit();
+        }
+      } catch (e) {
+        // Redis may not be injected yet
+      }
+    }
+
+    this._app = app;
     await this._app.init();
 
     this.agent = request(this._app.getHttpServer());
   }
 
   async close(): Promise<void> {
+    if (this.mockRedis && typeof this.mockRedis.disconnect === 'function') {
+      await this.mockRedis.disconnect();
+    }
     if (this._app) {
       await this._app.close();
     }
