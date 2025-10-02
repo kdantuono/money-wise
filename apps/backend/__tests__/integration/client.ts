@@ -4,6 +4,9 @@
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ConfigModule } from '@nestjs/config';
+import { HealthModule } from '@/core/health/health.module';
+import { RedisModule } from '@/core/redis/redis.module';
 import request from 'supertest';
 import { SuperTest, Test as SuperTestType } from 'supertest';
 import { createMockRedis } from '../mocks/redis.mock';
@@ -17,10 +20,14 @@ export class TestClient {
     // Create mock Redis to avoid real Redis connections in integration tests
     this.mockRedis = createMockRedis();
 
-    // Don't import AppModule which has RedisModule.forRoot() - build manually
-    // This avoids real Redis connections in tests
+    // Build test module with required modules but using MockRedis
+    // Similar pattern to auth.integration.spec.ts
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [
+        ConfigModule.forRoot({
+          isGlobal: true,
+          envFilePath: ['.env.test', '.env'],
+        }),
         TypeOrmModule.forRoot({
           type: 'postgres',
           host: process.env.DB_HOST || 'localhost',
@@ -35,12 +42,10 @@ export class TestClient {
           dropSchema: false,
           logging: false,
         }),
-        // Import RedisModule with mock instead of real connection
-        // This prevents NOAUTH errors in tests
+        RedisModule.forTest(this.mockRedis),  // Use forTest() to avoid real connection
+        HealthModule,  // Required for /health endpoint
       ],
     })
-    .overrideProvider('default')  // Override Redis provider
-    .useValue(this.mockRedis)
     .compile();
 
     this._app = moduleFixture.createNestApplication();
