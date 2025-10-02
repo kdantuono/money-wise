@@ -25,8 +25,8 @@ export async function setupTestDatabase(): Promise<DataSource> {
     type: 'postgres',
     host: process.env.DATABASE_HOST || 'localhost',
     port: parseInt(process.env.DATABASE_PORT || '5432'),
-    username: process.env.DATABASE_USER || 'notemesh', // Using notemesh user for tests
-    password: process.env.DATABASE_PASSWORD || 'password',
+    username: process.env.DB_USERNAME || 'postgres', // Align with CI configuration
+    password: process.env.DB_PASSWORD || 'password',
     database: 'moneywise_test',
     schema: 'public',
     synchronize: true,
