@@ -127,15 +127,24 @@ jobs:
             p/typescript
             p/react
             p/nextjs
-          generateSarif: "1"
         env:
           SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
 
       - name: 📤 Upload SARIF to GitHub
+        id: upload-sarif
         uses: github/codeql-action/upload-sarif@v3
         if: always()
+        continue-on-error: true  # Non-blocking until Code Scanning enabled
         with:
           sarif_file: semgrep.sarif
+
+      - name: 📝 Code Scanning Note
+        if: failure() && steps.upload-sarif.conclusion == 'failure'
+        run: |
+          echo "⚠️ SARIF upload failed - Code Scanning not enabled"
+          echo "This is informational only and does not block the build"
+          echo "To enable: Settings → Security → Code security and analysis → Code scanning"
+          exit 0
 
   # TODO: Enable CodeQL when repository code scanning is configured
   # codeql:
