@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.2] - 2025-01-02
+
+### Fixed
+- Fixed integration test client database connection issue in health check tests
+- Removed real PostgreSQL connection attempts from test client configuration
+- Resolved 2 failing health.test.ts tests by implementing mocked dependencies pattern (RedisModule.forTest)
+- All 491 existing tests now passing with zero regressions
+
+### Added
+- Comprehensive unit test suite for Transaction Repository with 56 new tests covering 23 methods
+- Test coverage for query methods (12 tests), update methods (6 tests), and not-yet-implemented methods (5 tests)
+- Complex query testing including date ranges, pagination, full-text search, aggregations, and duplicate detection
+- Plaid integration testing and comprehensive error handling scenarios
+
+### Changed
+- Transaction Repository test coverage increased from 0% to 99.29%
+  - Statements: 99.29% (140/141)
+  - Branches: 87.83% (103/117)
+  - Functions: 100% (23/23)
+  - Lines: 99.28% (139/140)
+- Total test count increased from 491 to 547 tests (56 new tests)
+- All CI/CD pipelines passing: Foundation Health Check, Development, Security, Testing, Build (web/backend/mobile), Pipeline Summary
+
+## [0.3.1] - 2025-01-01
+
 ### Added
 - Comprehensive project documentation (README.md, CHANGELOG.md, SETUP.md)
 - Documentation quality validation framework
