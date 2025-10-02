@@ -17,7 +17,7 @@ export const testDbConfig = {
   type: 'postgres' as const,
   host: process.env.DB_HOST || 'localhost',
   port: parseInt(process.env.DB_PORT || '5432'),
-  username: process.env.DB_USERNAME || 'postgres',
+  username: process.env.DB_USERNAME || 'notemesh', // CI uses DB_USERNAME (postgres), local uses notemesh
   password: process.env.DB_PASSWORD || 'password',
   database: 'moneywise_test',
   entities: ['src/**/*.entity.ts'],
