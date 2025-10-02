@@ -24,8 +24,18 @@ describe('Health Check', () => {
   it('should have database connection', async () => {
     const client = await getTestClient();
 
-    // This test will verify that the test database setup works
-    expect(global.testDataSource).toBeDefined();
-    expect(global.testDataSource.isInitialized).toBe(true);
+    // Verify database is working via health endpoint
+    const response = await client.get('/health');
+
+    // Health endpoint should return database status
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual(
+      expect.objectContaining({
+        status: 'ok',
+        database: expect.objectContaining({
+          status: 'up'
+        })
+      })
+    );
   });
 });
