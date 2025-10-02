@@ -3,7 +3,6 @@
 
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
 import { HealthModule } from '@/core/health/health.module';
 import { RedisModule } from '@/core/redis/redis.module';
@@ -21,26 +20,12 @@ export class TestClient {
     this.mockRedis = createMockRedis();
 
     // Build test module with required modules but using MockRedis
-    // Similar pattern to auth.integration.spec.ts
+    // Integration tests use mocked dependencies, not real database connections
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [
         ConfigModule.forRoot({
           isGlobal: true,
           envFilePath: ['.env.test', '.env'],
-        }),
-        TypeOrmModule.forRoot({
-          type: 'postgres',
-          host: process.env.DB_HOST || 'localhost',
-          port: parseInt(process.env.DB_PORT || '5432'),
-          username: process.env.DB_USERNAME || 'notemesh',
-          password: process.env.DB_PASSWORD || 'password',
-          database: 'moneywise_test',
-          entities: ['src/**/*.entity.ts'],
-          migrations: ['src/core/database/migrations/*.ts'],
-          migrationsRun: true,
-          synchronize: false,
-          dropSchema: false,
-          logging: false,
         }),
         RedisModule.forTest(this.mockRedis),  // Use forTest() to avoid real connection
         HealthModule,  // Required for /health endpoint
