@@ -7,24 +7,74 @@ export class ConsolidatedCompleteSchema1760000000000 implements MigrationInterfa
         // Enable uuid-ossp extension for UUID generation
         await queryRunner.query(`CREATE EXTENSION IF NOT EXISTS "uuid-ossp";`);
 
-        // Create ENUM types first
+        // Create ENUM types first (idempotent - safe for multiple runs)
         // User enums
-        await queryRunner.query(`CREATE TYPE "public"."users_role_enum" AS ENUM('user', 'admin');`);
-        await queryRunner.query(`CREATE TYPE "public"."users_status_enum" AS ENUM('active', 'inactive', 'suspended');`);
+        await queryRunner.query(`
+            DO $$ BEGIN
+                CREATE TYPE "public"."users_role_enum" AS ENUM('user', 'admin');
+            EXCEPTION WHEN duplicate_object THEN null;
+            END $$;
+        `);
+        await queryRunner.query(`
+            DO $$ BEGIN
+                CREATE TYPE "public"."users_status_enum" AS ENUM('active', 'inactive', 'suspended');
+            EXCEPTION WHEN duplicate_object THEN null;
+            END $$;
+        `);
 
         // Account enums
-        await queryRunner.query(`CREATE TYPE "public"."accounts_type_enum" AS ENUM('checking', 'savings', 'credit_card', 'investment', 'loan', 'mortgage', 'other');`);
-        await queryRunner.query(`CREATE TYPE "public"."accounts_status_enum" AS ENUM('active', 'inactive', 'closed', 'error');`);
-        await queryRunner.query(`CREATE TYPE "public"."accounts_source_enum" AS ENUM('plaid', 'manual');`);
+        await queryRunner.query(`
+            DO $$ BEGIN
+                CREATE TYPE "public"."accounts_type_enum" AS ENUM('checking', 'savings', 'credit_card', 'investment', 'loan', 'mortgage', 'other');
+            EXCEPTION WHEN duplicate_object THEN null;
+            END $$;
+        `);
+        await queryRunner.query(`
+            DO $$ BEGIN
+                CREATE TYPE "public"."accounts_status_enum" AS ENUM('active', 'inactive', 'closed', 'error');
+            EXCEPTION WHEN duplicate_object THEN null;
+            END $$;
+        `);
+        await queryRunner.query(`
+            DO $$ BEGIN
+                CREATE TYPE "public"."accounts_source_enum" AS ENUM('plaid', 'manual');
+            EXCEPTION WHEN duplicate_object THEN null;
+            END $$;
+        `);
 
         // Category enums
-        await queryRunner.query(`CREATE TYPE "public"."categories_type_enum" AS ENUM('income', 'expense', 'transfer');`);
-        await queryRunner.query(`CREATE TYPE "public"."categories_status_enum" AS ENUM('active', 'inactive', 'archived');`);
+        await queryRunner.query(`
+            DO $$ BEGIN
+                CREATE TYPE "public"."categories_type_enum" AS ENUM('income', 'expense', 'transfer');
+            EXCEPTION WHEN duplicate_object THEN null;
+            END $$;
+        `);
+        await queryRunner.query(`
+            DO $$ BEGIN
+                CREATE TYPE "public"."categories_status_enum" AS ENUM('active', 'inactive', 'archived');
+            EXCEPTION WHEN duplicate_object THEN null;
+            END $$;
+        `);
 
         // Transaction enums
-        await queryRunner.query(`CREATE TYPE "public"."transactions_type_enum" AS ENUM('debit', 'credit');`);
-        await queryRunner.query(`CREATE TYPE "public"."transactions_status_enum" AS ENUM('pending', 'posted', 'cancelled');`);
-        await queryRunner.query(`CREATE TYPE "public"."transactions_source_enum" AS ENUM('plaid', 'manual', 'import');`);
+        await queryRunner.query(`
+            DO $$ BEGIN
+                CREATE TYPE "public"."transactions_type_enum" AS ENUM('debit', 'credit');
+            EXCEPTION WHEN duplicate_object THEN null;
+            END $$;
+        `);
+        await queryRunner.query(`
+            DO $$ BEGIN
+                CREATE TYPE "public"."transactions_status_enum" AS ENUM('pending', 'posted', 'cancelled');
+            EXCEPTION WHEN duplicate_object THEN null;
+            END $$;
+        `);
+        await queryRunner.query(`
+            DO $$ BEGIN
+                CREATE TYPE "public"."transactions_source_enum" AS ENUM('plaid', 'manual', 'import');
+            EXCEPTION WHEN duplicate_object THEN null;
+            END $$;
+        `);
 
         // Create Users table
         await queryRunner.query(`
