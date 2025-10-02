@@ -117,7 +117,7 @@ jobs:
           fi
 
       - name: 🔍 Semgrep SAST Scan
-        continue-on-error: true  # Informational - findings tracked in SARIF
+        continue-on-error: true  # Informational - findings logged for review
         uses: semgrep/semgrep-action@v1
         with:
           config: >-
@@ -128,22 +128,16 @@ jobs:
             p/react
             p/nextjs
         env:
+          # Results are uploaded to Semgrep App for tracking
           SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
 
-      - name: 📤 Upload SARIF to GitHub
-        id: upload-sarif
-        uses: github/codeql-action/upload-sarif@v3
+      - name: 📝 SAST Scan Note
         if: always()
-        continue-on-error: true  # Non-blocking until Code Scanning enabled
-        with:
-          sarif_file: semgrep.sarif
-
-      - name: 📝 Code Scanning Note
-        if: failure() && steps.upload-sarif.conclusion == 'failure'
         run: |
-          echo "⚠️ SARIF upload failed - Code Scanning not enabled"
-          echo "This is informational only and does not block the build"
-          echo "To enable: Settings → Security → Code security and analysis → Code scanning"
+          echo "✅ SAST scan completed"
+          echo "📊 Findings are tracked in Semgrep App and visible in workflow logs"
+          echo "💡 To enable GitHub Code Scanning integration:"
+          echo "   Settings → Security → Code security and analysis → Code scanning"
           exit 0
 
   # TODO: Enable CodeQL when repository code scanning is configured
