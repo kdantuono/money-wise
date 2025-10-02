@@ -608,4 +608,301 @@ describe('AccountRepository', () => {
       );
     });
   });
+
+  describe('findByType', () => {
+    it('should find accounts by type with userId', async () => {
+      const checkingAccounts = [createMockAccount({ type: AccountType.CHECKING })];
+      mockRepository.find.mockResolvedValue(checkingAccounts);
+
+      const result = await accountRepository.findByType(AccountType.CHECKING, 'user-id-123');
+
+      expect(mockRepository.find).toHaveBeenCalledWith({
+        where: { type: AccountType.CHECKING, userId: 'user-id-123' },
+        order: { createdAt: 'DESC' },
+      });
+      expect(result).toEqual(checkingAccounts);
+    });
+
+    it('should find accounts by type without userId', async () => {
+      const savingsAccounts = [createMockAccount({ type: AccountType.SAVINGS })];
+      mockRepository.find.mockResolvedValue(savingsAccounts);
+
+      const result = await accountRepository.findByType(AccountType.SAVINGS);
+
+      expect(mockRepository.find).toHaveBeenCalledWith({
+        where: { type: AccountType.SAVINGS },
+        order: { createdAt: 'DESC' },
+      });
+      expect(result).toEqual(savingsAccounts);
+    });
+
+    it('should handle findByType errors', async () => {
+      const error = new Error('Type query failed');
+      mockRepository.find.mockRejectedValue(error);
+
+      await expect(accountRepository.findByType(AccountType.CHECKING)).rejects.toThrow(
+        'Failed to find accounts by type: Type query failed'
+      );
+    });
+  });
+
+  describe('findByPlaidItemId', () => {
+    it('should find accounts by Plaid item ID', async () => {
+      const plaidAccounts = [
+        createMockAccount({ plaidItemId: 'item_123' }),
+        createMockAccount({ plaidItemId: 'item_123' }),
+      ];
+      mockRepository.find.mockResolvedValue(plaidAccounts);
+
+      const result = await accountRepository.findByPlaidItemId('item_123');
+
+      expect(mockRepository.find).toHaveBeenCalledWith({
+        where: { plaidItemId: 'item_123' },
+        order: { createdAt: 'DESC' },
+      });
+      expect(result).toEqual(plaidAccounts);
+    });
+
+    it('should return empty array if no accounts found', async () => {
+      mockRepository.find.mockResolvedValue([]);
+
+      const result = await accountRepository.findByPlaidItemId('item_nonexistent');
+
+      expect(result).toEqual([]);
+    });
+
+    it('should handle findByPlaidItemId errors', async () => {
+      const error = new Error('Plaid item query failed');
+      mockRepository.find.mockRejectedValue(error);
+
+      await expect(accountRepository.findByPlaidItemId('item_123')).rejects.toThrow(
+        'Failed to find accounts by Plaid item ID: Plaid item query failed'
+      );
+    });
+  });
+
+  describe('incrementBalance', () => {
+    it('should increment account balance', async () => {
+      const executeResult = { affected: 1, raw: [], generatedMaps: [] };
+      mockQueryBuilder.execute.mockResolvedValue(executeResult);
+
+      const result = await accountRepository.incrementBalance('account-id-123', 100);
+
+      expect(mockRepository.createQueryBuilder).toHaveBeenCalled();
+      expect(mockQueryBuilder.update).toHaveBeenCalledWith(Account);
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith('id = :id', {
+        id: 'account-id-123',
+      });
+      expect(result).toBe(true);
+    });
+
+    it('should return false if account not found', async () => {
+      const executeResult = { affected: 0, raw: [], generatedMaps: [] };
+      mockQueryBuilder.execute.mockResolvedValue(executeResult);
+
+      const result = await accountRepository.incrementBalance('nonexistent-id', 50);
+
+      expect(result).toBe(false);
+    });
+
+    it('should handle incrementBalance errors', async () => {
+      const error = new Error('Increment failed');
+      mockQueryBuilder.execute.mockRejectedValue(error);
+
+      await expect(accountRepository.incrementBalance('account-id-123', 100)).rejects.toThrow(
+        'Failed to increment account balance: Increment failed'
+      );
+    });
+  });
+
+  describe('decrementBalance', () => {
+    it('should decrement account balance', async () => {
+      const executeResult = { affected: 1, raw: [], generatedMaps: [] };
+      mockQueryBuilder.execute.mockResolvedValue(executeResult);
+
+      const result = await accountRepository.decrementBalance('account-id-123', 50);
+
+      expect(mockRepository.createQueryBuilder).toHaveBeenCalled();
+      expect(mockQueryBuilder.update).toHaveBeenCalledWith(Account);
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith('id = :id', {
+        id: 'account-id-123',
+      });
+      expect(result).toBe(true);
+    });
+
+    it('should handle decrementBalance errors', async () => {
+      const error = new Error('Decrement failed');
+      mockQueryBuilder.execute.mockRejectedValue(error);
+
+      await expect(accountRepository.decrementBalance('account-id-123', 50)).rejects.toThrow(
+        'Failed to decrement account balance: Decrement failed'
+      );
+    });
+  });
+
+  describe('updateLastSyncedAt', () => {
+    it('should update sync timestamp successfully', async () => {
+      const updateResult = { affected: 1, raw: [], generatedMaps: [] };
+      mockRepository.update.mockResolvedValue(updateResult);
+
+      const result = await accountRepository.updateLastSyncedAt('account-id-123');
+
+      expect(mockRepository.update).toHaveBeenCalledWith(
+        'account-id-123',
+        { updatedAt: expect.any(Date) }
+      );
+      expect(result).toBe(true);
+    });
+
+    it('should return false if account not found', async () => {
+      const updateResult = { affected: 0, raw: [], generatedMaps: [] };
+      mockRepository.update.mockResolvedValue(updateResult);
+
+      const result = await accountRepository.updateLastSyncedAt('nonexistent-id');
+
+      expect(result).toBe(false);
+    });
+
+    it('should handle update errors', async () => {
+      const error = new Error('Update failed');
+      mockRepository.update.mockRejectedValue(error);
+
+      await expect(accountRepository.updateLastSyncedAt('account-id-123')).rejects.toThrow(
+        'Failed to update sync timestamp: Update failed'
+      );
+    });
+  });
+
+  describe('findWithTransactions', () => {
+    it('should find account with transactions and apply limit', async () => {
+      const mockAccountWithTransactions = {
+        ...createMockAccount(),
+        transactions: [
+          { id: 'txn-1', createdAt: new Date() },
+          { id: 'txn-2', createdAt: new Date() },
+          { id: 'txn-3', createdAt: new Date() },
+        ],
+      } as any;
+      mockRepository.findOne.mockResolvedValue(mockAccountWithTransactions);
+
+      const result = await accountRepository.findWithTransactions('account-id-123', 2);
+
+      expect(mockRepository.findOne).toHaveBeenCalledWith({
+        where: { id: 'account-id-123' },
+        relations: ['transactions'],
+        order: { transactions: { createdAt: 'DESC' } },
+      });
+      expect(result.transactions).toHaveLength(2);
+    });
+
+    it('should use default limit of 50', async () => {
+      const transactions = Array.from({ length: 100 }, (_, i) => ({
+        id: `txn-${i}`,
+        createdAt: new Date(),
+      }));
+      const mockAccountWithTransactions = {
+        ...createMockAccount(),
+        transactions,
+      } as any;
+      mockRepository.findOne.mockResolvedValue(mockAccountWithTransactions);
+
+      const result = await accountRepository.findWithTransactions('account-id-123');
+
+      expect(result.transactions).toHaveLength(50);
+    });
+
+    it('should return null if account not found', async () => {
+      mockRepository.findOne.mockResolvedValue(null);
+
+      const result = await accountRepository.findWithTransactions('nonexistent-id');
+
+      expect(result).toBeNull();
+    });
+
+    it('should handle errors', async () => {
+      const error = new Error('Query failed');
+      mockRepository.findOne.mockRejectedValue(error);
+
+      await expect(accountRepository.findWithTransactions('account-id-123')).rejects.toThrow(
+        'Failed to find account with transactions: Query failed'
+      );
+    });
+  });
+
+  describe('findByCurrency', () => {
+    it('should find accounts by currency with userId', async () => {
+      const usdAccounts = [createMockAccount({ currency: 'USD' })];
+      mockRepository.find.mockResolvedValue(usdAccounts);
+
+      const result = await accountRepository.findByCurrency('USD', 'user-id-123');
+
+      expect(mockRepository.find).toHaveBeenCalledWith({
+        where: { currency: 'USD', userId: 'user-id-123' },
+        order: { createdAt: 'DESC' },
+      });
+      expect(result).toEqual(usdAccounts);
+    });
+
+    it('should find accounts by currency without userId', async () => {
+      const eurAccounts = [createMockAccount({ currency: 'EUR' })];
+      mockRepository.find.mockResolvedValue(eurAccounts);
+
+      const result = await accountRepository.findByCurrency('EUR');
+
+      expect(mockRepository.find).toHaveBeenCalledWith({
+        where: { currency: 'EUR' },
+        order: { createdAt: 'DESC' },
+      });
+      expect(result).toEqual(eurAccounts);
+    });
+
+    it('should handle errors', async () => {
+      const error = new Error('Currency query failed');
+      mockRepository.find.mockRejectedValue(error);
+
+      await expect(accountRepository.findByCurrency('USD')).rejects.toThrow(
+        'Failed to find accounts by currency: Currency query failed'
+      );
+    });
+  });
+
+  describe('groupByInstitution', () => {
+    it('should group accounts by institution with totals', async () => {
+      const accounts = [
+        createMockAccount({ plaidItemId: 'item_123', currentBalance: 1000 }),
+        createMockAccount({ plaidItemId: 'item_123', currentBalance: 500 }),
+        createMockAccount({ plaidItemId: 'item_456', currentBalance: 2000 }),
+        createMockAccount({ plaidItemId: null, currentBalance: 300 }),
+      ];
+      mockRepository.find.mockResolvedValue(accounts);
+
+      const result = await accountRepository.groupByInstitution('user-id-123');
+
+      expect(mockRepository.find).toHaveBeenCalledWith({
+        where: { userId: 'user-id-123', isActive: true },
+        order: { createdAt: 'DESC' },
+      });
+      expect(result).toHaveLength(3);
+      expect(result.find(g => g.institution === 'item_123').totalBalance).toBe(1500);
+      expect(result.find(g => g.institution === 'item_456').totalBalance).toBe(2000);
+      expect(result.find(g => g.institution === 'Manual Accounts').totalBalance).toBe(300);
+    });
+
+    it('should return empty array if no accounts found', async () => {
+      mockRepository.find.mockResolvedValue([]);
+
+      const result = await accountRepository.groupByInstitution('user-id-123');
+
+      expect(result).toEqual([]);
+    });
+
+    it('should handle errors', async () => {
+      const error = new Error('Grouping failed');
+      mockRepository.find.mockRejectedValue(error);
+
+      await expect(accountRepository.groupByInstitution('user-id-123')).rejects.toThrow(
+        'Failed to group accounts by institution: Grouping failed'
+      );
+    });
+  });
 });

@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.4] - 2025-10-03
+
+### Added
+- Comprehensive unit test suite for Account Repository with 14 new tests covering 6 previously untested methods
+- Test coverage for findByType, findByPlaidItemId, incrementBalance, decrementBalance, updateLastSyncedAt, findWithTransactions, findByCurrency, and groupByInstitution methods
+- Balance manipulation testing (increment/decrement operations)
+- Currency filtering and institution grouping with complex aggregation logic
+- Transaction relationship testing with limit handling
+
+### Changed
+- Account Repository test coverage increased from 61% to 98.36%
+  - Statements: 98.36% (119/121)
+  - Branches: 94.11% (64/68)
+  - Functions: 91.30% (21/23)
+  - Lines: 98.31% (116/118)
+- Total test count increased from 488 to 501 tests (13 new tests)
+- All unit tests passing: 501 passed, 6 skipped
+
+### Fixed
+- CI/CD coverage reporting configuration - separated unit tests from integration/performance tests
+- Coverage artifact upload to GitHub Actions with 30-day retention
+- Jest coverage reporters configuration for proper json-summary generation
+
 ## [0.3.3] - 2025-10-02
 
 ### Added
