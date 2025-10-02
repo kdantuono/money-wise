@@ -12,30 +12,29 @@ describe('Database Migrations', () => {
   let manager: DatabaseTestManager;
 
   beforeAll(async () => {
+    // Start container ONCE for all tests - reuse across test suite
     manager = DatabaseTestManager.getInstance();
-  });
+    dataSource = await manager.start();
+  }, 120000); // 2 min timeout for initial container start
 
   afterAll(async () => {
+    // Cleanup ONCE after all tests complete
     await teardownTestDatabase();
   });
 
   beforeEach(async () => {
-    // Start fresh for each test
-    if (dataSource?.isInitialized) {
-      await dataSource.destroy();
-    }
+    // Just clean data between tests - reuse same container
+    await manager.clean();
   });
 
   afterEach(async () => {
-    if (dataSource?.isInitialized) {
-      await dataSource.destroy();
-    }
+    // No need to destroy DataSource between tests
   });
 
   describe('Schema Creation', () => {
     it('should create all tables with correct structure', async () => {
       // Arrange & Act
-      dataSource = await setupTestDatabase();
+      // DataSource already initialized in beforeAll
 
       // Assert - Check all expected tables exist
       const tableQuery = `
@@ -57,7 +56,7 @@ describe('Database Migrations', () => {
 
     it('should create all required columns for users table', async () => {
       // Arrange & Act
-      dataSource = await setupTestDatabase();
+      // DataSource already initialized in beforeAll
 
       // Assert - Check users table structure
       const columnsQuery = `
@@ -94,7 +93,7 @@ describe('Database Migrations', () => {
 
     it('should create all required columns for accounts table', async () => {
       // Arrange & Act
-      dataSource = await setupTestDatabase();
+      // DataSource already initialized in beforeAll
 
       // Assert - Check accounts table structure
       const columnsQuery = `
@@ -124,7 +123,7 @@ describe('Database Migrations', () => {
 
     it('should create all required columns for transactions table', async () => {
       // Arrange & Act
-      dataSource = await setupTestDatabase();
+      // DataSource already initialized in beforeAll
 
       // Assert - Check transactions table structure
       const columnsQuery = `
@@ -152,7 +151,7 @@ describe('Database Migrations', () => {
 
     it('should create all required columns for categories table', async () => {
       // Arrange & Act
-      dataSource = await setupTestDatabase();
+      // DataSource already initialized in beforeAll
 
       // Assert - Check categories table structure
       const columnsQuery = `
@@ -183,7 +182,7 @@ describe('Database Migrations', () => {
   describe('Indexes and Constraints', () => {
     it('should create all required indexes', async () => {
       // Arrange & Act
-      dataSource = await setupTestDatabase();
+      // DataSource already initialized in beforeAll
 
       // Assert - Check indexes exist by definition (not hash, which depends on column names)
       const indexQuery = `
@@ -229,7 +228,7 @@ describe('Database Migrations', () => {
 
     it('should create all foreign key constraints', async () => {
       // Arrange & Act
-      dataSource = await setupTestDatabase();
+      // DataSource already initialized in beforeAll
 
       // Assert - Check foreign key constraints
       const fkQuery = `
@@ -278,7 +277,7 @@ describe('Database Migrations', () => {
 
     it('should create unique constraints', async () => {
       // Arrange & Act
-      dataSource = await setupTestDatabase();
+      // DataSource already initialized in beforeAll
 
       // Assert - Check unique constraints
       const uniqueQuery = `
@@ -318,7 +317,7 @@ describe('Database Migrations', () => {
   describe('Migration Rollback', () => {
     it('should be able to drop and recreate schema', async () => {
       // Arrange
-      dataSource = await setupTestDatabase();
+      // DataSource already initialized in beforeAll
 
       // Verify tables exist
       let tables = await dataSource.query(
@@ -339,7 +338,7 @@ describe('Database Migrations', () => {
 
     it('should handle schema changes gracefully', async () => {
       // Arrange
-      dataSource = await setupTestDatabase();
+      // DataSource already initialized in beforeAll
 
       // Simulate schema change by adding a column
       await dataSource.query(
@@ -372,7 +371,7 @@ describe('Database Migrations', () => {
   describe('Data Type Validation', () => {
     it('should validate JSONB columns work correctly', async () => {
       // Arrange
-      dataSource = await setupTestDatabase();
+      // DataSource already initialized in beforeAll
 
       // Act - Insert data with JSONB
       await dataSource.query(`
@@ -405,7 +404,7 @@ describe('Database Migrations', () => {
 
     it('should validate enum constraints', async () => {
       // Arrange
-      dataSource = await setupTestDatabase();
+      // DataSource already initialized in beforeAll
 
       // Act & Assert - Valid enum value should work
       await expect(
@@ -450,7 +449,7 @@ describe('Database Migrations', () => {
 
     it('should validate decimal precision for monetary values', async () => {
       // Arrange
-      dataSource = await setupTestDatabase();
+      // DataSource already initialized in beforeAll
 
       // Create user and account first
       const userResult = await dataSource.query(`
@@ -501,7 +500,7 @@ describe('Database Migrations', () => {
   describe('Performance and Scalability', () => {
     it('should handle large schema operations efficiently', async () => {
       // Arrange
-      dataSource = await setupTestDatabase();
+      // DataSource already initialized in beforeAll
 
       const startTime = Date.now();
 
@@ -525,7 +524,7 @@ describe('Database Migrations', () => {
 
     it('should validate entity metadata matches database schema', async () => {
       // Arrange
-      dataSource = await setupTestDatabase();
+      // DataSource already initialized in beforeAll
 
       // Act - Get entity metadata and compare with actual schema
       for (const entity of entities) {
