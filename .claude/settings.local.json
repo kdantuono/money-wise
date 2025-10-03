@@ -21,7 +21,14 @@
       "Bash(awk:*)",
       "Bash(gh run download:*)",
       "Bash(tree:*)",
-      "Bash(pnpm --filter @money-wise/backend test:unit -- --coverage)"
+      "Bash(pnpm --filter @money-wise/backend test:unit -- --coverage)",
+      "Bash(gh issue list:*)",
+      "Bash(gh pr list:*)",
+      "Bash(gh issue view:*)",
+      "Bash(gh run list:*)",
+      "Bash(pnpm --filter @money-wise/backend test:unit)",
+      "Bash(gh pr view:*)",
+      "Bash(gh pr checks:*)"
     ],
     "deny": [],
     "ask": []

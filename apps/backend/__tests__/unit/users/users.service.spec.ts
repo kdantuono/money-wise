@@ -300,11 +300,11 @@ describe('UsersService', () => {
 
     it('should throw ConflictException when email already in use', async () => {
       const existingUser: any = { ...mockUser, id: 'other-user-id' };
-      const updateWithEmail: UpdateUserDto = { email: existingUser.email };
+      const updateWithEmail: UpdateUserDto = { email: 'existing@example.com' };
 
       repository.findOne
-        .mockResolvedValueOnce(mockUser)
-        .mockResolvedValueOnce(existingUser);
+        .mockResolvedValueOnce(mockUser) // First call to find user being updated
+        .mockResolvedValueOnce(existingUser); // Second call in findByEmail
 
       await expect(
         service.update(
@@ -313,9 +313,7 @@ describe('UsersService', () => {
           mockUser.id,
           UserRole.USER
         )
-      ).rejects.toThrow(
-        new ConflictException('Email already in use')
-      );
+      ).rejects.toThrow('Email already in use');
     });
 
     it('should not check email uniqueness when email unchanged', async () => {

@@ -56,11 +56,8 @@ describe('RateLimitService', () => {
         const key = `rate_limit:${action}:${identifier}`;
 
         // Simulate 3 attempts already made
-        await mockRedis.hset(key, {
-          count: '3',
-          windowStart: Date.now().toString(),
-          lockoutCount: '0',
-        });
+        const now = Date.now().toString();
+        mockRedis.hmget.mockResolvedValue(['3', now, '0']);
 
         const result = await service.checkRateLimit(identifier, action);
 
@@ -75,11 +72,8 @@ describe('RateLimitService', () => {
         const key = `rate_limit:${action}:${identifier}`;
 
         // Simulate max attempts already made
-        await mockRedis.hset(key, {
-          count: '5',
-          windowStart: Date.now().toString(),
-          lockoutCount: '0',
-        });
+        const now = Date.now().toString();
+        mockRedis.hmget.mockResolvedValue(['5', now, '0']);
 
         const result = await service.checkRateLimit(identifier, action);
 

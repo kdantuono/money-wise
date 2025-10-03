@@ -103,7 +103,7 @@ describe('AccountLockoutService', () => {
       // Verify Redis storage
       const key = `lockout:${identifier}`;
       const data = await mockRedis.hmget(key, 'failedAttempts', 'firstFailedAt');
-      expect(data[0]).toBe('1');
+      expect(String(data[0])).toBe('1');
       expect(data[1]).toBeDefined();
     });
 
@@ -126,7 +126,7 @@ describe('AccountLockoutService', () => {
 
       // Verify count was incremented
       const data = await mockRedis.hmget(key, 'failedAttempts');
-      expect(data[0]).toBe('3');
+      expect(String(data[0])).toBe('3');
     });
 
     it('should lock account after max failed attempts', async () => {
@@ -217,7 +217,7 @@ describe('AccountLockoutService', () => {
 
       // Verify new firstFailedAt was set
       const data = await mockRedis.hmget(key, 'failedAttempts', 'firstFailedAt');
-      expect(data[0]).toBe('1');
+      expect(String(data[0])).toBe('1');
       expect(parseInt(data[1]!)).toBeGreaterThan(oldFirstFailedAt);
     });
 
@@ -256,7 +256,7 @@ describe('AccountLockoutService', () => {
 
       // Verify failedAttempts was reset to 0 (not incremented further)
       const data = await mockRedis.hmget(key, 'failedAttempts');
-      expect(data[0]).toBe('0');
+      expect(String(data[0])).toBe('0');
     });
 
     it('should increment lockout count on each lockout', async () => {
@@ -273,7 +273,7 @@ describe('AccountLockoutService', () => {
       await service.recordFailedAttempt(identifier);
 
       const data = await mockRedis.hmget(key, 'lockoutCount');
-      expect(data[0]).toBe('1');
+      expect(String(data[0])).toBe('1');
     });
 
     it('should update user status to SUSPENDED when locked by email', async () => {

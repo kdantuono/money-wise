@@ -174,6 +174,14 @@ export class MockRedis extends EventEmitter {
         commands.push(['expire', key, seconds]);
         return pipelineObj;
       },
+      hset: (key: string, field: string, value: string) => {
+        commands.push(['hset', key, field, value]);
+        return pipelineObj;
+      },
+      hgetall: (key: string) => {
+        commands.push(['hgetall', key]);
+        return pipelineObj;
+      },
       exec: jest.fn(() => {
         // Execute all commands
         const results = commands.map(cmd => {
@@ -197,6 +205,16 @@ export class MockRedis extends EventEmitter {
           }
           if (method === 'expire') {
             return [null, this.storage.has(args[0]) ? 1 : 0];
+          }
+          if (method === 'hset') {
+            const hash = JSON.parse(this.storage.get(args[0]) || '{}');
+            hash[args[1]] = args[2];
+            this.storage.set(args[0], JSON.stringify(hash));
+            return [null, 1];
+          }
+          if (method === 'hgetall') {
+            const hash = JSON.parse(this.storage.get(args[0]) || '{}');
+            return [null, hash];
           }
           return [null, 'OK'];
         });
@@ -239,10 +257,17 @@ export class MockRedis extends EventEmitter {
   });
 
   // Hash operations
-  hset = jest.fn((key: string, field: string, value: string) => {
-    this.recordCall('hset', [key, field, value]);
+  hset = jest.fn((key: string, fieldOrObj: string | Record<string, string>, value?: string) => {
+    this.recordCall('hset', [key, fieldOrObj, value]);
     const hash = JSON.parse(this.storage.get(key) || '{}');
-    hash[field] = value;
+
+    // Support both object-based and field/value syntax
+    if (typeof fieldOrObj === 'object') {
+      Object.assign(hash, fieldOrObj);
+    } else {
+      hash[fieldOrObj] = value;
+    }
+
     this.storage.set(key, JSON.stringify(hash));
     return Promise.resolve(1);
   });
