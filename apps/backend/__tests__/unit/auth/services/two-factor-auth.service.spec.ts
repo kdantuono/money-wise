@@ -405,8 +405,7 @@ describe('TwoFactorAuthService', () => {
       await mockRedis.set(`2fa_user:${userId}`, JSON.stringify(userData));
       (speakeasy.totp.verify as jest.Mock).mockReturnValue(false);
 
-      await expect(service.disable2FA(userId, token)).rejects.toThrow(BadRequestException);
-      await expect(service.disable2FA(userId, token)).rejects.toThrow('Invalid 2FA token or backup code');
+      await expect(service.disable2FA(userId, token)).rejects.toThrow('Invalid 2FA token. Backup codes cannot be used to disable 2FA.');
 
       // Verify data was NOT deleted
       const stillExists = await mockRedis.get(`2fa_user:${userId}`);

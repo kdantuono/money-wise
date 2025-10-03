@@ -23,6 +23,15 @@ export class MockRedis extends EventEmitter {
   // String operations
   get = jest.fn((key: string) => {
     this.recordCall('get', [key]);
+
+    // Check if key has expired
+    const expiration = this.expirations.get(key);
+    if (expiration && Date.now() >= expiration) {
+      this.storage.delete(key);
+      this.expirations.delete(key);
+      return Promise.resolve(null);
+    }
+
     const value = this.storage.get(key);
     return Promise.resolve(value || null);
   });

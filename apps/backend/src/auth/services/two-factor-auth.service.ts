@@ -184,7 +184,7 @@ export class TwoFactorAuthService {
         secret: userData.secret,
         encoding: 'base32',
         token,
-        window: 2,
+        window: 1, // Allow for clock skew (±30 seconds)
       });
 
       if (verified) {
@@ -216,15 +216,28 @@ export class TwoFactorAuthService {
    */
   async disable2FA(userId: string, token: string): Promise<TwoFactorVerificationResult> {
     try {
-      // Verify current 2FA token before disabling
-      const verificationResult = await this.verifyTwoFactor(userId, token);
+      const userKey = `2fa_user:${userId}`;
+      const userDataStr = await this.redis.get(userKey);
 
-      if (!verificationResult.success) {
-        throw new BadRequestException('Invalid 2FA token');
+      if (!userDataStr) {
+        throw new BadRequestException('2FA not enabled for this user');
+      }
+
+      const userData = JSON.parse(userDataStr);
+
+      // Only allow TOTP tokens for disabling (not backup codes)
+      const verified = speakeasy.totp.verify({
+        secret: userData.secret,
+        encoding: 'base32',
+        token,
+        window: 2,
+      });
+
+      if (!verified) {
+        throw new BadRequestException('Invalid 2FA token. Backup codes cannot be used to disable 2FA.');
       }
 
       // Remove 2FA data
-      const userKey = `2fa_user:${userId}`;
       await this.redis.del(userKey);
 
       this.logger.log(`2FA disabled for user ${userId}`);
@@ -316,8 +329,9 @@ export class TwoFactorAuthService {
       const userData = JSON.parse(userDataStr);
       const backupCodes: BackupCode[] = userData.backupCodes || [];
 
-      // Find matching backup code
-      const backupCode = backupCodes.find(bc => bc.code === code && !bc.used);
+      // Find matching backup code (case-insensitive)
+      const normalizedCode = code.toUpperCase();
+      const backupCode = backupCodes.find(bc => bc.code.toUpperCase() === normalizedCode && !bc.used);
 
       if (!backupCode) {
         return { success: false, message: 'Invalid or used backup code' };
