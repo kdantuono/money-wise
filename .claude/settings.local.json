@@ -19,7 +19,9 @@
       "Read(//tmp/**)",
       "Read(//home/nemesi/.claude/todos/**)",
       "Bash(awk:*)",
-      "Bash(gh run download:*)"
+      "Bash(gh run download:*)",
+      "Bash(tree:*)",
+      "Bash(pnpm --filter @money-wise/backend test:unit -- --coverage)"
     ],
     "deny": [],
     "ask": []
