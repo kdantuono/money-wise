@@ -6,8 +6,7 @@
 
  RUN  v1.6.1 /home/nemesi/dev/money-wise/apps/web
 
- ✓ |@money-wise/web| __tests__/api/auth.test.tsx  (4 tests) 96ms
- ✓ |@money-wise/web| __tests__/pages/home.test.tsx  (4 tests) 362ms
+ ✓ |@money-wise/web| __tests__/api/auth.test.tsx  (4 tests) 81ms
 stderr | __tests__/components/auth/protected-route.test.tsx > withAuth Higher-Order Component > HOC with Complex Components > works with components that have state
 Warning: An update to StatefulComponent inside a test was not wrapped in act(...).
 
@@ -24,10 +23,11 @@ This ensures that you're testing the behavior the user would see in the browser.
     at AuthenticatedComponent
     at AllTheProviders (/home/nemesi/dev/money-wise/apps/web/__tests__/utils/test-utils.tsx:10:28)
 
- ✓ |@money-wise/web| __tests__/components/auth/protected-route.test.tsx  (18 tests) 508ms
- ✓ |@money-wise/web| __tests__/components/ui/label.test.tsx  (13 tests) 515ms
- ✓ |@money-wise/web| __tests__/components/ui/card.test.tsx  (30 tests) 899ms
- ✓ |@money-wise/web| __tests__/components/ui/loading.test.tsx  (32 tests) 909ms
+ ✓ |@money-wise/web| __tests__/components/auth/protected-route.test.tsx  (18 tests) 539ms
+ ✓ |@money-wise/web| __tests__/components/ui/label.test.tsx  (13 tests) 468ms
+ ✓ |@money-wise/web| __tests__/pages/home.test.tsx  (4 tests) 486ms
+ ✓ |@money-wise/web| __tests__/components/ui/loading.test.tsx  (32 tests) 952ms
+ ✓ |@money-wise/web| __tests__/components/ui/card.test.tsx  (30 tests) 950ms
 stderr | __tests__/components/ui/error-boundary.test.tsx > ErrorBoundary Component > Error Catching > catches errors from child components
 Error: Uncaught [Error: Test error]
     at reportException (/home/nemesi/dev/money-wise/node_modules/.pnpm/jsdom@23.2.0/node_modules/jsdom/lib/jsdom/living/helpers/runtime-script-errors.js:66:24)
@@ -248,7 +248,7 @@ Error: Uncaught [Error: Test error]
     at HTMLUnknownElementImpl._dispatch (/home/nemesi/dev/money-wise/node_modules/.pnpm/jsdom@23.2.0/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:233:9)
     at HTMLUnknownElementImpl.dispatchEvent (/home/nemesi/dev/money-wise/node_modules/.pnpm/jsdom@23.2.0/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:104:17)
 
- ✓ |@money-wise/web| __tests__/components/ui/button.test.tsx  (9 tests) 950ms
+ ✓ |@money-wise/web| __tests__/components/ui/button.test.tsx  (9 tests) 1034ms
 stderr | __tests__/components/ui/error-boundary.test.tsx > ErrorBoundary Component > Error Recovery > allows retry via Try Again button
 Error: Uncaught [Error: Test error]
     at reportException (/home/nemesi/dev/money-wise/node_modules/.pnpm/jsdom@23.2.0/node_modules/jsdom/lib/jsdom/living/helpers/runtime-script-errors.js:66:24)
@@ -622,7 +622,7 @@ Error: Uncaught [Error: Test error]
     at HTMLUnknownElementImpl._dispatch (/home/nemesi/dev/money-wise/node_modules/.pnpm/jsdom@23.2.0/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:233:9)
     at HTMLUnknownElementImpl.dispatchEvent (/home/nemesi/dev/money-wise/node_modules/.pnpm/jsdom@23.2.0/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:104:17)
 
- ✓ |@money-wise/web| __tests__/components/ui/input.test.tsx  (21 tests) 1251ms
+ ✓ |@money-wise/web| __tests__/components/ui/input.test.tsx  (21 tests) 1347ms
 stderr | __tests__/components/ui/error-boundary.test.tsx > ErrorBoundary Component > Error Boundary State > maintains error state until successfully resolved
 Error: Uncaught [Error: Test error]
     at reportException (/home/nemesi/dev/money-wise/node_modules/.pnpm/jsdom@23.2.0/node_modules/jsdom/lib/jsdom/living/helpers/runtime-script-errors.js:66:24)
@@ -822,7 +822,7 @@ Error: Uncaught [Error: Manual error]
     at Object.invokeGuardedCallbackDev (/home/nemesi/dev/money-wise/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:4213:16)
     at invokeGuardedCallback (/home/nemesi/dev/money-wise/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:4277:31)
 
- ✓ |@money-wise/web| __tests__/components/ui/error-boundary.test.tsx  (17 tests) 1437ms
+ ✓ |@money-wise/web| __tests__/components/ui/error-boundary.test.tsx  (17 tests) 1487ms
 stderr | __tests__/components/layout/dashboard-layout.test.tsx > DashboardLayout Component > Logout Functionality > redirects to login even if logout fails
 Logout error: Error: Logout failed
     at /home/nemesi/dev/money-wise/apps/web/__tests__/components/layout/dashboard-layout.test.tsx:228:52
@@ -836,10 +836,10 @@ Logout error: Error: Logout failed
     at startTests (file:///home/nemesi/dev/money-wise/node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:967:3)
     at file:///home/nemesi/dev/money-wise/node_modules/.pnpm/vitest@1.6.1_@types+node@20.19.17_@vitest+ui@1.6.1_jsdom@23.2.0/node_modules/vitest/dist/chunks/runtime-runBaseTests.oAvMKtQC.js:116:7
 
- ✓ |@money-wise/web| __tests__/components/layout/dashboard-layout.test.tsx  (27 tests) 6101ms
+ ✓ |@money-wise/web| __tests__/components/layout/dashboard-layout.test.tsx  (27 tests) 5951ms
 
  Test Files  10 passed (10)
       Tests  175 passed (175)
-   Start at  12:12:13
-   Duration  8.87s (transform 913ms, setup 2.31s, collect 6.92s, tests 13.03s, environment 10.02s, prepare 3.53s)
+   Start at  13:04:38
+   Duration  8.92s (transform 1.07s, setup 1.70s, collect 7.47s, tests 13.29s, environment 10.48s, prepare 3.80s)
 
