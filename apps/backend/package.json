@@ -1,6 +1,6 @@
 {
   "name": "@money-wise/backend",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "MoneyWise NestJS Backend API",
   "private": true,
   "scripts": {

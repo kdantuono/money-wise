@@ -2,7 +2,8 @@
 
 Personal finance management application with cross-platform support
 
-[![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)](https://github.com/kdantuono/money-wise)
+[![CI/CD Pipeline](https://github.com/kdantuono/money-wise/actions/workflows/progressive-ci-cd.yml/badge.svg)](https://github.com/kdantuono/money-wise/actions/workflows/progressive-ci-cd.yml)
+[![Version](https://img.shields.io/badge/version-0.4.0-blue.svg)](https://github.com/kdantuono/money-wise)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
 [![Package Manager](https://img.shields.io/badge/package%20manager-pnpm%20%3E%3D8.0.0-orange.svg)](https://pnpm.io/)

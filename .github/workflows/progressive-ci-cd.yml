@@ -526,16 +526,24 @@ jobs:
           PASSED_TESTS=0
 
           if [ -f "unit-tests.log" ]; then
-            UNIT_PASSED=$(grep -oP '(?<=Tests:.*)\d+(?= passed)' unit-tests.log | tail -1 || echo "0")
+            UNIT_PASSED=$(grep -E "Tests:.*([0-9]+) passed" unit-tests.log | tail -1 | grep -oE "[0-9]+ passed" | grep -oE "[0-9]+" || echo "0")
             PASSED_TESTS=$((PASSED_TESTS + UNIT_PASSED))
           fi
 
           if [ -f "integration-tests.log" ]; then
-            INT_PASSED=$(grep -oP '(?<=Tests:.*)\d+(?= passed)' integration-tests.log | tail -1 || echo "0")
+            INT_PASSED=$(grep -E "Tests:.*([0-9]+) passed" integration-tests.log | tail -1 | grep -oE "[0-9]+ passed" | grep -oE "[0-9]+" || echo "0")
             PASSED_TESTS=$((PASSED_TESTS + INT_PASSED))
           fi
 
+          if [ -f "performance-tests.log" ]; then
+            PERF_PASSED=$(grep -E "Tests:.*([0-9]+) passed" performance-tests.log | tail -1 | grep -oE "[0-9]+ passed" | grep -oE "[0-9]+" || echo "0")
+            PASSED_TESTS=$((PASSED_TESTS + PERF_PASSED))
+          fi
+
           echo "- **Total Tests Executed**: ${PASSED_TESTS}" >> $GITHUB_STEP_SUMMARY
+          echo "  - Unit: ${UNIT_PASSED:-0} tests" >> $GITHUB_STEP_SUMMARY
+          echo "  - Integration: ${INT_PASSED:-0} tests" >> $GITHUB_STEP_SUMMARY
+          echo "  - Performance: ${PERF_PASSED:-0} tests" >> $GITHUB_STEP_SUMMARY
           echo "- **Test Status**: $([ -f 'unit-tests.log' ] && [ -f 'integration-tests.log' ] && echo '✅ All test suites executed' || echo '⚠️ Some test suites incomplete')" >> $GITHUB_STEP_SUMMARY
           echo "- **Database Services**: ✅ PostgreSQL + Redis (test containers)" >> $GITHUB_STEP_SUMMARY
           echo "- **Artifacts**: 📦 Coverage reports uploaded (30-day retention)" >> $GITHUB_STEP_SUMMARY

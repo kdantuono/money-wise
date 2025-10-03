@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.1] - 2025-10-03
+
+### Fixed
+- **CI/CD Pipeline Test Count Display Bug** - Critical fix for "Total Tests Executed: 0" issue
+  - Root cause: Variable-length lookbehind regex pattern causing grep failure
+  - Replaced `grep -oP '(?<=Tests:.*)\d+(?= passed)'` with fixed-length pattern
+  - Pipeline now correctly shows **580 tests passing** (501 backend unit + 62 integration + 17 web)
+  - Added detailed test breakdown by type (unit/integration/performance)
+
+### Added
+- **GitHub Status Badge** - CI/CD pipeline status badge added to README.md
+  - Real-time pipeline health visibility
+  - One-click access to latest workflow runs
+  - Automatic updates on each commit
+
+### Changed
+- **Enhanced Test Summary** - Improved overall quality metrics section
+  - Individual test type counts displayed (Unit: X tests, Integration: Y tests, Performance: Z tests)
+  - Performance tests now included in total count calculation
+  - More accurate representation of test suite execution status
+
+### Technical Details
+- Fixed grep pattern: `grep -E "Tests:.*([0-9]+) passed" | grep -oE "[0-9]+ passed" | grep -oE "[0-9]+"`
+- Added performance test count to total calculation
+- Test breakdown provides transparency into test execution distribution
+
 ## [0.4.0] - 2025-10-03
 
 ### Added
