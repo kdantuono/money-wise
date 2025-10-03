@@ -221,7 +221,7 @@ export class AuthService {
     if (shouldWarn) {
       const daysUntilExpiration = await this.passwordSecurityService.getDaysUntilExpiration(user.id);
       // Add warning to response (could be done via custom property)
-      (authResponse as any).passwordExpiryWarning = {
+      (authResponse as AuthResponseDto & { passwordExpiryWarning?: { daysRemaining: number; message: string } }).passwordExpiryWarning = {
         daysRemaining: daysUntilExpiration,
         message: `Your password will expire in ${daysUntilExpiration} day(s). Please consider changing it.`,
       };
@@ -316,7 +316,7 @@ export class AuthService {
     description: string,
     ipAddress?: string,
     userAgent?: string,
-    metadata?: any
+    metadata?: Record<string, unknown>
   ): Promise<void> {
     const auditLog = this.auditLogRepository.create({
       userId,

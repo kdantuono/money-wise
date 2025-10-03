@@ -673,20 +673,20 @@ export class TransactionRepository extends BaseRepository<Transaction> implement
         netIncome: totalIncome - totalExpenses,
         transactionCount: parseInt(basic.transaction_count),
         averageTransaction: parseFloat(basic.average_transaction),
-        byCategory: categoryStats.map((stat: any) => ({
+        byCategory: categoryStats.map((stat: { category_id: string; category_name: string; amount: string; count: string }) => ({
           categoryId: stat.category_id,
           categoryName: stat.category_name,
           amount: parseFloat(stat.amount),
           count: parseInt(stat.count),
           percentage: totalAmount > 0 ? (parseFloat(stat.amount) / totalAmount) * 100 : 0,
         })),
-        byAccount: accountStats.map((stat: any) => ({
+        byAccount: accountStats.map((stat: { account_id: string; account_name: string; amount: string; count: string }) => ({
           accountId: stat.account_id,
           accountName: stat.account_name,
           amount: parseFloat(stat.amount),
           count: parseInt(stat.count),
         })),
-        byDay: dailyStats.map((stat: any) => {
+        byDay: dailyStats.map((stat: { date: string; income: string; expenses: string }) => {
           const income = parseFloat(stat.income);
           const expenses = parseFloat(stat.expenses);
           return {
@@ -707,16 +707,19 @@ export class TransactionRepository extends BaseRepository<Transaction> implement
   }
 
   // Helper method to map raw query results to Transaction entities
-  private mapRawToTransaction(raw: any): Transaction {
+  private mapRawToTransaction(raw: Record<string, unknown>): Transaction {
     const transaction = new Transaction();
-    transaction.id = raw.id;
-    transaction.amount = parseFloat(raw.amount);
-    transaction.date = new Date(raw.date);
-    transaction.description = raw.description;
-    transaction.merchantName = raw.merchantName;
-    transaction.type = raw.type;
-    transaction.status = raw.status;
-    transaction.source = raw.source;
+    transaction.id = String(raw.id);
+    transaction.amount = parseFloat(String(raw.amount));
+    transaction.date = new Date(String(raw.date));
+    transaction.description = String(raw.description);
+    transaction.merchantName = String(raw.merchantName);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    transaction.type = raw.type as any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    transaction.status = raw.status as any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    transaction.source = raw.source as any;
     return transaction;
   }
 

@@ -22,6 +22,7 @@ export interface DatabaseTestConfig {
  */
 export class DatabaseTestManager {
   private static instance: DatabaseTestManager;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private container: any = null;
   private dataSource: DataSource | null = null;
   private config: DatabaseTestConfig | null = null;

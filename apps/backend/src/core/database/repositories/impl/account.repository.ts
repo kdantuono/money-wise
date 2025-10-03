@@ -4,7 +4,7 @@
  */
 
 import { Injectable } from '@nestjs/common';
-import { DataSource } from 'typeorm';
+import { DataSource, FindOptionsWhere } from 'typeorm';
 import { Account, AccountType } from '../../entities';
 import { IAccountRepository } from '../interfaces/account.repository.interface';
 import { BaseRepository } from './base.repository';
@@ -43,7 +43,7 @@ export class AccountRepository extends BaseRepository<Account> implements IAccou
 
   async findByType(accountType: AccountType, userId?: string): Promise<Account[]> {
     try {
-      const whereCondition: any = { type: accountType };
+      const whereCondition: FindOptionsWhere<Account> = { type: accountType };
       if (userId) {
         whereCondition.userId = userId;
       }
@@ -239,7 +239,7 @@ export class AccountRepository extends BaseRepository<Account> implements IAccou
 
   async findByCurrency(currency: string, userId?: string): Promise<Account[]> {
     try {
-      const whereCondition: any = { currency };
+      const whereCondition: FindOptionsWhere<Account> = { currency };
       if (userId) {
         whereCondition.userId = userId;
       }

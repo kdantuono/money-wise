@@ -15,7 +15,7 @@ beforeAll(async () => {
   testDataSource = await setupTestDatabase();
 
   // Make dataSource available globally for tests
-  (global as any).testDataSource = testDataSource;
+  (global as typeof global & { testDataSource?: DataSource }).testDataSource = testDataSource;
 
   console.log('🔧 Database test setup completed');
 });

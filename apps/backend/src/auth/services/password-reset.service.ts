@@ -454,7 +454,7 @@ export class PasswordResetService {
     description: string,
     ipAddress?: string,
     userAgent?: string,
-    metadata?: any
+    metadata?: Record<string, unknown>
   ): Promise<void> {
     const auditLog = this.auditLogRepository.create({
       userId,

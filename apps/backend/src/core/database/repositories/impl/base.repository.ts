@@ -10,6 +10,7 @@ import {
   FindOneOptions,
   EntityTarget,
   DataSource,
+  DeepPartial,
 } from 'typeorm';
 import { Logger } from '@nestjs/common';
 import { IBaseRepository } from '../interfaces/base.repository.interface';
@@ -27,9 +28,9 @@ export abstract class BaseRepository<T> implements IBaseRepository<T> {
 
   async create(entityData: Partial<T>): Promise<T> {
     try {
-      const entity = this.repository.create(entityData as any);
+      const entity = this.repository.create(entityData as DeepPartial<T>);
       const savedEntity = await this.repository.save(entity) as T;
-      this.logger.debug(`Created entity with ID: ${(savedEntity as any).id}`);
+      this.logger.debug(`Created entity with ID: ${(savedEntity as { id?: unknown }).id}`);
       return savedEntity;
     } catch (error) {
       this.logger.error(`Failed to create entity: ${error.message}`, error.stack);
@@ -40,7 +41,7 @@ export abstract class BaseRepository<T> implements IBaseRepository<T> {
   async save(entity: T): Promise<T> {
     try {
       const savedEntity = await this.repository.save(entity);
-      this.logger.debug(`Saved entity with ID: ${(savedEntity as any).id}`);
+      this.logger.debug(`Saved entity with ID: ${(savedEntity as { id?: unknown }).id}`);
       return savedEntity;
     } catch (error) {
       this.logger.error(`Failed to save entity: ${error.message}`, error.stack);
@@ -50,6 +51,7 @@ export abstract class BaseRepository<T> implements IBaseRepository<T> {
 
   async findById(id: string, options?: FindOneOptions<T>): Promise<T | null> {
     try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const entity = await this.repository.findOne({
         ...options,
         where: { id } as any,
@@ -123,6 +125,7 @@ export abstract class BaseRepository<T> implements IBaseRepository<T> {
 
   async update(id: string, updateData: Partial<T>): Promise<T | null> {
     try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await this.repository.update(id, updateData as any);
       const updatedEntity = await this.findById(id);
       this.logger.debug(`Updated entity with ID: ${id}`);
@@ -204,6 +207,7 @@ export abstract class BaseRepository<T> implements IBaseRepository<T> {
 
   async exists(id: string): Promise<boolean> {
     try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const count = await this.repository.count({ where: { id } as any });
       return count > 0;
     } catch (error) {
@@ -224,7 +228,7 @@ export abstract class BaseRepository<T> implements IBaseRepository<T> {
 
   async createBulk(entitiesData: Partial<T>[]): Promise<T[]> {
     try {
-      const createdEntities = this.repository.create(entitiesData as any[]);
+      const createdEntities = this.repository.create(entitiesData as DeepPartial<T>[]);
       const savedEntities = await this.repository.save(createdEntities);
       this.logger.debug(`Bulk created ${savedEntities.length} entities`);
       return savedEntities;
@@ -236,7 +240,7 @@ export abstract class BaseRepository<T> implements IBaseRepository<T> {
 
   async bulkInsert(entities: Partial<T>[]): Promise<T[]> {
     try {
-      const createdEntities = this.repository.create(entities as any[]);
+      const createdEntities = this.repository.create(entities as DeepPartial<T>[]);
       const savedEntities = await this.repository.save(createdEntities);
       this.logger.debug(`Bulk inserted ${savedEntities.length} entities`);
       return savedEntities;
@@ -248,6 +252,7 @@ export abstract class BaseRepository<T> implements IBaseRepository<T> {
 
   async updateMany(where: FindOptionsWhere<T>, updateData: Partial<T>) {
     try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const result = await this.repository.update(where, updateData as any);
       this.logger.debug(`Updated ${result.affected || 0} entities`);
       return result;
@@ -259,6 +264,7 @@ export abstract class BaseRepository<T> implements IBaseRepository<T> {
 
   async bulkUpdate(criteria: FindOptionsWhere<T>, updateData: Partial<T>): Promise<number> {
     try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const result = await this.repository.update(criteria, updateData as any);
       const updatedCount = result.affected || 0;
       this.logger.debug(`Bulk updated ${updatedCount} entities`);
@@ -269,7 +275,7 @@ export abstract class BaseRepository<T> implements IBaseRepository<T> {
     }
   }
 
-  async query(sql: string, parameters?: any[]): Promise<any> {
+  async query<R = unknown>(sql: string, parameters?: unknown[]): Promise<R> {
     try {
       this.logger.warn(`Executing raw query: ${sql}`);
       const result = await this.repository.query(sql, parameters);

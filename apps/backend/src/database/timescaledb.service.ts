@@ -19,6 +19,71 @@ export interface HypertableStatus {
   retentionEnabled: boolean;
 }
 
+export interface TransactionTrend {
+  period: Date;
+  transaction_count: number;
+  total_debits: number;
+  total_credits: number;
+  net_flow: number;
+  avg_amount: number;
+  min_amount: number;
+  max_amount: number;
+}
+
+export interface CategorySpendingTrend {
+  period: Date;
+  categoryId: string;
+  spending: number;
+  transaction_count: number;
+  avg_transaction: number;
+}
+
+export interface AccountBalanceHistory {
+  period: Date;
+  balance_change: number;
+  running_balance: number;
+  transaction_count: number;
+}
+
+export interface MerchantSpending {
+  period: Date;
+  merchantName: string;
+  total_spending: number;
+  transaction_count: number;
+  avg_transaction: number;
+}
+
+export interface SpendingAnomaly {
+  period: Date;
+  daily_spending: number;
+  avg_spending: number;
+  stddev_spending: number;
+  z_score: number;
+  classification: 'anomaly' | 'normal';
+}
+
+export interface TransactionVelocity {
+  period: Date;
+  transaction_velocity: number;
+  total_amount: number;
+  unique_accounts: number;
+  unique_merchants: number;
+}
+
+export interface ChunkStatistics {
+  chunk_name: string;
+  range_start: Date;
+  range_end: Date;
+  is_compressed: boolean;
+  uncompressed_heap_size: number;
+  uncompressed_toast_size: number;
+  uncompressed_index_size: number;
+  compressed_heap_size: number;
+  compressed_toast_size: number;
+  compressed_index_size: number;
+  compression_ratio_percent: number;
+}
+
 @Injectable()
 export class TimescaleDBService implements OnModuleInit {
   private readonly logger = new Logger(TimescaleDBService.name);
@@ -225,8 +290,8 @@ export class TimescaleDBService implements OnModuleInit {
 
   async getTimescaleDBInfo(): Promise<{
     extensions: Array<{ name: string; default_version: string; installed_version: string }>;
-    hypertables: Array<Record<string, any>>;
-    policies: Array<Record<string, any>>;
+    hypertables: Array<Record<string, unknown>>;
+    policies: Array<Record<string, unknown>>;
   }> {
     try {
       const [versionInfo, hypertables, policies] = await Promise.all([
@@ -288,8 +353,8 @@ export class TimescaleDBService implements OnModuleInit {
     period: string = '1 day',
     startDate?: Date,
     endDate?: Date
-  ): Promise<any[]> {
-    const params: any[] = [];
+  ): Promise<TransactionTrend[]> {
+    const params: unknown[] = [];
     let whereClause = '';
     let paramIndex = 1;
 
@@ -340,8 +405,8 @@ export class TimescaleDBService implements OnModuleInit {
     categoryId?: string,
     period: string = '1 week',
     limit: number = 12
-  ): Promise<any[]> {
-    const params: any[] = [limit];
+  ): Promise<CategorySpendingTrend[]> {
+    const params: unknown[] = [limit];
     let whereClause = '';
 
     if (categoryId) {
@@ -376,7 +441,7 @@ export class TimescaleDBService implements OnModuleInit {
     accountId: string,
     period: string = '1 day',
     limit: number = 30
-  ): Promise<any[]> {
+  ): Promise<AccountBalanceHistory[]> {
     const query = `
       SELECT
         time_bucket('${period}', date) as period,
@@ -404,8 +469,8 @@ export class TimescaleDBService implements OnModuleInit {
     period: string = '1 month',
     limit: number = 10,
     accountId?: string
-  ): Promise<any[]> {
-    const params: any[] = [limit];
+  ): Promise<MerchantSpending[]> {
+    const params: unknown[] = [limit];
     let whereClause = '';
 
     if (accountId) {
@@ -441,7 +506,7 @@ export class TimescaleDBService implements OnModuleInit {
     accountId: string,
     period: string = '1 day',
     threshold: number = 2.0
-  ): Promise<any[]> {
+  ): Promise<SpendingAnomaly[]> {
     const query = `
       WITH daily_stats AS (
         SELECT
@@ -488,8 +553,8 @@ export class TimescaleDBService implements OnModuleInit {
     period: string = '1 hour',
     accountId?: string,
     limit: number = 24
-  ): Promise<any[]> {
-    const params: any[] = [limit];
+  ): Promise<TransactionVelocity[]> {
+    const params: unknown[] = [limit];
     let whereClause = '';
 
     if (accountId) {
@@ -519,7 +584,7 @@ export class TimescaleDBService implements OnModuleInit {
    * @param viewName - Name of the continuous aggregate view
    * @param limit - Number of records to return
    */
-  async getContinuousAggregateData(viewName: string, limit: number = 30): Promise<any[]> {
+  async getContinuousAggregateData(viewName: string, limit: number = 30): Promise<Record<string, unknown>[]> {
     const query = `
       SELECT * FROM ${viewName}
       ORDER BY bucket DESC
@@ -556,7 +621,7 @@ export class TimescaleDBService implements OnModuleInit {
    * Get hypertable chunk statistics
    * @param tableName - Name of the hypertable
    */
-  async getChunkStatistics(tableName: string): Promise<any[]> {
+  async getChunkStatistics(tableName: string): Promise<ChunkStatistics[]> {
     const query = `
       SELECT
         chunk_name,

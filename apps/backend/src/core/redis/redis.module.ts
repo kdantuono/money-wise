@@ -37,7 +37,7 @@ export class RedisModule {
     };
   }
 
-  static forTest(mockRedis: any): DynamicModule {
+  static forTest(mockRedis: unknown): DynamicModule {
     const redisProvider: Provider = {
       provide: 'default',
       useValue: mockRedis,

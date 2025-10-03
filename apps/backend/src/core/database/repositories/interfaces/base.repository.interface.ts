@@ -95,5 +95,5 @@ export interface IBaseRepository<T> {
   /**
    * Execute raw query (use with caution)
    */
-  query(sql: string, parameters?: any[]): Promise<any>;
+  query<R = unknown>(sql: string, parameters?: unknown[]): Promise<R>;
 }

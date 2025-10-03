@@ -134,7 +134,7 @@ export class CategoryRepository extends BaseRepository<Category> implements ICat
           WHERE 1=1
       `;
 
-      const params: any = {};
+      const params: Record<string, string> = {};
 
       if (parentId) {
         query += ` AND "parentId" = $1`;
@@ -167,7 +167,7 @@ export class CategoryRepository extends BaseRepository<Category> implements ICat
       const result = await this.manager.query(query, queryParams);
 
       // Convert raw results to Category entities
-      const categories = result.map((row: any) => {
+      const categories = result.map((row: Record<string, unknown>) => {
         const category = new Category();
         Object.assign(category, row);
         return category;
@@ -378,7 +378,7 @@ export class CategoryRepository extends BaseRepository<Category> implements ICat
         transactionCount: parseInt(basicStats[0]?.transaction_count || '0'),
         totalAmount: parseFloat(basicStats[0]?.total_amount || '0'),
         lastUsedAt: basicStats[0]?.last_used_at || null,
-        monthlyUsage: monthlyStats.map((stat: any) => ({
+        monthlyUsage: monthlyStats.map((stat: { month: string; count: string; amount: string }) => ({
           month: stat.month,
           count: parseInt(stat.count),
           amount: parseFloat(stat.amount),
@@ -452,13 +452,16 @@ export class CategoryRepository extends BaseRepository<Category> implements ICat
 
         if (score > 0) {
           // Store score for sorting (simplified - in real implementation you'd want proper scoring)
-          (category as any)._matchScore = score;
+          (category as Category & { _matchScore?: number })._matchScore = score;
           matchingCategories.push(category);
         }
       }
 
       // Sort by match score (highest first)
-      matchingCategories.sort((a, b) => ((b as any)._matchScore || 0) - ((a as any)._matchScore || 0));
+      matchingCategories.sort((a, b) =>
+        ((b as Category & { _matchScore?: number })._matchScore || 0) -
+        ((a as Category & { _matchScore?: number })._matchScore || 0)
+      );
 
       this.logger.debug(`Found ${matchingCategories.length} matching categories`);
       return matchingCategories;

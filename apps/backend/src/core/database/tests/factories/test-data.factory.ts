@@ -307,6 +307,7 @@ export class CategoryFactory extends BaseFactory<Category> {
     // Apply overrides last (except parent/parentId which are handled in build())
     Object.keys(overrides).forEach(key => {
       if (key !== 'parent' && key !== 'parentId') {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (category as any)[key] = overrides[key as keyof Category];
       }
     });

@@ -2,7 +2,7 @@
  * OpenAPI Specification for MoneyWise API
  * TODO: Generate this from NestJS Swagger decorators automatically
  */
-export const spec: any = {
+export const spec: Record<string, unknown> = {
   openapi: '3.0.0',
   info: {
     title: 'MoneyWise API',

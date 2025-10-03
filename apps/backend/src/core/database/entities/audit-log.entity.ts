@@ -53,7 +53,7 @@ export class AuditLog {
     failureReason?: string;
     lockoutDuration?: number;
     resetTokenExpiry?: string;
-    [key: string]: any;
+    [key: string]: unknown;
   };
 
   @Column({ type: 'boolean', default: false })
