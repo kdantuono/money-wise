@@ -1,11 +1,7 @@
 
-> @money-wise/backend@0.1.0 lint /home/nemesi/dev/money-wise/apps/backend
+> @money-wise/backend@0.4.1 lint /home/nemesi/dev/money-wise/apps/backend
 > eslint "{src,apps,libs,test}/**/*.ts" --fix
 
-
-/home/nemesi/dev/money-wise/apps/backend/src/auth/auth.service.ts
-  224:24  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  319:16  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
 
 /home/nemesi/dev/money-wise/apps/backend/src/auth/services/audit-log.service.ts
   263:68  warning  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
@@ -14,57 +10,15 @@
 /home/nemesi/dev/money-wise/apps/backend/src/auth/services/email-verification.service.ts
   141:33  warning  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
 
-/home/nemesi/dev/money-wise/apps/backend/src/auth/services/password-reset.service.ts
-  457:16  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-
-/home/nemesi/dev/money-wise/apps/backend/src/auth/services/password-security.service.ts
-  513:16  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-
 /home/nemesi/dev/money-wise/apps/backend/src/auth/services/two-factor-auth.service.ts
   74:48  warning  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
   94:17  warning  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
 
-/home/nemesi/dev/money-wise/apps/backend/src/core/database/entities/audit-log.entity.ts
-  56:20  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-
 /home/nemesi/dev/money-wise/apps/backend/src/core/database/migrations/1759998888888-AddTimescaleDBSupport.ts
   12:17  warning  Unexpected console statement  no-console
 
-/home/nemesi/dev/money-wise/apps/backend/src/core/database/repositories/impl/account.repository.ts
-   46:29  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  242:29  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-
 /home/nemesi/dev/money-wise/apps/backend/src/core/database/repositories/impl/base.repository.ts
-   30:59  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-   32:68  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-   43:66  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-   55:26  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  126:54  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  207:68  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  227:70  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  239:66  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  251:72  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  262:75  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  272:41  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  272:57  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-
-/home/nemesi/dev/money-wise/apps/backend/src/core/database/repositories/impl/category.repository.ts
-  137:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  170:43  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  381:47  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  455:24  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  461:48  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  461:80  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-
-/home/nemesi/dev/money-wise/apps/backend/src/core/database/repositories/impl/transaction.repository.ts
-  676:46  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  683:44  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  689:38  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  710:36  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-
-/home/nemesi/dev/money-wise/apps/backend/src/core/database/repositories/interfaces/base.repository.interface.ts
-  98:35  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  98:51  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  57:26  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
 
 /home/nemesi/dev/money-wise/apps/backend/src/core/database/test-database.module.ts
    84:5  warning  Unexpected console statement  no-console
@@ -125,21 +79,19 @@
   501:5  warning  Unexpected console statement  no-console
 
 /home/nemesi/dev/money-wise/apps/backend/src/core/database/tests/database-test.config.ts
-   25:22  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-   50:7   warning  Unexpected console statement              no-console
-   53:7   warning  Unexpected console statement              no-console
-   58:12  warning  Forbidden non-null assertion              @typescript-eslint/no-non-null-assertion
-   84:7   warning  Unexpected console statement              no-console
-  136:7   warning  Unexpected console statement              no-console
-  141:9   warning  Unexpected console statement              no-console
-  191:11  warning  Forbidden non-null assertion              @typescript-eslint/no-non-null-assertion
-  226:5   warning  Unexpected console statement              no-console
-  243:7   warning  Unexpected console statement              no-console
+   51:7   warning  Unexpected console statement  no-console
+   54:7   warning  Unexpected console statement  no-console
+   59:12  warning  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+   85:7   warning  Unexpected console statement  no-console
+  137:7   warning  Unexpected console statement  no-console
+  142:9   warning  Unexpected console statement  no-console
+  192:11  warning  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+  227:5   warning  Unexpected console statement  no-console
+  244:7   warning  Unexpected console statement  no-console
 
 /home/nemesi/dev/money-wise/apps/backend/src/core/database/tests/factories/test-data.factory.ts
-  310:22  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  620:5   warning  Unexpected console statement              no-console
-  644:5   warning  Unexpected console statement              no-console
+  621:5  warning  Unexpected console statement  no-console
+  645:5  warning  Unexpected console statement  no-console
 
 /home/nemesi/dev/money-wise/apps/backend/src/core/database/tests/jest.database.global-setup.ts
    9:3  warning  Unexpected console statement  no-console
@@ -152,9 +104,8 @@
   17:3  warning  Unexpected console statement  no-console
 
 /home/nemesi/dev/money-wise/apps/backend/src/core/database/tests/jest.database.setup.ts
-  18:14  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  20:3   warning  Unexpected console statement              no-console
-  29:3   warning  Unexpected console statement              no-console
+  20:3  warning  Unexpected console statement  no-console
+  29:3  warning  Unexpected console statement  no-console
 
 /home/nemesi/dev/money-wise/apps/backend/src/core/database/tests/run-database-tests.ts
   13:3  warning  Unexpected console statement  no-console
@@ -166,27 +117,5 @@
   45:3  warning  Unexpected console statement  no-console
   50:3  warning  Unexpected console statement  no-console
 
-/home/nemesi/dev/money-wise/apps/backend/src/core/redis/redis.module.ts
-  40:29  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-
-/home/nemesi/dev/money-wise/apps/backend/src/database/timescaledb.service.ts
-  228:39  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  229:36  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  291:14  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  292:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  343:14  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  344:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  379:14  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  407:14  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  408:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  444:14  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  491:14  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  492:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  522:83  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  559:56  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-
-/home/nemesi/dev/money-wise/apps/backend/src/docs/openapi.spec.ts
-  5:20  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-
-✖ 137 problems (0 errors, 137 warnings)
+✖ 88 problems (0 errors, 88 warnings)
 

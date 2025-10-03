@@ -546,4 +546,244 @@ describe('TwoFactorAuthService', () => {
       expect(quitSpy).toHaveBeenCalled();
     });
   });
+
+  describe('Edge Cases and Advanced Scenarios', () => {
+    it('should handle backup code exhaustion (all codes used)', async () => {
+      const userId = 'user-123';
+      const userData = {
+        secret: 'JBSWY3DPEHPK3PXP',
+        backupCodes: [
+          { code: 'CODE0001', used: true, usedAt: new Date() },
+          { code: 'CODE0002', used: true, usedAt: new Date() },
+          { code: 'CODE0003', used: true, usedAt: new Date() },
+          { code: 'CODE0004', used: true, usedAt: new Date() },
+          { code: 'CODE0005', used: true, usedAt: new Date() },
+          { code: 'CODE0006', used: true, usedAt: new Date() },
+          { code: 'CODE0007', used: true, usedAt: new Date() },
+          { code: 'CODE0008', used: true, usedAt: new Date() },
+          { code: 'CODE0009', used: true, usedAt: new Date() },
+          { code: 'CODE0010', used: true, usedAt: new Date() },
+        ],
+        enabledAt: new Date(),
+      };
+
+      await mockRedis.set(`2fa_user:${userId}`, JSON.stringify(userData));
+      (speakeasy.totp.verify as jest.Mock).mockReturnValue(false);
+
+      // Attempt to use backup code when all are exhausted
+      await expect(service.verifyTwoFactor(userId, 'ANYCODE')).rejects.toThrow(BadRequestException);
+      await expect(service.verifyTwoFactor(userId, 'ANYCODE')).rejects.toThrow('Invalid 2FA token or backup code');
+    });
+
+    it('should handle concurrent 2FA setup attempts by same user', async () => {
+      const user = createMockUser();
+      const mockSecret = {
+        base32: 'JBSWY3DPEHPK3PXP',
+        otpauth_url: 'otpauth://totp/MoneyWise(test@example.com)?secret=JBSWY3DPEHPK3PXP&issuer=MoneyWise',
+      };
+
+      mockUserRepository.findOne.mockResolvedValue(user);
+      (speakeasy.generateSecret as jest.Mock).mockReturnValue(mockSecret);
+      (qrcode.toDataURL as jest.Mock).mockResolvedValue('data:image/png;base64,mockQRCode');
+
+      // Simulate concurrent setup requests
+      const [result1, result2] = await Promise.all([
+        service.setupTwoFactor(user.id),
+        service.setupTwoFactor(user.id),
+      ]);
+
+      // Both should succeed but with different secrets/codes
+      expect(result1.secret).toBeDefined();
+      expect(result2.secret).toBeDefined();
+
+      // Backup codes should be different
+      expect(result1.backupCodes).not.toEqual(result2.backupCodes);
+    });
+
+    it('should handle 2FA verification with Redis connection failure', async () => {
+      const userId = 'user-123';
+      const token = '123456';
+
+      // Mock Redis to throw connection error
+      mockRedis.get = jest.fn().mockRejectedValue(new Error('ECONNREFUSED: Redis connection refused'));
+
+      await expect(service.verifyTwoFactor(userId, token)).rejects.toThrow('Failed to verify two-factor authentication');
+    });
+
+    it('should handle backup code verification when only 1 code remains', async () => {
+      const userId = 'user-123';
+      const lastCode = 'LASTCODE';
+      const userData = {
+        secret: 'JBSWY3DPEHPK3PXP',
+        backupCodes: [
+          { code: 'CODE0001', used: true, usedAt: new Date() },
+          { code: 'CODE0002', used: true, usedAt: new Date() },
+          { code: 'CODE0003', used: true, usedAt: new Date() },
+          { code: 'CODE0004', used: true, usedAt: new Date() },
+          { code: 'CODE0005', used: true, usedAt: new Date() },
+          { code: 'CODE0006', used: true, usedAt: new Date() },
+          { code: 'CODE0007', used: true, usedAt: new Date() },
+          { code: 'CODE0008', used: true, usedAt: new Date() },
+          { code: 'CODE0009', used: true, usedAt: new Date() },
+          { code: lastCode, used: false }, // Last unused code
+        ],
+        enabledAt: new Date(),
+      };
+
+      await mockRedis.set(`2fa_user:${userId}`, JSON.stringify(userData));
+      (speakeasy.totp.verify as jest.Mock).mockReturnValue(false);
+
+      const result = await service.verifyTwoFactor(userId, lastCode);
+
+      expect(result.success).toBe(true);
+      expect(result.message).toBe('Backup code verification successful');
+
+      // Verify all codes are now used
+      const updatedData = await mockRedis.get(`2fa_user:${userId}`);
+      const parsedData = JSON.parse(updatedData!);
+      const unusedCodes = parsedData.backupCodes.filter((bc: BackupCode) => !bc.used);
+      expect(unusedCodes.length).toBe(0);
+    });
+
+    it('should handle case-insensitive backup code verification', async () => {
+      const userId = 'user-123';
+      const backupCode = 'ABCD1234';
+      const userData = {
+        secret: 'JBSWY3DPEHPK3PXP',
+        backupCodes: [
+          { code: backupCode, used: false },
+        ],
+        enabledAt: new Date(),
+      };
+
+      await mockRedis.set(`2fa_user:${userId}`, JSON.stringify(userData));
+      (speakeasy.totp.verify as jest.Mock).mockReturnValue(false);
+
+      // Try lowercase version
+      const result = await service.verifyTwoFactor(userId, 'abcd1234');
+
+      expect(result.success).toBe(true);
+      expect(result.message).toBe('Backup code verification successful');
+    });
+
+    it('should prevent disabling 2FA with backup code (require TOTP)', async () => {
+      const userId = 'user-123';
+      const backupCode = 'ABCD1234';
+      const userData = {
+        secret: 'JBSWY3DPEHPK3PXP',
+        backupCodes: [
+          { code: backupCode, used: false },
+        ],
+        enabledAt: new Date(),
+      };
+
+      await mockRedis.set(`2fa_user:${userId}`, JSON.stringify(userData));
+      (speakeasy.totp.verify as jest.Mock).mockReturnValue(false);
+
+      // Attempt to disable with backup code should fail
+      await expect(service.disable2FA(userId, backupCode)).rejects.toThrow(BadRequestException);
+    });
+
+    it('should handle malformed 2FA setup data in Redis', async () => {
+      const userId = 'user-123';
+      const token = '123456';
+
+      // Store malformed JSON
+      await mockRedis.setex(`2fa_setup:${userId}`, 600, 'invalid-json{{{');
+
+      await expect(service.verifyAndEnable2FA(userId, token)).rejects.toThrow('Failed to verify two-factor authentication');
+    });
+
+    it('should handle setup expiration edge case (expires during verification)', async () => {
+      const userId = 'user-123';
+      const token = '123456';
+      const setupData = {
+        secret: 'JBSWY3DPEHPK3PXP',
+        backupCodes: [{ code: 'CODE0001', used: false }],
+      };
+
+      // Set with 1 second expiration
+      await mockRedis.setex(`2fa_setup:${userId}`, 1, JSON.stringify(setupData));
+      (speakeasy.totp.verify as jest.Mock).mockReturnValue(true);
+
+      // Wait for expiration
+      await new Promise(resolve => setTimeout(resolve, 1100));
+
+      // Should fail with setup not found
+      await expect(service.verifyAndEnable2FA(userId, token)).rejects.toThrow(BadRequestException);
+    });
+
+    it('should generate exactly 10 unique backup codes every time', async () => {
+      const user = createMockUser();
+      const mockSecret = {
+        base32: 'JBSWY3DPEHPK3PXP',
+        otpauth_url: 'otpauth://totp/MoneyWise(test@example.com)?secret=JBSWY3DPEHPK3PXP&issuer=MoneyWise',
+      };
+
+      mockUserRepository.findOne.mockResolvedValue(user);
+      (speakeasy.generateSecret as jest.Mock).mockReturnValue(mockSecret);
+      (qrcode.toDataURL as jest.Mock).mockResolvedValue('data:image/png;base64,mockQRCode');
+
+      // Run setup multiple times
+      const results = await Promise.all([
+        service.setupTwoFactor(user.id),
+        service.setupTwoFactor(user.id),
+        service.setupTwoFactor(user.id),
+      ]);
+
+      for (const result of results) {
+        expect(result.backupCodes).toHaveLength(10);
+        const uniqueCodes = new Set(result.backupCodes);
+        expect(uniqueCodes.size).toBe(10);
+      }
+
+      // Codes should be different across setups
+      expect(results[0].backupCodes).not.toEqual(results[1].backupCodes);
+      expect(results[1].backupCodes).not.toEqual(results[2].backupCodes);
+    });
+
+    it('should handle TOTP token validation at time boundary (clock skew)', async () => {
+      const userId = 'user-123';
+      const token = '123456';
+      const userData = {
+        secret: 'JBSWY3DPEHPK3PXP',
+        backupCodes: [],
+        enabledAt: new Date(),
+      };
+
+      await mockRedis.set(`2fa_user:${userId}`, JSON.stringify(userData));
+
+      // speakeasy handles time windows internally
+      (speakeasy.totp.verify as jest.Mock).mockReturnValue(true);
+
+      const result = await service.verifyTwoFactor(userId, token);
+
+      expect(result.success).toBe(true);
+      expect(speakeasy.totp.verify).toHaveBeenCalledWith(
+        expect.objectContaining({
+          secret: 'JBSWY3DPEHPK3PXP',
+          token,
+          window: 1, // Allows for clock skew
+        })
+      );
+    });
+
+    it('should handle new backup code generation when Redis save fails', async () => {
+      const userId = 'user-123';
+      const token = '123456';
+      const userData = {
+        secret: 'JBSWY3DPEHPK3PXP',
+        backupCodes: [{ code: 'OLD0001', used: false }],
+        enabledAt: new Date(),
+      };
+
+      await mockRedis.set(`2fa_user:${userId}`, JSON.stringify(userData));
+      (speakeasy.totp.verify as jest.Mock).mockReturnValue(true);
+
+      // Mock Redis set to fail
+      mockRedis.set = jest.fn().mockRejectedValue(new Error('Redis write failed'));
+
+      await expect(service.generateNewBackupCodes(userId, token)).rejects.toThrow('Failed to generate new backup codes');
+    });
+  });
 });

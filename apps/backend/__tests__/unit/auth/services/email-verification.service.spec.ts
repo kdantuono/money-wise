@@ -280,7 +280,7 @@ describe('EmailVerificationService', () => {
       );
     });
 
-    it.skip('should reject expired token - FIX IN PHASE 4 (date comparison bug)', async () => {
+    it('should reject expired token', async () => {
       const user = createMockUser();
       const token = crypto.randomBytes(32).toString('hex');
       const tokenData: EmailVerificationToken = {
@@ -295,13 +295,8 @@ describe('EmailVerificationService', () => {
       // Use longer TTL so Redis doesn't auto-expire before service check
       await mockRedis.setex(tokenKey, 3600, JSON.stringify(tokenData));
 
-      mockUserRepository.findOne.mockResolvedValueOnce(user);
+      mockUserRepository.findOne.mockResolvedValue(user);
 
-      // BUG: This test documents a date comparison bug
-      // The service compares new Date() > tokenData.expiresAt (string)
-      // which may not work correctly depending on JavaScript type coercion
-
-      await expect(service.verifyEmail(token)).rejects.toThrow(BadRequestException);
       await expect(service.verifyEmail(token)).rejects.toThrow('Verification token has expired');
 
       // Verify expired token was cleaned up
@@ -327,7 +322,7 @@ describe('EmailVerificationService', () => {
       await expect(service.verifyEmail(token)).rejects.toThrow('User not found');
     });
 
-    it.skip('should reject token if email does not match user - FIX IN PHASE 4 (mock setup issue)', async () => {
+    it('should reject token if email does not match user', async () => {
       const user = createMockUser({ email: 'user@example.com', emailVerifiedAt: null });
       const token = crypto.randomBytes(32).toString('hex');
       const tokenData: EmailVerificationToken = {
@@ -341,9 +336,8 @@ describe('EmailVerificationService', () => {
       const tokenKey = `email_verification:${token}`;
       await mockRedis.setex(tokenKey, 24 * 60 * 60, JSON.stringify(tokenData));
 
-      mockUserRepository.findOne.mockResolvedValueOnce(user);
+      mockUserRepository.findOne.mockResolvedValue(user);
 
-      await expect(service.verifyEmail(token)).rejects.toThrow(BadRequestException);
       await expect(service.verifyEmail(token)).rejects.toThrow(
         'Email verification token does not match user email',
       );
@@ -466,7 +460,7 @@ describe('EmailVerificationService', () => {
       );
     });
 
-    it.skip('should prevent resending if token was sent recently (within 1 hour) - FIX IN PHASE 4', async () => {
+    it('should prevent resending if token was sent recently (within 1 hour)', async () => {
       const user = createMockUser({ emailVerifiedAt: null });
       const existingToken = crypto.randomBytes(32).toString('hex');
       const tokenData: EmailVerificationToken = {
@@ -484,19 +478,14 @@ describe('EmailVerificationService', () => {
       );
       await mockRedis.setex(`email_verification_user:${user.id}`, 23 * 60 * 60, existingToken);
 
-      mockUserRepository.findOne.mockResolvedValueOnce(user);
+      mockUserRepository.findOne.mockResolvedValue(user);
 
-      // BUG: This test may fail due to date comparison issue at line 183
-      // tokenData.expiresAt.getTime() is called on a Date object parsed from JSON
-      // which may be a string, causing TypeError
-
-      await expect(service.resendVerificationEmail(user.id)).rejects.toThrow(BadRequestException);
       await expect(service.resendVerificationEmail(user.id)).rejects.toThrow(
         /Verification email was already sent recently/,
       );
     });
 
-    it.skip('should allow resending if existing token expires soon (less than 1 hour) - FIX IN PHASE 4', async () => {
+    it('should allow resending if existing token expires soon (less than 1 hour)', async () => {
       const user = createMockUser({ emailVerifiedAt: null });
       const existingToken = crypto.randomBytes(32).toString('hex');
       const tokenData: EmailVerificationToken = {
@@ -629,7 +618,7 @@ describe('EmailVerificationService', () => {
   });
 
   describe('cleanupExpiredTokens', () => {
-    it.skip('should delete expired tokens - FIX IN PHASE 4', async () => {
+    it('should delete expired tokens', async () => {
       const expiredToken1 = crypto.randomBytes(32).toString('hex');
       const expiredToken2 = crypto.randomBytes(32).toString('hex');
       const validToken = crypto.randomBytes(32).toString('hex');
@@ -677,9 +666,6 @@ describe('EmailVerificationService', () => {
       await mockRedis.setex(`email_verification_user:user-2`, 1, expiredToken2);
       await mockRedis.setex(`email_verification_user:user-3`, 24 * 60 * 60, validToken);
 
-      // BUG: This test documents a date comparison bug at line 267
-      // new Date() > tokenData.expiresAt compares Date to string
-
       const deletedCount = await service.cleanupExpiredTokens();
 
       expect(deletedCount).toBe(2);
@@ -725,7 +711,7 @@ describe('EmailVerificationService', () => {
   });
 
   describe('getVerificationStats', () => {
-    it.skip('should return correct statistics - FIX IN PHASE 4', async () => {
+    it('should return correct statistics', async () => {
       const expiredToken = crypto.randomBytes(32).toString('hex');
       const pendingToken1 = crypto.randomBytes(32).toString('hex');
       const pendingToken2 = crypto.randomBytes(32).toString('hex');
@@ -776,9 +762,6 @@ describe('EmailVerificationService', () => {
       };
       mockUserRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder as any);
 
-      // BUG: This test documents a date comparison bug at line 303
-      // now > tokenData.expiresAt compares Date to string
-
       const stats = await service.getVerificationStats();
 
       expect(stats.totalPendingVerifications).toBe(2);
@@ -804,6 +787,207 @@ describe('EmailVerificationService', () => {
       await service.onModuleDestroy();
 
       expect(quitSpy).toHaveBeenCalled();
+    });
+  });
+
+  describe('Edge Cases and Race Conditions', () => {
+    it('should handle multiple concurrent token generation requests', async () => {
+      const userId = 'user-concurrent-123';
+      const email = 'concurrent@example.com';
+
+      // Generate multiple tokens concurrently
+      const promises = Array(5).fill(null).map(() =>
+        service.generateVerificationToken(userId, email)
+      );
+
+      const tokens = await Promise.all(promises);
+
+      // All tokens should be unique
+      const uniqueTokens = new Set(tokens);
+      expect(uniqueTokens.size).toBe(5);
+
+      // All tokens should be stored in Redis
+      for (const token of tokens) {
+        const storedData = await mockRedis.get(`email_verification:${token}`);
+        expect(storedData).toBeDefined();
+      }
+    });
+
+    it('should handle token generation with special characters in email', async () => {
+      const userId = 'user-special-123';
+      const specialEmail = 'test+special@example.com';
+
+      const token = await service.generateVerificationToken(userId, specialEmail);
+
+      expect(token).toBeDefined();
+
+      const tokenData = await mockRedis.get(`email_verification:${token}`);
+      const parsed: EmailVerificationToken = JSON.parse(tokenData!);
+      expect(parsed.email).toBe(specialEmail);
+    });
+
+    it('should handle very long email addresses', async () => {
+      const userId = 'user-long-email-123';
+      const longEmail = 'a'.repeat(50) + '@' + 'b'.repeat(100) + '.com';
+
+      const token = await service.generateVerificationToken(userId, longEmail);
+
+      expect(token).toBeDefined();
+      expect(token.length).toBe(64);
+    });
+
+    it('should handle verification when Redis is slow (timeout scenario)', async () => {
+      const user = createMockUser();
+      const token = crypto.randomBytes(32).toString('hex');
+      const tokenData: EmailVerificationToken = {
+        token,
+        userId: user.id,
+        email: user.email,
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        createdAt: new Date(),
+      };
+
+      // Mock slow Redis response
+      const originalGet = mockRedis.get.bind(mockRedis);
+      mockRedis.get = jest.fn().mockImplementation(async (key) => {
+        await new Promise(resolve => setTimeout(resolve, 100)); // 100ms delay
+        return originalGet(key);
+      });
+
+      await mockRedis.setex(`email_verification:${token}`, 24 * 60 * 60, JSON.stringify(tokenData));
+      mockUserRepository.findOne.mockResolvedValue(user);
+      mockUserRepository.update.mockResolvedValue({ affected: 1 } as any);
+      mockUserRepository.findOne.mockResolvedValue(
+        createMockUser({
+          id: user.id,
+          email: user.email,
+          emailVerifiedAt: new Date(),
+          status: UserStatus.ACTIVE,
+        }),
+      );
+
+      const result = await service.verifyEmail(token);
+
+      expect(result.success).toBe(true);
+    });
+
+    it('should handle cleanup when user has abandoned verification (never completed)', async () => {
+      const userId = 'abandoned-user-123';
+      const email = 'abandoned@example.com';
+
+      // Create expired tokens directly (simulating abandoned verifications)
+      const expiredToken1 = crypto.randomBytes(32).toString('hex');
+      const expiredToken2 = crypto.randomBytes(32).toString('hex');
+
+      const expiredTokenData1: EmailVerificationToken = {
+        token: expiredToken1,
+        userId,
+        email,
+        expiresAt: new Date(Date.now() - 1000), // Already expired
+        createdAt: new Date(Date.now() - 25 * 60 * 60 * 1000),
+      };
+
+      const expiredTokenData2: EmailVerificationToken = {
+        token: expiredToken2,
+        userId: `${userId}-2`,
+        email: 'another@example.com',
+        expiresAt: new Date(Date.now() - 5000), // Already expired
+        createdAt: new Date(Date.now() - 26 * 60 * 60 * 1000),
+      };
+
+      // Store with longer TTL so Redis doesn't auto-delete before cleanup runs
+      await mockRedis.setex(
+        `email_verification:${expiredToken1}`,
+        3600,
+        JSON.stringify(expiredTokenData1),
+      );
+      await mockRedis.setex(
+        `email_verification:${expiredToken2}`,
+        3600,
+        JSON.stringify(expiredTokenData2),
+      );
+
+      const deletedCount = await service.cleanupExpiredTokens();
+      expect(deletedCount).toBe(2);
+
+      // Verify tokens were actually deleted
+      expect(await mockRedis.get(`email_verification:${expiredToken1}`)).toBeNull();
+      expect(await mockRedis.get(`email_verification:${expiredToken2}`)).toBeNull();
+    });
+
+    it('should handle getTokenInfo for malformed token data', async () => {
+      const token = crypto.randomBytes(32).toString('hex');
+
+      // Store malformed JSON
+      await mockRedis.setex(`email_verification:${token}`, 3600, 'invalid-json{{{');
+
+      const info = await service.getTokenInfo(token);
+
+      // Service should handle gracefully
+      expect(info).toBeNull();
+    });
+
+    it('should handle resend when previous token was manually deleted', async () => {
+      const user = createMockUser({ emailVerifiedAt: null });
+
+      // Set user token key to non-existent token
+      await mockRedis.setex(`email_verification_user:${user.id}`, 3600, 'non-existent-token');
+
+      mockUserRepository.findOne.mockResolvedValue(user);
+
+      const newToken = await service.resendVerificationEmail(user.id);
+
+      expect(newToken).toBeDefined();
+      expect(newToken).not.toBe('non-existent-token');
+    });
+
+    it('should handle stats calculation with no tokens', async () => {
+      mockRedis.clear();
+
+      const mockQueryBuilder = {
+        where: jest.fn().mockReturnThis(),
+        getCount: jest.fn().mockResolvedValue(0),
+      };
+      mockUserRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder as any);
+
+      const stats = await service.getVerificationStats();
+
+      expect(stats.totalPendingVerifications).toBe(0);
+      expect(stats.expiredTokens).toBe(0);
+      expect(stats.recentVerifications).toBe(0);
+    });
+
+    it('should handle verification when user status changes between checks', async () => {
+      const user = createMockUser({ emailVerifiedAt: null, status: UserStatus.ACTIVE });
+      const token = crypto.randomBytes(32).toString('hex');
+      const tokenData: EmailVerificationToken = {
+        token,
+        userId: user.id,
+        email: user.email,
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        createdAt: new Date(),
+      };
+
+      await mockRedis.setex(`email_verification:${token}`, 24 * 60 * 60, JSON.stringify(tokenData));
+
+      // First findOne returns active user
+      mockUserRepository.findOne.mockResolvedValueOnce(user);
+      mockUserRepository.update.mockResolvedValue({ affected: 1 } as any);
+
+      // Second findOne returns suspended user (changed during verification)
+      const suspendedUser = createMockUser({
+        id: user.id,
+        email: user.email,
+        emailVerifiedAt: new Date(),
+        status: UserStatus.SUSPENDED,
+      });
+      mockUserRepository.findOne.mockResolvedValueOnce(suspendedUser);
+
+      const result = await service.verifyEmail(token);
+
+      // Should still succeed but reflect new status
+      expect(result.success).toBe(true);
+      expect(result.user).toBeDefined();
     });
   });
 });

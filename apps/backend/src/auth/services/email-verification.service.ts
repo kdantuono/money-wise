@@ -88,7 +88,8 @@ export class EmailVerificationService {
       const tokenData: EmailVerificationToken = JSON.parse(tokenDataStr);
 
       // Check if token is expired
-      if (new Date() > tokenData.expiresAt) {
+      const expiresAt = new Date(tokenData.expiresAt);
+      if (new Date() > expiresAt) {
         await this.redis.del(key);
         throw new BadRequestException('Verification token has expired');
       }
@@ -178,9 +179,10 @@ export class EmailVerificationService {
 
         if (tokenDataStr) {
           const tokenData: EmailVerificationToken = JSON.parse(tokenDataStr);
+          const expiresAt = new Date(tokenData.expiresAt);
 
           // If token is still valid for more than 1 hour, don't generate a new one
-          if (tokenData.expiresAt.getTime() - Date.now() > 60 * 60 * 1000) {
+          if (expiresAt.getTime() - Date.now() > 60 * 60 * 1000) {
             throw new BadRequestException('Verification email was already sent recently. Please check your inbox.');
           }
         }
@@ -263,12 +265,17 @@ export class EmailVerificationService {
         const tokenDataStr = await this.redis.get(key);
         if (tokenDataStr) {
           const tokenData: EmailVerificationToken = JSON.parse(tokenDataStr);
+          const expiresAt = new Date(tokenData.expiresAt);
 
-          if (new Date() > tokenData.expiresAt) {
+          if (new Date() > expiresAt) {
             await this.redis.del(key);
             await this.redis.del(`email_verification_user:${tokenData.userId}`);
             deletedCount++;
           }
+        } else {
+          // Key exists but no data - already expired via TTL, remove orphaned key
+          await this.redis.del(key);
+          deletedCount++;
         }
       }
 
@@ -299,8 +306,9 @@ export class EmailVerificationService {
         const tokenDataStr = await this.redis.get(key);
         if (tokenDataStr) {
           const tokenData: EmailVerificationToken = JSON.parse(tokenDataStr);
+          const expiresAt = new Date(tokenData.expiresAt);
 
-          if (now > tokenData.expiresAt) {
+          if (now > expiresAt) {
             expiredTokens++;
           } else {
             totalPending++;

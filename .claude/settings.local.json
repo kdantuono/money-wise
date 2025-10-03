@@ -18,7 +18,8 @@
       "Bash(tee:*)",
       "Read(//tmp/**)",
       "Read(//home/nemesi/.claude/todos/**)",
-      "Bash(awk:*)"
+      "Bash(awk:*)",
+      "Bash(gh run download:*)"
     ],
     "deny": [],
     "ask": []
