@@ -1,3 +1,5 @@
+/* eslint-disable no-console */
+// Console statements are intentionally used for development-time performance debugging
 import * as Sentry from '@sentry/nextjs';
 
 /**
@@ -178,7 +180,9 @@ export function initWebVitals() {
     let clsValue = 0;
     new PerformanceObserver((list) => {
       for (const entry of list.getEntries()) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- PerformanceEntry types are incomplete in TypeScript
         if (!(entry as any).hadRecentInput) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any -- PerformanceEntry types are incomplete in TypeScript
           clsValue += (entry as any).value;
         }
       }
@@ -188,6 +192,7 @@ export function initWebVitals() {
     // First Input Delay (FID)
     new PerformanceObserver((list) => {
       for (const entry of list.getEntries()) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- PerformanceEntry types are incomplete in TypeScript
         console.debug(`Web Vitals FID: ${(entry as any).processingStart - entry.startTime}ms`);
       }
     }).observe({ entryTypes: ['first-input'] });

@@ -1,6 +1,8 @@
+/* eslint-disable no-console */
 /**
  * Database Test Configuration
  * Provides isolated test database setup with TestContainers
+ * Console statements are intentionally used for test infrastructure logging
  */
 
 import { DataSource } from 'typeorm';
@@ -56,7 +58,12 @@ export class DatabaseTestManager {
     }
 
     await this.initializeDataSource();
-    return this.dataSource!;
+
+    if (!this.dataSource) {
+      throw new Error('Failed to initialize test database DataSource');
+    }
+
+    return this.dataSource;
   }
 
   /**
@@ -174,6 +181,7 @@ export class DatabaseTestManager {
    */
   async clean(): Promise<void> {
     const dataSource = this.getDataSource();
+    const config = this.getConfig();
     const queryRunner = dataSource.createQueryRunner();
 
     try {
@@ -189,7 +197,7 @@ export class DatabaseTestManager {
         WHERE schemaname = $1
         AND tablename NOT LIKE 'pg_%'
         AND tablename NOT LIKE '_timescaledb_%'
-      `, [this.config!.schema]);
+      `, [config.schema]);
 
       // Truncate all tables
       for (const table of tables) {

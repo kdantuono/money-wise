@@ -1,6 +1,8 @@
+/* eslint-disable no-console */
 /**
  * Database Test Suite Runner
  * Orchestrates all database tests and generates comprehensive reports
+ * Console statements are intentionally used for test reporting and debugging
  */
 
 import { DataSource } from 'typeorm';

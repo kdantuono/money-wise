@@ -1,6 +1,8 @@
+/* eslint-disable no-console */
 /**
  * Test Data Factory
  * Provides consistent test data generation for all entities
+ * Console statements are intentionally used for test data generation debugging
  */
 
 import { faker } from '@faker-js/faker';

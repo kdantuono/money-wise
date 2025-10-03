@@ -6,8 +6,8 @@
 
  RUN  v1.6.1 /home/nemesi/dev/money-wise/apps/web
 
- ✓ |@money-wise/web| __tests__/api/auth.test.tsx  (4 tests) 102ms
- ✓ |@money-wise/web| __tests__/pages/home.test.tsx  (4 tests) 427ms
+ ✓ |@money-wise/web| __tests__/api/auth.test.tsx  (4 tests) 87ms
+ ✓ |@money-wise/web| __tests__/pages/home.test.tsx  (4 tests) 630ms
 stderr | __tests__/components/auth/protected-route.test.tsx > withAuth Higher-Order Component > HOC with Complex Components > works with components that have state
 Warning: An update to StatefulComponent inside a test was not wrapped in act(...).
 
@@ -24,11 +24,8 @@ This ensures that you're testing the behavior the user would see in the browser.
     at AuthenticatedComponent
     at AllTheProviders (/home/nemesi/dev/money-wise/apps/web/__tests__/utils/test-utils.tsx:10:28)
 
- ✓ |@money-wise/web| __tests__/components/auth/protected-route.test.tsx  (18 tests) 554ms
- ✓ |@money-wise/web| __tests__/components/ui/label.test.tsx  (13 tests) 517ms
- ✓ |@money-wise/web| __tests__/components/ui/card.test.tsx  (30 tests) 949ms
- ✓ |@money-wise/web| __tests__/components/ui/button.test.tsx  (9 tests) 1042ms
- ✓ |@money-wise/web| __tests__/components/ui/loading.test.tsx  (32 tests) 1004ms
+ ✓ |@money-wise/web| __tests__/components/auth/protected-route.test.tsx  (18 tests) 765ms
+ ✓ |@money-wise/web| __tests__/components/ui/label.test.tsx  (13 tests) 822ms
 stderr | __tests__/components/ui/error-boundary.test.tsx > ErrorBoundary Component > Error Catching > catches errors from child components
 Error: Uncaught [Error: Test error]
     at reportException (/home/nemesi/dev/money-wise/node_modules/.pnpm/jsdom@23.2.0/node_modules/jsdom/lib/jsdom/living/helpers/runtime-script-errors.js:66:24)
@@ -250,62 +247,9 @@ Error: Uncaught [Error: Test error]
     at HTMLUnknownElementImpl.dispatchEvent (/home/nemesi/dev/money-wise/node_modules/.pnpm/jsdom@23.2.0/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:104:17)
 
 stderr | __tests__/components/ui/input.test.tsx > Input Component > Controlled Mode > works as a controlled component
-Warning: An update to TestComponent inside a test was not wrapped in act(...).
-
-When testing, code that causes React state updates should be wrapped into act(...):
-
-act(() => {
-  /* fire events that update state */
-});
-/* assert on the output */
-
-This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
-    at TestComponent (/home/nemesi/dev/money-wise/apps/web/__tests__/components/ui/input.test.tsx:97:65)
-    at AllTheProviders (/home/nemesi/dev/money-wise/apps/web/__tests__/utils/test-utils.tsx:10:28)
-
-stderr | __tests__/components/ui/input.test.tsx > Input Component > Controlled Mode > works as a controlled component
-Warning: An update to TestComponent inside a test was not wrapped in act(...).
-
-When testing, code that causes React state updates should be wrapped into act(...):
-
-act(() => {
-  /* fire events that update state */
-});
-/* assert on the output */
-
-This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
-    at TestComponent (/home/nemesi/dev/money-wise/apps/web/__tests__/components/ui/input.test.tsx:97:65)
-    at AllTheProviders (/home/nemesi/dev/money-wise/apps/web/__tests__/utils/test-utils.tsx:10:28)
-
-stderr | __tests__/components/ui/input.test.tsx > Input Component > Controlled Mode > works as a controlled component
-Warning: An update to TestComponent inside a test was not wrapped in act(...).
-
-When testing, code that causes React state updates should be wrapped into act(...):
-
-act(() => {
-  /* fire events that update state */
-});
-/* assert on the output */
-
-This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
-    at TestComponent (/home/nemesi/dev/money-wise/apps/web/__tests__/components/ui/input.test.tsx:97:65)
-    at AllTheProviders (/home/nemesi/dev/money-wise/apps/web/__tests__/utils/test-utils.tsx:10:28)
-
-stderr | __tests__/components/ui/input.test.tsx > Input Component > Controlled Mode > works as a controlled component
-Warning: An update to TestComponent inside a test was not wrapped in act(...).
-
-When testing, code that causes React state updates should be wrapped into act(...):
-
-act(() => {
-  /* fire events that update state */
-});
-/* assert on the output */
-
-This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
-    at TestComponent (/home/nemesi/dev/money-wise/apps/web/__tests__/components/ui/input.test.tsx:97:65)
-    at AllTheProviders (/home/nemesi/dev/money-wise/apps/web/__tests__/utils/test-utils.tsx:10:28)
-
-stderr | __tests__/components/ui/input.test.tsx > Input Component > Controlled Mode > works as a controlled component
+ ✓ |@money-wise/web| __tests__/components/ui/card.test.tsx  (30 tests) 1348ms
+ ✓ |@money-wise/web| __tests__/components/ui/button.test.tsx  (9 tests) 1368ms
+ ✓ |@money-wise/web| __tests__/components/ui/loading.test.tsx  (32 tests) 1296ms
 Warning: An update to TestComponent inside a test was not wrapped in act(...).
 
 When testing, code that causes React state updates should be wrapped into act(...):
@@ -433,6 +377,62 @@ This ensures that you're testing the behavior the user would see in the browser.
     at TestComponent (/home/nemesi/dev/money-wise/apps/web/__tests__/components/ui/input.test.tsx:97:65)
     at AllTheProviders (/home/nemesi/dev/money-wise/apps/web/__tests__/utils/test-utils.tsx:10:28)
 
+stderr | __tests__/components/ui/input.test.tsx > Input Component > Controlled Mode > works as a controlled component
+Warning: An update to TestComponent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TestComponent (/home/nemesi/dev/money-wise/apps/web/__tests__/components/ui/input.test.tsx:97:65)
+    at AllTheProviders (/home/nemesi/dev/money-wise/apps/web/__tests__/utils/test-utils.tsx:10:28)
+
+stderr | __tests__/components/ui/input.test.tsx > Input Component > Controlled Mode > works as a controlled component
+Warning: An update to TestComponent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TestComponent (/home/nemesi/dev/money-wise/apps/web/__tests__/components/ui/input.test.tsx:97:65)
+    at AllTheProviders (/home/nemesi/dev/money-wise/apps/web/__tests__/utils/test-utils.tsx:10:28)
+
+stderr | __tests__/components/ui/input.test.tsx > Input Component > Controlled Mode > works as a controlled component
+Warning: An update to TestComponent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TestComponent (/home/nemesi/dev/money-wise/apps/web/__tests__/components/ui/input.test.tsx:97:65)
+    at AllTheProviders (/home/nemesi/dev/money-wise/apps/web/__tests__/utils/test-utils.tsx:10:28)
+
+stderr | __tests__/components/ui/input.test.tsx > Input Component > Controlled Mode > works as a controlled component
+Warning: An update to TestComponent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TestComponent (/home/nemesi/dev/money-wise/apps/web/__tests__/components/ui/input.test.tsx:97:65)
+    at AllTheProviders (/home/nemesi/dev/money-wise/apps/web/__tests__/utils/test-utils.tsx:10:28)
+
 stderr | __tests__/components/ui/error-boundary.test.tsx > ErrorBoundary Component > Error Recovery > renders reload page button
 Error: Uncaught [Error: Test error]
     at reportException (/home/nemesi/dev/money-wise/node_modules/.pnpm/jsdom@23.2.0/node_modules/jsdom/lib/jsdom/living/helpers/runtime-script-errors.js:66:24)
@@ -490,7 +490,7 @@ Error: Not implemented: navigation (except hash changes)
     at innerInvokeEventListeners (/home/nemesi/dev/money-wise/node_modules/.pnpm/jsdom@23.2.0/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:350:25)
     at invokeEventListeners (/home/nemesi/dev/money-wise/node_modules/.pnpm/jsdom@23.2.0/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:286:3) undefined
 
- ✓ |@money-wise/web| __tests__/components/ui/input.test.tsx  (21 tests) 1348ms
+ ✓ |@money-wise/web| __tests__/components/ui/input.test.tsx  (21 tests) 1724ms
 stderr | __tests__/components/ui/error-boundary.test.tsx > ErrorBoundary Component > Custom Fallback > renders custom fallback component when provided
 Error: Uncaught [Error: Custom fallback error]
     at reportException (/home/nemesi/dev/money-wise/node_modules/.pnpm/jsdom@23.2.0/node_modules/jsdom/lib/jsdom/living/helpers/runtime-script-errors.js:66:24)
@@ -822,7 +822,7 @@ Error: Uncaught [Error: Manual error]
     at Object.invokeGuardedCallbackDev (/home/nemesi/dev/money-wise/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:4213:16)
     at invokeGuardedCallback (/home/nemesi/dev/money-wise/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:4277:31)
 
- ✓ |@money-wise/web| __tests__/components/ui/error-boundary.test.tsx  (17 tests) 1584ms
+ ✓ |@money-wise/web| __tests__/components/ui/error-boundary.test.tsx  (17 tests) 1804ms
 stderr | __tests__/components/layout/dashboard-layout.test.tsx > DashboardLayout Component > Logout Functionality > redirects to login even if logout fails
 Logout error: Error: Logout failed
     at /home/nemesi/dev/money-wise/apps/web/__tests__/components/layout/dashboard-layout.test.tsx:228:52
@@ -836,10 +836,10 @@ Logout error: Error: Logout failed
     at startTests (file:///home/nemesi/dev/money-wise/node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:967:3)
     at file:///home/nemesi/dev/money-wise/node_modules/.pnpm/vitest@1.6.1_@types+node@20.19.17_@vitest+ui@1.6.1_jsdom@23.2.0/node_modules/vitest/dist/chunks/runtime-runBaseTests.oAvMKtQC.js:116:7
 
- ✓ |@money-wise/web| __tests__/components/layout/dashboard-layout.test.tsx  (27 tests) 5489ms
+ ✓ |@money-wise/web| __tests__/components/layout/dashboard-layout.test.tsx  (27 tests) 6453ms
 
  Test Files  10 passed (10)
       Tests  175 passed (175)
-   Start at  10:43:20
-   Duration  8.64s (transform 1.27s, setup 2.33s, collect 7.92s, tests 13.02s, environment 10.30s, prepare 3.45s)
+   Start at  11:47:30
+   Duration  10.25s (transform 1.15s, setup 2.61s, collect 8.66s, tests 16.30s, environment 13.92s, prepare 4.41s)
 

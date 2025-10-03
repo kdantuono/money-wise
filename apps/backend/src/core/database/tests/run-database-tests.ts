@@ -1,8 +1,10 @@
 #!/usr/bin/env ts-node
+/* eslint-disable no-console */
 
 /**
  * Database Test Runner
  * Standalone script to run comprehensive database tests
+ * Console statements are intentionally used for test runner output
  */
 
 import * as fs from 'fs';

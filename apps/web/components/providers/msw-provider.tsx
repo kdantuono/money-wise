@@ -12,8 +12,10 @@ export function MSWProvider({ children }: { children: React.ReactNode }) {
         try {
           const { startWorker } = await import('../../__mocks__/api/browser');
           await startWorker();
+          // eslint-disable-next-line no-console -- Development-only MSW initialization logging
           console.log('🔧 MSW started successfully');
         } catch (error) {
+          // eslint-disable-next-line no-console -- Development-only error logging
           console.warn('Failed to start MSW:', error);
         } finally {
           setIsReady(true);

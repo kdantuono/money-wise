@@ -9,6 +9,7 @@ export class AddTimescaleDBSupport1759998888888 implements MigrationInterface {
             await queryRunner.query(`CREATE EXTENSION IF NOT EXISTS timescaledb CASCADE;`);
         } catch (error) {
             if (error.message?.includes('is not available') || error.message?.includes('could not open extension')) {
+                // eslint-disable-next-line no-console -- Migration logging is intentional for deployment diagnostics
                 console.log('⚠️  TimescaleDB extension not available - skipping TimescaleDB features');
                 return; // Skip entire migration if TimescaleDB not available
             }

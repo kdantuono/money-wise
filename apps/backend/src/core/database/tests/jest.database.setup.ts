@@ -1,6 +1,8 @@
+/* eslint-disable no-console */
 /**
  * Jest Database Test Setup
  * Per-test setup and teardown for database tests
+ * Console statements are intentionally used for test lifecycle logging
  */
 
 import { DataSource } from 'typeorm';

@@ -1,4 +1,4 @@
-import { Injectable, Logger, BadRequestException, NotFoundException, Inject } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException, NotFoundException, InternalServerErrorException, Inject } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
@@ -134,12 +134,16 @@ export class EmailVerificationService {
         where: { id: user.id },
       });
 
+      if (!updatedUser) {
+        throw new InternalServerErrorException('Failed to retrieve updated user');
+      }
+
       this.logger.log(`Email verified successfully for user ${user.id}`);
 
       return {
         success: true,
         message: 'Email verified successfully',
-        user: this.sanitizeUser(updatedUser!),
+        user: this.sanitizeUser(updatedUser),
       };
     } catch (error) {
       if (error instanceof BadRequestException || error instanceof NotFoundException) {

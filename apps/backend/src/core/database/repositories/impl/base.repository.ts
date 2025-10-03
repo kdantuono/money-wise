@@ -51,9 +51,10 @@ export abstract class BaseRepository<T> implements IBaseRepository<T> {
 
   async findById(id: string, options?: FindOneOptions<T>): Promise<T | null> {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const entity = await this.repository.findOne({
         ...options,
+        // TypeScript limitation: FindOptionsWhere<T> doesn't allow generic 'id' property
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Required for generic repository ID lookup
         where: { id } as any,
       });
       return entity || null;

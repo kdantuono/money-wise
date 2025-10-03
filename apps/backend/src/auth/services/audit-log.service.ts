@@ -260,11 +260,13 @@ export class AuditLogService {
       }
 
       if (query.startDate) {
-        filteredLogs = filteredLogs.filter(log => log.timestamp >= query.startDate!);
+        const startDate = query.startDate;
+        filteredLogs = filteredLogs.filter(log => log.timestamp >= startDate);
       }
 
       if (query.endDate) {
-        filteredLogs = filteredLogs.filter(log => log.timestamp <= query.endDate!);
+        const endDate = query.endDate;
+        filteredLogs = filteredLogs.filter(log => log.timestamp <= endDate);
       }
 
       // Sort by timestamp (newest first)

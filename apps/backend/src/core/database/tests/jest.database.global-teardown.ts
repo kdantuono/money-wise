@@ -1,6 +1,8 @@
+/* eslint-disable no-console */
 /**
  * Jest Global Teardown for Database Tests
  * Runs once after all database tests complete
+ * Console statements are intentionally used for test cleanup logging
  */
 
 export default async function globalTeardown() {

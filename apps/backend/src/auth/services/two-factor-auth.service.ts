@@ -1,4 +1,4 @@
-import { Injectable, Logger, BadRequestException } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException, InternalServerErrorException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
@@ -70,8 +70,12 @@ export class TwoFactorAuthService {
         length: 32,
       });
 
+      if (!secret.otpauth_url || !secret.base32) {
+        throw new InternalServerErrorException('Failed to generate 2FA secret');
+      }
+
       // Generate QR code
-      const qrCodeUrl = await qrcode.toDataURL(secret.otpauth_url!);
+      const qrCodeUrl = await qrcode.toDataURL(secret.otpauth_url);
 
       // Generate backup codes
       const backupCodes = this.generateBackupCodes();
@@ -91,7 +95,7 @@ export class TwoFactorAuthService {
       this.logger.log(`2FA setup initiated for user ${userId}`);
 
       return {
-        secret: secret.base32!,
+        secret: secret.base32,
         qrCodeUrl,
         backupCodes: backupCodes.map(bc => bc.code),
       };
