@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.6] - 2025-10-03
+
+### Added
+- **Phase 6: Web Component Library Tests** - Comprehensive test coverage for UI components
+  - Created 7+ new component test files with 158 additional tests
+  - **Test Files Created**:
+    - `__tests__/components/ui/input.test.tsx` - 18 tests (accessibility, controlled/uncontrolled modes, user interactions)
+    - `__tests__/components/ui/card.test.tsx` - 30 tests (Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter)
+    - `__tests__/components/ui/label.test.tsx` - 13 tests (Radix UI integration, form accessibility)
+    - `__tests__/components/ui/loading.test.tsx` - 32 tests (LoadingSpinner, LoadingScreen, LoadingCard, LoadingButton)
+    - `__tests__/components/ui/error-boundary.test.tsx` - 17 tests (error catching, recovery, fallback rendering, useErrorBoundary hook)
+    - `__tests__/components/auth/protected-route.test.tsx` - 18 tests (authentication, redirection, HOC patterns)
+    - `__tests__/components/layout/dashboard-layout.test.tsx` - 27 tests (sidebar navigation, user menu, mobile responsiveness)
+
+### Changed
+- **Web Coverage Improvement**: 3.37% → **35.51%** (+32.14%)
+  - Components coverage: **99.74%** (button, card, input, label, loading, error-boundary)
+  - Auth components coverage: **100%** (protected-route)
+  - Layout components coverage: **100%** (dashboard-layout)
+  - Total test count: 17 → **175 tests** (+158 tests, 929% increase)
+
+### Technical Details
+- Testing patterns: React Testing Library, userEvent, Vitest mocking
+- Accessibility testing with ARIA attributes and semantic HTML
+- Component composition and integration testing
+- Error boundary state management and recovery testing
+- Mobile responsive behavior testing
+
 ## [0.4.1] - 2025-10-03
 
 ### Fixed
