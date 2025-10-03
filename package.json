@@ -1,6 +1,6 @@
 {
   "name": "money-wise",
-  "version": "0.1.0",
+  "version": "0.4.0",
   "description": "Personal finance management application with cross-platform support",
   "private": true,
   "workspaces": [

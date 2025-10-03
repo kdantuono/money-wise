@@ -7,6 +7,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2025-10-03
+
+### Added
+- Comprehensive CI/CD pipeline enhancements with advanced job summaries
+  - Separate test execution for unit, integration, and performance tests
+  - PostgreSQL and Redis test containers configured in GitHub Actions
+  - Comprehensive test result tables with pass/fail counts and duration metrics
+  - Code coverage analysis with visual indicators (🟢 ≥80%, 🟡 ≥60%, 🔴 <60%)
+  - Separate coverage reports for unit and integration tests
+  - Build summaries with duration and artifact size metrics
+  - Enhanced pipeline summary with stage-by-stage results
+  - Feature detection display (package.json, source code, tests, apps, Docker)
+  - Overall pipeline health metrics with success rate calculation
+
+### Changed
+- Testing pipeline now executes ALL test types instead of unit tests only
+  - Unit tests with database support
+  - Integration tests with full PostgreSQL/Redis infrastructure
+  - Performance tests with extended timeout (120s)
+- Test coverage generation separated by test type
+  - Unit coverage: `apps/backend/coverage/`
+  - Integration coverage: `apps/backend/coverage/integration/`
+- Artifact uploads now include test execution logs
+  - `unit-tests.log` - Unit test execution output
+  - `integration-tests.log` - Integration test execution output
+  - `performance-tests.log` - Performance test execution output
+- Build job enhanced with duration tracking and output size reporting
+- Pipeline summary redesigned with comprehensive reporting format
+
+### Fixed
+- Integration and performance tests no longer fail due to missing database
+- Test coverage now accurately reflects all test types, not just unit tests
+- CI/CD pipeline provides clear visual feedback on test and build status
+- Test artifacts retained for 30 days for historical analysis
+
+### Technical Details
+- All test types now use shared PostgreSQL (timescale/timescaledb:latest-pg15) service
+- All test types now use shared Redis (redis:7-alpine) service
+- Test environment variables configured consistently across all test steps
+- Job summaries use `$GITHUB_STEP_SUMMARY` for rich GitHub Actions UI integration
+- Coverage indicators use mathematical comparison for accurate threshold detection
+
 ## [0.3.4] - 2025-10-03
 
 ### Added

@@ -319,6 +319,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: 🧪 Unit Tests
+        id: unit-tests
         env:
           DB_HOST: localhost
           DB_PORT: 5432
@@ -335,9 +336,11 @@ jobs:
           NODE_ENV: test
         run: |
           echo "🧪 Running unit tests..."
-          pnpm test
+          pnpm test:unit | tee unit-tests.log
+          echo "unit_exit_code=${PIPESTATUS[0]}" >> $GITHUB_OUTPUT
 
-      - name: 📊 Test Coverage
+      - name: 🔗 Integration Tests
+        id: integration-tests
         env:
           DB_HOST: localhost
           DB_PORT: 5432
@@ -353,31 +356,189 @@ jobs:
           JWT_REFRESH_SECRET: test-jwt-refresh-secret-for-ci-only
           NODE_ENV: test
         run: |
-          echo "📊 Generating test coverage (unit tests only)..."
+          echo "🔗 Running integration tests..."
+          pnpm test:integration | tee integration-tests.log
+          echo "integration_exit_code=${PIPESTATUS[0]}" >> $GITHUB_OUTPUT
+
+      - name: ⚡ Performance Tests
+        id: performance-tests
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_USERNAME: postgres
+          DB_PASSWORD: testpassword
+          DB_NAME: moneywise_test
+          DATABASE_HOST: localhost
+          DATABASE_PORT: 5432
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+          REDIS_PASSWORD: ""
+          JWT_ACCESS_SECRET: test-jwt-access-secret-for-ci-only
+          JWT_REFRESH_SECRET: test-jwt-refresh-secret-for-ci-only
+          NODE_ENV: test
+        run: |
+          echo "⚡ Running performance tests..."
+          pnpm test:performance | tee performance-tests.log
+          echo "performance_exit_code=${PIPESTATUS[0]}" >> $GITHUB_OUTPUT
+
+      - name: 📊 Unit Test Coverage
+        id: unit-coverage
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_USERNAME: postgres
+          DB_PASSWORD: testpassword
+          DB_NAME: moneywise_test
+          DATABASE_HOST: localhost
+          DATABASE_PORT: 5432
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+          REDIS_PASSWORD: ""
+          JWT_ACCESS_SECRET: test-jwt-access-secret-for-ci-only
+          JWT_REFRESH_SECRET: test-jwt-refresh-secret-for-ci-only
+          NODE_ENV: test
+        run: |
+          echo "📊 Generating unit test coverage..."
           pnpm test:coverage
 
-      - name: 📈 Upload Coverage Reports
+      - name: 📊 Integration Test Coverage
+        id: integration-coverage
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_USERNAME: postgres
+          DB_PASSWORD: testpassword
+          DB_NAME: moneywise_test
+          DATABASE_HOST: localhost
+          DATABASE_PORT: 5432
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+          REDIS_PASSWORD: ""
+          JWT_ACCESS_SECRET: test-jwt-access-secret-for-ci-only
+          JWT_REFRESH_SECRET: test-jwt-refresh-secret-for-ci-only
+          NODE_ENV: test
+        run: |
+          echo "📊 Generating integration test coverage..."
+          pnpm --filter @money-wise/backend exec jest --coverage --testPathPattern='__tests__/integration' --coverageDirectory=coverage/integration
+
+      - name: 📈 Upload Test Results & Coverage
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: coverage-reports
+          name: test-results-and-coverage
           path: |
             apps/backend/coverage/
             apps/web/coverage/
             packages/*/coverage/
+            unit-tests.log
+            integration-tests.log
+            performance-tests.log
           retention-days: 30
 
-      - name: 📊 Coverage Summary
+      - name: 📊 Comprehensive Test Summary
         if: always()
         run: |
-          echo "## 📊 Test Coverage Summary" >> $GITHUB_STEP_SUMMARY
+          echo "# 🧪 Test Results Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          if [ -f "apps/backend/coverage/coverage-summary.json" ]; then
-            echo "### Backend Coverage" >> $GITHUB_STEP_SUMMARY
-            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-            cat apps/backend/coverage/coverage-summary.json | jq -r '.total | "Statements: \(.statements.pct)% | Branches: \(.branches.pct)% | Functions: \(.functions.pct)% | Lines: \(.lines.pct)%"' >> $GITHUB_STEP_SUMMARY
-            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+          # Test Execution Results
+          echo "## Test Execution Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Test Type | Status | Duration |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----------|--------|----------|" >> $GITHUB_STEP_SUMMARY
+
+          # Unit Tests
+          if grep -q "Tests:.*passed" unit-tests.log 2>/dev/null; then
+            UNIT_RESULT=$(grep "Tests:.*passed" unit-tests.log | tail -1)
+            UNIT_TIME=$(grep "Time:" unit-tests.log | tail -1 | awk '{print $2}')
+            echo "| 🧪 Unit Tests | ✅ ${UNIT_RESULT} | ${UNIT_TIME:-N/A} |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| 🧪 Unit Tests | ❌ Failed | N/A |" >> $GITHUB_STEP_SUMMARY
           fi
+
+          # Integration Tests
+          if grep -q "Tests:.*passed" integration-tests.log 2>/dev/null; then
+            INT_RESULT=$(grep "Tests:.*passed" integration-tests.log | tail -1)
+            INT_TIME=$(grep "Time:" integration-tests.log | tail -1 | awk '{print $2}')
+            echo "| 🔗 Integration Tests | ✅ ${INT_RESULT} | ${INT_TIME:-N/A} |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| 🔗 Integration Tests | ❌ Failed | N/A |" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # Performance Tests
+          if grep -q "Tests:.*passed" performance-tests.log 2>/dev/null; then
+            PERF_RESULT=$(grep "Tests:.*passed" performance-tests.log | tail -1)
+            PERF_TIME=$(grep "Time:" performance-tests.log | tail -1 | awk '{print $2}')
+            echo "| ⚡ Performance Tests | ✅ ${PERF_RESULT} | ${PERF_TIME:-N/A} |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| ⚡ Performance Tests | ⚠️ Skipped/Failed | N/A |" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Coverage Summary
+          echo "## 📊 Code Coverage Analysis" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Function to create coverage table
+          create_coverage_table() {
+            local coverage_file=$1
+            local test_type=$2
+
+            if [ -f "$coverage_file" ]; then
+              STATEMENTS=$(jq -r '.total.statements.pct' "$coverage_file")
+              BRANCHES=$(jq -r '.total.branches.pct' "$coverage_file")
+              FUNCTIONS=$(jq -r '.total.functions.pct' "$coverage_file")
+              LINES=$(jq -r '.total.lines.pct' "$coverage_file")
+
+              # Coverage indicators
+              get_indicator() {
+                local pct=$1
+                if (( $(echo "$pct >= 80" | bc -l) )); then echo "🟢"
+                elif (( $(echo "$pct >= 60" | bc -l) )); then echo "🟡"
+                else echo "🔴"; fi
+              }
+
+              echo "### ${test_type} Coverage" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "| Metric | Coverage | Indicator |" >> $GITHUB_STEP_SUMMARY
+              echo "|--------|----------|-----------|" >> $GITHUB_STEP_SUMMARY
+              echo "| Statements | ${STATEMENTS}% | $(get_indicator $STATEMENTS) |" >> $GITHUB_STEP_SUMMARY
+              echo "| Branches | ${BRANCHES}% | $(get_indicator $BRANCHES) |" >> $GITHUB_STEP_SUMMARY
+              echo "| Functions | ${FUNCTIONS}% | $(get_indicator $FUNCTIONS) |" >> $GITHUB_STEP_SUMMARY
+              echo "| Lines | ${LINES}% | $(get_indicator $LINES) |" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+            fi
+          }
+
+          # Backend Unit Coverage
+          create_coverage_table "apps/backend/coverage/coverage-summary.json" "🧪 Backend Unit Tests"
+
+          # Backend Integration Coverage
+          create_coverage_table "apps/backend/coverage/integration/coverage-summary.json" "🔗 Backend Integration Tests"
+
+          # Overall Summary
+          echo "## 📈 Overall Quality Metrics" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Calculate total tests
+          TOTAL_TESTS=0
+          PASSED_TESTS=0
+
+          if [ -f "unit-tests.log" ]; then
+            UNIT_PASSED=$(grep -oP '(?<=Tests:.*)\d+(?= passed)' unit-tests.log | tail -1 || echo "0")
+            PASSED_TESTS=$((PASSED_TESTS + UNIT_PASSED))
+          fi
+
+          if [ -f "integration-tests.log" ]; then
+            INT_PASSED=$(grep -oP '(?<=Tests:.*)\d+(?= passed)' integration-tests.log | tail -1 || echo "0")
+            PASSED_TESTS=$((PASSED_TESTS + INT_PASSED))
+          fi
+
+          echo "- **Total Tests Executed**: ${PASSED_TESTS}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Test Status**: $([ -f 'unit-tests.log' ] && [ -f 'integration-tests.log' ] && echo '✅ All test suites executed' || echo '⚠️ Some test suites incomplete')" >> $GITHUB_STEP_SUMMARY
+          echo "- **Database Services**: ✅ PostgreSQL + Redis (test containers)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Artifacts**: 📦 Coverage reports uploaded (30-day retention)" >> $GITHUB_STEP_SUMMARY
 
   # ===================================================================
   # 🏗️ BUILD: Conditional - Active when apps exist
@@ -428,9 +589,12 @@ jobs:
           pnpm install --frozen-lockfile
 
       - name: 🏗️ Build Application
+        id: build-app
         if: steps.check-app.outputs.exists == 'true'
         run: |
           echo "🏗️ Building ${{ matrix.app }}..."
+          BUILD_START=$(date +%s)
+
           if [[ "${{ matrix.app }}" == "backend" ]]; then
             pnpm --filter @money-wise/backend build
           elif [[ "${{ matrix.app }}" == "web" ]]; then
@@ -439,6 +603,45 @@ jobs:
             echo "📱 Mobile build not yet configured"
           else
             echo "⚠️ Unknown app: ${{ matrix.app }}"
+          fi
+
+          BUILD_END=$(date +%s)
+          BUILD_DURATION=$((BUILD_END - BUILD_START))
+          echo "build_duration=${BUILD_DURATION}" >> $GITHUB_OUTPUT
+
+      - name: 📊 Build Summary
+        if: steps.check-app.outputs.exists == 'true' && always()
+        run: |
+          echo "## 🏗️ Build Summary - ${{ matrix.app }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Build status
+          if [ -d "apps/${{ matrix.app }}/dist" ] || [ -d "apps/${{ matrix.app }}/.next" ]; then
+            echo "### ✅ Build Successful" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+
+            # Build artifacts info
+            echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
+            echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+            echo "| Application | ${{ matrix.app }} |" >> $GITHUB_STEP_SUMMARY
+            echo "| Build Duration | ${{ steps.build-app.outputs.build_duration }}s |" >> $GITHUB_STEP_SUMMARY
+
+            # Output directory size
+            if [ -d "apps/${{ matrix.app }}/dist" ]; then
+              DIST_SIZE=$(du -sh apps/${{ matrix.app }}/dist | cut -f1)
+              echo "| Build Output Size | ${DIST_SIZE} |" >> $GITHUB_STEP_SUMMARY
+            fi
+
+            if [ -d "apps/${{ matrix.app }}/.next" ]; then
+              NEXT_SIZE=$(du -sh apps/${{ matrix.app }}/.next | cut -f1)
+              echo "| Build Output Size | ${NEXT_SIZE} |" >> $GITHUB_STEP_SUMMARY
+            fi
+
+            echo "| Status | 🟢 Ready for deployment |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "### ❌ Build Failed" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Build artifacts not found. Check build logs for errors." >> $GITHUB_STEP_SUMMARY
           fi
 
   # ===================================================================
@@ -484,24 +687,108 @@ jobs:
     if: always()
 
     steps:
-      - name: 📊 Pipeline Results Summary
+      - name: 📊 Comprehensive Pipeline Summary
         run: |
-          echo "📊 Progressive CI/CD Pipeline Complete"
-          echo "🎯 Project Stage: ${{ needs.foundation.outputs.project_stage }}"
-          echo ""
-          echo "📋 PIPELINE RESULTS:"
-          echo "🌱 Foundation: ${{ needs.foundation.result }}"
-          echo "📦 Development: ${{ needs.development.result || 'skipped' }}"
-          echo "🧪 Testing: ${{ needs.testing.result || 'skipped' }}"
-          echo "🏗️ Build: ${{ needs.build.result || 'skipped' }}"
-          echo "🔒 Security: ${{ needs.security.result }}"
-          echo ""
+          echo "# 🚀 Progressive CI/CD Pipeline - Complete Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
 
-          # Overall status
+          # Project Info
+          echo "## 📋 Project Information" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Property | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Project Stage | **${{ needs.foundation.outputs.project_stage }}** |" >> $GITHUB_STEP_SUMMARY
+          echo "| Branch | \`${{ github.ref_name }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Commit | \`${{ github.sha }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Trigger | ${{ github.event_name }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Workflow Run | [#${{ github.run_number }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Pipeline Stages
+          echo "## 🔄 Pipeline Stage Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Stage | Status | Result |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|--------|" >> $GITHUB_STEP_SUMMARY
+
+          # Foundation
+          FOUNDATION_ICON="❌"
+          [[ "${{ needs.foundation.result }}" == "success" ]] && FOUNDATION_ICON="✅"
+          echo "| 🌱 Foundation | $FOUNDATION_ICON | ${{ needs.foundation.result }} |" >> $GITHUB_STEP_SUMMARY
+
+          # Development
+          DEV_ICON="⏭️"
+          DEV_RESULT="${{ needs.development.result || 'skipped' }}"
+          [[ "$DEV_RESULT" == "success" ]] && DEV_ICON="✅"
+          [[ "$DEV_RESULT" == "failure" ]] && DEV_ICON="❌"
+          echo "| 📦 Development | $DEV_ICON | $DEV_RESULT |" >> $GITHUB_STEP_SUMMARY
+
+          # Testing
+          TEST_ICON="⏭️"
+          TEST_RESULT="${{ needs.testing.result || 'skipped' }}"
+          [[ "$TEST_RESULT" == "success" ]] && TEST_ICON="✅"
+          [[ "$TEST_RESULT" == "failure" ]] && TEST_ICON="❌"
+          echo "| 🧪 Testing | $TEST_ICON | $TEST_RESULT |" >> $GITHUB_STEP_SUMMARY
+
+          # Build
+          BUILD_ICON="⏭️"
+          BUILD_RESULT="${{ needs.build.result || 'skipped' }}"
+          [[ "$BUILD_RESULT" == "success" ]] && BUILD_ICON="✅"
+          [[ "$BUILD_RESULT" == "failure" ]] && BUILD_ICON="❌"
+          echo "| 🏗️ Build | $BUILD_ICON | $BUILD_RESULT |" >> $GITHUB_STEP_SUMMARY
+
+          # Security
+          SEC_ICON="❌"
+          [[ "${{ needs.security.result }}" == "success" ]] && SEC_ICON="✅"
+          echo "| 🔒 Security | $SEC_ICON | ${{ needs.security.result }} |" >> $GITHUB_STEP_SUMMARY
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Feature Detection
+          echo "## 🔍 Detected Features" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Feature | Available |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|-----------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Package.json | ${{ needs.foundation.outputs.has_package_json == 'true' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Source Code | ${{ needs.foundation.outputs.has_source_code == 'true' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Tests | ${{ needs.foundation.outputs.has_tests == 'true' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Apps | ${{ needs.foundation.outputs.has_apps == 'true' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Docker | ${{ needs.foundation.outputs.has_docker == 'true' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Overall Status
+          echo "## 🎯 Overall Pipeline Status" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
           if [[ "${{ needs.foundation.result }}" == "success" ]]; then
-            echo "✅ Pipeline completed successfully"
-            echo "🚀 Ready for ${{ needs.foundation.outputs.project_stage }} development"
+            echo "### ✅ Pipeline Successful" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "All critical stages completed successfully. Project is ready for **${{ needs.foundation.outputs.project_stage }}** development." >> $GITHUB_STEP_SUMMARY
+
+            # Success metrics
+            STAGES_RUN=1
+            STAGES_SUCCESS=1
+
+            [[ "${{ needs.development.result }}" != "" ]] && STAGES_RUN=$((STAGES_RUN + 1))
+            [[ "${{ needs.development.result }}" == "success" ]] && STAGES_SUCCESS=$((STAGES_SUCCESS + 1))
+
+            [[ "${{ needs.testing.result }}" != "" ]] && STAGES_RUN=$((STAGES_RUN + 1))
+            [[ "${{ needs.testing.result }}" == "success" ]] && STAGES_SUCCESS=$((STAGES_SUCCESS + 1))
+
+            [[ "${{ needs.build.result }}" != "" ]] && STAGES_RUN=$((STAGES_RUN + 1))
+            [[ "${{ needs.build.result }}" == "success" ]] && STAGES_SUCCESS=$((STAGES_SUCCESS + 1))
+
+            [[ "${{ needs.security.result }}" == "success" ]] && STAGES_SUCCESS=$((STAGES_SUCCESS + 1))
+            STAGES_RUN=$((STAGES_RUN + 1))
+
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "📊 **Pipeline Health**: ${STAGES_SUCCESS}/${STAGES_RUN} stages successful" >> $GITHUB_STEP_SUMMARY
           else
-            echo "❌ Pipeline failed - check foundation issues"
+            echo "### ❌ Pipeline Failed" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Foundation stage failed. Review the errors above and fix issues before proceeding." >> $GITHUB_STEP_SUMMARY
             exit 1
           fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "*Progressive CI/CD Pipeline v2.0 - Adapts automatically from Greenfield → MVP → MMP*" >> $GITHUB_STEP_SUMMARY
