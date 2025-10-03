@@ -2,26 +2,4 @@
 > @money-wise/web@0.4.6 lint /home/nemesi/dev/money-wise/apps/web
 > next lint
 
-
-./components/providers/msw-provider.tsx
-15:11  Warning: Unexpected console statement.  no-console
-
-./lib/auth.ts
-13:17  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
-
-./src/lib/performance.ts
-47:5  Warning: Unexpected console statement.  no-console
-75:13  Warning: Unexpected console statement.  no-console
-81:11  Warning: Unexpected console statement.  no-console
-117:13  Warning: Unexpected console statement.  no-console
-123:11  Warning: Unexpected console statement.  no-console
-165:11  Warning: Unexpected console statement.  no-console
-174:7  Warning: Unexpected console statement.  no-console
-181:24  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
-182:33  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
-185:7  Warning: Unexpected console statement.  no-console
-191:9  Warning: Unexpected console statement.  no-console
-191:52  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
-214:7  Warning: Unexpected console statement.  no-console
-
-info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/basic-features/eslint#disabling-rules
+✔ No ESLint warnings or errors
