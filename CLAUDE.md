@@ -4,6 +4,7 @@
 
 **MANDATORY**: Execute `.claude/scripts/init-session.sh` at session start
 **FALLBACK**: If script fails, manually verify:
+
 1. NOT on main branch (`git branch --show-current`)
 2. Docker services running (`docker compose ps`)
 3. Dependencies installed (`pnpm install`)
@@ -11,6 +12,7 @@
 ## 🎯 Intelligent Agent Selection
 
 ### Pattern-Based Auto-Loading
+
 ```yaml
 IF architecture || design || scalability:
    LOAD: .claude/agents/architect-agent.md
@@ -76,6 +78,28 @@ git commit -m "type(scope): description"
 task → story → epic → dev → main
 ```
 
+## 🚨 MANDATORY CI/CD VERIFICATION
+
+**ABSOLUTE REQUIREMENT AFTER ANY PUSH:**
+
+```bash
+# ALWAYS verify CI/CD status after pushing
+git push origin [branch]
+gh run list --branch [branch] --limit 1  # Check latest run
+gh run watch [run-id]                     # Wait for completion
+
+# ❌ NEVER CLAIM SUCCESS WITHOUT VERIFICATION
+# ❌ NEVER PROCEED IF ANY PIPELINE FAILS
+# ✅ ONLY PROCEED WHEN ALL WORKFLOWS ARE GREEN
+```
+
+**ENFORCEMENT RULES:**
+
+1. **ZERO TOLERANCE**: Any failed pipeline MUST be fixed before proceeding
+2. **VERIFICATION MANDATORY**: Must confirm green status with `gh run view`
+3. **NO FALSE CLAIMS**: Never report success without actual pipeline verification
+4. **BLOCKING REQUIREMENT**: Failed CI/CD blocks ALL development work
+
 ## 📊 Project Context
 
 **Application**: MoneyWise Personal Finance
@@ -103,7 +127,8 @@ task → story → epic → dev → main
 ## 📚 References
 
 ### 🤖 AI Orchestration (Operational Instructions)
-- **Agent Details**: `.claude/agents/README.md`
+
+- **Agent Details**: `.claude/agents/_README.md`
 - **Process Agents**: `.claude/agents/[analytics|documentation|quality]-specialist.md`
 - **Board Integration**: `.claude/orchestration/board-integration.md`
 - **Commands**: `.claude/commands/README.md`
@@ -112,6 +137,7 @@ task → story → epic → dev → main
 - **Legacy Standards**: `.claude/best-practices.md` (selective sections)
 
 ### 📋 Project Planning (Requirements & Roadmaps)
+
 - **MVP Planning Hub**: `docs/planning/README.md` - Complete development roadmaps
 - **App Vision**: `docs/planning/app-overview.md` - Multi-generational finance platform
 - **Critical Path**: `docs/planning/critical-path.md` - 47 blocking tasks for MVP
@@ -119,6 +145,7 @@ task → story → epic → dev → main
 - **Integration Specs**: `docs/planning/integrations/` - Third-party API implementations
 
 ### 🏗️ Development Progress
+
 - **Setup Guide**: `docs/development/setup.md` - Environment configuration
 - **Live Progress**: `docs/development/progress.md` - Real-time development tracking
 
@@ -129,4 +156,5 @@ task → story → epic → dev → main
 **Development Questions** ("How do I set up/develop?") → `docs/development/` (setup, progress, guides)
 
 ---
-*Version: 4.0.0 | Planning-Optimized Discovery*
+
+## Version: 4.0.0 | Planning-Optimized Discovery

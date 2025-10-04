@@ -10,6 +10,7 @@ import {
   FindOneOptions,
   EntityTarget,
   DataSource,
+  DeepPartial,
 } from 'typeorm';
 import { Logger } from '@nestjs/common';
 import { IBaseRepository } from '../interfaces/base.repository.interface';
@@ -27,9 +28,9 @@ export abstract class BaseRepository<T> implements IBaseRepository<T> {
 
   async create(entityData: Partial<T>): Promise<T> {
     try {
-      const entity = this.repository.create(entityData as any);
+      const entity = this.repository.create(entityData as DeepPartial<T>);
       const savedEntity = await this.repository.save(entity) as T;
-      this.logger.debug(`Created entity with ID: ${(savedEntity as any).id}`);
+      this.logger.debug(`Created entity with ID: ${(savedEntity as { id?: unknown }).id}`);
       return savedEntity;
     } catch (error) {
       this.logger.error(`Failed to create entity: ${error.message}`, error.stack);
@@ -40,7 +41,7 @@ export abstract class BaseRepository<T> implements IBaseRepository<T> {
   async save(entity: T): Promise<T> {
     try {
       const savedEntity = await this.repository.save(entity);
-      this.logger.debug(`Saved entity with ID: ${(savedEntity as any).id}`);
+      this.logger.debug(`Saved entity with ID: ${(savedEntity as { id?: unknown }).id}`);
       return savedEntity;
     } catch (error) {
       this.logger.error(`Failed to save entity: ${error.message}`, error.stack);
@@ -48,9 +49,12 @@ export abstract class BaseRepository<T> implements IBaseRepository<T> {
     }
   }
 
-  async findById(id: string): Promise<T | null> {
+  async findById(id: string, options?: FindOneOptions<T>): Promise<T | null> {
     try {
       const entity = await this.repository.findOne({
+        ...options,
+        // TypeScript limitation: FindOptionsWhere<T> doesn't allow generic 'id' property
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Required for generic repository ID lookup
         where: { id } as any,
       });
       return entity || null;
@@ -78,6 +82,17 @@ export abstract class BaseRepository<T> implements IBaseRepository<T> {
     } catch (error) {
       this.logger.error(`Failed to find entities: ${error.message}`, error.stack);
       throw new Error(`Failed to find entities: ${error.message}`);
+    }
+  }
+
+  async findAndCount(options?: FindManyOptions<T>): Promise<[T[], number]> {
+    try {
+      const result = await this.repository.findAndCount(options);
+      this.logger.debug(`Found ${result[0].length} entities, total ${result[1]}`);
+      return result;
+    } catch (error) {
+      this.logger.error(`Failed to find and count entities: ${error.message}`, error.stack);
+      throw new Error(`Failed to find and count entities: ${error.message}`);
     }
   }
 
@@ -111,6 +126,7 @@ export abstract class BaseRepository<T> implements IBaseRepository<T> {
 
   async update(id: string, updateData: Partial<T>): Promise<T | null> {
     try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await this.repository.update(id, updateData as any);
       const updatedEntity = await this.findById(id);
       this.logger.debug(`Updated entity with ID: ${id}`);
@@ -121,15 +137,38 @@ export abstract class BaseRepository<T> implements IBaseRepository<T> {
     }
   }
 
+  async softDelete(id: string): Promise<boolean> {
+    try {
+      const result = await this.repository.softDelete(id);
+      const deleted = !!(result.affected && result.affected > 0);
+      this.logger.debug(`Soft deleted entity with ID: ${id} - Success: ${deleted}`);
+      return deleted;
+    } catch (error) {
+      this.logger.error(`Failed to soft delete entity with ID ${id}: ${error.message}`, error.stack);
+      throw new Error(`Failed to soft delete entity: ${error.message}`);
+    }
+  }
+
   async delete(id: string): Promise<boolean> {
     try {
       const result = await this.repository.delete(id);
-      const deleted = result.affected && result.affected > 0;
+      const deleted = !!(result.affected && result.affected > 0);
       this.logger.debug(`Deleted entity with ID: ${id} - Success: ${deleted}`);
       return deleted;
     } catch (error) {
       this.logger.error(`Failed to delete entity with ID ${id}: ${error.message}`, error.stack);
       throw new Error(`Failed to delete entity: ${error.message}`);
+    }
+  }
+
+  async deleteMany(where: FindOptionsWhere<T>) {
+    try {
+      const result = await this.repository.delete(where);
+      this.logger.debug(`Deleted ${result.affected || 0} entities`);
+      return result;
+    } catch (error) {
+      this.logger.error(`Failed to delete many entities: ${error.message}`, error.stack);
+      throw new Error(`Failed to delete many entities: ${error.message}`);
     }
   }
 
@@ -145,9 +184,21 @@ export abstract class BaseRepository<T> implements IBaseRepository<T> {
     }
   }
 
-  async count(criteria?: FindOptionsWhere<T>): Promise<number> {
+  async restore(id: string): Promise<boolean> {
     try {
-      const count = await this.repository.count({ where: criteria });
+      const result = await this.repository.restore(id);
+      const restored = !!(result.affected && result.affected > 0);
+      this.logger.debug(`Restored entity with ID: ${id} - Success: ${restored}`);
+      return restored;
+    } catch (error) {
+      this.logger.error(`Failed to restore entity with ID ${id}: ${error.message}`, error.stack);
+      throw new Error(`Failed to restore entity: ${error.message}`);
+    }
+  }
+
+  async count(options?: FindManyOptions<T>): Promise<number> {
+    try {
+      const count = await this.repository.count(options);
       return count;
     } catch (error) {
       this.logger.error(`Failed to count entities: ${error.message}`, error.stack);
@@ -155,7 +206,18 @@ export abstract class BaseRepository<T> implements IBaseRepository<T> {
     }
   }
 
-  async exists(criteria: FindOptionsWhere<T>): Promise<boolean> {
+  async exists(id: string): Promise<boolean> {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const count = await this.repository.count({ where: { id } as any });
+      return count > 0;
+    } catch (error) {
+      this.logger.error(`Failed to check entity existence: ${error.message}`, error.stack);
+      throw new Error(`Failed to check entity existence: ${error.message}`);
+    }
+  }
+
+  async existsBy(criteria: FindOptionsWhere<T>): Promise<boolean> {
     try {
       const count = await this.repository.count({ where: criteria });
       return count > 0;
@@ -165,9 +227,21 @@ export abstract class BaseRepository<T> implements IBaseRepository<T> {
     }
   }
 
+  async createBulk(entitiesData: Partial<T>[]): Promise<T[]> {
+    try {
+      const createdEntities = this.repository.create(entitiesData as DeepPartial<T>[]);
+      const savedEntities = await this.repository.save(createdEntities);
+      this.logger.debug(`Bulk created ${savedEntities.length} entities`);
+      return savedEntities;
+    } catch (error) {
+      this.logger.error(`Failed to bulk create entities: ${error.message}`, error.stack);
+      throw new Error(`Failed to bulk create entities: ${error.message}`);
+    }
+  }
+
   async bulkInsert(entities: Partial<T>[]): Promise<T[]> {
     try {
-      const createdEntities = this.repository.create(entities as any[]);
+      const createdEntities = this.repository.create(entities as DeepPartial<T>[]);
       const savedEntities = await this.repository.save(createdEntities);
       this.logger.debug(`Bulk inserted ${savedEntities.length} entities`);
       return savedEntities;
@@ -177,8 +251,21 @@ export abstract class BaseRepository<T> implements IBaseRepository<T> {
     }
   }
 
+  async updateMany(where: FindOptionsWhere<T>, updateData: Partial<T>) {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const result = await this.repository.update(where, updateData as any);
+      this.logger.debug(`Updated ${result.affected || 0} entities`);
+      return result;
+    } catch (error) {
+      this.logger.error(`Failed to update many entities: ${error.message}`, error.stack);
+      throw new Error(`Failed to update many entities: ${error.message}`);
+    }
+  }
+
   async bulkUpdate(criteria: FindOptionsWhere<T>, updateData: Partial<T>): Promise<number> {
     try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const result = await this.repository.update(criteria, updateData as any);
       const updatedCount = result.affected || 0;
       this.logger.debug(`Bulk updated ${updatedCount} entities`);
@@ -189,7 +276,7 @@ export abstract class BaseRepository<T> implements IBaseRepository<T> {
     }
   }
 
-  async query(sql: string, parameters?: any[]): Promise<any> {
+  async query<R = unknown>(sql: string, parameters?: unknown[]): Promise<R> {
     try {
       this.logger.warn(`Executing raw query: ${sql}`);
       const result = await this.repository.query(sql, parameters);
@@ -198,5 +285,19 @@ export abstract class BaseRepository<T> implements IBaseRepository<T> {
       this.logger.error(`Failed to execute query: ${error.message}`, error.stack);
       throw new Error(`Failed to execute query: ${error.message}`);
     }
+  }
+
+  /**
+   * Create a query builder for advanced queries
+   */
+  protected createQueryBuilder(alias?: string) {
+    return this.repository.createQueryBuilder(alias);
+  }
+
+  /**
+   * Get the entity manager for transactions
+   */
+  protected get manager() {
+    return this.repository.manager;
   }
 }

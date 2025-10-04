@@ -3,7 +3,7 @@
  * Extends base repository with User-specific operations
  */
 
-import { User } from '../../../../entities/user.entity';
+import { User } from '../../entities';
 import { IBaseRepository } from './base.repository.interface';
 
 export interface IUserRepository extends IBaseRepository<User> {

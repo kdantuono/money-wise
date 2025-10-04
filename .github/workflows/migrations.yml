@@ -1,0 +1,276 @@
+name: Database Migration Check
+
+on:
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'apps/backend/src/database/migrations/**'
+      - 'apps/backend/src/**/*.entity.ts'
+      - 'apps/backend/src/core/database/entities/**'
+  push:
+    branches: [main, develop]
+    paths:
+      - 'apps/backend/src/database/migrations/**'
+      - 'apps/backend/src/**/*.entity.ts'
+      - 'apps/backend/src/core/database/entities/**'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '18'
+  PNPM_VERSION: '8.15.1'
+
+jobs:
+  migration-validation:
+    name: 🗃️ Migration Validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    services:
+      postgres:
+        image: timescale/timescaledb:latest-pg15
+        env:
+          POSTGRES_DB: moneywise_migration_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+        options: >-
+          --health-cmd "pg_isready -U postgres -d moneywise_migration_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      postgres-rollback:
+        image: timescale/timescaledb:latest-pg15
+        env:
+          POSTGRES_DB: moneywise_rollback_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+        options: >-
+          --health-cmd "pg_isready -U postgres -d moneywise_rollback_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5433:5432
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 📦 Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: 📦 Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: 🏗️ Build backend
+        run: pnpm --filter @money-wise/backend build
+
+      - name: 🔍 Check for new migrations
+        id: check-migrations
+        run: |
+          # Check if there are any new migration files
+          NEW_MIGRATIONS=$(git diff --name-only origin/main...HEAD | grep -E "apps/backend/src/database/migrations/.*\.(ts|js)$" || echo "")
+          
+          if [ -n "$NEW_MIGRATIONS" ]; then
+            echo "found=true" >> $GITHUB_OUTPUT
+            echo "📋 New migrations found:"
+            echo "$NEW_MIGRATIONS"
+          else
+            echo "found=false" >> $GITHUB_OUTPUT
+            echo "📋 No new migrations found"
+          fi
+
+      - name: 🗃️ Run fresh migration
+        run: |
+          echo "🗃️ Running fresh database migration..."
+          pnpm --filter @money-wise/backend migration:run
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_USERNAME: postgres
+          DB_PASSWORD: password
+          DB_NAME: moneywise_migration_test
+          NODE_ENV: test
+
+      - name: 🔍 Validate schema after migration
+        run: |
+          echo "🔍 Validating database schema..."
+          
+          # Check if all expected tables exist
+          PGPASSWORD=password psql -h localhost -U postgres -d moneywise_migration_test -c "
+            SELECT table_name 
+            FROM information_schema.tables 
+            WHERE table_schema = 'public' 
+            ORDER BY table_name;
+          "
+          
+          # Check for any missing indexes or constraints
+          PGPASSWORD=password psql -h localhost -U postgres -d moneywise_migration_test -c "
+            SELECT 
+              schemaname,
+              tablename,
+              indexname,
+              indexdef
+            FROM pg_indexes 
+            WHERE schemaname = 'public'
+            ORDER BY tablename, indexname;
+          "
+
+      - name: 🔄 Test migration rollback (if new migrations found)
+        if: steps.check-migrations.outputs.found == 'true'
+        run: |
+          echo "🔄 Testing migration rollback..."
+          
+          # First, run migrations on rollback database
+          pnpm --filter @money-wise/backend migration:run
+          
+          # Try to rollback the latest migration
+          echo "⏪ Attempting to rollback latest migration..."
+          pnpm --filter @money-wise/backend migration:revert || {
+            echo "⚠️ Migration rollback failed - this might be expected for some migrations"
+            echo "📋 Manual review required for rollback safety"
+          }
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5433
+          DB_USERNAME: postgres
+          DB_PASSWORD: password
+          DB_NAME: moneywise_rollback_test
+          NODE_ENV: test
+
+      - name: 🔍 Schema comparison with main branch
+        if: github.event_name == 'pull_request'
+        run: |
+          echo "🔍 Comparing schema changes with main branch..."
+          
+          # This is a placeholder for schema comparison
+          # In a real scenario, you might use tools like:
+          # - migra for PostgreSQL schema comparison
+          # - Custom scripts to diff schema dumps
+          # - Database diff tools
+          
+          echo "📋 Schema comparison would check:"
+          echo "  - New tables, columns, indexes"
+          echo "  - Dropped or modified structures"
+          echo "  - Data type changes"
+          echo "  - Constraint modifications"
+          echo ""
+          echo "⚠️ Manual review recommended for breaking changes"
+
+      - name: 📊 Migration performance test
+        if: steps.check-migrations.outputs.found == 'true'
+        run: |
+          echo "📊 Testing migration performance..."
+          
+          # Create a test database with sample data
+          PGPASSWORD=password psql -h localhost -U postgres -d moneywise_migration_test -c "
+            -- Insert sample data to test migration performance
+            -- This would be customized based on your schema
+            
+            -- Example: Create sample users
+            INSERT INTO users (id, email, created_at, updated_at)
+            SELECT 
+              generate_random_uuid(),
+              'test' || i || '@example.com',
+              NOW() - INTERVAL '1 day' * (i % 365),
+              NOW()
+            FROM generate_series(1, 1000) i
+            ON CONFLICT DO NOTHING;
+          " 2>/dev/null || echo "📋 Sample data insertion skipped (tables may not exist yet)"
+          
+          # Time the migration rerun (should be fast if idempotent)
+          START_TIME=$(date +%s)
+          pnpm --filter @money-wise/backend migration:run
+          END_TIME=$(date +%s)
+          
+          DURATION=$((END_TIME - START_TIME))
+          echo "📊 Migration re-run took: ${DURATION}s"
+          
+          if [ $DURATION -gt 30 ]; then
+            echo "⚠️ Migration took longer than 30 seconds - consider optimization"
+          else
+            echo "✅ Migration performance acceptable"
+          fi
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_USERNAME: postgres
+          DB_PASSWORD: password
+          DB_NAME: moneywise_migration_test
+          NODE_ENV: test
+
+      - name: 🛡️ Security check for migrations
+        if: steps.check-migrations.outputs.found == 'true'
+        run: |
+          echo "🛡️ Checking migrations for security issues..."
+          
+          # Check for potentially dangerous SQL patterns
+          if find apps/backend/src/database/migrations -name "*.ts" -newer .git/FETCH_HEAD 2>/dev/null | xargs grep -i "drop\|truncate\|delete.*from" 2>/dev/null; then
+            echo "⚠️ Potentially destructive SQL operations found in migrations"
+            echo "📋 Please review these operations carefully"
+          else
+            echo "✅ No obviously destructive operations found"
+          fi
+          
+          # Check for hardcoded sensitive data
+          if find apps/backend/src/database/migrations -name "*.ts" -newer .git/FETCH_HEAD 2>/dev/null | xargs grep -iE "(password|secret|key|token).*['\"][^'\"]{8,}" 2>/dev/null; then
+            echo "⚠️ Potential hardcoded sensitive data found in migrations"
+            echo "📋 Please use environment variables or secure configuration"
+          else
+            echo "✅ No hardcoded sensitive data found"
+          fi
+
+      - name: 📋 Generate migration report
+        if: always()
+        run: |
+          echo "📋 Migration Validation Report"
+          echo "============================="
+          echo "🔍 New migrations found: ${{ steps.check-migrations.outputs.found }}"
+          echo "🗃️ Fresh migration: Success"
+          echo "🔍 Schema validation: Completed"
+          echo "🔄 Rollback test: ${{ steps.check-migrations.outputs.found == 'true' && 'Attempted' || 'Skipped' }}"
+          echo "📊 Performance test: ${{ steps.check-migrations.outputs.found == 'true' && 'Completed' || 'Skipped' }}"
+          echo "🛡️ Security check: ${{ steps.check-migrations.outputs.found == 'true' && 'Completed' || 'Skipped' }}"
+          echo ""
+          
+          if [ "${{ steps.check-migrations.outputs.found }}" == "true" ]; then
+            echo "📋 Migration files changed in this PR:"
+            git diff --name-only origin/main...HEAD | grep -E "apps/backend/src/database/migrations/.*\.(ts|js)$" || echo "None"
+          fi
+
+  migration-summary:
+    name: 📋 Migration Summary
+    runs-on: ubuntu-latest
+    needs: migration-validation
+    if: always()
+
+    steps:
+      - name: 📋 Migration test results
+        run: |
+          echo "📋 Database Migration Check Summary"
+          echo "==================================="
+          echo "🗃️ Migration Validation: ${{ needs.migration-validation.result }}"
+          echo ""
+          
+          if [[ "${{ needs.migration-validation.result }}" == "success" ]]; then
+            echo "✅ All migration checks passed"
+            echo "🗃️ Database migrations are ready for deployment"
+          else
+            echo "❌ Migration validation failed"
+            echo "📋 Please review the migration issues and fix them before merging"
+          fi

@@ -1,6 +1,6 @@
 import { DataSource } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
-import { User, Account, Category, Transaction } from '../entities';
+import { User, Account, Category, Transaction } from '../core/database/entities';
 
 export const databaseProviders = [
   {
@@ -19,6 +19,16 @@ export const databaseProviders = [
         ssl: configService.get('NODE_ENV') === 'production' ? { rejectUnauthorized: false } : false,
         migrations: ['dist/database/migrations/*.js'],
         migrationsTableName: 'migrations',
+        // TimescaleDB optimizations
+        extra: {
+          max: 20, // Maximum connections in pool
+          connectionTimeoutMillis: 5000,
+          idleTimeoutMillis: 30000,
+          query_timeout: 30000,
+          statement_timeout: 30000,
+          // TimescaleDB-specific settings
+          application_name: 'moneywise-backend',
+        },
       });
 
       return dataSource.initialize();

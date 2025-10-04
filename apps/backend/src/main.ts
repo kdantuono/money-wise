@@ -7,6 +7,7 @@ import { AppModule } from './app.module';
 import helmet from 'helmet';
 import compression from 'compression';
 import { AppConfig } from './core/config/app.config';
+import { MonitoringInterceptor } from './core/monitoring/monitoring.interceptor';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
@@ -20,6 +21,13 @@ async function bootstrap() {
     // Get configuration service
     const configService = app.get(ConfigService);
     const appConfig = configService.get<AppConfig>('app');
+
+    // Get monitoring service for interceptor
+    const { MonitoringService } = await import('./core/monitoring/monitoring.service');
+    const monitoringService = app.get(MonitoringService);
+
+    // Global monitoring interceptor
+    app.useGlobalInterceptors(new MonitoringInterceptor(monitoringService));
 
     // Validate configuration
     if (!appConfig) {

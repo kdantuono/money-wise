@@ -18,7 +18,7 @@ export default defineConfig({
     ['html', { open: 'never' }],
     ['json', { outputFile: 'test-results/results.json' }],
     ['junit', { outputFile: 'test-results/results.xml' }],
-    ['line']
+    ['line'],
   ],
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
@@ -78,20 +78,50 @@ export default defineConfig({
   ],
 
   /* Run your local dev server before starting the tests */
-  webServer: [
-    {
-      command: 'pnpm dev',
-      url: 'http://localhost:3000',
-      reuseExistingServer: !process.env.CI,
-      timeout: 120 * 1000,
-    },
-    {
-      command: 'pnpm --filter @money-wise/backend dev',
-      url: 'http://localhost:3001/health',
-      reuseExistingServer: !process.env.CI,
-      timeout: 120 * 1000,
-    }
-  ],
+  webServer: process.env.CI
+    ? [
+        // In CI, use production builds for faster startup
+        {
+          command: 'pnpm --filter @money-wise/backend start:prod',
+          url: 'http://localhost:3001/health',
+          reuseExistingServer: false,
+          timeout: 60 * 1000,
+          env: {
+            NODE_ENV: 'test',
+            DB_HOST: process.env.DB_HOST || 'localhost',
+            DB_PORT: process.env.DB_PORT || '5432',
+            DB_USERNAME: process.env.DB_USERNAME || 'postgres',
+            DB_PASSWORD: process.env.DB_PASSWORD || 'postgres',
+            DB_NAME: process.env.DB_NAME || 'moneywise_test',
+            REDIS_URL: process.env.REDIS_URL || 'redis://localhost:6379',
+            JWT_ACCESS_SECRET:
+              process.env.JWT_ACCESS_SECRET || 'test-access-secret-for-e2e',
+            JWT_REFRESH_SECRET:
+              process.env.JWT_REFRESH_SECRET || 'test-refresh-secret-for-e2e',
+          },
+        },
+        {
+          command: 'pnpm start',
+          url: 'http://localhost:3000',
+          reuseExistingServer: false,
+          timeout: 60 * 1000,
+        },
+      ]
+    : [
+        // In local dev, use dev servers
+        {
+          command: 'pnpm dev',
+          url: 'http://localhost:3000',
+          reuseExistingServer: true,
+          timeout: 120 * 1000,
+        },
+        {
+          command: 'pnpm --filter @money-wise/backend dev',
+          url: 'http://localhost:3001/health',
+          reuseExistingServer: true,
+          timeout: 120 * 1000,
+        },
+      ],
 
   /* Global test setup and teardown */
   globalSetup: require.resolve('./e2e/global-setup.ts'),
@@ -103,8 +133,26 @@ export default defineConfig({
   /* Test timeout */
   timeout: 30 * 1000,
 
-  /* Expect timeout */
+  /* Expect configuration with visual testing */
   expect: {
+    /* Timeout for expect() assertions */
     timeout: 10 * 1000,
+
+    /* Visual comparison configuration */
+    toHaveScreenshot: {
+      /* Threshold for visual comparison (0-1) */
+      threshold: 0.2,
+
+      /* Enable animation handling */
+      animations: 'disabled',
+
+      /* Set screenshot mode */
+      mode: 'css',
+    },
+
+    /* Match screenshots across different operating systems */
+    toMatchSnapshot: {
+      threshold: 0.2,
+    },
   },
 });

@@ -10,8 +10,8 @@ module.exports = {
   // Clear mocks automatically between every test
   clearMocks: true,
 
-  // Stop running tests after the first test failure
-  bail: 1,
+  // Continue running tests even after failures (bail disabled for comprehensive test reporting)
+  bail: false,
 
   // Collect coverage information
   collectCoverage: false, // Enable per-package as needed

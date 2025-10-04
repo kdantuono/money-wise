@@ -35,10 +35,10 @@ module.exports = {
   ],
 
   // Test match patterns for web
+  // NOTE: __tests__ directory uses Vitest, not Jest
   testMatch: [
     '<rootDir>/src/**/__tests__/**/*.{ts,tsx,js,jsx}',
-    '<rootDir>/src/**/*.{test,spec}.{ts,tsx,js,jsx}',
-    '<rootDir>/__tests__/**/*.{test,spec}.{ts,tsx,js,jsx}'
+    '<rootDir>/src/**/*.{test,spec}.{ts,tsx,js,jsx}'
   ],
 
   // Coverage collection specific to web
@@ -83,6 +83,7 @@ module.exports = {
     '/node_modules/',
     '/.next/',
     '/out/',
-    '/coverage/'
+    '/coverage/',
+    '/__tests__/' // Vitest tests, not Jest
   ]
 };

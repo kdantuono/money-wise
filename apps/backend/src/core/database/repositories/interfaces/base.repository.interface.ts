@@ -19,7 +19,7 @@ export interface IBaseRepository<T> {
   /**
    * Find entity by ID
    */
-  findById(id: string): Promise<T | null>;
+  findById(id: string, options?: FindOneOptions<T>): Promise<T | null>;
 
   /**
    * Find entity by criteria
@@ -30,6 +30,11 @@ export interface IBaseRepository<T> {
    * Find multiple entities by criteria
    */
   find(criteria?: FindManyOptions<T>): Promise<T[]>;
+
+  /**
+   * Find entities with count
+   */
+  findAndCount(options?: FindManyOptions<T>): Promise<[T[], number]>;
 
   /**
    * Find entities with pagination
@@ -46,6 +51,11 @@ export interface IBaseRepository<T> {
   update(id: string, updateData: Partial<T>): Promise<T | null>;
 
   /**
+   * Soft delete entity by ID
+   */
+  softDelete(id: string): Promise<boolean>;
+
+  /**
    * Delete entity by ID
    */
   delete(id: string): Promise<boolean>;
@@ -56,23 +66,34 @@ export interface IBaseRepository<T> {
   deleteBy(criteria: FindOptionsWhere<T>): Promise<number>;
 
   /**
-   * Count entities by criteria
+   * Restore soft-deleted entity
    */
-  count(criteria?: FindOptionsWhere<T>): Promise<number>;
+  restore(id: string): Promise<boolean>;
+
+  /**
+   * Count entities
+   */
+  count(options?: FindManyOptions<T>): Promise<number>;
+
+  /**
+   * Check if entity exists by ID
+   */
+  exists(id: string): Promise<boolean>;
 
   /**
    * Check if entity exists by criteria
    */
-  exists(criteria: FindOptionsWhere<T>): Promise<boolean>;
+  existsBy(criteria: FindOptionsWhere<T>): Promise<boolean>;
 
   /**
    * Execute bulk operations
    */
+  createBulk(entities: Partial<T>[]): Promise<T[]>;
   bulkInsert(entities: Partial<T>[]): Promise<T[]>;
   bulkUpdate(criteria: FindOptionsWhere<T>, updateData: Partial<T>): Promise<number>;
 
   /**
    * Execute raw query (use with caution)
    */
-  query(sql: string, parameters?: any[]): Promise<any>;
+  query<R = unknown>(sql: string, parameters?: unknown[]): Promise<R>;
 }

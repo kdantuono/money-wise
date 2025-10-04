@@ -3,6 +3,8 @@
  * Global test configuration and utilities for React Native Testing Library
  */
 
+/* eslint-disable @typescript-eslint/no-var-requires */
+
 import 'react-native-gesture-handler/jestSetup';
 
 // Mock react-native-reanimated
