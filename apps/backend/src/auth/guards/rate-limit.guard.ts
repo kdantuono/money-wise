@@ -87,8 +87,15 @@ export class RateLimitGuard implements CanActivate {
       const allowed = await this.checkRateLimit(request, appliedOptions);
       return allowed;
     } catch (error) {
-      this.logger.error('Rate limiting error:', error);
-      // On Redis errors, allow the request but log the error
+      // Re-throw HttpException (rate limit exceeded) to block the request
+      // This is a business logic error that MUST propagate to the client
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      // Only catch infrastructure errors (Redis failures)
+      // Graceful degradation: allow request but log the error
+      this.logger.error('Rate limiting infrastructure error (Redis):', error);
       return true;
     }
   }

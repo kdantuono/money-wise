@@ -202,10 +202,10 @@ describe('RateLimitGuard', () => {
       const result = await guard.canActivate(context);
 
       expect(result).toBe(true);
-      expect(mockLoggerError).toHaveBeenCalledWith('Rate limiting error:', expect.any(Error));
+      expect(mockLoggerError).toHaveBeenCalledWith('Rate limiting infrastructure error (Redis):', expect.any(Error));
     });
 
-    it('should catch HttpException instead of propagating (bug)', async () => {
+    it('should re-throw HttpException when rate limit exceeded', async () => {
       const context = createMockExecutionContext();
       const options: RateLimitOptions = {
         windowMs: 60000,
@@ -215,10 +215,45 @@ describe('RateLimitGuard', () => {
       mockReflector.get.mockReturnValueOnce(options);
       mockRedis.get.mockResolvedValueOnce('5'); // At limit
 
-      // BUG: Should propagate HttpException, but catches it
+      jest.spyOn(Date, 'now').mockReturnValue(1000000);
+
+      const promise = guard.canActivate(context);
+      await expect(promise).rejects.toThrow(HttpException);
+      await expect(promise).rejects.toThrow('Too many requests, please try again later');
+    });
+
+    it('should differentiate between business errors (HttpException) and infrastructure errors', async () => {
+      const context = createMockExecutionContext();
+      const options: RateLimitOptions = {
+        windowMs: 60000,
+        maxAttempts: 5,
+      };
+
+      // Test 1: HttpException should propagate (not be caught)
+      mockReflector.get.mockReturnValueOnce(options);
+      mockRedis.get.mockResolvedValueOnce('5');
+
+      const startTime = 1000000;
+      jest.spyOn(Date, 'now').mockReturnValue(startTime);
+
+      await expect(guard.canActivate(context)).rejects.toThrow(HttpException);
+      expect(mockLoggerError).not.toHaveBeenCalledWith(
+        'Rate limiting infrastructure error (Redis):',
+        expect.anything()
+      );
+
+      jest.clearAllMocks();
+
+      // Test 2: Redis error should be caught (graceful degradation)
+      mockReflector.get.mockReturnValueOnce(options);
+      mockRedis.get.mockRejectedValueOnce(new Error('Redis timeout'));
+
       const result = await guard.canActivate(context);
       expect(result).toBe(true);
-      expect(mockLoggerError).toHaveBeenCalled();
+      expect(mockLoggerError).toHaveBeenCalledWith(
+        'Rate limiting infrastructure error (Redis):',
+        expect.any(Error)
+      );
     });
   });
 
@@ -278,13 +313,10 @@ describe('RateLimitGuard', () => {
   });
 
   describe('checkRateLimit() - Limit Reached', () => {
-    // NOTE: Current implementation has a bug - it catches HttpException and returns true
-    // These tests verify the ACTUAL behavior, not the EXPECTED behavior
-    // TODO: Fix guard to re-throw HttpException and update these tests
-    it('should return true when limit reached due to error handling bug', async () => {
+    it('should throw HttpException when limit is reached', async () => {
       const context = createMockExecutionContext({
+        ip: '192.168.1.1',
         headers: { 'user-agent': 'test-browser' },
-        connection: { remoteAddress: '192.168.1.1' },
       });
       const options: RateLimitOptions = {
         windowMs: 60000,
@@ -294,13 +326,23 @@ describe('RateLimitGuard', () => {
       mockReflector.get.mockReturnValueOnce(options);
       mockRedis.get.mockResolvedValueOnce('5'); // At limit
 
-      // BUG: Should throw, but catches all errors
-      const result = await guard.canActivate(context);
-      expect(result).toBe(true);
-      expect(mockLoggerError).toHaveBeenCalledWith('Rate limiting error:', expect.any(HttpException));
+      jest.spyOn(Date, 'now').mockReturnValue(1000000);
+
+      await expect(guard.canActivate(context)).rejects.toThrow(HttpException);
+
+      // Should still log the warning
+      expect(mockLoggerWarn).toHaveBeenCalledWith(
+        expect.stringContaining('Rate limit exceeded'),
+        expect.objectContaining({
+          ip: '192.168.1.1',
+          userAgent: 'test-browser',
+          count: 5,
+          limit: 5,
+        })
+      );
     });
 
-    it('should return true when count exceeds limit due to error handling bug', async () => {
+    it('should throw HttpException when count exceeds limit', async () => {
       const context = createMockExecutionContext();
       const options: RateLimitOptions = {
         windowMs: 60000,
@@ -308,27 +350,31 @@ describe('RateLimitGuard', () => {
       };
 
       mockReflector.get.mockReturnValueOnce(options);
-      mockRedis.get.mockResolvedValueOnce('10'); // Exceeds limit
+      mockRedis.get.mockResolvedValueOnce('10'); // Way over limit
 
-      // BUG: Should throw, but catches all errors
-      const result = await guard.canActivate(context);
-      expect(result).toBe(true);
+      jest.spyOn(Date, 'now').mockReturnValue(1000000);
+
+      await expect(guard.canActivate(context)).rejects.toThrow(HttpException);
     });
 
-    it('should log error when rate limit calculation throws', async () => {
+    it('should throw HttpException with correct status code and message', async () => {
       const context = createMockExecutionContext();
       const options: RateLimitOptions = {
-        windowMs: 60000, // 1 minute
+        windowMs: 60000,
         maxAttempts: 5,
       };
 
       mockReflector.get.mockReturnValueOnce(options);
       mockRedis.get.mockResolvedValueOnce('5');
 
-      const result = await guard.canActivate(context);
+      jest.spyOn(Date, 'now').mockReturnValue(1000000);
 
-      expect(result).toBe(true); // Bug: catches HttpException
-      expect(mockLoggerError).toHaveBeenCalledWith('Rate limiting error:', expect.any(Error));
+      await expect(guard.canActivate(context)).rejects.toMatchObject({
+        response: expect.objectContaining({
+          statusCode: HttpStatus.TOO_MANY_REQUESTS,
+          message: 'Too many requests, please try again later',
+        }),
+      });
     });
   });
 
@@ -389,11 +435,9 @@ describe('RateLimitGuard', () => {
       mockReflector.get.mockReturnValueOnce(options);
       mockRedis.get.mockResolvedValueOnce('5');
 
-      try {
-        await guard.canActivate(context);
-      } catch (error) {
-        // Expected
-      }
+      jest.spyOn(Date, 'now').mockReturnValue(1000000);
+
+      await expect(guard.canActivate(context)).rejects.toThrow(HttpException);
 
       expect(callback).toHaveBeenCalledTimes(1);
       expect(callback).toHaveBeenCalledWith(expect.objectContaining({
@@ -402,7 +446,7 @@ describe('RateLimitGuard', () => {
       }));
     });
 
-    it('should return true when limit hit without onLimitReached callback', async () => {
+    it('should throw HttpException when limit hit without onLimitReached callback', async () => {
       const context = createMockExecutionContext();
       const options: RateLimitOptions = {
         windowMs: 60000,
@@ -413,9 +457,9 @@ describe('RateLimitGuard', () => {
       mockReflector.get.mockReturnValueOnce(options);
       mockRedis.get.mockResolvedValueOnce('5');
 
-      // BUG: Should throw HttpException, but catches and returns true
-      const result = await guard.canActivate(context);
-      expect(result).toBe(true);
+      jest.spyOn(Date, 'now').mockReturnValue(1000000);
+
+      await expect(guard.canActivate(context)).rejects.toThrow(HttpException);
     });
 
     it('should log warning with request details when limit exceeded', async () => {
@@ -431,7 +475,9 @@ describe('RateLimitGuard', () => {
       mockReflector.get.mockReturnValueOnce(options);
       mockRedis.get.mockResolvedValueOnce('5');
 
-      await guard.canActivate(context);
+      jest.spyOn(Date, 'now').mockReturnValue(1000000);
+
+      await expect(guard.canActivate(context)).rejects.toThrow(HttpException);
 
       expect(mockLoggerWarn).toHaveBeenCalledWith(
         expect.stringContaining('Rate limit exceeded'),
@@ -691,6 +737,116 @@ describe('RateLimitGuard', () => {
         db: expect.any(Number),
         maxRetriesPerRequest: 3,
       });
+    });
+  });
+
+  describe('Security - Rate Limit Enforcement', () => {
+    it('should block request when rate limit exceeded (critical security test)', async () => {
+      const context = createMockExecutionContext({
+        method: 'POST',
+        path: '/api/auth/login',
+      });
+      const options: RateLimitOptions = {
+        windowMs: 60000,
+        maxAttempts: 3,
+      };
+
+      mockReflector.get.mockReturnValueOnce(options);
+      mockRedis.get.mockResolvedValueOnce('3'); // At limit
+
+      jest.spyOn(Date, 'now').mockReturnValue(1000000);
+
+      // CRITICAL: Must throw HttpException, NOT return true
+      const promise = guard.canActivate(context);
+      await expect(promise).rejects.toThrow(HttpException);
+      await expect(promise).rejects.toMatchObject({
+        response: expect.objectContaining({
+          statusCode: HttpStatus.TOO_MANY_REQUESTS,
+          message: 'Too many requests, please try again later',
+        }),
+      });
+    });
+
+    it('should NOT apply graceful degradation when Redis is working and limit exceeded', async () => {
+      const context = createMockExecutionContext();
+      const options: RateLimitOptions = {
+        windowMs: 60000,
+        maxAttempts: 5,
+      };
+
+      mockReflector.get.mockReturnValueOnce(options);
+      mockRedis.get.mockResolvedValueOnce('5'); // Redis working, limit reached
+
+      jest.spyOn(Date, 'now').mockReturnValue(1000000);
+
+      // Should throw, not degrade gracefully
+      await expect(guard.canActivate(context)).rejects.toThrow(HttpException);
+
+      // Should NOT log infrastructure error
+      expect(mockLoggerError).not.toHaveBeenCalledWith(
+        'Rate limiting infrastructure error (Redis):',
+        expect.anything()
+      );
+    });
+
+    it('should enforce rate limit across multiple requests from same IP', async () => {
+      const context = createMockExecutionContext({
+        ip: '203.0.113.1',
+        method: 'POST',
+        path: '/api/auth/login',
+      });
+      const options: RateLimitOptions = {
+        windowMs: 60000,
+        maxAttempts: 3,
+      };
+
+      // Simulate sequential requests
+      mockReflector.get.mockReturnValue(options);
+
+      jest.spyOn(Date, 'now').mockReturnValue(1000000);
+
+      // First request: count = 1 (below limit)
+      mockRedis.get.mockResolvedValueOnce('0');
+      const result1 = await guard.canActivate(context);
+      expect(result1).toBe(true);
+
+      // Second request: count = 2 (below limit)
+      mockRedis.get.mockResolvedValueOnce('1');
+      const result2 = await guard.canActivate(context);
+      expect(result2).toBe(true);
+
+      // Third request: count = 3 (at limit - should block)
+      mockRedis.get.mockResolvedValueOnce('3');
+      await expect(guard.canActivate(context)).rejects.toThrow(HttpException);
+    });
+
+    it('should prevent brute force attacks by blocking excessive login attempts', async () => {
+      const context = createMockExecutionContext({
+        method: 'POST',
+        path: '/api/auth/login',
+        ip: '198.51.100.1',
+      });
+      const options: RateLimitOptions = {
+        windowMs: 300000, // 5 minutes
+        maxAttempts: 5,
+      };
+
+      mockReflector.get.mockReturnValueOnce(options);
+      mockRedis.get.mockResolvedValueOnce('10'); // Well over limit (brute force attempt)
+
+      jest.spyOn(Date, 'now').mockReturnValue(1000000);
+
+      // Should block the request
+      await expect(guard.canActivate(context)).rejects.toThrow(HttpException);
+
+      // Should log warning about excessive attempts
+      expect(mockLoggerWarn).toHaveBeenCalledWith(
+        expect.stringContaining('Rate limit exceeded'),
+        expect.objectContaining({
+          count: 10,
+          limit: 5,
+        })
+      );
     });
   });
 
