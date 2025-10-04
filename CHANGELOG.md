@@ -7,9 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.7] - 2025-10-04
+
+### Fixed
+
+- **RateLimitGuard Dependency Injection** (CRITICAL CI/CD fix)
+  - Replaced hardcoded Redis instantiation with proper dependency injection using `@Inject('default')`
+  - Fixed integration test failures (429 Too Many Requests errors in CI/CD)
+  - RateLimitGuard now receives Redis instance from RedisModule instead of creating its own
+  - All 1402 tests now passing in CI/CD pipeline (1338 unit + 64 integration + 175 web - was previously 64 integration tests failing)
+
+- **Environment Configuration Alignment**
+  - Unified `DB_*` variables across local development and CI/CD environments
+  - Created `.env.test` for integration testing with proper database credentials
+  - Updated `.env.example` with current configuration standards
+  - Removed legacy database name fallbacks from test setup
+
+### Changed
+
+- **Integration Tests**
+  - Updated auth integration tests to use `RedisModule.forTest()` pattern
+  - Removed broken guard override that was bypassed by hardcoded Redis instance
+  - Added `mockRedisClient.__reset()` to `afterEach` cleanup for proper test isolation
+
+- **Unit Tests**
+  - Updated RateLimitGuard unit tests to provide mock Redis via dependency injection
+  - Replaced `jest.mock('ioredis')` with proper provider pattern `{ provide: 'default', useValue: mockRedis }`
+
+### Technical Details
+
+- **Root Cause**: RateLimitGuard was creating its own Redis instance in constructor, bypassing dependency injection
+- **Impact**: Integration tests couldn't mock rate limiting, causing all auth endpoints to return 429 status
+- **Solution**: Proper DI pattern with `@Inject('default')` decorator for Redis injection
+- **Prevention**: Added code review checklist item for dependency injection validation
+
 ## [0.4.6] - 2025-10-03
 
 ### Added
+
 - **Phase 6: Web Component Library Tests** - Comprehensive test coverage for UI components
   - Created 7+ new component test files with 158 additional tests
   - **Test Files Created**:
@@ -22,6 +57,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - `__tests__/components/layout/dashboard-layout.test.tsx` - 27 tests (sidebar navigation, user menu, mobile responsiveness)
 
 ### Changed
+
 - **Web Coverage Improvement**: 3.37% → **35.51%** (+32.14%)
   - Components coverage: **99.74%** (button, card, input, label, loading, error-boundary)
   - Auth components coverage: **100%** (protected-route)
@@ -29,6 +65,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Total test count: 17 → **175 tests** (+158 tests, 929% increase)
 
 ### Technical Details
+
 - Testing patterns: React Testing Library, userEvent, Vitest mocking
 - Accessibility testing with ARIA attributes and semantic HTML
 - Component composition and integration testing
@@ -38,6 +75,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.4.1] - 2025-10-03
 
 ### Fixed
+
 - **CI/CD Pipeline Test Count Display Bug** - Critical fix for "Total Tests Executed: 0" issue
   - Root cause: Variable-length lookbehind regex pattern causing grep failure
   - Replaced `grep -oP '(?<=Tests:.*)\d+(?= passed)'` with fixed-length pattern
@@ -45,18 +83,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added detailed test breakdown by type (unit/integration/performance)
 
 ### Added
+
 - **GitHub Status Badge** - CI/CD pipeline status badge added to README.md
   - Real-time pipeline health visibility
   - One-click access to latest workflow runs
   - Automatic updates on each commit
 
 ### Changed
+
 - **Enhanced Test Summary** - Improved overall quality metrics section
   - Individual test type counts displayed (Unit: X tests, Integration: Y tests, Performance: Z tests)
   - Performance tests now included in total count calculation
   - More accurate representation of test suite execution status
 
 ### Technical Details
+
 - Fixed grep pattern: `grep -E "Tests:.*([0-9]+) passed" | grep -oE "[0-9]+ passed" | grep -oE "[0-9]+"`
 - Added performance test count to total calculation
 - Test breakdown provides transparency into test execution distribution
@@ -64,6 +105,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.4.0] - 2025-10-03
 
 ### Added
+
 - Comprehensive CI/CD pipeline enhancements with advanced job summaries
   - Separate test execution for unit, integration, and performance tests
   - PostgreSQL and Redis test containers configured in GitHub Actions
@@ -76,6 +118,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Overall pipeline health metrics with success rate calculation
 
 ### Changed
+
 - Testing pipeline now executes ALL test types instead of unit tests only
   - Unit tests with database support
   - Integration tests with full PostgreSQL/Redis infrastructure
@@ -91,12 +134,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Pipeline summary redesigned with comprehensive reporting format
 
 ### Fixed
+
 - Integration and performance tests no longer fail due to missing database
 - Test coverage now accurately reflects all test types, not just unit tests
 - CI/CD pipeline provides clear visual feedback on test and build status
 - Test artifacts retained for 30 days for historical analysis
 
 ### Technical Details
+
 - All test types now use shared PostgreSQL (timescale/timescaledb:latest-pg15) service
 - All test types now use shared Redis (redis:7-alpine) service
 - Test environment variables configured consistently across all test steps
@@ -106,6 +151,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.3.4] - 2025-10-03
 
 ### Added
+
 - Comprehensive unit test suite for Account Repository with 14 new tests covering 6 previously untested methods
 - Test coverage for findByType, findByPlaidItemId, incrementBalance, decrementBalance, updateLastSyncedAt, findWithTransactions, findByCurrency, and groupByInstitution methods
 - Balance manipulation testing (increment/decrement operations)
@@ -113,6 +159,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Transaction relationship testing with limit handling
 
 ### Changed
+
 - Account Repository test coverage increased from 61% to 98.36%
   - Statements: 98.36% (119/121)
   - Branches: 94.11% (64/68)
@@ -122,6 +169,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - All unit tests passing: 501 passed, 6 skipped
 
 ### Fixed
+
 - CI/CD coverage reporting configuration - separated unit tests from integration/performance tests
 - Coverage artifact upload to GitHub Actions with 30-day retention
 - Jest coverage reporters configuration for proper json-summary generation
@@ -129,6 +177,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.3.3] - 2025-10-02
 
 ### Added
+
 - Comprehensive unit test suite for Category Repository with 64 new tests covering 23 methods
 - Test coverage for hierarchical query methods (11 tests): findBySlug, findByType, findByStatus, findRootCategories, findChildCategories, findCategoryTree, findCategoriesWithRules, findDefaultCategories, findSystemCategories, searchCategories, isSlugAvailable
 - Test coverage for update operations (6 tests): updateStatus, moveCategory, updateSortOrder, updateRules, updateMetadata, reorderCategories
@@ -136,6 +185,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Tree structure testing including parent-child relationships, hierarchical queries, and complex category operations
 
 ### Changed
+
 - Category Repository test coverage increased from 0% to 99.15%
   - Statements: 99.15%
   - Branches: 80.59%
@@ -147,18 +197,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.3.2] - 2025-01-02
 
 ### Fixed
+
 - Fixed integration test client database connection issue in health check tests
 - Removed real PostgreSQL connection attempts from test client configuration
 - Resolved 2 failing health.test.ts tests by implementing mocked dependencies pattern (RedisModule.forTest)
 - All 491 existing tests now passing with zero regressions
 
 ### Added
+
 - Comprehensive unit test suite for Transaction Repository with 56 new tests covering 23 methods
 - Test coverage for query methods (12 tests), update methods (6 tests), and not-yet-implemented methods (5 tests)
 - Complex query testing including date ranges, pagination, full-text search, aggregations, and duplicate detection
 - Plaid integration testing and comprehensive error handling scenarios
 
 ### Changed
+
 - Transaction Repository test coverage increased from 0% to 99.29%
   - Statements: 99.29% (140/141)
   - Branches: 87.83% (103/117)
@@ -170,21 +223,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.3.1] - 2025-01-01
 
 ### Added
+
 - Comprehensive project documentation (README.md, CHANGELOG.md, SETUP.md)
 - Documentation quality validation framework
 - Automated documentation generation pipeline
 
 ### Changed
+
 - Updated React dependency versions for consistency across monorepo
 - Enhanced development workflow with documentation-first approach
 
 ### Fixed
+
 - Resolved pnpm lockfile mismatch issues
 - Fixed dependency resolution conflicts in monorepo setup
 
 ## [0.1.0] - 2025-01-26
 
 ### Added
+
 - Initial project structure with monorepo architecture
 - NestJS backend application foundation
 - Next.js web frontend foundation
@@ -208,16 +265,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Health check systems and monitoring
 
 ### Changed
+
 - Established board-first development workflow
 - Implemented epic-driven development approach
 - Enhanced project infrastructure for scale
 
 ### Fixed
+
 - Docker Compose health check syntax issues
 - CI/CD pipeline configuration corrections
 - Dependency resolution and version management
 
 ### Infrastructure
+
 - Complete monorepo workspace setup
 - Development environment standardization
 - Automated development workflow orchestration
@@ -235,18 +295,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Upcoming Releases
 
 ### [0.2.0] - Planned (Q1 2025)
+
 - User authentication system
 - Core transaction management
 - Basic budgeting functionality
 - Database schema implementation
 
 ### [0.3.0] - Planned (Q1 2025)
+
 - Account management system
 - Transaction categorization
 - Financial goal tracking
 - Enhanced UI components
 
 ### [1.0.0] - Planned (Q2 2025)
+
 - Banking integration (Plaid)
 - Advanced financial analytics
 - Mobile application release
@@ -263,18 +326,21 @@ This project follows [Semantic Versioning](https://semver.org/) (SemVer):
 ### Version Increment Triggers
 
 #### MAJOR (Breaking Changes)
+
 - API endpoint removals or incompatible changes
 - Database schema breaking changes
 - Authentication/authorization system changes
 - Core architecture modifications
 
 #### MINOR (New Features)
+
 - New API endpoints
 - New UI components and features
 - New integrations (banking, third-party services)
 - Enhanced functionality that's backward compatible
 
 #### PATCH (Bug Fixes)
+
 - Bug fixes that don't change functionality
 - Security patches
 - Performance improvements

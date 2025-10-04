@@ -81,7 +81,8 @@ describe('Auth Integration Tests', () => {
         AuthModule,
       ],
     })
-      // Let services use the injected Redis from RedisModule.forTest()
+      // RateLimitGuard now uses injected Redis from RedisModule.forTest()
+      // No need to override - it will automatically use the mock Redis
       .overrideProvider(getRepositoryToken(User))
       .useValue({
         findOne: jest.fn(),
@@ -103,10 +104,6 @@ describe('Auth Integration Tests', () => {
         find: jest.fn(),
         findOne: jest.fn(),
       })
-      .overrideProvider(RateLimitGuard)
-      .useValue({
-        canActivate: jest.fn().mockReturnValue(true),
-      })
       .compile();
 
     app = moduleFixture.createNestApplication();
@@ -121,7 +118,12 @@ describe('Auth Integration Tests', () => {
   });
 
   afterEach(async () => {
-    // Don't clear guard mocks - they need to persist
+    // Reset Redis mock state to prevent leakage between tests
+    if (mockRedisClient.__reset) {
+      mockRedisClient.__reset();
+    }
+
+    // Clear repository mocks
     userRepository.findOne.mockClear();
     userRepository.create.mockClear();
     userRepository.save.mockClear();
