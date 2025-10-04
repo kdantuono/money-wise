@@ -5,6 +5,7 @@ import {
   HttpException,
   HttpStatus,
   Logger,
+  Inject,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Request } from 'express';
@@ -38,7 +39,6 @@ export const RateLimit = (options: RateLimitOptions) => {
 @Injectable()
 export class RateLimitGuard implements CanActivate {
   private readonly logger = new Logger(RateLimitGuard.name);
-  private redis: Redis;
   private readonly defaultOptions: RateLimitOptions = {
     windowMs: 15 * 60 * 1000, // 15 minutes
     maxAttempts: 5,
@@ -49,17 +49,9 @@ export class RateLimitGuard implements CanActivate {
   constructor(
     private reflector: Reflector,
     private configService: ConfigService,
+    @Inject('default') private readonly redis: Redis,
   ) {
-    // Initialize Redis connection
-    this.redis = new Redis({
-      host: this.configService.get('REDIS_HOST', 'localhost'),
-      port: this.configService.get('REDIS_PORT', 6379),
-      password: this.configService.get('REDIS_PASSWORD'),
-      db: this.configService.get('REDIS_DB', 0),
-      // retryDelayOnFailover: removed in ioredis v5,
-      maxRetriesPerRequest: 3,
-    });
-
+    // Set up error handler for Redis connection
     this.redis.on('error', (error) => {
       this.logger.error('Redis connection error:', error);
     });
@@ -169,12 +161,6 @@ export class RateLimitGuard implements CanActivate {
       request.socket.remoteAddress ||
       'unknown'
     );
-  }
-
-  async onModuleDestroy() {
-    if (this.redis) {
-      await this.redis.quit();
-    }
   }
 }
 

@@ -1,3 +1,9 @@
+import { Test, TestingModule } from '@nestjs/testing';
+import { Reflector } from '@nestjs/core';
+import { ConfigService } from '@nestjs/config';
+import { ExecutionContext, HttpException, HttpStatus, Logger } from '@nestjs/common';
+import { RateLimitGuard, RateLimitOptions, RATE_LIMIT_KEY, RateLimit } from '../../../../src/auth/guards/rate-limit.guard';
+
 // Mock Redis instance
 const mockRedis = {
   get: jest.fn(),
@@ -9,19 +15,6 @@ const mockRedis = {
   quit: jest.fn().mockResolvedValue(undefined),
   on: jest.fn(),
 };
-
-// Mock Redis constructor
-jest.mock('ioredis', () => {
-  return {
-    Redis: jest.fn().mockImplementation(() => mockRedis),
-  };
-});
-
-import { Test, TestingModule } from '@nestjs/testing';
-import { Reflector } from '@nestjs/core';
-import { ConfigService } from '@nestjs/config';
-import { ExecutionContext, HttpException, HttpStatus, Logger } from '@nestjs/common';
-import { RateLimitGuard, RateLimitOptions, RATE_LIMIT_KEY, RateLimit } from '../../../../src/auth/guards/rate-limit.guard';
 
 // Mock Reflector
 const mockReflector = {
@@ -88,6 +81,7 @@ describe('RateLimitGuard', () => {
         RateLimitGuard,
         { provide: Reflector, useValue: mockReflector },
         { provide: ConfigService, useValue: mockConfigService },
+        { provide: 'default', useValue: mockRedis }, // Provide mock Redis via DI
       ],
     }).compile();
 
@@ -99,17 +93,6 @@ describe('RateLimitGuard', () => {
   });
 
   describe('constructor', () => {
-    it('should initialize Redis with default configuration', () => {
-      const { Redis } = require('ioredis');
-      expect(Redis).toHaveBeenCalledWith({
-        host: 'localhost',
-        port: 6379,
-        password: undefined,
-        db: 0,
-        maxRetriesPerRequest: 3,
-      });
-    });
-
     it('should register Redis error handler', () => {
       expect(mockRedis.on).toHaveBeenCalledWith('error', expect.any(Function));
     });
@@ -677,21 +660,6 @@ describe('RateLimitGuard', () => {
     });
   });
 
-  describe('onModuleDestroy()', () => {
-    it('should call redis.quit() on module destroy', async () => {
-      await guard.onModuleDestroy();
-
-      expect(mockRedis.quit).toHaveBeenCalledTimes(1);
-    });
-
-    it('should handle missing redis instance gracefully', async () => {
-      const guardWithoutRedis = new RateLimitGuard(mockReflector as any, mockConfigService as any);
-      (guardWithoutRedis as any).redis = null;
-
-      await expect(guardWithoutRedis.onModuleDestroy()).resolves.not.toThrow();
-    });
-  });
-
   describe('RateLimit Decorator', () => {
     it('should set metadata on method descriptor', () => {
       const options: RateLimitOptions = {
@@ -719,24 +687,6 @@ describe('RateLimitGuard', () => {
 
       const metadata = Reflect.getMetadata(RATE_LIMIT_KEY, TestClass);
       expect(metadata).toEqual(options);
-    });
-  });
-
-  describe('Redis Configuration', () => {
-    it('should initialize Redis with custom configuration', () => {
-      const { Redis } = require('ioredis');
-      const calls = Redis.mock.calls;
-
-      // Find the most recent Redis instantiation
-      const lastCall = calls[calls.length - 1];
-
-      expect(lastCall).toBeDefined();
-      expect(lastCall[0]).toMatchObject({
-        host: expect.any(String),
-        port: expect.any(Number),
-        db: expect.any(Number),
-        maxRetriesPerRequest: 3,
-      });
     });
   });
 
