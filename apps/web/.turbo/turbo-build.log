@@ -1,5 +1,5 @@
 
-> @money-wise/web@0.1.0 build /home/nemesi/dev/money-wise/apps/web
+> @money-wise/web@0.4.6 build /home/nemesi/dev/money-wise/apps/web
 > next build
 
   ▲ Next.js 14.2.32
@@ -17,14 +17,14 @@
    Collecting build traces ...
 
 Route (app)                              Size     First Load JS
-┌ ○ /                                    137 B          87.2 kB
-├ ○ /_not-found                          872 B            88 kB
+┌ ○ /                                    137 B          87.3 kB
+├ ○ /_not-found                          871 B            88 kB
 ├ ○ /auth/login                          3.11 kB         152 kB
 ├ ○ /auth/register                       3.4 kB          152 kB
 └ ○ /dashboard                           5.89 kB         133 kB
 + First Load JS shared by all            87.1 kB
-  ├ chunks/78-8b4834746df6295e.js        31.6 kB
-  ├ chunks/96a9fa71-aeb0bc012af654bf.js  53.6 kB
+  ├ chunks/254c8768-fc266ec13a141fad.js  53.6 kB
+  ├ chunks/99-41f5d7856e4f0a5e.js        31.6 kB
   └ other shared chunks (total)          1.89 kB
 
 

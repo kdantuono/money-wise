@@ -1,3 +1,5 @@
+/* eslint-disable no-console */
+// Console statements are intentionally used for development-time performance debugging
 import * as Sentry from '@sentry/nextjs';
 
 /**
@@ -32,7 +34,7 @@ export class PerformanceMonitor {
    * @param tags Additional tags for the measurement
    * @returns Duration in milliseconds
    */
-  static end(key: string, tags?: Record<string, string>): number {
+  static end(key: string, _tags?: Record<string, string>): number {
     const startTime = this.measurements.get(key);
     if (!startTime) {
       console.warn(`No start time found for measurement key: ${key}`);
@@ -43,14 +45,8 @@ export class PerformanceMonitor {
     const duration = endTime - startTime;
     this.measurements.delete(key);
 
-    // Report to Sentry
-    Sentry.metrics.gauge('web.performance.duration', duration, {
-      unit: 'millisecond',
-      tags: {
-        measurement_key: key,
-        ...tags,
-      },
-    });
+    // Log performance measurement
+    console.debug(`Performance: ${key} took ${duration}ms`);
 
     return duration;
   }
@@ -76,21 +72,20 @@ export class PerformanceMonitor {
         const startTime = performance.now();
 
         try {
+          // Tags will be logged for debugging purposes
           if (tags) {
-            Object.entries(tags).forEach(([key, value]) => {
-              span.setTag(key, value);
-            });
+            console.debug(`Performance tags for ${name}:`, tags);
           }
 
           const result = await operation();
           const duration = performance.now() - startTime;
 
-          span.setMeasurement('duration', duration, 'millisecond');
-          span.setStatus('ok');
+          console.debug(`Performance: ${name} took ${duration}ms`);
+          span.setStatus({ code: 1 }); // OK status
 
           return result;
         } catch (error) {
-          span.setStatus('internal_error');
+          span.setStatus({ code: 2 }); // Internal Error status
           span.recordException(error as Error);
           throw error;
         }
@@ -119,21 +114,20 @@ export class PerformanceMonitor {
         const startTime = performance.now();
 
         try {
+          // Tags will be logged for debugging purposes
           if (tags) {
-            Object.entries(tags).forEach(([key, value]) => {
-              span.setTag(key, value);
-            });
+            console.debug(`Performance tags for ${name}:`, tags);
           }
 
           const result = operation();
           const duration = performance.now() - startTime;
 
-          span.setMeasurement('duration', duration, 'millisecond');
-          span.setStatus('ok');
+          console.debug(`Performance: ${name} took ${duration}ms`);
+          span.setStatus({ code: 1 }); // OK status
 
           return result;
         } catch (error) {
-          span.setStatus('internal_error');
+          span.setStatus({ code: 2 }); // Internal Error status
           span.recordException(error as Error);
           throw error;
         }
@@ -170,9 +164,7 @@ export function initWebVitals() {
     new PerformanceObserver((list) => {
       for (const entry of list.getEntries()) {
         if (entry.name === 'first-contentful-paint') {
-          Sentry.metrics.gauge('web.vitals.fcp', entry.startTime, {
-            unit: 'millisecond',
-          });
+          console.debug(`Web Vitals FCP: ${entry.startTime}ms`);
         }
       }
     }).observe({ entryTypes: ['paint'] });
@@ -181,28 +173,27 @@ export function initWebVitals() {
     new PerformanceObserver((list) => {
       const entries = list.getEntries();
       const lastEntry = entries[entries.length - 1];
-      Sentry.metrics.gauge('web.vitals.lcp', lastEntry.startTime, {
-        unit: 'millisecond',
-      });
+      console.debug(`Web Vitals LCP: ${lastEntry.startTime}ms`);
     }).observe({ entryTypes: ['largest-contentful-paint'] });
 
     // Cumulative Layout Shift (CLS)
     let clsValue = 0;
     new PerformanceObserver((list) => {
       for (const entry of list.getEntries()) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- PerformanceEntry types are incomplete in TypeScript
         if (!(entry as any).hadRecentInput) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any -- PerformanceEntry types are incomplete in TypeScript
           clsValue += (entry as any).value;
         }
       }
-      Sentry.metrics.gauge('web.vitals.cls', clsValue);
+      console.debug(`Web Vitals CLS: ${clsValue}`);
     }).observe({ entryTypes: ['layout-shift'] });
 
     // First Input Delay (FID)
     new PerformanceObserver((list) => {
       for (const entry of list.getEntries()) {
-        Sentry.metrics.gauge('web.vitals.fid', (entry as any).processingStart - entry.startTime, {
-          unit: 'millisecond',
-        });
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- PerformanceEntry types are incomplete in TypeScript
+        console.debug(`Web Vitals FID: ${(entry as any).processingStart - entry.startTime}ms`);
       }
     }).observe({ entryTypes: ['first-input'] });
   }
@@ -225,23 +216,11 @@ export function monitorApiCall(url: string, method: string = 'GET') {
       });
 
       // Report API metrics
-      Sentry.metrics.gauge('api.request.duration', duration, {
-        unit: 'millisecond',
-        tags: {
-          url,
-          method,
-          status: status?.toString(),
-        },
-      });
+      console.debug(`API Performance: ${method} ${url} took ${duration}ms`);
 
       if (error) {
-        Sentry.metrics.increment('api.request.error', 1, {
-          tags: {
-            url,
-            method,
-            status: status?.toString(),
-          },
-        });
+        Sentry.setContext('api', { error: 'true', method, url });
+        Sentry.captureMessage(`API Error: ${method} ${url}`, 'error');
       }
     },
   };

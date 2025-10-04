@@ -46,7 +46,15 @@ export class Transaction {
   @Column({ type: 'uuid', nullable: true })
   categoryId?: string;
 
-  @Column({ type: 'decimal', precision: 15, scale: 2 })
+  @Column({
+    type: 'decimal',
+    precision: 15,
+    scale: 2,
+    transformer: {
+      to: (value: number) => value,
+      from: (value: string) => parseFloat(value)
+    }
+  })
   @IsNumber()
   amount: number;
 

@@ -286,7 +286,7 @@ export class CloudWatchService implements OnModuleInit {
     level: string,
     message: string,
     context?: string,
-    metadata?: Record<string, any>,
+    metadata?: Record<string, unknown>,
   ): Promise<void> {
     if (!this.config.enabled || !this.cloudWatchLogsClient) {
       return;
@@ -362,7 +362,7 @@ export class CloudWatchService implements OnModuleInit {
    * Setup CloudWatch alarms based on configuration
    */
   private async setupDefaultAlarms(): Promise<void> {
-    const environment = this.configService.get('NODE_ENV', 'development');
+    const currentEnvironment: string = this.configService.get('NODE_ENV', 'development');
 
     // Import alarm configurations
     const { CLOUDWATCH_ALARMS, ENVIRONMENT_THRESHOLDS } = await import('./alarms.config');
@@ -370,14 +370,15 @@ export class CloudWatchService implements OnModuleInit {
     // Filter alarms for current environment
     const enabledAlarms = CLOUDWATCH_ALARMS.filter(alarm =>
       alarm.enabled &&
-      (!alarm.environment || alarm.environment.includes(environment))
+      (!alarm.environment || alarm.environment.includes(currentEnvironment))
     );
 
-    this.logger.log(`Setting up ${enabledAlarms.length} CloudWatch alarms for ${environment} environment`);
+    this.logger.log(`Setting up ${enabledAlarms.length} CloudWatch alarms for ${currentEnvironment} environment`);
 
     for (const alarmConfig of enabledAlarms) {
       try {
-        const { enabled: _enabled, environment: _envs, ...alarmParams } = alarmConfig;
+        const alarmParams = { ...alarmConfig };
+        delete alarmParams.environment;
 
         const alarm: PutMetricAlarmCommandInput = {
           ...alarmParams,
@@ -385,11 +386,11 @@ export class CloudWatchService implements OnModuleInit {
         };
 
         // Adjust thresholds based on environment
-        if (ENVIRONMENT_THRESHOLDS[environment]) {
+        if (ENVIRONMENT_THRESHOLDS[currentEnvironment]) {
           alarm.Threshold = this.adjustThresholdForEnvironment(
             alarm.MetricName,
             alarm.Threshold,
-            environment,
+            currentEnvironment,
             ENVIRONMENT_THRESHOLDS,
           );
         }
@@ -409,7 +410,7 @@ export class CloudWatchService implements OnModuleInit {
     metricName: string,
     defaultThreshold: number,
     environment: string,
-    thresholds: any,
+    thresholds: Record<string, Record<string, number>>,
   ): number {
     const envThresholds = thresholds[environment];
     if (!envThresholds) {

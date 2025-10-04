@@ -9,44 +9,53 @@ on:
     # Run weekly on Sundays at 2 AM UTC
     - cron: '0 2 * * 0'
 
+permissions:
+  actions: read
+  contents: read
+  security-events: write
+  pull-requests: read
+
 jobs:
   dependency-review:
-    name: Dependency Review
+    name: 🔍 Dependency Review
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
+    continue-on-error: true  # Non-blocking until GitHub Advanced Security is enabled
 
     steps:
-      - name: Checkout code
+      - name: 📥 Checkout code
         uses: actions/checkout@v4
 
-      - name: Dependency Review
-        uses: actions/dependency-review-action@v3
+      - name: 🔍 Dependency Review
+        continue-on-error: true  # Requires GitHub Advanced Security to be enabled
+        uses: actions/dependency-review-action@v4
         with:
           fail-on-severity: moderate
-          allow-licenses: MIT, Apache-2.0, BSD-2-Clause, BSD-3-Clause, ISC
+          allow-licenses: MIT, Apache-2.0, BSD-2-Clause, BSD-3-Clause, ISC, CC0-1.0, Unlicense, MPL-2.0
+          comment-summary-in-pr: true
 
   security-audit:
-    name: Security Audit
+    name: 🔒 Security Audit
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: 📥 Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: 🔧 Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '18'
 
-      - name: Setup pnpm
+      - name: 📦 Setup pnpm
         uses: pnpm/action-setup@v2
         with:
           version: '8.15.1'
 
-      - name: Install dependencies
+      - name: 📦 Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Run security audit
+      - name: 🔒 Run security audit
         run: |
           echo "🔍 Running security audit..."
           # Note: Temporarily allowing known transitive vulnerabilities from Expo/React Native
@@ -65,10 +74,71 @@ jobs:
           fi
           exit 0
 
-      - name: Run license check
+      - name: 📄 Run license check
         run: |
           # Exclude private packages and check only dependencies
           npx license-checker --onlyAllow 'MIT;Apache-2.0;BSD-2-Clause;BSD-3-Clause;ISC;CC0-1.0;Unlicense;MPL-2.0' --excludePrivatePackages
+
+  sast-scan:
+    name: 🔍 SAST Scan (Static Analysis)
+    runs-on: ubuntu-latest
+    continue-on-error: true  # Non-blocking - findings logged for review
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: 📦 Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: '8.15.1'
+
+      - name: 📦 Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: 🔍 Run ESLint Security Rules
+        run: |
+          echo "🔍 Running ESLint with security rules..."
+          # Run ESLint with security-focused rules
+          pnpm lint 2>&1 | tee eslint-security.log || true
+
+          # Check for security-related warnings/errors
+          if grep -i "security\|vulnerable\|unsafe" eslint-security.log; then
+            echo "⚠️ Security-related linting issues found"
+          else
+            echo "✅ No security-related linting issues found"
+          fi
+
+      - name: 🔍 Semgrep SAST Scan
+        continue-on-error: true  # Informational - findings logged for review
+        uses: semgrep/semgrep-action@v1
+        with:
+          config: >-
+            p/security-audit
+            p/secrets
+            p/javascript
+            p/typescript
+            p/react
+            p/nextjs
+        env:
+          # Results are uploaded to Semgrep App for tracking
+          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
+
+      - name: 📝 SAST Scan Note
+        if: always()
+        run: |
+          echo "✅ SAST scan completed"
+          echo "📊 Findings are tracked in Semgrep App and visible in workflow logs"
+          echo "💡 To enable GitHub Code Scanning integration:"
+          echo "   Settings → Security → Code security and analysis → Code scanning"
+          exit 0
 
   # TODO: Enable CodeQL when repository code scanning is configured
   # codeql:
@@ -99,16 +169,16 @@ jobs:
   #       uses: github/codeql-action/analyze@v3
 
   secrets-scan:
-    name: Secrets Scan
+    name: 🔐 Secrets Scan
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: 📥 Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Run TruffleHog
+      - name: 🔐 Run TruffleHog
         uses: trufflesecurity/trufflehog@main
         with:
           path: ./
@@ -116,30 +186,168 @@ jobs:
           head: HEAD
           extra_args: --debug --only-verified
 
+      - name: 🔐 Additional Secret Patterns Scan
+        run: |
+          echo "🔍 Running additional secret pattern scan..."
+          
+          # Load security whitelist patterns
+          WHITELIST_FILE=".github/security-whitelist.txt"
+          
+          # Check for exposed secrets patterns
+          echo "🔍 Scanning for secrets..."
+          
+          SECRET_FOUND=false
+          
+          # Exclude directories and documentation
+          EXCLUDE_DIRS="--exclude-dir=.git --exclude-dir=docs --exclude-dir=node_modules --exclude-dir=.turbo"
+          EXCLUDE_FILES="--exclude=*.md --exclude=*.txt --exclude=*.log --exclude=pnpm-lock.yaml --exclude=package-lock.json"
+          
+          # Database connection strings
+          echo "🔍 Checking database connection strings..."
+          if grep -rE "(postgres|mysql|mongodb)://[^/\s]+:[^/\s]+@" . $EXCLUDE_DIRS $EXCLUDE_FILES 2>/dev/null | grep -v -E "(example|test|mock|placeholder)" 2>/dev/null; then
+            echo "❌ Database connection string detected!"
+            SECRET_FOUND=true
+          fi
+          
+          # API endpoints with embedded credentials
+          echo "🔍 Checking API endpoints with credentials..."
+          if grep -rE "https?://[^/\s]+:[^/\s]+@" . $EXCLUDE_DIRS $EXCLUDE_FILES 2>/dev/null | grep -v -E "(example|test|mock)" 2>/dev/null; then
+            echo "❌ API endpoint with embedded credentials detected!"
+            SECRET_FOUND=true
+          fi
+          
+          # Private keys
+          echo "🔍 Checking private keys..."
+          if grep -rE "-----BEGIN (RSA |DSA |EC )?PRIVATE KEY-----" . $EXCLUDE_DIRS $EXCLUDE_FILES 2>/dev/null; then
+            echo "❌ Private key detected!"
+            SECRET_FOUND=true
+          fi
+          
+          # Slack tokens
+          echo "🔍 Checking Slack tokens..."
+          if grep -rE "xox[baprs]-[0-9a-zA-Z-]+" . $EXCLUDE_DIRS $EXCLUDE_FILES 2>/dev/null; then
+            echo "❌ Slack token detected!"
+            SECRET_FOUND=true
+          fi
+          
+          if [[ "$SECRET_FOUND" == "true" ]]; then
+            echo "🚨 Secret scan FAILED - secrets detected"
+            echo "💡 Review detected secrets above. Add false positives to .github/security-whitelist.txt"
+            exit 1
+          fi
+          
+          echo "✅ Additional secret scan passed"
+
   dockerfile-security:
-    name: Dockerfile Security
+    name: 🐳 Dockerfile Security
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
 
     steps:
-      - name: Checkout code
+      - name: 📥 Checkout code
         uses: actions/checkout@v4
 
-      - name: Run Hadolint
+      - name: 🔍 Find Dockerfiles
+        id: find-dockerfiles
+        run: |
+          DOCKERFILES=$(find . -name "Dockerfile*" -type f | head -10)
+          if [ -n "$DOCKERFILES" ]; then
+            echo "found=true" >> $GITHUB_OUTPUT
+            echo "files<<EOF" >> $GITHUB_OUTPUT
+            echo "$DOCKERFILES" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          else
+            echo "found=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: 🔍 Run Hadolint
+        if: steps.find-dockerfiles.outputs.found == 'true'
         uses: hadolint/hadolint-action@v3.1.0
         with:
           dockerfile: Dockerfile
           failure-threshold: warning
+          recursive: true
+
+      - name: 🔍 Docker Scout CVE Scan
+        if: steps.find-dockerfiles.outputs.found == 'true'
+        run: |
+          echo "🔍 Docker Scout would scan for CVEs in production"
+          echo "This requires Docker Scout to be set up with proper credentials"
+          echo "✅ Dockerfile security check placeholder completed"
+
+  codeql:
+    name: 🔍 CodeQL Analysis
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+    
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: ['typescript', 'javascript']
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🔧 Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          queries: security-extended,security-and-quality
+
+      - name: 🔧 Autobuild
+        uses: github/codeql-action/autobuild@v3
+
+      - name: 🔍 Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{matrix.language}}"
 
   notify-security-issues:
-    name: Notify Security Issues
+    name: 🚨 Notify Security Issues
     runs-on: ubuntu-latest
-    needs: [security-audit, secrets-scan]
+    needs: [security-audit, sast-scan, secrets-scan]
     if: failure() && github.ref == 'refs/heads/main'
 
     steps:
-      - name: Notify team of security issues
+      - name: 🚨 Notify team of security issues
         run: |
           echo "🚨 Security issues detected in main branch!"
           echo "Please review the failed security checks and address them immediately."
+          echo "📋 Failed jobs:"
+          echo "- Security Audit: ${{ needs.security-audit.result }}"
+          echo "- SAST Scan: ${{ needs.sast-scan.result }}"
+          echo "- Secrets Scan: ${{ needs.secrets-scan.result }}"
           # Add notification logic here (Slack, email, etc.)
+
+  security-summary:
+    name: 📋 Security Summary
+    runs-on: ubuntu-latest
+    needs: [dependency-review, security-audit, sast-scan, secrets-scan, dockerfile-security]
+    if: always()
+
+    steps:
+      - name: 📋 Security scan results
+        run: |
+          echo "📋 Security Scan Summary"
+          echo "======================="
+          echo "🔍 Dependency Review: ${{ needs.dependency-review.result || 'skipped' }}"
+          echo "🔒 Security Audit: ${{ needs.security-audit.result }}"
+          echo "🔍 SAST Scan: ${{ needs.sast-scan.result }}"
+          echo "🔐 Secrets Scan: ${{ needs.secrets-scan.result }}"
+          echo "🐳 Dockerfile Security: ${{ needs.dockerfile-security.result || 'skipped' }}"
+          echo ""
+          
+          if [[ "${{ needs.security-audit.result }}" == "success" && 
+                "${{ needs.sast-scan.result }}" == "success" && 
+                "${{ needs.secrets-scan.result }}" == "success" ]]; then
+            echo "✅ All security scans passed!"
+          else
+            echo "⚠️ Some security checks failed or were skipped"
+            echo "📋 Review the individual job results above"
+          fi

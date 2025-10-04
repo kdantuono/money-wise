@@ -7,28 +7,78 @@ export class ConsolidatedCompleteSchema1760000000000 implements MigrationInterfa
         // Enable uuid-ossp extension for UUID generation
         await queryRunner.query(`CREATE EXTENSION IF NOT EXISTS "uuid-ossp";`);
 
-        // Create ENUM types first
+        // Create ENUM types first (idempotent - safe for multiple runs)
         // User enums
-        await queryRunner.query(`CREATE TYPE "public"."users_role_enum" AS ENUM('user', 'admin');`);
-        await queryRunner.query(`CREATE TYPE "public"."users_status_enum" AS ENUM('active', 'inactive', 'suspended');`);
+        await queryRunner.query(`
+            DO $$ BEGIN
+                CREATE TYPE "public"."users_role_enum" AS ENUM('user', 'admin');
+            EXCEPTION WHEN duplicate_object THEN null;
+            END $$;
+        `);
+        await queryRunner.query(`
+            DO $$ BEGIN
+                CREATE TYPE "public"."users_status_enum" AS ENUM('active', 'inactive', 'suspended');
+            EXCEPTION WHEN duplicate_object THEN null;
+            END $$;
+        `);
 
         // Account enums
-        await queryRunner.query(`CREATE TYPE "public"."accounts_type_enum" AS ENUM('checking', 'savings', 'credit_card', 'investment', 'loan', 'mortgage', 'other');`);
-        await queryRunner.query(`CREATE TYPE "public"."accounts_status_enum" AS ENUM('active', 'inactive', 'closed', 'error');`);
-        await queryRunner.query(`CREATE TYPE "public"."accounts_source_enum" AS ENUM('plaid', 'manual');`);
+        await queryRunner.query(`
+            DO $$ BEGIN
+                CREATE TYPE "public"."accounts_type_enum" AS ENUM('checking', 'savings', 'credit_card', 'investment', 'loan', 'mortgage', 'other');
+            EXCEPTION WHEN duplicate_object THEN null;
+            END $$;
+        `);
+        await queryRunner.query(`
+            DO $$ BEGIN
+                CREATE TYPE "public"."accounts_status_enum" AS ENUM('active', 'inactive', 'closed', 'error');
+            EXCEPTION WHEN duplicate_object THEN null;
+            END $$;
+        `);
+        await queryRunner.query(`
+            DO $$ BEGIN
+                CREATE TYPE "public"."accounts_source_enum" AS ENUM('plaid', 'manual');
+            EXCEPTION WHEN duplicate_object THEN null;
+            END $$;
+        `);
 
         // Category enums
-        await queryRunner.query(`CREATE TYPE "public"."categories_type_enum" AS ENUM('income', 'expense', 'transfer');`);
-        await queryRunner.query(`CREATE TYPE "public"."categories_status_enum" AS ENUM('active', 'inactive', 'archived');`);
+        await queryRunner.query(`
+            DO $$ BEGIN
+                CREATE TYPE "public"."categories_type_enum" AS ENUM('income', 'expense', 'transfer');
+            EXCEPTION WHEN duplicate_object THEN null;
+            END $$;
+        `);
+        await queryRunner.query(`
+            DO $$ BEGIN
+                CREATE TYPE "public"."categories_status_enum" AS ENUM('active', 'inactive', 'archived');
+            EXCEPTION WHEN duplicate_object THEN null;
+            END $$;
+        `);
 
         // Transaction enums
-        await queryRunner.query(`CREATE TYPE "public"."transactions_type_enum" AS ENUM('debit', 'credit');`);
-        await queryRunner.query(`CREATE TYPE "public"."transactions_status_enum" AS ENUM('pending', 'posted', 'cancelled');`);
-        await queryRunner.query(`CREATE TYPE "public"."transactions_source_enum" AS ENUM('plaid', 'manual', 'import');`);
+        await queryRunner.query(`
+            DO $$ BEGIN
+                CREATE TYPE "public"."transactions_type_enum" AS ENUM('debit', 'credit');
+            EXCEPTION WHEN duplicate_object THEN null;
+            END $$;
+        `);
+        await queryRunner.query(`
+            DO $$ BEGIN
+                CREATE TYPE "public"."transactions_status_enum" AS ENUM('pending', 'posted', 'cancelled');
+            EXCEPTION WHEN duplicate_object THEN null;
+            END $$;
+        `);
+        await queryRunner.query(`
+            DO $$ BEGIN
+                CREATE TYPE "public"."transactions_source_enum" AS ENUM('plaid', 'manual', 'import');
+            EXCEPTION WHEN duplicate_object THEN null;
+            END $$;
+        `);
 
         // Create Users table
         await queryRunner.query(`
-            CREATE TABLE "users" (
+            CREATE TABLE IF NOT EXISTS "users" (
                 "id" uuid NOT NULL DEFAULT uuid_generate_v4(),
                 "email" character varying(255) NOT NULL,
                 "firstName" character varying(255) NOT NULL,
@@ -51,7 +101,7 @@ export class ConsolidatedCompleteSchema1760000000000 implements MigrationInterfa
 
         // Create Accounts table
         await queryRunner.query(`
-            CREATE TABLE "accounts" (
+            CREATE TABLE IF NOT EXISTS "accounts" (
                 "id" uuid NOT NULL DEFAULT uuid_generate_v4(),
                 "userId" uuid NOT NULL,
                 "name" character varying(255) NOT NULL,
@@ -82,7 +132,7 @@ export class ConsolidatedCompleteSchema1760000000000 implements MigrationInterfa
 
         // Create Categories table with nested set model support
         await queryRunner.query(`
-            CREATE TABLE "categories" (
+            CREATE TABLE IF NOT EXISTS "categories" (
                 "id" uuid NOT NULL DEFAULT uuid_generate_v4(),
                 "name" character varying(255) NOT NULL,
                 "slug" character varying(255) NOT NULL,
@@ -108,7 +158,7 @@ export class ConsolidatedCompleteSchema1760000000000 implements MigrationInterfa
 
         // Create Transactions table
         await queryRunner.query(`
-            CREATE TABLE "transactions" (
+            CREATE TABLE IF NOT EXISTS "transactions" (
                 "id" uuid NOT NULL DEFAULT uuid_generate_v4(),
                 "accountId" uuid NOT NULL,
                 "categoryId" uuid,
@@ -144,30 +194,50 @@ export class ConsolidatedCompleteSchema1760000000000 implements MigrationInterfa
 
         // Create all indexes as defined in entities
         // User indexes
-        await queryRunner.query(`CREATE UNIQUE INDEX "IDX_97672ac88f789774dd47f7c8be" ON "users" ("email");`);
-        await queryRunner.query(`CREATE INDEX "IDX_f09a678f7a939bed58006d9be0" ON "users" ("status", "createdAt");`);
+        await queryRunner.query(`CREATE UNIQUE INDEX IF NOT EXISTS "IDX_97672ac88f789774dd47f7c8be" ON "users" ("email");`);
+        await queryRunner.query(`CREATE INDEX IF NOT EXISTS "IDX_f09a678f7a939bed58006d9be0" ON "users" ("status", "createdAt");`);
 
         // Account indexes
-        await queryRunner.query(`CREATE INDEX "IDX_1f2f9a5c612e70c37579c0cd2f" ON "accounts" ("userId", "status");`);
+        await queryRunner.query(`CREATE INDEX IF NOT EXISTS "IDX_1f2f9a5c612e70c37579c0cd2f" ON "accounts" ("userId", "status");`);
 
         // Category indexes
-        await queryRunner.query(`CREATE UNIQUE INDEX "IDX_420d9f679d41281f282f5bc7d0" ON "categories" ("slug");`);
-        await queryRunner.query(`CREATE INDEX "IDX_ac4a48ba34656dd8c491827069" ON "categories" ("type", "status");`);
-        await queryRunner.query(`CREATE INDEX "IDX_052bd705a991fb83f7ea1bc65c" ON "categories" ("parentId", "status");`);
+        await queryRunner.query(`CREATE UNIQUE INDEX IF NOT EXISTS "IDX_420d9f679d41281f282f5bc7d0" ON "categories" ("slug");`);
+        await queryRunner.query(`CREATE INDEX IF NOT EXISTS "IDX_ac4a48ba34656dd8c491827069" ON "categories" ("type", "status");`);
+        await queryRunner.query(`CREATE INDEX IF NOT EXISTS "IDX_052bd705a991fb83f7ea1bc65c" ON "categories" ("parentId", "status");`);
 
         // Transaction indexes
-        await queryRunner.query(`CREATE INDEX "IDX_da2770eb9a35f7ad1fdaf64601" ON "transactions" ("accountId", "date");`);
-        await queryRunner.query(`CREATE INDEX "IDX_2a1e90d5d68c4af2d9cb92b282" ON "transactions" ("categoryId", "date");`);
-        await queryRunner.query(`CREATE INDEX "IDX_af739975df3831311827aa41cc" ON "transactions" ("status", "date");`);
-        await queryRunner.query(`CREATE UNIQUE INDEX "IDX_8018d7b2e26fd07cc530b49601" ON "transactions" ("plaid_transaction_id") WHERE plaid_transaction_id IS NOT NULL;`);
-        await queryRunner.query(`CREATE INDEX "IDX_1bb91630a0e3c46d28d218a9cc" ON "transactions" ("amount", "date");`);
-        await queryRunner.query(`CREATE INDEX "IDX_d7fd9555329142e8722de51408" ON "transactions" ("merchantName", "date");`);
+        await queryRunner.query(`CREATE INDEX IF NOT EXISTS "IDX_da2770eb9a35f7ad1fdaf64601" ON "transactions" ("accountId", "date");`);
+        await queryRunner.query(`CREATE INDEX IF NOT EXISTS "IDX_2a1e90d5d68c4af2d9cb92b282" ON "transactions" ("categoryId", "date");`);
+        await queryRunner.query(`CREATE INDEX IF NOT EXISTS "IDX_af739975df3831311827aa41cc" ON "transactions" ("status", "date");`);
+        await queryRunner.query(`CREATE UNIQUE INDEX IF NOT EXISTS "IDX_8018d7b2e26fd07cc530b49601" ON "transactions" ("plaid_transaction_id") WHERE plaid_transaction_id IS NOT NULL;`);
+        await queryRunner.query(`CREATE INDEX IF NOT EXISTS "IDX_1bb91630a0e3c46d28d218a9cc" ON "transactions" ("amount", "date");`);
+        await queryRunner.query(`CREATE INDEX IF NOT EXISTS "IDX_d7fd9555329142e8722de51408" ON "transactions" ("merchantName", "date");`);
 
-        // Create foreign key constraints
-        await queryRunner.query(`ALTER TABLE "accounts" ADD CONSTRAINT "FK_3aa23c0a6d107393e8b40e3e2a6" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE NO ACTION;`);
-        await queryRunner.query(`ALTER TABLE "categories" ADD CONSTRAINT "FK_9a6f051e66982b5f0318981bcaa" FOREIGN KEY ("parentId") REFERENCES "categories"("id") ON DELETE CASCADE ON UPDATE NO ACTION;`);
-        await queryRunner.query(`ALTER TABLE "transactions" ADD CONSTRAINT "FK_26d8aec71ae9efbe468043cd2b9" FOREIGN KEY ("accountId") REFERENCES "accounts"("id") ON DELETE CASCADE ON UPDATE NO ACTION;`);
-        await queryRunner.query(`ALTER TABLE "transactions" ADD CONSTRAINT "FK_86e965e74f9cc66149cf6c90f64" FOREIGN KEY ("categoryId") REFERENCES "categories"("id") ON DELETE SET NULL ON UPDATE NO ACTION;`);
+        // Create foreign key constraints (idempotent)
+        await queryRunner.query(`
+            DO $$ BEGIN
+                ALTER TABLE "accounts" ADD CONSTRAINT "FK_3aa23c0a6d107393e8b40e3e2a6" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE NO ACTION;
+            EXCEPTION WHEN duplicate_object THEN null;
+            END $$;
+        `);
+        await queryRunner.query(`
+            DO $$ BEGIN
+                ALTER TABLE "categories" ADD CONSTRAINT "FK_9a6f051e66982b5f0318981bcaa" FOREIGN KEY ("parentId") REFERENCES "categories"("id") ON DELETE CASCADE ON UPDATE NO ACTION;
+            EXCEPTION WHEN duplicate_object THEN null;
+            END $$;
+        `);
+        await queryRunner.query(`
+            DO $$ BEGIN
+                ALTER TABLE "transactions" ADD CONSTRAINT "FK_26d8aec71ae9efbe468043cd2b9" FOREIGN KEY ("accountId") REFERENCES "accounts"("id") ON DELETE CASCADE ON UPDATE NO ACTION;
+            EXCEPTION WHEN duplicate_object THEN null;
+            END $$;
+        `);
+        await queryRunner.query(`
+            DO $$ BEGIN
+                ALTER TABLE "transactions" ADD CONSTRAINT "FK_86e965e74f9cc66149cf6c90f64" FOREIGN KEY ("categoryId") REFERENCES "categories"("id") ON DELETE SET NULL ON UPDATE NO ACTION;
+            EXCEPTION WHEN duplicate_object THEN null;
+            END $$;
+        `);
     }
 
     public async down(queryRunner: QueryRunner): Promise<void> {

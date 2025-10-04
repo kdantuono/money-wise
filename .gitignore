@@ -107,6 +107,8 @@ lerna-debug.log*
 .cache
 .parcel-cache
 .turbo/
+**/.turbo/
+*.tsbuildinfo
 
 # Database files
 *.db
@@ -128,3 +130,8 @@ pids/
 .env.test
 .env.production
 .env.staging
+.claude/worktrees/
+
+# Turbo logs
+**/.turbo/*.log
+**/.turbo/turbo-*.log

@@ -69,7 +69,7 @@ export class User {
   @IsString()
   avatar?: string;
 
-  @Column({ type: 'varchar', length: 10, nullable: true })
+  @Column({ type: 'varchar', length: 50, nullable: true })
   @IsOptional()
   @IsString()
   timezone?: string;

@@ -15,10 +15,10 @@ export class RegisterDto {
   lastName: string;
 
   @IsString()
-  @MinLength(8)
-  @MaxLength(100)
+  @MinLength(12)
+  @MaxLength(128)
   @Matches(
-    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/,
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&^#()_+-=[\]{}|;:,.<>~`])/,
     {
       message: 'Password must contain at least one uppercase letter, one lowercase letter, one number and one special character',
     },

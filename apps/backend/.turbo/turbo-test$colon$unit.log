@@ -1,322 +1,2927 @@
 
-> @money-wise/backend@0.1.0 test:unit /home/nemesi/dev/money-wise/apps/backend
-> jest --passWithNoTests --testPathPattern='src' "--testPathPattern=auth"
+> @money-wise/backend@0.4.1 test:unit /home/nemesi/dev/money-wise/apps/backend
+> jest --passWithNoTests --testPathPattern='__tests__/unit'
 
-PASS @money-wise/backend src/auth/auth.service.spec.ts
-  AuthService
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:07 PM [31m  ERROR[39m [38;5;3m[AccountLockoutService] [39m[31mError recording failed attempt:[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:07 PM [31m  ERROR[39m [38;5;3m[AccountLockoutService] [39m[31mError: Redis connection failed[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:07 PM [31m  ERROR[39m [38;5;3m[AccountLockoutService] [39m[31mError clearing failed attempts:[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:07 PM [31m  ERROR[39m [38;5;3m[AccountLockoutService] [39m[31mError: Redis error[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:07 PM [31m  ERROR[39m [38;5;3m[AccountLockoutService] [39m[31mError getting lockout info:[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:07 PM [31m  ERROR[39m [38;5;3m[AccountLockoutService] [39m[31mError: Redis error[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:07 PM [31m  ERROR[39m [38;5;3m[AccountLockoutService] [39m[31mError unlocking account:[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:07 PM [31m  ERROR[39m [38;5;3m[AccountLockoutService] [39m[31mError: Redis error[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:07 PM [31m  ERROR[39m [38;5;3m[AccountLockoutService] [39m[31mError getting lockout stats:[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:07 PM [31m  ERROR[39m [38;5;3m[AccountLockoutService] [39m[31mError: Redis error[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:07 PM [31m  ERROR[39m [38;5;3m[AccountLockoutService] [39m[31mError updating user lockout status:[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:07 PM [31m  ERROR[39m [38;5;3m[AccountLockoutService] [39m[31mError: Database error[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:07 PM [31m  ERROR[39m [38;5;3m[AccountLockoutService] [39m[31mError recording failed attempt:[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:07 PM [31m  ERROR[39m [38;5;3m[AccountLockoutService] [39m[31mError: Connection refused[39m
+FAIL @money-wise/backend __tests__/unit/auth/services/account-lockout.service.spec.ts (7.707 s)
+  AccountLockoutService
+    recordFailedAttempt
+      ✕ should record first failed attempt (20 ms)
+      ✕ should increment failed attempts on subsequent failures (7 ms)
+      ✓ should lock account after max failed attempts (6 ms)
+      ✕ should apply progressive lockout duration (7 ms)
+      ✓ should cap progressive lockout at 24 hours (5 ms)
+      ✕ should reset failed attempts after reset time (4 ms)
+      ✓ should return current lockout if account is already locked (10 ms)
+      ✕ should reset failed attempts to 0 after lockout (4 ms)
+      ✕ should increment lockout count on each lockout (4 ms)
+      ✓ should update user status to SUSPENDED when locked by email (9 ms)
+      ✓ should update user status to SUSPENDED when locked by user ID (3 ms)
+      ✓ should use custom lockout settings (3 ms)
+      ✓ should handle Redis errors gracefully (5 ms)
+      ✓ should set appropriate expiration on lockout data (3 ms)
+    clearFailedAttempts
+      ✓ should clear lockout data on successful login (3 ms)
+      ✓ should update user status to ACTIVE when unlocking by email (3 ms)
+      ✓ should update user status to ACTIVE when unlocking by user ID (2 ms)
+      ✓ should not update status if user is not SUSPENDED (3 ms)
+      ✓ should handle user not found gracefully (4 ms)
+      ✓ should handle Redis errors gracefully (10 ms)
+    getLockoutInfo
+      ✓ should return lockout info for active lockout (3 ms)
+      ✓ should return unlocked info when no lockout exists (3 ms)
+      ✓ should return unlocked info when lockout has expired (3 ms)
+      ✓ should return failed attempts even when not locked (3 ms)
+      ✓ should handle Redis errors gracefully (3 ms)
+    unlockAccount
+      ✓ should manually unlock an account (admin function) (3 ms)
+      ✓ should handle unlocking non-existent lockout (3 ms)
+      ✓ should handle Redis errors gracefully (2 ms)
+    getLockoutStats
+      ✓ should return statistics for currently locked accounts (11 ms)
+      ✓ should exclude expired lockouts from stats (2 ms)
+      ✓ should limit recent lockouts to 10 entries (3 ms)
+      ✓ should sort recent lockouts by lockedUntil descending (2 ms)
+      ✓ should handle empty lockout data (3 ms)
+      ✓ should handle Redis errors gracefully (4 ms)
+    Progressive Lockout Calculation
+      ✕ should calculate progressive lockout durations correctly (4 ms)
+      ✓ should cap at 24 hours even with high lockout count (3 ms)
+      ✓ should disable progressive lockout when configured (4 ms)
+    User Status Integration
+      ✓ should distinguish between email and user ID identifiers (9 ms)
+      ✓ should not update status if user is already ACTIVE (5 ms)
+      ✓ should not update status if user is INACTIVE (6 ms)
+      ✓ should handle database errors gracefully (4 ms)
+    onModuleDestroy
+      ✓ should close Redis connection on module destroy (3 ms)
+      ✓ should handle null Redis instance gracefully (2 ms)
+    Edge Cases and Boundary Conditions
+      ✓ should handle concurrent failed attempts correctly (4 ms)
+      ✕ should handle time boundary conditions for reset (4 ms)
+      ✕ should handle malformed Redis data gracefully (3 ms)
+      ✓ should handle Redis connection errors with safe defaults (4 ms)
+      ✓ should handle lockout at exact max attempts boundary (4 ms)
+
+  ● AccountLockoutService › recordFailedAttempt › should record first failed attempt
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "1"
+    Received: 1
+
+      104 |       const key = `lockout:${identifier}`;
+      105 |       const data = await mockRedis.hmget(key, 'failedAttempts', 'firstFailedAt');
+    > 106 |       expect(data[0]).toBe('1');
+          |                       ^
+      107 |       expect(data[1]).toBeDefined();
+      108 |     });
+      109 |
+
+      at Object.<anonymous> (__tests__/unit/auth/services/account-lockout.service.spec.ts:106:23)
+
+  ● AccountLockoutService › recordFailedAttempt › should increment failed attempts on subsequent failures
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "3"
+    Received: 3
+
+      127 |       // Verify count was incremented
+      128 |       const data = await mockRedis.hmget(key, 'failedAttempts');
+    > 129 |       expect(data[0]).toBe('3');
+          |                       ^
+      130 |     });
+      131 |
+      132 |     it('should lock account after max failed attempts', async () => {
+
+      at Object.<anonymous> (__tests__/unit/auth/services/account-lockout.service.spec.ts:129:23)
+
+  ● AccountLockoutService › recordFailedAttempt › should apply progressive lockout duration
+
+    expect(received).toBeLessThanOrEqual(expected)
+
+    Expected: <= 1759498448020
+    Received:    1759502047019
+
+      174 |       const expectedLockout = Date.now() + (60 * 60 * 1000);
+      175 |       expect(result.lockedUntil!.getTime()).toBeGreaterThanOrEqual(expectedLockout - 1000);
+    > 176 |       expect(result.lockedUntil!.getTime()).toBeLessThanOrEqual(expectedLockout + 1000);
+          |                                             ^
+      177 |     });
+      178 |
+      179 |     it('should cap progressive lockout at 24 hours', async () => {
+
+      at Object.<anonymous> (__tests__/unit/auth/services/account-lockout.service.spec.ts:176:45)
+
+  ● AccountLockoutService › recordFailedAttempt › should reset failed attempts after reset time
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "1"
+    Received: 1
+
+      218 |       // Verify new firstFailedAt was set
+      219 |       const data = await mockRedis.hmget(key, 'failedAttempts', 'firstFailedAt');
+    > 220 |       expect(data[0]).toBe('1');
+          |                       ^
+      221 |       expect(parseInt(data[1]!)).toBeGreaterThan(oldFirstFailedAt);
+      222 |     });
+      223 |
+
+      at Object.<anonymous> (__tests__/unit/auth/services/account-lockout.service.spec.ts:220:23)
+
+  ● AccountLockoutService › recordFailedAttempt › should reset failed attempts to 0 after lockout
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "0"
+    Received: null
+
+      257 |       // Verify failedAttempts was reset to 0 (not incremented further)
+      258 |       const data = await mockRedis.hmget(key, 'failedAttempts');
+    > 259 |       expect(data[0]).toBe('0');
+          |                       ^
+      260 |     });
+      261 |
+      262 |     it('should increment lockout count on each lockout', async () => {
+
+      at Object.<anonymous> (__tests__/unit/auth/services/account-lockout.service.spec.ts:259:23)
+
+  ● AccountLockoutService › recordFailedAttempt › should increment lockout count on each lockout
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "1"
+    Received: 1
+
+      274 |
+      275 |       const data = await mockRedis.hmget(key, 'lockoutCount');
+    > 276 |       expect(data[0]).toBe('1');
+          |                       ^
+      277 |     });
+      278 |
+      279 |     it('should update user status to SUSPENDED when locked by email', async () => {
+
+      at Object.<anonymous> (__tests__/unit/auth/services/account-lockout.service.spec.ts:276:23)
+
+  ● AccountLockoutService › Progressive Lockout Calculation › should calculate progressive lockout durations correctly
+
+    expect(received).toBeGreaterThanOrEqual(expected)
+
+    Expected: >= 1759498446150
+    Received:    1759496647150
+
+      698 |
+      699 |         expect(result.isLocked).toBe(true);
+    > 700 |         expect(result.lockedUntil!.getTime()).toBeGreaterThanOrEqual(expectedLockout - 1000);
+          |                                               ^
+      701 |         expect(result.lockedUntil!.getTime()).toBeLessThanOrEqual(expectedLockout + 1000);
+      702 |       }
+      703 |     });
+
+      at Object.<anonymous> (__tests__/unit/auth/services/account-lockout.service.spec.ts:700:47)
+
+  ● AccountLockoutService › Edge Cases and Boundary Conditions › should handle time boundary conditions for reset
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: false
+    Received: true
+
+      856 |
+      857 |       // Should be treated as expired and reset
+    > 858 |       expect(result.isLocked).toBe(false);
+          |                               ^
+      859 |       expect(result.failedAttempts).toBe(1);
+      860 |     });
+      861 |
+
+      at Object.<anonymous> (__tests__/unit/auth/services/account-lockout.service.spec.ts:858:31)
+
+  ● AccountLockoutService › Edge Cases and Boundary Conditions › should handle malformed Redis data gracefully
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 1
+    Received: NaN
+
+      875 |
+      876 |       expect(result.isLocked).toBe(false);
+    > 877 |       expect(result.failedAttempts).toBe(1);
+          |                                     ^
+      878 |     });
+      879 |
+      880 |     it('should handle Redis connection errors with safe defaults', async () => {
+
+      at Object.<anonymous> (__tests__/unit/auth/services/account-lockout.service.spec.ts:877:37)
+
+FAIL @money-wise/backend __tests__/unit/users/users.service.spec.ts
+  UsersService
+    findAll
+      ✓ should return paginated users with default pagination (8 ms)
+      ✓ should return paginated users with custom pagination (3 ms)
+      ✓ should return empty array when no users exist (3 ms)
+      ✓ should handle large datasets with proper pagination (3 ms)
+    findOne
+      ✓ should return a user by id (3 ms)
+      ✓ should throw NotFoundException when user not found (13 ms)
+      ✓ should include accounts relation in response (3 ms)
+    findByEmail
+      ✓ should return a user by email (7 ms)
+      ✓ should return null when user not found (3 ms)
+    update
+      ✓ should allow user to update their own profile (4 ms)
+      ✓ should allow admin to update any user profile (4 ms)
+      ✓ should throw ForbiddenException when non-admin tries to update another user (4 ms)
+      ✓ should throw NotFoundException when user not found (2 ms)
+      ✓ should check email uniqueness when updating email (2 ms)
+      ✕ should throw ConflictException when email already in use (13 ms)
+      ✓ should not check email uniqueness when email unchanged (3 ms)
+      ✓ should update multiple fields at once (2 ms)
+    updateStatus
+      ✓ should allow admin to update user status (3 ms)
+      ✓ should throw ForbiddenException when non-admin tries to update status (3 ms)
+      ✓ should throw NotFoundException when user not found (9 ms)
+      ✓ should update status to ACTIVE (4 ms)
+      ✓ should update status to INACTIVE (4 ms)
+    remove
+      ✓ should allow admin to delete user (5 ms)
+      ✓ should throw ForbiddenException when non-admin tries to delete user (2 ms)
+      ✓ should throw NotFoundException when user not found (2 ms)
+      ✓ should not call repository.remove when authorization fails (5 ms)
+    getStats
+      ✓ should return user statistics (3 ms)
+      ✓ should return zero stats when no users exist (2 ms)
+      ✓ should call count with correct status filters (2 ms)
+    toResponseDto (private method - tested through public methods)
+      ✓ should map user to response DTO correctly (2 ms)
+      ✓ should exclude sensitive fields like passwordHash (3 ms)
+      ✕ should include computed properties (3 ms)
+    edge cases and error handling
+      ✓ should handle repository errors gracefully (9 ms)
+      ✓ should handle invalid UUID format (2 ms)
+      ✓ should handle save errors during update (2 ms)
+      ✓ should handle concurrent update scenarios (4 ms)
+
+  ● UsersService › update › should throw ConflictException when email already in use
+
+    expect(received).rejects.toThrow(expected)
+
+    Expected message: "Email already in use"
+    Received message: "Cannot read properties of undefined (reading 'id')"
+
+          123 |   private toResponseDto(user: User): UserResponseDto {
+          124 |     return {
+        > 125 |       id: user.id,
+              |                ^
+          126 |       email: user.email,
+          127 |       firstName: user.firstName,
+          128 |       lastName: user.lastName,
+
+      at UsersService.toResponseDto (src/users/users.service.ts:125:16)
+      at UsersService.update (src/users/users.service.ts:76:17)
+      at Object.<anonymous> (__tests__/unit/users/users.service.spec.ts:309:7)
+      at Object.toThrow (../../node_modules/.pnpm/expect@29.7.0/node_modules/expect/build/index.js:218:22)
+      at Object.<anonymous> (__tests__/unit/users/users.service.spec.ts:316:17)
+
+  ● UsersService › toResponseDto (private method - tested through public methods) › should include computed properties
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "Test User"
+    Received: "New Name"
+
+      582 |       const result = await service.findOne(mockUser.id);
+      583 |
+    > 584 |       expect(result.fullName).toBe('Test User');
+          |                               ^
+      585 |       expect(result.isEmailVerified).toBe(true);
+      586 |       expect(result.isActive).toBe(true);
+      587 |     });
+
+      at Object.<anonymous> (__tests__/unit/users/users.service.spec.ts:584:31)
+
+  console.log
+    🐳 Starting PostgreSQL test container...
+
+      at DatabaseTestManager.start (src/core/database/tests/database-test.config.ts:53:15)
+
+  console.log
+    ✅ Test container started on port 33151
+
+      at DatabaseTestManager.startContainer (src/core/database/tests/database-test.config.ts:92:15)
+
+  console.log
+    ✅ Test database initialized
+
+      at DatabaseTestManager.initializeDataSource (src/core/database/tests/database-test.config.ts:144:15)
+
+  console.warn
+    ⚠️ TimescaleDB extension not available: extension "timescaledb" is not available
+
+      149 |         console.log('✅ TimescaleDB extension enabled');
+      150 |       } catch (error) {
+    > 151 |         console.warn('⚠️ TimescaleDB extension not available:', error.message);
+          |                 ^
+      152 |       }
+      153 |     } catch (error) {
+      154 |       console.error('❌ Failed to initialize test database:', error);
+
+      at DatabaseTestManager.initializeDataSource (src/core/database/tests/database-test.config.ts:151:17)
+      at DatabaseTestManager.start (src/core/database/tests/database-test.config.ts:60:5)
+      at Object.<anonymous> (__tests__/unit/core/database/migrations/migration.test.ts:17:18)
+
+  console.log
+    🛑 Test database stopped
+
+      at DatabaseTestManager.stop (src/core/database/tests/database-test.config.ts:235:13)
+
+PASS @money-wise/backend __tests__/unit/core/database/migrations/migration.test.ts (13.914 s)
+  Database Migrations
+    Schema Creation
+      ✓ should create all tables with correct structure (442 ms)
+      ✓ should create all required columns for users table (452 ms)
+      ✓ should create all required columns for accounts table (458 ms)
+      ✓ should create all required columns for transactions table (446 ms)
+      ✓ should create all required columns for categories table (460 ms)
+    Indexes and Constraints
+      ✓ should create all required indexes (428 ms)
+      ✓ should create all foreign key constraints (484 ms)
+      ✓ should create unique constraints (441 ms)
+    Migration Rollback
+      ✓ should be able to drop and recreate schema (733 ms)
+      ✓ should handle schema changes gracefully (749 ms)
+    Data Type Validation
+      ✓ should validate JSONB columns work correctly (542 ms)
+      ✓ should validate enum constraints (444 ms)
+      ✓ should validate decimal precision for monetary values (448 ms)
+    Performance and Scalability
+      ✓ should handle large schema operations efficiently (583 ms)
+      ✓ should validate entity metadata matches database schema (499 ms)
+
+PASS @money-wise/backend __tests__/unit/core/database/entities/entity-relationships.test.ts (10.833 s)
+  Entity Relationships
+    User -> Account Relationship
+      ✓ should create user with multiple accounts (583 ms)
+      ✓ should cascade delete accounts when user is deleted (546 ms)
+      ✓ should enforce foreign key constraint (575 ms)
+    Account -> Transaction Relationship
+      ✓ should create account with multiple transactions (512 ms)
+      ✓ should cascade delete transactions when account is deleted (586 ms)
+    Category -> Transaction Relationship
+      ✓ should associate transaction with category (523 ms)
+      ✓ should handle category deletion with SET NULL (504 ms)
+      ✓ should allow transaction without category (466 ms)
+    Category Tree Structure
+      ✓ should create parent-child category relationships (505 ms)
+      ✓ should cascade delete child categories when parent is deleted (532 ms)
+      ✓ should validate category tree depth (542 ms)
+    Complex Relationship Queries
+      ✓ should find all transactions for a user across accounts (557 ms)
+      ✓ should calculate account balance from transactions (501 ms)
+      ✓ should find categories with transaction counts (518 ms)
+    Constraint Validation
+      ✓ should enforce unique email constraint (476 ms)
+      ✓ should enforce unique category slug constraint (498 ms)
+      ✓ should enforce transaction amount precision (519 ms)
+      ✓ should enforce enum constraints (516 ms)
+    Index Performance
+      ✓ should use indexes for common queries (563 ms)
+
+PASS @money-wise/backend __tests__/unit/auth/services/password-security.service.spec.ts
+  PasswordSecurityService
+    hashPassword
+      ✓ should hash password with bcrypt (285 ms)
+      ✓ should hash password with argon2 (198 ms)
+    verifyPassword
+      ✓ should verify bcrypt password correctly (828 ms)
+      ✓ should verify argon2 password correctly (568 ms)
+      ✓ should auto-detect hashing algorithm (923 ms)
+    validatePassword
+      ✓ should validate strong password (3 ms)
+      ✓ should reject weak password (3 ms)
+    isPasswordExpired
+      ✓ should return false for recent password (3 ms)
+      ✓ should return true for old password (2 ms)
+    getDaysUntilExpiration
+      ✓ should calculate days until expiration correctly (2 ms)
+    shouldWarnPasswordExpiry
+      ✓ should warn when password expires soon (2 ms)
+      ✓ should not warn when password is not expiring soon (2 ms)
+
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:37 PM [31m  ERROR[39m [38;5;3m[TwoFactorAuthService] [39m[31mError setting up 2FA:[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:37 PM [31m  ERROR[39m [38;5;3m[TwoFactorAuthService] [39m[31mBadRequestException: User not found[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:37 PM [31m  ERROR[39m [38;5;3m[TwoFactorAuthService] [39m[31mError setting up 2FA:[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:37 PM [31m  ERROR[39m [38;5;3m[TwoFactorAuthService] [39m[31mError: QR generation failed[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:38 PM [31m  ERROR[39m [38;5;3m[TwoFactorAuthService] [39m[31mError verifying 2FA setup:[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:38 PM [31m  ERROR[39m [38;5;3m[TwoFactorAuthService] [39m[31mError: Redis error[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:38 PM [31m  ERROR[39m [38;5;3m[TwoFactorAuthService] [39m[31mError verifying 2FA:[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:38 PM [31m  ERROR[39m [38;5;3m[TwoFactorAuthService] [39m[31mError: Redis error[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:38 PM [31m  ERROR[39m [38;5;3m[TwoFactorAuthService] [39m[31mError disabling 2FA:[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:38 PM [31m  ERROR[39m [38;5;3m[TwoFactorAuthService] [39m[31mError: Redis error[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:38 PM [31m  ERROR[39m [38;5;3m[TwoFactorAuthService] [39m[31mError checking 2FA status:[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:38 PM [31m  ERROR[39m [38;5;3m[TwoFactorAuthService] [39m[31mError: Redis error[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:38 PM [31m  ERROR[39m [38;5;3m[TwoFactorAuthService] [39m[31mError generating new backup codes:[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:38 PM [31m  ERROR[39m [38;5;3m[TwoFactorAuthService] [39m[31mError: Redis error[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:38 PM [31m  ERROR[39m [38;5;3m[TwoFactorAuthService] [39m[31mError verifying 2FA:[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:38 PM [31m  ERROR[39m [38;5;3m[TwoFactorAuthService] [39m[31mError: ECONNREFUSED: Redis connection refused[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:38 PM [31m  ERROR[39m [38;5;3m[TwoFactorAuthService] [39m[31mError verifying 2FA setup:[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:38 PM [31m  ERROR[39m [38;5;3m[TwoFactorAuthService] [39m[31mSyntaxError: Unexpected token 'i', "invalid-json{{{" is not valid JSON[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:39 PM [31m  ERROR[39m [38;5;3m[TwoFactorAuthService] [39m[31mError generating new backup codes:[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:39 PM [31m  ERROR[39m [38;5;3m[TwoFactorAuthService] [39m[31mError: Redis write failed[39m
+PASS @money-wise/backend __tests__/unit/auth/services/two-factor-auth.service.spec.ts
+  TwoFactorAuthService
+    setupTwoFactor
+      ✓ should generate 2FA setup with secret, QR code, and backup codes (11 ms)
+      ✓ should throw error if user not found (17 ms)
+      ✓ should throw error if QR code generation fails (4 ms)
+      ✓ should store setup data with 10-minute expiration (3 ms)
+      ✓ should generate unique backup codes (3 ms)
+    verifyAndEnable2FA
+      ✓ should enable 2FA with valid token (3 ms)
+      ✓ should throw error for invalid token (2 ms)
+      ✓ should throw error if setup data not found (8 ms)
+      ✓ should throw error if setup data expired (1117 ms)
+      ✓ should handle Redis errors gracefully (5 ms)
+    verifyTwoFactor
+      ✓ should verify valid TOTP token (4 ms)
+      ✓ should verify valid backup code when TOTP fails (3 ms)
+      ✓ should throw error for already used backup code (3 ms)
+      ✓ should throw error for invalid token and backup code (3 ms)
+      ✓ should throw error if 2FA not enabled (2 ms)
+      ✓ should handle Redis errors gracefully (3 ms)
+    disable2FA
+      ✓ should disable 2FA with valid token (9 ms)
+      ✓ should throw error for invalid token when disabling (3 ms)
+      ✓ should handle Redis errors gracefully (2 ms)
+    is2FAEnabled
+      ✓ should return true if 2FA is enabled (2 ms)
+      ✓ should return false if 2FA is not enabled (3 ms)
+      ✓ should return false on Redis errors (4 ms)
+    generateNewBackupCodes
+      ✓ should generate new backup codes with valid token (3 ms)
+      ✓ should throw error for invalid token when generating new codes (3 ms)
+      ✓ should throw error if 2FA not enabled (3 ms)
+      ✓ should handle Redis errors gracefully (4 ms)
+    onModuleDestroy
+      ✓ should close Redis connection on module destroy (4 ms)
+    Edge Cases and Advanced Scenarios
+      ✓ should handle backup code exhaustion (all codes used) (9 ms)
+      ✓ should handle concurrent 2FA setup attempts by same user (3 ms)
+      ✓ should handle 2FA verification with Redis connection failure (2 ms)
+      ✓ should handle backup code verification when only 1 code remains (3 ms)
+      ✓ should handle case-insensitive backup code verification (2 ms)
+      ✓ should prevent disabling 2FA with backup code (require TOTP) (2 ms)
+      ✓ should handle malformed 2FA setup data in Redis (3 ms)
+      ✓ should handle setup expiration edge case (expires during verification) (1104 ms)
+      ✓ should generate exactly 10 unique backup codes every time (3 ms)
+      ✓ should handle TOTP token validation at time boundary (clock skew) (3 ms)
+      ✓ should handle new backup code generation when Redis save fails (8 ms)
+
+PASS @money-wise/backend __tests__/unit/auth/auth.controller.spec.ts
+  AuthController
     register
-      ✓ should register a new user successfully (25 ms)
-      ✓ should throw ConflictException if user already exists (16 ms)
+      ✓ should register a new user successfully (11 ms)
+      ✓ should throw ConflictException when user already exists (18 ms)
+      ✓ should handle invalid registration data (5 ms)
     login
-      ✓ should login user successfully (5 ms)
-      ✓ should throw UnauthorizedException if user not found (7 ms)
-      ✓ should throw UnauthorizedException if password is invalid (14 ms)
-      ✓ should throw UnauthorizedException if user is not active (3 ms)
-    validateUser
-      ✓ should return user if valid (6 ms)
-      ✓ should throw UnauthorizedException if user not found (6 ms)
-      ✓ should throw UnauthorizedException if user is not active (5 ms)
+      ✓ should login user successfully (2 ms)
+      ✓ should throw UnauthorizedException with invalid credentials (2 ms)
+      ✓ should throw UnauthorizedException for inactive user (2 ms)
+      ✓ should handle empty credentials (3 ms)
+    refreshToken
+      ✓ should refresh token successfully (3 ms)
+      ✓ should throw UnauthorizedException with invalid refresh token (2 ms)
+      ✓ should throw UnauthorizedException with expired refresh token (2 ms)
+      ✓ should handle malformed refresh token (8 ms)
+    getProfile
+      ✓ should return current user profile (3 ms)
+      ✓ should include virtual properties in profile (3 ms)
+      ✓ should handle user with null optional fields (2 ms)
+    logout
+      ✓ should logout successfully (3 ms)
+      ✓ should handle logout for any authenticated user (3 ms)
+    changePassword
+      ✓ should change password successfully (3 ms)
+      ✓ should throw error for invalid current password (4 ms)
+      ✓ should throw error for weak new password (2 ms)
+    requestPasswordReset
+      ✓ should request password reset successfully (2 ms)
+      ✓ should handle non-existent email gracefully (2 ms)
+      ✓ should handle service errors (7 ms)
+    resetPassword
+      ✓ should reset password successfully (3 ms)
+      ✓ should throw error for invalid token (2 ms)
+      ✓ should throw error for weak password (3 ms)
+      ✓ should throw error for expired token (2 ms)
+    validatePasswordResetToken
+      ✓ should validate token successfully (2 ms)
+      ✓ should return invalid for expired token (3 ms)
+      ✓ should return invalid for malformed token (2 ms)
+    verifyEmail
+      ✓ should verify email successfully (2 ms)
+      ✓ should throw error for invalid token (3 ms)
+      ✓ should throw error for expired token (2 ms)
+      ✓ should throw error for already verified email (2 ms)
+    resendEmailVerification
+      ✓ should resend verification email successfully (2 ms)
+      ✓ should throw error for already verified email (9 ms)
+      ✓ should handle rate limiting (3 ms)
+      ✓ should handle email service errors (3 ms)
+    checkPasswordStrength
+      ✓ should return strong password result (2 ms)
+      ✓ should return weak password result (3 ms)
+      ✓ should detect password with user information (2 ms)
+      ✓ should handle empty password (2 ms)
+    error handling
+      ✓ should propagate service errors correctly (2 ms)
+      ✓ should handle unexpected errors during login (2 ms)
+      ✓ should handle service timeout errors (3 ms)
 
-PASS @money-wise/backend src/core/database/repositories/__tests__/base.repository.spec.ts
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:41 PM [31m  ERROR[39m [38;5;3m[EmailVerificationService] [39m[31mError generating verification token:[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:41 PM [31m  ERROR[39m [38;5;3m[EmailVerificationService] [39m[31mError: Redis connection failed[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:41 PM [31m  ERROR[39m [38;5;3m[EmailVerificationService] [39m[31mError verifying email:[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:41 PM [31m  ERROR[39m [38;5;3m[EmailVerificationService] [39m[31mError: Database connection failed[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:41 PM [31m  ERROR[39m [38;5;3m[EmailVerificationService] [39m[31mError resending verification email:[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:41 PM [31m  ERROR[39m [38;5;3m[EmailVerificationService] [39m[31mError: Database error[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:41 PM [31m  ERROR[39m [38;5;3m[EmailVerificationService] [39m[31mError checking verification requirement:[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:41 PM [31m  ERROR[39m [38;5;3m[EmailVerificationService] [39m[31mError: Database error[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:41 PM [31m  ERROR[39m [38;5;3m[EmailVerificationService] [39m[31mError getting token info:[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:41 PM [31m  ERROR[39m [38;5;3m[EmailVerificationService] [39m[31mError: Redis error[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:41 PM [31m  ERROR[39m [38;5;3m[EmailVerificationService] [39m[31mError cleaning up expired tokens:[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:41 PM [31m  ERROR[39m [38;5;3m[EmailVerificationService] [39m[31mError: Redis error[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:41 PM [31m  ERROR[39m [38;5;3m[EmailVerificationService] [39m[31mError getting verification stats:[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:41 PM [31m  ERROR[39m [38;5;3m[EmailVerificationService] [39m[31mError: Redis error[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:41 PM [31m  ERROR[39m [38;5;3m[EmailVerificationService] [39m[31mError getting token info:[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:41 PM [31m  ERROR[39m [38;5;3m[EmailVerificationService] [39m[31mSyntaxError: Unexpected token 'i', "invalid-json{{{" is not valid JSON[39m
+PASS @money-wise/backend __tests__/unit/auth/services/email-verification.service.spec.ts
+  EmailVerificationService
+    generateVerificationToken
+      ✓ should generate and store verification token for valid user (5 ms)
+      ✓ should set token expiration to 24 hours from creation (2 ms)
+      ✓ should generate unique tokens for multiple calls (3 ms)
+      ✓ should handle Redis errors gracefully during token generation (24 ms)
+      ✓ should store both token data and user reverse lookup (4 ms)
+    verifyEmail
+      ✓ should successfully verify email with valid token (3 ms)
+      ✓ should reject invalid token (2 ms)
+      ✓ should reject expired token (3 ms)
+      ✓ should reject token for non-existent user (3 ms)
+      ✓ should reject token if email does not match user (2 ms)
+      ✓ should handle already verified email gracefully (3 ms)
+      ✓ should sanitize user data in response (exclude password) (2 ms)
+      ✓ should handle database errors during verification (2 ms)
+    resendVerificationEmail
+      ✓ should resend verification email for valid user (2 ms)
+      ✓ should reject resend for non-existent user (2 ms)
+      ✓ should reject resend for already verified email (8 ms)
+      ✓ should prevent resending if token was sent recently (within 1 hour) (2 ms)
+      ✓ should allow resending if existing token expires soon (less than 1 hour) (3 ms)
+      ✓ should clean up expired existing token before generating new one (5 ms)
+      ✓ should handle database errors during resend (3 ms)
+    isVerificationRequired
+      ✓ should return true for unverified user (3 ms)
+      ✓ should return false for verified user (2 ms)
+      ✓ should return true for non-existent user (fail-safe) (2 ms)
+      ✓ should return true on database error (fail-safe) (3 ms)
+    getTokenInfo
+      ✓ should return token information for valid token (2 ms)
+      ✓ should return null for non-existent token (2 ms)
+      ✓ should handle Redis errors gracefully (3 ms)
+    cleanupExpiredTokens
+      ✓ should delete expired tokens (3 ms)
+      ✓ should return 0 if no expired tokens found (2 ms)
+      ✓ should handle Redis errors gracefully during cleanup (8 ms)
+    getVerificationStats
+      ✓ should return correct statistics (2 ms)
+      ✓ should return zero stats on error (3 ms)
+    onModuleDestroy
+      ✓ should close Redis connection on module destroy (3 ms)
+    Edge Cases and Race Conditions
+      ✓ should handle multiple concurrent token generation requests (5 ms)
+      ✓ should handle token generation with special characters in email (3 ms)
+      ✓ should handle very long email addresses (3 ms)
+      ✓ should handle verification when Redis is slow (timeout scenario) (114 ms)
+      ✓ should handle cleanup when user has abandoned verification (never completed) (2 ms)
+      ✓ should handle getTokenInfo for malformed token data (5 ms)
+      ✓ should handle resend when previous token was manually deleted (4 ms)
+      ✓ should handle stats calculation with no tokens (2 ms)
+      ✓ should handle verification when user status changes between checks (3 ms)
+
+PASS @money-wise/backend __tests__/unit/database/timescaledb.service.spec.ts
+  TimescaleDBService
+    onModuleInit
+      ✓ should initialize TimescaleDB when enabled in configuration (5 ms)
+      ✓ should skip initialization when disabled in configuration (3 ms)
+      ✓ should skip initialization when configuration is not provided (3 ms)
+      ✓ should handle missing TimescaleDB extension gracefully (2 ms)
+      ✓ should throw error when initialization fails (16 ms)
+    createHypertable
+      ✓ should create a basic hypertable with required parameters (3 ms)
+      ✓ should create hypertable with partition column (2 ms)
+      ✓ should create hypertable with chunk time interval (6 ms)
+      ✓ should add compression policy when specified (2 ms)
+      ✓ should add retention policy when specified (2 ms)
+      ✓ should throw error when hypertable creation fails (3 ms)
+    addCompressionPolicy
+      ✓ should add compression policy successfully (3 ms)
+      ✓ should configure compression with segmentby (2 ms)
+      ✓ should throw error when compression policy fails (2 ms)
+    addRetentionPolicy
+      ✓ should add retention policy successfully (3 ms)
+      ✓ should throw error when retention policy fails (2 ms)
+    isTableHypertable
+      ✓ should return true when table is a hypertable (3 ms)
+      ✓ should return false when table is not a hypertable (2 ms)
+      ✓ should return false when query returns empty result (2 ms)
+      ✓ should return false on database error and log error (2 ms)
+    getHypertableStatus
+      ✓ should return hypertable status successfully (8 ms)
+      ✓ should throw error when status query fails (3 ms)
+    createContinuousAggregate
+      ✓ should create continuous aggregate with refresh policy (2 ms)
+      ✓ should throw error when continuous aggregate creation fails (2 ms)
+    getTimescaleDBInfo
+      ✓ should return complete TimescaleDB information (3 ms)
+      ✓ should throw error when info query fails (2 ms)
+    optimizeHypertable
+      ✓ should optimize hypertable chunks successfully (2 ms)
+      ✓ should throw error when optimization fails (2 ms)
+    getTransactionTrends
+      ✓ should get transaction trends without filters (2 ms)
+      ✓ should get transaction trends with account filter (2 ms)
+      ✓ should get transaction trends with date range (3 ms)
+      ✓ should support custom time bucket period (2 ms)
+    getCategorySpendingTrends
+      ✓ should get category spending trends without category filter (2 ms)
+      ✓ should get category spending trends with category filter (9 ms)
+      ✓ should respect limit parameter (2 ms)
+    getAccountBalanceHistory
+      ✓ should get account balance history (2 ms)
+      ✓ should support custom period and limit (3 ms)
+    getTopMerchantSpending
+      ✓ should get top merchant spending without account filter (2 ms)
+      ✓ should get top merchant spending with account filter (2 ms)
+      ✓ should support custom period and limit (2 ms)
+    detectSpendingAnomalies
+      ✓ should detect spending anomalies with default threshold (2 ms)
+      ✓ should support custom period and threshold (2 ms)
+      ✓ should filter only anomalies using z-score (2 ms)
+    getTransactionVelocity
+      ✓ should get transaction velocity without account filter (2 ms)
+      ✓ should get transaction velocity with account filter (2 ms)
+      ✓ should support custom period (2 ms)
+    getContinuousAggregateData
+      ✓ should get continuous aggregate data with default limit (2 ms)
+      ✓ should support custom limit (8 ms)
+    refreshContinuousAggregate
+      ✓ should refresh continuous aggregate successfully (3 ms)
+      ✓ should throw error when refresh fails (3 ms)
+    getChunkStatistics
+      ✓ should get chunk statistics for hypertable (3 ms)
+      ✓ should return empty array when no chunks found (2 ms)
+      ✓ should order chunks by range_start descending (2 ms)
+    Edge cases and error handling
+      ✓ should handle SQL injection attempts in table names (2 ms)
+      ✓ should handle empty result sets gracefully (2 ms)
+      ✓ should handle null/undefined parameters in query methods (2 ms)
+      ✓ should handle database connection timeouts (2 ms)
+      ✓ should handle concurrent policy creation attempts (2 ms)
+    Integration scenarios
+      ✓ should setup complete hypertable with all policies (2 ms)
+      ✓ should handle full initialization flow (2 ms)
+
+PASS @money-wise/backend __tests__/unit/core/database/repositories/transaction.repository.spec.ts
+  TransactionRepository
+    findByAccountId
+      ✓ should find transactions by account ID (5 ms)
+      ✓ should apply date range filters (2 ms)
+      ✓ should apply pagination (7 ms)
+      ✓ should include hidden transactions when requested (2 ms)
+      ✓ should handle findByAccountId errors (24 ms)
+    findByCategoryId
+      ✓ should find transactions by category ID (2 ms)
+      ✓ should apply date range and pagination (2 ms)
+      ✓ should handle findByCategoryId errors (2 ms)
+    findByUserId
+      ✓ should find transactions by user ID (3 ms)
+      ✓ should apply complex filters (2 ms)
+      ✓ should handle findByUserId errors (2 ms)
+    findByPlaidTransactionId
+      ✓ should find transaction by Plaid ID (7 ms)
+      ✓ should return null when Plaid transaction not found (3 ms)
+      ✓ should handle findByPlaidTransactionId errors (2 ms)
+    findByType
+      ✓ should find transactions by type (2 ms)
+      ✓ should apply optional filters (2 ms)
+      ✓ should handle findByType errors (2 ms)
+    findByStatus
+      ✓ should find transactions by status (2 ms)
+      ✓ should apply optional filters (2 ms)
+      ✓ should handle findByStatus errors (2 ms)
+    findBySource
+      ✓ should find transactions by source (3 ms)
+      ✓ should apply optional filters (3 ms)
+      ✓ should handle findBySource errors (2 ms)
+    findUncategorized
+      ✓ should find uncategorized transactions (9 ms)
+      ✓ should apply optional filters (3 ms)
+      ✓ should handle findUncategorized errors (3 ms)
+    findDuplicates
+      ✓ should find duplicate transactions (2 ms)
+      ✓ should apply duplicate detection options (2 ms)
+      ✓ should handle findDuplicates errors (2 ms)
+    findRecent
+      ✓ should find recent transactions (5 ms)
+      ✓ should use custom days and limit (2 ms)
+      ✓ should handle findRecent errors (2 ms)
+    searchTransactions
+      ✓ should search transactions by term (2 ms)
+      ✓ should apply search filters (2 ms)
+      ✓ should handle searchTransactions errors (2 ms)
+    getTransactionStats
+      ✓ should get transaction statistics (9 ms)
+      ✓ should handle getTransactionStats errors (2 ms)
+    updateCategory
+      ✓ should update transaction category (2 ms)
+      ✓ should handle null category (uncategorize) (1 ms)
+      ✓ should return null when transaction not found (3 ms)
+      ✓ should handle updateCategory errors (2 ms)
+    updateDescription
+      ✓ should update transaction description (2 ms)
+      ✓ should handle updateDescription errors (2 ms)
+    toggleHidden
+      ✓ should toggle hidden status from false to true (4 ms)
+      ✓ should toggle hidden status from true to false (2 ms)
+      ✓ should return null when transaction not found (4 ms)
+      ✓ should handle toggleHidden errors (4 ms)
+    addNotes
+      ✓ should add notes to transaction (3 ms)
+      ✓ should handle addNotes errors (14 ms)
+    addTags
+      ✓ should add tags to transaction (3 ms)
+      ✓ should handle addTags errors (3 ms)
+    getMonthlySpendingByCategory
+      ✓ should throw not implemented error (3 ms)
+    createSplit
+      ✓ should throw not implemented error (2 ms)
+    bulkCategorize
+      ✓ should throw not implemented error (2 ms)
+    findNeedingCategorization
+      ✓ should throw not implemented error (3 ms)
+    getCashFlow
+      ✓ should throw not implemented error (2 ms)
+
+PASS @money-wise/backend __tests__/unit/core/database/repositories/user.repository.spec.ts
+  UserRepository
+    findByEmail
+      ✓ should find user by email (case-insensitive) (4 ms)
+      ✓ should convert email to lowercase before querying (2 ms)
+      ✓ should return null when user not found (1 ms)
+      ✓ should handle findByEmail errors (17 ms)
+    isEmailTaken
+      ✓ should return true when email is taken (3 ms)
+      ✓ should return false when email is not taken (8 ms)
+      ✓ should exclude specific user when checking email availability (2 ms)
+      ✓ should return true when email exists for different user (2 ms)
+      ✓ should handle isEmailTaken errors (2 ms)
+    findByEmailVerificationToken
+      ✓ should return null and log warning (not implemented) (2 ms)
+      ✓ should handle errors in findByEmailVerificationToken (3 ms)
+    findByPasswordResetToken
+      ✓ should return null and log warning (not implemented) (3 ms)
+      ✓ should handle errors in findByPasswordResetToken (4 ms)
+    markEmailAsVerified
+      ✓ should mark email as verified successfully (5 ms)
+      ✓ should return false when user not found (3 ms)
+      ✓ should return false when affected is undefined (2 ms)
+      ✓ should handle markEmailAsVerified errors (3 ms)
+    updatePasswordHash
+      ✓ should update password hash successfully (8 ms)
+      ✓ should return false when user not found (1 ms)
+      ✓ should handle updatePasswordHash errors (2 ms)
+    setPasswordResetToken
+      ✓ should return false and log warning (not implemented) (2 ms)
+      ✓ should handle errors in setPasswordResetToken (2 ms)
+    clearPasswordResetToken
+      ✓ should return false and log warning (not implemented) (2 ms)
+      ✓ should handle errors in clearPasswordResetToken (2 ms)
+    findWithAccounts
+      ✓ should find user with accounts successfully (2 ms)
+      ✓ should return null when user not found (2 ms)
+      ✓ should handle findWithAccounts errors (2 ms)
+    findByDateRange
+      ✓ should find users within date range (3 ms)
+      ✓ should return empty array when no users found in range (3 ms)
+      ✓ should handle findByDateRange errors (11 ms)
+    getUserStats
+      ✓ should return comprehensive user statistics (3 ms)
+      ✓ should calculate stats with zero users (3 ms)
+      ✓ should calculate stats with all verified users (2 ms)
+      ✓ should use 7-day window for recently created (2 ms)
+      ✓ should handle getUserStats errors (2 ms)
+    softDelete
+      ✓ should log soft delete and return true (1 ms)
+      ✓ should handle softDelete errors (2 ms)
+    search
+      ✓ should search users by firstName (2 ms)
+      ✓ should search users by lastName (2 ms)
+      ✓ should search users by email (2 ms)
+      ✓ should apply custom limit (1 ms)
+      ✓ should use default limit of 10 (13 ms)
+      ✓ should return empty array when no matches found (3 ms)
+      ✓ should handle partial matches (5 ms)
+      ✓ should handle search errors (7 ms)
+      ✓ should handle special characters in search query (3 ms)
+      ✓ should be case-insensitive (4 ms)
+
+PASS @money-wise/backend __tests__/unit/auth/controllers/password.controller.spec.ts
+  PasswordController
+    checkPasswordStrength
+      ✓ should return password strength result (5 ms)
+      ✓ should return weak password result (4 ms)
+      ✓ should detect personal information in password (3 ms)
+      ✓ should validate without personal information context (3 ms)
+    changePassword
+      ✓ should change password successfully (2 ms)
+      ✓ should throw error for mismatched passwords (24 ms)
+      ✓ should throw error when rate limited (2 ms)
+      ✓ should throw error for incorrect current password (3 ms)
+      ✓ should handle password change failure from service (2 ms)
+      ✓ should clear rate limit on successful change (2 ms)
+      ✓ should extract IP from various headers (2 ms)
+    requestPasswordReset
+      ✓ should request password reset successfully (2 ms)
+      ✓ should handle non-existent email gracefully (2 ms)
+      ✓ should extract IP from x-real-ip header (2 ms)
+      ✓ should handle unknown IP address (2 ms)
+    validateResetToken
+      ✓ should validate reset token successfully (2 ms)
+      ✓ should return invalid for bad token (3 ms)
+      ✓ should return invalid for expired token (3 ms)
+      ✓ should pass IP and user agent to service (3 ms)
+    resetPassword
+      ✓ should reset password successfully (10 ms)
+      ✓ should throw error for failed reset (2 ms)
+      ✓ should throw error for mismatched passwords (2 ms)
+      ✓ should throw error for weak password (3 ms)
+      ✓ should throw error for expired token (4 ms)
+    getPasswordPolicy
+      ✓ should return password policy (2 ms)
+    getPasswordStatus
+      ✓ should return password status (2 ms)
+      ✓ should return expired status (2 ms)
+      ✓ should return warning status (3 ms)
+      ✓ should handle negative days until expiration (3 ms)
+    IP extraction (getClientIp)
+      ✓ should extract IP from x-forwarded-for header (4 ms)
+      ✓ should extract IP from x-real-ip header (2 ms)
+      ✓ should extract IP from connection.remoteAddress (2 ms)
+      ✓ should extract IP from socket.remoteAddress (3 ms)
+      ✓ should return unknown when no IP is found (2 ms)
+
+PASS @money-wise/backend __tests__/unit/core/database/repositories/category.repository.spec.ts
+  CategoryRepository
+    findBySlug
+      ✓ should find category by slug (5 ms)
+      ✓ should return null when category not found (3 ms)
+      ✓ should handle findBySlug errors (28 ms)
+    findByType
+      ✓ should find categories by type (active only) (3 ms)
+      ✓ should include inactive categories when requested (3 ms)
+      ✓ should handle findByType errors (2 ms)
+    findByStatus
+      ✓ should find categories by status (3 ms)
+      ✓ should handle findByStatus errors (3 ms)
+    findRootCategories
+      ✓ should find all root categories (3 ms)
+      ✓ should filter root categories by type (3 ms)
+      ✓ should handle findRootCategories errors (3 ms)
+    findChildCategories
+      ✓ should find child categories (active only) (10 ms)
+      ✓ should include inactive children when requested (3 ms)
+      ✓ should handle findChildCategories errors (2 ms)
+    findCategoryTree
+      ✓ should find full category tree (2 ms)
+      ✓ should find tree starting from specific parent (2 ms)
+      ✓ should handle findCategoryTree errors (2 ms)
+    findCategoriesWithRules
+      ✓ should find categories with rules (2 ms)
+      ✓ should filter by type (2 ms)
+      ✓ should handle findCategoriesWithRules errors (2 ms)
+    findDefaultCategories
+      ✓ should find default categories (2 ms)
+      ✓ should filter default categories by type (1 ms)
+      ✓ should handle findDefaultCategories errors (2 ms)
+    findSystemCategories
+      ✓ should find system categories (3 ms)
+      ✓ should filter system categories by type (9 ms)
+      ✓ should handle findSystemCategories errors (3 ms)
+    searchCategories
+      ✓ should search categories by name and description (3 ms)
+      ✓ should filter search by type (2 ms)
+      ✓ should handle searchCategories errors (3 ms)
+    isSlugAvailable
+      ✓ should return true when slug is available (3 ms)
+      ✓ should return false when slug is taken (2 ms)
+      ✓ should exclude specified category from check (3 ms)
+      ✓ should handle isSlugAvailable errors (2 ms)
+    updateStatus
+      ✓ should update category status (2 ms)
+      ✓ should return null when category not found (2 ms)
+      ✓ should handle updateStatus errors (2 ms)
+    moveCategory
+      ✓ should move category to new parent (9 ms)
+      ✓ should move category to root level (2 ms)
+      ✓ should handle moveCategory errors (2 ms)
+    updateSortOrder
+      ✓ should update category sort order (3 ms)
+      ✓ should handle updateSortOrder errors (2 ms)
+    getCategoryUsageStats
+      ✓ should get category usage statistics (2 ms)
+      ✓ should handle null values in stats (2 ms)
+      ✓ should handle getCategoryUsageStats errors (2 ms)
+    findMatchingCategories
+      ✓ should find matching categories based on keywords (3 ms)
+      ✓ should match by merchant patterns (4 ms)
+      ✓ should match by amount ranges (4 ms)
+      ✓ should return empty array when no matches (3 ms)
+      ✓ should handle findMatchingCategories errors (2 ms)
+    archiveAndReassign
+      ✓ should archive category and reassign transactions (7 ms)
+      ✓ should handle archiveAndReassign errors (3 ms)
+    createDefaultCategories
+      ✓ should create default categories (3 ms)
+      ✓ should handle createDefaultCategories errors (2 ms)
+    updateRules
+      ✓ should update category rules (2 ms)
+      ✓ should handle updateRules errors (2 ms)
+    updateMetadata
+      ✓ should update category metadata (3 ms)
+      ✓ should handle updateMetadata errors (2 ms)
+    reorderCategories
+      ✓ should reorder categories under parent (2 ms)
+      ✓ should reorder categories at root level (2 ms)
+      ✓ should handle reorderCategories errors (2 ms)
+    Edge Cases
+      ✓ should handle empty string slug (1 ms)
+      ✓ should handle special characters in search (7 ms)
+      ✓ should handle large category trees (4 ms)
+      ✓ should handle category with no transactions in usage stats (2 ms)
+
+PASS @money-wise/backend __tests__/unit/core/database/repositories/base.repository.spec.ts
   BaseRepository
     constructor
-      ✓ should initialize repository with correct entity (6 ms)
+      ✓ should initialize repository with correct entity (7 ms)
     create
-      ✓ should create and save a new entity successfully (3 ms)
-      ✓ should handle creation errors and throw descriptive error (23 ms)
+      ✓ should create and save a new entity successfully (2 ms)
+      ✓ should handle creation errors and throw descriptive error (25 ms)
     save
       ✓ should save an existing entity successfully (4 ms)
-      ✓ should handle save errors (13 ms)
+      ✓ should handle save errors (5 ms)
     findById
       ✓ should find entity by ID successfully (4 ms)
-      ✓ should return null when entity not found (3 ms)
-      ✓ should handle findById errors (3 ms)
+      ✓ should return null when entity not found (2 ms)
+      ✓ should handle findById errors (12 ms)
     findOne
-      ✓ should find one entity with FindOptionsWhere (2 ms)
-      ✓ should find one entity with FindOneOptions (3 ms)
+      ✓ should find one entity with FindOptionsWhere (3 ms)
+      ✓ should find one entity with FindOneOptions (4 ms)
+      ✓ should return null when no entity found (3 ms)
       ✓ should handle findOne errors (3 ms)
     find
       ✓ should find multiple entities with options (3 ms)
-      ✓ should find all entities when no options provided (2 ms)
+      ✓ should find all entities when no options provided (3 ms)
       ✓ should handle find errors (3 ms)
     findWithPagination
       ✓ should return paginated results (3 ms)
-      ✓ should handle pagination with criteria (4 ms)
-      ✓ should handle pagination errors (3 ms)
+      ✓ should handle pagination with criteria (3 ms)
+      ✓ should handle pagination errors (2 ms)
     update
-      ✓ should update entity successfully (3 ms)
-      ✓ should return null when entity to update not found (2 ms)
-      ✓ should handle update errors (4 ms)
+      ✓ should update entity successfully (2 ms)
+      ✓ should return null when entity to update not found (10 ms)
+      ✓ should handle update errors (3 ms)
     delete
-      ✓ should delete entity successfully (3 ms)
+      ✓ should delete entity successfully (2 ms)
       ✓ should return false when no entity was deleted (2 ms)
       ✓ should handle delete errors (3 ms)
     deleteBy
       ✓ should delete entities by criteria (2 ms)
+      ✓ should return 0 when no entities match deletion criteria (3 ms)
       ✓ should handle deleteBy errors (3 ms)
     count
-      ✓ should count entities with criteria (9 ms)
-      ✓ should count all entities when no criteria provided (3 ms)
-      ✓ should handle count errors (4 ms)
+      ✓ should count entities with criteria (2 ms)
+      ✓ should count all entities when no criteria provided (2 ms)
+      ✓ should handle count errors (2 ms)
     exists
-      ✓ should return true when entity exists (3 ms)
+      ✓ should return true when entity exists (2 ms)
       ✓ should return false when entity does not exist (2 ms)
-      ✓ should handle exists errors (2 ms)
+      ✓ should handle exists errors (10 ms)
     bulkInsert
       ✓ should perform bulk insert successfully (3 ms)
-      ✓ should handle bulk insert errors (5 ms)
+      ✓ should handle bulk insert errors (4 ms)
     bulkUpdate
-      ✓ should perform bulk update successfully (2 ms)
-      ✓ should handle bulk update errors (3 ms)
+      ✓ should perform bulk update successfully (3 ms)
+      ✓ should return 0 when no entities match update criteria (2 ms)
+      ✓ should handle bulk update errors (2 ms)
     query
-      ✓ should execute raw query successfully (2 ms)
+      ✓ should execute raw query successfully (3 ms)
       ✓ should execute parameterized query (2 ms)
-      ✓ should handle query errors (8 ms)
-
-PASS @money-wise/backend src/core/health/health.controller.spec.ts
-  HealthController
-    ✓ should be defined (9 ms)
-    getHealth
-      ✓ should return basic health status (5 ms)
-      ✓ should return consistent timestamp format (3 ms)
-      ✓ should return positive uptime (4 ms)
-      ✓ should return memory usage (4 ms)
-    getDetailedHealth
-      ✓ should return detailed health with services status (21 ms)
-      ✓ should include database response time (5 ms)
-    getReadiness
-      ✓ should return readiness status (3 ms)
-    getLiveness
-      ✓ should return liveness status (2 ms)
-
-PASS @money-wise/backend src/core/database/repositories/__tests__/integration/repositories.integration.spec.ts
-  Repository Integration Tests
-    Repository Pattern Integration
-      ✓ should have repositories properly exported from index (286 ms)
-      ✓ should have repository module and injection tokens exported (1 ms)
-      ✓ should validate repository structure integrity (3 ms)
-      ✓ should validate test coverage completeness (2 ms)
-    Repository Pattern Compliance
-      ✓ should document zero-tolerance validation achievements (1 ms)
-      ✓ should validate atomic commit compliance (1 ms)
-
-PASS @money-wise/backend src/core/database/repositories/__tests__/user.repository.spec.ts
-  UserRepository
-    findByEmail
-      ✓ should find user by email with case insensitivity (7 ms)
-      ✓ should return null when user not found (3 ms)
-      ✓ should handle findByEmail errors (21 ms)
-    isEmailTaken
-      ✓ should return true when email is taken (3 ms)
-      ✓ should return false when email is not taken (3 ms)
-      ✓ should exclude specific user when checking email availability (2 ms)
-      ✓ should handle isEmailTaken errors (11 ms)
-    findByEmailVerificationToken
-      ✓ should return null for email verification token (not implemented) (4 ms)
-      ✓ should handle findByEmailVerificationToken errors (5 ms)
-    findByPasswordResetToken
-      ✓ should return null for password reset token (not implemented) (2 ms)
-      ✓ should handle findByPasswordResetToken errors (3 ms)
-    markEmailAsVerified
-      ✓ should mark email as verified successfully (3 ms)
-      ✓ should return false when no user was updated (3 ms)
-      ✓ should handle markEmailAsVerified errors (4 ms)
-    updatePasswordHash
-      ✓ should update password hash successfully (3 ms)
-      ✓ should return false when no user was updated (3 ms)
-      ✓ should handle updatePasswordHash errors (4 ms)
-    setPasswordResetToken
-      ✓ should return false for password reset token (not implemented) (2 ms)
-      ✓ should handle setPasswordResetToken errors (11 ms)
-    clearPasswordResetToken
-      ✓ should return false for clear password reset token (not implemented) (3 ms)
-      ✓ should handle clearPasswordResetToken errors (3 ms)
-    findWithAccounts
-      ✓ should find user with their accounts (3 ms)
-      ✓ should return null when user not found (3 ms)
-      ✓ should handle findWithAccounts errors (3 ms)
-    findByDateRange
-      ✓ should find users within date range (4 ms)
-      ✓ should handle findByDateRange errors (3 ms)
-    getUserStats
-      ✓ should return user statistics (3 ms)
-      ✓ should handle getUserStats errors (4 ms)
+      ✓ should handle query errors (2 ms)
     softDelete
-      ✓ should log soft delete request (4 ms)
-      ✓ should handle softDelete errors (3 ms)
-    search
-      ✓ should search users by first name, last name, and email (11 ms)
-      ✓ should use default limit when not provided (4 ms)
-      ✓ should handle search errors (3 ms)
+      ✓ should soft delete entity successfully (3 ms)
+      ✓ should return false when no entity was soft deleted (3 ms)
+      ✓ should handle soft delete errors (4 ms)
+      ✓ should handle null affected count (7 ms)
+    restore
+      ✓ should restore soft deleted entity successfully (2 ms)
+      ✓ should return false when no entity was restored (3 ms)
+      ✓ should handle restore errors (2 ms)
+      ✓ should handle undefined affected count (2 ms)
+    deleteMany
+      ✓ should delete multiple entities by criteria (3 ms)
+      ✓ should return 0 affected when no entities deleted (2 ms)
+      ✓ should handle null affected count (2 ms)
+      ✓ should handle deleteMany errors (3 ms)
+    findAndCount
+      ✓ should find entities with total count (2 ms)
+      ✓ should find and count all entities without options (1 ms)
+      ✓ should handle empty result set (2 ms)
+      ✓ should handle findAndCount errors (7 ms)
+    createBulk
+      ✓ should create multiple entities successfully (2 ms)
+      ✓ should handle empty array (2 ms)
+      ✓ should handle createBulk errors (3 ms)
+    updateMany
+      ✓ should update multiple entities successfully (2 ms)
+      ✓ should handle zero updates (1 ms)
+      ✓ should handle null affected count (2 ms)
+      ✓ should handle updateMany errors (2 ms)
+    existsBy
+      ✓ should return true when entity exists by criteria (2 ms)
+      ✓ should return false when entity does not exist (2 ms)
+      ✓ should return true when multiple entities match criteria (4 ms)
+      ✓ should handle existsBy errors (3 ms)
+    protected methods
+      createQueryBuilder
+        ✓ should create query builder with alias (2 ms)
+        ✓ should create query builder without alias (9 ms)
+      manager
+        ✓ should access entity manager from repository (2 ms)
+    edge cases
+      findById with options
+        ✓ should apply FindOneOptions when finding by ID (3 ms)
+      delete with undefined affected
+        ✓ should handle undefined affected count in delete (2 ms)
+      update partial data
+        ✓ should handle partial entity updates (2 ms)
+      findWithPagination edge cases
+        ✓ should handle first page pagination (2 ms)
+        ✓ should handle large page numbers (2 ms)
+        ✓ should handle very large limit values (2 ms)
+      count with complex options
+        ✓ should handle count with where and order options (2 ms)
 
-FAIL @money-wise/backend src/core/database/repositories/__tests__/account.repository.spec.ts
+PASS @money-wise/backend __tests__/unit/users/users.controller.spec.ts
+  UsersController
+    ✓ should be defined (5 ms)
+    findAll
+      ✓ should return paginated users for admin (4 ms)
+      ✓ should support custom pagination parameters (9 ms)
+      ✓ should use default pagination when not provided (3 ms)
+    getCurrentUser
+      ✓ should return current user profile (3 ms)
+    getStats
+      ✓ should return user statistics (2 ms)
+    findOne
+      ✓ should return user by ID (2 ms)
+      ✓ should throw NotFoundException when user not found (9 ms)
+    update
+      ✓ should allow user to update own profile (3 ms)
+      ✓ should allow admin to update any user profile (2 ms)
+      ✓ should throw ForbiddenException when non-admin tries to update another user (2 ms)
+      ✓ should throw ConflictException when email already exists (3 ms)
+      ✓ should throw NotFoundException when user not found (2 ms)
+    updateStatus
+      ✓ should allow admin to update user status (9 ms)
+      ✓ should throw ForbiddenException when non-admin tries to update status (3 ms)
+      ✓ should throw NotFoundException when user not found (2 ms)
+      ✓ should support all status transitions (3 ms)
+    remove
+      ✓ should allow admin to delete user (2 ms)
+      ✓ should throw ForbiddenException when non-admin tries to delete user (2 ms)
+      ✓ should throw NotFoundException when user not found (2 ms)
+
+PASS @money-wise/backend __tests__/unit/common/interceptors/sentry.interceptor.spec.ts
+  SentryInterceptor
+    intercept
+      ✓ should create interceptor instance (2 ms)
+
+PASS @money-wise/backend __tests__/unit/accounts/accounts.controller.spec.ts
+  AccountsController
+    ✓ should be defined (5 ms)
+    create
+      ✓ should create an account for the current user (3 ms)
+      ✓ should create account with default currency if not provided (3 ms)
+      ✓ should create account with optional fields (2 ms)
+    findAll
+      ✓ should return all accounts for current user (10 ms)
+      ✓ should return empty array when user has no accounts (2 ms)
+      ✓ should return multiple accounts (2 ms)
+    getSummary
+      ✓ should return accounts summary (3 ms)
+      ✓ should return summary with no accounts (2 ms)
+    findOne
+      ✓ should return account by ID for owner (2 ms)
+      ✓ should allow admin to access any account (2 ms)
+      ✓ should throw NotFoundException when account not found (11 ms)
+      ✓ should throw ForbiddenException when user tries to access another user account (2 ms)
+    getBalance
+      ✓ should return account balance (2 ms)
+      ✓ should return balance with null available balance (2 ms)
+      ✓ should throw ForbiddenException when accessing another user balance (3 ms)
+      ✓ should throw NotFoundException when account not found (2 ms)
+    update
+      ✓ should allow user to update own account (11 ms)
+      ✓ should allow admin to update any account (2 ms)
+      ✓ should throw ForbiddenException when non-owner tries to update (2 ms)
+      ✓ should throw NotFoundException when account not found (3 ms)
+      ✓ should update status (2 ms)
+      ✓ should update settings (2 ms)
+    remove
+      ✓ should allow user to delete own account (2 ms)
+      ✓ should allow admin to delete any account (2 ms)
+      ✓ should throw ForbiddenException when non-owner tries to delete (2 ms)
+      ✓ should throw NotFoundException when account not found (2 ms)
+    syncAccount
+      ✓ should sync Plaid account (3 ms)
+      ✓ should throw ForbiddenException when trying to sync manual account (2 ms)
+      ✓ should throw ForbiddenException when non-owner tries to sync (2 ms)
+      ✓ should throw NotFoundException when account not found (3 ms)
+
+PASS @money-wise/backend __tests__/unit/core/database/repositories/account.repository.spec.ts
   AccountRepository
     findByUserId
-      ✓ should find accounts by user ID (7 ms)
-      ✓ should handle findByUserId errors (31 ms)
+      ✓ should find accounts by user ID (5 ms)
+      ✓ should handle findByUserId errors (25 ms)
     findActiveAccountsByUserId
-      ✓ should find active accounts by user ID (5 ms)
-      ✓ should handle findActiveAccountsByUserId errors (5 ms)
+      ✓ should find active accounts by user ID (3 ms)
+      ✓ should handle findActiveAccountsByUserId errors (2 ms)
     updateBalance
-      ✓ should update account currentBalance successfully (5 ms)
-      ✓ should return false when no account was updated (4 ms)
-      ✕ should handle updateBalance errors (16 ms)
+      ✓ should update account currentBalance successfully (2 ms)
+      ✓ should return false when no account was updated (2 ms)
+      ✓ should handle updateBalance errors (3 ms)
     incrementBalance
-      ✓ should increment account currentBalance successfully (4 ms)
-      ✓ should return false when no account was updated (3 ms)
-      ✕ should handle incrementBalance errors (4 ms)
+      ✓ should increment account currentBalance successfully (3 ms)
+      ✓ should return false when no account was updated (2 ms)
+      ✓ should handle incrementBalance errors (2 ms)
+      ✓ should increment account balance (1 ms)
+      ✓ should return false if account not found (2 ms)
+      ✓ should handle incrementBalance errors (2 ms)
     decrementBalance
-      ✓ should decrement account currentBalance successfully (14 ms)
-      ✕ should handle decrementBalance errors (5 ms)
+      ✓ should decrement account currentBalance successfully (2 ms)
+      ✓ should handle decrementBalance errors (12 ms)
+      ✓ should decrement account balance (2 ms)
+      ✓ should handle decrementBalance errors (2 ms)
     getTotalBalanceForUser
       ✓ should get total currentBalance for user (4 ms)
       ✓ should return 0 when no total found (3 ms)
-      ✕ should handle getTotalBalanceForUser errors (3 ms)
+      ✓ should handle getTotalBalanceForUser errors (2 ms)
     findByPlaidAccountId
-      ✓ should find account by Plaid account ID (2 ms)
+      ✓ should find account by Plaid account ID (3 ms)
       ✓ should return null when Plaid account not found (2 ms)
       ✓ should handle findByPlaidAccountId errors (3 ms)
     deactivateAccount
-      ✓ should deactivate account successfully (3 ms)
+      ✓ should deactivate account successfully (2 ms)
       ✓ should return false when no account was deactivated (2 ms)
-      ✓ should handle deactivateAccount errors (2 ms)
+      ✓ should handle deactivateAccount errors (3 ms)
     reactivateAccount
-      ✓ should reactivate account successfully (3 ms)
-      ✓ should handle reactivateAccount errors (10 ms)
+      ✓ should reactivate account successfully (2 ms)
+      ✓ should handle reactivateAccount errors (3 ms)
     findAccountsForSync
-      ✓ should find accounts for sync with user filter (4 ms)
-      ✓ should find all accounts for sync without user filter (3 ms)
-      ✓ should handle findAccountsForSync errors (3 ms)
+      ✓ should find accounts for sync with user filter (10 ms)
+      ✓ should find all accounts for sync without user filter (2 ms)
+      ✓ should handle findAccountsForSync errors (2 ms)
     getAccountBalancesSummary
-      ✓ should get account currentBalances summary by type (6 ms)
-      ✕ should handle getAccountBalancesSummary errors (3 ms)
+      ✓ should get account currentBalances summary by type (2 ms)
+      ✓ should handle getAccountBalancesSummary errors (2 ms)
     findLowBalanceAccounts
-      ✓ should find low currentBalance accounts with user filter (3 ms)
-      ✕ should handle findLowBalanceAccounts errors (3 ms)
+      ✓ should find low currentBalance accounts with user filter (2 ms)
+      ✓ should handle findLowBalanceAccounts errors (3 ms)
+    findByType
+      ✓ should find accounts by type with userId (2 ms)
+      ✓ should find accounts by type without userId (3 ms)
+      ✓ should handle findByType errors (3 ms)
+    findByPlaidItemId
+      ✓ should find accounts by Plaid item ID (4 ms)
+      ✓ should return empty array if no accounts found (2 ms)
+      ✓ should handle findByPlaidItemId errors (7 ms)
+    updateLastSyncedAt
+      ✓ should update sync timestamp successfully (2 ms)
+      ✓ should return false if account not found (2 ms)
+      ✓ should handle update errors (2 ms)
+    findWithTransactions
+      ✓ should find account with transactions and apply limit (2 ms)
+      ✓ should use default limit of 50 (2 ms)
+      ✓ should return null if account not found (1 ms)
+      ✓ should handle errors (7 ms)
+    findByCurrency
+      ✓ should find accounts by currency with userId (2 ms)
+      ✓ should find accounts by currency without userId (2 ms)
+      ✓ should handle errors (4 ms)
+    groupByInstitution
+      ✓ should group accounts by institution with totals (4 ms)
+      ✓ should return empty array if no accounts found (4 ms)
+      ✓ should handle errors (2 ms)
 
-  ● AccountRepository › updateBalance › should handle updateBalance errors
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:51 PM [31m  ERROR[39m [38;5;3m[PasswordResetService] [39m[31mFailed to generate password reset token for test@example.com:[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:51 PM [31m  ERROR[39m [38;5;3m[PasswordResetService] [39m[31mTypeError: tokenData.createdAt.getTime is not a function[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:51 PM [31m  ERROR[39m [38;5;3m[PasswordResetService] [39m[31mFailed to generate password reset token for test@example.com:[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:51 PM [31m  ERROR[39m [38;5;3m[PasswordResetService] [39m[31mTypeError: tokenData.createdAt.getTime is not a function[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:51 PM [31m  ERROR[39m [38;5;3m[PasswordResetService] [39m[31mFailed to generate password reset token for test@example.com:[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:51 PM [31m  ERROR[39m [38;5;3m[PasswordResetService] [39m[31mError: Redis error[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:51 PM [31m  ERROR[39m [38;5;3m[PasswordResetService] [39m[31mError validating reset token:[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:51 PM [31m  ERROR[39m [38;5;3m[PasswordResetService] [39m[31mError: Redis error[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:51 PM [31m  ERROR[39m [38;5;3m[PasswordResetService] [39m[31mError resetting password:[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:51 PM [31m  ERROR[39m [38;5;3m[PasswordResetService] [39m[31mError: Database error[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:51 PM [31m  ERROR[39m [38;5;3m[PasswordResetService] [39m[31mFailed to generate password reset token for test@example.com:[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:51 PM [31m  ERROR[39m [38;5;3m[PasswordResetService] [39m[31mTypeError: tokenData.createdAt.getTime is not a function[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:51 PM [31m  ERROR[39m [38;5;3m[PasswordResetService] [39m[31mFailed to generate password reset token for test@example.com:[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:51 PM [31m  ERROR[39m [38;5;3m[PasswordResetService] [39m[31mTypeError: tokenData.createdAt.getTime is not a function[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:51 PM [31m  ERROR[39m [38;5;3m[PasswordResetService] [39m[31mError getting password reset stats:[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:51 PM [31m  ERROR[39m [38;5;3m[PasswordResetService] [39m[31mError: Redis error[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:51 PM [31m  ERROR[39m [38;5;3m[PasswordResetService] [39m[31mError cleaning up expired tokens:[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:51 PM [31m  ERROR[39m [38;5;3m[PasswordResetService] [39m[31mError: Redis error[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:51 PM [31m  ERROR[39m [38;5;3m[PasswordResetService] [39m[31mError revoking user tokens:[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:51 PM [31m  ERROR[39m [38;5;3m[PasswordResetService] [39m[31mError: Redis error[39m
+PASS @money-wise/backend __tests__/unit/auth/services/password-reset.service.spec.ts
+  PasswordResetService
+    Token Generation (requestPasswordReset)
+      ✓ should generate and store reset token for valid user (6 ms)
+      ✓ should prevent multiple token generation within 5 minutes (3 ms)
+      ✓ should set token expiration to 30 minutes from creation (2 ms)
+      ✓ should store token data with metadata in Redis (3 ms)
+      ✓ should clean up expired tokens before creating new one (8 ms)
+      ✓ should handle database errors gracefully during token creation (3 ms)
+      ✓ should log token generation in audit trail (2 ms)
+    Rate Limiting
+      ✓ should reject request when rate limit exceeded (3 ms)
+      ✓ should reject request when account is locked out (3 ms)
+      ✓ should log rate limit events in audit trail (4 ms)
+    User Enumeration Prevention
+      ✓ should return same success message for non-existent users (3 ms)
+      ✓ should return same success message for inactive users (2 ms)
+      ✓ should record failed attempts for non-existent users (3 ms)
+    Token Validation (validateResetToken)
+      ✓ should accept valid unexpired tokens (2 ms)
+      ✓ should reject expired tokens (3 ms)
+      ✓ should reject already-used tokens (9 ms)
+      ✓ should reject invalid token format (2 ms)
+      ✓ should reject tokens for non-existent users (3 ms)
+      ✓ should reject tokens for inactive users (3 ms)
+      ✓ should handle validation errors gracefully (2 ms)
+    Password Reset (resetPassword)
+      ✓ should reset password successfully with valid token (4 ms)
+      ✓ should reject mismatched passwords (2 ms)
+      ✓ should reject weak passwords (3 ms)
+      ✓ should mark token as used after successful reset (2 ms)
+      ✓ should clear rate limits after successful reset (3 ms)
+      ✓ should log successful password reset in audit trail (10 ms)
+      ✓ should return email verification requirement status (4 ms)
+      ✓ should handle password change errors gracefully (3 ms)
+    Token Management
+      ✓ should handle token cleanup errors gracefully (3 ms)
+      ✓ should not cleanup recent tokens (< 5 minutes old) (3 ms)
+    Statistics and Maintenance
+      ✓ should return password reset statistics (2 ms)
+      ✓ should handle errors in statistics gracefully (2 ms)
+      ✓ should cleanup all expired tokens (3 ms)
+      ✓ should handle cleanup errors gracefully (3 ms)
+      ✓ should revoke all tokens for a specific user (3 ms)
+      ✓ should handle revocation when no tokens exist (2 ms)
+      ✓ should handle revocation errors gracefully (8 ms)
+    Resource Cleanup
+      ✓ should cleanup Redis connection on module destroy (4 ms)
+
+PASS @money-wise/backend __tests__/unit/auth/auth.service.spec.ts
+  AuthService
+    register
+      ✓ should register a new user successfully (6 ms)
+      ✓ should throw ConflictException if user already exists (15 ms)
+    login
+      ✓ should login user successfully (4 ms)
+      ✓ should throw UnauthorizedException if user not found (8 ms)
+      ✓ should throw UnauthorizedException if password is invalid (3 ms)
+      ✓ should throw UnauthorizedException if user is not active (3 ms)
+    refreshToken
+      ✓ should refresh token successfully with valid refresh token (3 ms)
+      ✓ should throw UnauthorizedException with invalid refresh token (4 ms)
+      ✓ should throw UnauthorizedException if user not found (3 ms)
+      ✓ should throw UnauthorizedException if user is not active (2 ms)
+      ✓ should throw UnauthorizedException with expired refresh token (3 ms)
+    validateUser
+      ✓ should return user if valid (2 ms)
+      ✓ should throw UnauthorizedException if user not found (7 ms)
+      ✓ should throw UnauthorizedException if user is not active (3 ms)
+    generateAuthResponse
+      ✓ should generate proper auth response with tokens (5 ms)
+    error scenarios
+      ✓ should handle password hashing errors during registration (6 ms)
+      ✓ should handle database errors during user creation (2 ms)
+      ✓ should handle password verification errors during login (3 ms)
+
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:53 PM [31m  ERROR[39m [38;5;3m[AuthSecurityService] [39m[31mLogin error:[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:53 PM [31m  ERROR[39m [38;5;3m[AuthSecurityService] [39m[31mTypeError: Cannot read properties of undefined (reading 'isLocked')[39m
+PASS @money-wise/backend __tests__/unit/auth/auth-security.service.spec.ts
+  AuthSecurityService
+    ✓ should be defined (11 ms)
+    register
+      ✓ should successfully register a new user (4 ms)
+      ✓ should throw ConflictException if user already exists (19 ms)
+      ✓ should throw BadRequestException for weak password (4 ms)
+    login
+      ✓ should successfully login with valid credentials (4 ms)
+      ✓ should throw UnauthorizedException if account is locked (4 ms)
+      ✓ should throw UnauthorizedException for invalid credentials (5 ms)
+      ✓ should record failed attempt on invalid password (3 ms)
+    changePassword
+      ✓ should successfully change password (11 ms)
+      ✓ should throw UnauthorizedException for invalid current password (3 ms)
+      ✓ should throw BadRequestException for weak new password (2 ms)
+      ✓ should throw BadRequestException if new password is same as current (4 ms)
+    requestPasswordReset
+      ✓ should request password reset (2 ms)
+    verifyEmail
+      ✓ should verify email successfully (4 ms)
+    checkPasswordStrength
+      ✓ should return password strength analysis (4 ms)
+    refreshToken
+      ✓ should successfully refresh token (3 ms)
+      ✓ should throw UnauthorizedException for invalid token (2 ms)
+
+PASS @money-wise/backend __tests__/unit/auth/jwt.strategy.spec.ts
+  JwtStrategy
+    constructor
+      ✓ should be defined (6 ms)
+      ✓ should configure strategy with correct options (3 ms)
+    validate
+      ✓ should return user for valid payload (2 ms)
+      ✓ should throw UnauthorizedException when user validation fails (8 ms)
+      ✓ should throw UnauthorizedException with custom message for invalid token (2 ms)
+      ✓ should handle payload with different user roles (2 ms)
+      ✓ should handle payload with missing fields (2 ms)
+      ✓ should handle payload with invalid user ID format (2 ms)
+      ✓ should handle null or undefined payload gracefully (8 ms)
+      ✓ should handle empty payload object (2 ms)
+      ✓ should propagate specific error messages from AuthService (2 ms)
+      ✓ should handle concurrent validation requests (2 ms)
+    error scenarios
+      ✓ should handle AuthService throwing non-UnauthorizedException errors (2 ms)
+      ✓ should handle AuthService returning null unexpectedly (3 ms)
+      ✓ should handle malformed JWT payload structure (3 ms)
+
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mFailed to log audit event:[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mError: ID generation failed[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31m[AUDIT] suspicious_activity: anonymous from 192.168.1.1[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mObject:[39m
+{
+  "id": "audit_1759494894876_xnxcog6fs",
+  "eventType": "suspicious_activity",
+  "severity": "critical",
+  "ipAddress": "192.168.1.1",
+  "userAgent": "Mozilla/5.0",
+  "details": {},
+  "timestamp": "2025-10-03T12:34:54.876Z"
+}
+
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mSECURITY ALERT[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mObject:[39m
+{
+  "id": "audit_1759494894876_xnxcog6fs",
+  "eventType": "suspicious_activity",
+  "severity": "critical",
+  "ipAddress": "192.168.1.1",
+  "userAgent": "Mozilla/5.0",
+  "details": {},
+  "timestamp": "2025-10-03T12:34:54.876Z"
+}
+
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31m[AUDIT] account_locked: anonymous from 192.168.1.1[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mObject:[39m
+{
+  "id": "audit_1759494894880_uum2p72jh",
+  "eventType": "account_locked",
+  "severity": "critical",
+  "ipAddress": "192.168.1.1",
+  "userAgent": "Mozilla/5.0",
+  "details": {},
+  "timestamp": "2025-10-03T12:34:54.880Z"
+}
+
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mSECURITY ALERT[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mObject:[39m
+{
+  "id": "audit_1759494894880_uum2p72jh",
+  "eventType": "account_locked",
+  "severity": "critical",
+  "ipAddress": "192.168.1.1",
+  "userAgent": "Mozilla/5.0",
+  "details": {},
+  "timestamp": "2025-10-03T12:34:54.880Z"
+}
+
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31m[AUDIT] account_locked: user-123 from 192.168.1.1[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mObject:[39m
+{
+  "id": "audit_1759494894898_5vmas3dhx",
+  "eventType": "account_locked",
+  "severity": "critical",
+  "userId": "user-123",
+  "email": "test@example.com",
+  "ipAddress": "192.168.1.1",
+  "userAgent": "Mozilla/5.0",
+  "details": {
+    "failedAttempts": 5,
+    "lockDuration": 3600
+  },
+  "timestamp": "2025-10-03T12:34:54.898Z"
+}
+
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mSECURITY ALERT[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mObject:[39m
+{
+  "id": "audit_1759494894898_5vmas3dhx",
+  "eventType": "account_locked",
+  "severity": "critical",
+  "userId": "user-123",
+  "email": "test@example.com",
+  "ipAddress": "192.168.1.1",
+  "userAgent": "Mozilla/5.0",
+  "details": {
+    "failedAttempts": 5,
+    "lockDuration": 3600
+  },
+  "timestamp": "2025-10-03T12:34:54.898Z"
+}
+
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31m[AUDIT] suspicious_activity: user-123 from 192.168.1.1[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mObject:[39m
+{
+  "id": "audit_1759494894900_clgjnny0f",
+  "eventType": "suspicious_activity",
+  "severity": "critical",
+  "userId": "user-123",
+  "email": "test@example.com",
+  "ipAddress": "192.168.1.1",
+  "userAgent": "Mozilla/5.0",
+  "details": {
+    "description": "Multiple failed 2FA attempts from different IPs"
+  },
+  "timestamp": "2025-10-03T12:34:54.900Z"
+}
+
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mSECURITY ALERT[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mObject:[39m
+{
+  "id": "audit_1759494894900_clgjnny0f",
+  "eventType": "suspicious_activity",
+  "severity": "critical",
+  "userId": "user-123",
+  "email": "test@example.com",
+  "ipAddress": "192.168.1.1",
+  "userAgent": "Mozilla/5.0",
+  "details": {
+    "description": "Multiple failed 2FA attempts from different IPs"
+  },
+  "timestamp": "2025-10-03T12:34:54.900Z"
+}
+
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31m[AUDIT] suspicious_activity: anonymous from 192.168.1.1[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mObject:[39m
+{
+  "id": "audit_1759494894903_9vvju4n2o",
+  "eventType": "suspicious_activity",
+  "severity": "critical",
+  "ipAddress": "192.168.1.1",
+  "userAgent": "Mozilla/5.0",
+  "details": {
+    "description": "Brute force attack detected"
+  },
+  "timestamp": "2025-10-03T12:34:54.903Z"
+}
+
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mSECURITY ALERT[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mObject:[39m
+{
+  "id": "audit_1759494894903_9vvju4n2o",
+  "eventType": "suspicious_activity",
+  "severity": "critical",
+  "ipAddress": "192.168.1.1",
+  "userAgent": "Mozilla/5.0",
+  "details": {
+    "description": "Brute force attack detected"
+  },
+  "timestamp": "2025-10-03T12:34:54.903Z"
+}
+
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31m[AUDIT] account_locked: user-2 from 192.168.1.1[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mObject:[39m
+{
+  "id": "audit_1759494894916_pvmjolzw7",
+  "eventType": "account_locked",
+  "severity": "critical",
+  "userId": "user-2",
+  "email": "user2@example.com",
+  "ipAddress": "192.168.1.1",
+  "userAgent": "Mozilla/5.0",
+  "details": {},
+  "timestamp": "2025-10-03T12:34:54.916Z"
+}
+
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mSECURITY ALERT[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mObject:[39m
+{
+  "id": "audit_1759494894916_pvmjolzw7",
+  "eventType": "account_locked",
+  "severity": "critical",
+  "userId": "user-2",
+  "email": "user2@example.com",
+  "ipAddress": "192.168.1.1",
+  "userAgent": "Mozilla/5.0",
+  "details": {},
+  "timestamp": "2025-10-03T12:34:54.916Z"
+}
+
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31m[AUDIT] account_locked: user-2 from 192.168.1.1[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mObject:[39m
+{
+  "id": "audit_1759494894919_7ym27og58",
+  "eventType": "account_locked",
+  "severity": "critical",
+  "userId": "user-2",
+  "email": "user2@example.com",
+  "ipAddress": "192.168.1.1",
+  "userAgent": "Mozilla/5.0",
+  "details": {},
+  "timestamp": "2025-10-03T12:34:54.919Z"
+}
+
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mSECURITY ALERT[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mObject:[39m
+{
+  "id": "audit_1759494894919_7ym27og58",
+  "eventType": "account_locked",
+  "severity": "critical",
+  "userId": "user-2",
+  "email": "user2@example.com",
+  "ipAddress": "192.168.1.1",
+  "userAgent": "Mozilla/5.0",
+  "details": {},
+  "timestamp": "2025-10-03T12:34:54.919Z"
+}
+
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31m[AUDIT] account_locked: user-2 from 192.168.1.1[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mObject:[39m
+{
+  "id": "audit_1759494894922_0woo1yexw",
+  "eventType": "account_locked",
+  "severity": "critical",
+  "userId": "user-2",
+  "email": "user2@example.com",
+  "ipAddress": "192.168.1.1",
+  "userAgent": "Mozilla/5.0",
+  "details": {},
+  "timestamp": "2025-10-03T12:34:54.922Z"
+}
+
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mSECURITY ALERT[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mObject:[39m
+{
+  "id": "audit_1759494894922_0woo1yexw",
+  "eventType": "account_locked",
+  "severity": "critical",
+  "userId": "user-2",
+  "email": "user2@example.com",
+  "ipAddress": "192.168.1.1",
+  "userAgent": "Mozilla/5.0",
+  "details": {},
+  "timestamp": "2025-10-03T12:34:54.922Z"
+}
+
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31m[AUDIT] account_locked: user-2 from 192.168.1.1[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mObject:[39m
+{
+  "id": "audit_1759494894925_xmkf6zijf",
+  "eventType": "account_locked",
+  "severity": "critical",
+  "userId": "user-2",
+  "email": "user2@example.com",
+  "ipAddress": "192.168.1.1",
+  "userAgent": "Mozilla/5.0",
+  "details": {},
+  "timestamp": "2025-10-03T12:34:54.925Z"
+}
+
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mSECURITY ALERT[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mObject:[39m
+{
+  "id": "audit_1759494894925_xmkf6zijf",
+  "eventType": "account_locked",
+  "severity": "critical",
+  "userId": "user-2",
+  "email": "user2@example.com",
+  "ipAddress": "192.168.1.1",
+  "userAgent": "Mozilla/5.0",
+  "details": {},
+  "timestamp": "2025-10-03T12:34:54.925Z"
+}
+
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31m[AUDIT] account_locked: user-2 from 192.168.1.1[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mObject:[39m
+{
+  "id": "audit_1759494894928_l4c92j67k",
+  "eventType": "account_locked",
+  "severity": "critical",
+  "userId": "user-2",
+  "email": "user2@example.com",
+  "ipAddress": "192.168.1.1",
+  "userAgent": "Mozilla/5.0",
+  "details": {},
+  "timestamp": "2025-10-03T12:34:54.928Z"
+}
+
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mSECURITY ALERT[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mObject:[39m
+{
+  "id": "audit_1759494894928_l4c92j67k",
+  "eventType": "account_locked",
+  "severity": "critical",
+  "userId": "user-2",
+  "email": "user2@example.com",
+  "ipAddress": "192.168.1.1",
+  "userAgent": "Mozilla/5.0",
+  "details": {},
+  "timestamp": "2025-10-03T12:34:54.928Z"
+}
+
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31m[AUDIT] account_locked: user-2 from 192.168.1.1[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mObject:[39m
+{
+  "id": "audit_1759494894931_azwliaeq9",
+  "eventType": "account_locked",
+  "severity": "critical",
+  "userId": "user-2",
+  "email": "user2@example.com",
+  "ipAddress": "192.168.1.1",
+  "userAgent": "Mozilla/5.0",
+  "details": {},
+  "timestamp": "2025-10-03T12:34:54.931Z"
+}
+
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mSECURITY ALERT[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mObject:[39m
+{
+  "id": "audit_1759494894931_azwliaeq9",
+  "eventType": "account_locked",
+  "severity": "critical",
+  "userId": "user-2",
+  "email": "user2@example.com",
+  "ipAddress": "192.168.1.1",
+  "userAgent": "Mozilla/5.0",
+  "details": {},
+  "timestamp": "2025-10-03T12:34:54.931Z"
+}
+
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31m[AUDIT] account_locked: user-2 from 192.168.1.1[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mObject:[39m
+{
+  "id": "audit_1759494894933_wxhy3ogec",
+  "eventType": "account_locked",
+  "severity": "critical",
+  "userId": "user-2",
+  "email": "user2@example.com",
+  "ipAddress": "192.168.1.1",
+  "userAgent": "Mozilla/5.0",
+  "details": {},
+  "timestamp": "2025-10-03T12:34:54.933Z"
+}
+
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mSECURITY ALERT[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mObject:[39m
+{
+  "id": "audit_1759494894933_wxhy3ogec",
+  "eventType": "account_locked",
+  "severity": "critical",
+  "userId": "user-2",
+  "email": "user2@example.com",
+  "ipAddress": "192.168.1.1",
+  "userAgent": "Mozilla/5.0",
+  "details": {},
+  "timestamp": "2025-10-03T12:34:54.933Z"
+}
+
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31m[AUDIT] account_locked: user-2 from 192.168.1.1[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mObject:[39m
+{
+  "id": "audit_1759494894937_quec7rk8u",
+  "eventType": "account_locked",
+  "severity": "critical",
+  "userId": "user-2",
+  "email": "user2@example.com",
+  "ipAddress": "192.168.1.1",
+  "userAgent": "Mozilla/5.0",
+  "details": {},
+  "timestamp": "2025-10-03T12:34:54.937Z"
+}
+
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mSECURITY ALERT[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mObject:[39m
+{
+  "id": "audit_1759494894937_quec7rk8u",
+  "eventType": "account_locked",
+  "severity": "critical",
+  "userId": "user-2",
+  "email": "user2@example.com",
+  "ipAddress": "192.168.1.1",
+  "userAgent": "Mozilla/5.0",
+  "details": {},
+  "timestamp": "2025-10-03T12:34:54.937Z"
+}
+
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31m[AUDIT] account_locked: user-2 from 192.168.1.1[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mObject:[39m
+{
+  "id": "audit_1759494894940_mttifwayg",
+  "eventType": "account_locked",
+  "severity": "critical",
+  "userId": "user-2",
+  "email": "user2@example.com",
+  "ipAddress": "192.168.1.1",
+  "userAgent": "Mozilla/5.0",
+  "details": {},
+  "timestamp": "2025-10-03T12:34:54.940Z"
+}
+
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mSECURITY ALERT[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mObject:[39m
+{
+  "id": "audit_1759494894940_mttifwayg",
+  "eventType": "account_locked",
+  "severity": "critical",
+  "userId": "user-2",
+  "email": "user2@example.com",
+  "ipAddress": "192.168.1.1",
+  "userAgent": "Mozilla/5.0",
+  "details": {},
+  "timestamp": "2025-10-03T12:34:54.940Z"
+}
+
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31m[AUDIT] account_locked: user-2 from 192.168.1.1[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mObject:[39m
+{
+  "id": "audit_1759494894945_nagjx8hxv",
+  "eventType": "account_locked",
+  "severity": "critical",
+  "userId": "user-2",
+  "email": "user2@example.com",
+  "ipAddress": "192.168.1.1",
+  "userAgent": "Mozilla/5.0",
+  "details": {},
+  "timestamp": "2025-10-03T12:34:54.945Z"
+}
+
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mSECURITY ALERT[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mObject:[39m
+{
+  "id": "audit_1759494894945_nagjx8hxv",
+  "eventType": "account_locked",
+  "severity": "critical",
+  "userId": "user-2",
+  "email": "user2@example.com",
+  "ipAddress": "192.168.1.1",
+  "userAgent": "Mozilla/5.0",
+  "details": {},
+  "timestamp": "2025-10-03T12:34:54.945Z"
+}
+
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31m[AUDIT] account_locked: user-2 from 192.168.1.1[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mObject:[39m
+{
+  "id": "audit_1759494894953_oa9t3et4v",
+  "eventType": "account_locked",
+  "severity": "critical",
+  "userId": "user-2",
+  "email": "user2@example.com",
+  "ipAddress": "192.168.1.1",
+  "userAgent": "Mozilla/5.0",
+  "details": {},
+  "timestamp": "2025-10-03T12:34:54.953Z"
+}
+
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mSECURITY ALERT[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mObject:[39m
+{
+  "id": "audit_1759494894953_oa9t3et4v",
+  "eventType": "account_locked",
+  "severity": "critical",
+  "userId": "user-2",
+  "email": "user2@example.com",
+  "ipAddress": "192.168.1.1",
+  "userAgent": "Mozilla/5.0",
+  "details": {},
+  "timestamp": "2025-10-03T12:34:54.953Z"
+}
+
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31m[AUDIT] account_locked: user-2 from 192.168.1.1[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mObject:[39m
+{
+  "id": "audit_1759494894955_c7o6ni6ab",
+  "eventType": "account_locked",
+  "severity": "critical",
+  "userId": "user-2",
+  "email": "user2@example.com",
+  "ipAddress": "192.168.1.1",
+  "userAgent": "Mozilla/5.0",
+  "details": {},
+  "timestamp": "2025-10-03T12:34:54.955Z"
+}
+
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mSECURITY ALERT[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mObject:[39m
+{
+  "id": "audit_1759494894955_c7o6ni6ab",
+  "eventType": "account_locked",
+  "severity": "critical",
+  "userId": "user-2",
+  "email": "user2@example.com",
+  "ipAddress": "192.168.1.1",
+  "userAgent": "Mozilla/5.0",
+  "details": {},
+  "timestamp": "2025-10-03T12:34:54.955Z"
+}
+
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31m[AUDIT] account_locked: user-2 from 192.168.1.1[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mObject:[39m
+{
+  "id": "audit_1759494894958_9n3v13rwj",
+  "eventType": "account_locked",
+  "severity": "critical",
+  "userId": "user-2",
+  "email": "user2@example.com",
+  "ipAddress": "192.168.1.1",
+  "userAgent": "Mozilla/5.0",
+  "details": {},
+  "timestamp": "2025-10-03T12:34:54.958Z"
+}
+
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mSECURITY ALERT[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mObject:[39m
+{
+  "id": "audit_1759494894958_9n3v13rwj",
+  "eventType": "account_locked",
+  "severity": "critical",
+  "userId": "user-2",
+  "email": "user2@example.com",
+  "ipAddress": "192.168.1.1",
+  "userAgent": "Mozilla/5.0",
+  "details": {},
+  "timestamp": "2025-10-03T12:34:54.958Z"
+}
+
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31m[AUDIT] account_locked: user-2 from 192.168.1.1[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mObject:[39m
+{
+  "id": "audit_1759494894961_a0a69g72i",
+  "eventType": "account_locked",
+  "severity": "critical",
+  "userId": "user-2",
+  "email": "user2@example.com",
+  "ipAddress": "192.168.1.1",
+  "userAgent": "Mozilla/5.0",
+  "details": {},
+  "timestamp": "2025-10-03T12:34:54.961Z"
+}
+
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mSECURITY ALERT[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mObject:[39m
+{
+  "id": "audit_1759494894961_a0a69g72i",
+  "eventType": "account_locked",
+  "severity": "critical",
+  "userId": "user-2",
+  "email": "user2@example.com",
+  "ipAddress": "192.168.1.1",
+  "userAgent": "Mozilla/5.0",
+  "details": {},
+  "timestamp": "2025-10-03T12:34:54.961Z"
+}
+
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mError querying audit logs:[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mTypeError: this.auditLogs is not iterable[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31m[AUDIT] account_locked: user-2 from 192.168.1.1[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mObject:[39m
+{
+  "id": "audit_1759494894964_gyppbdgvk",
+  "eventType": "account_locked",
+  "severity": "critical",
+  "userId": "user-2",
+  "email": "user2@example.com",
+  "ipAddress": "192.168.1.1",
+  "userAgent": "Mozilla/5.0",
+  "details": {},
+  "timestamp": "2025-10-03T12:34:54.964Z"
+}
+
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mSECURITY ALERT[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mObject:[39m
+{
+  "id": "audit_1759494894964_gyppbdgvk",
+  "eventType": "account_locked",
+  "severity": "critical",
+  "userId": "user-2",
+  "email": "user2@example.com",
+  "ipAddress": "192.168.1.1",
+  "userAgent": "Mozilla/5.0",
+  "details": {},
+  "timestamp": "2025-10-03T12:34:54.964Z"
+}
+
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31m[AUDIT] account_locked: user-2 from 192.168.1.1[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mObject:[39m
+{
+  "id": "audit_1759494894966_5t3ks0f68",
+  "eventType": "account_locked",
+  "severity": "critical",
+  "userId": "user-2",
+  "email": "user2@example.com",
+  "ipAddress": "192.168.1.1",
+  "userAgent": "Mozilla/5.0",
+  "details": {},
+  "timestamp": "2025-10-03T12:34:54.966Z"
+}
+
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mSECURITY ALERT[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mObject:[39m
+{
+  "id": "audit_1759494894966_5t3ks0f68",
+  "eventType": "account_locked",
+  "severity": "critical",
+  "userId": "user-2",
+  "email": "user2@example.com",
+  "ipAddress": "192.168.1.1",
+  "userAgent": "Mozilla/5.0",
+  "details": {},
+  "timestamp": "2025-10-03T12:34:54.966Z"
+}
+
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31m[AUDIT] account_locked: user-2 from 192.168.1.1[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mObject:[39m
+{
+  "id": "audit_1759494894969_cbngmrrk2",
+  "eventType": "account_locked",
+  "severity": "critical",
+  "userId": "user-2",
+  "email": "user2@example.com",
+  "ipAddress": "192.168.1.1",
+  "userAgent": "Mozilla/5.0",
+  "details": {},
+  "timestamp": "2025-10-03T12:34:54.969Z"
+}
+
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mSECURITY ALERT[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mObject:[39m
+{
+  "id": "audit_1759494894969_cbngmrrk2",
+  "eventType": "account_locked",
+  "severity": "critical",
+  "userId": "user-2",
+  "email": "user2@example.com",
+  "ipAddress": "192.168.1.1",
+  "userAgent": "Mozilla/5.0",
+  "details": {},
+  "timestamp": "2025-10-03T12:34:54.969Z"
+}
+
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31m[AUDIT] account_locked: user-2 from 192.168.1.1[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mObject:[39m
+{
+  "id": "audit_1759494894971_nf6eb8b6n",
+  "eventType": "account_locked",
+  "severity": "critical",
+  "userId": "user-2",
+  "email": "user2@example.com",
+  "ipAddress": "192.168.1.1",
+  "userAgent": "Mozilla/5.0",
+  "details": {},
+  "timestamp": "2025-10-03T12:34:54.971Z"
+}
+
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mSECURITY ALERT[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mObject:[39m
+{
+  "id": "audit_1759494894971_nf6eb8b6n",
+  "eventType": "account_locked",
+  "severity": "critical",
+  "userId": "user-2",
+  "email": "user2@example.com",
+  "ipAddress": "192.168.1.1",
+  "userAgent": "Mozilla/5.0",
+  "details": {},
+  "timestamp": "2025-10-03T12:34:54.971Z"
+}
+
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31m[AUDIT] account_locked: user-2 from 192.168.1.1[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mObject:[39m
+{
+  "id": "audit_1759494894974_va669wmfo",
+  "eventType": "account_locked",
+  "severity": "critical",
+  "userId": "user-2",
+  "email": "user2@example.com",
+  "ipAddress": "192.168.1.1",
+  "userAgent": "Mozilla/5.0",
+  "details": {},
+  "timestamp": "2025-10-03T12:34:54.974Z"
+}
+
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mSECURITY ALERT[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mObject:[39m
+{
+  "id": "audit_1759494894974_va669wmfo",
+  "eventType": "account_locked",
+  "severity": "critical",
+  "userId": "user-2",
+  "email": "user2@example.com",
+  "ipAddress": "192.168.1.1",
+  "userAgent": "Mozilla/5.0",
+  "details": {},
+  "timestamp": "2025-10-03T12:34:54.974Z"
+}
+
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31m[AUDIT] account_locked: user-2 from 192.168.1.1[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mObject:[39m
+{
+  "id": "audit_1759494894976_37fiayzw2",
+  "eventType": "account_locked",
+  "severity": "critical",
+  "userId": "user-2",
+  "email": "user2@example.com",
+  "ipAddress": "192.168.1.1",
+  "userAgent": "Mozilla/5.0",
+  "details": {},
+  "timestamp": "2025-10-03T12:34:54.976Z"
+}
+
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mSECURITY ALERT[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mObject:[39m
+{
+  "id": "audit_1759494894976_37fiayzw2",
+  "eventType": "account_locked",
+  "severity": "critical",
+  "userId": "user-2",
+  "email": "user2@example.com",
+  "ipAddress": "192.168.1.1",
+  "userAgent": "Mozilla/5.0",
+  "details": {},
+  "timestamp": "2025-10-03T12:34:54.976Z"
+}
+
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31m[AUDIT] account_locked: user-2 from 192.168.1.1[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mObject:[39m
+{
+  "id": "audit_1759494894979_okqhd8oa3",
+  "eventType": "account_locked",
+  "severity": "critical",
+  "userId": "user-2",
+  "email": "user2@example.com",
+  "ipAddress": "192.168.1.1",
+  "userAgent": "Mozilla/5.0",
+  "details": {},
+  "timestamp": "2025-10-03T12:34:54.979Z"
+}
+
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mSECURITY ALERT[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mObject:[39m
+{
+  "id": "audit_1759494894979_okqhd8oa3",
+  "eventType": "account_locked",
+  "severity": "critical",
+  "userId": "user-2",
+  "email": "user2@example.com",
+  "ipAddress": "192.168.1.1",
+  "userAgent": "Mozilla/5.0",
+  "details": {},
+  "timestamp": "2025-10-03T12:34:54.979Z"
+}
+
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31m[AUDIT] account_locked: user-2 from 192.168.1.1[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mObject:[39m
+{
+  "id": "audit_1759494894981_xh3f49gcv",
+  "eventType": "account_locked",
+  "severity": "critical",
+  "userId": "user-2",
+  "email": "user2@example.com",
+  "ipAddress": "192.168.1.1",
+  "userAgent": "Mozilla/5.0",
+  "details": {},
+  "timestamp": "2025-10-03T12:34:54.981Z"
+}
+
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mSECURITY ALERT[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mObject:[39m
+{
+  "id": "audit_1759494894981_xh3f49gcv",
+  "eventType": "account_locked",
+  "severity": "critical",
+  "userId": "user-2",
+  "email": "user2@example.com",
+  "ipAddress": "192.168.1.1",
+  "userAgent": "Mozilla/5.0",
+  "details": {},
+  "timestamp": "2025-10-03T12:34:54.981Z"
+}
+
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31m[AUDIT] account_locked: user-2 from 192.168.1.1[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mObject:[39m
+{
+  "id": "audit_1759494894991_ny673tudt",
+  "eventType": "account_locked",
+  "severity": "critical",
+  "userId": "user-2",
+  "email": "user2@example.com",
+  "ipAddress": "192.168.1.1",
+  "userAgent": "Mozilla/5.0",
+  "details": {},
+  "timestamp": "2025-10-03T12:34:54.991Z"
+}
+
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mSECURITY ALERT[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mObject:[39m
+{
+  "id": "audit_1759494894991_ny673tudt",
+  "eventType": "account_locked",
+  "severity": "critical",
+  "userId": "user-2",
+  "email": "user2@example.com",
+  "ipAddress": "192.168.1.1",
+  "userAgent": "Mozilla/5.0",
+  "details": {},
+  "timestamp": "2025-10-03T12:34:54.991Z"
+}
+
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31m[AUDIT] account_locked: user-2 from 192.168.1.1[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mObject:[39m
+{
+  "id": "audit_1759494894994_yz3j1tslp",
+  "eventType": "account_locked",
+  "severity": "critical",
+  "userId": "user-2",
+  "email": "user2@example.com",
+  "ipAddress": "192.168.1.1",
+  "userAgent": "Mozilla/5.0",
+  "details": {},
+  "timestamp": "2025-10-03T12:34:54.994Z"
+}
+
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mSECURITY ALERT[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mObject:[39m
+{
+  "id": "audit_1759494894994_yz3j1tslp",
+  "eventType": "account_locked",
+  "severity": "critical",
+  "userId": "user-2",
+  "email": "user2@example.com",
+  "ipAddress": "192.168.1.1",
+  "userAgent": "Mozilla/5.0",
+  "details": {},
+  "timestamp": "2025-10-03T12:34:54.994Z"
+}
+
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mError getting audit stats:[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mTypeError: Cannot read properties of null (reading 'filter')[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31m[AUDIT] account_locked: user-2 from 192.168.1.1[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mObject:[39m
+{
+  "id": "audit_1759494894998_lghjt7qi2",
+  "eventType": "account_locked",
+  "severity": "critical",
+  "userId": "user-2",
+  "email": "user2@example.com",
+  "ipAddress": "192.168.1.1",
+  "userAgent": "Mozilla/5.0",
+  "details": {},
+  "timestamp": "2025-10-03T12:34:54.998Z"
+}
+
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mSECURITY ALERT[39m
+[31m[Nest] 2204799  - [39m10/03/2025, 2:34:54 PM [31m  ERROR[39m [38;5;3m[AuditLogService] [39m[31mObject:[39m
+{
+  "id": "audit_1759494894998_lghjt7qi2",
+  "eventType": "account_locked",
+  "severity": "critical",
+  "userId": "user-2",
+  "email": "user2@example.com",
+  "ipAddress": "192.168.1.1",
+  "userAgent": "Mozilla/5.0",
+  "details": {},
+  "timestamp": "2025-10-03T12:34:54.998Z"
+}
+
+PASS @money-wise/backend __tests__/unit/auth/services/audit-log.service.spec.ts
+  AuditLogService
+    logEvent
+      ✓ should log a basic audit event (6 ms)
+      ✓ should extract client IP from x-forwarded-for header (3 ms)
+      ✓ should extract client IP from x-real-ip header when x-forwarded-for not available (4 ms)
+      ✓ should fall back to connection.remoteAddress for IP (2 ms)
+      ✓ should use "unknown" when no IP can be determined (3 ms)
+      ✓ should extract session ID from x-session-id header (2 ms)
+      ✓ should extract user-agent from request (2 ms)
+      ✓ should use "unknown" for missing user-agent (2 ms)
+      ✓ should store custom details in audit event (2 ms)
+      ✓ should not throw on logging errors (2 ms)
+      ✓ should cap audit logs at maxLogEntries (10000) (13 ms)
+    determineSeverity
+      ✓ should assign CRITICAL severity to suspicious activity (2 ms)
+      ✓ should assign CRITICAL severity to account locked (4 ms)
+      ✓ should assign HIGH severity to login failed (2 ms)
+      ✓ should assign HIGH severity to rate limit exceeded (2 ms)
+      ✓ should assign MEDIUM severity to password change success (3 ms)
+      ✓ should assign LOW severity to login success (2 ms)
+    logLoginSuccess
+      ✓ should log successful login with user details (3 ms)
+    logLoginFailed
+      ✓ should log failed login attempt with reason (3 ms)
+    logAccountLocked
+      ✓ should log account lockout with details (3 ms)
+    logSuspiciousActivity
+      ✓ should log suspicious activity with description (2 ms)
+      ✓ should log anonymous suspicious activity (2 ms)
+    logPasswordChange
+      ✓ should log successful password change (9 ms)
+      ✓ should log failed password change (2 ms)
+    queryLogs
+      ✓ should query all logs without filters (3 ms)
+      ✓ should filter logs by userId (2 ms)
+      ✓ should filter logs by single eventType (3 ms)
+      ✓ should filter logs by multiple eventTypes (3 ms)
+      ✓ should filter logs by single severity (3 ms)
+      ✓ should filter logs by multiple severities (3 ms)
+      ✓ should filter logs by ipAddress (2 ms)
+      ✓ should filter logs by date range (startDate) (3 ms)
+      ✓ should filter logs by date range (endDate) (4 ms)
+      ✓ should filter logs by date range (startDate and endDate) (4 ms)
+      ✓ should sort logs by timestamp (newest first) (3 ms)
+      ✓ should apply pagination with offset and limit (2 ms)
+      ✓ should apply default pagination (limit 100) (3 ms)
+      ✓ should handle errors gracefully (3 ms)
+      ✓ should combine multiple filters (2 ms)
+    getAuditStats
+      ✓ should return stats for hour timeframe (3 ms)
+      ✓ should return stats for day timeframe (default) (3 ms)
+      ✓ should count unique users correctly (2 ms)
+      ✓ should count unique IPs correctly (3 ms)
+      ✓ should count events by severity (2 ms)
+      ✓ should handle week timeframe (3 ms)
+      ✓ should handle month timeframe (2 ms)
+      ✓ should exclude events outside timeframe (10 ms)
+      ✓ should handle errors gracefully (4 ms)
+      ✓ should handle empty audit logs (2 ms)
+    Edge Cases
+      ✓ should handle multiple events from same user at different IPs (3 ms)
+      ✓ should handle events with empty details (3 ms)
+      ✓ should handle events without userId or email (2 ms)
+      ✓ should generate unique IDs for all events (2 ms)
+      ✓ should handle very large details objects (2 ms)
+      ✓ should handle pagination beyond available logs (2 ms)
+      ✓ should handle concurrent logging of multiple events (2 ms)
+
+PASS @money-wise/backend __tests__/unit/core/health/health.controller.spec.ts
+  HealthController
+    ✓ should be defined (4 ms)
+    getHealth
+      ✓ should return basic health status (3 ms)
+      ✓ should return consistent timestamp format (4 ms)
+      ✓ should return positive uptime (10 ms)
+      ✓ should return memory usage (4 ms)
+    getDetailedHealth
+      ✓ should return detailed health with services status (6 ms)
+      ✓ should include database response time (3 ms)
+    getReadiness
+      ✓ should return readiness status (2 ms)
+    getLiveness
+      ✓ should return liveness status (1 ms)
+
+PASS @money-wise/backend __tests__/unit/auth/jwt-auth.guard.spec.ts
+  JwtAuthGuard
+    canActivate
+      ✓ should return true for public routes (6 ms)
+      ✓ should call super.canActivate for protected routes (3 ms)
+      ✓ should handle undefined public key (3 ms)
+      ✓ should properly check method and class decorators (3 ms)
+    handleRequest
+      ✓ should return user when no error and user exists (2 ms)
+      ✓ should throw UnauthorizedException when error exists (7 ms)
+      ✓ should throw UnauthorizedException when user is null (3 ms)
+      ✓ should throw UnauthorizedException when user is undefined (3 ms)
+      ✓ should throw custom UnauthorizedException with proper message (2 ms)
+      ✓ should prioritize original error over missing user (9 ms)
+      ✓ should handle falsy user values (4 ms)
+      ✓ should handle truthy user values (4 ms)
+    integration scenarios
+      ✓ should handle public route with missing user gracefully (3 ms)
+      ✓ should handle protected route with valid token (2 ms)
+
+PASS @money-wise/backend __tests__/unit/auth/services/password-strength.service.spec.ts
+  PasswordStrengthService
+    calculateStrength
+      ✓ should return very weak for simple passwords (10 ms)
+      ✓ should return strong for complex passwords (3 ms)
+      ✓ should detect common passwords (3 ms)
+      ✓ should detect personal information in password (4 ms)
+      ✓ should detect repeating characters (4 ms)
+      ✓ should detect sequential characters (2 ms)
+    validatePolicy
+      ✓ should validate minimum length requirement (2 ms)
+      ✓ should validate character requirements (2 ms)
+      ✓ should pass for valid passwords (2 ms)
+
+PASS @money-wise/backend __tests__/unit/docs/openapi.spec.ts
+  OpenAPI Specification
+    ✓ should generate valid OpenAPI spec (2 ms)
+
+PASS @money-wise/backend __tests__/unit/common/decorators/sentry-transaction.decorator.spec.ts
+  SentryTransactionDecorator
+    withSentryTransaction
+      ✓ should wrap function with Sentry transaction (1 ms)
+      ✓ should handle errors in wrapped function (3 ms)
+    SentryTransactionManager
+      ✓ should manage transaction lifecycle (1 ms)
+
+FAIL @money-wise/backend __tests__/unit/auth/services/rate-limit.service.spec.ts
+  ● Test suite failed to run
+
+    [96m__tests__/unit/auth/services/rate-limit.service.spec.ts[0m:[93m59[0m:[93m25[0m - [91merror[0m[90m TS2554: [0mExpected 3 arguments, but got 2.
+
+    [7m59[0m         await mockRedis.hset(key, {
+    [7m  [0m [91m                        ~~~~[0m
+    [96m__tests__/unit/auth/services/rate-limit.service.spec.ts[0m:[93m78[0m:[93m25[0m - [91merror[0m[90m TS2554: [0mExpected 3 arguments, but got 2.
+
+    [7m78[0m         await mockRedis.hset(key, {
+    [7m  [0m [91m                        ~~~~[0m
+    [96m__tests__/unit/auth/services/rate-limit.service.spec.ts[0m:[93m100[0m:[93m25[0m - [91merror[0m[90m TS2554: [0mExpected 3 arguments, but got 2.
+
+    [7m100[0m         await mockRedis.hset(key, {
+    [7m   [0m [91m                        ~~~~[0m
+    [96m__tests__/unit/auth/services/rate-limit.service.spec.ts[0m:[93m123[0m:[93m25[0m - [91merror[0m[90m TS2554: [0mExpected 3 arguments, but got 2.
+
+    [7m123[0m         await mockRedis.hset(key, {
+    [7m   [0m [91m                        ~~~~[0m
+    [96m__tests__/unit/auth/services/rate-limit.service.spec.ts[0m:[93m149[0m:[93m25[0m - [91merror[0m[90m TS2554: [0mExpected 3 arguments, but got 2.
+
+    [7m149[0m         await mockRedis.hset(key, {
+    [7m   [0m [91m                        ~~~~[0m
+    [96m__tests__/unit/auth/services/rate-limit.service.spec.ts[0m:[93m195[0m:[93m25[0m - [91merror[0m[90m TS2554: [0mExpected 3 arguments, but got 2.
+
+    [7m195[0m         await mockRedis.hset(key, {
+    [7m   [0m [91m                        ~~~~[0m
+    [96m__tests__/unit/auth/services/rate-limit.service.spec.ts[0m:[93m245[0m:[93m25[0m - [91merror[0m[90m TS2554: [0mExpected 3 arguments, but got 2.
+
+    [7m245[0m         await mockRedis.hset(key, {
+    [7m   [0m [91m                        ~~~~[0m
+    [96m__tests__/unit/auth/services/rate-limit.service.spec.ts[0m:[93m263[0m:[93m25[0m - [91merror[0m[90m TS2554: [0mExpected 3 arguments, but got 2.
+
+    [7m263[0m         await mockRedis.hset(key, {
+    [7m   [0m [91m                        ~~~~[0m
+    [96m__tests__/unit/auth/services/rate-limit.service.spec.ts[0m:[93m287[0m:[93m25[0m - [91merror[0m[90m TS2554: [0mExpected 3 arguments, but got 2.
+
+    [7m287[0m         await mockRedis.hset(key, {
+    [7m   [0m [91m                        ~~~~[0m
+    [96m__tests__/unit/auth/services/rate-limit.service.spec.ts[0m:[93m323[0m:[93m25[0m - [91merror[0m[90m TS2554: [0mExpected 3 arguments, but got 2.
+
+    [7m323[0m         await mockRedis.hset(key, {
+    [7m   [0m [91m                        ~~~~[0m
+    [96m__tests__/unit/auth/services/rate-limit.service.spec.ts[0m:[93m350[0m:[93m23[0m - [91merror[0m[90m TS2554: [0mExpected 3 arguments, but got 2.
+
+    [7m350[0m       await mockRedis.hset(key, {
+    [7m   [0m [91m                      ~~~~[0m
+    [96m__tests__/unit/auth/services/rate-limit.service.spec.ts[0m:[93m382[0m:[93m23[0m - [91merror[0m[90m TS2554: [0mExpected 3 arguments, but got 2.
+
+    [7m382[0m       await mockRedis.hset(key, {
+    [7m   [0m [91m                      ~~~~[0m
+    [96m__tests__/unit/auth/services/rate-limit.service.spec.ts[0m:[93m401[0m:[93m23[0m - [91merror[0m[90m TS2554: [0mExpected 3 arguments, but got 2.
+
+    [7m401[0m       await mockRedis.hset(key, {
+    [7m   [0m [91m                      ~~~~[0m
+    [96m__tests__/unit/auth/services/rate-limit.service.spec.ts[0m:[93m432[0m:[93m23[0m - [91merror[0m[90m TS2554: [0mExpected 3 arguments, but got 2.
+
+    [7m432[0m       await mockRedis.hset(key, {
+    [7m   [0m [91m                      ~~~~[0m
+    [96m__tests__/unit/auth/services/rate-limit.service.spec.ts[0m:[93m454[0m:[93m23[0m - [91merror[0m[90m TS2554: [0mExpected 3 arguments, but got 2.
+
+    [7m454[0m       await mockRedis.hset(key, {
+    [7m   [0m [91m                      ~~~~[0m
+    [96m__tests__/unit/auth/services/rate-limit.service.spec.ts[0m:[93m484[0m:[93m23[0m - [91merror[0m[90m TS2554: [0mExpected 3 arguments, but got 2.
+
+    [7m484[0m       await mockRedis.hset(key, {
+    [7m   [0m [91m                      ~~~~[0m
+    [96m__tests__/unit/auth/services/rate-limit.service.spec.ts[0m:[93m579[0m:[93m23[0m - [91merror[0m[90m TS2554: [0mExpected 3 arguments, but got 2.
+
+    [7m579[0m       await mockRedis.hset(key1, {
+    [7m   [0m [91m                      ~~~~[0m
+    [96m__tests__/unit/auth/services/rate-limit.service.spec.ts[0m:[93m648[0m:[93m23[0m - [91merror[0m[90m TS2554: [0mExpected 3 arguments, but got 2.
+
+    [7m648[0m       await mockRedis.hset(key, {
+    [7m   [0m [91m                      ~~~~[0m
+    [96m__tests__/unit/auth/services/rate-limit.service.spec.ts[0m:[93m666[0m:[93m23[0m - [91merror[0m[90m TS2554: [0mExpected 3 arguments, but got 2.
+
+    [7m666[0m       await mockRedis.hset(key, {
+    [7m   [0m [91m                      ~~~~[0m
+    [96m__tests__/unit/auth/services/rate-limit.service.spec.ts[0m:[93m700[0m:[93m23[0m - [91merror[0m[90m TS2554: [0mExpected 3 arguments, but got 2.
+
+    [7m700[0m       await mockRedis.hset(key, {
+    [7m   [0m [91m                      ~~~~[0m
+    [96m__tests__/unit/auth/services/rate-limit.service.spec.ts[0m:[93m720[0m:[93m25[0m - [91merror[0m[90m TS2554: [0mExpected 3 arguments, but got 2.
+
+    [7m720[0m         await mockRedis.hset(key, {
+    [7m   [0m [91m                        ~~~~[0m
+
+FAIL @money-wise/backend __tests__/unit/accounts/accounts.service.spec.ts
+  AccountsService
+    create
+      ✓ should create a new account with provided data (5 ms)
+      ✓ should default currency to USD when not provided (2 ms)
+      ✓ should default syncEnabled to true when not provided (2 ms)
+      ✓ should set syncEnabled from DTO when provided (3 ms)
+      ✓ should set isActive to true on creation (3 ms)
+      ✓ should associate account with correct userId (3 ms)
+    findAll
+      ✓ should return all accounts for a user (4 ms)
+      ✓ should return empty array when user has no accounts (3 ms)
+      ✓ should order accounts by creation date descending (2 ms)
+    findOne
+      ✓ should return account when user owns it (11 ms)
+      ✓ should allow admin to access any account (2 ms)
+      ✓ should throw ForbiddenException when non-owner non-admin tries to access (17 ms)
+      ✓ should throw NotFoundException when account does not exist (3 ms)
+      ✓ should include transactions relation (2 ms)
+    update
+      ✓ should allow user to update their own account (4 ms)
+      ✓ should allow admin to update any account (2 ms)
+      ✓ should throw ForbiddenException when non-owner non-admin tries to update (3 ms)
+      ✓ should throw NotFoundException when account does not exist (3 ms)
+      ✓ should update multiple fields at once (2 ms)
+    remove
+      ✓ should allow user to delete their own account (3 ms)
+      ✓ should allow admin to delete any account (2 ms)
+      ✓ should throw ForbiddenException when non-owner non-admin tries to delete (2 ms)
+      ✓ should throw NotFoundException when account does not exist (10 ms)
+      ✓ should not call remove when authorization fails (3 ms)
+    getBalance
+      ✓ should return balance for account owner (3 ms)
+      ✓ should allow admin to get any account balance (2 ms)
+      ✓ should throw ForbiddenException when non-owner non-admin tries to access (3 ms)
+      ✓ should throw NotFoundException when account does not exist (2 ms)
+      ✓ should return null for availableBalance when not set (2 ms)
+    getSummary
+      ✕ should calculate summary for user accounts (3 ms)
+      ✕ should group accounts by type (5 ms)
+      ✕ should count accounts needing sync (2 ms)
+      ✓ should only include active accounts (3 ms)
+      ✓ should return zero summary when user has no accounts (3 ms)
+      ✓ should handle negative balances in credit accounts (2 ms)
+    syncAccount
+      ✓ should sync Plaid account for owner (2 ms)
+      ✓ should allow admin to sync any Plaid account (12 ms)
+      ✓ should throw ForbiddenException when non-owner tries to sync (3 ms)
+      ✓ should throw NotFoundException when account does not exist (3 ms)
+      ✓ should throw ForbiddenException when trying to sync non-Plaid account (2 ms)
+      ✓ should clear sync error on successful sync (3 ms)
+    toResponseDto (private method - tested through public methods)
+      ✓ should map account to response DTO correctly (2 ms)
+      ✓ should exclude sensitive fields like plaidAccessToken (1 ms)
+    edge cases and error handling
+      ✓ should handle repository errors gracefully (3 ms)
+      ✓ should handle save errors during create (3 ms)
+      ✓ should handle concurrent update scenarios (2 ms)
+      ✓ should handle invalid account ID format (3 ms)
+      ✓ should handle accounts with null optional fields (2 ms)
+
+  ● AccountsService › getSummary › should calculate summary for user accounts
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 5500
+    Received: 9500
+
+      505 |       });
+      506 |       expect(result.totalAccounts).toBe(3);
+    > 507 |       expect(result.totalBalance).toBe(5500); // 1000 + 5000 - 500
+          |                                   ^
+      508 |       expect(result.activeAccounts).toBe(3);
+      509 |     });
+      510 |
+
+      at Object.<anonymous> (__tests__/unit/accounts/accounts.service.spec.ts:507:35)
+
+  ● AccountsService › getSummary › should group accounts by type
+
+    expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 1
+    + Received  + 1
+
+      Object {
+        "count": 1,
+    -   "totalBalance": 1000,
+    +   "totalBalance": 5000,
+      }
+
+      519 |       const result = await service.getSummary(userId);
+      520 |
+    > 521 |       expect(result.byType[AccountType.CHECKING]).toEqual({
+          |                                                   ^
+      522 |         count: 1,
+      523 |         totalBalance: 1000,
+      524 |       });
+
+      at Object.<anonymous> (__tests__/unit/accounts/accounts.service.spec.ts:521:51)
+
+  ● AccountsService › getSummary › should count accounts needing sync
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 2
+    Received: 0
+
+      539 |       const result = await service.getSummary(userId);
+      540 |
+    > 541 |       expect(result.accountsNeedingSync).toBe(2);
+          |                                          ^
+      542 |     });
+      543 |
+      544 |     it('should only include active accounts', async () => {
+
+      at Object.<anonymous> (__tests__/unit/accounts/accounts.service.spec.ts:541:42)
+
+Summary of all failing tests
+FAIL __tests__/unit/auth/services/account-lockout.service.spec.ts (7.707 s)
+  ● AccountLockoutService › recordFailedAttempt › should record first failed attempt
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "1"
+    Received: 1
+
+      104 |       const key = `lockout:${identifier}`;
+      105 |       const data = await mockRedis.hmget(key, 'failedAttempts', 'firstFailedAt');
+    > 106 |       expect(data[0]).toBe('1');
+          |                       ^
+      107 |       expect(data[1]).toBeDefined();
+      108 |     });
+      109 |
+
+      at Object.<anonymous> (__tests__/unit/auth/services/account-lockout.service.spec.ts:106:23)
+
+  ● AccountLockoutService › recordFailedAttempt › should increment failed attempts on subsequent failures
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "3"
+    Received: 3
+
+      127 |       // Verify count was incremented
+      128 |       const data = await mockRedis.hmget(key, 'failedAttempts');
+    > 129 |       expect(data[0]).toBe('3');
+          |                       ^
+      130 |     });
+      131 |
+      132 |     it('should lock account after max failed attempts', async () => {
+
+      at Object.<anonymous> (__tests__/unit/auth/services/account-lockout.service.spec.ts:129:23)
+
+  ● AccountLockoutService › recordFailedAttempt › should apply progressive lockout duration
+
+    expect(received).toBeLessThanOrEqual(expected)
+
+    Expected: <= 1759498448020
+    Received:    1759502047019
+
+      174 |       const expectedLockout = Date.now() + (60 * 60 * 1000);
+      175 |       expect(result.lockedUntil!.getTime()).toBeGreaterThanOrEqual(expectedLockout - 1000);
+    > 176 |       expect(result.lockedUntil!.getTime()).toBeLessThanOrEqual(expectedLockout + 1000);
+          |                                             ^
+      177 |     });
+      178 |
+      179 |     it('should cap progressive lockout at 24 hours', async () => {
+
+      at Object.<anonymous> (__tests__/unit/auth/services/account-lockout.service.spec.ts:176:45)
+
+  ● AccountLockoutService › recordFailedAttempt › should reset failed attempts after reset time
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "1"
+    Received: 1
+
+      218 |       // Verify new firstFailedAt was set
+      219 |       const data = await mockRedis.hmget(key, 'failedAttempts', 'firstFailedAt');
+    > 220 |       expect(data[0]).toBe('1');
+          |                       ^
+      221 |       expect(parseInt(data[1]!)).toBeGreaterThan(oldFirstFailedAt);
+      222 |     });
+      223 |
+
+      at Object.<anonymous> (__tests__/unit/auth/services/account-lockout.service.spec.ts:220:23)
+
+  ● AccountLockoutService › recordFailedAttempt › should reset failed attempts to 0 after lockout
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "0"
+    Received: null
+
+      257 |       // Verify failedAttempts was reset to 0 (not incremented further)
+      258 |       const data = await mockRedis.hmget(key, 'failedAttempts');
+    > 259 |       expect(data[0]).toBe('0');
+          |                       ^
+      260 |     });
+      261 |
+      262 |     it('should increment lockout count on each lockout', async () => {
+
+      at Object.<anonymous> (__tests__/unit/auth/services/account-lockout.service.spec.ts:259:23)
+
+  ● AccountLockoutService › recordFailedAttempt › should increment lockout count on each lockout
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "1"
+    Received: 1
+
+      274 |
+      275 |       const data = await mockRedis.hmget(key, 'lockoutCount');
+    > 276 |       expect(data[0]).toBe('1');
+          |                       ^
+      277 |     });
+      278 |
+      279 |     it('should update user status to SUSPENDED when locked by email', async () => {
+
+      at Object.<anonymous> (__tests__/unit/auth/services/account-lockout.service.spec.ts:276:23)
+
+  ● AccountLockoutService › Progressive Lockout Calculation › should calculate progressive lockout durations correctly
+
+    expect(received).toBeGreaterThanOrEqual(expected)
+
+    Expected: >= 1759498446150
+    Received:    1759496647150
+
+      698 |
+      699 |         expect(result.isLocked).toBe(true);
+    > 700 |         expect(result.lockedUntil!.getTime()).toBeGreaterThanOrEqual(expectedLockout - 1000);
+          |                                               ^
+      701 |         expect(result.lockedUntil!.getTime()).toBeLessThanOrEqual(expectedLockout + 1000);
+      702 |       }
+      703 |     });
+
+      at Object.<anonymous> (__tests__/unit/auth/services/account-lockout.service.spec.ts:700:47)
+
+  ● AccountLockoutService › Edge Cases and Boundary Conditions › should handle time boundary conditions for reset
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: false
+    Received: true
+
+      856 |
+      857 |       // Should be treated as expired and reset
+    > 858 |       expect(result.isLocked).toBe(false);
+          |                               ^
+      859 |       expect(result.failedAttempts).toBe(1);
+      860 |     });
+      861 |
+
+      at Object.<anonymous> (__tests__/unit/auth/services/account-lockout.service.spec.ts:858:31)
+
+  ● AccountLockoutService › Edge Cases and Boundary Conditions › should handle malformed Redis data gracefully
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 1
+    Received: NaN
+
+      875 |
+      876 |       expect(result.isLocked).toBe(false);
+    > 877 |       expect(result.failedAttempts).toBe(1);
+          |                                     ^
+      878 |     });
+      879 |
+      880 |     it('should handle Redis connection errors with safe defaults', async () => {
+
+      at Object.<anonymous> (__tests__/unit/auth/services/account-lockout.service.spec.ts:877:37)
+
+FAIL __tests__/unit/users/users.service.spec.ts
+  ● UsersService › update › should throw ConflictException when email already in use
 
     expect(received).rejects.toThrow(expected)
 
-    Expected substring: "Failed to update account currentBalance: Balance update failed"
-    Received message:   "Failed to update account balance: Balance update failed"
+    Expected message: "Email already in use"
+    Received message: "Cannot read properties of undefined (reading 'id')"
 
-          91 |     } catch (error) {
-          92 |       this.logger.error(`Failed to update account balance: ${error.message}`, error.stack);
-        > 93 |       throw new Error(`Failed to update account balance: ${error.message}`);
-             |             ^
-          94 |     }
-          95 |   }
-          96 |
+          123 |   private toResponseDto(user: User): UserResponseDto {
+          124 |     return {
+        > 125 |       id: user.id,
+              |                ^
+          126 |       email: user.email,
+          127 |       firstName: user.firstName,
+          128 |       lastName: user.lastName,
 
-      at AccountRepository.updateBalance (src/core/database/repositories/impl/account.repository.ts:93:13)
-      at Object.<anonymous> (src/core/database/repositories/__tests__/account.repository.spec.ts:176:7)
+      at UsersService.toResponseDto (src/users/users.service.ts:125:16)
+      at UsersService.update (src/users/users.service.ts:76:17)
+      at Object.<anonymous> (__tests__/unit/users/users.service.spec.ts:309:7)
       at Object.toThrow (../../node_modules/.pnpm/expect@29.7.0/node_modules/expect/build/index.js:218:22)
-      at Object.<anonymous> (src/core/database/repositories/__tests__/account.repository.spec.ts:176:85)
+      at Object.<anonymous> (__tests__/unit/users/users.service.spec.ts:316:17)
 
-  ● AccountRepository › incrementBalance › should handle incrementBalance errors
+  ● UsersService › toResponseDto (private method - tested through public methods) › should include computed properties
 
-    expect(received).rejects.toThrow(expected)
+    expect(received).toBe(expected) // Object.is equality
 
-    Expected substring: "Failed to increment account currentBalance: Increment failed"
-    Received message:   "Failed to increment account balance: Increment failed"
+    Expected: "Test User"
+    Received: "New Name"
 
-          107 |     } catch (error) {
-          108 |       this.logger.error(`Failed to increment account balance: ${error.message}`, error.stack);
-        > 109 |       throw new Error(`Failed to increment account balance: ${error.message}`);
-              |             ^
-          110 |     }
-          111 |   }
-          112 |
+      582 |       const result = await service.findOne(mockUser.id);
+      583 |
+    > 584 |       expect(result.fullName).toBe('Test User');
+          |                               ^
+      585 |       expect(result.isEmailVerified).toBe(true);
+      586 |       expect(result.isActive).toBe(true);
+      587 |     });
 
-      at AccountRepository.incrementBalance (src/core/database/repositories/impl/account.repository.ts:109:13)
-      at Object.<anonymous> (src/core/database/repositories/__tests__/account.repository.spec.ts:210:7)
-      at Object.toThrow (../../node_modules/.pnpm/expect@29.7.0/node_modules/expect/build/index.js:218:22)
-      at Object.<anonymous> (src/core/database/repositories/__tests__/account.repository.spec.ts:210:87)
+      at Object.<anonymous> (__tests__/unit/users/users.service.spec.ts:584:31)
 
-  ● AccountRepository › decrementBalance › should handle decrementBalance errors
+FAIL __tests__/unit/auth/services/rate-limit.service.spec.ts
+  ● Test suite failed to run
 
-    expect(received).rejects.toThrow(expected)
+    [96m__tests__/unit/auth/services/rate-limit.service.spec.ts[0m:[93m59[0m:[93m25[0m - [91merror[0m[90m TS2554: [0mExpected 3 arguments, but got 2.
 
-    Expected substring: "Failed to decrement account currentBalance: Decrement failed"
-    Received message:   "Failed to decrement account balance: Decrement failed"
+    [7m59[0m         await mockRedis.hset(key, {
+    [7m  [0m [91m                        ~~~~[0m
+    [96m__tests__/unit/auth/services/rate-limit.service.spec.ts[0m:[93m78[0m:[93m25[0m - [91merror[0m[90m TS2554: [0mExpected 3 arguments, but got 2.
 
-          123 |     } catch (error) {
-          124 |       this.logger.error(`Failed to decrement account balance: ${error.message}`, error.stack);
-        > 125 |       throw new Error(`Failed to decrement account balance: ${error.message}`);
-              |             ^
-          126 |     }
-          127 |   }
-          128 |
+    [7m78[0m         await mockRedis.hset(key, {
+    [7m  [0m [91m                        ~~~~[0m
+    [96m__tests__/unit/auth/services/rate-limit.service.spec.ts[0m:[93m100[0m:[93m25[0m - [91merror[0m[90m TS2554: [0mExpected 3 arguments, but got 2.
 
-      at AccountRepository.decrementBalance (src/core/database/repositories/impl/account.repository.ts:125:13)
-      at Object.<anonymous> (src/core/database/repositories/__tests__/account.repository.spec.ts:234:7)
-      at Object.toThrow (../../node_modules/.pnpm/expect@29.7.0/node_modules/expect/build/index.js:218:22)
-      at Object.<anonymous> (src/core/database/repositories/__tests__/account.repository.spec.ts:234:87)
+    [7m100[0m         await mockRedis.hset(key, {
+    [7m   [0m [91m                        ~~~~[0m
+    [96m__tests__/unit/auth/services/rate-limit.service.spec.ts[0m:[93m123[0m:[93m25[0m - [91merror[0m[90m TS2554: [0mExpected 3 arguments, but got 2.
 
-  ● AccountRepository › getTotalBalanceForUser › should handle getTotalBalanceForUser errors
+    [7m123[0m         await mockRedis.hset(key, {
+    [7m   [0m [91m                        ~~~~[0m
+    [96m__tests__/unit/auth/services/rate-limit.service.spec.ts[0m:[93m149[0m:[93m25[0m - [91merror[0m[90m TS2554: [0mExpected 3 arguments, but got 2.
 
-    expect(received).rejects.toThrow(expected)
+    [7m149[0m         await mockRedis.hset(key, {
+    [7m   [0m [91m                        ~~~~[0m
+    [96m__tests__/unit/auth/services/rate-limit.service.spec.ts[0m:[93m195[0m:[93m25[0m - [91merror[0m[90m TS2554: [0mExpected 3 arguments, but got 2.
 
-    Expected substring: "Failed to get total currentBalance: Total currentBalance query failed"
-    Received message:   "Failed to get total balance: Total currentBalance query failed"
+    [7m195[0m         await mockRedis.hset(key, {
+    [7m   [0m [91m                        ~~~~[0m
+    [96m__tests__/unit/auth/services/rate-limit.service.spec.ts[0m:[93m245[0m:[93m25[0m - [91merror[0m[90m TS2554: [0mExpected 3 arguments, but got 2.
 
-          139 |     } catch (error) {
-          140 |       this.logger.error(`Failed to get total balance: ${error.message}`, error.stack);
-        > 141 |       throw new Error(`Failed to get total balance: ${error.message}`);
-              |             ^
-          142 |     }
-          143 |   }
-          144 |
+    [7m245[0m         await mockRedis.hset(key, {
+    [7m   [0m [91m                        ~~~~[0m
+    [96m__tests__/unit/auth/services/rate-limit.service.spec.ts[0m:[93m263[0m:[93m25[0m - [91merror[0m[90m TS2554: [0mExpected 3 arguments, but got 2.
 
-      at AccountRepository.getTotalBalanceForUser (src/core/database/repositories/impl/account.repository.ts:141:13)
-      at Object.<anonymous> (src/core/database/repositories/__tests__/account.repository.spec.ts:269:7)
-      at Object.toThrow (../../node_modules/.pnpm/expect@29.7.0/node_modules/expect/build/index.js:218:22)
-      at Object.<anonymous> (src/core/database/repositories/__tests__/account.repository.spec.ts:269:85)
+    [7m263[0m         await mockRedis.hset(key, {
+    [7m   [0m [91m                        ~~~~[0m
+    [96m__tests__/unit/auth/services/rate-limit.service.spec.ts[0m:[93m287[0m:[93m25[0m - [91merror[0m[90m TS2554: [0mExpected 3 arguments, but got 2.
 
-  ● AccountRepository › getAccountBalancesSummary › should handle getAccountBalancesSummary errors
+    [7m287[0m         await mockRedis.hset(key, {
+    [7m   [0m [91m                        ~~~~[0m
+    [96m__tests__/unit/auth/services/rate-limit.service.spec.ts[0m:[93m323[0m:[93m25[0m - [91merror[0m[90m TS2554: [0mExpected 3 arguments, but got 2.
 
-    expect(received).rejects.toThrow(expected)
+    [7m323[0m         await mockRedis.hset(key, {
+    [7m   [0m [91m                        ~~~~[0m
+    [96m__tests__/unit/auth/services/rate-limit.service.spec.ts[0m:[93m350[0m:[93m23[0m - [91merror[0m[90m TS2554: [0mExpected 3 arguments, but got 2.
 
-    Expected substring: "Failed to get account currentBalances summary: Summary query failed"
-    Received message:   "Failed to get account balances summary: Summary query failed"
+    [7m350[0m       await mockRedis.hset(key, {
+    [7m   [0m [91m                      ~~~~[0m
+    [96m__tests__/unit/auth/services/rate-limit.service.spec.ts[0m:[93m382[0m:[93m23[0m - [91merror[0m[90m TS2554: [0mExpected 3 arguments, but got 2.
 
-          166 |     } catch (error) {
-          167 |       this.logger.error(`Failed to get account balances summary: ${error.message}`, error.stack);
-        > 168 |       throw new Error(`Failed to get account balances summary: ${error.message}`);
-              |             ^
-          169 |     }
-          170 |   }
-          171 |
+    [7m382[0m       await mockRedis.hset(key, {
+    [7m   [0m [91m                      ~~~~[0m
+    [96m__tests__/unit/auth/services/rate-limit.service.spec.ts[0m:[93m401[0m:[93m23[0m - [91merror[0m[90m TS2554: [0mExpected 3 arguments, but got 2.
 
-      at AccountRepository.getAccountBalancesSummary (src/core/database/repositories/impl/account.repository.ts:168:13)
-      at Object.<anonymous> (src/core/database/repositories/__tests__/account.repository.spec.ts:446:7)
-      at Object.toThrow (../../node_modules/.pnpm/expect@29.7.0/node_modules/expect/build/index.js:218:22)
-      at Object.<anonymous> (src/core/database/repositories/__tests__/account.repository.spec.ts:446:88)
+    [7m401[0m       await mockRedis.hset(key, {
+    [7m   [0m [91m                      ~~~~[0m
+    [96m__tests__/unit/auth/services/rate-limit.service.spec.ts[0m:[93m432[0m:[93m23[0m - [91merror[0m[90m TS2554: [0mExpected 3 arguments, but got 2.
 
-  ● AccountRepository › findLowBalanceAccounts › should handle findLowBalanceAccounts errors
+    [7m432[0m       await mockRedis.hset(key, {
+    [7m   [0m [91m                      ~~~~[0m
+    [96m__tests__/unit/auth/services/rate-limit.service.spec.ts[0m:[93m454[0m:[93m23[0m - [91merror[0m[90m TS2554: [0mExpected 3 arguments, but got 2.
 
-    expect(received).rejects.toThrow(expected)
+    [7m454[0m       await mockRedis.hset(key, {
+    [7m   [0m [91m                      ~~~~[0m
+    [96m__tests__/unit/auth/services/rate-limit.service.spec.ts[0m:[93m484[0m:[93m23[0m - [91merror[0m[90m TS2554: [0mExpected 3 arguments, but got 2.
 
-    Expected substring: "Failed to find low currentBalance accounts: Low currentBalance query failed"
-    Received message:   "Failed to find low balance accounts: Low currentBalance query failed"
+    [7m484[0m       await mockRedis.hset(key, {
+    [7m   [0m [91m                      ~~~~[0m
+    [96m__tests__/unit/auth/services/rate-limit.service.spec.ts[0m:[93m579[0m:[93m23[0m - [91merror[0m[90m TS2554: [0mExpected 3 arguments, but got 2.
 
-          271 |     } catch (error) {
-          272 |       this.logger.error(`Failed to find low balance accounts: ${error.message}`, error.stack);
-        > 273 |       throw new Error(`Failed to find low balance accounts: ${error.message}`);
-              |             ^
-          274 |     }
-          275 |   }
-          276 |
+    [7m579[0m       await mockRedis.hset(key1, {
+    [7m   [0m [91m                      ~~~~[0m
+    [96m__tests__/unit/auth/services/rate-limit.service.spec.ts[0m:[93m648[0m:[93m23[0m - [91merror[0m[90m TS2554: [0mExpected 3 arguments, but got 2.
 
-      at AccountRepository.findLowBalanceAccounts (src/core/database/repositories/impl/account.repository.ts:273:13)
-      at Object.<anonymous> (src/core/database/repositories/__tests__/account.repository.spec.ts:477:7)
-      at Object.toThrow (../../node_modules/.pnpm/expect@29.7.0/node_modules/expect/build/index.js:218:22)
-      at Object.<anonymous> (src/core/database/repositories/__tests__/account.repository.spec.ts:477:75)
+    [7m648[0m       await mockRedis.hset(key, {
+    [7m   [0m [91m                      ~~~~[0m
+    [96m__tests__/unit/auth/services/rate-limit.service.spec.ts[0m:[93m666[0m:[93m23[0m - [91merror[0m[90m TS2554: [0mExpected 3 arguments, but got 2.
 
-Test Suites: 1 failed, 5 passed, 6 total
-Tests:       6 failed, 119 passed, 125 total
+    [7m666[0m       await mockRedis.hset(key, {
+    [7m   [0m [91m                      ~~~~[0m
+    [96m__tests__/unit/auth/services/rate-limit.service.spec.ts[0m:[93m700[0m:[93m23[0m - [91merror[0m[90m TS2554: [0mExpected 3 arguments, but got 2.
+
+    [7m700[0m       await mockRedis.hset(key, {
+    [7m   [0m [91m                      ~~~~[0m
+    [96m__tests__/unit/auth/services/rate-limit.service.spec.ts[0m:[93m720[0m:[93m25[0m - [91merror[0m[90m TS2554: [0mExpected 3 arguments, but got 2.
+
+    [7m720[0m         await mockRedis.hset(key, {
+    [7m   [0m [91m                        ~~~~[0m
+
+FAIL __tests__/unit/accounts/accounts.service.spec.ts
+  ● AccountsService › getSummary › should calculate summary for user accounts
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 5500
+    Received: 9500
+
+      505 |       });
+      506 |       expect(result.totalAccounts).toBe(3);
+    > 507 |       expect(result.totalBalance).toBe(5500); // 1000 + 5000 - 500
+          |                                   ^
+      508 |       expect(result.activeAccounts).toBe(3);
+      509 |     });
+      510 |
+
+      at Object.<anonymous> (__tests__/unit/accounts/accounts.service.spec.ts:507:35)
+
+  ● AccountsService › getSummary › should group accounts by type
+
+    expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 1
+    + Received  + 1
+
+      Object {
+        "count": 1,
+    -   "totalBalance": 1000,
+    +   "totalBalance": 5000,
+      }
+
+      519 |       const result = await service.getSummary(userId);
+      520 |
+    > 521 |       expect(result.byType[AccountType.CHECKING]).toEqual({
+          |                                                   ^
+      522 |         count: 1,
+      523 |         totalBalance: 1000,
+      524 |       });
+
+      at Object.<anonymous> (__tests__/unit/accounts/accounts.service.spec.ts:521:51)
+
+  ● AccountsService › getSummary › should count accounts needing sync
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 2
+    Received: 0
+
+      539 |       const result = await service.getSummary(userId);
+      540 |
+    > 541 |       expect(result.accountsNeedingSync).toBe(2);
+          |                                          ^
+      542 |     });
+      543 |
+      544 |     it('should only include active accounts', async () => {
+
+      at Object.<anonymous> (__tests__/unit/accounts/accounts.service.spec.ts:541:42)
+
+
+Test Suites: 4 failed, 26 passed, 30 total
+Tests:       14 failed, 913 passed, 927 total
 Snapshots:   0 total
-Time:        5.796 s
-Ran all test suites matching /src|auth/i.
+Time:        62.275 s
+Ran all test suites matching /__tests__\/unit/i.
  ELIFECYCLE  Command failed with exit code 1.

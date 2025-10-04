@@ -5,13 +5,23 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { AuthSecurityService } from './auth-security.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { RateLimitGuard } from './guards/rate-limit.guard';
+import { RateLimitService } from './services/rate-limit.service';
+import { PasswordSecurityService } from './services/password-security.service';
+import { AccountLockoutService } from './services/account-lockout.service';
+import { EmailVerificationService } from './services/email-verification.service';
+import { PasswordResetService } from './services/password-reset.service';
+import { AuditLogService } from './services/audit-log.service';
 import { User } from '../core/database/entities/user.entity';
+import { AuditLog } from '../core/database/entities/audit-log.entity';
+import { PasswordHistory } from '../core/database/entities/password-history.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User]),
+    TypeOrmModule.forFeature([User, AuditLog, PasswordHistory]),
     PassportModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -25,7 +35,29 @@ import { User } from '../core/database/entities/user.entity';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, JwtAuthGuard],
-  exports: [AuthService, JwtAuthGuard],
+  providers: [
+    AuthService,
+    AuthSecurityService,
+    JwtStrategy,
+    JwtAuthGuard,
+    RateLimitGuard,
+    RateLimitService,
+    PasswordSecurityService,
+    AccountLockoutService,
+    EmailVerificationService,
+    PasswordResetService,
+    AuditLogService,
+  ],
+  exports: [
+    AuthService,
+    AuthSecurityService,
+    JwtAuthGuard,
+    RateLimitGuard,
+    PasswordSecurityService,
+    AccountLockoutService,
+    EmailVerificationService,
+    PasswordResetService,
+    AuditLogService,
+  ],
 })
 export class AuthModule {}
