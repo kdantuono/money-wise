@@ -19,7 +19,7 @@
     "clean": "rm -rf .next out coverage"
   },
   "dependencies": {
-    "next": "14.0.3",
+    "next": "14.2.32",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "@next/font": "14.0.3",
