@@ -12,7 +12,7 @@ Personal finance management application with cross-platform support
 
 MoneyWise is a comprehensive personal finance management application built with modern technologies and cross-platform compatibility. The application helps users track expenses, manage budgets, and gain insights into their financial health.
 
-### **Current Status: MVP Development (v0.1.0)**
+### **Current Status: MVP Development (v0.4.6)**
 - ✅ Project infrastructure and monorepo setup complete
 - ✅ Documentation and planning organization complete
 - 🚧 Core financial features in development
@@ -37,10 +37,14 @@ cd money-wise
 # 2. Install dependencies
 pnpm install
 
-# 3. Start development services
+# 3. Configure environment variables
+cp .env.example .env
+# Edit .env if needed (defaults work for local development)
+
+# 4. Start development services (PostgreSQL + Redis)
 pnpm docker:dev
 
-# 4. Start development servers
+# 5. Start development servers
 pnpm dev
 ```
 
@@ -296,6 +300,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**Version**: 0.1.0 | **Status**: MVP Development | **Last Updated**: 2025-01-26
+**Version**: 0.4.6 | **Status**: MVP Development | **Last Updated**: 2025-10-04
 
 For questions or support, please create an issue or contact the maintainers.

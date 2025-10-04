@@ -14,13 +14,14 @@ declare global {
 }
 
 // Test database configuration
+// Uses environment variables from .env.test or CI/CD environment
 export const testDbConfig = {
   type: 'postgres' as const,
   host: process.env.DB_HOST || 'localhost',
   port: parseInt(process.env.DB_PORT || '5432'),
-  username: process.env.DB_USERNAME || 'notemesh', // CI uses DB_USERNAME (postgres), local uses notemesh
+  username: process.env.DB_USERNAME || 'postgres',
   password: process.env.DB_PASSWORD || 'password',
-  database: 'moneywise_test',
+  database: process.env.DB_NAME || 'moneywise_test',
   entities: ['src/**/*.entity.ts'],
   migrations: ['src/core/database/migrations/*.ts'],
   migrationsRun: true,

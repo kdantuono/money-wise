@@ -23,11 +23,11 @@ export async function setupTestDatabase(): Promise<DataSource> {
 
   testDataSource = new DataSource({
     type: 'postgres',
-    host: process.env.DATABASE_HOST || 'localhost',
-    port: parseInt(process.env.DATABASE_PORT || '5432'),
-    username: process.env.DB_USERNAME || 'notemesh', // CI uses DB_USERNAME (postgres), local uses notemesh
+    host: process.env.DB_HOST || 'localhost',
+    port: parseInt(process.env.DB_PORT || '5432'),
+    username: process.env.DB_USERNAME || 'postgres',
     password: process.env.DB_PASSWORD || 'password',
-    database: 'moneywise_test',
+    database: process.env.DB_NAME || 'moneywise_test',
     schema: 'public',
     synchronize: true,
     dropSchema: false,
