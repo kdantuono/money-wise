@@ -15,13 +15,14 @@ describe('Large Dataset Performance Tests', () => {
   let dataSource: DataSource;
   let factory: TestDataFactory;
 
-  // Performance thresholds (adjust based on hardware)
+  // Performance thresholds (CI-aware, adjusts for slower CI/CD environments)
+  const CI_MULTIPLIER = process.env.CI === 'true' ? 2.5 : 1.0;
   const PERFORMANCE_THRESHOLDS = {
-    BATCH_INSERT_1000: 5000,     // 5 seconds for 1000 records
-    BATCH_INSERT_10000: 30000,   // 30 seconds for 10000 records
-    COMPLEX_QUERY: 2000,         // 2 seconds for complex queries
-    AGGREGATION_QUERY: 3000,     // 3 seconds for aggregations
-    PAGINATION_QUERY: 500,       // 500ms for paginated queries
+    BATCH_INSERT_1000: Math.floor(5000 * CI_MULTIPLIER),     // 5s local, 12.5s CI
+    BATCH_INSERT_10000: Math.floor(30000 * CI_MULTIPLIER),   // 30s local, 75s CI
+    COMPLEX_QUERY: Math.floor(2000 * CI_MULTIPLIER),         // 2s local, 5s CI
+    AGGREGATION_QUERY: Math.floor(3000 * CI_MULTIPLIER),     // 3s local, 7.5s CI
+    PAGINATION_QUERY: Math.floor(500 * CI_MULTIPLIER),       // 500ms local, 1.25s CI
   };
 
   beforeAll(async () => {

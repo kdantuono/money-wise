@@ -14,10 +14,28 @@ export class MockRedis extends EventEmitter {
   private storage: Map<string, string> = new Map();
   private expirations: Map<string, number> = new Map();
 
+  // Error injection for testing error paths
+  private pipelineErrorInjection: Error | null = null;
+
   constructor() {
     super();
     // Suppress unhandled error warnings in tests
     this.on('error', () => {});
+  }
+
+  /**
+   * Inject an error to be thrown on next pipeline exec()
+   * Useful for testing error handling in pipelined operations
+   */
+  injectPipelineError(error: Error): void {
+    this.pipelineErrorInjection = error;
+  }
+
+  /**
+   * Clear any injected pipeline errors
+   */
+  clearPipelineError(): void {
+    this.pipelineErrorInjection = null;
   }
 
   // String operations
@@ -183,6 +201,13 @@ export class MockRedis extends EventEmitter {
         return pipelineObj;
       },
       exec: jest.fn(() => {
+        // Check for injected errors first
+        if (this.pipelineErrorInjection) {
+          const error = this.pipelineErrorInjection;
+          this.pipelineErrorInjection = null; // Clear after use
+          return Promise.reject(error);
+        }
+
         // Execute all commands
         const results = commands.map(cmd => {
           const [method, ...args] = cmd;
