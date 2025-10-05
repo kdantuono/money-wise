@@ -4,6 +4,7 @@
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigModule } from '@nestjs/config';
+import { DataSource } from 'typeorm';
 import { HealthModule } from '@/core/health/health.module';
 import { RedisModule } from '@/core/redis/redis.module';
 import request from 'supertest';
@@ -19,7 +20,22 @@ export class TestClient {
     // Create mock Redis to avoid real Redis connections in integration tests
     this.mockRedis = createMockRedis();
 
-    // Build test module with required modules but using MockRedis
+    // Create a mock DataSource for testing
+    const mockDataSource = {
+      isInitialized: true,
+      query: jest.fn().mockResolvedValue([{ health: 1 }]),
+      driver: {
+        master: {
+          pool: {
+            totalCount: 10,
+            idleCount: 5,
+            waitingCount: 0,
+          },
+        },
+      },
+    } as unknown as DataSource;
+
+    // Build test module with required modules but using MockRedis and MockDataSource
     // Integration tests use mocked dependencies, not real database connections
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [
@@ -31,6 +47,8 @@ export class TestClient {
         HealthModule,  // Required for /health endpoint
       ],
     })
+    .overrideProvider(DataSource)
+    .useValue(mockDataSource)
     .compile();
 
     this._app = moduleFixture.createNestApplication();
