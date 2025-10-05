@@ -6,9 +6,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { HealthController } from '@/core/health/health.controller';
 import { ConfigService } from '@nestjs/config';
+import { DataSource } from 'typeorm';
 
 describe('HealthController', () => {
   let controller: HealthController;
+  let mockDataSource: jest.Mocked<DataSource>;
+  let mockRedis: any;
 
   beforeEach(async () => {
     const mockConfigService = {
@@ -18,12 +21,39 @@ describe('HealthController', () => {
       }),
     };
 
+    mockDataSource = {
+      isInitialized: true,
+      query: jest.fn().mockResolvedValue([{ health: 1 }]),
+      driver: {
+        master: {
+          pool: {
+            totalCount: 10,
+            idleCount: 5,
+            waitingCount: 0,
+          },
+        },
+      },
+    } as any;
+
+    mockRedis = {
+      ping: jest.fn().mockResolvedValue('PONG'),
+      info: jest.fn().mockResolvedValue('redis_version:7.0.0\r\n'),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       controllers: [HealthController],
       providers: [
         {
           provide: ConfigService,
           useValue: mockConfigService,
+        },
+        {
+          provide: DataSource,
+          useValue: mockDataSource,
+        },
+        {
+          provide: 'default',
+          useValue: mockRedis,
         },
       ],
     }).compile();
@@ -90,9 +120,12 @@ describe('HealthController', () => {
           database: {
             status: 'ok',
             responseTime: expect.any(Number),
+            details: expect.any(Object),
           },
           redis: {
             status: 'ok',
+            responseTime: expect.any(Number),
+            details: expect.any(Object),
           },
         },
       });
@@ -103,16 +136,55 @@ describe('HealthController', () => {
 
       expect(result.services.database.responseTime).toBeGreaterThanOrEqual(0);
     });
+
+    it('should include connection pool stats', async () => {
+      const result = await controller.getDetailedHealth();
+
+      expect(result.services.database.details).toEqual({
+        pool: {
+          total: 10,
+          idle: 5,
+          waiting: 0,
+        },
+      });
+    });
+
+    it('should include Redis version', async () => {
+      const result = await controller.getDetailedHealth();
+
+      expect(result.services.redis.details).toEqual({
+        version: '7.0.0',
+      });
+    });
   });
 
   describe('getReadiness', () => {
-    it('should return readiness status', () => {
-      const result = controller.getReadiness();
+    it('should return readiness status when all services are healthy', async () => {
+      const result = await controller.getReadiness();
 
       expect(result).toEqual({
         status: 'ready',
         timestamp: expect.any(String),
+        checks: {
+          database: true,
+          redis: true,
+        },
       });
+    });
+
+    it('should throw 503 when database is not ready', async () => {
+      Object.defineProperty(mockDataSource, 'isInitialized', {
+        value: false,
+        writable: true,
+      });
+
+      await expect(controller.getReadiness()).rejects.toThrow();
+    });
+
+    it('should throw 503 when Redis is not ready', async () => {
+      mockRedis.ping.mockRejectedValue(new Error('Connection refused'));
+
+      await expect(controller.getReadiness()).rejects.toThrow();
     });
   });
 
