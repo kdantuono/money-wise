@@ -21,6 +21,16 @@ interface HealthCheckResponse {
   };
 }
 
+interface PostgresDriver {
+  master?: {
+    pool?: {
+      totalCount: number;
+      idleCount: number;
+      waitingCount: number;
+    };
+  };
+}
+
 @ApiTags('Health')
 @Controller('health')
 export class HealthController {
@@ -255,8 +265,7 @@ export class HealthController {
       await this.dataSource.query('SELECT 1 as health');
 
       // Get connection pool stats
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const driver = this.dataSource.driver as any;
+      const driver = this.dataSource.driver as PostgresDriver;
       const poolStats = driver.master?.pool
         ? {
             total: driver.master.pool.totalCount,

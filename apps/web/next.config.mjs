@@ -22,8 +22,8 @@ const nextConfig = {
 
   // TypeScript configuration
   typescript: {
-    // Allow production builds to complete even with type errors
-    // (strict checking is done in CI/CD pipeline)
+    // Fail builds on type errors (strict checking enforced)
+    // Type checking is also done in CI/CD pipeline for early detection
     ignoreBuildErrors: false,
   },
 

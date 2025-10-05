@@ -123,7 +123,7 @@ feature/story-1.5.2-sentry-environments
 **Pros**:
 - ✅ No wasted work (finish current 75% progress)
 - ✅ Gain orchestration benefits for bulk of work (22h remaining)
-- ✅ Lower coordination overhead (5 parallel tasks vs 8)
+- ✅ Lower coordination overhead (7 parallel tasks vs 8 sequential)
 - ✅ Balance speed + simplicity
 
 **Cons**:

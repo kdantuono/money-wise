@@ -30,7 +30,7 @@ export class LoggerService implements NestLoggerService {
   private readonly logLevel: LogLevel;
 
   constructor(private readonly configService: ConfigService) {
-    const env = this.configService.get<string>('app.NODE_ENV', 'development');
+    const env = this.configService.get<string>('NODE_ENV', 'development');
     this.isProduction = env === 'production';
 
     // Set log level based on environment

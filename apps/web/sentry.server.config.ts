@@ -53,7 +53,7 @@ if (SENTRY_DSN) {
     // Profiling (environment-aware sampling)
     profilesSampleRate: profiles,
     integrations: [
-      nodeProfilingIntegration(),
+      ...(profiles > 0 ? [nodeProfilingIntegration()] : []),
     ],
 
     // Release tracking (optional - for deploy tracking)
