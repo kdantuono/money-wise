@@ -13,18 +13,39 @@ import { nodeProfilingIntegration } from '@sentry/profiling-node';
 
 const SENTRY_DSN = process.env.SENTRY_DSN;
 const NODE_ENV = process.env.NODE_ENV || 'development';
+const SENTRY_ENVIRONMENT = process.env.SENTRY_ENVIRONMENT || NODE_ENV;
+
+/**
+ * Get environment-specific sampling rates
+ * - Production: 10% traces, 10% profiles (conserve free tier quota)
+ * - Staging: 50% traces, 20% profiles (balance coverage vs quota)
+ * - Development: 100% traces, 0% profiles (full debugging, no overhead)
+ */
+const getSamplingRates = () => {
+  switch (SENTRY_ENVIRONMENT) {
+    case 'production':
+      return { traces: 0.1, profiles: 0.1 };
+    case 'staging':
+      return { traces: 0.5, profiles: 0.2 };
+    case 'development':
+    default:
+      return { traces: 1.0, profiles: 0 };
+  }
+};
+
+const { traces, profiles } = getSamplingRates();
 
 // Only initialize if DSN is provided (graceful degradation)
 if (SENTRY_DSN) {
   Sentry.init({
     dsn: SENTRY_DSN,
-    environment: process.env.SENTRY_ENVIRONMENT || NODE_ENV,
+    environment: SENTRY_ENVIRONMENT,
 
-    // Performance Monitoring (adaptive sampling based on environment)
-    tracesSampleRate: NODE_ENV === 'production' ? 0.1 : 1.0,
+    // Performance Monitoring (environment-aware sampling)
+    tracesSampleRate: traces,
 
-    // Profiling (MVP free tier: limit production samples, full dev sampling)
-    profilesSampleRate: NODE_ENV === 'production' ? 0.1 : 0,
+    // Profiling (environment-aware sampling)
+    profilesSampleRate: profiles,
     integrations: [
       nodeProfilingIntegration(),
     ],
@@ -40,7 +61,10 @@ if (SENTRY_DSN) {
   });
 
   // eslint-disable-next-line no-console
-  console.log(`[Sentry] Initialized for environment: ${NODE_ENV}`);
+  console.log(
+    `[Sentry] Initialized for environment: ${SENTRY_ENVIRONMENT} ` +
+    `(traces: ${traces * 100}%, profiles: ${profiles * 100}%)`,
+  );
 } else {
   console.warn('[Sentry] DSN not provided - error tracking disabled');
 }
