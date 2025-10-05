@@ -1,7 +1,3 @@
-# .github/dependabot.yml
-# Dependabot configuration for MoneyWise monorepo
-# Manages dependencies across npm/pnpm, Docker, and GitHub Actions
-
 version: 2
 updates:
   # NPM dependencies for root workspace

@@ -1,3 +1,7 @@
+// ⚠️ CRITICAL: Sentry instrumentation MUST be imported FIRST
+// This enables auto-instrumentation before any other modules load
+import './instrument';
+
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';

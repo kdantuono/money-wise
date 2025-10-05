@@ -150,4 +150,37 @@ export class HealthController {
       };
     }
   }
+
+  /**
+   * Sentry Test Endpoint
+   * Triggers a test error to verify Sentry integration is working
+   *
+   * ⚠️ This endpoint is for testing ONLY - remove in production or add auth guard
+   *
+   * Usage:
+   * 1. Set SENTRY_DSN in .env
+   * 2. Start backend: pnpm --filter @money-wise/backend dev
+   * 3. Trigger error: curl http://localhost:3001/api/health/sentry-test
+   * 4. Check Sentry dashboard for error
+   */
+  @Get('sentry-test')
+  @ApiOperation({
+    summary: 'Test Sentry error tracking (DEV ONLY)',
+    description: 'Triggers a test error to verify Sentry integration. Remove in production.'
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Intentional test error for Sentry verification',
+  })
+  testSentry(): never {
+    const appConfig = this.configService.get<AppConfig>('app');
+
+    // Only allow in non-production environments
+    if (appConfig?.NODE_ENV === 'production') {
+      throw new Error('Sentry test endpoint is disabled in production');
+    }
+
+    // Trigger test error
+    throw new Error('[SENTRY TEST] This is an intentional test error to verify Sentry integration');
+  }
 }
