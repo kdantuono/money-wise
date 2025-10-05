@@ -9,31 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Sentry Error Tracking Integration** (EPIC-005: Development Infrastructure Quality)
-  - Minimal SDK integration (25 lines) using `@sentry/nestjs` auto-instrumentation
-  - Backend error tracking and performance monitoring
-  - Environment-based sampling: 100% dev/staging, 10% production
-  - Auto-capture: unhandled exceptions, promise rejections, HTTP context
-  - Error filtering: ignores expected errors (404s, auth failures)
-  - Test endpoint: `GET /api/health/sentry-test` for integration verification
-  - Comprehensive runbook: `docs/monitoring/sentry-runbook.md`
-  - Free tier: 5,000 events/month, $0 cost
+- **Code Review Quality Improvements** (PR #111 - Code Review Response)
+  - CI-aware performance test thresholds (2.5x multiplier for CI environments)
+  - Redis mock error injection for comprehensive error path testing
+  - Prevents flaky test failures in GitHub Actions while maintaining strict local standards
 
-### Changed
+### Fixed
 
-- **Backend Entry Point** (`apps/backend/src/main.ts`)
-  - Added Sentry instrumentation import (MUST be first import for auto-instrumentation)
-  - Import order critical: `./instrument` → `reflect-metadata` → NestJS modules
-
-- **Environment Configuration** (`apps/backend/.env.example`)
-  - Enhanced Sentry configuration documentation
-  - Added `SENTRY_DSN`, `SENTRY_ENVIRONMENT`, `SENTRY_RELEASE` variables
-  - Included setup instructions and example values
-
-- **Health Controller** (`apps/backend/src/core/health/health.controller.ts`)
-  - Added `/api/health/sentry-test` endpoint for integration testing
-  - Dev-only endpoint (disabled in production)
-  - Triggers intentional error to verify Sentry captures and sends to dashboard
+- **Test Infrastructure Hardening**
+  - Performance tests now adapt to CI/CD environment (slower builds tolerated)
+  - Redis mock can inject errors for pipeline exec() testing
+  - Comprehensive error handling test coverage now possible
 
 ## [0.4.7] - 2025-10-04
 
@@ -68,6 +54,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Impact**: Integration tests couldn't mock rate limiting, causing all auth endpoints to return 429 status
 - **Solution**: Proper DI pattern with `@Inject('default')` decorator for Redis injection
 - **Prevention**: Added code review checklist item for dependency injection validation
+
+## [0.4.6] - 2025-10-03
+
+### Added
+
+- **Sentry Error Tracking Integration** (EPIC-005: Development Infrastructure Quality)
+  - Minimal SDK integration (25 lines) using `@sentry/nestjs` auto-instrumentation
+  - Backend error tracking and performance monitoring
+  - Environment-based sampling: 100% dev/staging, 10% production
+  - Auto-capture: unhandled exceptions, promise rejections, HTTP context
+  - Error filtering: ignores expected errors (404s, auth failures)
+  - Test endpoint: `GET /api/health/sentry-test` for integration verification
+  - Comprehensive runbook: `docs/monitoring/sentry-runbook.md`
+  - Free tier: 5,000 events/month, $0 cost
+
+### Changed
+
+- **Backend Entry Point** (`apps/backend/src/main.ts`)
+  - Added Sentry instrumentation import (MUST be first import for auto-instrumentation)
+  - Import order critical: `./instrument` → `reflect-metadata` → NestJS modules
+
+- **Environment Configuration** (`apps/backend/.env.example`)
+  - Enhanced Sentry configuration documentation
+  - Added `SENTRY_DSN`, `SENTRY_ENVIRONMENT`, `SENTRY_RELEASE` variables
+  - Included setup instructions and example values
+
+- **Health Controller** (`apps/backend/src/core/health/health.controller.ts`)
+  - Added `/api/health/sentry-test` endpoint for integration testing
+  - Dev-only endpoint (disabled in production)
+  - Triggers intentional error to verify Sentry captures and sends to dashboard
 
 ## [0.4.6] - 2025-10-03
 
