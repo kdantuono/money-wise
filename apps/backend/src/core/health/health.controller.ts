@@ -1,6 +1,9 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Inject, HttpStatus, HttpException } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
+import { DataSource } from 'typeorm';
+import { Redis } from 'ioredis';
+import * as Sentry from '@sentry/node';
 import { AppConfig } from '../config/app.config';
 
 interface HealthCheckResponse {
@@ -21,7 +24,11 @@ interface HealthCheckResponse {
 @ApiTags('Health')
 @Controller('health')
 export class HealthController {
-  constructor(private readonly configService: ConfigService) {}
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly dataSource: DataSource,
+    @Inject('default') private readonly redis: Redis,
+  ) {}
 
   @Get()
   @ApiOperation({ summary: 'Health check endpoint' })
@@ -77,11 +84,53 @@ export class HealthController {
     status: 503,
     description: 'Service is not ready',
   })
-  getReadiness(): { status: string; timestamp: string } {
-    // Add additional readiness checks here (database, external services, etc.)
+  async getReadiness(): Promise<{ status: string; timestamp: string; checks: Record<string, boolean> }> {
+    const checks = {
+      database: false,
+      redis: false,
+    };
+
+    try {
+      // Check database connection
+      if (this.dataSource.isInitialized) {
+        await this.dataSource.query('SELECT 1');
+        checks.database = true;
+      }
+    } catch (error) {
+      Sentry.captureException(error, {
+        tags: { healthCheck: 'database' },
+        level: 'warning',
+      });
+    }
+
+    try {
+      // Check Redis connection
+      await this.redis.ping();
+      checks.redis = true;
+    } catch (error) {
+      Sentry.captureException(error, {
+        tags: { healthCheck: 'redis' },
+        level: 'warning',
+      });
+    }
+
+    const isReady = checks.database && checks.redis;
+
+    if (!isReady) {
+      throw new HttpException(
+        {
+          status: 'not ready',
+          timestamp: new Date().toISOString(),
+          checks,
+        },
+        HttpStatus.SERVICE_UNAVAILABLE,
+      );
+    }
+
     return {
       status: 'ready',
       timestamp: new Date().toISOString(),
+      checks,
     };
   }
 
@@ -104,33 +153,130 @@ export class HealthController {
     status: 200,
     description: 'Detailed health information including services',
   })
-  async getDetailedHealth(): Promise<HealthCheckResponse & { services: Record<string, { status: string; responseTime?: number; error?: string }> }> {
-    const basicHealth = this.getHealth();
+  async getDetailedHealth(): Promise<HealthCheckResponse & { services: Record<string, { status: string; responseTime?: number; error?: string; details?: Record<string, unknown> }> }> {
+    return Sentry.startSpan(
+      {
+        op: 'http.server',
+        name: 'GET /health/detailed',
+      },
+      async () => {
+        const basicHealth = this.getHealth();
 
-    // Add service health checks
-    const services = {
-      database: await this.checkDatabaseHealth(),
-      redis: await this.checkRedisHealth(),
+        // Add service health checks with individual spans
+        const database = await Sentry.startSpan(
+          { op: 'db.check', name: 'Database Health Check' },
+          () => this.checkDatabaseHealth(),
+        );
+
+        const redis = await Sentry.startSpan(
+          { op: 'redis.check', name: 'Redis Health Check' },
+          () => this.checkRedisHealth(),
+        );
+
+        const services = {
+          database,
+          redis,
+        };
+
+        // Determine overall health status
+        const allHealthy = Object.values(services).every(service => service.status === 'ok');
+
+        return {
+          ...basicHealth,
+          status: allHealthy ? 'ok' : 'error',
+          services,
+        };
+      },
+    );
+  }
+
+  @Get('metrics')
+  @ApiOperation({ summary: 'Application metrics and resource usage' })
+  @ApiResponse({
+    status: 200,
+    description: 'Detailed application metrics',
+  })
+  getMetrics(): {
+    memory: {
+      rss: number;
+      heapTotal: number;
+      heapUsed: number;
+      external: number;
+      arrayBuffers: number;
     };
+    process: {
+      pid: number;
+      uptime: number;
+      cpuUsage: {
+        user: number;
+        system: number;
+      };
+    };
+    system: {
+      platform: string;
+      nodeVersion: string;
+      v8Version: string;
+    };
+  } {
+    const memoryUsage = process.memoryUsage();
+    const cpuUsage = process.cpuUsage();
 
     return {
-      ...basicHealth,
-      services,
+      memory: {
+        rss: Math.round(memoryUsage.rss / 1024 / 1024), // MB
+        heapTotal: Math.round(memoryUsage.heapTotal / 1024 / 1024), // MB
+        heapUsed: Math.round(memoryUsage.heapUsed / 1024 / 1024), // MB
+        external: Math.round(memoryUsage.external / 1024 / 1024), // MB
+        arrayBuffers: Math.round(memoryUsage.arrayBuffers / 1024 / 1024), // MB
+      },
+      process: {
+        pid: process.pid,
+        uptime: Math.round(process.uptime()),
+        cpuUsage,
+      },
+      system: {
+        platform: process.platform,
+        nodeVersion: process.version,
+        v8Version: process.versions.v8,
+      },
     };
   }
 
-  private async checkDatabaseHealth(): Promise<{ status: string; responseTime?: number; error?: string }> {
+  private async checkDatabaseHealth(): Promise<{ status: string; responseTime?: number; error?: string; details?: Record<string, unknown> }> {
     try {
       const start = Date.now();
-      // Mock database check for now - will be replaced with actual DataSource injection
-      await new Promise(resolve => setTimeout(resolve, 1));
+
+      // Check database connection
+      if (!this.dataSource.isInitialized) {
+        throw new Error('Database not initialized');
+      }
+
+      // Execute simple query to verify connectivity
+      await this.dataSource.query('SELECT 1 as health');
+
+      // Get connection pool stats
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const driver = this.dataSource.driver as any;
+      const poolStats = driver.master?.pool
+        ? {
+            total: driver.master.pool.totalCount,
+            idle: driver.master.pool.idleCount,
+            waiting: driver.master.pool.waitingCount,
+          }
+        : undefined;
+
       const responseTime = Date.now() - start;
 
       return {
         status: 'ok',
         responseTime,
+        details: poolStats ? { pool: poolStats } : undefined,
       };
     } catch (error) {
+      Sentry.captureException(error, {
+        tags: { healthCheck: 'database' },
+      });
+
       return {
         status: 'error',
         error: error.message,
@@ -138,12 +284,34 @@ export class HealthController {
     }
   }
 
-  private async checkRedisHealth(): Promise<{ status: string; error?: string }> {
+  private async checkRedisHealth(): Promise<{ status: string; responseTime?: number; error?: string; details?: Record<string, unknown> }> {
     try {
-      // Mock Redis check for now - will be replaced with actual Redis client injection
-      return { status: 'ok' };
-    // eslint-disable-next-line no-unreachable
+      const start = Date.now();
+
+      // Ping Redis
+      const pong = await this.redis.ping();
+
+      if (pong !== 'PONG') {
+        throw new Error(`Unexpected Redis response: ${pong}`);
+      }
+
+      // Get Redis info
+      const info = await this.redis.info('server');
+      const versionMatch = info.match(/redis_version:([^\r\n]+)/);
+      const version = versionMatch ? versionMatch[1] : 'unknown';
+
+      const responseTime = Date.now() - start;
+
+      return {
+        status: 'ok',
+        responseTime,
+        details: { version },
+      };
     } catch (error) {
+      Sentry.captureException(error, {
+        tags: { healthCheck: 'redis' },
+      });
+
       return {
         status: 'error',
         error: (error as Error).message,
