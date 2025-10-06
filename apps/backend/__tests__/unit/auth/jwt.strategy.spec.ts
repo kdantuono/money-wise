@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { UnauthorizedException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { JwtStrategy } from '@/auth/strategies/jwt.strategy';
 import { AuthService, JwtPayload } from '@/auth/auth.service';
 import {
@@ -46,6 +47,19 @@ describe('JwtStrategy', () => {
           provide: AuthService,
           useValue: {
             validateUser: jest.fn(),
+          },
+        },
+        {
+          provide: ConfigService,
+          useValue: {
+            get: jest.fn((key: string) => {
+              if (key === 'auth') {
+                return {
+                  JWT_ACCESS_SECRET: 'test-secret',
+                };
+              }
+              return null;
+            }),
           },
         },
       ],

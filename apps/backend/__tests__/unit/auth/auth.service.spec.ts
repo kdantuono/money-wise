@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ConflictException, UnauthorizedException } from '@nestjs/common';
@@ -85,7 +86,7 @@ describe('AuthService', () => {
           },
         },
         {
-          provide: 'ConfigService',
+          provide: ConfigService,
           useValue: {
             get: jest.fn((key: string) => {
               const config = {
