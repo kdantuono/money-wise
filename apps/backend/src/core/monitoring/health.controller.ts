@@ -1,7 +1,9 @@
 import { Controller, Get, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { MonitoringService } from './monitoring.service';
 import { CloudWatchService } from './cloudwatch.service';
+import { AppConfig } from '../config';
 
 interface HealthStatus {
   status: 'healthy' | 'degraded' | 'unhealthy';
@@ -30,6 +32,7 @@ export class HealthController {
   constructor(
     private readonly monitoringService: MonitoringService,
     private readonly cloudWatchService: CloudWatchService,
+    private readonly configService: ConfigService,
   ) {}
 
   @Get()
@@ -78,12 +81,14 @@ export class HealthController {
       // Determine overall status
       const overallStatus = this.calculateOverallStatus(services, performanceSummary);
 
+      const appConfig = this.configService.get<AppConfig>('app');
+
       const healthStatus: HealthStatus = {
         status: overallStatus,
         timestamp: new Date().toISOString(),
         uptime: performanceSummary.uptime,
-        version: process.env.npm_package_version || '1.0.0',
-        environment: process.env.NODE_ENV || 'development',
+        version: appConfig.APP_VERSION || '1.0.0',
+        environment: appConfig.NODE_ENV,
         services,
         metrics: {
           totalRequests: performanceSummary.totalRequests,
@@ -114,12 +119,14 @@ export class HealthController {
         responseTime,
       );
 
+      const appConfig = this.configService.get<AppConfig>('app');
+
       return {
         status: 'unhealthy',
         timestamp: new Date().toISOString(),
         uptime: process.uptime() * 1000,
-        version: process.env.npm_package_version || '1.0.0',
-        environment: process.env.NODE_ENV || 'development',
+        version: appConfig.APP_VERSION || '1.0.0',
+        environment: appConfig.NODE_ENV,
         services: {
           database: 'unhealthy',
           redis: 'unhealthy',

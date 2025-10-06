@@ -4,6 +4,7 @@ import {
   ConflictException,
   BadRequestException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -14,6 +15,7 @@ import { LoginDto } from './dto/login.dto';
 import { AuthResponseDto } from './dto/auth-response.dto';
 import { PasswordSecurityService, HashingAlgorithm } from './services/password-security.service';
 import { RateLimitService } from './services/rate-limit.service';
+import { AuthConfig } from '../core/config';
 
 export interface JwtPayload {
   sub: string;
@@ -31,6 +33,7 @@ export class AuthService {
     private jwtService: JwtService,
     private passwordSecurityService: PasswordSecurityService,
     private rateLimitService: RateLimitService,
+    private configService: ConfigService,
   ) {}
 
   async register(
@@ -269,14 +272,16 @@ export class AuthService {
       role: user.role,
     };
 
+    const authConfig = this.configService.get<AuthConfig>('auth');
+
     const accessToken = this.jwtService.sign(payload, {
-      secret: process.env.JWT_ACCESS_SECRET,
-      expiresIn: process.env.JWT_ACCESS_EXPIRES_IN || '15m',
+      secret: authConfig.JWT_ACCESS_SECRET,
+      expiresIn: authConfig.JWT_ACCESS_EXPIRES_IN,
     });
 
     const refreshToken = this.jwtService.sign(payload, {
-      secret: process.env.JWT_REFRESH_SECRET,
-      expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
+      secret: authConfig.JWT_REFRESH_SECRET,
+      expiresIn: authConfig.JWT_REFRESH_EXPIRES_IN,
     });
 
     // Create user object without password and include virtual properties
