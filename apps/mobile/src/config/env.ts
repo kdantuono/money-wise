@@ -31,10 +31,9 @@ const envSchema = z.object({
   // Analytics Configuration
   EXPO_PUBLIC_ANALYTICS_ENABLED: z
     .string()
-    .transform((val) => val === 'true')
-    .pipe(z.boolean())
     .optional()
-    .default(false),
+    .default('false')
+    .transform((val) => val === 'true'),
 });
 
 export type Env = z.infer<typeof envSchema>;

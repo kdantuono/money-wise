@@ -41,18 +41,16 @@ const envSchema = z.object({
 
   NEXT_PUBLIC_SENTRY_DEBUG: z
     .string()
-    .transform((val) => val === 'true')
-    .pipe(z.boolean())
     .optional()
-    .default(false),
+    .default('false')
+    .transform((val) => val === 'true'),
 
   // Analytics Configuration
   NEXT_PUBLIC_ANALYTICS_ENABLED: z
     .string()
-    .transform((val) => val === 'true')
-    .pipe(z.boolean())
     .optional()
-    .default(false),
+    .default('false')
+    .transform((val) => val === 'true'),
 
   // Server-side Sentry (for source map upload)
   SENTRY_ORG: z.string().optional(),
