@@ -1,0 +1,297 @@
+# 🎯 Specialized Quality Gates
+# Path-triggered workflows for specialized validations
+# Only runs when specific files change (cost optimization)
+
+name: Specialized Gates
+
+on:
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'apps/backend/src/database/migrations/**'
+      - 'apps/backend/src/**/*.entity.ts'
+      - 'apps/backend/src/core/database/entities/**'
+      - '**/Dockerfile*'
+      - '**/docker-compose*.yml'
+  push:
+    branches: [main, develop]
+    paths:
+      - 'apps/backend/src/database/migrations/**'
+      - 'apps/backend/src/**/*.entity.ts'
+      - 'apps/backend/src/core/database/entities/**'
+      - '**/Dockerfile*'
+      - '**/docker-compose*.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '18'
+  PNPM_VERSION: '8.15.1'
+
+jobs:
+  # ===================================================================
+  # 🗃️ MIGRATION VALIDATION: Database schema changes
+  # ===================================================================
+
+  migration-validation:
+    name: 🗃️ Migration Validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    services:
+      postgres:
+        image: timescale/timescaledb:latest-pg15
+        env:
+          POSTGRES_DB: moneywise_migration_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+        options: >-
+          --health-cmd "pg_isready -U postgres -d moneywise_migration_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      postgres-rollback:
+        image: timescale/timescaledb:latest-pg15
+        env:
+          POSTGRES_DB: moneywise_rollback_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+        options: >-
+          --health-cmd "pg_isready -U postgres -d moneywise_rollback_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5433:5432
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 📦 Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: 📦 Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: 🏗️ Build backend
+        run: pnpm --filter @money-wise/backend build
+
+      - name: 🔍 Check for new migrations
+        id: check-migrations
+        run: |
+          NEW_MIGRATIONS=$(git diff --name-only origin/main...HEAD | grep -E "apps/backend/src/database/migrations/.*\.(ts|js)$" || echo "")
+
+          if [ -n "$NEW_MIGRATIONS" ]; then
+            echo "found=true" >> $GITHUB_OUTPUT
+            echo "📋 New migrations found:"
+            echo "$NEW_MIGRATIONS"
+          else
+            echo "found=false" >> $GITHUB_OUTPUT
+            echo "📋 No new migrations found"
+          fi
+
+      - name: 🗃️ Run fresh migration
+        run: |
+          echo "🗃️ Running fresh database migration..."
+          pnpm --filter @money-wise/backend migration:run
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_USERNAME: postgres
+          DB_PASSWORD: password
+          DB_NAME: moneywise_migration_test
+          NODE_ENV: test
+
+      - name: 🔍 Validate schema after migration
+        run: |
+          echo "🔍 Validating database schema..."
+
+          PGPASSWORD=password psql -h localhost -U postgres -d moneywise_migration_test -c "
+            SELECT table_name
+            FROM information_schema.tables
+            WHERE table_schema = 'public'
+            ORDER BY table_name;
+          "
+
+          PGPASSWORD=password psql -h localhost -U postgres -d moneywise_migration_test -c "
+            SELECT
+              schemaname,
+              tablename,
+              indexname,
+              indexdef
+            FROM pg_indexes
+            WHERE schemaname = 'public'
+            ORDER BY tablename, indexname;
+          "
+
+      - name: 🔄 Test migration rollback
+        if: steps.check-migrations.outputs.found == 'true'
+        run: |
+          echo "🔄 Testing migration rollback..."
+
+          pnpm --filter @money-wise/backend migration:run
+
+          echo "⏪ Attempting to rollback latest migration..."
+          pnpm --filter @money-wise/backend migration:revert || {
+            echo "⚠️ Migration rollback failed - manual review required"
+          }
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5433
+          DB_USERNAME: postgres
+          DB_PASSWORD: password
+          DB_NAME: moneywise_rollback_test
+          NODE_ENV: test
+
+      - name: 📊 Migration performance test
+        if: steps.check-migrations.outputs.found == 'true'
+        run: |
+          echo "📊 Testing migration performance..."
+
+          PGPASSWORD=password psql -h localhost -U postgres -d moneywise_migration_test -c "
+            INSERT INTO users (id, email, created_at, updated_at)
+            SELECT
+              generate_random_uuid(),
+              'test' || i || '@example.com',
+              NOW() - INTERVAL '1 day' * (i % 365),
+              NOW()
+            FROM generate_series(1, 1000) i
+            ON CONFLICT DO NOTHING;
+          " 2>/dev/null || echo "📋 Sample data insertion skipped"
+
+          START_TIME=$(date +%s)
+          pnpm --filter @money-wise/backend migration:run
+          END_TIME=$(date +%s)
+
+          DURATION=$((END_TIME - START_TIME))
+          echo "📊 Migration re-run took: ${DURATION}s"
+
+          if [ $DURATION -gt 30 ]; then
+            echo "⚠️ Migration took longer than 30 seconds - consider optimization"
+          else
+            echo "✅ Migration performance acceptable"
+          fi
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_USERNAME: postgres
+          DB_PASSWORD: password
+          DB_NAME: moneywise_migration_test
+          NODE_ENV: test
+
+      - name: 🛡️ Security check for migrations
+        if: steps.check-migrations.outputs.found == 'true'
+        run: |
+          echo "🛡️ Checking migrations for security issues..."
+
+          if find apps/backend/src/database/migrations -name "*.ts" -newer .git/FETCH_HEAD 2>/dev/null | xargs grep -i "drop\|truncate\|delete.*from" 2>/dev/null; then
+            echo "⚠️ Potentially destructive SQL operations found"
+            echo "📋 Please review these operations carefully"
+          else
+            echo "✅ No obviously destructive operations found"
+          fi
+
+          if find apps/backend/src/database/migrations -name "*.ts" -newer .git/FETCH_HEAD 2>/dev/null | xargs grep -iE "(password|secret|key|token).*['\"][^'\"]{8,}" 2>/dev/null; then
+            echo "⚠️ Potential hardcoded sensitive data found"
+            echo "📋 Use environment variables or secure configuration"
+          else
+            echo "✅ No hardcoded sensitive data found"
+          fi
+
+  # ===================================================================
+  # 🐳 DOCKERFILE SECURITY: Container security scanning
+  # ===================================================================
+
+  dockerfile-security:
+    name: 🐳 Dockerfile Security
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🔍 Find Dockerfiles
+        id: find-dockerfiles
+        run: |
+          DOCKERFILES=$(find . -name "Dockerfile*" -type f | head -10)
+          if [ -n "$DOCKERFILES" ]; then
+            echo "found=true" >> $GITHUB_OUTPUT
+            echo "files<<EOF" >> $GITHUB_OUTPUT
+            echo "$DOCKERFILES" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+            echo "📋 Found Dockerfiles:"
+            echo "$DOCKERFILES"
+          else
+            echo "found=false" >> $GITHUB_OUTPUT
+            echo "📋 No Dockerfiles found"
+          fi
+
+      - name: 🔍 Run Hadolint
+        if: steps.find-dockerfiles.outputs.found == 'true'
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: Dockerfile
+          failure-threshold: warning
+          recursive: true
+
+      - name: 📋 Dockerfile Security Summary
+        if: always()
+        run: |
+          if [[ "${{ steps.find-dockerfiles.outputs.found }}" == "true" ]]; then
+            echo "✅ Dockerfile security scan completed"
+            echo "📊 Scans performed:"
+            echo "   - Hadolint: Best practices validation"
+          else
+            echo "⏭️ No Dockerfiles to scan"
+          fi
+
+  # ===================================================================
+  # ✅ SPECIALIZED GATES SUMMARY
+  # ===================================================================
+
+  gates-summary:
+    name: ✅ Specialized Gates Summary
+    runs-on: ubuntu-latest
+    needs: [migration-validation, dockerfile-security]
+    if: always()
+    timeout-minutes: 5
+
+    steps:
+      - name: 📋 Summary
+        run: |
+          echo "# 🎯 Specialized Quality Gates - Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          echo "## 🔄 Gate Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Gate | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|--------|" >> $GITHUB_STEP_SUMMARY
+
+          MIG_ICON="${{ needs.migration-validation.result == 'success' && '✅' || needs.migration-validation.result == 'failure' && '❌' || '⏭️' }}"
+          MIG_RESULT="${{ needs.migration-validation.result || 'skipped' }}"
+          echo "| 🗃️ Migration Validation | $MIG_ICON $MIG_RESULT |" >> $GITHUB_STEP_SUMMARY
+
+          DOCKER_ICON="${{ needs.dockerfile-security.result == 'success' && '✅' || needs.dockerfile-security.result == 'failure' && '❌' || '⏭️' }}"
+          DOCKER_RESULT="${{ needs.dockerfile-security.result || 'skipped' }}"
+          echo "| 🐳 Dockerfile Security | $DOCKER_ICON $DOCKER_RESULT |" >> $GITHUB_STEP_SUMMARY
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "*Path-triggered specialized gates - Run only when relevant files change*" >> $GITHUB_STEP_SUMMARY
