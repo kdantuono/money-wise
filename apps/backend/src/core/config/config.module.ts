@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule as NestConfigModule } from '@nestjs/config';
-import { plainToClass } from 'class-transformer';
+import { plainToInstance } from 'class-transformer';
 import { validateSync } from 'class-validator';
 import { AppConfig } from './app.config';
 import { DatabaseConfig } from './database.config';
@@ -16,12 +16,12 @@ import { MonitoringConfig } from './monitoring.config';
 function validateConfig(config: Record<string, unknown>) {
   // Transform to configuration objects with implicit conversion
   const configs = {
-    app: plainToClass(AppConfig, config, { enableImplicitConversion: true }),
-    database: plainToClass(DatabaseConfig, config, { enableImplicitConversion: true }),
-    auth: plainToClass(AuthConfig, config, { enableImplicitConversion: true }),
-    redis: plainToClass(RedisConfig, config, { enableImplicitConversion: true }),
-    sentry: plainToClass(SentryConfig, config, { enableImplicitConversion: true }),
-    monitoring: plainToClass(MonitoringConfig, config, { enableImplicitConversion: true }),
+    app: plainToInstance(AppConfig, config, { enableImplicitConversion: true }),
+    database: plainToInstance(DatabaseConfig, config, { enableImplicitConversion: true }),
+    auth: plainToInstance(AuthConfig, config, { enableImplicitConversion: true }),
+    redis: plainToInstance(RedisConfig, config, { enableImplicitConversion: true }),
+    sentry: plainToInstance(SentryConfig, config, { enableImplicitConversion: true }),
+    monitoring: plainToInstance(MonitoringConfig, config, { enableImplicitConversion: true }),
   };
 
   // Validate all configurations
