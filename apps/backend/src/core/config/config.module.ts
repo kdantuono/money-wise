@@ -22,6 +22,7 @@ import { AuthConfig } from './auth.config';
 import { RedisConfig } from './redis.config';
 import { SentryConfig } from './sentry.config';
 import { MonitoringConfig } from './monitoring.config';
+import { formatValidationErrors } from './utils/format-validation-errors';
 
 /**
  * Configuration validation function
@@ -47,29 +48,15 @@ function validateConfig(config: Record<string, unknown>) {
       forbidNonWhitelisted: true, // Security: disallow unknown env vars
     });
 
-    return errors.flatMap((error) => {
-      const propertyPath = `${name}.${error.property}`;
-      const constraints = error.constraints
-        ? Object.values(error.constraints).map((msg) => `${propertyPath}: ${msg}`)
-        : [];
-
-      // Handle nested validation errors
-      const childErrors = error.children?.flatMap((child) => {
-        const childPath = `${propertyPath}.${child.property}`;
-        return child.constraints
-          ? Object.values(child.constraints).map((msg) => `${childPath}: ${msg}`)
-          : [];
-      }) || [];
-
-      return [...constraints, ...childErrors];
-    });
+    // Prefix errors with config domain name for clarity
+    return errors.map((error) => ({
+      ...error,
+      property: `${name}.${error.property}`,
+    }));
   });
 
   if (allErrors.length > 0) {
-    const errorMessages = allErrors.join('\n  - ');
-    throw new Error(
-      `❌ Configuration Validation Failed:\n\n  - ${errorMessages}\n\nPlease check your .env file and ensure all required variables are set correctly.\nMissing or invalid environment variables are listed above with their validation errors.`,
-    );
+    throw new Error(formatValidationErrors(allErrors));
   }
 
   return configs;
