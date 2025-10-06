@@ -135,3 +135,9 @@ pids/
 # Turbo logs
 **/.turbo/*.log
 **/.turbo/turbo-*.log
+
+# Test scripts (temporary)
+apps/backend/test-sentry*.js
+
+# Generated TypeScript files
+**/next-env.d.ts
