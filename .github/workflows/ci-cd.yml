@@ -770,13 +770,16 @@ jobs:
   # ===================================================================
   # 🚀 TRIGGER RELEASE: Call release workflow on main success
   # ===================================================================
-
-  trigger-release:
-    name: 🚀 Trigger Release Pipeline
-    needs: [foundation, development, testing, build, summary]
-    if: |
-      github.ref == 'refs/heads/main' &&
-      needs.foundation.result == 'success' &&
-      needs.build.result == 'success'
-    uses: ./.github/workflows/release.yml
-    secrets: inherit
+  # NOTE: This job is disabled until workflows are merged to main/develop
+  # GitHub Actions validates workflow references at parse time, not runtime
+  # Re-enable after merge by uncommenting the job below
+  #
+  # trigger-release:
+  #   name: 🚀 Trigger Release Pipeline
+  #   needs: [foundation, development, testing, build, summary]
+  #   if: |
+  #     github.ref == 'refs/heads/main' &&
+  #     needs.foundation.result == 'success' &&
+  #     needs.build.result == 'success'
+  #   uses: ./.github/workflows/release.yml
+  #   secrets: inherit
