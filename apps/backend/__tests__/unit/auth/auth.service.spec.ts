@@ -84,6 +84,22 @@ describe('AuthService', () => {
             recordAttempt: jest.fn().mockResolvedValue(undefined),
           },
         },
+        {
+          provide: 'ConfigService',
+          useValue: {
+            get: jest.fn((key: string) => {
+              const config = {
+                auth: {
+                  JWT_ACCESS_SECRET: 'test-access-secret',
+                  JWT_ACCESS_EXPIRES_IN: '15m',
+                  JWT_REFRESH_SECRET: 'test-refresh-secret',
+                  JWT_REFRESH_EXPIRES_IN: '7d',
+                },
+              };
+              return config[key] || config;
+            }),
+          },
+        },
       ],
     }).compile();
 
