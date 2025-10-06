@@ -770,13 +770,13 @@ jobs:
   # ===================================================================
   # 🚀 TRIGGER RELEASE: Call release workflow on main success
   # ===================================================================
-
-  trigger-release:
-    name: 🚀 Trigger Release Pipeline
-    needs: [foundation, development, testing, build, summary]
-    if: |
-      github.ref == 'refs/heads/main' &&
-      needs.foundation.result == 'success' &&
-      needs.build.result == 'success'
-    uses: ./.github/workflows/release.yml
-    secrets: inherit
+  # TEMPORARILY DISABLED FOR DEBUGGING
+  # trigger-release:
+  #   name: 🚀 Trigger Release Pipeline
+  #   needs: [foundation, development, testing, build, summary]
+  #   if: |
+  #     github.ref == 'refs/heads/main' &&
+  #     needs.foundation.result == 'success' &&
+  #     needs.build.result == 'success'
+  #   uses: ./.github/workflows/release.yml
+  #   secrets: inherit
