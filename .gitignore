@@ -135,3 +135,4 @@ pids/
 # Turbo logs
 **/.turbo/*.log
 **/.turbo/turbo-*.log
+apps/backend/test-sentry*.js
