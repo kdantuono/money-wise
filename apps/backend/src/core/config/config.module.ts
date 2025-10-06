@@ -45,7 +45,7 @@ function validateConfig(config: Record<string, unknown>) {
     const errors = validateSync(configObject, {
       skipMissingProperties: false,
       whitelist: true,
-      forbidNonWhitelisted: true, // Security: disallow unknown env vars
+      forbidNonWhitelisted: false, // Allow unknown env vars (npm, system vars, etc.)
     });
 
     // Prefix errors with config domain name for clarity
