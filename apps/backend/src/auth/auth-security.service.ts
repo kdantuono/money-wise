@@ -5,6 +5,7 @@ import {
   BadRequestException,
   Logger,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -37,6 +38,7 @@ import { AccountLockoutService } from './services/account-lockout.service';
 import { EmailVerificationService } from './services/email-verification.service';
 import { PasswordResetService } from './services/password-reset.service';
 import { AuditLogService, AuditEventType } from './services/audit-log.service';
+import { AuthConfig } from '../core/config';
 
 export interface JwtPayload {
   sub: string;
@@ -56,7 +58,8 @@ export class AuthSecurityService {
     private accountLockoutService: AccountLockoutService,
     private emailVerificationService: EmailVerificationService,
     private passwordResetService: PasswordResetService,
-    private auditLogService: AuditLogService
+    private auditLogService: AuditLogService,
+    private configService: ConfigService,
   ) {}
 
   /**
@@ -571,8 +574,9 @@ export class AuthSecurityService {
     request: Request
   ): Promise<AuthResponseDto> {
     try {
+      const authConfig = this.configService.get<AuthConfig>('auth');
       const payload = this.jwtService.verify(refreshToken, {
-        secret: process.env.JWT_REFRESH_SECRET,
+        secret: authConfig.JWT_REFRESH_SECRET,
       });
 
       const user = await this.userRepository.findOne({
@@ -655,14 +659,16 @@ export class AuthSecurityService {
       role: user.role,
     };
 
+    const authConfig = this.configService.get<AuthConfig>('auth');
+
     const accessToken = this.jwtService.sign(payload, {
-      secret: process.env.JWT_ACCESS_SECRET,
-      expiresIn: process.env.JWT_ACCESS_EXPIRES_IN || '15m',
+      secret: authConfig.JWT_ACCESS_SECRET,
+      expiresIn: authConfig.JWT_ACCESS_EXPIRES_IN,
     });
 
     const refreshToken = this.jwtService.sign(payload, {
-      secret: process.env.JWT_REFRESH_SECRET,
-      expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
+      secret: authConfig.JWT_REFRESH_SECRET,
+      expiresIn: authConfig.JWT_REFRESH_EXPIRES_IN,
     });
 
     // Create user object without password and include virtual properties
