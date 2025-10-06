@@ -52,9 +52,6 @@ describe('PasswordResetService', () => {
   };
 
   beforeEach(async () => {
-    // Set NODE_ENV to development so tokens are returned in responses
-    process.env.NODE_ENV = 'development';
-
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         PasswordResetService,
@@ -91,13 +88,22 @@ describe('PasswordResetService', () => {
           provide: ConfigService,
           useValue: {
             get: jest.fn((key: string, defaultValue?: any) => {
-              const config: Record<string, any> = {
-                REDIS_HOST: 'localhost',
-                REDIS_PORT: 6379,
-                REDIS_DB: 0,
-                NODE_ENV: 'development', // Return token in development
-              };
-              return config[key] ?? defaultValue;
+              if (key === 'redis') {
+                return {
+                  REDIS_HOST: 'localhost',
+                  REDIS_PORT: 6379,
+                  REDIS_DB: 0,
+                };
+              }
+              if (key === 'app') {
+                return {
+                  NODE_ENV: 'development',
+                  APP_NAME: 'MoneyWise',
+                  APP_VERSION: '1.0.0',
+                  PORT: 3000,
+                };
+              }
+              return defaultValue;
             }),
           },
         },

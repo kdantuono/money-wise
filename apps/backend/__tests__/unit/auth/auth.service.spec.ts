@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ConflictException, UnauthorizedException } from '@nestjs/common';
@@ -82,6 +83,22 @@ describe('AuthService', () => {
           useValue: {
             checkRateLimit: jest.fn().mockResolvedValue({ allowed: true, remaining: 5 }),
             recordAttempt: jest.fn().mockResolvedValue(undefined),
+          },
+        },
+        {
+          provide: ConfigService,
+          useValue: {
+            get: jest.fn((key: string) => {
+              if (key === 'auth') {
+                return {
+                  JWT_ACCESS_SECRET: 'test-access-secret',
+                  JWT_ACCESS_EXPIRES_IN: '15m',
+                  JWT_REFRESH_SECRET: 'test-refresh-secret',
+                  JWT_REFRESH_EXPIRES_IN: '7d',
+                };
+              }
+              return undefined;
+            }),
           },
         },
       ],
@@ -201,10 +218,6 @@ describe('AuthService', () => {
       role: 'user',
     };
 
-    beforeEach(() => {
-      process.env.JWT_REFRESH_SECRET = 'refresh-secret';
-    });
-
     it('should refresh token successfully with valid refresh token', async () => {
       jwtService.verify.mockReturnValue(payload);
       userRepository.findOne.mockResolvedValue(mockUser);
@@ -213,7 +226,7 @@ describe('AuthService', () => {
       const result = await service.refreshToken(refreshToken);
 
       expect(jwtService.verify).toHaveBeenCalledWith(refreshToken, {
-        secret: process.env.JWT_REFRESH_SECRET,
+        secret: 'test-refresh-secret',
       });
       expect(userRepository.findOne).toHaveBeenCalledWith({
         where: { id: payload.sub },
@@ -233,7 +246,7 @@ describe('AuthService', () => {
         UnauthorizedException,
       );
       expect(jwtService.verify).toHaveBeenCalledWith(refreshToken, {
-        secret: process.env.JWT_REFRESH_SECRET,
+        secret: 'test-refresh-secret',
       });
     });
 
@@ -314,13 +327,6 @@ describe('AuthService', () => {
   });
 
   describe('generateAuthResponse', () => {
-    beforeEach(() => {
-      process.env.JWT_ACCESS_SECRET = 'access-secret';
-      process.env.JWT_REFRESH_SECRET = 'refresh-secret';
-      process.env.JWT_ACCESS_EXPIRES_IN = '15m';
-      process.env.JWT_REFRESH_EXPIRES_IN = '7d';
-    });
-
     it('should generate proper auth response with tokens', async () => {
       jwtService.sign
         .mockReturnValueOnce('access-token')
@@ -347,8 +353,8 @@ describe('AuthService', () => {
           role: mockUser.role,
         },
         {
-          secret: process.env.JWT_ACCESS_SECRET,
-          expiresIn: process.env.JWT_ACCESS_EXPIRES_IN,
+          secret: 'test-access-secret',
+          expiresIn: '15m',
         },
       );
       expect(jwtService.sign).toHaveBeenCalledWith(
@@ -358,8 +364,8 @@ describe('AuthService', () => {
           role: mockUser.role,
         },
         {
-          secret: process.env.JWT_REFRESH_SECRET,
-          expiresIn: process.env.JWT_REFRESH_EXPIRES_IN,
+          secret: 'test-refresh-secret',
+          expiresIn: '7d',
         },
       );
       expect(result.accessToken).toBe('access-token');
