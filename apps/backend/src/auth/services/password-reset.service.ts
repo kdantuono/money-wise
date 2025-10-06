@@ -8,6 +8,7 @@ import { User, UserStatus } from '../../core/database/entities/user.entity';
 import { AuditLog, AuditEventType } from '../../core/database/entities/audit-log.entity';
 import { PasswordSecurityService } from './password-security.service';
 import { RateLimitService } from './rate-limit.service';
+import { AppConfig } from '../../core/config/app.config';
 
 // Enhanced interface combining both approaches
 export interface PasswordResetToken {
@@ -191,10 +192,11 @@ export class PasswordResetService {
 
       // In a real application, you would send an email here
       // For development, we'll return the token
+      const env = this.configService.get<AppConfig>('app')?.NODE_ENV;
       return {
         success: true,
         message: successMessage,
-        token: process.env.NODE_ENV === 'development' ? resetToken : undefined,
+        token: env === 'development' ? resetToken : undefined,
       };
     } catch (error) {
       this.logger.error(`Failed to generate password reset token for ${email}:`, error);

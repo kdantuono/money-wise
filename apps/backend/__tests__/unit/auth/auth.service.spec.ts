@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ConflictException, UnauthorizedException } from '@nestjs/common';
@@ -82,6 +83,22 @@ describe('AuthService', () => {
           useValue: {
             checkRateLimit: jest.fn().mockResolvedValue({ allowed: true, remaining: 5 }),
             recordAttempt: jest.fn().mockResolvedValue(undefined),
+          },
+        },
+        {
+          provide: ConfigService,
+          useValue: {
+            get: jest.fn((key: string) => {
+              const config = {
+                auth: {
+                  JWT_ACCESS_SECRET: 'test-access-secret',
+                  JWT_ACCESS_EXPIRES_IN: '15m',
+                  JWT_REFRESH_SECRET: 'test-refresh-secret',
+                  JWT_REFRESH_EXPIRES_IN: '7d',
+                },
+              };
+              return config[key] || config;
+            }),
           },
         },
       ],
