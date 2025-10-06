@@ -116,7 +116,7 @@ jobs:
             echo "✅ No security-related linting issues found"
           fi
 
-      - name: 🔍 Semgrep SAST Scan
+      - name: 🔍 Semgrep SAST Scan (Enhanced)
         continue-on-error: true  # Informational - findings logged for review
         uses: semgrep/semgrep-action@v1
         with:
@@ -127,6 +127,12 @@ jobs:
             p/typescript
             p/react
             p/nextjs
+            p/owasp-top-ten
+            p/cwe-top-25
+            p/xss
+            p/sql-injection
+            p/command-injection
+          generateSarif: true
         env:
           # Results are uploaded to Semgrep App for tracking
           SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
@@ -134,39 +140,19 @@ jobs:
       - name: 📝 SAST Scan Note
         if: always()
         run: |
-          echo "✅ SAST scan completed"
+          echo "✅ SAST scan completed with Enhanced Semgrep"
+          echo "📊 Security Coverage:"
+          echo "   - OWASP Top 10 vulnerabilities"
+          echo "   - CWE Top 25 security weaknesses"
+          echo "   - XSS, SQL Injection, Command Injection"
+          echo "   - JavaScript/TypeScript/React/Next.js security patterns"
+          echo "   - Secret detection patterns"
+          echo ""
           echo "📊 Findings are tracked in Semgrep App and visible in workflow logs"
-          echo "💡 To enable GitHub Code Scanning integration:"
-          echo "   Settings → Security → Code security and analysis → Code scanning"
+          echo ""
+          echo "📖 Security Strategy: docs/development/security-strategy-private-repo.md"
+          echo "💡 Note: CodeQL is disabled (requires GitHub Advanced Security for private repos)"
           exit 0
-
-  # TODO: Enable CodeQL when repository code scanning is configured
-  # codeql:
-  #   name: CodeQL Analysis
-  #   runs-on: ubuntu-latest
-  #   permissions:
-  #     actions: read
-  #     contents: read
-  #     security-events: write
-  #
-  #   strategy:
-  #     matrix:
-  #       language: ['typescript']
-  #
-  #   steps:
-  #     - name: Checkout code
-  #       uses: actions/checkout@v4
-  #
-  #     - name: Initialize CodeQL
-  #       uses: github/codeql-action/init@v3
-  #       with:
-  #         languages: ${{ matrix.language }}
-  #
-  #     - name: Autobuild
-  #       uses: github/codeql-action/autobuild@v3
-  #
-  #     - name: Perform CodeQL Analysis
-  #       uses: github/codeql-action/analyze@v3
 
   secrets-scan:
     name: 🔐 Secrets Scan
@@ -275,38 +261,59 @@ jobs:
           echo "This requires Docker Scout to be set up with proper credentials"
           echo "✅ Dockerfile security check placeholder completed"
 
-  codeql:
-    name: 🔍 CodeQL Analysis
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
-    
-    permissions:
-      actions: read
-      contents: read
-      security-events: write
-
-    strategy:
-      fail-fast: false
-      matrix:
-        language: ['typescript', 'javascript']
-
-    steps:
-      - name: 📥 Checkout code
-        uses: actions/checkout@v4
-
-      - name: 🔧 Initialize CodeQL
-        uses: github/codeql-action/init@v3
-        with:
-          languages: ${{ matrix.language }}
-          queries: security-extended,security-and-quality
-
-      - name: 🔧 Autobuild
-        uses: github/codeql-action/autobuild@v3
-
-      - name: 🔍 Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v3
-        with:
-          category: "/language:${{matrix.language}}"
+  # CodeQL Analysis - DISABLED
+  #
+  # Reason: CodeQL requires GitHub Advanced Security which is only available for:
+  #   1. Public repositories (free)
+  #   2. Private repositories in GitHub Organizations with Advanced Security (paid)
+  #
+  # This repository is private and owned by an individual user (not an organization),
+  # therefore CodeQL cannot be used.
+  #
+  # Alternative: Enhanced Semgrep SAST scanning (see sast-scan job above)
+  # - Provides similar security coverage
+  # - Works on private repositories (free tier)
+  # - Covers OWASP Top 10, CWE-25, and language-specific vulnerabilities
+  #
+  # To enable CodeQL in the future:
+  #   1. Move repository to a GitHub Organization, AND
+  #   2. Enable GitHub Advanced Security ($49/user/month), OR
+  #   3. Make repository public
+  #
+  # Documentation: docs/development/security-strategy-private-repo.md
+  #
+  # codeql:
+  #   name: 🔍 CodeQL Analysis
+  #   runs-on: ubuntu-latest
+  #   if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+  #
+  #   permissions:
+  #     actions: read
+  #     contents: read
+  #     security-events: write
+  #
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       language: ['typescript', 'javascript']
+  #
+  #   steps:
+  #     - name: 📥 Checkout code
+  #       uses: actions/checkout@v4
+  #
+  #     - name: 🔧 Initialize CodeQL
+  #       uses: github/codeql-action/init@v3
+  #       with:
+  #         languages: ${{ matrix.language }}
+  #         queries: security-extended,security-and-quality
+  #
+  #     - name: 🔧 Autobuild
+  #       uses: github/codeql-action/autobuild@v3
+  #
+  #     - name: 🔍 Perform CodeQL Analysis
+  #       uses: github/codeql-action/analyze@v3
+  #       with:
+  #         category: "/language:${{matrix.language}}"
 
   notify-security-issues:
     name: 🚨 Notify Security Issues
