@@ -65,12 +65,17 @@ export class AuthSecurityService {
     private auditLogService: AuditLogService,
     private configService: ConfigService,
   ) {
-    // Cache JWT configuration for performance
+    // Cache JWT configuration for performance and fail fast if missing
     const authConfig = this.configService.get<AuthConfig>('auth');
-    this.jwtAccessSecret = authConfig?.JWT_ACCESS_SECRET || '';
-    this.jwtAccessExpiresIn = authConfig?.JWT_ACCESS_EXPIRES_IN || '15m';
-    this.jwtRefreshSecret = authConfig?.JWT_REFRESH_SECRET || '';
-    this.jwtRefreshExpiresIn = authConfig?.JWT_REFRESH_EXPIRES_IN || '7d';
+
+    if (!authConfig?.JWT_ACCESS_SECRET || !authConfig?.JWT_REFRESH_SECRET) {
+      throw new Error('JWT secrets not configured');
+    }
+
+    this.jwtAccessSecret = authConfig.JWT_ACCESS_SECRET;
+    this.jwtAccessExpiresIn = authConfig.JWT_ACCESS_EXPIRES_IN || '15m';
+    this.jwtRefreshSecret = authConfig.JWT_REFRESH_SECRET;
+    this.jwtRefreshExpiresIn = authConfig.JWT_REFRESH_EXPIRES_IN || '7d';
   }
 
   /**
