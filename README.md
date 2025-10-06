@@ -64,18 +64,31 @@ pnpm dev
 ```
 money-wise/
 ├── apps/
-│   ├── web/          # Next.js web application
-│   ├── mobile/       # React Native mobile app
-│   └── backend/      # NestJS API server
+│   ├── backend/      # NestJS API server (port 3001)
+│   ├── web/          # Next.js web application (port 3000)
+│   └── mobile/       # React Native mobile app
 ├── packages/         # Shared packages
-│   ├── ui/           # Shared UI components
-│   ├── types/        # TypeScript definitions
+│   ├── types/        # TypeScript type definitions
 │   ├── utils/        # Utility functions
-│   └── test-utils/   # Shared testing utilities
+│   ├── ui/           # React UI components
+│   └── test-utils/   # Testing utilities & fixtures
 ├── docs/             # Documentation
+│   ├── api/          # API documentation
+│   ├── architecture/ # Architecture decisions (ADRs)
+│   ├── development/  # Development guides
+│   └── planning/     # Project planning & roadmaps
 ├── infrastructure/   # Docker configs & deployment
-└── scripts/          # Development scripts
+├── scripts/          # Development & CI scripts
+└── .github/          # GitHub Actions workflows
 ```
+
+**Monorepo Management**:
+- Package Manager: pnpm workspaces
+- Build System: Turborepo (optimized caching)
+- Import Boundaries: Enforced via ESLint
+- TypeScript: Path aliases configured
+
+📖 **[View Complete Structure Documentation](./docs/development/monorepo-structure.md)**
 
 ### **Technology Stack**
 - **Frontend**: Next.js 14, React 18, TypeScript, Tailwind CSS
