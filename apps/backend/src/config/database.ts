@@ -1,7 +1,21 @@
+/**
+ * TypeORM CLI DataSource Configuration
+ *
+ * IMPORTANT: This file is used by TypeORM CLI for migrations and is NOT part of
+ * the NestJS application runtime. It MUST use process.env directly because:
+ * 1. TypeORM CLI runs outside NestJS context (no dependency injection)
+ * 2. Used by migration commands: `pnpm migration:generate`, `pnpm migration:run`
+ * 3. ConfigService is not available in this context
+ *
+ * This is a DOCUMENTED EXCEPTION to the "no process.env" rule.
+ *
+ * @see apps/backend/src/core/config/database.config.ts - Runtime database config using ConfigService
+ */
+
 import { DataSource } from 'typeorm';
 import { config } from 'dotenv';
 
-// Load environment variables
+// Load environment variables FIRST (required for CLI context)
 config();
 
 const AppDataSource = new DataSource({
