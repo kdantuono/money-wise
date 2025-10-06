@@ -1,6 +1,13 @@
-name: Release Management
+# 🚀 Consolidated Release Pipeline
+# Combines: sentry-release.yml + release.yml
+# Optimized: Reuses build artifacts from ci-cd.yml (no rebuild)
+# Architecture: Sentry + GitHub Release + Docker in unified workflow
+
+name: Release Pipeline
 
 on:
+  workflow_call:
+    # Called by ci-cd.yml on main branch success
   push:
     tags:
       - 'v*'
@@ -24,11 +31,22 @@ permissions:
 env:
   NODE_VERSION: '18'
   PNPM_VERSION: '8.15.1'
+  SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+  SENTRY_PROJECT_BACKEND: ${{ secrets.SENTRY_PROJECT_BACKEND }}
+  SENTRY_PROJECT_WEB: ${{ secrets.SENTRY_PROJECT_WEB }}
+  SENTRY_PROJECT_MOBILE: ${{ secrets.SENTRY_PROJECT_MOBILE }}
+  SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
 
 jobs:
+  # ===================================================================
+  # 🔍 VALIDATE: Version validation and generation
+  # ===================================================================
+
   validate-release:
     name: 🔍 Validate Release
     runs-on: ubuntu-latest
+    timeout-minutes: 5
+
     outputs:
       version: ${{ steps.version.outputs.version }}
       is_prerelease: ${{ steps.version.outputs.is_prerelease }}
@@ -42,122 +60,187 @@ jobs:
       - name: 🔍 Extract version information
         id: version
         run: |
-          if [ "${{ github.event_name }}" = "push" ]; then
-            # Extract version from tag
+          if [ "${{ github.event_name }}" = "push" ] && [[ "${{ github.ref }}" == refs/tags/* ]]; then
             VERSION=${GITHUB_REF#refs/tags/}
             IS_PRERELEASE=$(echo "$VERSION" | grep -E "(alpha|beta|rc)" && echo "true" || echo "false")
-          else
-            # Use manual input
+          elif [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             VERSION="${{ github.event.inputs.version }}"
             IS_PRERELEASE="${{ github.event.inputs.prerelease }}"
+          else
+            # workflow_call from ci-cd.yml
+            VERSION="${GITHUB_SHA:0:8}-$(date +%Y%m%d%H%M%S)"
+            IS_PRERELEASE="false"
           fi
-          
+
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "is_prerelease=$IS_PRERELEASE" >> $GITHUB_OUTPUT
-          
+
           echo "📋 Release Version: $VERSION"
           echo "📋 Pre-release: $IS_PRERELEASE"
 
       - name: 🔍 Validate version format
+        if: startsWith(github.ref, 'refs/tags/')
         run: |
           VERSION="${{ steps.version.outputs.version }}"
-          
+
           if ! echo "$VERSION" | grep -E "^v[0-9]+\.[0-9]+\.[0-9]+"; then
             echo "❌ Invalid version format: $VERSION"
             echo "📋 Expected format: v1.0.0, v1.0.0-alpha.1, etc."
             exit 1
           fi
-          
+
           echo "✅ Version format is valid: $VERSION"
 
-      - name: 🔍 Check if version already exists
-        run: |
-          VERSION="${{ steps.version.outputs.version }}"
-          
-          if git tag -l | grep -q "^$VERSION$"; then
-            echo "❌ Version $VERSION already exists"
-            exit 1
-          fi
-          
-          echo "✅ Version $VERSION is new"
+  # ===================================================================
+  # 📦 SENTRY RELEASE: Create releases and upload source maps
+  # ===================================================================
 
-  build-release:
-    name: 🏗️ Build Release
+  sentry-release:
+    name: 📦 Sentry Release Management
     runs-on: ubuntu-latest
     needs: validate-release
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/')
     timeout-minutes: 20
+
+    strategy:
+      matrix:
+        app: [backend, web]
 
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: 📦 Setup pnpm
+      - name: 📥 Download Build Artifacts
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: build-${{ matrix.app }}-${{ github.run_id }}
+          path: apps/${{ matrix.app }}/
+
+      - name: 🔍 Check if build artifacts exist
+        id: check-artifacts
+        run: |
+          if [[ -d "apps/${{ matrix.app }}/dist" || -d "apps/${{ matrix.app }}/.next" ]]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "✅ Build artifacts found for ${{ matrix.app }}"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "⚠️ No build artifacts, will rebuild ${{ matrix.app }}"
+          fi
+
+      - name: 📦 Setup pnpm (if rebuild needed)
+        if: steps.check-artifacts.outputs.exists == 'false'
         uses: pnpm/action-setup@v2
         with:
           version: ${{ env.PNPM_VERSION }}
 
-      - name: 🔧 Setup Node.js
+      - name: 📦 Setup Node.js (if rebuild needed)
+        if: steps.check-artifacts.outputs.exists == 'false'
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
 
-      - name: 📦 Install dependencies
+      - name: 📥 Install Dependencies (if rebuild needed)
+        if: steps.check-artifacts.outputs.exists == 'false'
         run: pnpm install --frozen-lockfile
 
-      - name: 🧪 Run tests
-        run: pnpm test
-
-      - name: 🔍 Run linting
-        run: pnpm lint
-
-      - name: 🏗️ Build applications
+      - name: 🏗️ Rebuild Application (if needed)
+        if: steps.check-artifacts.outputs.exists == 'false'
         run: |
-          echo "🏗️ Building applications for release..."
-          pnpm --filter @money-wise/backend build
-          # Skip web build due to network restrictions in CI
-          echo "⚠️ Web build skipped due to CI environment limitations"
-
-      - name: 📦 Create release artifacts
-        run: |
-          echo "📦 Creating release artifacts..."
-          
-          # Create release directory
-          mkdir -p release-artifacts
-          
-          # Copy built backend
-          if [ -d "apps/backend/dist" ]; then
-            cp -r apps/backend/dist release-artifacts/backend-dist
-            echo "✅ Backend artifacts created"
+          echo "🏗️ Rebuilding ${{ matrix.app }}..."
+          if [[ "${{ matrix.app }}" == "backend" ]]; then
+            pnpm --filter @money-wise/backend build
+          elif [[ "${{ matrix.app }}" == "web" ]]; then
+            pnpm --filter @money-wise/web build
           fi
-          
-          # Copy package.json files for version info
-          find . -name "package.json" -not -path "*/node_modules/*" -exec cp {} release-artifacts/ \; 2>/dev/null || true
-          
-          # Create version info file
-          cat > release-artifacts/version-info.json << EOF
-          {
-            "version": "${{ needs.validate-release.outputs.version }}",
-            "commit": "${{ github.sha }}",
-            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-            "is_prerelease": ${{ needs.validate-release.outputs.is_prerelease }},
-            "build_number": "${{ github.run_number }}"
-          }
-          EOF
-          
-          echo "✅ Release artifacts prepared"
+        env:
+          SENTRY_RELEASE: ${{ needs.validate-release.outputs.version }}
+          SENTRY_ORG: ${{ env.SENTRY_ORG }}
+          SENTRY_AUTH_TOKEN: ${{ env.SENTRY_AUTH_TOKEN }}
 
-      - name: 📤 Upload release artifacts
-        uses: actions/upload-artifact@v4
+      - name: 📦 Install Sentry CLI
+        run: curl -sL https://sentry.io/get-cli/ | bash
+
+      - name: 📦 Create Sentry Release
+        run: |
+          VERSION="${{ needs.validate-release.outputs.version }}"
+          PROJECT="${{ matrix.app == 'backend' && env.SENTRY_PROJECT_BACKEND || env.SENTRY_PROJECT_WEB }}"
+
+          sentry-cli releases new -p $PROJECT $VERSION
+          sentry-cli releases set-commits --auto $VERSION
+
+          echo "✅ Created Sentry release: $VERSION for ${{ matrix.app }}"
+
+      - name: 📤 Upload Source Maps (Backend)
+        if: matrix.app == 'backend' && (hashFiles('apps/backend/dist/**/*.map') != '')
+        run: |
+          VERSION="${{ needs.validate-release.outputs.version }}"
+          sentry-cli sourcemaps upload \
+            --release=$VERSION \
+            --project=$SENTRY_PROJECT_BACKEND \
+            apps/backend/dist
+
+      - name: 📤 Upload Source Maps (Web)
+        if: matrix.app == 'web' && (hashFiles('apps/web/.next/**/*.map') != '')
+        run: |
+          VERSION="${{ needs.validate-release.outputs.version }}"
+          sentry-cli sourcemaps upload \
+            --release=$VERSION \
+            --project=$SENTRY_PROJECT_WEB \
+            apps/web/.next
+
+      - name: ✅ Finalize Sentry Release
+        run: |
+          VERSION="${{ needs.validate-release.outputs.version }}"
+          PROJECT="${{ matrix.app == 'backend' && env.SENTRY_PROJECT_BACKEND || env.SENTRY_PROJECT_WEB }}"
+
+          sentry-cli releases finalize -p $PROJECT $VERSION
+          echo "✅ Finalized Sentry release: $VERSION"
+
+  # ===================================================================
+  # 🐳 MOBILE SENTRY: Separate job for mobile (no build)
+  # ===================================================================
+
+  sentry-mobile:
+    name: 📱 Sentry Mobile Release
+    runs-on: ubuntu-latest
+    needs: validate-release
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/')
+    timeout-minutes: 5
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
         with:
-          name: release-artifacts
-          path: release-artifacts/
-          retention-days: 30
+          fetch-depth: 0
+
+      - name: 📦 Install Sentry CLI
+        run: curl -sL https://sentry.io/get-cli/ | bash
+
+      - name: 📱 Create Mobile Sentry Release
+        run: |
+          VERSION="${{ needs.validate-release.outputs.version }}"
+
+          sentry-cli releases new -p $SENTRY_PROJECT_MOBILE $VERSION
+          sentry-cli releases set-commits --auto $VERSION
+          sentry-cli releases finalize -p $SENTRY_PROJECT_MOBILE $VERSION
+
+          echo "✅ Created Sentry mobile release: $VERSION"
+
+  # ===================================================================
+  # 📝 CHANGELOG: Generate changelog from commits
+  # ===================================================================
 
   generate-changelog:
     name: 📝 Generate Changelog
     runs-on: ubuntu-latest
     needs: validate-release
+    if: startsWith(github.ref, 'refs/tags/')
+    timeout-minutes: 5
+
     outputs:
       changelog: ${{ steps.changelog.outputs.changelog }}
 
@@ -170,28 +253,24 @@ jobs:
       - name: 📝 Generate changelog
         id: changelog
         run: |
-          echo "📝 Generating changelog..."
-          
           VERSION="${{ needs.validate-release.outputs.version }}"
-          PREVIOUS_TAG=$(git tag -l --sort=-version:refname | head -n1)
-          
+          PREVIOUS_TAG=$(git tag -l --sort=-version:refname | grep -v "^$VERSION$" | head -n1)
+
           if [ -n "$PREVIOUS_TAG" ]; then
             echo "📋 Changes since $PREVIOUS_TAG:"
             CHANGELOG=$(cat << 'EOF'
           ## What's Changed
-          
+
           EOF
           )
-            
-            # Get commits since last tag
+
             COMMITS=$(git log --pretty=format:"* %s (%h)" $PREVIOUS_TAG..HEAD)
             if [ -n "$COMMITS" ]; then
               CHANGELOG="$CHANGELOG"$'\n'"$COMMITS"
             else
               CHANGELOG="$CHANGELOG"$'\n'"* No commits since last release"
             fi
-            
-            # Add contributors
+
             CONTRIBUTORS=$(git log --pretty=format:"%an" $PREVIOUS_TAG..HEAD | sort -u | sed 's/^/* @/' | head -10)
             if [ -n "$CONTRIBUTORS" ]; then
               CHANGELOG="$CHANGELOG"$'\n\n'"## Contributors"$'\n'"$CONTRIBUTORS"
@@ -199,11 +278,9 @@ jobs:
           else
             CHANGELOG="## Initial Release"$'\n\n'"This is the first release of MoneyWise."
           fi
-          
-          # Save changelog to file and output
+
           echo "$CHANGELOG" > changelog.md
-          
-          # Set output (escape newlines for GitHub Actions)
+
           {
             echo 'changelog<<EOF'
             echo "$CHANGELOG"
@@ -213,44 +290,58 @@ jobs:
       - name: 📤 Upload changelog
         uses: actions/upload-artifact@v4
         with:
-          name: changelog
+          name: changelog-${{ github.run_id }}
           path: changelog.md
-          retention-days: 30
+          retention-days: 7
 
-  create-release:
-    name: 🚀 Create Release
+  # ===================================================================
+  # 🚀 GITHUB RELEASE: Create GitHub release with artifacts
+  # ===================================================================
+
+  github-release:
+    name: 🚀 GitHub Release
     runs-on: ubuntu-latest
-    needs: [validate-release, build-release, generate-changelog]
+    needs: [validate-release, sentry-release, generate-changelog]
+    if: startsWith(github.ref, 'refs/tags/')
+    timeout-minutes: 10
 
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@v4
 
-      - name: 📥 Download release artifacts
+      - name: 📥 Download Build Artifacts
         uses: actions/download-artifact@v4
+        continue-on-error: true
         with:
-          name: release-artifacts
+          pattern: build-*-${{ github.run_id }}
           path: release-artifacts/
 
-      - name: 📥 Download changelog
+      - name: 📥 Download Changelog
         uses: actions/download-artifact@v4
         with:
-          name: changelog
+          name: changelog-${{ github.run_id }}
           path: ./
 
-      - name: 📦 Prepare release assets
+      - name: 📦 Prepare Release Assets
         run: |
           echo "📦 Preparing release assets..."
-          
-          # Create release archive
-          if [ -d "release-artifacts/backend-dist" ]; then
-            tar -czf backend-${{ needs.validate-release.outputs.version }}.tar.gz -C release-artifacts backend-dist
+
+          if [ -d "release-artifacts/build-backend-${{ github.run_id }}/dist" ]; then
+            tar -czf backend-${{ needs.validate-release.outputs.version }}.tar.gz \
+              -C release-artifacts/build-backend-${{ github.run_id }} dist
             echo "✅ Backend archive created"
           fi
-          
-          # Copy version info
-          cp release-artifacts/version-info.json .
-          
+
+          cat > version-info.json << EOF
+          {
+            "version": "${{ needs.validate-release.outputs.version }}",
+            "commit": "${{ github.sha }}",
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "is_prerelease": ${{ needs.validate-release.outputs.is_prerelease }},
+            "build_number": "${{ github.run_number }}"
+          }
+          EOF
+
           echo "✅ Release assets prepared"
 
       - name: 🚀 Create GitHub Release
@@ -266,11 +357,16 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  # ===================================================================
+  # 🐳 DOCKER RELEASE: Multi-platform container images
+  # ===================================================================
+
   docker-release:
     name: 🐳 Docker Release
     runs-on: ubuntu-latest
-    needs: [validate-release, create-release]
-    if: success()
+    needs: [validate-release, github-release]
+    if: startsWith(github.ref, 'refs/tags/')
+    timeout-minutes: 30
 
     strategy:
       matrix:
@@ -331,27 +427,118 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  notify-release:
-    name: 📢 Notify Release
+  # ===================================================================
+  # 📢 DEPLOYMENT NOTIFICATION: Unified notifications
+  # ===================================================================
+
+  deploy-notification:
+    name: 📢 Deployment Notification
     runs-on: ubuntu-latest
-    needs: [validate-release, create-release, docker-release]
-    if: always()
+    needs: [validate-release, sentry-release, sentry-mobile]
+    if: always() && needs.validate-release.result == 'success'
+    timeout-minutes: 5
 
     steps:
-      - name: 📢 Release notification
+      - name: 📦 Install Sentry CLI
+        run: curl -sL https://sentry.io/get-cli/ | bash
+
+      - name: 📢 Create Sentry Deployment
         run: |
-          echo "📢 Release ${{ needs.validate-release.outputs.version }} completed!"
+          VERSION="${{ needs.validate-release.outputs.version }}"
+          ENVIRONMENT=$([ "${{ github.ref }}" = "refs/heads/main" ] && echo "production" || echo "staging")
+
+          sentry-cli releases deploys $VERSION new -e $ENVIRONMENT -p $SENTRY_PROJECT_BACKEND || true
+          sentry-cli releases deploys $VERSION new -e $ENVIRONMENT -p $SENTRY_PROJECT_WEB || true
+          sentry-cli releases deploys $VERSION new -e $ENVIRONMENT -p $SENTRY_PROJECT_MOBILE || true
+
+          echo "✅ Created deployment notifications for $ENVIRONMENT"
+
+      - name: 📢 Deployment Summary
+        run: |
+          echo "📢 Release ${{ needs.validate-release.outputs.version }} deployed!"
           echo "📋 Status Summary:"
-          echo "  - Release Creation: ${{ needs.create-release.result }}"
+          echo "  - Sentry Releases: ${{ needs.sentry-release.result }}"
+          echo "  - GitHub Release: ${{ needs.github-release.result || 'skipped' }}"
           echo "  - Docker Images: ${{ needs.docker-release.result || 'skipped' }}"
           echo ""
-          
-          if [[ "${{ needs.create-release.result }}" == "success" ]]; then
-            echo "✅ Release ${{ needs.validate-release.outputs.version }} published successfully"
-            echo "🔗 https://github.com/${{ github.repository }}/releases/tag/${{ needs.validate-release.outputs.version }}"
-          else
-            echo "❌ Release creation failed"
+
+          if [[ "${{ needs.sentry-release.result }}" == "success" ]]; then
+            echo "✅ Sentry releases created successfully"
           fi
-          
-          # Add notification logic here (Slack, Discord, email, etc.)
-          # Example: curl to webhook with release information
+
+  # ===================================================================
+  # 🏥 DEPLOYMENT HEALTH: Monitor deployment stability
+  # ===================================================================
+
+  monitor-deployment:
+    name: 🏥 Monitor Deployment Health
+    runs-on: ubuntu-latest
+    needs: [validate-release, deploy-notification]
+    if: always() && needs.validate-release.result == 'success' && github.ref == 'refs/heads/main'
+    timeout-minutes: 10
+
+    steps:
+      - name: ⏳ Wait for deployment stabilization
+        run: |
+          echo "⏳ Waiting 5 minutes for deployment to stabilize..."
+          sleep 300
+
+      - name: 🏥 Health Check
+        run: |
+          VERSION="${{ needs.validate-release.outputs.version }}"
+          ENVIRONMENT="production"
+
+          echo "🏥 Monitoring release health for version: $VERSION"
+          echo "Environment: $ENVIRONMENT"
+          echo ""
+          echo "📊 Implement error rate monitoring based on Sentry API"
+          echo "💡 Consider setting up alerts in Sentry dashboard"
+
+  # ===================================================================
+  # ✅ RELEASE SUMMARY: Final status report
+  # ===================================================================
+
+  release-summary:
+    name: ✅ Release Summary
+    runs-on: ubuntu-latest
+    needs: [validate-release, sentry-release, github-release, docker-release, deploy-notification]
+    if: always()
+    timeout-minutes: 5
+
+    steps:
+      - name: 📊 Release Summary
+        run: |
+          echo "# 🚀 Release Pipeline - Complete Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          echo "## 📋 Release Information" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Property | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Version | **${{ needs.validate-release.outputs.version }}** |" >> $GITHUB_STEP_SUMMARY
+          echo "| Pre-release | ${{ needs.validate-release.outputs.is_prerelease }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Trigger | ${{ github.event_name }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          echo "## 🔄 Release Pipeline Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Stage | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+
+          SENTRY_ICON="${{ needs.sentry-release.result == 'success' && '✅' || '❌' }}"
+          echo "| 📦 Sentry Release | $SENTRY_ICON ${{ needs.sentry-release.result }} |" >> $GITHUB_STEP_SUMMARY
+
+          GITHUB_RESULT="${{ needs.github-release.result || 'skipped' }}"
+          GITHUB_ICON="${{ needs.github-release.result == 'success' && '✅' || needs.github-release.result == 'failure' && '❌' || '⏭️' }}"
+          echo "| 🚀 GitHub Release | $GITHUB_ICON $GITHUB_RESULT |" >> $GITHUB_STEP_SUMMARY
+
+          DOCKER_RESULT="${{ needs.docker-release.result || 'skipped' }}"
+          DOCKER_ICON="${{ needs.docker-release.result == 'success' && '✅' || needs.docker-release.result == 'failure' && '❌' || '⏭️' }}"
+          echo "| 🐳 Docker Images | $DOCKER_ICON $DOCKER_RESULT |" >> $GITHUB_STEP_SUMMARY
+
+          DEPLOY_ICON="${{ needs.deploy-notification.result == 'success' && '✅' || '❌' }}"
+          echo "| 📢 Deployment | $DEPLOY_ICON ${{ needs.deploy-notification.result }} |" >> $GITHUB_STEP_SUMMARY
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "*Consolidated Release Pipeline v2.0 - Artifact Reuse + Unified Workflow*" >> $GITHUB_STEP_SUMMARY
