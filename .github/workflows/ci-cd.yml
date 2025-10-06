@@ -188,20 +188,29 @@ jobs:
     name: 🔒 Security (Lightweight - Feature Branches)
     runs-on: ubuntu-latest
     needs: foundation
-    if: |
-      github.event_name == 'pull_request' &&
-      github.base_ref != 'main' &&
-      github.base_ref != 'refs/heads/main'
     timeout-minutes: 15
     continue-on-error: false
 
     steps:
+      - name: ✅ Check if should run
+        id: should-run
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" && "${{ github.base_ref }}" != "main" && "${{ github.base_ref }}" != "refs/heads/main" ]]; then
+            echo "run=true" >> $GITHUB_OUTPUT
+            echo "✅ Running lightweight security scan"
+          else
+            echo "run=false" >> $GITHUB_OUTPUT
+            echo "⏭️ Skipping lightweight security (not a feature branch PR)"
+          fi
+
       - name: 📥 Checkout Repository
+        if: steps.should-run.outputs.run == 'true'
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
       - name: 🔍 SAST Scan (Basic - Critical Rules Only)
+        if: steps.should-run.outputs.run == 'true'
         continue-on-error: true
         uses: semgrep/semgrep-action@v1
         with:
@@ -216,6 +225,7 @@ jobs:
           SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
 
       - name: 🔐 Secrets Scan (Fast)
+        if: steps.should-run.outputs.run == 'true'
         uses: trufflesecurity/trufflehog@main
         with:
           path: ./
@@ -237,33 +247,46 @@ jobs:
     name: 🔒 Security (Enhanced - Develop + PR to Main)
     runs-on: ubuntu-latest
     needs: foundation
-    if: |
-      github.ref == 'refs/heads/develop' ||
-      (github.event_name == 'pull_request' && github.base_ref == 'main')
     timeout-minutes: 20
     continue-on-error: false
 
     steps:
+      - name: ✅ Check if should run
+        id: should-run
+        run: |
+          if [[ "${{ github.ref }}" == "refs/heads/develop" || ("${{ github.event_name }}" == "pull_request" && "${{ github.base_ref }}" == "main") ]]; then
+            echo "run=true" >> $GITHUB_OUTPUT
+            echo "✅ Running enhanced security scan"
+          else
+            echo "run=false" >> $GITHUB_OUTPUT
+            echo "⏭️ Skipping enhanced security (not develop or PR to main)"
+          fi
+
       - name: 📥 Checkout Repository
+        if: steps.should-run.outputs.run == 'true'
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
       - name: 📦 Setup pnpm
+        if: steps.should-run.outputs.run == 'true'
         uses: pnpm/action-setup@v2
         with:
           version: '8.15.1'
 
       - name: 📦 Setup Node.js
+        if: steps.should-run.outputs.run == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
 
       - name: 📥 Install Dependencies
+        if: steps.should-run.outputs.run == 'true'
         run: pnpm install --frozen-lockfile
 
       - name: 🔍 SAST Scan (Full Rulesets)
+        if: steps.should-run.outputs.run == 'true'
         continue-on-error: true
         uses: semgrep/semgrep-action@v1
         with:
@@ -284,6 +307,7 @@ jobs:
           SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
 
       - name: 🔐 Secrets Scan (Full)
+        if: steps.should-run.outputs.run == 'true'
         uses: trufflesecurity/trufflehog@main
         with:
           path: ./
@@ -292,6 +316,7 @@ jobs:
           extra_args: --debug --only-verified
 
       - name: 🔒 Dependency Security Audit
+        if: steps.should-run.outputs.run == 'true'
         run: |
           echo "🔍 Running dependency security audit..."
           set +e
@@ -304,6 +329,7 @@ jobs:
           exit 0
 
       - name: 📄 License Compliance Check
+        if: steps.should-run.outputs.run == 'true'
         run: |
           echo "📄 Checking license compliance..."
           npx license-checker --onlyAllow 'MIT;Apache-2.0;BSD-2-Clause;BSD-3-Clause;ISC;CC0-1.0;Unlicense;MPL-2.0' --excludePrivatePackages
@@ -323,31 +349,46 @@ jobs:
     name: 🔒 Security (Comprehensive - Main Branch Only)
     runs-on: ubuntu-latest
     needs: foundation
-    if: github.ref == 'refs/heads/main'
     timeout-minutes: 25
     continue-on-error: false
 
     steps:
+      - name: ✅ Check if should run
+        id: should-run
+        run: |
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "run=true" >> $GITHUB_OUTPUT
+            echo "✅ Running comprehensive security scan"
+          else
+            echo "run=false" >> $GITHUB_OUTPUT
+            echo "⏭️ Skipping comprehensive security (not main branch)"
+          fi
+
       - name: 📥 Checkout Repository
+        if: steps.should-run.outputs.run == 'true'
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
       - name: 📦 Setup pnpm
+        if: steps.should-run.outputs.run == 'true'
         uses: pnpm/action-setup@v2
         with:
           version: '8.15.1'
 
       - name: 📦 Setup Node.js
+        if: steps.should-run.outputs.run == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
 
       - name: 📥 Install Dependencies
+        if: steps.should-run.outputs.run == 'true'
         run: pnpm install --frozen-lockfile
 
       - name: 🔍 SAST Scan (Comprehensive + Custom Rules)
+        if: steps.should-run.outputs.run == 'true'
         continue-on-error: true
         uses: semgrep/semgrep-action@v1
         with:
@@ -368,6 +409,7 @@ jobs:
           SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
 
       - name: 🔐 Secrets Scan (Comprehensive)
+        if: steps.should-run.outputs.run == 'true'
         uses: trufflesecurity/trufflehog@main
         with:
           path: ./
@@ -376,6 +418,7 @@ jobs:
           extra_args: --debug --only-verified
 
       - name: 🔐 Additional Secret Patterns
+        if: steps.should-run.outputs.run == 'true'
         run: |
           echo "🔍 Running additional secret pattern scan..."
 
@@ -403,6 +446,7 @@ jobs:
           echo "✅ Additional secret scan passed"
 
       - name: 🔒 Dependency Security Audit (High Severity)
+        if: steps.should-run.outputs.run == 'true'
         run: |
           echo "🔍 Running high-severity dependency audit..."
           set +e
@@ -414,11 +458,12 @@ jobs:
           exit 0
 
       - name: 📄 License Compliance Check
+        if: steps.should-run.outputs.run == 'true'
         run: |
           npx license-checker --onlyAllow 'MIT;Apache-2.0;BSD-2-Clause;BSD-3-Clause;ISC;CC0-1.0;Unlicense;MPL-2.0' --excludePrivatePackages
 
       - name: 🐳 Container Security Scan (if Dockerfiles exist)
-        if: needs.foundation.outputs.has_docker == 'true'
+        if: steps.should-run.outputs.run == 'true' && needs.foundation.outputs.has_docker == 'true'
         run: |
           echo "🐳 Container security scanning..."
           DOCKERFILES=$(find . -name "Dockerfile*" -type f | head -5)
