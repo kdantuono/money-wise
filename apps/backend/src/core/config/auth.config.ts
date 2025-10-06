@@ -1,4 +1,21 @@
-import { IsString, IsOptional, MinLength } from 'class-validator';
+import { IsString, IsOptional, MinLength, Validate, ValidatorConstraint, ValidatorConstraintInterface, ValidationArguments } from 'class-validator';
+
+/**
+ * Custom validator to ensure JWT refresh secret is different from access secret
+ * Security Best Practice: Using the same secret for both tokens compromises both if one is leaked
+ */
+@ValidatorConstraint({ name: 'isUniqueSecret', async: false })
+export class IsUniqueSecret implements ValidatorConstraintInterface {
+  validate(value: string, args: ValidationArguments) {
+    const [relatedPropertyName] = args.constraints;
+    const relatedValue = (args.object as any)[relatedPropertyName];
+    return value !== relatedValue;
+  }
+
+  defaultMessage(args: ValidationArguments) {
+    return `${args.property} must be different from ${args.constraints[0]} for security`;
+  }
+}
 
 /**
  * JWT Authentication Configuration
@@ -31,6 +48,9 @@ export class AuthConfig {
    */
   @IsString()
   @MinLength(32, { message: 'JWT_REFRESH_SECRET must be at least 32 characters' })
+  @Validate(IsUniqueSecret, ['JWT_ACCESS_SECRET'], {
+    message: 'JWT_REFRESH_SECRET must be different from JWT_ACCESS_SECRET for security'
+  })
   JWT_REFRESH_SECRET: string;
 
   /**
