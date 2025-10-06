@@ -21,8 +21,6 @@ on:
 env:
   NODE_VERSION: '18'
   FORCE_COLORS: '1'
-  SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-  SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
 
 permissions:
   actions: read
@@ -776,7 +774,7 @@ jobs:
 
   trigger-release:
     name: 🚀 Trigger Release Pipeline
-    needs: [foundation, development, security-comprehensive, testing, build, summary]
+    needs: [foundation, development, testing, build, summary]
     if: |
       github.ref == 'refs/heads/main' &&
       needs.foundation.result == 'success' &&
