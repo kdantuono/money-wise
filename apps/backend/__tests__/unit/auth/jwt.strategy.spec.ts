@@ -37,6 +37,9 @@ describe('JwtStrategy', () => {
   } as User;
 
   beforeEach(async () => {
+    // Set environment variables for JWT secret
+    process.env.JWT_ACCESS_SECRET = 'test-secret';
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         JwtStrategy,
@@ -53,12 +56,9 @@ describe('JwtStrategy', () => {
               if (key === 'auth') {
                 return {
                   JWT_ACCESS_SECRET: 'test-secret',
-                  JWT_ACCESS_EXPIRES_IN: '15m',
-                  JWT_REFRESH_SECRET: 'test-refresh-secret',
-                  JWT_REFRESH_EXPIRES_IN: '7d',
                 };
               }
-              return undefined;
+              return null;
             }),
           },
         },
@@ -71,6 +71,7 @@ describe('JwtStrategy', () => {
 
   afterEach(() => {
     jest.clearAllMocks();
+    delete process.env.JWT_ACCESS_SECRET;
   });
 
   describe('constructor', () => {

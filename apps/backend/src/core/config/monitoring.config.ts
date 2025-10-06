@@ -1,108 +1,101 @@
+import { IsString, IsBoolean, IsOptional, IsNumber, Min } from 'class-validator';
+
 /**
- * Monitoring Configuration
- *
- * Error tracking (Sentry) and metrics (CloudWatch) configuration.
- * Includes environment-aware defaults for sampling rates.
+ * Monitoring and Metrics Configuration
+ * Validates CloudWatch and application metrics settings
  */
-import { registerAs } from '@nestjs/config';
-import {
-  IsString,
-  IsBoolean,
-  IsNumber,
-  IsOptional,
-  ValidateNested,
-  ValidateIf,
-  Min,
-} from 'class-validator';
-import { Type } from 'class-transformer';
-
-export class SentryConfig {
-  @IsString()
-  @IsOptional()
-  SENTRY_DSN?: string;
-
-  @IsString()
-  @IsOptional()
-  SENTRY_ENVIRONMENT?: string;
-
-  @IsString()
-  @IsOptional()
-  SENTRY_RELEASE?: string;
-}
-
-export class CloudWatchConfig {
+export class MonitoringConfig {
+  /**
+   * Enable CloudWatch Metrics Integration
+   * Default: false (disabled)
+   * Set to true in staging/production if using AWS CloudWatch
+   */
   @IsBoolean()
   @IsOptional()
   CLOUDWATCH_ENABLED?: boolean = false;
 
+  /**
+   * CloudWatch Metrics Namespace
+   * Default: MoneyWise/Backend
+   * Groups all metrics under this namespace in CloudWatch
+   */
   @IsString()
-  @ValidateIf((o) => o.CLOUDWATCH_ENABLED === true, {
-    message: 'CLOUDWATCH_NAMESPACE is required when CloudWatch is enabled',
-  })
-  CLOUDWATCH_NAMESPACE?: string;
+  @IsOptional()
+  CLOUDWATCH_NAMESPACE?: string = 'MoneyWise/Backend';
 
+  /**
+   * AWS Region for CloudWatch
+   * Default: us-east-1
+   * Must match your AWS deployment region
+   */
   @IsString()
-  @ValidateIf((o) => o.CLOUDWATCH_ENABLED === true, {
-    message: 'AWS_REGION is required when CloudWatch is enabled',
-  })
-  AWS_REGION?: string;
+  @IsOptional()
+  AWS_REGION?: string = 'us-east-1';
 
+  /**
+   * AWS Access Key ID (for CloudWatch authentication)
+   * CRITICAL: Store in secrets manager in production
+   * Prefer IAM roles over access keys when possible
+   */
   @IsString()
-  @ValidateIf((o) => o.CLOUDWATCH_ENABLED === true, {
-    message: 'AWS_ACCESS_KEY_ID is required when CloudWatch is enabled',
-  })
+  @IsOptional()
   AWS_ACCESS_KEY_ID?: string;
 
+  /**
+   * AWS Secret Access Key (for CloudWatch authentication)
+   * CRITICAL: Store in secrets manager in production
+   * Prefer IAM roles over access keys when possible
+   */
   @IsString()
-  @ValidateIf((o) => o.CLOUDWATCH_ENABLED === true, {
-    message: 'AWS_SECRET_ACCESS_KEY is required when CloudWatch is enabled',
-  })
+  @IsOptional()
   AWS_SECRET_ACCESS_KEY?: string;
-}
 
-export class MonitoringConfig {
-  @ValidateNested()
-  @Type(() => SentryConfig)
-  sentry: SentryConfig;
-
-  @ValidateNested()
-  @Type(() => CloudWatchConfig)
-  cloudwatch: CloudWatchConfig;
-
+  /**
+   * Enable Application Metrics Collection
+   * Default: true
+   * Collects request counts, response times, error rates, etc.
+   */
   @IsBoolean()
   @IsOptional()
   METRICS_ENABLED?: boolean = true;
 
+  /**
+   * Metrics Flush Interval (milliseconds)
+   * Default: 30000 (30 seconds)
+   * How often to batch and send metrics to CloudWatch
+   */
   @IsNumber()
-  @Min(1000, { message: 'METRICS_FLUSH_INTERVAL must be at least 1000ms' })
   @IsOptional()
-  METRICS_FLUSH_INTERVAL?: number;
+  @Min(1000) // Minimum 1 second
+  METRICS_FLUSH_INTERVAL?: number = 30000;
 
+  /**
+   * Enable Health Check Endpoints
+   * Default: true
+   * Exposes /health and /health/metrics endpoints
+   */
   @IsBoolean()
   @IsOptional()
   HEALTH_CHECK_ENABLED?: boolean = true;
+
+  /**
+   * Check if CloudWatch is configured and enabled
+   */
+  isCloudWatchEnabled(): boolean {
+    return this.CLOUDWATCH_ENABLED === true;
+  }
+
+  /**
+   * Check if metrics collection is enabled
+   */
+  isMetricsEnabled(): boolean {
+    return this.METRICS_ENABLED === true;
+  }
+
+  /**
+   * Check if health checks are enabled
+   */
+  isHealthCheckEnabled(): boolean {
+    return this.HEALTH_CHECK_ENABLED === true;
+  }
 }
-
-export default registerAs('monitoring', () => {
-  const isProduction = process.env.NODE_ENV === 'production';
-
-  return {
-    sentry: {
-      SENTRY_DSN: process.env.SENTRY_DSN,
-      SENTRY_ENVIRONMENT: process.env.SENTRY_ENVIRONMENT || process.env.NODE_ENV,
-      SENTRY_RELEASE: process.env.SENTRY_RELEASE,
-    },
-    cloudwatch: {
-      CLOUDWATCH_ENABLED: process.env.CLOUDWATCH_ENABLED === 'true',
-      CLOUDWATCH_NAMESPACE: process.env.CLOUDWATCH_NAMESPACE,
-      AWS_REGION: process.env.AWS_REGION,
-      AWS_ACCESS_KEY_ID: process.env.AWS_ACCESS_KEY_ID,
-      AWS_SECRET_ACCESS_KEY: process.env.AWS_SECRET_ACCESS_KEY,
-    },
-    METRICS_ENABLED: process.env.METRICS_ENABLED !== 'false',
-    METRICS_FLUSH_INTERVAL:
-      parseInt(process.env.METRICS_FLUSH_INTERVAL, 10) ||
-      (isProduction ? 60000 : 30000),
-    HEALTH_CHECK_ENABLED: process.env.HEALTH_CHECK_ENABLED !== 'false',
-  };
-});

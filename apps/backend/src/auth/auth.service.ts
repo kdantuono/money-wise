@@ -15,7 +15,7 @@ import { LoginDto } from './dto/login.dto';
 import { AuthResponseDto } from './dto/auth-response.dto';
 import { PasswordSecurityService, HashingAlgorithm } from './services/password-security.service';
 import { RateLimitService } from './services/rate-limit.service';
-import { AuthConfig } from '../core/config';
+import { AuthConfig } from '../core/config/auth.config';
 
 export interface JwtPayload {
   sub: string;
@@ -25,6 +25,11 @@ export interface JwtPayload {
 
 @Injectable()
 export class AuthService {
+  private readonly jwtAccessSecret: string;
+  private readonly jwtAccessExpiresIn: string;
+  private readonly jwtRefreshSecret: string;
+  private readonly jwtRefreshExpiresIn: string;
+
   constructor(
     @InjectRepository(User)
     private userRepository: Repository<User>,
@@ -34,7 +39,19 @@ export class AuthService {
     private passwordSecurityService: PasswordSecurityService,
     private rateLimitService: RateLimitService,
     private configService: ConfigService,
-  ) {}
+  ) {
+    // Cache JWT configuration for performance and fail fast if missing
+    const authConfig = this.configService.get<AuthConfig>('auth');
+
+    if (!authConfig?.JWT_ACCESS_SECRET || !authConfig?.JWT_REFRESH_SECRET) {
+      throw new Error('JWT secrets not configured');
+    }
+
+    this.jwtAccessSecret = authConfig.JWT_ACCESS_SECRET;
+    this.jwtAccessExpiresIn = authConfig.JWT_ACCESS_EXPIRES_IN || '15m';
+    this.jwtRefreshSecret = authConfig.JWT_REFRESH_SECRET;
+    this.jwtRefreshExpiresIn = authConfig.JWT_REFRESH_EXPIRES_IN || '7d';
+  }
 
   async register(
     registerDto: RegisterDto,
@@ -235,9 +252,8 @@ export class AuthService {
 
   async refreshToken(refreshToken: string): Promise<AuthResponseDto> {
     try {
-      const authConfig = this.configService.get<AuthConfig>('auth');
       const payload = this.jwtService.verify(refreshToken, {
-        secret: authConfig.JWT_REFRESH_SECRET,
+        secret: this.jwtRefreshSecret,
       });
 
       const user = await this.userRepository.findOne({
@@ -273,16 +289,14 @@ export class AuthService {
       role: user.role,
     };
 
-    const authConfig = this.configService.get<AuthConfig>('auth');
-
     const accessToken = this.jwtService.sign(payload, {
-      secret: authConfig.JWT_ACCESS_SECRET,
-      expiresIn: authConfig.JWT_ACCESS_EXPIRES_IN,
+      secret: this.jwtAccessSecret,
+      expiresIn: this.jwtAccessExpiresIn,
     });
 
     const refreshToken = this.jwtService.sign(payload, {
-      secret: authConfig.JWT_REFRESH_SECRET,
-      expiresIn: authConfig.JWT_REFRESH_EXPIRES_IN,
+      secret: this.jwtRefreshSecret,
+      expiresIn: this.jwtRefreshExpiresIn,
     });
 
     // Create user object without password and include virtual properties

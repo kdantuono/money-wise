@@ -89,15 +89,15 @@ describe('AuthService', () => {
           provide: ConfigService,
           useValue: {
             get: jest.fn((key: string) => {
-              if (key === 'auth') {
-                return {
+              const config = {
+                auth: {
                   JWT_ACCESS_SECRET: 'test-access-secret',
                   JWT_ACCESS_EXPIRES_IN: '15m',
                   JWT_REFRESH_SECRET: 'test-refresh-secret',
                   JWT_REFRESH_EXPIRES_IN: '7d',
-                };
-              }
-              return undefined;
+                },
+              };
+              return config[key] || config;
             }),
           },
         },
@@ -218,6 +218,10 @@ describe('AuthService', () => {
       role: 'user',
     };
 
+    beforeEach(() => {
+      process.env.JWT_REFRESH_SECRET = 'refresh-secret';
+    });
+
     it('should refresh token successfully with valid refresh token', async () => {
       jwtService.verify.mockReturnValue(payload);
       userRepository.findOne.mockResolvedValue(mockUser);
@@ -327,6 +331,13 @@ describe('AuthService', () => {
   });
 
   describe('generateAuthResponse', () => {
+    beforeEach(() => {
+      process.env.JWT_ACCESS_SECRET = 'access-secret';
+      process.env.JWT_REFRESH_SECRET = 'refresh-secret';
+      process.env.JWT_ACCESS_EXPIRES_IN = '15m';
+      process.env.JWT_REFRESH_EXPIRES_IN = '7d';
+    });
+
     it('should generate proper auth response with tokens', async () => {
       jwtService.sign
         .mockReturnValueOnce('access-token')

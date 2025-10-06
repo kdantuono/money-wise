@@ -22,7 +22,7 @@ import {
 export class IsUniqueSecret implements ValidatorConstraintInterface {
   validate(value: string, args: ValidationArguments): boolean {
     const [relatedPropertyName] = args.constraints;
-    const relatedValue = (args.object as any)[relatedPropertyName];
+    const relatedValue = (args.object as Record<string, unknown>)[relatedPropertyName];
     return value !== relatedValue;
   }
 

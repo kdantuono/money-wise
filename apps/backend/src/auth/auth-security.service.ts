@@ -11,6 +11,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Request } from 'express';
 import { User, UserStatus } from '../core/database/entities/user.entity';
+import { AuthConfig } from '../core/config/auth.config';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { AuthResponseDto } from './dto/auth-response.dto';
@@ -38,7 +39,6 @@ import { AccountLockoutService } from './services/account-lockout.service';
 import { EmailVerificationService } from './services/email-verification.service';
 import { PasswordResetService } from './services/password-reset.service';
 import { AuditLogService, AuditEventType } from './services/audit-log.service';
-import { AuthConfig } from '../core/config';
 
 export interface JwtPayload {
   sub: string;
@@ -49,6 +49,10 @@ export interface JwtPayload {
 @Injectable()
 export class AuthSecurityService {
   private readonly logger = new Logger(AuthSecurityService.name);
+  private readonly jwtAccessSecret: string;
+  private readonly jwtAccessExpiresIn: string;
+  private readonly jwtRefreshSecret: string;
+  private readonly jwtRefreshExpiresIn: string;
 
   constructor(
     @InjectRepository(User)
@@ -60,7 +64,19 @@ export class AuthSecurityService {
     private passwordResetService: PasswordResetService,
     private auditLogService: AuditLogService,
     private configService: ConfigService,
-  ) {}
+  ) {
+    // Cache JWT configuration for performance and fail fast if missing
+    const authConfig = this.configService.get<AuthConfig>('auth');
+
+    if (!authConfig?.JWT_ACCESS_SECRET || !authConfig?.JWT_REFRESH_SECRET) {
+      throw new Error('JWT secrets not configured');
+    }
+
+    this.jwtAccessSecret = authConfig.JWT_ACCESS_SECRET;
+    this.jwtAccessExpiresIn = authConfig.JWT_ACCESS_EXPIRES_IN || '15m';
+    this.jwtRefreshSecret = authConfig.JWT_REFRESH_SECRET;
+    this.jwtRefreshExpiresIn = authConfig.JWT_REFRESH_EXPIRES_IN || '7d';
+  }
 
   /**
    * Enhanced registration with email verification
@@ -574,9 +590,8 @@ export class AuthSecurityService {
     request: Request
   ): Promise<AuthResponseDto> {
     try {
-      const authConfig = this.configService.get<AuthConfig>('auth');
       const payload = this.jwtService.verify(refreshToken, {
-        secret: authConfig.JWT_REFRESH_SECRET,
+        secret: this.jwtRefreshSecret,
       });
 
       const user = await this.userRepository.findOne({
@@ -659,16 +674,14 @@ export class AuthSecurityService {
       role: user.role,
     };
 
-    const authConfig = this.configService.get<AuthConfig>('auth');
-
     const accessToken = this.jwtService.sign(payload, {
-      secret: authConfig.JWT_ACCESS_SECRET,
-      expiresIn: authConfig.JWT_ACCESS_EXPIRES_IN,
+      secret: this.jwtAccessSecret,
+      expiresIn: this.jwtAccessExpiresIn,
     });
 
     const refreshToken = this.jwtService.sign(payload, {
-      secret: authConfig.JWT_REFRESH_SECRET,
-      expiresIn: authConfig.JWT_REFRESH_EXPIRES_IN,
+      secret: this.jwtRefreshSecret,
+      expiresIn: this.jwtRefreshExpiresIn,
     });
 
     // Create user object without password and include virtual properties

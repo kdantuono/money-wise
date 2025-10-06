@@ -3,7 +3,8 @@ import { ConfigService } from '@nestjs/config';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { MonitoringService } from './monitoring.service';
 import { CloudWatchService } from './cloudwatch.service';
-import { AppConfig, DatabaseConfig, RedisConfig, MonitoringConfig } from '../config';
+import { AppConfig } from '../config/app.config';
+import { MonitoringConfig } from '../config/monitoring.config';
 
 interface HealthStatus {
   status: 'healthy' | 'degraded' | 'unhealthy';
@@ -28,12 +29,19 @@ interface HealthStatus {
 @Controller('health')
 export class HealthController {
   private readonly logger = new Logger(HealthController.name);
+  private readonly appVersion: string;
+  private readonly environment: string;
 
   constructor(
     private readonly monitoringService: MonitoringService,
     private readonly cloudWatchService: CloudWatchService,
     private readonly configService: ConfigService,
-  ) {}
+  ) {
+    // Cache config values to avoid repeated lookups
+    const appConfig = this.configService.get<AppConfig>('app');
+    this.appVersion = appConfig?.APP_VERSION || '1.0.0';
+    this.environment = appConfig?.NODE_ENV || 'development';
+  }
 
   @Get()
   @ApiOperation({ summary: 'Get application health status' })
@@ -81,14 +89,12 @@ export class HealthController {
       // Determine overall status
       const overallStatus = this.calculateOverallStatus(services, performanceSummary);
 
-      const appConfig = this.configService.get<AppConfig>('app');
-
       const healthStatus: HealthStatus = {
         status: overallStatus,
         timestamp: new Date().toISOString(),
         uptime: performanceSummary.uptime,
-        version: appConfig.APP_VERSION || '1.0.0',
-        environment: appConfig.NODE_ENV,
+        version: this.appVersion,
+        environment: this.environment,
         services,
         metrics: {
           totalRequests: performanceSummary.totalRequests,
@@ -119,14 +125,12 @@ export class HealthController {
         responseTime,
       );
 
-      const appConfig = this.configService.get<AppConfig>('app');
-
       return {
         status: 'unhealthy',
         timestamp: new Date().toISOString(),
         uptime: process.uptime() * 1000,
-        version: appConfig.APP_VERSION || '1.0.0',
-        environment: appConfig.NODE_ENV,
+        version: this.appVersion,
+        environment: this.environment,
         services: {
           database: 'unhealthy',
           redis: 'unhealthy',
@@ -176,10 +180,10 @@ export class HealthController {
 
   private async checkDatabase(): Promise<'healthy' | 'unhealthy'> {
     try {
-      // TODO: Implement actual database connection test
-      // For now, verify database configuration is present
-      const dbConfig = this.configService.get<DatabaseConfig>('database');
-      if (!dbConfig || !dbConfig.DB_HOST || !dbConfig.DB_NAME) {
+      // TODO: Implement actual database connection test using TypeORM DataSource
+      // For now, assume healthy if database config is present
+      const dbConfig = this.configService.get('database');
+      if (!dbConfig || !dbConfig.DB_HOST) {
         throw new Error('Database connection not configured');
       }
       return 'healthy';
@@ -190,9 +194,9 @@ export class HealthController {
 
   private async checkRedis(): Promise<'healthy' | 'unhealthy'> {
     try {
-      // TODO: Implement actual Redis connection test
-      // For now, verify Redis configuration is present
-      const redisConfig = this.configService.get<RedisConfig>('redis');
+      // TODO: Implement actual Redis connection test using Redis client
+      // For now, assume healthy if Redis config is present
+      const redisConfig = this.configService.get('redis');
       if (!redisConfig || !redisConfig.REDIS_HOST) {
         throw new Error('Redis connection not configured');
       }
@@ -206,7 +210,7 @@ export class HealthController {
     try {
       // Check if CloudWatch is enabled and accessible
       const monitoringConfig = this.configService.get<MonitoringConfig>('monitoring');
-      if (!monitoringConfig?.cloudwatch?.CLOUDWATCH_ENABLED) {
+      if (!monitoringConfig?.isCloudWatchEnabled()) {
         return 'disabled';
       }
 

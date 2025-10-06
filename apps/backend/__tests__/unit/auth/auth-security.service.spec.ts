@@ -87,7 +87,17 @@ describe('AuthSecurityService', () => {
         {
           provide: ConfigService,
           useValue: {
-            get: jest.fn().mockReturnValue('test-value'),
+            get: jest.fn((key: string) => {
+              const config = {
+                auth: {
+                  JWT_ACCESS_SECRET: 'test-access-secret-32-characters-long!!!',
+                  JWT_ACCESS_EXPIRES_IN: '15m',
+                  JWT_REFRESH_SECRET: 'test-refresh-secret-32-characters-long!!!',
+                  JWT_REFRESH_EXPIRES_IN: '7d',
+                },
+              };
+              return config[key];
+            }),
           },
         },
         {

@@ -4,7 +4,7 @@ import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { AuthService, JwtPayload } from '../auth.service';
 import { User } from '../../core/database/entities/user.entity';
-import { AuthConfig } from '../../core/config';
+import { AuthConfig } from '../../core/config/auth.config';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -13,6 +13,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     private configService: ConfigService,
   ) {
     const authConfig = configService.get<AuthConfig>('auth');
+
+    if (!authConfig?.JWT_ACCESS_SECRET) {
+      throw new Error('JWT access secret not configured');
+    }
+
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,

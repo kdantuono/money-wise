@@ -24,7 +24,7 @@ import {
 
 @ValidatorConstraint({ name: 'isStrongPassword', async: false })
 export class IsStrongPassword implements ValidatorConstraintInterface {
-  validate(value: string, args: ValidationArguments): boolean {
+  validate(value: string, _args: ValidationArguments): boolean {
     // Only enforce in production for security-critical fields
     if (process.env.NODE_ENV !== 'production') {
       return true;

@@ -5,15 +5,28 @@
  * This file initializes Sentry error tracking and performance monitoring
  * using the minimal SDK approach (not custom decorators/interceptors).
  *
+ * NOTE: This file cannot use NestJS ConfigService because it runs before
+ * the NestJS application is bootstrapped. It must read from process.env
+ * directly, but in a controlled, centralized manner.
+ *
  * @see https://docs.sentry.io/platforms/javascript/guides/nestjs/
  */
 
 import * as Sentry from '@sentry/nestjs';
 import { nodeProfilingIntegration } from '@sentry/profiling-node';
+import { config } from 'dotenv';
 
+// Load environment variables FIRST (before accessing process.env)
+config();
+
+/**
+ * Sentry Configuration extracted from environment
+ * This is the ONLY place in the codebase that should access Sentry env vars directly
+ */
 const SENTRY_DSN = process.env.SENTRY_DSN;
 const NODE_ENV = process.env.NODE_ENV || 'development';
 const SENTRY_ENVIRONMENT = process.env.SENTRY_ENVIRONMENT || NODE_ENV;
+const SENTRY_RELEASE = process.env.SENTRY_RELEASE;
 
 /**
  * Get environment-specific sampling rates
@@ -51,7 +64,7 @@ if (SENTRY_DSN) {
     ],
 
     // Release tracking (optional - for deploy tracking)
-    release: process.env.SENTRY_RELEASE,
+    release: SENTRY_RELEASE,
 
     // Error filtering (reduce noise from expected errors)
     ignoreErrors: [

@@ -1,48 +1,42 @@
 /**
  * TimescaleDB Configuration
  *
- * TimescaleDB-specific settings for time-series data optimization.
- * Controls hypertable chunking, compression, and data retention policies.
+ * Configures TimescaleDB-specific features like:
+ * - Hypertable creation and management
+ * - Compression policies
+ * - Retention policies
+ *
+ * IMPORTANT: This is a static configuration file loaded at module initialization.
+ * It uses process.env directly because it's imported before NestJS ConfigModule
+ * is initialized. This is a DOCUMENTED EXCEPTION to the "no process.env" rule.
+ *
+ * For runtime configuration access, use ConfigService with DatabaseConfig class.
+ *
+ * @see https://docs.timescale.com/
+ * @see apps/backend/src/core/config/database.config.ts - Runtime database config
  */
-import { registerAs } from '@nestjs/config';
-import { IsBoolean, IsOptional, IsString } from 'class-validator';
 
-export class TimescaleDbConfig {
-  @IsBoolean()
-  @IsOptional()
-  TIMESCALEDB_ENABLED?: boolean = true;
+import { config } from 'dotenv';
 
-  @IsBoolean()
-  @IsOptional()
-  TIMESCALEDB_COMPRESSION_ENABLED?: boolean = true;
+// Load environment variables FIRST
+config();
 
-  @IsBoolean()
-  @IsOptional()
-  TIMESCALEDB_RETENTION_ENABLED?: boolean = true;
-
-  @IsString()
-  @IsOptional()
-  TIMESCALEDB_CHUNK_TIME_INTERVAL?: string = '1 day';
-
-  @IsString()
-  @IsOptional()
-  TIMESCALEDB_COMPRESSION_AFTER?: string = '7 days';
-
-  @IsString()
-  @IsOptional()
-  TIMESCALEDB_RETENTION_AFTER?: string = '7 years';
-}
-
-export default registerAs('timescaledb', () => ({
-  TIMESCALEDB_ENABLED: process.env.TIMESCALEDB_ENABLED === 'true',
-  TIMESCALEDB_COMPRESSION_ENABLED:
-    process.env.TIMESCALEDB_COMPRESSION_ENABLED === 'true',
-  TIMESCALEDB_RETENTION_ENABLED:
-    process.env.TIMESCALEDB_RETENTION_ENABLED === 'true',
-  TIMESCALEDB_CHUNK_TIME_INTERVAL:
-    process.env.TIMESCALEDB_CHUNK_TIME_INTERVAL || '1 day',
-  TIMESCALEDB_COMPRESSION_AFTER:
-    process.env.TIMESCALEDB_COMPRESSION_AFTER || '7 days',
-  TIMESCALEDB_RETENTION_AFTER:
-    process.env.TIMESCALEDB_RETENTION_AFTER || '7 years',
-}));
+export const timescaledbConfig = {
+  hypertables: [
+    // Transaction metrics hypertable
+    {
+      tableName: 'transaction_metrics',
+      timeColumnName: 'time',
+      createIfNotExists: true,
+      migrateData: false,
+    },
+  ],
+  options: {
+    enabled: process.env.TIMESCALEDB_ENABLED === 'true',
+    compressionEnabled: process.env.TIMESCALEDB_COMPRESSION_ENABLED === 'true',
+    retentionEnabled: process.env.TIMESCALEDB_RETENTION_ENABLED === 'true',
+    chunkTimeInterval: process.env.TIMESCALEDB_CHUNK_TIME_INTERVAL || '1 day',
+    compressionAfter: process.env.TIMESCALEDB_COMPRESSION_AFTER || '7 days',
+    retentionAfter: process.env.TIMESCALEDB_RETENTION_AFTER || '7 years',
+  },
+};
