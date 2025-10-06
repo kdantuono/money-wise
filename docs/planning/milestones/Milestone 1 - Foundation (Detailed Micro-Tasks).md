@@ -1,6 +1,12 @@
 # Milestone 1: Foundation & Setup - Detailed Breakdown
 ## 55 Points → 142 Micro-Tasks
 
+> ⚠️ **PLANNING TEMPLATE - OBSOLETE TECH STACK**
+> This document was created as a planning template and contains references to Python/FastAPI/Pytest.
+> **Actual Implementation**: NestJS + Next.js + TypeScript + Jest/Vitest/Playwright
+> **Current Status**: See [`docs/development/progress.md`](../../development/progress.md) for actual implementation progress
+> **Purpose**: Historical reference and task breakdown concepts only
+
 ---
 
 ## Quick Reference for Claude Code

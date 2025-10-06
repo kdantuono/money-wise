@@ -1,6 +1,12 @@
 # Milestone 2: Authentication & Core Models - Detailed Breakdown
 ## 34 Points → 118 Micro-Tasks
 
+> ⚠️ **PLANNING TEMPLATE - OBSOLETE TECH STACK**
+> This document was created as a planning template and contains references to Python/SQLAlchemy/Pydantic.
+> **Actual Implementation**: NestJS + TypeORM + class-validator + TypeScript
+> **Current Status**: See [`docs/development/progress.md`](../../development/progress.md) for actual implementation progress
+> **Purpose**: Historical reference and task breakdown concepts only
+
 ---
 
 ## Quick Reference for Claude Code
