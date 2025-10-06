@@ -1,7 +1,7 @@
 // API Test Client
 // TASK-003-004: Create API Test Client
 
-import { INestApplication } from '@nestjs/common';
+import { Global, INestApplication, Module } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigModule } from '@nestjs/config';
 import { DataSource } from 'typeorm';
@@ -35,10 +35,24 @@ export class TestClient {
       },
     } as unknown as DataSource;
 
+    // Create a global test module that provides DataSource
+    @Global()
+    @Module({
+      providers: [
+        {
+          provide: DataSource,
+          useValue: mockDataSource,
+        },
+      ],
+      exports: [DataSource],
+    })
+    class MockDataSourceModule {}
+
     // Build test module with required modules but using MockRedis and MockDataSource
     // Integration tests use mocked dependencies, not real database connections
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [
+        MockDataSourceModule,  // Provide DataSource globally
         ConfigModule.forRoot({
           isGlobal: true,
           envFilePath: ['.env.test', '.env'],
@@ -47,8 +61,6 @@ export class TestClient {
         HealthModule,  // Required for /health endpoint
       ],
     })
-    .overrideProvider(DataSource)
-    .useValue(mockDataSource)
     .compile();
 
     this._app = moduleFixture.createNestApplication();
