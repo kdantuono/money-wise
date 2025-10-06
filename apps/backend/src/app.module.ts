@@ -8,7 +8,6 @@ import { MonitoringModule } from './core/monitoring/monitoring.module';
 import { LoggingModule } from './core/logging/logging.module';
 import { AuthModule } from './auth/auth.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
-import { TestSentryController } from './test-sentry.controller';
 
 @Module({
   imports: [
@@ -23,7 +22,7 @@ import { TestSentryController } from './test-sentry.controller';
     // Feature modules
     AuthModule,
   ],
-  controllers: [TestSentryController],
+  controllers: [],
   providers: [
     {
       provide: APP_GUARD,
