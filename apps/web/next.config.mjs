@@ -5,9 +5,10 @@ const nextConfig = {
   // Enable React strict mode for better development experience
   reactStrictMode: true,
 
-  // Enable experimental instrumentation hook for Sentry
+  // Experimental features
   experimental: {
-    instrumentationHook: true,
+    // Client trace metadata for Sentry
+    clientTraceMetadata: ['baggage', 'sentry-trace'],
   },
 
   // Environment variables exposed to the browser

@@ -12,6 +12,7 @@
  * ```
  */
 import { z } from 'zod';
+import Constants from 'expo-constants';
 
 const envSchema = z.object({
   // Application Configuration
@@ -39,16 +40,25 @@ const envSchema = z.object({
 export type Env = z.infer<typeof envSchema>;
 
 /**
+ * Get environment variable from Expo Constants
+ * Expo automatically exposes EXPO_PUBLIC_* variables through Constants.expoConfig.extra
+ */
+const getEnvVar = (key: string): string | undefined => {
+  // In Expo, EXPO_PUBLIC_* variables are available through Constants
+  return Constants.expoConfig?.extra?.[key];
+};
+
+/**
  * Validated environment configuration
  * Throws error at build time if validation fails
  */
 export const env = envSchema.parse({
-  EXPO_PUBLIC_APP_NAME: process.env.EXPO_PUBLIC_APP_NAME,
-  EXPO_PUBLIC_APP_VERSION: process.env.EXPO_PUBLIC_APP_VERSION,
-  EXPO_PUBLIC_API_URL: process.env.EXPO_PUBLIC_API_URL,
-  EXPO_PUBLIC_SENTRY_DSN: process.env.EXPO_PUBLIC_SENTRY_DSN,
-  EXPO_PUBLIC_SENTRY_RELEASE: process.env.EXPO_PUBLIC_SENTRY_RELEASE,
-  EXPO_PUBLIC_ANALYTICS_ENABLED: process.env.EXPO_PUBLIC_ANALYTICS_ENABLED,
+  EXPO_PUBLIC_APP_NAME: getEnvVar('EXPO_PUBLIC_APP_NAME'),
+  EXPO_PUBLIC_APP_VERSION: getEnvVar('EXPO_PUBLIC_APP_VERSION'),
+  EXPO_PUBLIC_API_URL: getEnvVar('EXPO_PUBLIC_API_URL'),
+  EXPO_PUBLIC_SENTRY_DSN: getEnvVar('EXPO_PUBLIC_SENTRY_DSN'),
+  EXPO_PUBLIC_SENTRY_RELEASE: getEnvVar('EXPO_PUBLIC_SENTRY_RELEASE'),
+  EXPO_PUBLIC_ANALYTICS_ENABLED: getEnvVar('EXPO_PUBLIC_ANALYTICS_ENABLED'),
 });
 
 /**
