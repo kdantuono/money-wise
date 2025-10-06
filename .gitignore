@@ -11,6 +11,10 @@ __pycache__/
 
 venv/
 
+# Package managers (use pnpm only)
+package-lock.json
+yarn.lock
+
 
 
 # Environment

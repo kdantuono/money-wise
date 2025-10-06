@@ -45,7 +45,10 @@
       "Bash(docker:*)",
       "Bash(pnpm test:integration:*)",
       "Bash(pnpm --filter @money-wise/backend test:unit --listTests)",
-      "Bash(pnpm --filter @money-wise/backend test:unit -- --listTests)"
+      "Bash(pnpm --filter @money-wise/backend test:unit -- --listTests)",
+      "Bash(for branch in feature/story-1.5.4-config-consolidation origin/feature/story-1.5.2-sentry-environments origin/feature/story-1.5.4-config-consolidation)",
+      "Bash(do echo \"=== Branch: $branch ===\" git log --oneline $branch --not epic/1.5-infrastructure)",
+      "Bash(git show-ref:*)"
     ],
     "deny": [],
     "ask": []
