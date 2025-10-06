@@ -9,7 +9,7 @@ import {
   IsNumber,
   IsOptional,
   IsEnum,
-  IsUrl,
+  Matches,
   Min,
   Max,
 } from 'class-validator';
@@ -45,8 +45,9 @@ export class AppConfig {
   API_PREFIX?: string = 'api';
 
   @IsString()
-  @IsUrl({}, { message: 'CORS_ORIGIN must be a valid URL' })
-  CORS_ORIGIN: string;
+  @IsOptional()
+  @Matches(/^https?:\/\/.+/, { message: 'CORS_ORIGIN must be a valid URL starting with http:// or https://' })
+  CORS_ORIGIN?: string = 'http://localhost:3000';
 }
 
 export default registerAs('app', () => ({
