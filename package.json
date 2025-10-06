@@ -8,6 +8,9 @@
     "packages/*",
     "test-utils"
   ],
+  "overrides": {
+    "ip": "^3.0.0"
+  },
   "scripts": {
     "dev": "turbo run dev --parallel",
     "dev:backend": "turbo run dev --filter=@money-wise/backend",
@@ -21,7 +24,7 @@
     "test:unit": "turbo run test:unit",
     "test:integration": "turbo run test:integration",
     "test:coverage": "turbo run test:coverage",
-    "test:coverage:report": "node scripts/coverage-report.js",
+    "test:coverage:report": "node scripts/testing/coverage-report.js",
     "test:coverage:open": "open coverage-reports/html/index.html",
     "test:watch": "turbo run test:watch",
     "test:e2e": "turbo run test:e2e",

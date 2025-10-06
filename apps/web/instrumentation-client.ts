@@ -1,16 +1,20 @@
 /**
- * Sentry Client-Side Configuration (Browser Runtime)
+ * Sentry Client-Side Instrumentation (Browser Runtime)
  *
  * This file initializes Sentry for the browser/client-side runtime.
  * It runs in the user's browser and captures client-side errors, performance data,
  * and user interactions.
+ *
+ * NOTE: This is the Next.js 15+ recommended pattern. The old sentry.client.config.ts
+ * file is deprecated when using Turbopack and will be removed in future versions.
  *
  * Environment-aware sampling rates:
  * - Development: 100% traces (full debugging)
  * - Staging: 50% traces (balance coverage vs quota)
  * - Production: 10% traces (conserve free tier quota)
  *
- * @see https://docs.sentry.io/platforms/javascript/guides/nextjs/
+ * @see https://nextjs.org/docs/app/api-reference/file-conventions/instrumentation-client
+ * @see https://docs.sentry.io/platforms/javascript/guides/nextjs/manual-setup
  */
 
 import * as Sentry from '@sentry/nextjs';
@@ -115,3 +119,10 @@ if (SENTRY_DSN) {
   // eslint-disable-next-line no-console
   console.warn('[Sentry Client] DSN not provided - error tracking disabled');
 }
+
+/**
+ * Hook for capturing router transitions
+ * Required by Sentry for Next.js App Router navigation tracking
+ * @see https://docs.sentry.io/platforms/javascript/guides/nextjs/manual-setup/#navigation-tracking
+ */
+export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;

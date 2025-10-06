@@ -1,3 +1,17 @@
+/**
+ * Configuration Module
+ *
+ * Provides type-safe, validated configuration access across the application.
+ * Uses NestJS ConfigModule with class-validator for fail-fast validation.
+ *
+ * Configuration Domains:
+ * - app: Application settings (NODE_ENV, PORT, CORS)
+ * - database: PostgreSQL/TimescaleDB connection
+ * - auth: JWT authentication secrets
+ * - redis: Redis connection for sessions/cache
+ * - sentry: Sentry error tracking
+ * - monitoring: CloudWatch metrics and monitoring
+ */
 import { Module } from '@nestjs/common';
 import { ConfigModule as NestConfigModule } from '@nestjs/config';
 import { plainToInstance } from 'class-transformer';
@@ -8,10 +22,12 @@ import { AuthConfig } from './auth.config';
 import { RedisConfig } from './redis.config';
 import { SentryConfig } from './sentry.config';
 import { MonitoringConfig } from './monitoring.config';
+import { formatValidationErrors } from './utils/format-validation-errors';
 
 /**
  * Configuration validation function
  * Validates environment variables against configuration classes
+ * Enhanced with detailed error messages and security hardening
  */
 function validateConfig(config: Record<string, unknown>) {
   // Transform to configuration objects with implicit conversion
@@ -24,23 +40,23 @@ function validateConfig(config: Record<string, unknown>) {
     monitoring: plainToInstance(MonitoringConfig, config, { enableImplicitConversion: true }),
   };
 
-  // Validate all configurations
+  // Validate all configurations with security hardening
   const allErrors = Object.entries(configs).flatMap(([name, configObject]) => {
-    const errors = validateSync(configObject, { skipMissingProperties: false });
+    const errors = validateSync(configObject, {
+      skipMissingProperties: false,
+      whitelist: true,
+      forbidNonWhitelisted: true, // Security: disallow unknown env vars
+    });
+
+    // Prefix errors with config domain name for clarity
     return errors.map((error) => ({
-      config: name,
-      constraints: error.constraints || {},
-      property: error.property,
+      ...error,
+      property: `${name}.${error.property}`,
     }));
   });
 
   if (allErrors.length > 0) {
-    const errorMessages = allErrors.map(
-      (error) =>
-        `[${error.config}.${error.property}] ${Object.values(error.constraints).join(', ')}`,
-    );
-
-    throw new Error(`Configuration validation failed:\n${errorMessages.join('\n')}`);
+    throw new Error(formatValidationErrors(allErrors));
   }
 
   return configs;
@@ -50,8 +66,15 @@ function validateConfig(config: Record<string, unknown>) {
   imports: [
     NestConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: ['.env.local', '.env'],
+      envFilePath: [
+        '.env.local', // Local overrides (gitignored)
+        `.env.${process.env.NODE_ENV}`, // Environment-specific
+        '.env', // Default
+      ],
       validate: validateConfig,
+      validationOptions: {
+        abortEarly: false, // Show all validation errors
+      },
       cache: true,
     }),
   ],

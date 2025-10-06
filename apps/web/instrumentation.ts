@@ -23,5 +23,21 @@ export async function register() {
   }
 }
 
-// Client-side instrumentation is handled separately via sentry.client.config.ts
-// and imported automatically by Next.js
+/**
+ * Error handler for nested React Server Components
+ * Required by Sentry for Next.js 15 App Router
+ * @see https://docs.sentry.io/platforms/javascript/guides/nextjs/manual-setup/#errors-from-nested-react-server-components
+ */
+export async function onRequestError(
+  err: unknown,
+  request: Request,
+  context: { routerKind: 'Pages Router' | 'App Router' },
+) {
+  // Only instrument on server-side
+  if (process.env.NEXT_RUNTIME === 'nodejs') {
+    const Sentry = await import('@sentry/nextjs');
+    Sentry.captureRequestError(err, request as any, context as any);
+  }
+}
+
+// Client-side instrumentation is handled separately via instrumentation-client.ts

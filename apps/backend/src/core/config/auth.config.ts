@@ -1,21 +1,5 @@
-import { IsString, IsOptional, MinLength, Validate, ValidatorConstraint, ValidatorConstraintInterface, ValidationArguments } from 'class-validator';
-
-/**
- * Custom validator to ensure JWT refresh secret is different from access secret
- * Security Best Practice: Using the same secret for both tokens compromises both if one is leaked
- */
-@ValidatorConstraint({ name: 'isUniqueSecret', async: false })
-export class IsUniqueSecret implements ValidatorConstraintInterface {
-  validate(value: string, args: ValidationArguments) {
-    const [relatedPropertyName] = args.constraints;
-    const relatedValue = (args.object as any)[relatedPropertyName];
-    return value !== relatedValue;
-  }
-
-  defaultMessage(args: ValidationArguments) {
-    return `${args.property} must be different from ${args.constraints[0]} for security`;
-  }
-}
+import { IsString, IsOptional, MinLength, Validate } from 'class-validator';
+import { IsUniqueSecret } from './validators/unique-secret.validator';
 
 /**
  * JWT Authentication Configuration
