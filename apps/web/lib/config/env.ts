@@ -44,7 +44,7 @@ const envSchema = z.object({
     .transform((val) => val === 'true')
     .pipe(z.boolean())
     .optional()
-    .default('false'),
+    .default(false),
 
   // Analytics Configuration
   NEXT_PUBLIC_ANALYTICS_ENABLED: z
@@ -52,7 +52,7 @@ const envSchema = z.object({
     .transform((val) => val === 'true')
     .pipe(z.boolean())
     .optional()
-    .default('false'),
+    .default(false),
 
   // Server-side Sentry (for source map upload)
   SENTRY_ORG: z.string().optional(),

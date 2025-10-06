@@ -53,7 +53,7 @@ export default registerAs('app', () => ({
   NODE_ENV: process.env.NODE_ENV as Environment,
   PORT: parseInt(process.env.PORT, 10) || 3001,
   APP_NAME: process.env.APP_NAME,
-  APP_VERSION: process.env.APP_VERSION || process.env.npm_package_version,
+  APP_VERSION: process.env.APP_VERSION, // Optional - set explicitly in .env if needed
   API_PREFIX: process.env.API_PREFIX,
   CORS_ORIGIN: process.env.CORS_ORIGIN || 'http://localhost:3000',
 }));

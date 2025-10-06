@@ -20,28 +20,38 @@ export function validateConfig(config: Record<string, unknown>) {
   const errors = validateSync(validatedConfig, {
     skipMissingProperties: false,
     whitelist: true,
-    forbidNonWhitelisted: false, // Allow extra env vars
+    forbidNonWhitelisted: true, // Disallow extra env vars for security
   });
 
   if (errors.length > 0) {
     const errorMessages = errors
       .map((error) => {
+        const propertyPath = error.property;
         const constraints = error.constraints
           ? Object.values(error.constraints)
           : [];
         const childErrors = error.children
-          ? error.children.map((child) =>
-              child.constraints ? Object.values(child.constraints) : [],
-            )
+          ? error.children.map((child) => {
+              const childPath = `${propertyPath}.${child.property}`;
+              const childConstraints = child.constraints
+                ? Object.values(child.constraints).map(
+                    (msg) => `${childPath}: ${msg}`,
+                  )
+                : [];
+              return childConstraints;
+            })
           : [];
 
-        return [...constraints, ...childErrors.flat()];
+        const formattedConstraints = constraints.map(
+          (msg) => `${propertyPath}: ${msg}`,
+        );
+        return [...formattedConstraints, ...childErrors.flat()];
       })
       .flat()
       .join('\n  - ');
 
     throw new Error(
-      `❌ Configuration Validation Failed:\n\n  - ${errorMessages}\n\nPlease check your .env file and ensure all required variables are set correctly.`,
+      `❌ Configuration Validation Failed:\n\n  - ${errorMessages}\n\nPlease check your .env file and ensure all required variables are set correctly.\nMissing or invalid environment variables are listed above with their validation errors.`,
     );
   }
 
@@ -54,7 +64,7 @@ function transformToNested(env: Record<string, unknown>) {
       NODE_ENV: env.NODE_ENV,
       PORT: parseInt(env.PORT as string, 10) || 3001,
       APP_NAME: env.APP_NAME,
-      APP_VERSION: env.APP_VERSION || env.npm_package_version,
+      APP_VERSION: env.APP_VERSION, // Optional - set explicitly in .env if needed
       API_PREFIX: env.API_PREFIX,
       CORS_ORIGIN: env.CORS_ORIGIN || 'http://localhost:3000',
     },

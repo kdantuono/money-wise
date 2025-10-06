@@ -34,7 +34,7 @@ const envSchema = z.object({
     .transform((val) => val === 'true')
     .pipe(z.boolean())
     .optional()
-    .default('false'),
+    .default(false),
 });
 
 export type Env = z.infer<typeof envSchema>;
