@@ -95,7 +95,10 @@ describe('PasswordResetService', () => {
                 REDIS_HOST: 'localhost',
                 REDIS_PORT: 6379,
                 REDIS_DB: 0,
-                NODE_ENV: 'development', // Return token in development
+                NODE_ENV: 'development',
+                app: {
+                  NODE_ENV: 'development', // Return token in development
+                },
               };
               return config[key] ?? defaultValue;
             }),

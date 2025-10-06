@@ -230,7 +230,7 @@ describe('AuthService', () => {
       const result = await service.refreshToken(refreshToken);
 
       expect(jwtService.verify).toHaveBeenCalledWith(refreshToken, {
-        secret: process.env.JWT_REFRESH_SECRET,
+        secret: 'test-refresh-secret',
       });
       expect(userRepository.findOne).toHaveBeenCalledWith({
         where: { id: payload.sub },
@@ -250,7 +250,7 @@ describe('AuthService', () => {
         UnauthorizedException,
       );
       expect(jwtService.verify).toHaveBeenCalledWith(refreshToken, {
-        secret: process.env.JWT_REFRESH_SECRET,
+        secret: 'test-refresh-secret',
       });
     });
 
@@ -364,8 +364,8 @@ describe('AuthService', () => {
           role: mockUser.role,
         },
         {
-          secret: process.env.JWT_ACCESS_SECRET,
-          expiresIn: process.env.JWT_ACCESS_EXPIRES_IN,
+          secret: 'test-access-secret',
+          expiresIn: '15m',
         },
       );
       expect(jwtService.sign).toHaveBeenCalledWith(
@@ -375,8 +375,8 @@ describe('AuthService', () => {
           role: mockUser.role,
         },
         {
-          secret: process.env.JWT_REFRESH_SECRET,
-          expiresIn: process.env.JWT_REFRESH_EXPIRES_IN,
+          secret: 'test-refresh-secret',
+          expiresIn: '7d',
         },
       );
       expect(result.accessToken).toBe('access-token');
