@@ -235,8 +235,9 @@ export class AuthService {
 
   async refreshToken(refreshToken: string): Promise<AuthResponseDto> {
     try {
+      const authConfig = this.configService.get<AuthConfig>('auth');
       const payload = this.jwtService.verify(refreshToken, {
-        secret: process.env.JWT_REFRESH_SECRET,
+        secret: authConfig.JWT_REFRESH_SECRET,
       });
 
       const user = await this.userRepository.findOne({

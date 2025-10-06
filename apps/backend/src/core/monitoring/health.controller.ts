@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { MonitoringService } from './monitoring.service';
 import { CloudWatchService } from './cloudwatch.service';
-import { AppConfig } from '../config';
+import { AppConfig, DatabaseConfig, RedisConfig, MonitoringConfig } from '../config';
 
 interface HealthStatus {
   status: 'healthy' | 'degraded' | 'unhealthy';
@@ -177,10 +177,10 @@ export class HealthController {
   private async checkDatabase(): Promise<'healthy' | 'unhealthy'> {
     try {
       // TODO: Implement actual database connection test
-      // For now, simulate a potential connection check
-      const connectionCheck = process.env.DATABASE_URL || 'postgresql://localhost:5432/moneywise';
-      if (!connectionCheck) {
-        throw new Error('Database connection string not configured');
+      // For now, verify database configuration is present
+      const dbConfig = this.configService.get<DatabaseConfig>('database');
+      if (!dbConfig || !dbConfig.DB_HOST || !dbConfig.DB_NAME) {
+        throw new Error('Database connection not configured');
       }
       return 'healthy';
     } catch {
@@ -191,10 +191,10 @@ export class HealthController {
   private async checkRedis(): Promise<'healthy' | 'unhealthy'> {
     try {
       // TODO: Implement actual Redis connection test
-      // For now, simulate a potential connection check
-      const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
-      if (!redisUrl) {
-        throw new Error('Redis connection string not configured');
+      // For now, verify Redis configuration is present
+      const redisConfig = this.configService.get<RedisConfig>('redis');
+      if (!redisConfig || !redisConfig.REDIS_HOST) {
+        throw new Error('Redis connection not configured');
       }
       return 'healthy';
     } catch {
@@ -205,7 +205,8 @@ export class HealthController {
   private async checkCloudWatch(): Promise<'healthy' | 'unhealthy' | 'disabled'> {
     try {
       // Check if CloudWatch is enabled and accessible
-      if (!process.env.CLOUDWATCH_ENABLED || process.env.CLOUDWATCH_ENABLED === 'false') {
+      const monitoringConfig = this.configService.get<MonitoringConfig>('monitoring');
+      if (!monitoringConfig?.cloudwatch?.CLOUDWATCH_ENABLED) {
         return 'disabled';
       }
 
