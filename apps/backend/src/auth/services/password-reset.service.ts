@@ -194,7 +194,7 @@ export class PasswordResetService {
       return {
         success: true,
         message: successMessage,
-        token: process.env.NODE_ENV === 'development' ? resetToken : undefined,
+        token: this.configService.get<string>('NODE_ENV') === 'development' ? resetToken : undefined,
       };
     } catch (error) {
       this.logger.error(`Failed to generate password reset token for ${email}:`, error);
