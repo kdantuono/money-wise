@@ -76,15 +76,46 @@ module.exports = {
     '!src/main.ts',
     '!src/**/__tests__/**',
     '!src/**/__mocks__/**',
+    // Exclude infrastructure/setup files (no business logic to test)
+    '!src/instrument.ts',                         // Sentry initialization
+    '!src/config/**',                              // Simple config exports
+    '!src/database/index.ts',                      // Simple database exports
+    '!src/core/database/migrations/**',            // One-time database migrations
+    '!src/core/database/tests/**',                 // Test infrastructure itself
+    '!src/core/config/index.ts',                   // Config barrel exports
+    '!src/core/database/repositories/index.ts',    // Repository barrel exports
+    '!src/docs/**',                                // OpenAPI/documentation files
   ],
 
-  // Coverage thresholds for backend (MVP phase - progressive improvement)
+  // Coverage thresholds for backend (STORY-1.5.7 - Hardening to 90%)
+  // Current baseline (with exclusions): Statements 86.24%, Branches 76.68%, Functions 82.99%, Lines 87.01%
+  // Target: 90% across all metrics (work in progress)
   coverageThreshold: {
     global: {
-      branches: 5,
-      functions: 15,
-      lines: 15,
-      statements: 15,
+      branches: 76,    // Current: 76.68%, prevent regression
+      functions: 82,   // Current: 82.99%, prevent regression
+      lines: 87,       // Current: 87.01%, prevent regression
+      statements: 86,  // Current: 86.24%, prevent regression
+    },
+    // High-priority modules that MUST maintain excellence
+    './src/auth/services/**/*.ts': {
+      branches: 85,  // Auth services critical for security
+      functions: 95,
+      lines: 95,
+      statements: 95,
+    },
+    './src/core/database/repositories/**/*.ts': {
+      branches: 85,  // Database operations must be reliable
+      functions: 90,
+      lines: 98,
+      statements: 98,
+    },
+    // Modules being actively improved (looser thresholds to allow work)
+    './src/core/health/**/*.ts': {
+      branches: 50,
+      functions: 80,
+      lines: 80,
+      statements: 80,
     },
   },
 
