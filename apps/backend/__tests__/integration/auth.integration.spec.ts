@@ -6,7 +6,7 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository, UpdateResult } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import request from 'supertest';
 import * as bcrypt from 'bcryptjs';
 
@@ -65,22 +65,62 @@ describe('Auth Integration Tests', () => {
   } as User;
 
   beforeEach(async () => {
-    // Set environment variables
-    process.env.JWT_ACCESS_SECRET = 'test-access-secret';
-    process.env.JWT_REFRESH_SECRET = 'test-refresh-secret';
+    // Set environment variables for ConfigService
+    process.env.NODE_ENV = 'test';
+    process.env.APP_NAME = 'MoneyWise Test';
+    process.env.APP_PORT = '4000';
+    process.env.APP_HOST = 'localhost';
+    process.env.APP_VERSION = '0.4.1';
+
+    // JWT Configuration (must be ≥32 chars AND different from each other)
+    process.env.JWT_ACCESS_SECRET = 'test-access-secret-exactly-32-chars-long-for-jwt!!';
+    process.env.JWT_REFRESH_SECRET = 'test-refresh-secret-exactly-32-chars-long-jwt!';
     process.env.JWT_ACCESS_EXPIRES_IN = '15m';
     process.env.JWT_REFRESH_EXPIRES_IN = '7d';
+
+    // Database Configuration
+    process.env.DB_HOST = 'localhost';
+    process.env.DB_PORT = '5432';
+    process.env.DB_USERNAME = 'postgres';
+    process.env.DB_PASSWORD = 'testpassword';
+    process.env.DB_DATABASE = 'moneywise_test';
+
+    // Redis Configuration
+    process.env.REDIS_HOST = 'localhost';
+    process.env.REDIS_PORT = '6379';
+
+    // Security Configuration
+    process.env.CORS_ORIGIN = 'http://localhost:3000';
+    process.env.SESSION_SECRET = 'test-session-secret-min-32-characters-long';
+    process.env.CSRF_SECRET = 'test-csrf-secret-minimum-32-characters-long';
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [
         RedisModule.forTest(mockRedisClient), // Use testable Redis module
         ConfigModule.forRoot({
           isGlobal: true,
-          envFilePath: ['.env.test', '.env'],
+          ignoreEnvFile: true, // Use process.env directly (bypass .env files)
+          validate: undefined, // Skip validation in tests
+          cache: false, // Don't cache config in tests
         }),
         AuthModule,
       ],
     })
+      // Override ConfigService to provide auth config
+      .overrideProvider(ConfigService)
+      .useValue({
+        get: jest.fn((key: string) => {
+          if (key === 'auth') {
+            return {
+              JWT_ACCESS_SECRET: process.env.JWT_ACCESS_SECRET,
+              JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET,
+              JWT_ACCESS_EXPIRES_IN: process.env.JWT_ACCESS_EXPIRES_IN,
+              JWT_REFRESH_EXPIRES_IN: process.env.JWT_REFRESH_EXPIRES_IN,
+            };
+          }
+          return process.env[key];
+        }),
+      })
       // RateLimitGuard now uses injected Redis from RedisModule.forTest()
       // No need to override - it will automatically use the mock Redis
       .overrideProvider(getRepositoryToken(User))
