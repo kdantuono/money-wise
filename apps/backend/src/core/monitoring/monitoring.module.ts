@@ -7,11 +7,16 @@ import { HealthController } from './health.controller';
 import { PerformanceInterceptor } from './performance.interceptor';
 import { MetricsService } from './metrics.service';
 import { LoggerModule } from '../logging/logger.module';
+import { TestSentryController } from './test-sentry.controller';
 
 @Global()
 @Module({
   imports: [ConfigModule, LoggerModule],
-  controllers: [HealthController],
+  controllers: [
+    HealthController,
+    // Only include test controller in non-production
+    ...(process.env.NODE_ENV !== 'production' ? [TestSentryController] : []),
+  ],
   providers: [
     CloudWatchService,
     MonitoringService,
