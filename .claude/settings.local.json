@@ -48,7 +48,12 @@
       "Bash(pnpm --filter @money-wise/backend test:unit -- --listTests)",
       "Bash(for branch in feature/story-1.5.4-config-consolidation origin/feature/story-1.5.2-sentry-environments origin/feature/story-1.5.4-config-consolidation)",
       "Bash(do echo \"=== Branch: $branch ===\" git log --oneline $branch --not epic/1.5-infrastructure)",
-      "Bash(git show-ref:*)"
+      "Bash(git show-ref:*)",
+      "Bash(gh project item-list:*)",
+      "Bash(pnpm --filter @money-wise/web test:unit -- --coverage --coverageReporters=text-summary)",
+      "Bash(git branch:*)",
+      "Bash(pnpm --filter @money-wise/backend test:unit -- --coverage --coverageReporters=text-summary --passWithNoTests)",
+      "Bash(xargs:*)"
     ],
     "deny": [],
     "ask": []
