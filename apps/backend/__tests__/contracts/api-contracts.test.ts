@@ -3,8 +3,26 @@ import { Test, TestingModule } from '@nestjs/testing'
 import { INestApplication } from '@nestjs/common'
 import { spec } from '@/docs/openapi.spec'
 
+// Type spec properly for OpenAPI 3.0
+interface OpenAPISpec {
+  openapi: string;
+  info: {
+    title: string;
+    version: string;
+    description: string;
+  };
+  paths: Record<string, any>;
+  components?: {
+    schemas?: Record<string, any>;
+    securitySchemes?: Record<string, any>;
+  };
+  security?: Array<Record<string, any>>;
+}
+
+const typedSpec = spec as unknown as OpenAPISpec;
+
 // Load OpenAPI spec for contract testing
-jestOpenAPI(spec)
+jestOpenAPI(typedSpec as any)
 
 describe('API Contract Tests', () => {
   let app: INestApplication
@@ -281,17 +299,17 @@ describe('API Contract Tests', () => {
 
   describe('OpenAPI Specification Validation', () => {
     it('should have a valid OpenAPI spec', async () => {
-      expect(spec).toBeDefined()
-      expect(spec.openapi).toBe('3.0.0')
-      expect(spec.info).toBeDefined()
-      expect(spec.info.title).toBe('MoneyWise API')
-      expect(spec.paths).toBeDefined()
-      expect(spec.components).toBeDefined()
-      expect(spec.components?.schemas).toBeDefined()
+      expect(typedSpec).toBeDefined()
+      expect(typedSpec.openapi).toBe('3.0.0')
+      expect(typedSpec.info).toBeDefined()
+      expect(typedSpec.info.title).toBe('MoneyWise API')
+      expect(typedSpec.paths).toBeDefined()
+      expect(typedSpec.components).toBeDefined()
+      expect(typedSpec.components?.schemas).toBeDefined()
     })
 
     it('should have all required schemas defined', async () => {
-      const schemas = spec.components?.schemas
+      const schemas = typedSpec.components?.schemas
       expect(schemas).toBeDefined()
 
       const requiredSchemas = [
@@ -309,7 +327,7 @@ describe('API Contract Tests', () => {
     })
 
     it('should have all required paths defined', async () => {
-      const paths = spec.paths
+      const paths = typedSpec.paths
       expect(paths).toBeDefined()
 
       const requiredPaths = [
@@ -326,9 +344,9 @@ describe('API Contract Tests', () => {
     })
 
     it('should have proper security definitions', async () => {
-      expect(spec.components?.securitySchemes).toBeDefined()
-      expect(spec.components?.securitySchemes?.bearerAuth).toBeDefined()
-      expect(spec.security).toBeDefined()
+      expect(typedSpec.components?.securitySchemes).toBeDefined()
+      expect(typedSpec.components?.securitySchemes?.bearerAuth).toBeDefined()
+      expect(typedSpec.security).toBeDefined()
     })
   })
 })

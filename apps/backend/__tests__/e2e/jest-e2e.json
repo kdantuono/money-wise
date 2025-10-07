@@ -11,8 +11,8 @@
   ],
   "coverageDirectory": "../coverage-e2e",
   "moduleNameMapper": {
-    "^@/(.*)$": "<rootDir>/../src/$1",
-    "^@money-wise/types$": "<rootDir>/../../packages/types/src"
+    "^@/(.*)$": "<rootDir>/../../src/$1",
+    "^@money-wise/types$": "<rootDir>/../../../../packages/types/src"
   },
   "setupFilesAfterEnv": ["<rootDir>/setup-e2e.ts"],
   "testTimeout": 60000,

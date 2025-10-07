@@ -65,10 +65,34 @@ export class TestApp {
   private async bootstrap(): Promise<void> {
     // Setup environment for tests
     process.env.NODE_ENV = 'test';
-    process.env.JWT_ACCESS_SECRET = process.env.JWT_ACCESS_SECRET || 'test-access-secret';
-    process.env.JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'test-refresh-secret';
+
+    // JWT Configuration (must be ≥32 chars AND different from each other)
+    process.env.JWT_ACCESS_SECRET = process.env.JWT_ACCESS_SECRET || 'e2e-test-access-secret-exactly-32-chars-long-jwt!!';
+    process.env.JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'e2e-test-refresh-secret-exactly-32-chars-jwt!';
     process.env.JWT_ACCESS_EXPIRES_IN = '15m';
     process.env.JWT_REFRESH_EXPIRES_IN = '7d';
+
+    // Required environment variables for ConfigModule validation
+    process.env.APP_NAME = 'MoneyWise E2E Test';
+    process.env.APP_PORT = '4000';
+    process.env.APP_HOST = 'localhost';
+    process.env.APP_VERSION = '0.4.1';
+
+    // Database Configuration
+    process.env.DB_HOST = 'localhost';
+    process.env.DB_PORT = '5432';
+    process.env.DB_USERNAME = 'postgres';
+    process.env.DB_PASSWORD = 'testpassword';
+    process.env.DB_DATABASE = 'moneywise_test';
+
+    // Redis Configuration
+    process.env.REDIS_HOST = 'localhost';
+    process.env.REDIS_PORT = '6379';
+
+    // Security Configuration
+    process.env.CORS_ORIGIN = 'http://localhost:3000';
+    process.env.SESSION_SECRET = 'e2e-test-session-secret-min-32-characters-long';
+    process.env.CSRF_SECRET = 'e2e-test-csrf-secret-minimum-32-characters-long';
 
     // Create mock Redis client using our comprehensive mock
     this.mockRedis = createMockRedis();
@@ -83,7 +107,8 @@ export class TestApp {
       imports: [
         ConfigModule.forRoot({
           isGlobal: true,
-          envFilePath: ['.env.test', '.env'],
+          ignoreEnvFile: true, // Use process.env set in bootstrap()
+          cache: false,
         }),
         await TestDatabaseModule.forRoot(),
         RedisModule.forTest(this.mockRedis),
