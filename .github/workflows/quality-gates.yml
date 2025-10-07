@@ -1,0 +1,450 @@
+name: Quality Gates
+
+on:
+  push:
+    branches: [main, develop, 'epic/*', 'feature/*', 'story/*']
+  pull_request:
+    branches: [main, develop, 'epic/*']
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '20.x'
+  PNPM_VERSION: '8'
+
+jobs:
+  # Job 1: Lint and Type Check
+  lint-and-typecheck:
+    name: Lint and Type Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Get pnpm store directory
+        id: pnpm-cache
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v3
+        with:
+          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run ESLint
+        run: pnpm lint
+
+      - name: Run TypeScript type check
+        run: pnpm typecheck
+
+  # Job 2: Unit Tests with Coverage
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      matrix:
+        project: [backend, web]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Get pnpm store directory
+        id: pnpm-cache
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v3
+        with:
+          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run unit tests with coverage
+        run: |
+          cd apps/${{ matrix.project }}
+          pnpm test:coverage --ci --coverage --coverageReporters=json --coverageReporters=lcov --coverageReporters=text
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          files: apps/${{ matrix.project }}/coverage/lcov.info
+          flags: ${{ matrix.project }}
+          name: ${{ matrix.project }}-coverage
+
+      - name: Check coverage thresholds
+        run: |
+          cd apps/${{ matrix.project }}
+          node -e "
+          const coverage = require('./coverage/coverage-summary.json');
+          const total = coverage.total;
+          console.log('Coverage Summary:');
+          console.log('  Statements:', total.statements.pct + '%');
+          console.log('  Branches:', total.branches.pct + '%');
+          console.log('  Functions:', total.functions.pct + '%');
+          console.log('  Lines:', total.lines.pct + '%');
+
+          const threshold = ${{ matrix.project === 'backend' ? 90 : 80 }};
+          if (total.statements.pct < threshold) {
+            console.error('❌ Coverage below threshold: ' + total.statements.pct + '% < ' + threshold + '%');
+            process.exit(1);
+          }
+          console.log('✅ Coverage meets threshold');
+          "
+
+      - name: Comment PR with coverage
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const coverage = JSON.parse(fs.readFileSync('apps/${{ matrix.project }}/coverage/coverage-summary.json', 'utf8'));
+            const total = coverage.total;
+
+            const comment = `### ${{ matrix.project }} Coverage Report 📊
+
+            | Metric | Coverage | Status |
+            |--------|----------|--------|
+            | Statements | ${total.statements.pct}% | ${total.statements.pct >= 90 ? '✅' : '⚠️'} |
+            | Branches | ${total.branches.pct}% | ${total.branches.pct >= 85 ? '✅' : '⚠️'} |
+            | Functions | ${total.functions.pct}% | ${total.functions.pct >= 90 ? '✅' : '⚠️'} |
+            | Lines | ${total.lines.pct}% | ${total.lines.pct >= 90 ? '✅' : '⚠️'} |`;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+
+  # Job 3: Integration Tests
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: test_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run database migrations
+        env:
+          DATABASE_URL: postgresql://test:test@localhost:5432/test_db
+        run: |
+          cd apps/backend
+          pnpm prisma migrate deploy
+
+      - name: Run integration tests
+        env:
+          DATABASE_URL: postgresql://test:test@localhost:5432/test_db
+          REDIS_URL: redis://localhost:6379
+          NODE_ENV: test
+        run: |
+          cd apps/backend
+          pnpm test:integration --ci
+
+  # Job 4: E2E Tests
+  e2e-tests:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    strategy:
+      matrix:
+        shard: [1, 2, 3, 4]
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: test_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: |
+          cd apps/web
+          npx playwright install --with-deps chromium
+
+      - name: Build applications
+        run: |
+          pnpm build:backend
+          pnpm build:web
+
+      - name: Run E2E tests (shard ${{ matrix.shard }}/4)
+        env:
+          DATABASE_URL: postgresql://test:test@localhost:5432/test_db
+          NEXT_PUBLIC_API_URL: http://localhost:3001
+        run: |
+          # Start backend server
+          cd apps/backend
+          pnpm start:prod &
+          BACKEND_PID=$!
+
+          # Start frontend server
+          cd ../web
+          pnpm start &
+          FRONTEND_PID=$!
+
+          # Wait for servers to be ready
+          npx wait-on http://localhost:3001/health http://localhost:3000 -t 30000
+
+          # Run E2E tests with sharding
+          npx playwright test --shard=${{ matrix.shard }}/4
+
+          # Cleanup
+          kill $BACKEND_PID $FRONTEND_PID
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: playwright-report-shard-${{ matrix.shard }}
+          path: apps/web/playwright-report/
+
+  # Job 5: Performance Tests
+  performance-tests:
+    name: Performance Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run performance benchmarks
+        run: |
+          cd apps/backend
+          pnpm test:performance --ci
+
+      - name: Store benchmark results
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          tool: 'customBiggerIsBetter'
+          output-file-path: apps/backend/performance-results.json
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: false
+          comment-on-alert: true
+          alert-threshold: '110%'
+          fail-on-alert: true
+
+  # Job 6: Security Scan
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Trivy security scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Upload Trivy results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+      - name: Audit npm dependencies
+        run: pnpm audit --audit-level=high
+
+  # Job 7: Bundle Size Check
+  bundle-size:
+    name: Bundle Size Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build and analyze bundle
+        run: |
+          cd apps/web
+          pnpm build
+          pnpm analyze
+
+      - name: Check bundle size limits
+        uses: andresz1/size-limit-action@v1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          directory: apps/web
+          build_script: build
+
+  # Job 8: Quality Report
+  quality-report:
+    name: Generate Quality Report
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [lint-and-typecheck, unit-tests, integration-tests, e2e-tests]
+    if: always()
+    steps:
+      - name: Generate summary
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const jobs = context.payload.workflow_run?.jobs || [];
+            let passed = 0;
+            let failed = 0;
+
+            jobs.forEach(job => {
+              if (job.status === 'completed' && job.conclusion === 'success') passed++;
+              else if (job.status === 'completed' && job.conclusion === 'failure') failed++;
+            });
+
+            const emoji = failed === 0 ? '✅' : '❌';
+            const status = failed === 0 ? 'PASSED' : 'FAILED';
+
+            core.summary
+              .addHeading(`Quality Gates ${emoji} ${status}`)
+              .addTable([
+                [{data: 'Check', header: true}, {data: 'Status', header: true}],
+                ['Lint & Type Check', context.needs.lint-and-typecheck.result === 'success' ? '✅' : '❌'],
+                ['Unit Tests', context.needs.unit-tests.result === 'success' ? '✅' : '❌'],
+                ['Integration Tests', context.needs.integration-tests.result === 'success' ? '✅' : '❌'],
+                ['E2E Tests', context.needs.e2e-tests.result === 'success' ? '✅' : '❌'],
+              ])
+              .write();
+
+  # Job 9: Deploy Preview (for PRs)
+  deploy-preview:
+    name: Deploy Preview
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    if: github.event_name == 'pull_request'
+    needs: [lint-and-typecheck, unit-tests]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to Preview Environment
+        run: |
+          echo "Deploying PR preview to: https://pr-${{ github.event.pull_request.number }}.preview.moneywise.app"
+          # Add actual deployment steps here
+
+      - name: Comment PR with preview URL
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `🚀 Preview deployed to: https://pr-${{ github.event.pull_request.number }}.preview.moneywise.app`
+            });
