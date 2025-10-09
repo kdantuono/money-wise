@@ -94,7 +94,7 @@ jobs:
       - name: Run unit tests with coverage
         run: |
           cd apps/${{ matrix.project }}
-          pnpm test:coverage --ci --coverage --coverageReporters=json --coverageReporters=lcov --coverageReporters=text
+          pnpm test:unit --ci --coverage --coverageReporters=json --coverageReporters=lcov --coverageReporters=text
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
