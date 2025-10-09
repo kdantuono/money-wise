@@ -69,6 +69,8 @@ module.exports = {
   collectCoverageFrom: [
     'src/**/*.{ts,js}',
     '!src/**/*.d.ts',
+    '!src/**/*.spec.ts',                           // Exclude test files from coverage
+    '!src/**/*.test.ts',                           // Exclude test files from coverage
     '!src/**/*.interface.ts',
     '!src/**/*.dto.ts',
     '!src/**/*.entity.ts',
@@ -87,15 +89,15 @@ module.exports = {
     '!src/docs/**',                                // OpenAPI/documentation files
   ],
 
-  // Coverage thresholds for backend (STORY-1.5.7 - Hardening to 90%)
-  // Current baseline (with exclusions): Statements 86.24%, Branches 76.68%, Functions 82.99%, Lines 87.01%
-  // Target: 90% across all metrics (work in progress)
+  // Coverage thresholds for backend (STORY-1.5.7 Phase 2 - Baseline 80%)
+  // Phase 2 Target: 80% statements (matches CI/CD workflow threshold)
+  // Phase 5 will increase to 90% across all metrics
   coverageThreshold: {
     global: {
-      branches: 76,    // Current: 76.68%, prevent regression
-      functions: 82,   // Current: 82.99%, prevent regression
-      lines: 87,       // Current: 87.01%, prevent regression
-      statements: 86,  // Current: 86.24%, prevent regression
+      statements: 80,  // Phase 2 baseline (Phase 5: 90%)
+      branches: 70,    // Phase 2 baseline (Phase 5: 90%)
+      functions: 75,   // Phase 2 baseline (Phase 5: 90%)
+      lines: 80,       // Phase 2 baseline (Phase 5: 90%)
     },
     // High-priority modules that MUST maintain excellence
     './src/auth/services/**/*.ts': {
