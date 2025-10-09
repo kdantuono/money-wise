@@ -94,7 +94,11 @@ jobs:
       - name: Run unit tests with coverage
         run: |
           cd apps/${{ matrix.project }}
-          pnpm test:unit --ci --coverage --coverageReporters=json --coverageReporters=lcov --coverageReporters=text
+          if [ "${{ matrix.project }}" = "web" ]; then
+            pnpm test:unit --coverage --coverageReporters=json --coverageReporters=lcov --coverageReporters=text
+          else
+            pnpm test:unit --ci --coverage --coverageReporters=json --coverageReporters=lcov --coverageReporters=text
+          fi
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
@@ -205,7 +209,7 @@ jobs:
           DATABASE_URL: postgresql://test:test@localhost:5432/test_db
         run: |
           cd apps/backend
-          pnpm prisma migrate deploy
+          npx prisma migrate deploy
 
       - name: Run integration tests
         env:
@@ -214,7 +218,7 @@ jobs:
           NODE_ENV: test
         run: |
           cd apps/backend
-          pnpm test:integration --ci
+          pnpm test:integration
 
   # Job 4: E2E Tests
   e2e-tests:
@@ -321,7 +325,7 @@ jobs:
       - name: Run performance benchmarks
         run: |
           cd apps/backend
-          pnpm test:performance --ci
+          pnpm test:performance
 
       - name: Store benchmark results
         uses: benchmark-action/github-action-benchmark@v1
