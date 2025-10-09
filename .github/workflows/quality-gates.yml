@@ -95,7 +95,7 @@ jobs:
         run: |
           cd apps/${{ matrix.project }}
           if [ "${{ matrix.project }}" = "web" ]; then
-            pnpm test:unit --coverage --coverageReporters=json --coverageReporters=lcov --coverageReporters=text
+            pnpm test:unit --coverage
           else
             pnpm test:unit --ci --coverage --coverageReporters=json --coverageReporters=lcov --coverageReporters=text
           fi
@@ -209,7 +209,7 @@ jobs:
           DATABASE_URL: postgresql://test:test@localhost:5432/test_db
         run: |
           cd apps/backend
-          npx prisma migrate deploy
+          pnpm db:migrate
 
       - name: Run integration tests
         env:
