@@ -214,8 +214,16 @@ jobs:
 
       - name: Run integration tests
         env:
-          DATABASE_URL: postgresql://test:test@localhost:5432/test_db
+          # Database configuration (Integration tests use individual vars, not DATABASE_URL)
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_USERNAME: test
+          DB_PASSWORD: test
+          DB_NAME: test_db
+          DB_SCHEMA: public
+          # Redis configuration
           REDIS_URL: redis://localhost:6379
+          # Application configuration
           NODE_ENV: test
         run: |
           cd apps/backend
