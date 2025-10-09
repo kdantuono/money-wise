@@ -1,7 +1,7 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class UpdateUserTimezoneLength1735695600000 implements MigrationInterface {
-  name = 'UpdateUserTimezoneLength1735695600000';
+export class UpdateUserTimezoneLength1760000000001 implements MigrationInterface {
+  name = 'UpdateUserTimezoneLength1760000000001';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     // Alter timezone column from VARCHAR(10) to VARCHAR(50) to support full IANA timezone strings
