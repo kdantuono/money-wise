@@ -271,7 +271,22 @@ jobs:
 
       - name: Run E2E tests (shard ${{ matrix.shard }}/4)
         env:
-          DATABASE_URL: postgresql://test:test@localhost:5432/test_db
+          # Database configuration (NestJS requires individual vars for validation)
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_USERNAME: test
+          DB_PASSWORD: test
+          DB_NAME: test_db
+          DB_SCHEMA: public
+          # Application configuration
+          NODE_ENV: test
+          PORT: 3001
+          # Auth configuration (required for NestJS validation)
+          JWT_SECRET: test-jwt-secret-minimum-32-characters-long-for-testing
+          JWT_REFRESH_SECRET: test-jwt-refresh-secret-minimum-32-characters-long-for-testing
+          JWT_EXPIRES_IN: 15m
+          JWT_REFRESH_EXPIRES_IN: 7d
+          # Frontend URL
           NEXT_PUBLIC_API_URL: http://localhost:3001
         run: |
           # Start backend server
