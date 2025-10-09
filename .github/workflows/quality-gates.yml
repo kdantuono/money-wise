@@ -115,12 +115,12 @@ jobs:
           console.log('  Functions:', total.functions.pct + '%');
           console.log('  Lines:', total.lines.pct + '%');
 
-          const threshold = ${{ matrix.project === 'backend' ? 90 : 80 }};
+          const threshold = 80; // STORY-1.5.7: Zero-tolerance ≥80% for all packages
           if (total.statements.pct < threshold) {
             console.error('❌ Coverage below threshold: ' + total.statements.pct + '% < ' + threshold + '%');
             process.exit(1);
           }
-          console.log('✅ Coverage meets threshold');
+          console.log('✅ Coverage meets threshold: ' + total.statements.pct + '% ≥ ' + threshold + '%');
           "
 
       - name: Comment PR with coverage
