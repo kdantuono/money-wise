@@ -1,7 +1,7 @@
 import { MigrationInterface, QueryRunner } from "typeorm";
 
-export class AddTimescaleDBSupport1759998888888 implements MigrationInterface {
-    name = 'AddTimescaleDBSupport1759998888888'
+export class AddTimescaleDBSupport1760000000002 implements MigrationInterface {
+    name = 'AddTimescaleDBSupport1760000000002'
 
     public async up(queryRunner: QueryRunner): Promise<void> {
         // Enable TimescaleDB extension (skip if not available - e.g. local dev without TimescaleDB)
