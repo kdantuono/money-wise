@@ -21,6 +21,7 @@ on:
 env:
   NODE_VERSION: '18'
   FORCE_COLORS: '1'
+  TURBO_TELEMETRY_DISABLED: '1'  # Opt-out of anonymous telemetry
 
 permissions:
   actions: read
