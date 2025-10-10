@@ -1,15 +1,26 @@
 name: Quality Gates
 
+# TIER 3 & 4: PR to develop + Main branch - COMPREHENSIVE CI (20-30 min)
+# Tier 3 Cost: ~1,320 min/month (2 PRs/day × 22 min × 30 days)
+# Tier 4 Cost: ~960 min/month (1 push/day × 32 min × 30 days)
+# Purpose: Full quality validation before develop/main merge
+
 on:
   push:
-    branches: [main, develop, 'epic/*', 'feature/*', 'story/*']
+    branches: [main, develop]  # OPTIMIZED: Removed epic/feature/story branches
   pull_request:
-    branches: [main, develop, 'epic/*']
+    branches: [main, develop]
+    types: [opened, synchronize, reopened, ready_for_review]  # Explicit trigger types
   workflow_dispatch:
 
 env:
   NODE_VERSION: '20.x'
   PNPM_VERSION: '8'
+
+# Cancel outdated runs on new push
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
 
 jobs:
   # Job 1: Lint and Type Check
@@ -37,7 +48,7 @@ jobs:
           echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
 
       - name: Setup pnpm cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4  # OPTIMIZED: Upgraded for better caching
         with:
           path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
           key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
@@ -81,7 +92,7 @@ jobs:
           echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
 
       - name: Setup pnpm cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4  # OPTIMIZED: Upgraded for better caching
         with:
           path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
           key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
@@ -236,7 +247,8 @@ jobs:
     timeout-minutes: 50
     strategy:
       matrix:
-        shard: [1, 2, 3, 4]
+        # OPTIMIZED: 2 shards for PRs (saves ~40% E2E time), 4 for main
+        shard: ${{ github.event_name == 'pull_request' && fromJSON('[1, 2]') || fromJSON('[1, 2, 3, 4]') }}
     services:
       postgres:
         image: timescale/timescaledb:latest-pg15  # TimescaleDB required for migrations
@@ -278,10 +290,27 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # OPTIMIZATION: Cache Playwright browsers
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('apps/web/package.json') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+
       - name: Install Playwright browsers
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: |
           cd apps/web
           npx playwright install --with-deps chromium
+
+      - name: Install Playwright system deps (cache hit)
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: |
+          cd apps/web
+          npx playwright install-deps chromium
 
       - name: Build applications
         run: |
@@ -348,8 +377,9 @@ jobs:
           # Wait for frontend to be ready (30s timeout)
           pnpm wait-on http://localhost:3000 -t 30000
 
-          # Run E2E tests with sharding
-          npx playwright test --shard=${{ matrix.shard }}/4
+          # Run E2E tests with sharding (2 shards for PRs, 4 for main)
+          TOTAL_SHARDS=${{ github.event_name == 'pull_request' && '2' || '4' }}
+          npx playwright test --shard=${{ matrix.shard }}/$TOTAL_SHARDS
 
           # Cleanup
           kill $BACKEND_PID $FRONTEND_PID
