@@ -326,6 +326,11 @@ jobs:
           pnpm start &
           FRONTEND_PID=$!
 
+          # Debug: Test health endpoint directly
+          echo "Testing health endpoint..."
+          sleep 5  # Give server time to bind to port
+          curl -v http://localhost:3001/api/health || echo "Health check failed!"
+
           # Wait for servers to be ready (30s timeout)
           pnpm wait-on http://localhost:3001/api/health http://localhost:3000 -t 30000
 
