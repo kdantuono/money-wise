@@ -242,7 +242,7 @@ jobs:
         image: timescale/timescaledb:latest-pg15  # TimescaleDB required for migrations
         env:
           POSTGRES_USER: test
-          POSTGRES_PASSWORD: test
+          POSTGRES_PASSWORD: testpass
           POSTGRES_DB: test_db
         ports:
           - 5432:5432
@@ -284,14 +284,14 @@ jobs:
           DB_HOST: localhost
           DB_PORT: 5432
           DB_USERNAME: test
-          DB_PASSWORD: test
+          DB_PASSWORD: testpass
           DB_NAME: test_db
           DB_SCHEMA: public
           # Application configuration
           NODE_ENV: test
           PORT: 3001
           # Auth configuration (required for NestJS validation)
-          JWT_SECRET: test-jwt-secret-minimum-32-characters-long-for-testing
+          JWT_ACCESS_SECRET: test-jwt-access-secret-minimum-32-characters-long-for-testing
           JWT_REFRESH_SECRET: test-jwt-refresh-secret-minimum-32-characters-long-for-testing
           JWT_EXPIRES_IN: 15m
           JWT_REFRESH_EXPIRES_IN: 7d
