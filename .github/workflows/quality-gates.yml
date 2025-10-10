@@ -288,6 +288,13 @@ jobs:
           pnpm build:backend
           pnpm build:web
 
+      - name: Run database migrations
+        env:
+          DATABASE_URL: postgresql://test:testpass@localhost:5432/test_db
+        run: |
+          cd apps/backend
+          pnpm db:migrate
+
       - name: Run E2E tests (shard ${{ matrix.shard }}/4)
         env:
           # Database configuration (NestJS requires individual vars for validation)
