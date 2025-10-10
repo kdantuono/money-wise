@@ -5,6 +5,7 @@ import { DataSource } from 'typeorm';
 import { Redis } from 'ioredis';
 import * as Sentry from '@sentry/node';
 import { AppConfig } from '../config/app.config';
+import { Public } from '../../auth/decorators/public.decorator';
 
 interface HealthCheckResponse {
   status: 'ok' | 'error';
@@ -40,6 +41,7 @@ export class HealthController {
     @Inject('default') private readonly redis: Redis,
   ) {}
 
+  @Public()
   @Get()
   @ApiOperation({ summary: 'Health check endpoint' })
   @ApiResponse({
@@ -84,6 +86,7 @@ export class HealthController {
     };
   }
 
+  @Public()
   @Get('ready')
   @ApiOperation({ summary: 'Readiness probe endpoint' })
   @ApiResponse({
@@ -144,6 +147,7 @@ export class HealthController {
     };
   }
 
+  @Public()
   @Get('live')
   @ApiOperation({ summary: 'Liveness probe endpoint' })
   @ApiResponse({
@@ -157,6 +161,7 @@ export class HealthController {
     };
   }
 
+  @Public()
   @Get('detailed')
   @ApiOperation({ summary: 'Detailed health check with service dependencies' })
   @ApiResponse({
@@ -200,6 +205,7 @@ export class HealthController {
     );
   }
 
+  @Public()
   @Get('metrics')
   @ApiOperation({ summary: 'Application metrics and resource usage' })
   @ApiResponse({
@@ -340,6 +346,7 @@ export class HealthController {
    * 3. Trigger error: curl http://localhost:3001/api/health/sentry-test
    * 4. Check Sentry dashboard for error
    */
+  @Public()
   @Get('sentry-test')
   @ApiOperation({
     summary: 'Test Sentry error tracking (DEV ONLY)',
