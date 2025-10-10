@@ -245,6 +245,11 @@ jobs:
     name: E2E Tests
     runs-on: ubuntu-latest
     timeout-minutes: 50
+    # OPTION B: Run E2E only on PR approval or push to main/develop (not every PR push)
+    # Saves ~660 min/month by running once per PR instead of every push
+    if: |
+      github.event_name == 'push' ||
+      (github.event_name == 'pull_request' && github.event.action == 'ready_for_review')
     strategy:
       matrix:
         # OPTIMIZED: 2 shards for PRs (saves ~40% E2E time), 4 for main
