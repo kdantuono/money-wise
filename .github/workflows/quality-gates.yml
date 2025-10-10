@@ -97,7 +97,7 @@ jobs:
           if [ "${{ matrix.project }}" = "web" ]; then
             pnpm test:unit --coverage
           else
-            pnpm test:unit --ci --coverage --coverageReporters=json --coverageReporters=lcov --coverageReporters=text
+            pnpm test:unit --ci --coverage --coverageReporters=json-summary --coverageReporters=lcov --coverageReporters=text
           fi
 
       - name: Upload coverage to Codecov
