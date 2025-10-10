@@ -319,8 +319,8 @@ jobs:
           pnpm start &
           FRONTEND_PID=$!
 
-          # Wait for servers to be ready (60s timeout to account for npx package installation)
-          npx wait-on http://localhost:3001/api/health http://localhost:3000 -t 60000
+          # Wait for servers to be ready (30s timeout)
+          pnpm wait-on http://localhost:3001/api/health http://localhost:3000 -t 30000
 
           # Run E2E tests with sharding
           npx playwright test --shard=${{ matrix.shard }}/4
