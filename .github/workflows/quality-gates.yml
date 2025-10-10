@@ -289,7 +289,6 @@ jobs:
           DB_SCHEMA: public
           # Application configuration
           NODE_ENV: test
-          PORT: 3001
           # Auth configuration (required for NestJS validation)
           JWT_ACCESS_SECRET: test-jwt-access-secret-minimum-32-characters-long-for-testing
           JWT_REFRESH_SECRET: test-jwt-refresh-secret-minimum-32-characters-long-for-testing
@@ -298,9 +297,9 @@ jobs:
           # Frontend URL
           NEXT_PUBLIC_API_URL: http://localhost:3001
         run: |
-          # Start backend server
+          # Start backend server on port 3001
           cd apps/backend
-          pnpm start:prod &
+          PORT=3001 pnpm start:prod &
           BACKEND_PID=$!
 
           # Start frontend server
