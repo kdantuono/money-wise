@@ -30,6 +30,7 @@ git reset --soft <commit-hash>
 | CP-002 | TASK-1.5-P.0.2 | `64c9946` | 2025-10-11 | `git reset --hard 64c9946` |
 | CP-003 | TASK-1.5-P.0.3 | `82fd711` | 2025-10-11 | `git reset --hard 82fd711` |
 | CP-004 | TASK-1.5-P.0.4 | `ae2132d` | 2025-10-11 | `git reset --hard ae2132d` |
+| CP-005 | TASK-1.5-P.1.1 | `cd8d399` | 2025-10-11 | `git reset --hard cd8d399` |
 
 ---
 
@@ -224,7 +225,48 @@ If something breaks:
 
 ---
 
-**Last Updated**: 2025-10-11 03:00 UTC
-**Total Checkpoints**: 4
+### CP-005: Prisma Dependencies Installed
+
+**Task**: TASK-1.5-P.1.1 - Install Prisma Dependencies
+**Commit**: `cd8d399`
+**Date**: 2025-10-11 04:00 UTC
+**Phase**: 1 - Prisma Foundation (IN PROGRESS)
+**Story**: STORY-1.5-PRISMA.1 (#122)
+
+#### What Was Completed
+
+- Installed Prisma 6.17.1 (CLI) and @prisma/client 6.17.1
+- Initialized Prisma with `prisma init`
+- Created prisma/schema.prisma with PostgreSQL datasource
+- Configured DATABASE_URL for existing PostgreSQL database
+- Added 7 Prisma CLI scripts to package.json
+
+#### Files Changed
+
+- `apps/backend/package.json` (added dependencies + scripts)
+- `apps/backend/prisma/schema.prisma` (new)
+- `apps/backend/.gitignore` (new, ignore Prisma generated files)
+- `pnpm-lock.yaml` (updated with Prisma packages)
+- `apps/backend/.env` (DATABASE_URL configured - not committed)
+
+#### Verification
+
+- ✅ `npx prisma --version` returns 6.17.1
+- ✅ `npx prisma validate` succeeds
+- ✅ schema.prisma exists with datasource and generator
+- ✅ DATABASE_URL points to local PostgreSQL
+
+#### Safe to Rollback?
+
+✅ **YES** - No code changes yet, only infrastructure setup. Database not modified.
+
+#### Next Task
+
+TASK-1.5-P.1.2 - Design Family + User Entities (2h)
+
+---
+
+**Last Updated**: 2025-10-11 04:00 UTC
+**Total Checkpoints**: 5
 **Branch**: feature/epic-1.5-completion
-**Current Phase**: 1 - Prisma Foundation (Next)
+**Current Phase**: 1 - Prisma Foundation (20% complete - 1/5 tasks)
