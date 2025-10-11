@@ -34,7 +34,7 @@ git reset --soft <commit-hash>
 | CP-006 | TASK-1.5-P.1.2 | `56e4209` | 2025-10-11 | `git reset --hard 56e4209` |
 | CP-007 | TASK-1.5-P.1.3 | `c61f6f8` | 2025-10-11 | `git reset --hard c61f6f8` |
 | CP-008 | TASK-1.5-P.1.4 | `pending` | 2025-10-11 | `git reset --hard <hash>` |
-| CP-009 | TASK-1.5-P.1.5 | `pending` | 2025-10-11 | `git reset --hard <hash>` |
+| CP-009 | TASK-1.5-P.1.5 | `1b2d7fa` | 2025-10-11 | `git reset --hard 1b2d7fa` |
 
 ---
 
@@ -499,7 +499,7 @@ TASK-1.5-P.1.5 - Design Achievement Entity + Validate Complete Schema (3h)
 ### CP-009: Achievement Entity + Complete Schema Validation
 
 **Task**: TASK-1.5-P.1.5 - Design Achievement Entity + Validate Complete Schema
-**Commit**: `pending`
+**Commit**: `1b2d7fa`
 **Date**: 2025-10-11 13:00 UTC
 **Phase**: 1 - Prisma Foundation (COMPLETE)
 **Story**: STORY-1.5-PRISMA.1 (#122)
