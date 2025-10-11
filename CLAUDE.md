@@ -2,6 +2,24 @@
 
 ## 🚨 CRITICAL: Session Initialization
 
+### 1️⃣ Recover Last Session (NEW!)
+
+**FIRST ACTION IN ANY SESSION**:
+```bash
+/resume-work
+```
+
+This command automatically:
+- ✅ Restores your complete todo list from last session
+- ✅ Shows recent git activity and changes
+- ✅ Displays recent documentation updates
+- ✅ Provides clear "next action" suggestion
+- ✅ Ensures continuity across sessions
+
+**See**: `.claude/SESSION-RECOVERY-GUIDE.md` for details
+
+### 2️⃣ Verify Environment
+
 **MANDATORY**: Execute `.claude/scripts/init-session.sh` at session start
 **FALLBACK**: If script fails, manually verify:
 
@@ -58,11 +76,15 @@ IF bug || fix || issue:
 
 ## ⚡ Quick Commands
 
+### Essential
+- **`/resume-work`** - **Restore last session (todos + context)** ⭐ USE FIRST
+- `/status` - Show execution status
+
+### Development
 - `/epic:init [name]` - Initialize epic with decomposition
-- `/epic:execute` - Execute with parallel agents  
+- `/epic:execute` - Execute with parallel agents
 - `/feature [name]` - Standard feature development
 - `/fix [issue-#]` - Fix GitHub issue
-- `/status` - Show execution status
 
 ## 🔄 Git Workflow (NEVER OVERRIDE)
 
