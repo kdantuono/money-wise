@@ -31,6 +31,7 @@ git reset --soft <commit-hash>
 | CP-003 | TASK-1.5-P.0.3 | `82fd711` | 2025-10-11 | `git reset --hard 82fd711` |
 | CP-004 | TASK-1.5-P.0.4 | `ae2132d` | 2025-10-11 | `git reset --hard ae2132d` |
 | CP-005 | TASK-1.5-P.1.1 | `cd8d399` | 2025-10-11 | `git reset --hard cd8d399` |
+| CP-006 | TASK-1.5-P.1.2 | `56e4209` | 2025-10-11 | `git reset --hard 56e4209` |
 
 ---
 
@@ -266,7 +267,79 @@ TASK-1.5-P.1.2 - Design Family + User Entities (2h)
 
 ---
 
-**Last Updated**: 2025-10-11 04:00 UTC
-**Total Checkpoints**: 5
+### CP-006: Family + User Schema Designed
+
+**Task**: TASK-1.5-P.1.2 - Design Family + User Entities
+**Commit**: `56e4209`
+**Date**: 2025-10-11 06:00 UTC
+**Phase**: 1 - Prisma Foundation (IN PROGRESS)
+**Story**: STORY-1.5-PRISMA.1 (#122)
+
+#### What Was Completed
+
+- Designed Family entity (new concept, didn't exist in TypeORM)
+- Migrated User entity from TypeORM with family relationship added
+- Created UserRole enum (ADMIN/MEMBER/VIEWER) - family-level permissions
+- Created UserStatus enum (ACTIVE/INACTIVE/SUSPENDED)
+- Defined Account placeholder model for dual ownership pattern
+- Comprehensive architectural decisions documented inline in schema
+- Validated with `npx prisma format` and `npx prisma validate`
+
+#### Key Architectural Decisions
+
+1. **Family-First Model**: familyId is REQUIRED (not nullable)
+   - Every user must belong to a family
+   - Solo users get auto-created single-member families on signup
+   - Simplifies authorization logic
+
+2. **Role Enum Change**: USER/ADMIN → ADMIN/MEMBER/VIEWER
+   - TypeORM had system-level roles (USER/ADMIN)
+   - Prisma uses family-level roles (ADMIN/MEMBER/VIEWER)
+   - ADMIN: Full family management
+   - MEMBER: Standard access
+   - VIEWER: Read-only (for children learning finance)
+
+3. **Cascade Behavior**:
+   - Family deleted → Users CASCADE deleted
+   - User deleted → Accounts CASCADE deleted
+   - Maintains data integrity
+
+4. **Dual Ownership Model** (Accounts):
+   - userId OR familyId (both nullable)
+   - Enables personal + shared family accounts
+   - Application enforces exactly one set
+
+5. **Indexes for Performance**:
+   - Email: UNIQUE for authentication
+   - FamilyId: Standard for JOINs
+   - (FamilyId, Role): Composite for "all admins in family"
+   - (Status, CreatedAt): User lifecycle queries
+
+#### Files Changed
+
+- `apps/backend/prisma/schema.prisma` (added Family, User, Account models + enums)
+
+#### Verification
+
+- ✅ `npx prisma format` succeeded - schema formatting valid
+- ✅ `npx prisma validate` succeeded - schema semantically correct
+- ✅ Family model with required relationships defined
+- ✅ User model with familyId REQUIRED (not nullable)
+- ✅ UserRole and UserStatus enums created
+- ✅ All architectural decisions documented inline
+- ✅ Comprehensive indexes added for query performance
+
+#### Safe to Rollback?
+
+✅ **YES** - No database migrations run yet, no code changes. Only schema design.
+
+#### Next Task
+
+TASK-1.5-P.1.3 - Design Account + Transaction Entities (2h)
+
+---
+
+**Last Updated**: 2025-10-11 06:00 UTC
+**Total Checkpoints**: 6
 **Branch**: feature/epic-1.5-completion
-**Current Phase**: 1 - Prisma Foundation (20% complete - 1/5 tasks)
+**Current Phase**: 1 - Prisma Foundation (40% complete - 2/5 tasks)
