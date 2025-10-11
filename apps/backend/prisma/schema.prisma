@@ -13,3 +13,166 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+// ============================================================================
+// ENUMS
+// ============================================================================
+
+/// User role within a family context
+/// ADMIN: Full family management (billing, member management, settings)
+/// MEMBER: Standard access (manage own data, view family data)
+/// VIEWER: Read-only access (good for children learning about finances)
+enum UserRole {
+  ADMIN
+  MEMBER
+  VIEWER
+
+  @@map("user_role")
+}
+
+/// User account status
+/// ACTIVE: Normal operation
+/// INACTIVE: Temporarily disabled (e.g., parent disables child account)
+/// SUSPENDED: System-level suspension (security/policy violation)
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+
+  @@map("user_status")
+}
+
+// ============================================================================
+// MODELS
+// ============================================================================
+
+/// Family entity - Core organizational unit for MoneyWise
+/// Represents a household/family group with shared financial management
+model Family {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String   @db.VarChar(255)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relations
+  users    User[]
+  accounts Account[]
+
+  @@map("families")
+}
+
+/// User entity - Individual user within a family
+/// Migrated from TypeORM with family relationship added
+model User {
+  id              String     @id @default(uuid()) @db.Uuid
+  email           String     @unique @db.VarChar(255)
+  firstName       String     @map("first_name") @db.VarChar(255)
+  lastName        String     @map("last_name") @db.VarChar(255)
+  passwordHash    String     @map("password_hash") @db.VarChar(255)
+  role            UserRole   @default(MEMBER)
+  status          UserStatus @default(ACTIVE)
+  avatar          String?    @db.VarChar(255)
+  timezone        String?    @db.VarChar(50)
+  currency        String     @default("USD") @db.VarChar(3)
+  preferences     Json?      @db.JsonB
+  lastLoginAt     DateTime?  @map("last_login_at") @db.Timestamptz
+  emailVerifiedAt DateTime?  @map("email_verified_at") @db.Timestamptz
+  createdAt       DateTime   @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime   @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Family relationship
+  // ARCHITECTURAL DECISION: familyId is REQUIRED
+  // Rationale: MoneyWise is "family-first" - every user must belong to a family
+  // Solo users automatically get a single-member family on signup
+  // This ensures consistent data model and simplifies authorization logic
+  familyId String @map("family_id") @db.Uuid
+  family   Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+
+  // Relations
+  // ARCHITECTURAL DECISION: User → Account relationship maintained
+  // Users own their personal accounts, but family also has shared accounts
+  // This enables both individual and family-level financial management
+  accounts Account[]
+
+  // Indexes for query performance
+  @@index([email], name: "idx_users_email")
+  @@index([familyId], name: "idx_users_family_id")
+  @@index([status, createdAt], name: "idx_users_status_created")
+  @@index([familyId, role], name: "idx_users_family_role")
+  @@map("users")
+}
+
+/// Account entity - Placeholder for account relationship
+/// Will be fully designed in next phase
+model Account {
+  id   String @id @default(uuid()) @db.Uuid
+  name String @db.VarChar(255)
+
+  // Dual ownership model
+  userId String? @map("user_id") @db.Uuid
+  user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  familyId String? @map("family_id") @db.Uuid
+  family   Family? @relation(fields: [familyId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@index([userId], name: "idx_accounts_user_id")
+  @@index([familyId], name: "idx_accounts_family_id")
+  @@map("accounts")
+}
+
+// ============================================================================
+// ARCHITECTURAL DECISIONS SUMMARY
+// ============================================================================
+
+// 1. CASCADE BEHAVIOR
+//    - Family deleted → Users CASCADE deleted
+//    - Rationale: Family is the core organizational unit. When a family account
+//      is closed, all associated users should be removed to maintain data integrity.
+//      Users cannot exist without a family in MoneyWise's model.
+//    - User deleted → Accounts CASCADE deleted
+//    - Rationale: Accounts are personally owned. When user leaves, their accounts go too.
+//
+// 2. REQUIRED familyId
+//    - Every user MUST belong to a family (no nullable familyId)
+//    - Solo users get auto-created single-member families on signup
+//    - Simplifies authorization: check family membership instead of "user OR family" logic
+//    - Aligns with core product vision: multi-generational finance platform
+//
+// 3. ROLE ENUM CHANGES
+//    - TypeORM: USER/ADMIN (system-level roles)
+//    - Prisma: ADMIN/MEMBER/VIEWER (family-level roles)
+//    - Rationale: Roles now represent permission within a family, not system access
+//    - ADMIN: Can manage family settings, invite/remove members, view all data
+//    - MEMBER: Standard user with full access to their own data + shared family data
+//    - VIEWER: Read-only (designed for children learning finance)
+//
+// 4. NAMING CONVENTIONS
+//    - Database: snake_case (PostgreSQL standard)
+//    - Application: camelCase (TypeScript standard)
+//    - Use @map for column names, @@map for table names
+//    - Maintains clean separation between DB and app layers
+//
+// 5. INDEXES
+//    - Email: UNIQUE index for authentication
+//    - FamilyId: Standard index for JOIN performance
+//    - (FamilyId, Role): Composite for "all admins in family" queries
+//    - (Status, CreatedAt): For user lifecycle queries and admin dashboards
+//
+// 6. DUAL OWNERSHIP MODEL (Accounts)
+//    - Accounts can be owned by User OR Family (both nullable)
+//    - Enables personal accounts (userId) and shared family accounts (familyId)
+//    - Application logic must ensure exactly one is set (DB constraint in next phase)
+//
+// 7. PREFERENCES FIELD
+//    - Stored as JSONB for flexibility
+//    - Schema validation handled at application layer
+//    - Expected shape: { theme, language, notifications: { email, push, categories, budgets } }
+//
+// 8. TIMESTAMPS
+//    - All stored as TIMESTAMPTZ (timezone-aware)
+//    - createdAt: auto-set on insert
+//    - updatedAt: auto-updated on any change
+//    - Enables accurate audit trails across timezones
