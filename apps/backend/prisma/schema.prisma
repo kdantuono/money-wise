@@ -42,6 +42,78 @@ enum UserStatus {
   @@map("user_status")
 }
 
+/// Financial account type
+/// Maps to standard banking account categories
+enum AccountType {
+  CHECKING
+  SAVINGS
+  CREDIT_CARD
+  INVESTMENT
+  LOAN
+  MORTGAGE
+  OTHER
+
+  @@map("account_type")
+}
+
+/// Account operational status
+/// ACTIVE: Normal operation, syncing enabled
+/// INACTIVE: User-disabled, no syncing
+/// CLOSED: Permanently closed account
+/// ERROR: Sync/connection error, needs attention
+enum AccountStatus {
+  ACTIVE
+  INACTIVE
+  CLOSED
+  ERROR
+
+  @@map("account_status")
+}
+
+/// Account data source
+/// PLAID: Synced via Plaid API
+/// MANUAL: User-entered data
+enum AccountSource {
+  PLAID
+  MANUAL
+
+  @@map("account_source")
+}
+
+/// Transaction type
+/// DEBIT: Money out (expenses, withdrawals)
+/// CREDIT: Money in (income, deposits)
+enum TransactionType {
+  DEBIT
+  CREDIT
+
+  @@map("transaction_type")
+}
+
+/// Transaction processing status
+/// PENDING: Not yet cleared/posted
+/// POSTED: Cleared and finalized
+/// CANCELLED: Transaction reversed/cancelled
+enum TransactionStatus {
+  PENDING
+  POSTED
+  CANCELLED
+
+  @@map("transaction_status")
+}
+
+/// Transaction data source
+/// PLAID: Auto-synced via Plaid API
+/// MANUAL: User-entered transaction
+/// IMPORT: Bulk imported (CSV, etc.)
+enum TransactionSource {
+  PLAID
+  MANUAL
+  IMPORT
+
+  @@map("transaction_source")
+}
+
 // ============================================================================
 // MODELS
 // ============================================================================
@@ -102,25 +174,206 @@ model User {
   @@map("users")
 }
 
-/// Account entity - Placeholder for account relationship
-/// Will be fully designed in next phase
+/// Account entity - Financial account (bank, credit card, investment, etc.)
+/// ARCHITECTURAL DECISION: Dual ownership model
+/// - Personal accounts: userId set, familyId null
+/// - Family accounts: familyId set, userId null
+/// - Application layer enforces exactly one is set (XOR constraint)
+/// - Enables both individual and shared family financial management
 model Account {
   id   String @id @default(uuid()) @db.Uuid
   name String @db.VarChar(255)
 
-  // Dual ownership model
+  // Account classification
+  type   AccountType   @default(OTHER)
+  status AccountStatus @default(ACTIVE)
+  source AccountSource
+
+  // Balance tracking
+  // ARCHITECTURAL DECISION: Use Decimal for money fields
+  // Rationale: Float/Double precision errors are unacceptable for financial data
+  // Example: 0.1 + 0.2 = 0.30000000000000004 in binary floating point
+  // Decimal stores exact values, critical for money calculations
+  currentBalance   Decimal  @default(0) @db.Decimal(15, 2)
+  availableBalance Decimal? @db.Decimal(15, 2)
+  creditLimit      Decimal? @db.Decimal(15, 2)
+  currency         String   @default("USD") @db.VarChar(3)
+
+  // Institution details
+  institutionName String? @db.VarChar(255)
+  accountNumber   String? @db.VarChar(255)
+  routingNumber   String? @db.VarChar(255)
+
+  // Plaid integration fields
+  // ARCHITECTURAL DECISION: Store plaidAccessToken at account level
+  // Rationale: One access token per Plaid Item (institution connection)
+  // Multiple accounts can share same plaidItemId (e.g., checking + savings)
+  plaidAccountId   String? @map("plaid_account_id") @db.VarChar(255)
+  plaidItemId      String? @map("plaid_item_id") @db.VarChar(255)
+  plaidAccessToken String? @map("plaid_access_token") @db.Text
+
+  // Plaid metadata stored as JSONB
+  // ARCHITECTURAL DECISION: Use JSONB instead of separate columns
+  // Rationale: Plaid metadata evolves, JSONB provides flexibility
+  // Application layer handles schema validation via TypeScript types
+  // Expected shape: { mask, subtype, officialName, persistentAccountId }
+  plaidMetadata Json? @db.JsonB
+
+  // Sync settings
+  isActive    Boolean   @default(true) @map("is_active")
+  syncEnabled Boolean   @default(true) @map("sync_enabled")
+  lastSyncAt  DateTime? @map("last_sync_at") @db.Timestamptz
+  syncError   String?   @map("sync_error") @db.VarChar(500)
+
+  // Account preferences stored as JSONB
+  // Expected shape: { autoSync, syncFrequency, notifications, budgetIncluded }
+  settings Json? @db.JsonB
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Dual ownership relations
+  // ARCHITECTURAL DECISION: Both nullable, XOR enforced at application layer
+  // Rationale: Prisma does not support native XOR constraints
+  // Application must validate: (userId IS NULL) XOR (familyId IS NULL)
+  // Consider adding DB check constraint in migration for data integrity
   userId String? @map("user_id") @db.Uuid
   user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   familyId String? @map("family_id") @db.Uuid
   family   Family? @relation(fields: [familyId], references: [id], onDelete: Cascade)
 
+  // Relations
+  transactions Transaction[]
+
+  @@unique([plaidAccountId], name: "uq_accounts_plaid_account")
+  // Indexes for query performance
+  // ARCHITECTURAL DECISION: Index strategy for common query patterns
+  // 1. Ownership lookups: userId, familyId
+  // 2. Account filtering: (userId/familyId, status) for "show active accounts"
+  // 3. Plaid sync: plaidItemId for batch sync operations
+  // 4. Unique Plaid IDs: Prevent duplicate connections
+  @@index([userId], name: "idx_accounts_user_id")
+  @@index([familyId], name: "idx_accounts_family_id")
+  @@index([userId, status], name: "idx_accounts_user_status")
+  @@index([familyId, status], name: "idx_accounts_family_status")
+  @@index([plaidItemId], name: "idx_accounts_plaid_item")
+  @@map("accounts")
+}
+
+/// Transaction entity - Individual financial transaction
+/// ARCHITECTURAL DECISION: Immutable transaction history
+/// - Transactions should not be deleted, only marked as CANCELLED
+/// - Historical data is critical for financial reporting and auditing
+/// - Exception: CASCADE delete when parent Account is deleted (account closure)
+model Transaction {
+  id String @id @default(uuid()) @db.Uuid
+
+  // Amount and classification
+  // ARCHITECTURAL DECISION: Store amount as absolute value
+  // Rationale: Type field (DEBIT/CREDIT) determines flow direction
+  // Application layer computes displayAmount (negative for expenses)
+  // Simplifies aggregation queries: SUM(amount) WHERE type = 'DEBIT'
+  amount   Decimal           @db.Decimal(15, 2)
+  type     TransactionType
+  status   TransactionStatus @default(POSTED)
+  source   TransactionSource
+  currency String            @default("USD") @db.VarChar(3)
+
+  // Date tracking
+  // ARCHITECTURAL DECISION: date as DATE, authorizedDate as TIMESTAMPTZ
+  // Rationale: date is for financial reporting (day-level granularity)
+  // authorizedDate preserves exact transaction time for Plaid data
+  date           DateTime  @db.Date
+  authorizedDate DateTime? @map("authorized_date") @db.Timestamptz
+
+  // Description fields
+  description         String  @db.VarChar(500)
+  merchantName        String? @map("merchant_name") @db.VarChar(255)
+  originalDescription String? @map("original_description") @db.VarChar(255)
+
+  // Additional metadata
+  reference   String? @db.VarChar(255)
+  checkNumber String? @map("check_number") @db.VarChar(255)
+  notes       String? @db.Text
+
+  // Transaction flags
+  isPending       Boolean @default(false) @map("is_pending")
+  isRecurring     Boolean @default(false) @map("is_recurring")
+  isHidden        Boolean @default(false) @map("is_hidden")
+  includeInBudget Boolean @default(true) @map("include_in_budget")
+
+  // Plaid integration fields
+  plaidTransactionId String? @map("plaid_transaction_id") @db.VarChar(255)
+  plaidAccountId     String? @map("plaid_account_id") @db.VarChar(255)
+
+  // Complex metadata stored as JSONB
+  // ARCHITECTURAL DECISION: Use JSONB for nested/evolving structures
+  // Rationale: Plaid API provides rich metadata that changes over time
+  // JSONB allows flexible storage without schema migrations
+  // Application layer handles validation and type safety
+  // PostgreSQL JSONB supports GIN indexes for JSON queries if needed
+
+  // Plaid-specific metadata
+  // Expected shape: { categoryId, categoryConfidenceLevel, transactionCode,
+  //                   transactionType, locationId, merchantEntityId,
+  //                   paymentChannel, authorizedDateTime, personalFinanceCategory }
+  plaidMetadata Json? @db.JsonB
+
+  // Location data (for merchant transactions)
+  // Expected shape: { address, city, region, postalCode, country, lat, lon, storeNumber }
+  location Json? @db.JsonB
+
+  // User-defined tags (array of strings)
+  // Expected shape: ["groceries", "work-expense", "reimbursable"]
+  tags Json? @db.JsonB
+
+  // File attachments (receipts, invoices)
+  // Expected shape: [{ id, filename, mimetype, size, url }]
+  attachments Json? @db.JsonB
+
+  // Split transaction details
+  // ARCHITECTURAL DECISION: Store split info in JSONB, not separate table
+  // Rationale: Splits are uncommon, adding join complexity for rare case
+  // JSONB keeps data co-located for better query performance
+  // Expected shape: { isParent, parentId, splits: [{ amount, categoryId, description }] }
+  splitDetails Json? @map("split_details") @db.JsonB
+
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
 
-  @@index([userId], name: "idx_accounts_user_id")
-  @@index([familyId], name: "idx_accounts_family_id")
-  @@map("accounts")
+  // Relations
+  // ARCHITECTURAL DECISION: CASCADE delete when Account deleted
+  // Rationale: Transactions cannot exist without parent account
+  // When user closes account, transaction history goes with it
+  // For data retention: Export transactions before account deletion
+  accountId String  @map("account_id") @db.Uuid
+  account   Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  // ARCHITECTURAL DECISION: SET NULL when Category deleted
+  // Rationale: Category is optional classification, not required parent
+  // If user deletes category, transactions remain but lose categorization
+  // Application can provide "uncategorized" filter for these transactions
+  categoryId String? @map("category_id") @db.Uuid
+  // Category relation will be added in P.1.4 when Category model is created
+  // category   Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  @@unique([plaidTransactionId], name: "uq_transactions_plaid_id")
+  // Indexes for query performance
+  // ARCHITECTURAL DECISION: Time-series and filtering indexes
+  // Common query patterns:
+  // 1. Account transaction history: (accountId, date) for pagination
+  // 2. Category spending reports: (categoryId, date) for time-range aggregation
+  // 3. Status filtering: (status, date) for pending transaction views
+  // 4. Merchant analysis: (merchantName, date) for spending patterns
+  // 5. Amount queries: (amount, date) for large transaction alerts
+  // 6. Plaid deduplication: UNIQUE on plaidTransactionId (when not null)
+  @@index([accountId, date], name: "idx_transactions_account_date")
+  @@index([categoryId, date], name: "idx_transactions_category_date")
+  @@index([status, date], name: "idx_transactions_status_date")
+  @@index([merchantName, date], name: "idx_transactions_merchant_date")
+  @@index([amount, date], name: "idx_transactions_amount_date")
+  @@map("transactions")
 }
 
 // ============================================================================
@@ -129,11 +382,17 @@ model Account {
 
 // 1. CASCADE BEHAVIOR
 //    - Family deleted → Users CASCADE deleted
-//    - Rationale: Family is the core organizational unit. When a family account
+//      Rationale: Family is the core organizational unit. When a family account
 //      is closed, all associated users should be removed to maintain data integrity.
 //      Users cannot exist without a family in MoneyWise's model.
 //    - User deleted → Accounts CASCADE deleted
-//    - Rationale: Accounts are personally owned. When user leaves, their accounts go too.
+//      Rationale: Accounts are personally owned. When user leaves, their accounts go too.
+//    - Account deleted → Transactions CASCADE deleted
+//      Rationale: Transactions cannot exist without parent account. When account
+//      is closed, transaction history is removed. Export data before deletion.
+//    - Category deleted → Transaction.categoryId SET NULL
+//      Rationale: Category is optional classification. Transactions remain valid
+//      without categorization, just become "uncategorized."
 //
 // 2. REQUIRED familyId
 //    - Every user MUST belong to a family (no nullable familyId)
@@ -155,24 +414,75 @@ model Account {
 //    - Use @map for column names, @@map for table names
 //    - Maintains clean separation between DB and app layers
 //
-// 5. INDEXES
-//    - Email: UNIQUE index for authentication
-//    - FamilyId: Standard index for JOIN performance
-//    - (FamilyId, Role): Composite for "all admins in family" queries
-//    - (Status, CreatedAt): For user lifecycle queries and admin dashboards
+// 5. DECIMAL VS FLOAT FOR MONEY
+//    - All money fields use Decimal type with @db.Decimal(15, 2)
+//    - Rationale: Float/Double precision errors are unacceptable for financial data
+//    - Example: 0.1 + 0.2 = 0.30000000000000004 in binary floating point
+//    - Decimal stores exact values using fixed-point arithmetic
+//    - Precision 15,2: Max value $9,999,999,999,999.99 (sufficient for personal finance)
+//    - Application layer: Use Decimal.js or similar for calculations
 //
-// 6. DUAL OWNERSHIP MODEL (Accounts)
+// 6. JSONB FOR FLEXIBLE METADATA
+//    - Used for: plaidMetadata, location, tags, attachments, splitDetails, settings
+//    - Rationale: These structures evolve over time (especially Plaid API changes)
+//    - JSONB provides flexibility without schema migrations
+//    - Application layer handles validation via TypeScript types (Zod schemas)
+//    - PostgreSQL JSONB supports GIN indexes if JSON querying becomes necessary
+//    - Trade-off: Flexibility vs type safety (accept for auxiliary data)
+//
+// 7. DUAL OWNERSHIP MODEL (Accounts)
 //    - Accounts can be owned by User OR Family (both nullable)
 //    - Enables personal accounts (userId) and shared family accounts (familyId)
-//    - Application logic must ensure exactly one is set (DB constraint in next phase)
+//    - Application logic must enforce XOR: exactly one is set, never both or neither
+//    - Consider adding DB check constraint in migration:
+//      CHECK ((user_id IS NULL) != (family_id IS NULL))
+//    - Prisma does not support native XOR constraints in schema
 //
-// 7. PREFERENCES FIELD
-//    - Stored as JSONB for flexibility
-//    - Schema validation handled at application layer
-//    - Expected shape: { theme, language, notifications: { email, push, categories, budgets } }
+// 8. TRANSACTION AMOUNT STORAGE
+//    - Amount stored as absolute value (never negative)
+//    - Type field (DEBIT/CREDIT) determines flow direction
+//    - Rationale: Simplifies aggregation queries and prevents sign confusion
+//    - Application layer computes displayAmount (negative for expenses)
+//    - Example: $50 grocery expense: amount=50.00, type=DEBIT, displayAmount=-50.00
 //
-// 8. TIMESTAMPS
-//    - All stored as TIMESTAMPTZ (timezone-aware)
-//    - createdAt: auto-set on insert
-//    - updatedAt: auto-updated on any change
-//    - Enables accurate audit trails across timezones
+// 9. DATE VS TIMESTAMP FIELDS
+//    - Transaction.date: DATE type (day-level granularity for reporting)
+//    - Transaction.authorizedDate: TIMESTAMPTZ (exact time for Plaid data)
+//    - Rationale: Financial reports group by day, not time
+//    - Preserves exact timestamp for audit trails when available
+//    - All other timestamps: TIMESTAMPTZ for timezone-aware tracking
+//
+// 10. INDEXES FOR TIME-SERIES QUERIES
+//     - All transaction indexes include date as second column
+//     - Rationale: Time-range queries are primary access pattern
+//     - Examples: "Last 30 days", "This month", "Year-to-date"
+//     - Composite indexes (entity, date) enable efficient range scans
+//     - Index on (amount, date) for large transaction alerts
+//     - Index on (merchantName, date) for spending pattern analysis
+//
+// 11. UNIQUE CONSTRAINTS FOR PLAID
+//     - Account.plaidAccountId: UNIQUE (prevent duplicate connections)
+//     - Transaction.plaidTransactionId: UNIQUE (prevent duplicate imports)
+//     - Rationale: Plaid IDs are globally unique, enforce at DB level
+//     - Handles sync failures gracefully (constraint violation = already synced)
+//
+// 12. VIRTUAL PROPERTIES STRATEGY
+//     - TypeORM entities have getter methods (isExpense, displayAmount, etc.)
+//     - Prisma does not support virtual properties in schema
+//     - Rationale: Computed values belong in application layer, not database
+//     - Implementation: Create helper functions or class methods in service layer
+//     - Example: formatTransaction(tx) returns tx with computed properties
+//
+// 13. TRANSACTION IMMUTABILITY
+//     - Transactions should not be deleted, only marked CANCELLED
+//     - Rationale: Financial audit trails require complete history
+//     - Exception: CASCADE delete when parent Account deleted (account closure)
+//     - For corrections: Create offsetting transaction, don't modify original
+//     - Application layer enforces this policy
+//
+// 14. CATEGORY OPTIONAL
+//     - Transaction.categoryId is nullable
+//     - Rationale: Categorization is user preference, not requirement
+//     - Transactions valid without category (import, initial sync)
+//     - Application can auto-categorize or prompt user
+//     - SET NULL when category deleted maintains transaction validity
