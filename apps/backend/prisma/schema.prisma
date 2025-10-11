@@ -114,6 +114,82 @@ enum TransactionSource {
   @@map("transaction_source")
 }
 
+/// Category type classification
+/// INCOME: Revenue categories (salary, freelance, etc.)
+/// EXPENSE: Spending categories (food, transportation, etc.)
+/// TRANSFER: Inter-account transfers
+enum CategoryType {
+  INCOME
+  EXPENSE
+  TRANSFER
+
+  @@map("category_type")
+}
+
+/// Category operational status
+/// ACTIVE: Normal operation, visible to users
+/// INACTIVE: Hidden but preserved for history
+/// ARCHIVED: Soft-deleted, not shown in dropdowns
+enum CategoryStatus {
+  ACTIVE
+  INACTIVE
+  ARCHIVED
+
+  @@map("category_status")
+}
+
+/// Budget period type
+/// MONTHLY: Standard monthly budget cycle
+/// QUARTERLY: 3-month budget planning
+/// YEARLY: Annual budget allocation
+/// CUSTOM: User-defined date range
+enum BudgetPeriod {
+  MONTHLY
+  QUARTERLY
+  YEARLY
+  CUSTOM
+
+  @@map("budget_period")
+}
+
+/// Budget operational status
+/// ACTIVE: Currently tracking expenses
+/// COMPLETED: Period ended, archived for reporting
+/// DRAFT: In planning, not yet active
+enum BudgetStatus {
+  ACTIVE
+  COMPLETED
+  DRAFT
+
+  @@map("budget_status")
+}
+
+/// Achievement type classification
+/// SAVINGS: Savings milestones (e.g., "Save $1000")
+/// BUDGET: Budget adherence (e.g., "Stay under budget for 3 months")
+/// CONSISTENCY: Regular activity (e.g., "Log transactions 30 days straight")
+/// EDUCATION: Financial literacy (e.g., "Complete budgeting tutorial")
+enum AchievementType {
+  SAVINGS
+  BUDGET
+  CONSISTENCY
+  EDUCATION
+
+  @@map("achievement_type")
+}
+
+/// User achievement status
+/// LOCKED: Not yet unlocked, shows requirements
+/// IN_PROGRESS: Requirements being tracked, shows progress
+/// UNLOCKED: Achievement earned, timestamp recorded
+enum AchievementStatus {
+  LOCKED
+  IN_PROGRESS
+  UNLOCKED
+
+  @@map("achievement_status")
+}
+
 // ============================================================================
 // MODELS
 // ============================================================================
@@ -127,8 +203,10 @@ model Family {
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
 
   // Relations
-  users    User[]
-  accounts Account[]
+  users      User[]
+  accounts   Account[]
+  categories Category[]
+  budgets    Budget[]
 
   @@map("families")
 }
@@ -164,7 +242,8 @@ model User {
   // ARCHITECTURAL DECISION: User → Account relationship maintained
   // Users own their personal accounts, but family also has shared accounts
   // This enables both individual and family-level financial management
-  accounts Account[]
+  accounts         Account[]
+  userAchievements UserAchievement[]
 
   // Indexes for query performance
   @@index([email], name: "idx_users_email")
@@ -354,9 +433,8 @@ model Transaction {
   // Rationale: Category is optional classification, not required parent
   // If user deletes category, transactions remain but lose categorization
   // Application can provide "uncategorized" filter for these transactions
-  categoryId String? @map("category_id") @db.Uuid
-  // Category relation will be added in P.1.4 when Category model is created
-  // category   Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  categoryId String?   @map("category_id") @db.Uuid
+  category   Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
 
   @@unique([plaidTransactionId], name: "uq_transactions_plaid_id")
   // Indexes for query performance
@@ -374,6 +452,249 @@ model Transaction {
   @@index([merchantName, date], name: "idx_transactions_merchant_date")
   @@index([amount, date], name: "idx_transactions_amount_date")
   @@map("transactions")
+}
+
+/// Category entity - Transaction classification system with hierarchical structure
+/// ARCHITECTURAL DECISION: Self-referential tree structure
+/// - Supports parent-child category hierarchy (e.g., "Food" → "Restaurants" → "Fast Food")
+/// - parentId nullable: top-level categories have no parent
+/// - Application layer must prevent circular references and enforce max depth
+/// - TypeORM used "nested-set" tree structure; Prisma uses adjacency list (parent-child)
+/// - Trade-off: Adjacency list simpler but requires recursive queries for full tree
+model Category {
+  id          String         @id @default(uuid()) @db.Uuid
+  name        String         @db.VarChar(255)
+  slug        String         @unique @db.VarChar(255)
+  description String?        @db.Text
+  type        CategoryType
+  status      CategoryStatus @default(ACTIVE)
+
+  // Visual customization
+  color String? @db.VarChar(7) // Hex color code (#RRGGBB)
+  icon  String? @db.VarChar(100) // Icon identifier (e.g., "utensils", "car")
+
+  // System flags
+  // ARCHITECTURAL DECISION: isDefault vs isSystem
+  // isDefault: Pre-populated categories users can modify/delete
+  // isSystem: Core categories protected from deletion (e.g., "Uncategorized")
+  isDefault Boolean @default(false) @map("is_default")
+  isSystem  Boolean @default(false) @map("is_system")
+
+  // Ordering and hierarchy
+  sortOrder Int @default(0) @map("sort_order")
+
+  // Auto-categorization rules stored as JSONB
+  // ARCHITECTURAL DECISION: Use JSONB for ML/rule-based categorization
+  // Rationale: Categorization rules evolve with ML model updates
+  // Expected shape: { keywords, merchantPatterns, amountRanges, autoAssign, confidence }
+  rules Json? @db.JsonB
+
+  // Budget and tax metadata stored as JSONB
+  // Expected shape: { budgetEnabled, monthlyLimit, goalAmount, taxDeductible, businessExpense }
+  metadata Json? @db.JsonB
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Self-referential hierarchy
+  // ARCHITECTURAL DECISION: Nullable parentId for top-level categories
+  // Rationale: Enables flexible multi-level hierarchy
+  // Application enforces max depth (e.g., 3 levels) to prevent deep nesting
+  parentId String?    @map("parent_id") @db.Uuid
+  parent   Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children Category[] @relation("CategoryHierarchy")
+
+  // Family ownership
+  // ARCHITECTURAL DECISION: Required familyId
+  // Rationale: Categories are family-specific (custom categories per family)
+  // System categories seeded for each family on creation
+  familyId String @map("family_id") @db.Uuid
+  family   Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+
+  // Relations
+  transactions Transaction[]
+  budgets      Budget[]
+
+  // Indexes for query performance
+  // ARCHITECTURAL DECISION: Index strategy for category queries
+  // 1. Family + Type filtering: "Show all expense categories for this family"
+  // 2. Family + Status filtering: "Show active categories"
+  // 3. Parent lookups: "Get child categories of X"
+  // 4. Slug uniqueness: Enforce per-family unique slugs
+  @@unique([familyId, slug], name: "uq_categories_family_slug")
+  @@index([familyId, type], name: "idx_categories_family_type")
+  @@index([familyId, status], name: "idx_categories_family_status")
+  @@index([parentId], name: "idx_categories_parent_id")
+  @@index([type, status], name: "idx_categories_type_status")
+  @@map("categories")
+}
+
+/// Budget entity - Financial spending limits and tracking
+/// ARCHITECTURAL DECISION: Budget at Category level, not Account level
+/// - Rationale: Users think "I want to spend $500/month on groceries" (category)
+/// - Not: "I want my checking account limited to $X" (account-level limits are rare)
+/// - Budgets track spending across all accounts within a category
+model Budget {
+  id     String       @id @default(uuid()) @db.Uuid
+  name   String       @db.VarChar(255)
+  amount Decimal      @db.Decimal(15, 2)
+  period BudgetPeriod @default(MONTHLY)
+  status BudgetStatus @default(ACTIVE)
+
+  // Date range for budget period
+  // ARCHITECTURAL DECISION: Store explicit start/end dates
+  // Rationale: Supports both recurring (MONTHLY) and custom date ranges
+  // For MONTHLY: startDate = first day of month, endDate = last day of month
+  // For CUSTOM: User-specified date range
+  // Application layer generates periods for recurring budgets
+  startDate DateTime @map("start_date") @db.Date
+  endDate   DateTime @map("end_date") @db.Date
+
+  // Spending alerts
+  // ARCHITECTURAL DECISION: Store alert thresholds as percentages
+  // Rationale: "Alert me at 50%, 75%, 90% of budget" is common pattern
+  // Application layer computes actual amounts and sends notifications
+  alertThresholds Int[] @default([50, 75, 90]) @map("alert_thresholds") // Percentages
+
+  // Budget settings stored as JSONB
+  // Expected shape: { rolloverUnspent, includeHiddenTransactions, notifyOnOverspend }
+  settings Json? @db.JsonB
+
+  // Descriptive notes
+  notes String? @db.Text
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Category relation
+  // ARCHITECTURAL DECISION: Required categoryId
+  // Rationale: Every budget must be tied to a category
+  // Multi-category budgets can be handled via parent category budgets
+  // Example: Budget for "Food" parent includes "Restaurants" + "Groceries" children
+  categoryId String   @map("category_id") @db.Uuid
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  // Family ownership
+  // ARCHITECTURAL DECISION: Required familyId
+  // Rationale: Budgets are family-level planning tools
+  // Individual users within family collaborate on shared budgets
+  familyId String @map("family_id") @db.Uuid
+  family   Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+
+  // Indexes for query performance
+  // ARCHITECTURAL DECISION: Index strategy for budget queries
+  // 1. Family + Status: "Show active budgets for this family"
+  // 2. Family + Period: "Show all monthly budgets"
+  // 3. Category lookup: "Get budget for category X"
+  // 4. Date range queries: "Find budgets overlapping date range"
+  @@index([familyId, status], name: "idx_budgets_family_status")
+  @@index([familyId, period], name: "idx_budgets_family_period")
+  @@index([categoryId], name: "idx_budgets_category_id")
+  @@index([startDate, endDate], name: "idx_budgets_date_range")
+  @@map("budgets")
+}
+
+/// Achievement entity - Gamification system for financial goals
+/// ARCHITECTURAL DECISION: Two-table design (Achievement + UserAchievement)
+/// - Achievement: Template definitions (title, description, requirements)
+/// - UserAchievement: User progress tracking (status, progress, unlocked date)
+/// - Rationale: Separates static definitions from dynamic user state
+/// - Enables easy addition of new achievements without affecting user data
+model Achievement {
+  id          String          @id @default(uuid()) @db.Uuid
+  title       String          @db.VarChar(255)
+  description String          @db.Text
+  type        AchievementType
+  icon        String?         @db.VarChar(100) // Icon identifier (e.g., "trophy", "star")
+
+  // Points and rewards
+  // ARCHITECTURAL DECISION: Points system for gamification
+  // Rationale: Points enable leaderboards, rewards, progression tiers
+  // Future: Can be exchanged for features, badges, or family benefits
+  points Int @default(0)
+
+  // Achievement requirements stored as JSONB
+  // ARCHITECTURAL DECISION: Flexible requirements structure
+  // Rationale: Different achievement types have different requirements
+  // Expected shape varies by type:
+  //   SAVINGS: { targetAmount: 1000, timeframe: "monthly" }
+  //   BUDGET: { categorySlugs: ["food"], underBudgetMonths: 3 }
+  //   CONSISTENCY: { action: "log-transaction", consecutiveDays: 30 }
+  //   EDUCATION: { tutorialId: "budgeting-101", completionPercentage: 100 }
+  requirements Json @db.JsonB
+
+  // Display and ordering
+  sortOrder    Int     @default(0) @map("sort_order")
+  isActive     Boolean @default(true) @map("is_active")
+  isRepeatable Boolean @default(false) @map("is_repeatable") // Can be earned multiple times
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relations
+  userAchievements UserAchievement[]
+
+  // Indexes for query performance
+  @@index([type, isActive], name: "idx_achievements_type_active")
+  @@index([sortOrder], name: "idx_achievements_sort")
+  @@map("achievements")
+}
+
+/// UserAchievement entity - Tracks individual user progress on achievements
+/// ARCHITECTURAL DECISION: Separate from Achievement for flexibility
+/// - Enables per-user progress tracking without modifying Achievement template
+/// - Supports repeatable achievements (multiple UserAchievement records per user)
+/// - Allows historical tracking (when achievement was unlocked, progress snapshots)
+model UserAchievement {
+  id     String            @id @default(uuid()) @db.Uuid
+  status AchievementStatus @default(LOCKED)
+
+  // Progress tracking stored as JSONB
+  // ARCHITECTURAL DECISION: Flexible progress structure matching requirements
+  // Rationale: Progress shape varies by achievement type
+  // Expected shape examples:
+  //   SAVINGS: { currentAmount: 750, targetAmount: 1000, percentage: 75 }
+  //   BUDGET: { monthsUnderBudget: 2, targetMonths: 3, categories: ["food"] }
+  //   CONSISTENCY: { currentStreak: 15, targetDays: 30, lastLogDate: "2025-10-11" }
+  //   EDUCATION: { sectionsCompleted: 8, totalSections: 10, percentage: 80 }
+  progress Json? @db.JsonB
+
+  // Unlock timestamp
+  // ARCHITECTURAL DECISION: Separate unlockedAt field for analytics
+  // Rationale: Enables "achievement unlocked on DATE" display and analytics
+  // NULL when status != UNLOCKED
+  unlockedAt DateTime? @map("unlocked_at") @db.Timestamptz
+
+  // Notification flags
+  // ARCHITECTURAL DECISION: Track notification state
+  // Rationale: Prevent duplicate notifications, allow user control
+  notifiedAt DateTime? @map("notified_at") @db.Timestamptz
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relations
+  // ARCHITECTURAL DECISION: Required achievementId and userId
+  // Rationale: Every UserAchievement must link to an Achievement template and a User
+  // CASCADE delete: If Achievement deleted, remove user progress (admin cleanup)
+  // CASCADE delete: If User deleted, remove their achievement progress
+  achievementId String      @map("achievement_id") @db.Uuid
+  achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+
+  userId String @map("user_id") @db.Uuid
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Indexes for query performance
+  // ARCHITECTURAL DECISION: Index strategy for achievement queries
+  // 1. User lookup: "Show all achievements for this user"
+  // 2. User + Status: "Show unlocked achievements" or "Show in-progress achievements"
+  // 3. Achievement + User: Enforce unique constraint (one progress record per user per achievement, unless repeatable)
+  // 4. Unlock date queries: "Show recent unlocks" for notifications/leaderboards
+  @@unique([achievementId, userId], name: "uq_user_achievements_achievement_user")
+  @@index([userId, status], name: "idx_user_achievements_user_status")
+  @@index([userId, unlockedAt], name: "idx_user_achievements_user_unlocked")
+  @@index([achievementId], name: "idx_user_achievements_achievement")
+  @@map("user_achievements")
 }
 
 // ============================================================================

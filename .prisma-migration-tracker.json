@@ -3,10 +3,10 @@
   "epic": "EPIC-1.5-PRISMA",
   "epic_issue": 120,
   "started_at": "2025-10-11T00:00:00Z",
-  "current_phase": "1-foundation",
-  "current_story": "STORY-1.5-PRISMA.1",
-  "current_story_issue": 122,
-  "current_task": "TASK-1.5-P.1.3",
+  "current_phase": "2-core-entities",
+  "current_story": "STORY-1.5-PRISMA.2",
+  "current_story_issue": 123,
+  "current_task": "TASK-1.5-P.2.1",
   "completed_tasks": [
     {
       "task_id": "TASK-1.5-P.0.1",
@@ -61,6 +61,33 @@
       "commit_hash": "56e4209",
       "agent": "database-architect",
       "verification": "Family and User models designed with relationships, validated with prisma validate"
+    },
+    {
+      "task_id": "TASK-1.5-P.1.3",
+      "name": "Design Account + Transaction Entities",
+      "completed_at": "2025-10-11T08:00:00Z",
+      "duration_hours": 2,
+      "commit_hash": "c61f6f8",
+      "agent": "database-architect",
+      "verification": "Account and Transaction models with 6 enums, 14 architectural decisions, validated"
+    },
+    {
+      "task_id": "TASK-1.5-P.1.4",
+      "name": "Design Category + Budget Entities",
+      "completed_at": "2025-10-11T10:00:00Z",
+      "duration_hours": 2,
+      "commit_hash": "pending",
+      "agent": "database-architect",
+      "verification": "Category (hierarchical tree) + Budget models, 4 new enums, schema validated"
+    },
+    {
+      "task_id": "TASK-1.5-P.1.5",
+      "name": "Design Achievement Entity + Validate Schema",
+      "completed_at": "2025-10-11T13:00:00Z",
+      "duration_hours": 3,
+      "commit_hash": "pending",
+      "agent": "database-architect",
+      "verification": "Achievement + UserAchievement models, 2 enums, complete schema validated - 10 models, 14 enums, 12 relations"
     }
   ],
   "phases": {
@@ -113,8 +140,8 @@
       "story_issue": 122,
       "duration_hours": 10,
       "tasks_total": 5,
-      "tasks_completed": 2,
-      "status": "in_progress",
+      "tasks_completed": 5,
+      "status": "completed",
       "tasks": [
         {
           "id": "TASK-1.5-P.1.1",
@@ -131,6 +158,30 @@
           "status": "completed",
           "agent": "database-architect",
           "verification": "Family and User models defined with relationships"
+        },
+        {
+          "id": "TASK-1.5-P.1.3",
+          "name": "Design Account + Transaction Entities",
+          "duration_hours": 2,
+          "status": "completed",
+          "agent": "database-architect",
+          "verification": "Schema validated, 6 enums, comprehensive indexes"
+        },
+        {
+          "id": "TASK-1.5-P.1.4",
+          "name": "Design Category + Budget Entities",
+          "duration_hours": 2,
+          "status": "completed",
+          "agent": "database-architect",
+          "verification": "Category + Budget models, hierarchical tree structure, 4 enums"
+        },
+        {
+          "id": "TASK-1.5-P.1.5",
+          "name": "Design Achievement Entity + Validate Schema",
+          "duration_hours": 3,
+          "status": "completed",
+          "agent": "database-architect",
+          "verification": "Achievement + UserAchievement models, 2 enums, complete schema validated"
         }
       ]
     },
@@ -182,12 +233,12 @@
   },
   "metrics": {
     "total_hours_planned": 94,
-    "total_hours_spent": 9,
+    "total_hours_spent": 16,
     "total_tasks": 48,
-    "completed_tasks": 6,
-    "completion_percentage": 12.5,
+    "completed_tasks": 9,
+    "completion_percentage": 18.8,
     "estimated_completion_date": "2025-10-25",
-    "current_velocity": 0.67,
+    "current_velocity": 0.69,
     "blocked_tasks": 0
   },
   "blockers": [],
@@ -200,6 +251,10 @@
     "2025-10-11: Phase 0 COMPLETE - Setup & Planning finished (6h)",
     "2025-10-11: Phase 1 STARTED - Prisma Foundation",
     "2025-10-11: TASK-1.5-P.1.1 COMPLETE - Prisma installed and initialized (cd8d399)",
-    "2025-10-11: TASK-1.5-P.1.2 COMPLETE - Family + User schema designed (56e4209)"
+    "2025-10-11: TASK-1.5-P.1.2 COMPLETE - Family + User schema designed (56e4209)",
+    "2025-10-11: TASK-1.5-P.1.3 COMPLETE - Account + Transaction schema (c61f6f8)",
+    "2025-10-11: TASK-1.5-P.1.4 COMPLETE - Category + Budget entities designed",
+    "2025-10-11: TASK-1.5-P.1.5 COMPLETE - Achievement + UserAchievement models, gamification system",
+    "2025-10-11: Phase 1 COMPLETE - Prisma Foundation finished (10h, 5 tasks) - Schema design complete"
   ]
 }
