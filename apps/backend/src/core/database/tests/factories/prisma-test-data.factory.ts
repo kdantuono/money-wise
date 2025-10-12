@@ -326,6 +326,10 @@ export class AccountFactory extends BasePrismaFactory<Account> {
 export class CategoryFactory extends BasePrismaFactory<Category> {
   private static slugCounter = 0;
 
+  constructor(prisma: PrismaClient, private familyFactory: FamilyFactory) {
+    super(prisma);
+  }
+
   create(overrides: Partial<Category> = {}): Category {
     const name = overrides.name || faker.commerce.department();
     const timestamp = Date.now();
@@ -335,6 +339,7 @@ export class CategoryFactory extends BasePrismaFactory<Category> {
       id: overrides.id || faker.string.uuid(),
       name,
       slug: overrides.slug || `${name.toLowerCase().replace(/\s+/g, '-')}-${timestamp}-${CategoryFactory.slugCounter}`,
+      familyId: overrides.familyId || '', // Must be provided when building
       description: overrides.description || faker.lorem.sentence(),
       type: overrides.type || ('EXPENSE' as CategoryType),
       status: overrides.status || ('ACTIVE' as CategoryStatus),
@@ -362,12 +367,20 @@ export class CategoryFactory extends BasePrismaFactory<Category> {
   }
 
   async build(overrides: Partial<Category> = {}): Promise<Category> {
-    const data = this.create(overrides);
+    // Create family if familyId not provided
+    let familyId = overrides.familyId;
+    if (!familyId) {
+      const family = await this.familyFactory.build();
+      familyId = family.id;
+    }
+
+    const data = this.create({ ...overrides, familyId });
 
     // Build create data object conditionally based on parentId
     const createData: any = {
       name: data.name,
       slug: data.slug,
+      familyId: data.familyId,
       description: data.description,
       type: data.type,
       status: data.status,
@@ -450,6 +463,7 @@ export class TransactionFactory extends BasePrismaFactory<Transaction> {
       originalDescription: overrides.originalDescription || null,
       currency: overrides.currency || 'USD',
       reference: overrides.reference || null,
+      checkNumber: overrides.checkNumber || null,
       isPending: overrides.isPending ?? false,
       isRecurring: overrides.isRecurring ?? false,
       isHidden: overrides.isHidden ?? false,
@@ -490,6 +504,7 @@ export class TransactionFactory extends BasePrismaFactory<Transaction> {
         originalDescription: data.originalDescription,
         currency: data.currency,
         reference: data.reference,
+        checkNumber: data.checkNumber,
         isPending: data.isPending,
         isRecurring: data.isRecurring,
         isHidden: data.isHidden,
@@ -638,7 +653,7 @@ export class PrismaTestDataFactory {
     this.families = new FamilyFactory(prisma);
     this.users = new UserFactory(prisma, this.families);
     this.accounts = new AccountFactory(prisma, this.users);
-    this.categories = new CategoryFactory(prisma);
+    this.categories = new CategoryFactory(prisma, this.families);
     this.transactions = new TransactionFactory(prisma, this.accounts);
     this.budgets = new BudgetFactory(prisma, this.families);
   }
