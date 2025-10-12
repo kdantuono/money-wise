@@ -1,9 +1,8 @@
 import { Injectable, Logger, Inject } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import { Redis } from 'ioredis';
-import { User, UserStatus } from '../../core/database/entities/user.entity';
+import { UserStatus } from '../../../generated/prisma';
+import { PrismaUserService } from '../../core/database/prisma/services/user.service';
 
 export interface LockoutSettings {
   maxFailedAttempts: number;
@@ -31,8 +30,7 @@ export class AccountLockoutService {
   };
 
   constructor(
-    @InjectRepository(User)
-    private userRepository: Repository<User>,
+    private prismaUserService: PrismaUserService,
     private configService: ConfigService,
     @Inject('default')
     private readonly redis: Redis,
@@ -273,25 +271,16 @@ export class AccountLockoutService {
     _lockedUntil?: Date,
   ): Promise<void> {
     try {
-      // Check if identifier is an email or user ID
-      const isEmail = identifier.includes('@');
-      const whereCondition = isEmail ? { email: identifier } : { id: identifier };
-
-      const user = await this.userRepository.findOne({
-        where: whereCondition,
-      });
+      // Use findByIdentifier which supports both email and user ID
+      const user = await this.prismaUserService.findByIdentifier(identifier);
 
       if (user) {
         // For now, we'll use the existing status field
         // In a production app, you might want separate lockout fields
         if (isLocked && user.status === UserStatus.ACTIVE) {
-          await this.userRepository.update(user.id, {
-            status: UserStatus.SUSPENDED,
-          });
+          await this.prismaUserService.update(user.id, { status: UserStatus.SUSPENDED });
         } else if (!isLocked && user.status === UserStatus.SUSPENDED) {
-          await this.userRepository.update(user.id, {
-            status: UserStatus.ACTIVE,
-          });
+          await this.prismaUserService.update(user.id, { status: UserStatus.ACTIVE });
         }
       }
     } catch (error) {
