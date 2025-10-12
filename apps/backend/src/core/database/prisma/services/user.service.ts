@@ -584,6 +584,32 @@ export class PrismaUserService {
   }
 
   /**
+   * Count users with emailVerifiedAt after a given date
+   *
+   * BEHAVIOR:
+   * - Counts users where emailVerifiedAt > since date
+   * - Used for email verification statistics
+   * - Returns 0 if no users found
+   *
+   * USE CASES:
+   * - Email verification statistics (recent verifications)
+   * - Admin analytics dashboards
+   * - Monitoring verification trends
+   *
+   * @param since - Date threshold for verification timestamp
+   * @returns Count of users verified after the given date
+   */
+  async countVerifiedSince(since: Date): Promise<number> {
+    return await this.prisma.user.count({
+      where: {
+        emailVerifiedAt: {
+          gt: since,
+        },
+      },
+    });
+  }
+
+  /**
    * Find all users with total count (pagination support)
    *
    * BEHAVIOR:

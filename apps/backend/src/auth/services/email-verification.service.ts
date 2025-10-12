@@ -1,10 +1,10 @@
 import { Injectable, Logger, BadRequestException, NotFoundException, InternalServerErrorException, Inject } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import { Redis } from 'ioredis';
 import * as crypto from 'crypto';
-import { User, UserStatus } from '../../core/database/entities/user.entity';
+import { UserStatus } from '../../../generated/prisma';
+import { PrismaUserService } from '../../core/database/prisma/services/user.service';
+import type { User } from '../../../generated/prisma';
 
 export interface EmailVerificationToken {
   token: string;
@@ -17,7 +17,7 @@ export interface EmailVerificationToken {
 export interface EmailVerificationResult {
   success: boolean;
   message: string;
-  user?: Partial<User>;
+  user?: Partial<User> | Partial<any>; // Accept any user-like object for compatibility
 }
 
 @Injectable()
@@ -25,8 +25,7 @@ export class EmailVerificationService {
   private readonly logger = new Logger(EmailVerificationService.name);
 
   constructor(
-    @InjectRepository(User)
-    private userRepository: Repository<User>,
+    private prismaUserService: PrismaUserService,
     private configService: ConfigService,
     @Inject('default')
     private readonly redis: Redis,
@@ -95,9 +94,7 @@ export class EmailVerificationService {
       }
 
       // Find user
-      const user = await this.userRepository.findOne({
-        where: { id: tokenData.userId },
-      });
+      const user = await this.prismaUserService.findOne(tokenData.userId);
 
       if (!user) {
         throw new NotFoundException('User not found');
@@ -120,19 +117,19 @@ export class EmailVerificationService {
         };
       }
 
-      // Update user verification status
-      await this.userRepository.update(user.id, {
-        emailVerifiedAt: new Date(),
-        status: UserStatus.ACTIVE, // Ensure user is active after verification
+      // Update user verification status (using verifyEmail + status update separately)
+      // Note: We can't use update() because UpdateUserDto doesn't include emailVerifiedAt
+      // We need to update both emailVerifiedAt and status, then fetch the updated user
+      await this.prismaUserService.verifyEmail(user.id);
+
+      // Update status to ACTIVE
+      const updatedUser = await this.prismaUserService.update(user.id, {
+        status: UserStatus.ACTIVE,
       });
 
       // Clean up tokens
       await this.redis.del(key);
       await this.redis.del(`email_verification_user:${user.id}`);
-
-      const updatedUser = await this.userRepository.findOne({
-        where: { id: user.id },
-      });
 
       if (!updatedUser) {
         throw new InternalServerErrorException('Failed to retrieve updated user');
@@ -160,9 +157,7 @@ export class EmailVerificationService {
    */
   async resendVerificationEmail(userId: string): Promise<string> {
     try {
-      const user = await this.userRepository.findOne({
-        where: { id: userId },
-      });
+      const user = await this.prismaUserService.findOne(userId);
 
       if (!user) {
         throw new NotFoundException('User not found');
@@ -217,10 +212,7 @@ export class EmailVerificationService {
    */
   async isVerificationRequired(userId: string): Promise<boolean> {
     try {
-      const user = await this.userRepository.findOne({
-        where: { id: userId },
-        select: ['emailVerifiedAt'],
-      });
+      const user = await this.prismaUserService.findOne(userId);
 
       return user ? !user.emailVerifiedAt : true;
     } catch (error) {
@@ -321,12 +313,8 @@ export class EmailVerificationService {
       }
 
       // Count recent verifications (last 24 hours)
-      const recentVerifications = await this.userRepository
-        .createQueryBuilder('user')
-        .where('user.emailVerifiedAt > :since', {
-          since: new Date(Date.now() - 24 * 60 * 60 * 1000)
-        })
-        .getCount();
+      const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      const recentVerifications = await this.prismaUserService.countVerifiedSince(since);
 
       return {
         totalPendingVerifications: totalPending,
