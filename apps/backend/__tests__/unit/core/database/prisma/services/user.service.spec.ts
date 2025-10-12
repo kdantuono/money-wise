@@ -1785,9 +1785,10 @@ describe('PrismaUserService', () => {
         _count: { _all: true },
       });
       expect(result).toEqual({
-        ACTIVE: 10,
-        INACTIVE: 3,
-        SUSPENDED: 1,
+        total: 14,
+        active: 10,
+        inactive: 3,
+        suspended: 1,
       });
     });
 
@@ -1802,9 +1803,10 @@ describe('PrismaUserService', () => {
 
       // Assert
       expect(result).toEqual({
-        ACTIVE: 5,
-        INACTIVE: 0,
-        SUSPENDED: 0,
+        total: 5,
+        active: 5,
+        inactive: 0,
+        suspended: 0,
       });
     });
 
@@ -1817,9 +1819,10 @@ describe('PrismaUserService', () => {
 
       // Assert
       expect(result).toEqual({
-        ACTIVE: 0,
-        INACTIVE: 0,
-        SUSPENDED: 0,
+        total: 0,
+        active: 0,
+        inactive: 0,
+        suspended: 0,
       });
     });
 
@@ -1841,9 +1844,10 @@ describe('PrismaUserService', () => {
         where: { familyId },
       });
       expect(result).toEqual({
-        ACTIVE: 7,
-        INACTIVE: 2,
-        SUSPENDED: 0,
+        total: 9,
+        active: 7,
+        inactive: 2,
+        suspended: 0,
       });
     });
 
@@ -1876,7 +1880,7 @@ describe('PrismaUserService', () => {
 
       // Assert
       expect(result).toEqual({
-        data: users,
+        users: users,
         total: 42,
       });
     });
@@ -1895,7 +1899,7 @@ describe('PrismaUserService', () => {
         skip: 1,
         take: 1,
       });
-      expect(result.data).toHaveLength(1);
+      expect(result.users).toHaveLength(1);
       expect(result.total).toBe(10);
     });
 
@@ -1916,7 +1920,7 @@ describe('PrismaUserService', () => {
       expect(prisma.user.count).toHaveBeenCalledWith({
         where: { familyId },
       });
-      expect(result.data).toHaveLength(1);
+      expect(result.users).toHaveLength(1);
       expect(result.total).toBe(3);
     });
 
@@ -1944,7 +1948,7 @@ describe('PrismaUserService', () => {
 
       // Assert
       expect(result).toEqual({
-        data: [],
+        users: [],
         total: 0,
       });
     });

@@ -523,7 +523,7 @@ export class PrismaUserService {
    * Count users grouped by status
    *
    * BEHAVIOR:
-   * - Returns object with counts for each UserStatus (ACTIVE, INACTIVE, SUSPENDED)
+   * - Returns object with total count and counts for each UserStatus
    * - Missing statuses default to 0
    * - Optional familyId filter
    *
@@ -533,10 +533,10 @@ export class PrismaUserService {
    * - Admin analytics
    *
    * @param familyId - Optional family filter
-   * @returns Object with status counts { ACTIVE: 10, INACTIVE: 3, SUSPENDED: 1 }
+   * @returns Object with status counts { total: 14, active: 10, inactive: 3, suspended: 1 }
    * @throws BadRequestException if familyId UUID format is invalid
    */
-  async countByStatus(familyId?: string): Promise<Record<UserStatus, number>> {
+  async countByStatus(familyId?: string): Promise<{ total: number; active: number; inactive: number; suspended: number }> {
     // Validate familyId if provided
     if (familyId) {
       this.validateUuid(familyId);
@@ -556,25 +556,38 @@ export class PrismaUserService {
         });
 
     // Initialize all statuses to 0
-    const counts: Record<UserStatus, number> = {
-      ACTIVE: 0,
-      INACTIVE: 0,
-      SUSPENDED: 0,
+    const counts = {
+      active: 0,
+      inactive: 0,
+      suspended: 0,
     };
 
     // Fill in actual counts
+    let total = 0;
     for (const result of results) {
-      counts[result.status] = result._count._all;
+      const count = result._count._all;
+      total += count;
+
+      if (result.status === UserStatus.ACTIVE) {
+        counts.active = count;
+      } else if (result.status === UserStatus.INACTIVE) {
+        counts.inactive = count;
+      } else if (result.status === UserStatus.SUSPENDED) {
+        counts.suspended = count;
+      }
     }
 
-    return counts;
+    return {
+      total,
+      ...counts,
+    };
   }
 
   /**
    * Find all users with total count (pagination support)
    *
    * BEHAVIOR:
-   * - Returns both data array and total count
+   * - Returns both users array and total count
    * - Total count respects filter criteria but ignores pagination
    * - Useful for paginated UIs that need to show "Page X of Y"
    *
@@ -584,7 +597,7 @@ export class PrismaUserService {
    * - Consider caching for frequently accessed data
    *
    * @param options - Optional pagination, filtering, and ordering
-   * @returns Object with data array and total count
+   * @returns Object with users array and total count
    *
    * @example
    * ```typescript
@@ -594,15 +607,15 @@ export class PrismaUserService {
    *   where: { familyId },
    *   orderBy: { createdAt: 'desc' }
    * });
-   * // result = { data: [10 users], total: 42 }
+   * // result = { users: [10 users], total: 42 }
    * // Can show: "Page 3 of 5 (42 total users)"
    * ```
    */
-  async findAllWithCount(options?: FindAllOptions): Promise<{ data: User[]; total: number }> {
+  async findAllWithCount(options?: FindAllOptions): Promise<{ users: User[]; total: number }> {
     const { where, skip, take, orderBy } = options || {};
 
     // Execute queries sequentially
-    const [data, total] = await Promise.all([
+    const [users, total] = await Promise.all([
       this.prisma.user.findMany({
         where,
         skip,
@@ -614,7 +627,7 @@ export class PrismaUserService {
       }),
     ]);
 
-    return { data, total };
+    return { users, total };
   }
 
   /**
