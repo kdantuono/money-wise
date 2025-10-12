@@ -1,12 +1,10 @@
-import { Injectable, Logger, BadRequestException, InternalServerErrorException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Injectable, Logger, BadRequestException, InternalServerErrorException, Inject } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Redis } from 'ioredis';
 import * as crypto from 'crypto';
 import * as speakeasy from 'speakeasy';
 import * as qrcode from 'qrcode';
-import { User } from '../../core/database/entities/user.entity';
+import { PrismaUserService } from '../../core/database/prisma/services/user.service';
 
 export interface TwoFactorSetupResult {
   secret: string;
@@ -28,23 +26,13 @@ export interface BackupCode {
 @Injectable()
 export class TwoFactorAuthService {
   private readonly logger = new Logger(TwoFactorAuthService.name);
-  private redis: Redis;
 
   constructor(
-    @InjectRepository(User)
-    private userRepository: Repository<User>,
+    private prismaUserService: PrismaUserService,
     private configService: ConfigService,
+    @Inject('default')
+    private readonly redis: Redis,
   ) {
-    // Initialize Redis connection
-    this.redis = new Redis({
-      host: this.configService.get('REDIS_HOST', 'localhost'),
-      port: this.configService.get('REDIS_PORT', 6379),
-      password: this.configService.get('REDIS_PASSWORD'),
-      db: this.configService.get('REDIS_DB', 0),
-      // retryDelayOnFailover: removed in ioredis v5,
-      maxRetriesPerRequest: 3,
-    });
-
     this.redis.on('error', (error) => {
       this.logger.error('Redis connection error:', error);
     });
@@ -55,9 +43,7 @@ export class TwoFactorAuthService {
    */
   async setupTwoFactor(userId: string): Promise<TwoFactorSetupResult> {
     try {
-      const user = await this.userRepository.findOne({
-        where: { id: userId },
-      });
+      const user = await this.prismaUserService.findOne(userId);
 
       if (!user) {
         throw new BadRequestException('User not found');
