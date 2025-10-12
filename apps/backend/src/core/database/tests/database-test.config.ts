@@ -303,3 +303,14 @@ export const cleanTestDatabase = async (): Promise<void> => {
   const manager = DatabaseTestManager.getInstance();
   await manager.clean();
 };
+
+/**
+ * Get Prisma test data factory
+ * Use this for integration tests to create test data
+ */
+export const getTestDataFactory = async () => {
+  const { PrismaTestDataFactory } = await import('./factories/prisma-test-data.factory');
+  const manager = DatabaseTestManager.getInstance();
+  const prisma = manager.getPrismaClient();
+  return new PrismaTestDataFactory(prisma);
+};
