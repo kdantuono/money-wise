@@ -1,11 +1,10 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Injectable, Logger, Inject } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Redis } from 'ioredis';
 import { v4 as uuidv4 } from 'uuid';
-import { User, UserStatus } from '../../core/database/entities/user.entity';
-import { AuditLog, AuditEventType } from '../../core/database/entities/audit-log.entity';
+import { UserStatus, AuditEventType } from '../../../generated/prisma';
+import { PrismaUserService } from '../../core/database/prisma/services/user.service';
+import { PrismaAuditLogService } from '../../core/database/prisma/services/audit-log.service';
 import { PasswordSecurityService } from './password-security.service';
 import { RateLimitService } from './rate-limit.service';
 import { AppConfig } from '../../core/config/app.config';
@@ -40,26 +39,16 @@ export class PasswordResetService {
   private readonly logger = new Logger(PasswordResetService.name);
   private readonly tokenExpirationMinutes = 30;
   private readonly maxActiveTokens = 3;
-  private redis: Redis;
 
   constructor(
-    @InjectRepository(User)
-    private userRepository: Repository<User>,
-    @InjectRepository(AuditLog)
-    private auditLogRepository: Repository<AuditLog>,
+    private prismaUserService: PrismaUserService,
+    private prismaAuditLogService: PrismaAuditLogService,
     private passwordSecurityService: PasswordSecurityService,
     private rateLimitService: RateLimitService,
     private configService: ConfigService,
+    @Inject('default')
+    private readonly redis: Redis,
   ) {
-    // Enhanced Redis configuration from epic branch
-    this.redis = new Redis({
-      host: configService.get('REDIS_HOST', 'localhost'),
-      port: configService.get('REDIS_PORT', 6379),
-      password: configService.get('REDIS_PASSWORD'),
-      db: configService.get('REDIS_DB', 0),
-      maxRetriesPerRequest: 3,
-    });
-
     this.redis.on('error', (error) => {
       this.logger.error('Redis connection error:', error);
     });
@@ -99,10 +88,7 @@ export class PasswordResetService {
     }
 
     // Find user
-    const user = await this.userRepository.findOne({
-      where: { email },
-      select: ['id', 'email', 'firstName', 'lastName', 'status'],
-    });
+    const user = await this.prismaUserService.findByEmail(email);
 
     // Always return success message for security (don't reveal if email exists)
     const successMessage = 'If an account with that email exists, you will receive a password reset link shortly.';
@@ -256,10 +242,7 @@ export class PasswordResetService {
       }
 
       // Verify user still exists and is active
-      const user = await this.userRepository.findOne({
-        where: { id: tokenData.userId },
-        select: ['id', 'status'],
-      });
+      const user = await this.prismaUserService.findOne(tokenData.userId);
 
       if (!user || user.status !== UserStatus.ACTIVE) {
         return { valid: false, error: 'User account is not available' };
@@ -339,10 +322,7 @@ export class PasswordResetService {
       this.logger.log(`Password reset completed for user ${userId}`);
 
       // Get user to check email verification status
-      const user = await this.userRepository.findOne({
-        where: { id: userId },
-        select: ['emailVerifiedAt'],
-      });
+      const user = await this.prismaUserService.findOne(userId);
 
       return {
         success: true,
@@ -458,7 +438,7 @@ export class PasswordResetService {
     userAgent?: string,
     metadata?: Record<string, unknown>
   ): Promise<void> {
-    const auditLog = this.auditLogRepository.create({
+    await this.prismaAuditLogService.create({
       userId,
       eventType,
       description,
@@ -467,8 +447,6 @@ export class PasswordResetService {
       metadata,
       isSecurityEvent: true,
     });
-
-    await this.auditLogRepository.save(auditLog);
   }
 
   /**

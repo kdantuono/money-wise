@@ -5,14 +5,13 @@ jest.mock('ioredis', () => {
 });
 
 import { Test, TestingModule } from '@nestjs/testing';
-import { Repository } from 'typeorm';
-import { getRepositoryToken } from '@nestjs/typeorm';
 import { ConfigService } from '@nestjs/config';
 import { PasswordResetService, PasswordResetToken } from '@/auth/services/password-reset.service';
 import { PasswordSecurityService } from '@/auth/services/password-security.service';
 import { RateLimitService } from '@/auth/services/rate-limit.service';
-import { User, UserStatus } from '@/core/database/entities/user.entity';
-import { AuditLog, AuditEventType } from '@/core/database/entities/audit-log.entity';
+import { UserStatus, AuditEventType } from '../../../../generated/prisma';
+import { PrismaUserService } from '@/core/database/prisma/services/user.service';
+import { PrismaAuditLogService } from '@/core/database/prisma/services/audit-log.service';
 import { MockRedis, createMockRedis } from '../../../mocks/redis.mock';
 
 // Helper to store token data in Redis with proper date serialization
@@ -31,13 +30,13 @@ async function storeTokenInRedis(mockRedis: MockRedis, token: string, userId: st
 
 describe('PasswordResetService', () => {
   let service: PasswordResetService;
-  let userRepository: jest.Mocked<Repository<User>>;
-  let auditLogRepository: jest.Mocked<Repository<AuditLog>>;
+  let prismaUserService: jest.Mocked<PrismaUserService>;
+  let prismaAuditLogService: jest.Mocked<PrismaAuditLogService>;
   let passwordSecurityService: jest.Mocked<PasswordSecurityService>;
   let rateLimitService: jest.Mocked<RateLimitService>;
   let mockRedis: MockRedis;
 
-  const mockUser: Partial<User> = {
+  const mockUser: any = {
     id: 'user-123',
     email: 'test@example.com',
     firstName: 'Test',
@@ -59,18 +58,16 @@ describe('PasswordResetService', () => {
       providers: [
         PasswordResetService,
         {
-          provide: getRepositoryToken(User),
+          provide: PrismaUserService,
           useValue: {
+            findByEmail: jest.fn(),
             findOne: jest.fn(),
-            update: jest.fn(),
-            save: jest.fn(),
           },
         },
         {
-          provide: getRepositoryToken(AuditLog),
+          provide: PrismaAuditLogService,
           useValue: {
-            create: jest.fn((entity) => entity),
-            save: jest.fn((entity) => Promise.resolve(entity)),
+            create: jest.fn((data) => Promise.resolve({ id: 'audit-log-id', ...data })),
           },
         },
         {
@@ -104,12 +101,16 @@ describe('PasswordResetService', () => {
             }),
           },
         },
+        {
+          provide: 'default',
+          useValue: createMockRedis(),
+        },
       ],
     }).compile();
 
     service = module.get<PasswordResetService>(PasswordResetService);
-    userRepository = module.get(getRepositoryToken(User));
-    auditLogRepository = module.get(getRepositoryToken(AuditLog));
+    prismaUserService = module.get(PrismaUserService);
+    prismaAuditLogService = module.get(PrismaAuditLogService);
     passwordSecurityService = module.get(PasswordSecurityService);
     rateLimitService = module.get(RateLimitService);
 
@@ -132,7 +133,7 @@ describe('PasswordResetService', () => {
         resetTime: new Date(),
         isLocked: false,
       });
-      userRepository.findOne.mockResolvedValue(mockUser as User);
+      prismaUserService.findByEmail.mockResolvedValue(mockUser);
       rateLimitService.recordAttempt.mockResolvedValue(undefined);
 
       const result = await service.requestPasswordReset('test@example.com', mockMetadata);
@@ -146,8 +147,7 @@ describe('PasswordResetService', () => {
         'passwordReset',
         true,
       );
-      expect(auditLogRepository.create).toHaveBeenCalled();
-      expect(auditLogRepository.save).toHaveBeenCalled();
+      expect(prismaAuditLogService.create).toHaveBeenCalled();
     });
 
     it('should prevent multiple token generation within 5 minutes', async () => {
@@ -160,7 +160,7 @@ describe('PasswordResetService', () => {
         resetTime: new Date(),
         isLocked: false,
       });
-      userRepository.findOne.mockResolvedValue(mockUser as User);
+      prismaUserService.findByEmail.mockResolvedValue(mockUser);
 
       const result1 = await service.requestPasswordReset('test@example.com', mockMetadata);
       const result2 = await service.requestPasswordReset('test@example.com', mockMetadata);
@@ -182,7 +182,7 @@ describe('PasswordResetService', () => {
         resetTime: new Date(),
         isLocked: false,
       });
-      userRepository.findOne.mockResolvedValue(mockUser as User);
+      prismaUserService.findByEmail.mockResolvedValue(mockUser);
 
       await service.requestPasswordReset('test@example.com', mockMetadata);
 
@@ -198,7 +198,7 @@ describe('PasswordResetService', () => {
         resetTime: new Date(),
         isLocked: false,
       });
-      userRepository.findOne.mockResolvedValue(mockUser as User);
+      prismaUserService.findByEmail.mockResolvedValue(mockUser);
 
       await service.requestPasswordReset('test@example.com', mockMetadata);
 
@@ -223,7 +223,7 @@ describe('PasswordResetService', () => {
         resetTime: new Date(),
         isLocked: false,
       });
-      userRepository.findOne.mockResolvedValue(mockUser as User);
+      prismaUserService.findByEmail.mockResolvedValue(mockUser);
 
       // Store an expired token (not through Redis since cleanupExpiredTokens checks via get)
       const expiredToken: PasswordResetToken = {
@@ -253,7 +253,7 @@ describe('PasswordResetService', () => {
         resetTime: new Date(),
         isLocked: false,
       });
-      userRepository.findOne.mockResolvedValue(mockUser as User);
+      prismaUserService.findByEmail.mockResolvedValue(mockUser);
       mockRedis.setex = jest.fn().mockRejectedValue(new Error('Redis error'));
 
       const result = await service.requestPasswordReset('test@example.com', mockMetadata);
@@ -274,11 +274,11 @@ describe('PasswordResetService', () => {
         resetTime: new Date(),
         isLocked: false,
       });
-      userRepository.findOne.mockResolvedValue(mockUser as User);
+      prismaUserService.findByEmail.mockResolvedValue(mockUser);
 
       await service.requestPasswordReset('test@example.com', mockMetadata);
 
-      expect(auditLogRepository.create).toHaveBeenCalledWith(
+      expect(prismaAuditLogService.create).toHaveBeenCalledWith(
         expect.objectContaining({
           userId: mockUser.id,
           eventType: AuditEventType.PASSWORD_RESET_REQUESTED,
@@ -306,7 +306,7 @@ describe('PasswordResetService', () => {
       expect(result.success).toBe(false);
       expect(result.message).toContain('Rate limit exceeded');
       expect(result.message).toContain('minutes');
-      expect(userRepository.findOne).not.toHaveBeenCalled();
+      expect(prismaUserService.findByEmail).not.toHaveBeenCalled();
       expect(rateLimitService.recordAttempt).toHaveBeenCalledWith(
         mockMetadata.ipAddress,
         'passwordReset',
@@ -341,7 +341,7 @@ describe('PasswordResetService', () => {
 
       await service.requestPasswordReset('test@example.com', mockMetadata);
 
-      expect(auditLogRepository.create).toHaveBeenCalledWith(
+      expect(prismaAuditLogService.create).toHaveBeenCalledWith(
         expect.objectContaining({
           eventType: AuditEventType.PASSWORD_RESET_REQUESTED,
           description: expect.stringContaining('rate limit exceeded'),
@@ -359,7 +359,7 @@ describe('PasswordResetService', () => {
         resetTime: new Date(),
         isLocked: false,
       });
-      userRepository.findOne.mockResolvedValue(null);
+      prismaUserService.findByEmail.mockResolvedValue(null);
 
       const result = await service.requestPasswordReset('nonexistent@example.com', mockMetadata);
 
@@ -377,7 +377,7 @@ describe('PasswordResetService', () => {
         isLocked: false,
       });
       const inactiveUser = { ...mockUser, status: UserStatus.SUSPENDED };
-      userRepository.findOne.mockResolvedValue(inactiveUser as User);
+      prismaUserService.findByEmail.mockResolvedValue(inactiveUser);
 
       const result = await service.requestPasswordReset('test@example.com', mockMetadata);
 
@@ -394,7 +394,7 @@ describe('PasswordResetService', () => {
         resetTime: new Date(),
         isLocked: false,
       });
-      userRepository.findOne.mockResolvedValue(null);
+      prismaUserService.findByEmail.mockResolvedValue(null);
 
       await service.requestPasswordReset('nonexistent@example.com', mockMetadata);
 
@@ -419,7 +419,7 @@ describe('PasswordResetService', () => {
 
     it('should accept valid unexpired tokens', async () => {
       await storeTokenInRedis(mockRedis, validTokenData.token, mockUser.id!, validTokenData);
-      userRepository.findOne.mockResolvedValue(mockUser as User);
+      prismaUserService.findOne.mockResolvedValue(mockUser);
 
       const result = await service.validateResetToken(validTokenData.token, mockMetadata);
 
@@ -443,7 +443,7 @@ describe('PasswordResetService', () => {
       };
 
       await storeTokenInRedis(mockRedis, expiredTokenData.token, mockUser.id!, expiredTokenData);
-      userRepository.findOne.mockResolvedValue(mockUser as User);
+      prismaUserService.findOne.mockResolvedValue(mockUser);
 
       const result = await service.validateResetToken(expiredTokenData.token, mockMetadata);
 
@@ -465,7 +465,7 @@ describe('PasswordResetService', () => {
 
       expect(result.valid).toBe(false);
       expect(result.error).toBe('Reset token has already been used');
-      expect(auditLogRepository.create).toHaveBeenCalledWith(
+      expect(prismaAuditLogService.create).toHaveBeenCalledWith(
         expect.objectContaining({
           description: 'Already used password reset token attempted',
           metadata: expect.objectContaining({ alreadyUsed: true }),
@@ -478,7 +478,7 @@ describe('PasswordResetService', () => {
 
       expect(result.valid).toBe(false);
       expect(result.error).toBe('Invalid or expired reset token');
-      expect(auditLogRepository.create).toHaveBeenCalledWith(
+      expect(prismaAuditLogService.create).toHaveBeenCalledWith(
         expect.objectContaining({
           description: 'Invalid password reset token used',
           metadata: expect.objectContaining({ invalidToken: true }),
@@ -488,7 +488,7 @@ describe('PasswordResetService', () => {
 
     it('should reject tokens for non-existent users', async () => {
       await storeTokenInRedis(mockRedis, validTokenData.token, mockUser.id!, validTokenData);
-      userRepository.findOne.mockResolvedValue(null);
+      prismaUserService.findOne.mockResolvedValue(null);
 
       const result = await service.validateResetToken(validTokenData.token, mockMetadata);
 
@@ -499,7 +499,7 @@ describe('PasswordResetService', () => {
     it('should reject tokens for inactive users', async () => {
       const inactiveUser = { ...mockUser, status: UserStatus.SUSPENDED };
       await storeTokenInRedis(mockRedis, validTokenData.token, mockUser.id!, validTokenData);
-      userRepository.findOne.mockResolvedValue(inactiveUser as User);
+      prismaUserService.findOne.mockResolvedValue(inactiveUser);
 
       const result = await service.validateResetToken(validTokenData.token, mockMetadata);
 
@@ -531,7 +531,7 @@ describe('PasswordResetService', () => {
 
     beforeEach(async () => {
       await storeTokenInRedis(mockRedis, validToken, mockUser.id!, validTokenData);
-      userRepository.findOne.mockResolvedValue(mockUser as User);
+      prismaUserService.findOne.mockResolvedValue(mockUser);
     });
 
     it('should reset password successfully with valid token', async () => {
@@ -586,7 +586,7 @@ describe('PasswordResetService', () => {
 
       expect(result.success).toBe(false);
       expect(result.error).toBe('Password does not meet security requirements');
-      expect(auditLogRepository.create).toHaveBeenCalledWith(
+      expect(prismaAuditLogService.create).toHaveBeenCalledWith(
         expect.objectContaining({
           description: expect.stringContaining('Password reset failed'),
           metadata: expect.objectContaining({
@@ -647,7 +647,7 @@ describe('PasswordResetService', () => {
         mockMetadata,
       );
 
-      expect(auditLogRepository.create).toHaveBeenCalledWith(
+      expect(prismaAuditLogService.create).toHaveBeenCalledWith(
         expect.objectContaining({
           userId: mockUser.id,
           eventType: AuditEventType.PASSWORD_RESET_COMPLETED,
@@ -663,8 +663,8 @@ describe('PasswordResetService', () => {
       });
 
       const unverifiedUser = { ...mockUser, emailVerifiedAt: null };
-      userRepository.findOne.mockResolvedValueOnce(mockUser as User); // For validation
-      userRepository.findOne.mockResolvedValueOnce(unverifiedUser as User); // For final check
+      prismaUserService.findOne.mockResolvedValueOnce(mockUser); // For validation
+      prismaUserService.findOne.mockResolvedValueOnce(unverifiedUser); // For final check
 
       const result = await service.resetPassword(
         validToken,
@@ -706,7 +706,7 @@ describe('PasswordResetService', () => {
         resetTime: new Date(),
         isLocked: false,
       });
-      userRepository.findOne.mockResolvedValue(mockUser as User);
+      prismaUserService.findByEmail.mockResolvedValue(mockUser);
 
       // Create an old token (> 5 minutes ago)
       const oldTokenData: PasswordResetToken = {
@@ -740,7 +740,7 @@ describe('PasswordResetService', () => {
         resetTime: new Date(),
         isLocked: false,
       });
-      userRepository.findOne.mockResolvedValue(mockUser as User);
+      prismaUserService.findByEmail.mockResolvedValue(mockUser);
 
       // Create a recent token (< 5 minutes ago)
       const recentTokenData: PasswordResetToken = {
