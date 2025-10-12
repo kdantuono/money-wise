@@ -1,6 +1,13 @@
 import { Module, Global } from '@nestjs/common';
 import { PrismaService } from './prisma.service';
 import { PrismaFamilyService } from './services/family.service';
+import { PrismaUserService } from './services/user.service';
+import { PrismaPasswordHistoryService } from './services/password-history.service';
+import { PrismaAuditLogService } from './services/audit-log.service';
+import { TransactionService } from './services/transaction.service';
+import { CategoryService } from './services/category.service';
+import { BudgetService } from './services/budget.service';
+import { PrismaAccountService } from './services/account.service';
 
 /**
  * PrismaModule - Global module for Prisma database services
@@ -43,7 +50,27 @@ import { PrismaFamilyService } from './services/family.service';
  */
 @Global()
 @Module({
-  providers: [PrismaService, PrismaFamilyService],
-  exports: [PrismaService, PrismaFamilyService],
+  providers: [
+    PrismaService,
+    PrismaFamilyService,
+    PrismaUserService,
+    PrismaPasswordHistoryService,
+    PrismaAuditLogService,
+    TransactionService,
+    CategoryService,
+    BudgetService,
+    PrismaAccountService,
+  ],
+  exports: [
+    PrismaService,
+    PrismaFamilyService,
+    PrismaUserService,
+    PrismaPasswordHistoryService,
+    PrismaAuditLogService,
+    TransactionService,
+    CategoryService,
+    BudgetService,
+    PrismaAccountService,
+  ],
 })
 export class PrismaModule {}

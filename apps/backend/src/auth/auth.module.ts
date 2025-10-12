@@ -18,10 +18,12 @@ import { AuditLogService } from './services/audit-log.service';
 import { User } from '../core/database/entities/user.entity';
 import { AuditLog } from '../core/database/entities/audit-log.entity';
 import { PasswordHistory } from '../core/database/entities/password-history.entity';
+import { PrismaModule } from '../core/database/prisma/prisma.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([User, AuditLog, PasswordHistory]),
+    PrismaModule, // Add Prisma module for migrated services
     PassportModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
