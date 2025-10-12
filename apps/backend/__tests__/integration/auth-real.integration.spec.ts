@@ -20,7 +20,7 @@ import request from 'supertest';
 
 import { AuthModule } from '@/auth/auth.module';
 import { RedisModule } from '@/core/redis/redis.module';
-import { DatabaseModule } from '@/core/database/database.module';
+import { PrismaModule } from '@/core/database/prisma/prisma.module';
 import {
   setupTestDatabase,
   cleanTestDatabase,
@@ -43,7 +43,7 @@ describe('Real Auth Integration Tests (Prisma)', () => {
 
   beforeAll(async () => {
     // Setup test database (TestContainers or local PostgreSQL)
-    await setupTestDatabase();
+    const testPrismaClient = await setupTestDatabase();
 
     // Get test data factory
     factory = await getTestDataFactory();
@@ -76,13 +76,26 @@ describe('Real Auth Integration Tests (Prisma)', () => {
         ConfigModule.forRoot({
           isGlobal: true,
           ignoreEnvFile: true, // Use process.env directly
-          validate: undefined, // Skip validation in tests
           cache: false, // Don't cache config in tests
+          load: [
+            // Test config factory - groups env vars into nested objects like production
+            () => ({
+              auth: {
+                JWT_ACCESS_SECRET: process.env.JWT_ACCESS_SECRET,
+                JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET,
+                JWT_ACCESS_EXPIRES_IN: process.env.JWT_ACCESS_EXPIRES_IN,
+                JWT_REFRESH_EXPIRES_IN: process.env.JWT_REFRESH_EXPIRES_IN,
+              },
+            }),
+          ],
         }),
-        DatabaseModule, // Real Prisma database
+        PrismaModule, // Real Prisma database
         AuthModule,
       ],
-    }).compile();
+    })
+      .overrideProvider(PrismaService)
+      .useValue(testPrismaClient) // Use test database Prisma client
+      .compile();
 
     app = moduleFixture.createNestApplication();
     app.useGlobalPipes(
@@ -120,29 +133,38 @@ describe('Real Auth Integration Tests (Prisma)', () => {
     };
 
     it('should register a new user successfully', async () => {
-      const response = await request(app.getHttpServer())
-        .post('/auth/register')
-        .send(validRegisterDto)
-        .expect(201);
+      try {
+        const response = await request(app.getHttpServer())
+          .post('/auth/register')
+          .send(validRegisterDto);
 
-      expect(response.body).toHaveProperty('accessToken');
-      expect(response.body).toHaveProperty('refreshToken');
-      expect(response.body).toHaveProperty('user');
-      expect(response.body).toHaveProperty('expiresIn');
-      expect(response.body.user).not.toHaveProperty('passwordHash');
-      expect(response.body.user.email).toBe(validRegisterDto.email.toLowerCase());
-      expect(response.body.user.firstName).toBe(validRegisterDto.firstName);
-      expect(response.body.user.lastName).toBe(validRegisterDto.lastName);
+        console.log('Response status:', response.status);
+        console.log('Response body:', JSON.stringify(response.body, null, 2));
 
-      // Verify user was actually created in database
-      const user = await prismaService.user.findUnique({
-        where: { email: validRegisterDto.email.toLowerCase() },
-      });
-      expect(user).toBeTruthy();
-      expect(user!.firstName).toBe(validRegisterDto.firstName);
-      expect(user!.lastName).toBe(validRegisterDto.lastName);
-      expect(user!.status).toBe('ACTIVE');
-      expect(user!.role).toBe('MEMBER');
+        expect(response.status).toBe(201);
+        expect(response.body).toHaveProperty('accessToken');
+        expect(response.body).toHaveProperty('refreshToken');
+        expect(response.body).toHaveProperty('user');
+        expect(response.body).toHaveProperty('expiresIn');
+        expect(response.body.user).not.toHaveProperty('passwordHash');
+        expect(response.body.user.email).toBe(validRegisterDto.email.toLowerCase());
+        expect(response.body.user.firstName).toBe(validRegisterDto.firstName);
+        expect(response.body.user.lastName).toBe(validRegisterDto.lastName);
+
+        // Verify user was actually created in database
+        const user = await prismaService.user.findUnique({
+          where: { email: validRegisterDto.email.toLowerCase() },
+        });
+        expect(user).toBeTruthy();
+        expect(user!.firstName).toBe(validRegisterDto.firstName);
+        expect(user!.lastName).toBe(validRegisterDto.lastName);
+        expect(user!.status).toBe('ACTIVE');
+        expect(user!.role).toBe('MEMBER');
+      } catch (error) {
+        console.error('❌ Test failed with error:', error.message);
+        console.error('Stack:', error.stack);
+        throw error;
+      }
     });
 
     it('should return 409 when user already exists', async () => {
