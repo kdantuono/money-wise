@@ -158,7 +158,7 @@ describe('Real Auth Integration Tests (Prisma)', () => {
         expect(user).toBeTruthy();
         expect(user!.firstName).toBe(validRegisterDto.firstName);
         expect(user!.lastName).toBe(validRegisterDto.lastName);
-        expect(user!.status).toBe('ACTIVE');
+        expect(user!.status).toBe('INACTIVE'); // Users start INACTIVE until email verification
         expect(user!.role).toBe('MEMBER');
       } catch (error) {
         console.error('❌ Test failed with error:', error.message);
@@ -380,6 +380,9 @@ describe('Real Auth Integration Tests (Prisma)', () => {
     });
 
     it('should refresh token successfully', async () => {
+      // Wait 1 second to ensure different iat timestamp
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
       const response = await request(app.getHttpServer())
         .post('/auth/refresh')
         .send({ refreshToken })
@@ -390,7 +393,7 @@ describe('Real Auth Integration Tests (Prisma)', () => {
       expect(response.body).toHaveProperty('user');
       expect(response.body.user.email).toBe(testUser.email);
 
-      // New tokens should be different from original
+      // New tokens should be different from original (due to different iat)
       expect(response.body.refreshToken).not.toBe(refreshToken);
     });
 
@@ -551,21 +554,17 @@ describe('Real Auth Integration Tests (Prisma)', () => {
 
       const { accessToken, refreshToken } = registerResponse.body;
 
-      // 2. Access profile with registration token
-      const profileResponse1 = await request(app.getHttpServer())
-        .get('/auth/profile')
-        .set('Authorization', `Bearer ${accessToken}`)
-        .expect(200);
+      // 2. Activate user (simulate email verification)
+      // NOTE: Users must be ACTIVE to use protected endpoints
+      await prismaService.user.update({
+        where: { email: userEmail },
+        data: {
+          status: 'ACTIVE',
+          emailVerifiedAt: new Date()
+        },
+      });
 
-      expect(profileResponse1.body.email).toBe(userEmail);
-
-      // 3. Logout
-      await request(app.getHttpServer())
-        .post('/auth/logout')
-        .set('Authorization', `Bearer ${accessToken}`)
-        .expect(204);
-
-      // 4. Login again with credentials
+      // 3. Login to get fresh tokens for ACTIVE user
       const loginResponse = await request(app.getHttpServer())
         .post('/auth/login')
         .send({
@@ -574,10 +573,35 @@ describe('Real Auth Integration Tests (Prisma)', () => {
         })
         .expect(200);
 
-      // 5. Verify new tokens work
+      const activeAccessToken = loginResponse.body.accessToken;
+
+      // 4. Access profile with active user token
+      const profileResponse1 = await request(app.getHttpServer())
+        .get('/auth/profile')
+        .set('Authorization', `Bearer ${activeAccessToken}`)
+        .expect(200);
+
+      expect(profileResponse1.body.email).toBe(userEmail);
+
+      // 5. Logout
+      await request(app.getHttpServer())
+        .post('/auth/logout')
+        .set('Authorization', `Bearer ${activeAccessToken}`)
+        .expect(204);
+
+      // 6. Login again with credentials (verify re-login works)
+      const loginResponse2 = await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({
+          email: userEmail,
+          password: userPassword,
+        })
+        .expect(200);
+
+      // 7. Verify new tokens work
       const profileResponse2 = await request(app.getHttpServer())
         .get('/auth/profile')
-        .set('Authorization', `Bearer ${loginResponse.body.accessToken}`)
+        .set('Authorization', `Bearer ${loginResponse2.body.accessToken}`)
         .expect(200);
 
       expect(profileResponse2.body.email).toBe(userEmail);
@@ -604,7 +628,19 @@ describe('Real Auth Integration Tests (Prisma)', () => {
 
       const { accessToken: originalAccessToken, refreshToken } = registerResponse.body;
 
-      // 2. Refresh token
+      // 2. Activate user (simulate email verification)
+      await prismaService.user.update({
+        where: { email: 'refreshflow@example.com' },
+        data: {
+          status: 'ACTIVE',
+          emailVerifiedAt: new Date()
+        },
+      });
+
+      // Wait 1 second to ensure different iat timestamp
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // 3. Refresh token
       const refreshResponse = await request(app.getHttpServer())
         .post('/auth/refresh')
         .send({ refreshToken })

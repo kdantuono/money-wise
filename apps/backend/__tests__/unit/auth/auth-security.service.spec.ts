@@ -14,6 +14,7 @@ import { EmailVerificationService } from '@/auth/services/email-verification.ser
 import { PasswordResetService } from '@/auth/services/password-reset.service';
 import { AuditLogService } from '@/auth/services/audit-log.service';
 import { PrismaUserService } from '@/core/database/prisma/services/user.service';
+import { PrismaFamilyService } from '@/core/database/prisma/services/family.service';
 import {
   UserStatus,
   UserRole,
@@ -22,6 +23,7 @@ import {
 describe('AuthSecurityService', () => {
   let service: AuthSecurityService;
   let prismaUserService: PrismaUserService;
+  let prismaFamilyService: PrismaFamilyService;
   let jwtService: JwtService;
   let passwordSecurityService: PasswordSecurityService;
   let accountLockoutService: AccountLockoutService;
@@ -76,6 +78,16 @@ describe('AuthSecurityService', () => {
             createWithHash: jest.fn(),
             updateLastLogin: jest.fn(),
             updatePasswordHash: jest.fn(),
+          },
+        },
+        {
+          provide: PrismaFamilyService,
+          useValue: {
+            create: jest.fn(),
+            findOne: jest.fn(),
+            findAll: jest.fn(),
+            update: jest.fn(),
+            delete: jest.fn(),
           },
         },
         {
@@ -149,6 +161,7 @@ describe('AuthSecurityService', () => {
 
     service = module.get<AuthSecurityService>(AuthSecurityService);
     prismaUserService = module.get<PrismaUserService>(PrismaUserService);
+    prismaFamilyService = module.get<PrismaFamilyService>(PrismaFamilyService);
     jwtService = module.get<JwtService>(JwtService);
     passwordSecurityService = module.get<PasswordSecurityService>(
       PasswordSecurityService
@@ -192,6 +205,14 @@ describe('AuthSecurityService', () => {
         .spyOn(passwordSecurityService, 'hashPassword')
         .mockResolvedValue('hashedPassword');
       jest
+        .spyOn(prismaFamilyService, 'create')
+        .mockResolvedValue({
+          id: 'family-123',
+          name: `${registerDto.firstName} ${registerDto.lastName}'s Family`,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
+      jest
         .spyOn(prismaUserService, 'createWithHash')
         .mockResolvedValue(createMockUser({
           ...registerDto,
@@ -209,6 +230,9 @@ describe('AuthSecurityService', () => {
       expect(result).toHaveProperty('refreshToken');
       expect(result).toHaveProperty('user');
       expect(result.user.email).toBe(registerDto.email.toLowerCase());
+      expect(prismaFamilyService.create).toHaveBeenCalledWith({
+        name: `${registerDto.firstName} ${registerDto.lastName}'s Family`
+      });
     });
 
     it('should throw ConflictException if user already exists', async () => {
@@ -738,6 +762,14 @@ describe('AuthSecurityService', () => {
         .spyOn(passwordSecurityService, 'hashPassword')
         .mockResolvedValue('hashedPassword');
       jest
+        .spyOn(prismaFamilyService, 'create')
+        .mockResolvedValue({
+          id: 'family-123',
+          name: `${registerDto.firstName} ${registerDto.lastName}'s Family`,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
+      jest
         .spyOn(prismaUserService, 'createWithHash')
         .mockRejectedValue(new Error('Database connection error'));
 
@@ -767,6 +799,14 @@ describe('AuthSecurityService', () => {
       jest
         .spyOn(passwordSecurityService, 'hashPassword')
         .mockResolvedValue('hashedPassword');
+      jest
+        .spyOn(prismaFamilyService, 'create')
+        .mockResolvedValue({
+          id: 'family-123',
+          name: `${registerDto.firstName} ${registerDto.lastName}'s Family`,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
       jest
         .spyOn(prismaUserService, 'createWithHash')
         .mockResolvedValue(createMockUser({

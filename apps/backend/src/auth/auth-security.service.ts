@@ -10,6 +10,7 @@ import { JwtService } from '@nestjs/jwt';
 import { Request } from 'express';
 import { User as PrismaUser, UserStatus } from '../../generated/prisma';
 import { PrismaUserService } from '../core/database/prisma/services/user.service';
+import { PrismaFamilyService } from '../core/database/prisma/services/family.service';
 import { enrichUserWithVirtuals } from '../core/database/prisma/utils/user-virtuals';
 import { AuthConfig } from '../core/config/auth.config';
 import { RegisterDto } from './dto/register.dto';
@@ -56,6 +57,7 @@ export class AuthSecurityService {
 
   constructor(
     private prismaUserService: PrismaUserService,
+    private prismaFamilyService: PrismaFamilyService,
     private jwtService: JwtService,
     private passwordSecurityService: PasswordSecurityService,
     private accountLockoutService: AccountLockoutService,
@@ -128,6 +130,16 @@ export class AuthSecurityService {
       const passwordHash =
         await this.passwordSecurityService.hashPassword(password);
 
+      // Create family for new user (users always belong to a family)
+      // Family name defaults to "[FirstName] [LastName]'s Family"
+      const familyName = firstName && lastName
+        ? `${firstName} ${lastName}'s Family`
+        : email.split('@')[0] + "'s Family";
+
+      const family = await this.prismaFamilyService.create({
+        name: familyName
+      });
+
       // Create user (inactive until email verification)
       // MIGRATION: userRepository.create() + save() → prismaUserService.createWithHash()
       // Note: Using createWithHash since password is already hashed by PasswordSecurityService
@@ -136,6 +148,7 @@ export class AuthSecurityService {
         firstName,
         lastName,
         passwordHash,
+        familyId: family.id, // Link user to newly created family
         status: UserStatus.INACTIVE as any, // Require email verification - cast to handle enum type
       });
 
