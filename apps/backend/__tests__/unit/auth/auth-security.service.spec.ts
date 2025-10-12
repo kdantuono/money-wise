@@ -1,8 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { getRepositoryToken } from '@nestjs/typeorm';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-import { Repository } from 'typeorm';
 import {
   BadRequestException,
   UnauthorizedException,
@@ -15,15 +13,15 @@ import { AccountLockoutService } from '@/auth/services/account-lockout.service';
 import { EmailVerificationService } from '@/auth/services/email-verification.service';
 import { PasswordResetService } from '@/auth/services/password-reset.service';
 import { AuditLogService } from '@/auth/services/audit-log.service';
+import { PrismaUserService } from '@/core/database/prisma/services/user.service';
 import {
-  User,
   UserStatus,
   UserRole,
-} from '@/core/database/entities/user.entity';
+} from '../../../generated/prisma';
 
 describe('AuthSecurityService', () => {
   let service: AuthSecurityService;
-  let userRepository: Repository<User>;
+  let prismaUserService: PrismaUserService;
   let jwtService: JwtService;
   let passwordSecurityService: PasswordSecurityService;
   let accountLockoutService: AccountLockoutService;
@@ -31,30 +29,32 @@ describe('AuthSecurityService', () => {
   let passwordResetService: PasswordResetService;
   let auditLogService: AuditLogService;
 
-  const mockUser: User = {
+  // Helper function to create mock users with all required Prisma fields
+  const createMockUser = (overrides = {}): any => ({
     id: '1',
     email: 'test@example.com',
     firstName: 'John',
     lastName: 'Doe',
     passwordHash: 'hashedPassword',
-    role: UserRole.USER,
+    role: UserRole.MEMBER,
     status: UserStatus.ACTIVE,
     currency: 'USD',
     lastLoginAt: new Date(),
     emailVerifiedAt: new Date(),
     createdAt: new Date(),
     updatedAt: new Date(),
+    familyId: 'family-123', // Required by Prisma User type (non-nullable)
+    avatar: null,
+    timezone: null,
+    preferences: null,
     accounts: [],
-    get fullName() {
-      return `${this.firstName} ${this.lastName}`;
-    },
-    get isEmailVerified() {
-      return !!this.emailVerifiedAt;
-    },
-    get isActive() {
-      return this.status === UserStatus.ACTIVE;
-    },
-  } as User;
+    fullName: 'John Doe',
+    isEmailVerified: true,
+    isActive: true,
+    ...overrides,
+  });
+
+  const mockUser = createMockUser();
 
   const mockRequest = {
     ip: '127.0.0.1',
@@ -69,12 +69,13 @@ describe('AuthSecurityService', () => {
       providers: [
         AuthSecurityService,
         {
-          provide: getRepositoryToken(User),
+          provide: PrismaUserService,
           useValue: {
+            findByEmail: jest.fn(),
             findOne: jest.fn(),
-            create: jest.fn(),
-            save: jest.fn(),
-            update: jest.fn(),
+            createWithHash: jest.fn(),
+            updateLastLogin: jest.fn(),
+            updatePasswordHash: jest.fn(),
           },
         },
         {
@@ -147,7 +148,7 @@ describe('AuthSecurityService', () => {
     }).compile();
 
     service = module.get<AuthSecurityService>(AuthSecurityService);
-    userRepository = module.get<Repository<User>>(getRepositoryToken(User));
+    prismaUserService = module.get<PrismaUserService>(PrismaUserService);
     jwtService = module.get<JwtService>(JwtService);
     passwordSecurityService = module.get<PasswordSecurityService>(
       PasswordSecurityService
@@ -176,7 +177,7 @@ describe('AuthSecurityService', () => {
     };
 
     it('should successfully register a new user', async () => {
-      jest.spyOn(userRepository, 'findOne').mockResolvedValue(null);
+      jest.spyOn(prismaUserService, 'findByEmail').mockResolvedValue(null);
       jest.spyOn(passwordSecurityService, 'validatePassword').mockResolvedValue({
         isValid: true,
         strengthResult: {
@@ -191,23 +192,13 @@ describe('AuthSecurityService', () => {
         .spyOn(passwordSecurityService, 'hashPassword')
         .mockResolvedValue('hashedPassword');
       jest
-        .spyOn(userRepository, 'create')
-        .mockReturnValue({
-          ...mockUser,
+        .spyOn(prismaUserService, 'createWithHash')
+        .mockResolvedValue(createMockUser({
           ...registerDto,
           fullName: `${registerDto.firstName} ${registerDto.lastName}`,
           isEmailVerified: false,
           isActive: true
-        } as unknown as User);
-      jest
-        .spyOn(userRepository, 'save')
-        .mockResolvedValue({
-          ...mockUser,
-          ...registerDto,
-          fullName: `${registerDto.firstName} ${registerDto.lastName}`,
-          isEmailVerified: false,
-          isActive: true
-        } as unknown as User);
+        }));
       jest
         .spyOn(emailVerificationService, 'generateVerificationToken')
         .mockResolvedValue('verification-token');
@@ -221,7 +212,7 @@ describe('AuthSecurityService', () => {
     });
 
     it('should throw ConflictException if user already exists', async () => {
-      jest.spyOn(userRepository, 'findOne').mockResolvedValue(mockUser);
+      jest.spyOn(prismaUserService, 'findByEmail').mockResolvedValue(mockUser);
 
       await expect(service.register(registerDto, mockRequest)).rejects.toThrow(
         ConflictException
@@ -229,7 +220,7 @@ describe('AuthSecurityService', () => {
     });
 
     it('should throw BadRequestException for weak password', async () => {
-      jest.spyOn(userRepository, 'findOne').mockResolvedValue(null);
+      jest.spyOn(prismaUserService, 'findByEmail').mockResolvedValue(null);
       jest.spyOn(passwordSecurityService, 'validatePassword').mockResolvedValue({
         isValid: false,
         strengthResult: {
@@ -258,11 +249,11 @@ describe('AuthSecurityService', () => {
         isLocked: false,
         failedAttempts: 0,
       });
-      jest.spyOn(userRepository, 'findOne').mockResolvedValue(mockUser);
+      jest.spyOn(prismaUserService, 'findByEmail').mockResolvedValue(mockUser);
       jest
         .spyOn(passwordSecurityService, 'verifyPassword')
         .mockResolvedValue(true);
-      jest.spyOn(userRepository, 'update').mockResolvedValue(undefined);
+      jest.spyOn(prismaUserService, 'updateLastLogin').mockResolvedValue(undefined);
 
       const result = await service.login(loginDto, mockRequest);
 
@@ -290,7 +281,7 @@ describe('AuthSecurityService', () => {
         isLocked: false,
         failedAttempts: 0,
       });
-      jest.spyOn(userRepository, 'findOne').mockResolvedValue(null);
+      jest.spyOn(prismaUserService, 'findByEmail').mockResolvedValue(null);
 
       await expect(service.login(loginDto, mockRequest)).rejects.toThrow(
         UnauthorizedException
@@ -302,7 +293,7 @@ describe('AuthSecurityService', () => {
         isLocked: false,
         failedAttempts: 0,
       });
-      jest.spyOn(userRepository, 'findOne').mockResolvedValue(mockUser);
+      jest.spyOn(prismaUserService, 'findByEmail').mockResolvedValue(mockUser);
       jest
         .spyOn(passwordSecurityService, 'verifyPassword')
         .mockResolvedValue(false);
@@ -327,7 +318,7 @@ describe('AuthSecurityService', () => {
     };
 
     it('should successfully change password', async () => {
-      jest.spyOn(userRepository, 'findOne').mockResolvedValue(mockUser);
+      jest.spyOn(prismaUserService, 'findOne').mockResolvedValue(mockUser);
       jest
         .spyOn(passwordSecurityService, 'verifyPassword')
         .mockResolvedValueOnce(true) // current password valid
@@ -348,7 +339,7 @@ describe('AuthSecurityService', () => {
       jest
         .spyOn(passwordSecurityService, 'hashPassword')
         .mockResolvedValue('newHashedPassword');
-      jest.spyOn(userRepository, 'update').mockResolvedValue(undefined);
+      jest.spyOn(prismaUserService, 'updatePasswordHash').mockResolvedValue(undefined);
 
       const result = await service.changePassword(
         mockUser.id,
@@ -367,7 +358,7 @@ describe('AuthSecurityService', () => {
     });
 
     it('should throw UnauthorizedException for invalid current password', async () => {
-      jest.spyOn(userRepository, 'findOne').mockResolvedValue(mockUser);
+      jest.spyOn(prismaUserService, 'findOne').mockResolvedValue(mockUser);
       jest
         .spyOn(passwordSecurityService, 'verifyPassword')
         .mockResolvedValue(false);
@@ -378,7 +369,7 @@ describe('AuthSecurityService', () => {
     });
 
     it('should throw BadRequestException for weak new password', async () => {
-      jest.spyOn(userRepository, 'findOne').mockResolvedValue(mockUser);
+      jest.spyOn(prismaUserService, 'findOne').mockResolvedValue(mockUser);
       jest
         .spyOn(passwordSecurityService, 'verifyPassword')
         .mockResolvedValue(true);
@@ -399,7 +390,7 @@ describe('AuthSecurityService', () => {
     });
 
     it('should throw BadRequestException if new password is same as current', async () => {
-      jest.spyOn(userRepository, 'findOne').mockResolvedValue(mockUser);
+      jest.spyOn(prismaUserService, 'findOne').mockResolvedValue(mockUser);
       jest
         .spyOn(passwordSecurityService, 'verifyPassword')
         .mockResolvedValueOnce(true) // current password valid
@@ -503,7 +494,7 @@ describe('AuthSecurityService', () => {
         role: mockUser.role,
       };
       jest.spyOn(jwtService, 'verify').mockReturnValue(payload);
-      jest.spyOn(userRepository, 'findOne').mockResolvedValue(mockUser);
+      jest.spyOn(prismaUserService, 'findOne').mockResolvedValue(mockUser);
 
       const result = await service.refreshToken('refresh-token', mockRequest);
 
@@ -525,10 +516,10 @@ describe('AuthSecurityService', () => {
       const payload = {
         sub: 'non-existent-id',
         email: 'nonexistent@example.com',
-        role: UserRole.USER,
+        role: UserRole.MEMBER,
       };
       jest.spyOn(jwtService, 'verify').mockReturnValue(payload);
-      jest.spyOn(userRepository, 'findOne').mockResolvedValue(null);
+      jest.spyOn(prismaUserService, 'findOne').mockResolvedValue(null);
 
       await expect(
         service.refreshToken('refresh-token', mockRequest)
@@ -536,20 +527,17 @@ describe('AuthSecurityService', () => {
     });
 
     it('should throw UnauthorizedException if user is inactive', async () => {
-      const inactiveUser = {
-        ...mockUser,
+      const inactiveUser = createMockUser({
         status: UserStatus.INACTIVE,
-        get isActive() {
-          return this.status === UserStatus.ACTIVE;
-        },
-      } as User;
+        isActive: false,
+      });
       const payload = {
         sub: mockUser.id,
         email: mockUser.email,
         role: mockUser.role,
       };
       jest.spyOn(jwtService, 'verify').mockReturnValue(payload);
-      jest.spyOn(userRepository, 'findOne').mockResolvedValue(inactiveUser);
+      jest.spyOn(prismaUserService, 'findOne').mockResolvedValue(inactiveUser);
 
       await expect(
         service.refreshToken('refresh-token', mockRequest)
@@ -735,7 +723,7 @@ describe('AuthSecurityService', () => {
     };
 
     it('should handle generic errors during registration', async () => {
-      jest.spyOn(userRepository, 'findOne').mockResolvedValue(null);
+      jest.spyOn(prismaUserService, 'findByEmail').mockResolvedValue(null);
       jest.spyOn(passwordSecurityService, 'validatePassword').mockResolvedValue({
         isValid: true,
         strengthResult: {
@@ -750,16 +738,7 @@ describe('AuthSecurityService', () => {
         .spyOn(passwordSecurityService, 'hashPassword')
         .mockResolvedValue('hashedPassword');
       jest
-        .spyOn(userRepository, 'create')
-        .mockReturnValue({
-          ...mockUser,
-          ...registerDto,
-          fullName: `${registerDto.firstName} ${registerDto.lastName}`,
-          isEmailVerified: false,
-          isActive: true
-        } as unknown as User);
-      jest
-        .spyOn(userRepository, 'save')
+        .spyOn(prismaUserService, 'createWithHash')
         .mockRejectedValue(new Error('Database connection error'));
 
       await expect(service.register(registerDto, mockRequest)).rejects.toThrow(
@@ -774,7 +753,7 @@ describe('AuthSecurityService', () => {
         email: 'NEWUSER@EXAMPLE.COM',
       };
 
-      jest.spyOn(userRepository, 'findOne').mockResolvedValue(null);
+      jest.spyOn(prismaUserService, 'findByEmail').mockResolvedValue(null);
       jest.spyOn(passwordSecurityService, 'validatePassword').mockResolvedValue({
         isValid: true,
         strengthResult: {
@@ -789,32 +768,20 @@ describe('AuthSecurityService', () => {
         .spyOn(passwordSecurityService, 'hashPassword')
         .mockResolvedValue('hashedPassword');
       jest
-        .spyOn(userRepository, 'create')
-        .mockReturnValue({
-          ...mockUser,
+        .spyOn(prismaUserService, 'createWithHash')
+        .mockResolvedValue(createMockUser({
           email: 'newuser@example.com',
           fullName: `${registerDto.firstName} ${registerDto.lastName}`,
           isEmailVerified: false,
           isActive: true
-        } as unknown as User);
-      jest
-        .spyOn(userRepository, 'save')
-        .mockResolvedValue({
-          ...mockUser,
-          email: 'newuser@example.com',
-          fullName: `${registerDto.firstName} ${registerDto.lastName}`,
-          isEmailVerified: false,
-          isActive: true
-        } as unknown as User);
+        }));
       jest
         .spyOn(emailVerificationService, 'generateVerificationToken')
         .mockResolvedValue('verification-token');
 
       await service.register(dtoWithUpperCaseEmail, mockRequest);
 
-      expect(userRepository.findOne).toHaveBeenCalledWith({
-        where: { email: 'newuser@example.com' },
-      });
+      expect(prismaUserService.findByEmail).toHaveBeenCalledWith('newuser@example.com');
     });
   });
 
@@ -825,18 +792,15 @@ describe('AuthSecurityService', () => {
     };
 
     it('should throw UnauthorizedException for inactive user', async () => {
-      const inactiveUser = {
-        ...mockUser,
+      const inactiveUser = createMockUser({
         status: UserStatus.INACTIVE,
-        get isActive() {
-          return this.status === UserStatus.ACTIVE;
-        },
-      } as User;
+        isActive: false,
+      });
       jest.spyOn(accountLockoutService, 'getLockoutInfo').mockResolvedValue({
         isLocked: false,
         failedAttempts: 0,
       });
-      jest.spyOn(userRepository, 'findOne').mockResolvedValue(inactiveUser);
+      jest.spyOn(prismaUserService, 'findByEmail').mockResolvedValue(inactiveUser);
       jest
         .spyOn(passwordSecurityService, 'verifyPassword')
         .mockResolvedValue(true);
@@ -859,7 +823,7 @@ describe('AuthSecurityService', () => {
         failedAttempts: 0,
       });
       jest
-        .spyOn(userRepository, 'findOne')
+        .spyOn(prismaUserService, 'findByEmail')
         .mockRejectedValue(new Error('Database error'));
 
       await expect(service.login(loginDto, mockRequest)).rejects.toThrow(
@@ -877,18 +841,15 @@ describe('AuthSecurityService', () => {
         isLocked: false,
         failedAttempts: 0,
       });
-      jest.spyOn(userRepository, 'findOne').mockResolvedValue(mockUser);
+      jest.spyOn(prismaUserService, 'findByEmail').mockResolvedValue(mockUser);
       jest
         .spyOn(passwordSecurityService, 'verifyPassword')
         .mockResolvedValue(true);
-      jest.spyOn(userRepository, 'update').mockResolvedValue(undefined);
+      jest.spyOn(prismaUserService, 'updateLastLogin').mockResolvedValue(undefined);
 
       await service.login(dtoWithUpperCaseEmail, mockRequest);
 
-      expect(userRepository.findOne).toHaveBeenCalledWith({
-        where: { email: 'test@example.com' },
-        select: expect.any(Array),
-      });
+      expect(prismaUserService.findByEmail).toHaveBeenCalledWith('test@example.com');
     });
 
     it('should record failed login and trigger account lock', async () => {
@@ -896,7 +857,7 @@ describe('AuthSecurityService', () => {
         isLocked: false,
         failedAttempts: 0,
       });
-      jest.spyOn(userRepository, 'findOne').mockResolvedValue(mockUser);
+      jest.spyOn(prismaUserService, 'findByEmail').mockResolvedValue(mockUser);
       jest
         .spyOn(passwordSecurityService, 'verifyPassword')
         .mockResolvedValue(false);
@@ -923,7 +884,7 @@ describe('AuthSecurityService', () => {
     };
 
     it('should throw UnauthorizedException if user not found', async () => {
-      jest.spyOn(userRepository, 'findOne').mockResolvedValue(null);
+      jest.spyOn(prismaUserService, 'findOne').mockResolvedValue(null);
 
       await expect(
         service.changePassword(mockUser.id, passwordChangeDto, mockRequest)
@@ -931,7 +892,7 @@ describe('AuthSecurityService', () => {
     });
 
     it('should throw BadRequestException if password is in history', async () => {
-      jest.spyOn(userRepository, 'findOne').mockResolvedValue(mockUser);
+      jest.spyOn(prismaUserService, 'findOne').mockResolvedValue(mockUser);
       jest
         .spyOn(passwordSecurityService, 'verifyPassword')
         .mockResolvedValueOnce(true) // current password valid
@@ -960,7 +921,7 @@ describe('AuthSecurityService', () => {
     });
 
     it('should handle generic errors during password change', async () => {
-      jest.spyOn(userRepository, 'findOne').mockResolvedValue(mockUser);
+      jest.spyOn(prismaUserService, 'findOne').mockResolvedValue(mockUser);
       jest
         .spyOn(passwordSecurityService, 'verifyPassword')
         .mockResolvedValueOnce(true) // current password valid
@@ -1039,11 +1000,11 @@ describe('AuthSecurityService', () => {
         isLocked: false,
         failedAttempts: 0,
       });
-      jest.spyOn(userRepository, 'findOne').mockResolvedValue(mockUser);
+      jest.spyOn(prismaUserService, 'findByEmail').mockResolvedValue(mockUser);
       jest
         .spyOn(passwordSecurityService, 'verifyPassword')
         .mockResolvedValue(true);
-      jest.spyOn(userRepository, 'update').mockResolvedValue(undefined);
+      jest.spyOn(prismaUserService, 'updateLastLogin').mockResolvedValue(undefined);
 
       await service.login(
         { email: 'test@example.com', password: 'pass' },
@@ -1064,11 +1025,11 @@ describe('AuthSecurityService', () => {
         isLocked: false,
         failedAttempts: 0,
       });
-      jest.spyOn(userRepository, 'findOne').mockResolvedValue(mockUser);
+      jest.spyOn(prismaUserService, 'findByEmail').mockResolvedValue(mockUser);
       jest
         .spyOn(passwordSecurityService, 'verifyPassword')
         .mockResolvedValue(true);
-      jest.spyOn(userRepository, 'update').mockResolvedValue(undefined);
+      jest.spyOn(prismaUserService, 'updateLastLogin').mockResolvedValue(undefined);
 
       await service.login(
         { email: 'test@example.com', password: 'pass' },
@@ -1091,11 +1052,11 @@ describe('AuthSecurityService', () => {
         isLocked: false,
         failedAttempts: 0,
       });
-      jest.spyOn(userRepository, 'findOne').mockResolvedValue(mockUser);
+      jest.spyOn(prismaUserService, 'findByEmail').mockResolvedValue(mockUser);
       jest
         .spyOn(passwordSecurityService, 'verifyPassword')
         .mockResolvedValue(true);
-      jest.spyOn(userRepository, 'update').mockResolvedValue(undefined);
+      jest.spyOn(prismaUserService, 'updateLastLogin').mockResolvedValue(undefined);
 
       await service.login(
         { email: 'test@example.com', password: 'pass' },
@@ -1112,11 +1073,11 @@ describe('AuthSecurityService', () => {
         isLocked: false,
         failedAttempts: 0,
       });
-      jest.spyOn(userRepository, 'findOne').mockResolvedValue(mockUser);
+      jest.spyOn(prismaUserService, 'findByEmail').mockResolvedValue(mockUser);
       jest
         .spyOn(passwordSecurityService, 'verifyPassword')
         .mockResolvedValue(true);
-      jest.spyOn(userRepository, 'update').mockResolvedValue(undefined);
+      jest.spyOn(prismaUserService, 'updateLastLogin').mockResolvedValue(undefined);
 
       const result = await service.login(
         { email: 'test@example.com', password: 'pass' },

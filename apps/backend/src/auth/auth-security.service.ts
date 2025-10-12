@@ -7,10 +7,10 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import { Request } from 'express';
-import { User, UserStatus } from '../core/database/entities/user.entity';
+import { User as PrismaUser, UserStatus } from '../../generated/prisma';
+import { PrismaUserService } from '../core/database/prisma/services/user.service';
+import { enrichUserWithVirtuals } from '../core/database/prisma/utils/user-virtuals';
 import { AuthConfig } from '../core/config/auth.config';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
@@ -55,8 +55,7 @@ export class AuthSecurityService {
   private readonly jwtRefreshExpiresIn: string;
 
   constructor(
-    @InjectRepository(User)
-    private userRepository: Repository<User>,
+    private prismaUserService: PrismaUserService,
     private jwtService: JwtService,
     private passwordSecurityService: PasswordSecurityService,
     private accountLockoutService: AccountLockoutService,
@@ -89,9 +88,8 @@ export class AuthSecurityService {
 
     try {
       // Check if user already exists
-      const existingUser = await this.userRepository.findOne({
-        where: { email: email.toLowerCase() },
-      });
+      // MIGRATION: userRepository.findOne({where: {email}}) → prismaUserService.findByEmail(email)
+      const existingUser = await this.prismaUserService.findByEmail(email.toLowerCase());
 
       if (existingUser) {
         await this.auditLogService.logEvent(
@@ -131,15 +129,15 @@ export class AuthSecurityService {
         await this.passwordSecurityService.hashPassword(password);
 
       // Create user (inactive until email verification)
-      const user = this.userRepository.create({
+      // MIGRATION: userRepository.create() + save() → prismaUserService.createWithHash()
+      // Note: Using createWithHash since password is already hashed by PasswordSecurityService
+      const savedUser = await this.prismaUserService.createWithHash({
         email: email.toLowerCase(),
         firstName,
         lastName,
         passwordHash,
-        status: UserStatus.INACTIVE, // Require email verification
+        status: UserStatus.INACTIVE as any, // Require email verification - cast to handle enum type
       });
-
-      const savedUser = await this.userRepository.save(user);
 
       // Generate email verification token
       const verificationToken =
@@ -209,19 +207,9 @@ export class AuthSecurityService {
       }
 
       // Find user with password
-      const user = await this.userRepository.findOne({
-        where: { email: normalizedEmail },
-        select: [
-          'id',
-          'email',
-          'firstName',
-          'lastName',
-          'passwordHash',
-          'role',
-          'status',
-          'emailVerifiedAt',
-        ],
-      });
+      // MIGRATION: userRepository.findOne({where: {email}, select: [...]}) → prismaUserService.findByEmail(email)
+      // Note: Prisma returns all fields by default, select array not needed
+      const user = await this.prismaUserService.findByEmail(normalizedEmail);
 
       if (!user) {
         await this.recordFailedLogin(
@@ -263,9 +251,8 @@ export class AuthSecurityService {
       await this.accountLockoutService.clearFailedAttempts(normalizedEmail);
 
       // Update last login
-      await this.userRepository.update(user.id, {
-        lastLoginAt: new Date(),
-      });
+      // MIGRATION: userRepository.update(id, {lastLoginAt}) → prismaUserService.updateLastLogin(id)
+      await this.prismaUserService.updateLastLogin(user.id);
 
       // Log successful login
       await this.auditLogService.logLoginSuccess(request, user.id, user.email);
@@ -301,10 +288,9 @@ export class AuthSecurityService {
 
     try {
       // Find user with current password
-      const user = await this.userRepository.findOne({
-        where: { id: userId },
-        select: ['id', 'email', 'firstName', 'lastName', 'passwordHash'],
-      });
+      // MIGRATION: userRepository.findOne({where: {id}, select: [...]}) → prismaUserService.findOne(id)
+      // Note: Prisma returns all fields including passwordHash
+      const user = await this.prismaUserService.findOne(userId);
 
       if (!user) {
         throw new UnauthorizedException('User not found');
@@ -375,9 +361,9 @@ export class AuthSecurityService {
         await this.passwordSecurityService.hashPassword(newPassword);
 
       // Update password
-      await this.userRepository.update(userId, {
-        passwordHash: newPasswordHash,
-      });
+      // MIGRATION: userRepository.update(id, {passwordHash}) → prismaUserService.updatePasswordHash(id, hash)
+      // Note: Using updatePasswordHash since password is already hashed by PasswordSecurityService
+      await this.prismaUserService.updatePasswordHash(userId, newPasswordHash);
 
       // Log successful password change
       await this.auditLogService.logPasswordChange(
@@ -594,9 +580,8 @@ export class AuthSecurityService {
         secret: this.jwtRefreshSecret,
       });
 
-      const user = await this.userRepository.findOne({
-        where: { id: payload.sub },
-      });
+      // MIGRATION: userRepository.findOne({where: {id}}) → prismaUserService.findOne(id)
+      const user = await this.prismaUserService.findOne(payload.sub);
 
       if (!user || user.status !== UserStatus.ACTIVE) {
         await this.auditLogService.logEvent(
@@ -667,7 +652,7 @@ export class AuthSecurityService {
     }
   }
 
-  private async generateAuthResponse(user: User): Promise<AuthResponseDto> {
+  private async generateAuthResponse(user: PrismaUser): Promise<AuthResponseDto> {
     const payload: JwtPayload = {
       sub: user.id,
       email: user.email,
@@ -684,33 +669,37 @@ export class AuthSecurityService {
       expiresIn: this.jwtRefreshExpiresIn,
     });
 
+    // Enrich user with virtual properties (fullName, isEmailVerified, isActive)
+    // MIGRATION: TypeORM virtual properties (getters) → Prisma utility function
+    const enrichedUser = enrichUserWithVirtuals(user as any);
+
     // Create user object without password and include virtual properties
     const userWithoutPassword = {
-      id: user.id,
-      email: user.email,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      role: user.role,
-      status: user.status,
-      avatar: user.avatar,
-      timezone: user.timezone,
-      currency: user.currency,
-      preferences: user.preferences,
-      lastLoginAt: user.lastLoginAt,
-      emailVerifiedAt: user.emailVerifiedAt,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
-      accounts: user.accounts,
+      id: enrichedUser.id,
+      email: enrichedUser.email,
+      firstName: enrichedUser.firstName,
+      lastName: enrichedUser.lastName,
+      role: enrichedUser.role,
+      status: enrichedUser.status,
+      avatar: enrichedUser.avatar,
+      timezone: enrichedUser.timezone,
+      currency: enrichedUser.currency,
+      preferences: enrichedUser.preferences,
+      lastLoginAt: enrichedUser.lastLoginAt,
+      emailVerifiedAt: enrichedUser.emailVerifiedAt,
+      createdAt: enrichedUser.createdAt,
+      updatedAt: enrichedUser.updatedAt,
+      accounts: [], // Default empty - not loaded by default for performance
       // Virtual properties
-      fullName: user.fullName,
-      isEmailVerified: user.isEmailVerified,
-      isActive: user.isActive,
+      fullName: enrichedUser.fullName,
+      isEmailVerified: enrichedUser.isEmailVerified,
+      isActive: enrichedUser.isActive,
     };
 
     return {
       accessToken,
       refreshToken,
-      user: userWithoutPassword,
+      user: userWithoutPassword as any, // Type cast to handle enum differences between TypeORM and Prisma
       expiresIn: 15 * 60, // 15 minutes in seconds
     };
   }
