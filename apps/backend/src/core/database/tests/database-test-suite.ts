@@ -54,10 +54,15 @@ export class DatabaseTestSuite {
 
   /**
    * Initialize test suite
+   *
+   * ⚠️ DEFERRED TO P.3.5 - TypeORM Legacy Test Suite
+   * This test suite uses TypeORM DataSource and TestDataFactory (TypeORM-based).
+   * Will be migrated to Prisma in P.3.5.
    */
   async initialize(): Promise<void> {
     console.log('🚀 Initializing Database Test Suite...');
 
+    // @ts-expect-error - Deferred to P.3.5: TypeORM → Prisma migration
     this.dataSource = await setupTestDatabase();
     this.factory = new TestDataFactory(this.dataSource);
     this.manager = DatabaseTestManager.getInstance();

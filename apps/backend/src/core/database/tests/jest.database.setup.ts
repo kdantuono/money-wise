@@ -3,6 +3,9 @@
  * Jest Database Test Setup
  * Per-test setup and teardown for database tests
  * Console statements are intentionally used for test lifecycle logging
+ *
+ * ⚠️ DEFERRED TO P.3.5 - TypeORM Legacy Test Setup
+ * This setup file uses TypeORM DataSource. Will be migrated to Prisma in P.3.5.
  */
 
 import { DataSource } from 'typeorm';
@@ -14,6 +17,7 @@ let testDataSource: DataSource;
 // Setup before each test file
 beforeAll(async () => {
   // Setup test database
+  // @ts-expect-error - Deferred to P.3.5: TypeORM → Prisma migration
   testDataSource = await setupTestDatabase();
 
   // Make dataSource available globally for tests

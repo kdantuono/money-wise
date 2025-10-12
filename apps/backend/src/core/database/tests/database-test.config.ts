@@ -5,9 +5,10 @@
  * Console statements are intentionally used for test infrastructure logging
  */
 
-import { DataSource } from 'typeorm';
+import { execSync } from 'child_process';
+import { join } from 'path';
 import { PostgreSqlContainer } from '@testcontainers/postgresql';
-import { entities } from '../entities';
+import { PrismaClient } from '../../../../generated/prisma';
 
 export interface DatabaseTestConfig {
   host: string;
@@ -20,13 +21,13 @@ export interface DatabaseTestConfig {
 
 /**
  * Database Test Manager
- * Manages isolated PostgreSQL instances for testing
+ * Manages isolated PostgreSQL instances for testing with Prisma
  */
 export class DatabaseTestManager {
   private static instance: DatabaseTestManager;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private container: any = null;
-  private dataSource: DataSource | null = null;
+  private prismaClient: PrismaClient | null = null;
   private config: DatabaseTestConfig | null = null;
 
   private constructor() {}
@@ -39,11 +40,11 @@ export class DatabaseTestManager {
   }
 
   /**
-   * Start test database container and create DataSource
+   * Start test database container and initialize Prisma
    */
-  async start(): Promise<DataSource> {
-    if (this.dataSource?.isInitialized) {
-      return this.dataSource;
+  async start(): Promise<PrismaClient> {
+    if (this.prismaClient) {
+      return this.prismaClient;
     }
 
     // Determine if we should use TestContainers or local PostgreSQL
@@ -57,13 +58,13 @@ export class DatabaseTestManager {
       this.setupLocalConfig();
     }
 
-    await this.initializeDataSource();
+    await this.initializePrisma();
 
-    if (!this.dataSource) {
-      throw new Error('Failed to initialize test database DataSource');
+    if (!this.prismaClient) {
+      throw new Error('Failed to initialize test database Prisma client');
     }
 
-    return this.dataSource;
+    return this.prismaClient;
   }
 
   /**
@@ -111,59 +112,85 @@ export class DatabaseTestManager {
   }
 
   /**
-   * Initialize TypeORM DataSource
+   * Initialize Prisma Client and apply schema
    */
-  private async initializeDataSource(): Promise<void> {
+  private async initializePrisma(): Promise<void> {
     if (!this.config) {
       throw new Error('Database configuration not set');
     }
 
-    this.dataSource = new DataSource({
-      type: 'postgres',
-      host: this.config.host,
-      port: this.config.port,
-      username: this.config.username,
-      password: this.config.password,
-      database: this.config.database,
-      schema: this.config.schema,
-      entities,
-      synchronize: true,
-      dropSchema: false,
-      logging: process.env.NODE_ENV === 'test-debug',
-      extra: {
-        // Test-optimized connection settings
-        max: 5,
-        min: 1,
-        idleTimeoutMillis: 30000,
-        connectionTimeoutMillis: 10000,
-      },
-    });
+    // Build DATABASE_URL for test database
+    const databaseUrl = `postgresql://${this.config.username}:${this.config.password}@${this.config.host}:${this.config.port}/${this.config.database}?schema=${this.config.schema}`;
+
+    // Set DATABASE_URL for Prisma
+    process.env.DATABASE_URL = databaseUrl;
 
     try {
-      await this.dataSource.initialize();
-      console.log('✅ Test database initialized');
+      // Initialize Prisma Client
+      this.prismaClient = new PrismaClient({
+        datasources: {
+          db: { url: databaseUrl },
+        },
+        log: process.env.NODE_ENV === 'test-debug' ? ['query', 'error', 'warn'] : ['error'],
+      });
 
-      // Enable TimescaleDB extension if available
+      // Connect to database
+      await this.prismaClient.$connect();
+      console.log('✅ Prisma client connected to test database');
+
+      // Apply Prisma migrations
+      // This applies all migrations from prisma/migrations/ directory
+      console.log('📦 Applying Prisma migrations to test database...');
+      console.log(`   Database URL: ${databaseUrl.replace(/:[^:@]+@/, ':***@')}`);
+
       try {
-        await this.dataSource.query('CREATE EXTENSION IF NOT EXISTS timescaledb');
+        const output = execSync('pnpm prisma migrate deploy', {
+          cwd: join(__dirname, '../../..'),
+          env: { ...process.env, DATABASE_URL: databaseUrl },
+          encoding: 'utf-8',
+          stdio: 'pipe',
+        });
+        console.log('✅ Prisma migrations applied successfully');
+        if (process.env.NODE_ENV === 'test-debug') {
+          console.log('Prisma output:', output);
+        }
+      } catch (error) {
+        console.error('❌ Failed to apply Prisma migrations:');
+        console.error('Error:', error.message);
+        if (error.stdout) console.error('Stdout:', error.stdout.toString());
+        if (error.stderr) console.error('Stderr:', error.stderr.toString());
+        throw error;
+      }
+
+      // Enable TimescaleDB extension if available (optional)
+      try {
+        await this.prismaClient.$executeRawUnsafe('CREATE EXTENSION IF NOT EXISTS timescaledb');
         console.log('✅ TimescaleDB extension enabled');
       } catch (error) {
         console.warn('⚠️ TimescaleDB extension not available:', error.message);
       }
     } catch (error) {
-      console.error('❌ Failed to initialize test database:', error);
+      console.error('❌ Failed to initialize Prisma test database:', error);
       throw error;
     }
   }
 
   /**
-   * Get current DataSource
+   * Get current Prisma Client
    */
-  getDataSource(): DataSource {
-    if (!this.dataSource?.isInitialized) {
+  getPrismaClient(): PrismaClient {
+    if (!this.prismaClient) {
       throw new Error('Test database not initialized. Call start() first.');
     }
-    return this.dataSource;
+    return this.prismaClient;
+  }
+
+  /**
+   * Get current DataSource (legacy compatibility - returns Prisma client)
+   * @deprecated Use getPrismaClient() instead
+   */
+  getDataSource(): PrismaClient {
+    return this.getPrismaClient();
   }
 
   /**
@@ -177,43 +204,37 @@ export class DatabaseTestManager {
   }
 
   /**
-   * Clean all data from database
+   * Clean all data from database using Prisma
    */
   async clean(): Promise<void> {
-    const dataSource = this.getDataSource();
+    const prisma = this.getPrismaClient();
     const config = this.getConfig();
-    const queryRunner = dataSource.createQueryRunner();
 
     try {
-      await queryRunner.connect();
-      await queryRunner.startTransaction();
-
-      // Disable foreign key constraints
-      await queryRunner.query('SET session_replication_role = replica');
-
-      // Get all table names
-      const tables = await queryRunner.query(`
+      // Get all table names from Prisma schema
+      const tables: { tablename: string }[] = await prisma.$queryRawUnsafe(`
         SELECT tablename FROM pg_tables
-        WHERE schemaname = $1
+        WHERE schemaname = '${config.schema}'
         AND tablename NOT LIKE 'pg_%'
         AND tablename NOT LIKE '_timescaledb_%'
-      `, [config.schema]);
+        AND tablename != '_prisma_migrations'
+      `);
+
+      // Disable foreign key constraints
+      await prisma.$executeRawUnsafe('SET session_replication_role = replica');
 
       // Truncate all tables
       for (const table of tables) {
-        await queryRunner.query(`TRUNCATE TABLE "${table.tablename}" RESTART IDENTITY CASCADE`);
+        await prisma.$executeRawUnsafe(`TRUNCATE TABLE "${table.tablename}" RESTART IDENTITY CASCADE`);
       }
 
       // Re-enable foreign key constraints
-      await queryRunner.query('SET session_replication_role = DEFAULT');
+      await prisma.$executeRawUnsafe('SET session_replication_role = DEFAULT');
 
-      await queryRunner.commitTransaction();
+      console.log(`✅ Cleaned ${tables.length} tables from test database`);
     } catch (error) {
-      await queryRunner.rollbackTransaction();
       console.warn('Warning: Could not clean database:', error.message);
       throw error;
-    } finally {
-      await queryRunner.release();
     }
   }
 
@@ -221,9 +242,9 @@ export class DatabaseTestManager {
    * Stop database and cleanup
    */
   async stop(): Promise<void> {
-    if (this.dataSource?.isInitialized) {
-      await this.dataSource.destroy();
-      this.dataSource = null;
+    if (this.prismaClient) {
+      await this.prismaClient.$disconnect();
+      this.prismaClient = null;
     }
 
     if (this.container) {
@@ -239,11 +260,11 @@ export class DatabaseTestManager {
    * Create TimescaleDB hypertable for transactions
    */
   async createHypertables(): Promise<void> {
-    const dataSource = this.getDataSource();
+    const prisma = this.getPrismaClient();
 
     try {
       // Create hypertable for transactions by date
-      await dataSource.query(`
+      await prisma.$executeRawUnsafe(`
         SELECT create_hypertable('transactions', 'date',
           chunk_time_interval => INTERVAL '1 month',
           if_not_exists => TRUE
@@ -258,12 +279,13 @@ export class DatabaseTestManager {
 
 /**
  * Setup function for Jest tests
+ * Returns PrismaClient for test database
  */
-export const setupTestDatabase = async (): Promise<DataSource> => {
+export const setupTestDatabase = async (): Promise<PrismaClient> => {
   const manager = DatabaseTestManager.getInstance();
-  const dataSource = await manager.start();
+  const prismaClient = await manager.start();
   await manager.clean();
-  return dataSource;
+  return prismaClient;
 };
 
 /**
