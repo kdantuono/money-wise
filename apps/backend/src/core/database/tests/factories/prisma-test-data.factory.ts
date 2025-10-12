@@ -75,7 +75,6 @@ export class FamilyFactory extends BasePrismaFactory<Family> {
   private static familyCounter = 0;
 
   create(overrides: Partial<Family> = {}): Family {
-    const timestamp = Date.now();
     FamilyFactory.familyCounter++;
 
     const name = overrides.name || `${faker.person.lastName()} Family ${FamilyFactory.familyCounter}`;
@@ -140,9 +139,6 @@ export class UserFactory extends BasePrismaFactory<User> {
       emailVerifiedAt: overrides.emailVerifiedAt || faker.date.past(),
       createdAt: overrides.createdAt || new Date(),
       updatedAt: overrides.updatedAt || new Date(),
-      twoFactorSecret: overrides.twoFactorSecret || null,
-      twoFactorEnabled: overrides.twoFactorEnabled || false,
-      twoFactorBackupCodes: overrides.twoFactorBackupCodes || null,
     } as User;
   }
 
@@ -171,9 +167,6 @@ export class UserFactory extends BasePrismaFactory<User> {
         preferences: data.preferences as any,
         lastLoginAt: data.lastLoginAt,
         emailVerifiedAt: data.emailVerifiedAt,
-        twoFactorSecret: data.twoFactorSecret,
-        twoFactorEnabled: data.twoFactorEnabled,
-        twoFactorBackupCodes: data.twoFactorBackupCodes,
       },
     });
   }
@@ -230,8 +223,8 @@ export class AccountFactory extends BasePrismaFactory<Account> {
       type: overrides.type || ('CHECKING' as AccountType),
       status: overrides.status || ('ACTIVE' as AccountStatus),
       source: overrides.source || ('MANUAL' as AccountSource),
-      // Use ?? to properly handle 0 and negative balances
-      currentBalance: overrides.currentBalance ?? parseFloat(faker.finance.amount()),
+      // Use Prisma.Decimal for money fields
+      currentBalance: overrides.currentBalance ?? new Prisma.Decimal(faker.finance.amount()),
       availableBalance: overrides.availableBalance ?? null,
       creditLimit: overrides.creditLimit ?? null,
       currency: overrides.currency || 'USD',
@@ -240,7 +233,6 @@ export class AccountFactory extends BasePrismaFactory<Account> {
       routingNumber: overrides.routingNumber || faker.number.int({ min: 100000000, max: 999999999 }).toString(),
       isActive: overrides.isActive ?? true,
       syncEnabled: overrides.syncEnabled ?? true,
-      needsSync: overrides.needsSync ?? false,
       lastSyncAt: overrides.lastSyncAt || faker.date.recent(),
       syncError: overrides.syncError || null,
       settings: overrides.settings || {
@@ -285,7 +277,6 @@ export class AccountFactory extends BasePrismaFactory<Account> {
         routingNumber: data.routingNumber,
         isActive: data.isActive,
         syncEnabled: data.syncEnabled,
-        needsSync: data.needsSync,
         lastSyncAt: data.lastSyncAt,
         syncError: data.syncError,
         settings: data.settings as any,
@@ -322,8 +313,8 @@ export class AccountFactory extends BasePrismaFactory<Account> {
   async buildCreditCard(overrides: Partial<Account> = {}): Promise<Account> {
     return this.build({
       type: 'CREDIT_CARD' as AccountType,
-      currentBalance: parseFloat(faker.finance.amount({ min: -5000, max: 0 })),
-      creditLimit: parseFloat(faker.finance.amount({ min: 1000, max: 50000 })),
+      currentBalance: new Prisma.Decimal(faker.finance.amount({ min: -5000, max: 0 })),
+      creditLimit: new Prisma.Decimal(faker.finance.amount({ min: 1000, max: 50000 })),
       ...overrides,
     });
   }
@@ -373,23 +364,28 @@ export class CategoryFactory extends BasePrismaFactory<Category> {
   async build(overrides: Partial<Category> = {}): Promise<Category> {
     const data = this.create(overrides);
 
-    return await this.prisma.category.create({
-      data: {
-        name: data.name,
-        slug: data.slug,
-        description: data.description,
-        type: data.type,
-        status: data.status,
-        color: data.color,
-        icon: data.icon,
-        isDefault: data.isDefault,
-        isSystem: data.isSystem,
-        sortOrder: data.sortOrder,
-        parentId: data.parentId,
-        rules: data.rules as any,
-        metadata: data.metadata as any,
-      },
-    });
+    // Build create data object conditionally based on parentId
+    const createData: any = {
+      name: data.name,
+      slug: data.slug,
+      description: data.description,
+      type: data.type,
+      status: data.status,
+      color: data.color,
+      icon: data.icon,
+      isDefault: data.isDefault,
+      isSystem: data.isSystem,
+      sortOrder: data.sortOrder,
+      rules: data.rules as any,
+      metadata: data.metadata as any,
+    };
+
+    // Add parent relation only if parentId exists
+    if (data.parentId) {
+      createData.parent = { connect: { id: data.parentId } };
+    }
+
+    return await this.prisma.category.create({ data: createData });
   }
 
   /**
@@ -443,7 +439,7 @@ export class TransactionFactory extends BasePrismaFactory<Transaction> {
       id: overrides.id || faker.string.uuid(),
       accountId: overrides.accountId || '', // Must be provided when building
       categoryId: overrides.categoryId || null,
-      amount: overrides.amount || parseFloat(faker.finance.amount()),
+      amount: overrides.amount || new Prisma.Decimal(faker.finance.amount()),
       type: overrides.type || ('DEBIT' as TransactionType),
       status: overrides.status || ('POSTED' as TransactionStatus),
       source: overrides.source || ('MANUAL' as TransactionSource),
@@ -514,7 +510,7 @@ export class TransactionFactory extends BasePrismaFactory<Transaction> {
   async buildExpense(overrides: Partial<Transaction> = {}): Promise<Transaction> {
     return this.build({
       type: 'DEBIT' as TransactionType,
-      amount: parseFloat(faker.finance.amount({ min: 10, max: 500 })),
+      amount: new Prisma.Decimal(faker.finance.amount({ min: 10, max: 500 })),
       description: `Purchase at ${faker.company.name()}`,
       ...overrides,
     });
@@ -526,7 +522,7 @@ export class TransactionFactory extends BasePrismaFactory<Transaction> {
   async buildIncome(overrides: Partial<Transaction> = {}): Promise<Transaction> {
     return this.build({
       type: 'CREDIT' as TransactionType,
-      amount: parseFloat(faker.finance.amount({ min: 500, max: 5000 })),
+      amount: new Prisma.Decimal(faker.finance.amount({ min: 500, max: 5000 })),
       description: 'Salary payment',
       merchantName: 'Employer',
       ...overrides,
@@ -583,7 +579,7 @@ export class BudgetFactory extends BasePrismaFactory<Budget> {
       familyId: overrides.familyId || '', // Must be provided when building
       categoryId: overrides.categoryId || null,
       name: overrides.name || `${faker.commerce.department()} Budget`,
-      amount: overrides.amount || parseFloat(faker.finance.amount({ min: 100, max: 5000 })),
+      amount: overrides.amount || new Prisma.Decimal(faker.finance.amount({ min: 100, max: 5000 })),
       period: overrides.period || ('MONTHLY' as BudgetPeriod),
       startDate,
       endDate,
@@ -668,14 +664,14 @@ export class PrismaTestDataFactory {
     const checkingAccount = await this.accounts.build({
       userId: user.id,
       type: 'CHECKING' as AccountType,
-      currentBalance: 5000,
+      currentBalance: new Prisma.Decimal(5000),
     });
 
     const creditAccount = await this.accounts.build({
       userId: user.id,
       type: 'CREDIT_CARD' as AccountType,
-      currentBalance: -1500,
-      creditLimit: 10000,
+      currentBalance: new Prisma.Decimal(-1500),
+      creditLimit: new Prisma.Decimal(10000),
     });
 
     // Create categories
@@ -697,7 +693,7 @@ export class PrismaTestDataFactory {
     const budget = await this.budgets.build({
       familyId: family.id,
       categoryId: foodCategory.id,
-      amount: 1000,
+      amount: new Prisma.Decimal(1000),
     });
 
     return {
@@ -735,7 +731,7 @@ export class PrismaTestDataFactory {
         });
 
         // Create transactions for this account
-        const transactions = await this.transactions.buildMany(transactionsPerUser, {
+        await this.transactions.buildMany(transactionsPerUser, {
           accountId: account.id,
         });
       }

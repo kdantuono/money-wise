@@ -19,6 +19,7 @@ describe('JwtStrategy', () => {
     firstName: 'John',
     lastName: 'Doe',
     passwordHash: 'hashedPassword',
+    familyId: 'test-family-id',
     role: UserRole.USER,
     status: UserStatus.ACTIVE,
     currency: 'USD',
