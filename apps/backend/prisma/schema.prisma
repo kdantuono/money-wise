@@ -190,6 +190,25 @@ enum AchievementStatus {
   @@map("achievement_status")
 }
 
+/// Audit event types for security and account activity tracking
+/// Covers password management, authentication, and account lifecycle events
+enum AuditEventType {
+  PASSWORD_CHANGED
+  PASSWORD_RESET_REQUESTED
+  PASSWORD_RESET_COMPLETED
+  LOGIN_SUCCESS
+  LOGIN_FAILED
+  LOGIN_LOCKED
+  ACCOUNT_CREATED
+  ACCOUNT_DELETED
+  ACCOUNT_SUSPENDED
+  ACCOUNT_REACTIVATED
+  TWO_FACTOR_ENABLED
+  TWO_FACTOR_DISABLED
+
+  @@map("audit_event_type")
+}
+
 // ============================================================================
 // MODELS
 // ============================================================================
@@ -244,6 +263,8 @@ model User {
   // This enables both individual and family-level financial management
   accounts         Account[]
   userAchievements UserAchievement[]
+  passwordHistory  PasswordHistory[]
+  auditLogs        AuditLog[]
 
   // Indexes for query performance
   @@index([email], name: "idx_users_email")
@@ -695,6 +716,109 @@ model UserAchievement {
   @@index([userId, unlockedAt], name: "idx_user_achievements_user_unlocked")
   @@index([achievementId], name: "idx_user_achievements_achievement")
   @@map("user_achievements")
+}
+
+/// PasswordHistory entity - Tracks password changes for security compliance
+/// ARCHITECTURAL DECISION: Password history for security requirements
+/// - Store hashed passwords only (never plain text)
+/// - Track password changes for compliance (e.g., "no reuse of last 5 passwords")
+/// - Capture IP and user agent for security audit trails
+/// - CASCADE delete when user deleted (privacy compliance)
+model PasswordHistory {
+  id String @id @default(uuid()) @db.Uuid
+
+  // Password hash (bcrypt or argon2)
+  // SECURITY: Never store plain text passwords
+  // Same hashing algorithm as User.passwordHash
+  passwordHash String @map("password_hash") @db.VarChar(255)
+
+  // Security audit metadata
+  // ARCHITECTURAL DECISION: Track change context for security
+  // ipAddress: Client IP for geo-location analysis
+  // userAgent: Browser/device fingerprinting
+  ipAddress String? @map("ip_address") @db.VarChar(45) // IPv6 max length: 45
+  userAgent String? @map("user_agent") @db.VarChar(255)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  // User relation
+  // ARCHITECTURAL DECISION: CASCADE delete
+  // Rationale: When user deleted, password history should be purged (privacy)
+  // No orphaned password history records
+  userId String @map("user_id") @db.Uuid
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Indexes for query performance
+  // ARCHITECTURAL DECISION: Composite index (userId, createdAt)
+  // Query pattern: "Get last N password hashes for user X"
+  // Enables efficient password reuse checks
+  @@index([userId, createdAt], name: "idx_password_history_user_created")
+  @@map("password_history")
+}
+
+/// AuditLog entity - Security and activity event tracking
+/// ARCHITECTURAL DECISION: Comprehensive audit trail
+/// - Track all security-sensitive events (login, password, account changes)
+/// - Support forensic analysis (IP, user agent, timestamps)
+/// - Enable compliance reporting (PCI-DSS, SOC2, GDPR)
+/// - userId nullable for system-level events (e.g., failed login without user match)
+model AuditLog {
+  id String @id @default(uuid()) @db.Uuid
+
+  // Event classification
+  // ARCHITECTURAL DECISION: Enum for type safety and indexing
+  // Ensures consistent event naming across application
+  eventType AuditEventType @map("event_type")
+
+  // Event description
+  // ARCHITECTURAL DECISION: Human-readable description
+  // Examples: "User changed password", "Login failed: invalid credentials"
+  description String @db.VarChar(255)
+
+  // Security context
+  // ARCHITECTURAL DECISION: Track origin of event
+  // ipAddress: Detect unusual locations, rate limiting
+  // userAgent: Device fingerprinting, bot detection
+  ipAddress String? @map("ip_address") @db.VarChar(45)
+  userAgent String? @map("user_agent") @db.VarChar(255)
+
+  // Additional event metadata stored as JSONB
+  // ARCHITECTURAL DECISION: Flexible metadata structure
+  // Different event types have different metadata needs
+  // Examples:
+  //   PASSWORD_CHANGED: { passwordStrength: 85 }
+  //   LOGIN_FAILED: { failureReason: "invalid_password", attemptCount: 3 }
+  //   LOGIN_LOCKED: { lockoutDuration: 900, unlockAt: "2025-10-12T15:30:00Z" }
+  //   PASSWORD_RESET_REQUESTED: { resetTokenExpiry: "2025-10-12T14:00:00Z" }
+  metadata Json? @db.JsonB
+
+  // Security flag
+  // ARCHITECTURAL DECISION: Pre-filter high-priority events
+  // Rationale: Enable efficient queries for security monitoring
+  // Example: Alert on all isSecurityEvent=true in last 24h
+  isSecurityEvent Boolean @default(false) @map("is_security_event")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  // User relation (nullable for system events)
+  // ARCHITECTURAL DECISION: Nullable userId
+  // Rationale: Some events occur without identified user
+  // Examples: Failed login with non-existent email, rate limit hit
+  // CASCADE delete: User deletion removes their audit trail (privacy)
+  userId String? @map("user_id") @db.Uuid
+  user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Indexes for query performance
+  // ARCHITECTURAL DECISION: Multiple index strategies
+  // 1. User timeline: (userId, eventType, createdAt) for "user activity history"
+  // 2. Event monitoring: (eventType, createdAt) for "all LOGIN_FAILED in last hour"
+  // 3. IP analysis: (ipAddress, createdAt) for "all events from IP X"
+  // 4. Security alerts: (isSecurityEvent, createdAt) for monitoring dashboard
+  @@index([userId, eventType, createdAt], name: "idx_audit_logs_user_event_created")
+  @@index([eventType, createdAt], name: "idx_audit_logs_event_created")
+  @@index([ipAddress, createdAt], name: "idx_audit_logs_ip_created")
+  @@index([isSecurityEvent, createdAt], name: "idx_audit_logs_security_created")
+  @@map("audit_logs")
 }
 
 // ============================================================================

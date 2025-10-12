@@ -819,6 +819,64 @@ export class PrismaUserService {
   }
 
   /**
+   * Update user password hash directly (for pre-hashed passwords)
+   *
+   * CRITICAL SECURITY WARNING:
+   * - Only use when password is ALREADY securely hashed
+   * - DO NOT pass plain text passwords to this method
+   * - Use updatePassword() for plain text passwords
+   *
+   * PURPOSE:
+   * - Used by password-security.service where password is already hashed with Argon2
+   * - Allows external services to manage hashing algorithms (bcrypt, argon2, etc.)
+   * - Supports password policy enforcement at higher service layers
+   *
+   * VALIDATION:
+   * - Validates passwordHash format (bcrypt or argon2)
+   * - Validates user exists (throws NotFoundException)
+   * - Does NOT validate password strength (responsibility of caller)
+   *
+   * USE CASES:
+   * - Password security service with custom hashing policies
+   * - Password history tracking with pre-hashed passwords
+   * - Migration scenarios where passwords already hashed
+   *
+   * @param userId - User UUID
+   * @param passwordHash - Pre-hashed password (bcrypt or argon2 format)
+   * @returns void
+   * @throws BadRequestException if UUID format is invalid or hash format invalid
+   * @throws NotFoundException if user doesn't exist
+   */
+  async updatePasswordHash(userId: string, passwordHash: string): Promise<void> {
+    this.validateUuid(userId);
+
+    // Validate passwordHash format (bcrypt or argon2)
+    const bcryptRegex = /^\$2[aby]\$\d{2}\$.+$/;
+    const argon2Regex = /^\$argon2(id|i|d)\$.+$/;
+    if (!bcryptRegex.test(passwordHash) && !argon2Regex.test(passwordHash)) {
+      throw new BadRequestException(
+        'Invalid passwordHash format - must be bcrypt or argon2 hash'
+      );
+    }
+
+    // Verify user exists
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found - cannot update password hash');
+    }
+
+    // Update password hash directly
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { passwordHash },
+    });
+  }
+
+  /**
    * Update last login timestamp
    *
    * BEHAVIOR:

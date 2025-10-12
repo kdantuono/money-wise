@@ -1,11 +1,10 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
 import * as argon2 from 'argon2';
-import { User } from '../../core/database/entities/user.entity';
-import { PasswordHistory } from '../../core/database/entities/password-history.entity';
-import { AuditLog, AuditEventType } from '../../core/database/entities/audit-log.entity';
+import { PrismaUserService } from '../../core/database/prisma/services/user.service';
+import { PrismaPasswordHistoryService } from '../../core/database/prisma/services/password-history.service';
+import { PrismaAuditLogService } from '../../core/database/prisma/services/audit-log.service';
+import { AuditEventType } from '../../../generated/prisma';
 
 export enum HashingAlgorithm {
   BCRYPT = 'bcrypt',
@@ -76,12 +75,9 @@ export class PasswordSecurityService {
   ]);
 
   constructor(
-    @InjectRepository(User)
-    private userRepository: Repository<User>,
-    @InjectRepository(PasswordHistory)
-    private passwordHistoryRepository: Repository<PasswordHistory>,
-    @InjectRepository(AuditLog)
-    private auditLogRepository: Repository<AuditLog>,
+    private readonly prismaUserService: PrismaUserService,
+    private readonly prismaPasswordHistoryService: PrismaPasswordHistoryService,
+    private readonly prismaAuditLogService: PrismaAuditLogService,
   ) {}
 
   async validatePassword(
@@ -162,7 +158,7 @@ export class PasswordSecurityService {
       adminInitiated?: boolean;
     }
   ): Promise<PasswordChangeResult> {
-    const user = await this.userRepository.findOne({ where: { id: userId } });
+    const user = await this.prismaUserService.findOne(userId);
     if (!user) {
       throw new BadRequestException('User not found');
     }
@@ -201,11 +197,10 @@ export class PasswordSecurityService {
       // Save old password to history
       await this.savePasswordHistory(userId, user.passwordHash, metadata);
 
-      // Update user password
-      await this.userRepository.update(userId, {
-        passwordHash: newPasswordHash,
-        updatedAt: new Date(),
-      });
+      // Update user password using updatePassword which handles hashing internally
+      // NOTE: We pass the already-hashed password here, so we need direct update
+      // TODO: Consider refactoring to use a separate method for pre-hashed passwords
+      await this.prismaUserService.updatePasswordHash(userId, newPasswordHash);
 
       // Log the password change
       await this.logPasswordEvent(
@@ -238,10 +233,7 @@ export class PasswordSecurityService {
   }
 
   async isPasswordExpired(userId: string): Promise<boolean> {
-    const user = await this.userRepository.findOne({
-      where: { id: userId },
-      select: ['updatedAt']
-    });
+    const user = await this.prismaUserService.findOne(userId);
 
     if (!user || !user.updatedAt) return false;
 
@@ -253,10 +245,7 @@ export class PasswordSecurityService {
   }
 
   async getDaysUntilExpiration(userId: string): Promise<number> {
-    const user = await this.userRepository.findOne({
-      where: { id: userId },
-      select: ['updatedAt']
-    });
+    const user = await this.prismaUserService.findOne(userId);
 
     if (!user || !user.updatedAt) return this.defaultPolicy.expirationDays;
 
@@ -273,11 +262,10 @@ export class PasswordSecurityService {
   }
 
   private async isPasswordReused(userId: string, newPassword: string): Promise<boolean> {
-    const history = await this.passwordHistoryRepository.find({
-      where: { userId },
-      order: { createdAt: 'DESC' },
-      take: this.defaultPolicy.historyLength,
-    });
+    const history = await this.prismaPasswordHistoryService.getRecentPasswords(
+      userId,
+      this.defaultPolicy.historyLength
+    );
 
     for (const record of history) {
       const matches = await this.verifyPassword(newPassword, record.passwordHash);
@@ -482,26 +470,18 @@ export class PasswordSecurityService {
     metadata?: { ipAddress?: string; userAgent?: string }
   ): Promise<void> {
     // Clean up old history beyond the limit
-    const historyCount = await this.passwordHistoryRepository.count({ where: { userId } });
-    if (historyCount >= this.defaultPolicy.historyLength) {
-      const oldRecords = await this.passwordHistoryRepository.find({
-        where: { userId },
-        order: { createdAt: 'ASC' },
-        take: historyCount - this.defaultPolicy.historyLength + 1,
-      });
-
-      await this.passwordHistoryRepository.remove(oldRecords);
-    }
+    await this.prismaPasswordHistoryService.deleteOldPasswords(
+      userId,
+      this.defaultPolicy.historyLength
+    );
 
     // Save current password to history
-    const historyRecord = this.passwordHistoryRepository.create({
+    await this.prismaPasswordHistoryService.create({
       userId,
       passwordHash,
       ipAddress: metadata?.ipAddress,
       userAgent: metadata?.userAgent,
     });
-
-    await this.passwordHistoryRepository.save(historyRecord);
   }
 
   private async logPasswordEvent(
@@ -512,17 +492,15 @@ export class PasswordSecurityService {
     userAgent?: string,
     metadata?: Record<string, unknown>
   ): Promise<void> {
-    const auditLog = this.auditLogRepository.create({
+    await this.prismaAuditLogService.create({
       userId,
       eventType,
       description,
       ipAddress,
       userAgent,
-      metadata,
+      metadata: metadata as any,
       isSecurityEvent: true,
     });
-
-    await this.auditLogRepository.save(auditLog);
   }
 
   async getPasswordPolicy(): Promise<PasswordPolicy> {
