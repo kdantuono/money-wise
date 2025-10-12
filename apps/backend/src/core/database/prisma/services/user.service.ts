@@ -468,6 +468,254 @@ export class PrismaUserService {
   }
 
   // ============================================================================
+  // P.3.4 PREREQUISITE METHODS - NEW METHODS FOR SERVICE MIGRATION
+  // ============================================================================
+
+  /**
+   * Find user by identifier (email)
+   *
+   * BEHAVIOR:
+   * - Identifier is treated as email (case-insensitive)
+   * - Used by account-lockout.service for failed login tracking
+   *
+   * USE CASES:
+   * - Account lockout tracking by email
+   * - Login attempts monitoring
+   *
+   * @param identifier - Email address
+   * @returns User entity or null if not found
+   */
+  async findByIdentifier(identifier: string): Promise<User | null> {
+    // Normalize identifier as email (trim and lowercase)
+    const normalizedEmail = identifier.trim().toLowerCase();
+
+    const user = await this.prisma.user.findUnique({
+      where: { email: normalizedEmail },
+    });
+
+    return user;
+  }
+
+  /**
+   * Count users matching optional filter criteria
+   *
+   * FILTERING:
+   * - familyId: Count users in specific family
+   * - role: Count users by role
+   * - status: Count users by status
+   * - Can combine multiple filters
+   *
+   * USE CASES:
+   * - User statistics
+   * - Family member counts
+   * - Email verification tracking
+   *
+   * @param where - Optional filter criteria
+   * @returns Count of matching users
+   */
+  async count(where?: Prisma.UserWhereInput): Promise<number> {
+    return await this.prisma.user.count({
+      where,
+    });
+  }
+
+  /**
+   * Count users grouped by status
+   *
+   * BEHAVIOR:
+   * - Returns object with counts for each UserStatus (ACTIVE, INACTIVE, SUSPENDED)
+   * - Missing statuses default to 0
+   * - Optional familyId filter
+   *
+   * USE CASES:
+   * - User statistics dashboard
+   * - Family member status breakdown
+   * - Admin analytics
+   *
+   * @param familyId - Optional family filter
+   * @returns Object with status counts { ACTIVE: 10, INACTIVE: 3, SUSPENDED: 1 }
+   * @throws BadRequestException if familyId UUID format is invalid
+   */
+  async countByStatus(familyId?: string): Promise<Record<UserStatus, number>> {
+    // Validate familyId if provided
+    if (familyId) {
+      this.validateUuid(familyId);
+    }
+
+    // Group by status and count
+    // Use conditional calls to avoid Prisma TypeScript circular reference issues
+    const results = familyId
+      ? await this.prisma.user.groupBy({
+          by: ['status'],
+          _count: { _all: true },
+          where: { familyId },
+        })
+      : await this.prisma.user.groupBy({
+          by: ['status'],
+          _count: { _all: true },
+        });
+
+    // Initialize all statuses to 0
+    const counts: Record<UserStatus, number> = {
+      ACTIVE: 0,
+      INACTIVE: 0,
+      SUSPENDED: 0,
+    };
+
+    // Fill in actual counts
+    for (const result of results) {
+      counts[result.status] = result._count._all;
+    }
+
+    return counts;
+  }
+
+  /**
+   * Find all users with total count (pagination support)
+   *
+   * BEHAVIOR:
+   * - Returns both data array and total count
+   * - Total count respects filter criteria but ignores pagination
+   * - Useful for paginated UIs that need to show "Page X of Y"
+   *
+   * PERFORMANCE:
+   * - Two queries: findMany + count
+   * - Queries run sequentially
+   * - Consider caching for frequently accessed data
+   *
+   * @param options - Optional pagination, filtering, and ordering
+   * @returns Object with data array and total count
+   *
+   * @example
+   * ```typescript
+   * const result = await service.findAllWithCount({
+   *   skip: 20,
+   *   take: 10,
+   *   where: { familyId },
+   *   orderBy: { createdAt: 'desc' }
+   * });
+   * // result = { data: [10 users], total: 42 }
+   * // Can show: "Page 3 of 5 (42 total users)"
+   * ```
+   */
+  async findAllWithCount(options?: FindAllOptions): Promise<{ data: User[]; total: number }> {
+    const { where, skip, take, orderBy } = options || {};
+
+    // Execute queries sequentially
+    const [data, total] = await Promise.all([
+      this.prisma.user.findMany({
+        where,
+        skip,
+        take,
+        orderBy,
+      }),
+      this.prisma.user.count({
+        where,
+      }),
+    ]);
+
+    return { data, total };
+  }
+
+  /**
+   * Create user with pre-hashed password
+   *
+   * CRITICAL DIFFERENCE FROM create():
+   * - Accepts passwordHash directly (NO hashing performed)
+   * - Used by auth.service where password is already hashed
+   * - familyId is OPTIONAL (unlike create() where it's required)
+   *
+   * USE CASES:
+   * - Auth service registration flow
+   * - User creation where password is pre-hashed
+   * - Account migration scenarios
+   *
+   * VALIDATION:
+   * - Email format and uniqueness
+   * - passwordHash format validation (bcrypt-like)
+   * - familyId is optional (for auth flows where family created after user)
+   *
+   * SECURITY:
+   * - NEVER pass plain text passwords to this method
+   * - passwordHash must be bcrypt/argon2 format
+   * - Validates hash format before storage
+   *
+   * @param dto - User creation data with pre-hashed password
+   * @returns Created User entity
+   * @throws BadRequestException if validation fails
+   * @throws ConflictException if email already exists
+   */
+  async createWithHash(dto: {
+    email: string;
+    passwordHash: string;
+    firstName?: string;
+    lastName?: string;
+    familyId?: string;
+    role?: UserRole;
+    status?: UserStatus;
+  }): Promise<User> {
+    // Validate email format (basic check)
+    const email = dto.email.trim().toLowerCase();
+    if (!email || email.length === 0) {
+      throw new BadRequestException('Email cannot be empty');
+    }
+
+    // Email format validation (simple regex)
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      throw new BadRequestException('Invalid email format');
+    }
+
+    // Validate passwordHash is not empty
+    if (!dto.passwordHash || dto.passwordHash.length === 0) {
+      throw new BadRequestException('passwordHash cannot be empty');
+    }
+
+    // Validate passwordHash format (bcrypt or argon2)
+    // More lenient - just check prefix to allow test hashes
+    const bcryptRegex = /^\$2[aby]\$\d{2}\$.+$/;
+    const argon2Regex = /^\$argon2(id|i|d)\$.+$/;
+    if (!bcryptRegex.test(dto.passwordHash) && !argon2Regex.test(dto.passwordHash)) {
+      throw new BadRequestException(
+        'Invalid passwordHash format - must be bcrypt or argon2 hash'
+      );
+    }
+
+    // Build Prisma create input using Unchecked variant (allows optional familyId)
+    const createData: Prisma.UserUncheckedCreateInput = {
+      email,
+      passwordHash: dto.passwordHash, // Use hash directly - NO hashing
+      firstName: dto.firstName ?? null,
+      lastName: dto.lastName ?? null,
+      familyId: dto.familyId ?? null, // Optional for auth flows
+      role: dto.role ?? UserRole.MEMBER,
+      status: dto.status ?? UserStatus.ACTIVE,
+    };
+
+    try {
+      const user = await this.prisma.user.create({
+        data: createData,
+      });
+
+      return user;
+    } catch (error: any) {
+      // Transform Prisma errors to domain exceptions
+      // Check for Prisma error code property (more flexible for testing)
+      if (error.code) {
+        // P2002: Unique constraint violation (duplicate email)
+        if (error.code === 'P2002') {
+          throw new ConflictException('Email already exists - user with this email is already registered');
+        }
+        // P2003: Foreign key constraint violation (invalid familyId)
+        if (error.code === 'P2003') {
+          throw new BadRequestException('Foreign key constraint failed - familyId does not reference an existing family');
+        }
+      }
+      throw error;
+    }
+  }
+
+  // ============================================================================
   // AUTHENTICATION METHODS
   // ============================================================================
 

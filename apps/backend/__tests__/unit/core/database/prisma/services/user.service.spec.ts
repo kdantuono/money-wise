@@ -35,6 +35,7 @@ type MockPrismaClient = DeepMockProxy<PrismaClient> & {
     update: jest.Mock;
     delete: jest.Mock;
     count: jest.Mock;
+    groupBy: jest.Mock;
   };
 };
 
@@ -1595,6 +1596,557 @@ describe('PrismaUserService', () => {
 
       // Assert
       expect(result.email).toBe(longEmail);
+    });
+  });
+
+  // ============================================================================
+  // P.3.4 PREREQUISITE METHODS - NEW METHODS FOR SERVICE MIGRATION
+  // ============================================================================
+
+  /**
+   * Tests for findByIdentifier() - P.3.4.0.1
+   * Required by account-lockout.service
+   * Accepts email OR username as identifier
+   */
+  describe('findByIdentifier', () => {
+    it('should find user by email identifier', async () => {
+      // Arrange
+      const email = 'test@example.com';
+      const user = createMockUser({ email });
+      prisma.user.findUnique.mockResolvedValue(user);
+
+      // Act
+      const result = await service.findByIdentifier(email);
+
+      // Assert
+      expect(prisma.user.findUnique).toHaveBeenCalledWith({
+        where: { email: email.toLowerCase() },
+      });
+      expect(result).toEqual(user);
+    });
+
+    it('should normalize email before search (case-insensitive)', async () => {
+      // Arrange
+      const uppercaseEmail = 'TEST@EXAMPLE.COM';
+      const user = createMockUser({ email: 'test@example.com' });
+      prisma.user.findUnique.mockResolvedValue(user);
+
+      // Act
+      const result = await service.findByIdentifier(uppercaseEmail);
+
+      // Assert
+      expect(prisma.user.findUnique).toHaveBeenCalledWith({
+        where: { email: 'test@example.com' },
+      });
+      expect(result).toEqual(user);
+    });
+
+    it('should return null for non-existent identifier', async () => {
+      // Arrange
+      prisma.user.findUnique.mockResolvedValue(null);
+
+      // Act
+      const result = await service.findByIdentifier('nonexistent@example.com');
+
+      // Assert
+      expect(result).toBeNull();
+    });
+
+    it('should handle email identifiers with plus addressing', async () => {
+      // Arrange
+      const emailWithPlus = 'user+tag@example.com';
+      const user = createMockUser({ email: emailWithPlus });
+      prisma.user.findUnique.mockResolvedValue(user);
+
+      // Act
+      const result = await service.findByIdentifier(emailWithPlus);
+
+      // Assert
+      expect(result).toEqual(user);
+    });
+  });
+
+  /**
+   * Tests for count() - P.3.4.0.2
+   * Required by users.service and email-verification.service
+   * Counts users matching optional filter criteria
+   */
+  describe('count', () => {
+    it('should count all users when no filter provided', async () => {
+      // Arrange
+      prisma.user.count.mockResolvedValue(42);
+
+      // Act
+      const result = await service.count();
+
+      // Assert
+      expect(prisma.user.count).toHaveBeenCalledWith({});
+      expect(result).toBe(42);
+    });
+
+    it('should count users by familyId', async () => {
+      // Arrange
+      const familyId = 'f1234567-89ab-cdef-0123-456789abcdef';
+      prisma.user.count.mockResolvedValue(5);
+
+      // Act
+      const result = await service.count({ familyId });
+
+      // Assert
+      expect(prisma.user.count).toHaveBeenCalledWith({
+        where: { familyId },
+      });
+      expect(result).toBe(5);
+    });
+
+    it('should count users by status', async () => {
+      // Arrange
+      prisma.user.count.mockResolvedValue(10);
+
+      // Act
+      const result = await service.count({ status: 'ACTIVE' as UserStatus });
+
+      // Assert
+      expect(prisma.user.count).toHaveBeenCalledWith({
+        where: { status: 'ACTIVE' },
+      });
+      expect(result).toBe(10);
+    });
+
+    it('should count users by role', async () => {
+      // Arrange
+      prisma.user.count.mockResolvedValue(3);
+
+      // Act
+      const result = await service.count({ role: 'ADMIN' as UserRole });
+
+      // Assert
+      expect(prisma.user.count).toHaveBeenCalledWith({
+        where: { role: 'ADMIN' },
+      });
+      expect(result).toBe(3);
+    });
+
+    it('should return 0 when no users match criteria', async () => {
+      // Arrange
+      prisma.user.count.mockResolvedValue(0);
+
+      // Act
+      const result = await service.count({ status: 'SUSPENDED' as UserStatus });
+
+      // Assert
+      expect(result).toBe(0);
+    });
+
+    it('should count users with multiple filters', async () => {
+      // Arrange
+      const familyId = 'f1234567-89ab-cdef-0123-456789abcdef';
+      prisma.user.count.mockResolvedValue(2);
+
+      // Act
+      const result = await service.count({
+        familyId,
+        role: 'MEMBER' as UserRole,
+        status: 'ACTIVE' as UserStatus,
+      });
+
+      // Assert
+      expect(prisma.user.count).toHaveBeenCalledWith({
+        where: {
+          familyId,
+          role: 'MEMBER',
+          status: 'ACTIVE',
+        },
+      });
+      expect(result).toBe(2);
+    });
+  });
+
+  /**
+   * Tests for countByStatus() - P.3.4.0.3
+   * Required by users.service.getStats()
+   * Returns count breakdown by each UserStatus
+   */
+  describe('countByStatus', () => {
+    it('should return counts grouped by status', async () => {
+      // Arrange
+      prisma.user.groupBy.mockResolvedValue([
+        { status: 'ACTIVE' as UserStatus, _count: { _all: 10 } },
+        { status: 'INACTIVE' as UserStatus, _count: { _all: 3 } },
+        { status: 'SUSPENDED' as UserStatus, _count: { _all: 1 } },
+      ] as any);
+
+      // Act
+      const result = await service.countByStatus();
+
+      // Assert
+      expect(prisma.user.groupBy).toHaveBeenCalledWith({
+        by: ['status'],
+        _count: { _all: true },
+      });
+      expect(result).toEqual({
+        ACTIVE: 10,
+        INACTIVE: 3,
+        SUSPENDED: 1,
+      });
+    });
+
+    it('should return zero counts for missing statuses', async () => {
+      // Arrange
+      prisma.user.groupBy.mockResolvedValue([
+        { status: 'ACTIVE' as UserStatus, _count: { _all: 5 } },
+      ] as any);
+
+      // Act
+      const result = await service.countByStatus();
+
+      // Assert
+      expect(result).toEqual({
+        ACTIVE: 5,
+        INACTIVE: 0,
+        SUSPENDED: 0,
+      });
+    });
+
+    it('should handle empty database (all counts zero)', async () => {
+      // Arrange
+      prisma.user.groupBy.mockResolvedValue([]);
+
+      // Act
+      const result = await service.countByStatus();
+
+      // Assert
+      expect(result).toEqual({
+        ACTIVE: 0,
+        INACTIVE: 0,
+        SUSPENDED: 0,
+      });
+    });
+
+    it('should filter counts by familyId when provided', async () => {
+      // Arrange
+      const familyId = 'f1234567-89ab-cdef-0123-456789abcdef';
+      prisma.user.groupBy.mockResolvedValue([
+        { status: 'ACTIVE' as UserStatus, _count: { _all: 7 } },
+        { status: 'INACTIVE' as UserStatus, _count: { _all: 2 } },
+      ] as any);
+
+      // Act
+      const result = await service.countByStatus(familyId);
+
+      // Assert
+      expect(prisma.user.groupBy).toHaveBeenCalledWith({
+        by: ['status'],
+        _count: { _all: true },
+        where: { familyId },
+      });
+      expect(result).toEqual({
+        ACTIVE: 7,
+        INACTIVE: 2,
+        SUSPENDED: 0,
+      });
+    });
+
+    it('should validate familyId UUID format', async () => {
+      // Arrange
+      const invalidId = 'not-a-uuid';
+
+      // Act & Assert
+      await expect(service.countByStatus(invalidId)).rejects.toThrow(/uuid/i);
+    });
+  });
+
+  /**
+   * Tests for findAllWithCount() - P.3.4.0.4
+   * Required for pagination with total count
+   * Returns both data array and total count
+   */
+  describe('findAllWithCount', () => {
+    it('should return users and total count', async () => {
+      // Arrange
+      const users = [
+        createMockUser({ id: 'user-1' }),
+        createMockUser({ id: 'user-2' }),
+      ];
+      prisma.user.findMany.mockResolvedValue(users);
+      prisma.user.count.mockResolvedValue(42);
+
+      // Act
+      const result = await service.findAllWithCount();
+
+      // Assert
+      expect(result).toEqual({
+        data: users,
+        total: 42,
+      });
+    });
+
+    it('should support pagination with skip and take', async () => {
+      // Arrange
+      const users = [createMockUser({ id: 'user-2' })];
+      prisma.user.findMany.mockResolvedValue(users);
+      prisma.user.count.mockResolvedValue(10);
+
+      // Act
+      const result = await service.findAllWithCount({ skip: 1, take: 1 });
+
+      // Assert
+      expect(prisma.user.findMany).toHaveBeenCalledWith({
+        skip: 1,
+        take: 1,
+      });
+      expect(result.data).toHaveLength(1);
+      expect(result.total).toBe(10);
+    });
+
+    it('should filter by familyId with correct count', async () => {
+      // Arrange
+      const familyId = 'f1234567-89ab-cdef-0123-456789abcdef';
+      const users = [createMockUser({ id: 'user-1', familyId })];
+      prisma.user.findMany.mockResolvedValue(users);
+      prisma.user.count.mockResolvedValue(3);
+
+      // Act
+      const result = await service.findAllWithCount({ where: { familyId } });
+
+      // Assert
+      expect(prisma.user.findMany).toHaveBeenCalledWith({
+        where: { familyId },
+      });
+      expect(prisma.user.count).toHaveBeenCalledWith({
+        where: { familyId },
+      });
+      expect(result.data).toHaveLength(1);
+      expect(result.total).toBe(3);
+    });
+
+    it('should support ordering', async () => {
+      // Arrange
+      prisma.user.findMany.mockResolvedValue([]);
+      prisma.user.count.mockResolvedValue(0);
+
+      // Act
+      await service.findAllWithCount({ orderBy: { createdAt: 'desc' } });
+
+      // Assert
+      expect(prisma.user.findMany).toHaveBeenCalledWith({
+        orderBy: { createdAt: 'desc' },
+      });
+    });
+
+    it('should return empty data with zero count', async () => {
+      // Arrange
+      prisma.user.findMany.mockResolvedValue([]);
+      prisma.user.count.mockResolvedValue(0);
+
+      // Act
+      const result = await service.findAllWithCount();
+
+      // Assert
+      expect(result).toEqual({
+        data: [],
+        total: 0,
+      });
+    });
+
+    it('should combine all query options', async () => {
+      // Arrange
+      const familyId = 'f1234567-89ab-cdef-0123-456789abcdef';
+      prisma.user.findMany.mockResolvedValue([]);
+      prisma.user.count.mockResolvedValue(15);
+
+      // Act
+      await service.findAllWithCount({
+        skip: 10,
+        take: 5,
+        where: { familyId, role: 'ADMIN' as UserRole },
+        orderBy: { email: 'asc' },
+      });
+
+      // Assert
+      expect(prisma.user.findMany).toHaveBeenCalledWith({
+        skip: 10,
+        take: 5,
+        where: { familyId, role: 'ADMIN' },
+        orderBy: { email: 'asc' },
+      });
+      expect(prisma.user.count).toHaveBeenCalledWith({
+        where: { familyId, role: 'ADMIN' },
+      });
+    });
+  });
+
+  /**
+   * Tests for createWithHash() - P.3.4.0.5
+   * Required by auth.service for registration with pre-hashed passwords
+   * Accepts passwordHash directly (no hashing)
+   */
+  describe('createWithHash', () => {
+    const validDto = {
+      email: 'newuser@example.com',
+      passwordHash: '$2b$10$K7L/V0mIJAiGOiXe4L3Ec.QqKqPqWqT9QqKqPqWqT9QqKqPqWqT',
+      firstName: 'Jane',
+      lastName: 'Smith',
+      familyId: 'f1234567-89ab-cdef-0123-456789abcdef',
+    };
+
+    it('should create user with pre-hashed password', async () => {
+      // Arrange
+      const expectedUser = createMockUser({
+        email: 'newuser@example.com',
+        passwordHash: validDto.passwordHash,
+      });
+      prisma.user.create.mockResolvedValue(expectedUser);
+
+      // Act
+      const result = await service.createWithHash(validDto);
+
+      // Assert
+      expect(result.passwordHash).toBe(validDto.passwordHash);
+      expect(prisma.user.create).toHaveBeenCalled();
+    });
+
+    it('should NOT re-hash the provided passwordHash', async () => {
+      // Arrange
+      const preHashedPassword = '$2b$10$PreHashedPasswordString';
+      const dto = { ...validDto, passwordHash: preHashedPassword };
+      const expectedUser = createMockUser({ passwordHash: preHashedPassword });
+      prisma.user.create.mockResolvedValue(expectedUser);
+
+      // Act
+      const result = await service.createWithHash(dto);
+
+      // Assert
+      expect(result.passwordHash).toBe(preHashedPassword);
+      // Verify the call had exact hash (not double-hashed)
+      const callData = prisma.user.create.mock.calls[0][0] as any;
+      expect(callData.data.passwordHash).toBe(preHashedPassword);
+    });
+
+    it('should accept user without familyId (optional for auth flows)', async () => {
+      // Arrange
+      const dtoWithoutFamily = {
+        email: 'user@example.com',
+        passwordHash: '$2b$10$hash',
+        firstName: 'John',
+      };
+      const expectedUser = createMockUser({
+        email: 'user@example.com',
+        familyId: null as any, // Allow null for this test
+      });
+      prisma.user.create.mockResolvedValue(expectedUser);
+
+      // Act
+      const result = await service.createWithHash(dtoWithoutFamily);
+
+      // Assert
+      expect(result).toBeDefined();
+      expect(result.email).toBe('user@example.com');
+    });
+
+    it('should trim and lowercase email', async () => {
+      // Arrange
+      const dto = { ...validDto, email: '  UPPERCASE@Example.COM  ' };
+      const expectedUser = createMockUser({ email: 'uppercase@example.com' });
+      prisma.user.create.mockResolvedValue(expectedUser);
+
+      // Act
+      const result = await service.createWithHash(dto);
+
+      // Assert
+      expect(result.email).toBe('uppercase@example.com');
+    });
+
+    it('should reject empty email', async () => {
+      // Arrange
+      const dto = { ...validDto, email: '' };
+
+      // Act & Assert
+      await expect(service.createWithHash(dto)).rejects.toThrow(/email/i);
+    });
+
+    it('should reject invalid email format', async () => {
+      // Arrange
+      const dto = { ...validDto, email: 'not-an-email' };
+
+      // Act & Assert
+      await expect(service.createWithHash(dto)).rejects.toThrow(/email/i);
+    });
+
+    it('should reject duplicate email', async () => {
+      // Arrange
+      const error = Object.assign(
+        new Error('Unique constraint failed on the fields: (`email`)'),
+        {
+          code: 'P2002',
+          clientVersion: '5.0.0',
+          meta: { target: ['email'] },
+        }
+      );
+      // Make it look like a PrismaClientKnownRequestError
+      Object.setPrototypeOf(error, Error.prototype);
+      prisma.user.create.mockRejectedValue(error);
+
+      // Act & Assert
+      await expect(service.createWithHash(validDto)).rejects.toThrow(/email.*exists/i);
+    });
+
+    it('should set default role to MEMBER', async () => {
+      // Arrange
+      const expectedUser = createMockUser({ role: 'MEMBER' as UserRole });
+      prisma.user.create.mockResolvedValue(expectedUser);
+
+      // Act
+      const result = await service.createWithHash(validDto);
+
+      // Assert
+      expect(result.role).toBe('MEMBER');
+    });
+
+    it('should allow custom role when specified', async () => {
+      // Arrange
+      const dtoWithRole = { ...validDto, role: 'ADMIN' as UserRole };
+      const expectedUser = createMockUser({ role: 'ADMIN' as UserRole });
+      prisma.user.create.mockResolvedValue(expectedUser);
+
+      // Act
+      const result = await service.createWithHash(dtoWithRole);
+
+      // Assert
+      expect(result.role).toBe('ADMIN');
+    });
+
+    it('should reject empty passwordHash', async () => {
+      // Arrange
+      const dto = { ...validDto, passwordHash: '' };
+
+      // Act & Assert
+      await expect(service.createWithHash(dto)).rejects.toThrow(/password/i);
+    });
+
+    it('should validate passwordHash format (bcrypt-like)', async () => {
+      // Arrange
+      const dto = { ...validDto, passwordHash: 'plaintext' };
+
+      // Act & Assert
+      await expect(service.createWithHash(dto)).rejects.toThrow(/password.*hash/i);
+    });
+
+    it('should handle optional firstName and lastName', async () => {
+      // Arrange
+      const minimalDto = {
+        email: 'minimal@example.com',
+        passwordHash: '$2b$10$hash',
+      };
+      const expectedUser = createMockUser({ firstName: null, lastName: null });
+      prisma.user.create.mockResolvedValue(expectedUser);
+
+      // Act
+      const result = await service.createWithHash(minimalDto);
+
+      // Assert
+      expect(result.firstName).toBeNull();
+      expect(result.lastName).toBeNull();
     });
   });
 });
