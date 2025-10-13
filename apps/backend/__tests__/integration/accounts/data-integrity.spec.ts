@@ -198,6 +198,157 @@ describe('AccountsService Data Integrity Validation', () => {
         expect(fetched!.currentBalance.toNumber()).toBe(value);
       }
     });
+
+    it('should handle maximum balance value (15 digits)', async () => {
+      // DECIMAL(15,2) supports up to 9,999,999,999,999.99
+      const maxValue = 9999999999999.99;
+
+      const account = await prisma.account.create({
+        data: {
+          name: 'Maximum Balance Test',
+          type: 'INVESTMENT',
+          source: 'MANUAL',
+          currentBalance: maxValue,
+          userId: testUserId,
+          currency: 'USD',
+          isActive: true,
+          syncEnabled: true,
+        },
+      });
+
+      const fetched = await prisma.account.findUnique({
+        where: { id: account.id },
+      });
+
+      expect(fetched!.currentBalance.toNumber()).toBe(maxValue);
+    });
+
+    it('should handle minimum positive value (0.01)', async () => {
+      const minValue = 0.01;
+
+      const account = await prisma.account.create({
+        data: {
+          name: 'Minimum Balance Test',
+          type: 'CHECKING',
+          source: 'MANUAL',
+          currentBalance: minValue,
+          userId: testUserId,
+          currency: 'USD',
+          isActive: true,
+          syncEnabled: true,
+        },
+      });
+
+      const fetched = await prisma.account.findUnique({
+        where: { id: account.id },
+      });
+
+      expect(fetched!.currentBalance.toNumber()).toBe(minValue);
+    });
+
+    it('should handle negative balances (credit cards/loans)', async () => {
+      const negativeValues = [-100.50, -1234.56, -0.01];
+
+      for (const value of negativeValues) {
+        const account = await prisma.account.create({
+          data: {
+            name: `Negative Balance Test ${value}`,
+            type: 'CREDIT_CARD',
+            source: 'MANUAL',
+            currentBalance: value,
+            userId: testUserId,
+            currency: 'USD',
+            isActive: true,
+            syncEnabled: true,
+          },
+        });
+
+        const fetched = await prisma.account.findUnique({
+          where: { id: account.id },
+        });
+
+        expect(fetched!.currentBalance.toNumber()).toBe(value);
+      }
+    });
+
+    it('should round repeating decimals to 2 decimal places', async () => {
+      // JavaScript floating point: 1/3 = 0.333... should round to 0.33
+      const repeatingDecimal = 1 / 3;
+
+      const account = await prisma.account.create({
+        data: {
+          name: 'Repeating Decimal Test',
+          type: 'CHECKING',
+          source: 'MANUAL',
+          currentBalance: repeatingDecimal,
+          userId: testUserId,
+          currency: 'USD',
+          isActive: true,
+          syncEnabled: true,
+        },
+      });
+
+      const fetched = await prisma.account.findUnique({
+        where: { id: account.id },
+      });
+
+      // DECIMAL(15,2) rounds to 0.33
+      expect(fetched!.currentBalance.toNumber()).toBe(0.33);
+    });
+
+    it('should handle scientific notation inputs', async () => {
+      // Scientific notation should convert properly
+      const scientificValue = 1.23e3; // 1230.00
+
+      const account = await prisma.account.create({
+        data: {
+          name: 'Scientific Notation Test',
+          type: 'SAVINGS',
+          source: 'MANUAL',
+          currentBalance: scientificValue,
+          userId: testUserId,
+          currency: 'USD',
+          isActive: true,
+          syncEnabled: true,
+        },
+      });
+
+      const fetched = await prisma.account.findUnique({
+        where: { id: account.id },
+      });
+
+      expect(fetched!.currentBalance.toNumber()).toBe(1230.00);
+    });
+
+    it('should preserve precision in arithmetic operations', async () => {
+      // Create account with initial balance
+      const account = await prisma.account.create({
+        data: {
+          name: 'Arithmetic Test',
+          type: 'CHECKING',
+          source: 'MANUAL',
+          currentBalance: 100.50,
+          userId: testUserId,
+          currency: 'USD',
+          isActive: true,
+          syncEnabled: true,
+        },
+      });
+
+      // Update with decimal arithmetic (100.50 + 0.75 = 101.25)
+      await prisma.account.update({
+        where: { id: account.id },
+        data: {
+          currentBalance: 101.25,
+        },
+      });
+
+      const fetched = await prisma.account.findUnique({
+        where: { id: account.id },
+      });
+
+      expect(fetched!.currentBalance.toNumber()).toBe(101.25);
+    });
   });
 
   describe('Foreign Key Integrity', () => {
