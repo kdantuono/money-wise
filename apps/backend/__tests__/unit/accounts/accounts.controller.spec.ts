@@ -9,7 +9,7 @@ import { CreateAccountDto } from '../../../src/accounts/dto/create-account.dto';
 import { UpdateAccountDto } from '../../../src/accounts/dto/update-account.dto';
 
 /**
- * TODO (P.3.8.3): Rewrite unit tests for Prisma
+ * TODO (#128 - P.3.8.3): Rewrite unit tests for Prisma
  *
  * These unit tests use TypeORM entity enums and entity import patterns.
  * They need complete rewrite to use Prisma-generated enums and types.
@@ -20,6 +20,7 @@ import { UpdateAccountDto } from '../../../src/accounts/dto/update-account.dto';
  *   - AccountSource.MANUAL → "MANUAL"
  *   - AccountStatus.INACTIVE → "INACTIVE"
  * Estimated effort: 30-60 minutes
+ * Tracking: https://github.com/kdantuono/money-wise/issues/128
  *
  * See: apps/backend/__tests__/integration/accounts/ for complete test coverage
  */

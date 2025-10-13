@@ -10,7 +10,7 @@ import { PrismaService } from '../../../src/core/database/prisma/prisma.service'
 import { Account as PrismaAccount } from '../../../generated/prisma';
 
 /**
- * TODO (P.3.8.3): Rewrite unit tests for Prisma
+ * TODO (#128 - P.3.8.3): Rewrite unit tests for Prisma
  *
  * These unit tests use TypeORM entity enums and Repository mock patterns.
  * They need complete rewrite to use Prisma Client patterns.
@@ -18,6 +18,7 @@ import { Account as PrismaAccount } from '../../../generated/prisma';
  * Current status: SKIPPED (38 integration tests provide complete coverage)
  * Blocked by: Need to update mock patterns from Repository to Prisma Client
  * Estimated effort: 1-2 hours
+ * Tracking: https://github.com/kdantuono/money-wise/issues/128
  *
  * See: apps/backend/__tests__/integration/accounts/ for complete test coverage
  */
