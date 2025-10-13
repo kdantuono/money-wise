@@ -23,10 +23,10 @@ import { DataSource, Repository } from 'typeorm';
 import { faker } from '@faker-js/faker';
 import { setupTestDatabase, cleanTestDatabase, teardownTestDatabase } from '../../../src/core/database/tests/database-test.config';
 import { TestDataFactory } from '../../../src/core/database/tests/factories/test-data.factory';
-import { User, UserRole, UserStatus } from '../../../src/core/database/entities/user.entity';
-import { Account, AccountType, AccountStatus, AccountSource } from '../../../src/core/database/entities/account.entity';
+import { User, UserRole, UserStatus } from '../../../generated/prisma';
+import { Account, AccountType, AccountStatus, AccountSource } from '../../../generated/prisma';
 import { Category, CategoryType, CategoryStatus } from '../../../src/core/database/entities/category.entity';
-import { Transaction, TransactionType, TransactionStatus } from '../../../src/core/database/entities/transaction.entity';
+import { Transaction, TransactionType, TransactionStatus } from '../../../generated/prisma';
 
 describe.skip('Repository Operations', () => {
   let dataSource: DataSource;

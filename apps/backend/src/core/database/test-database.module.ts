@@ -6,12 +6,12 @@ import { DataSource } from 'typeorm';
 import { PostgreSqlContainer, StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 
 // Import all entities
-import { User } from './entities/user.entity';
-import { Account } from './entities/account.entity';
-import { Transaction } from './entities/transaction.entity';
-import { Category } from './entities/category.entity';
-import { AuditLog } from './entities/audit-log.entity';
-import { PasswordHistory } from './entities/password-history.entity';
+import { User } from '../../generated/prisma';
+import { Account } from '../../generated/prisma';
+import { Transaction } from '../../generated/prisma';
+import { Category } from '../../generated/prisma';
+import { AuditLog } from '../../generated/prisma';
+import { PasswordHistory } from '../../generated/prisma';
 
 /**
  * TestDatabaseModule - Shared test database infrastructure

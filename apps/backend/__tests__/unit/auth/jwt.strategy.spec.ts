@@ -7,7 +7,7 @@ import type { User } from '../../../generated/prisma';
 import {
   UserStatus,
   UserRole,
-} from '@/core/database/entities/user.entity';
+} from '../../../generated/prisma';
 
 describe('JwtStrategy', () => {
   let strategy: JwtStrategy;

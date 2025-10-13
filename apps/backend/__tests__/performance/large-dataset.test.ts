@@ -6,10 +6,10 @@
 import { DataSource } from 'typeorm';
 import { setupTestDatabase, cleanTestDatabase, teardownTestDatabase } from '@/core/database/tests/database-test.config';
 import { TestDataFactory } from '@/core/database/tests/factories/test-data.factory';
-import { User } from '@/core/database/entities/user.entity';
-import { Account, AccountType } from '@/core/database/entities/account.entity';
-import { Transaction, TransactionType } from '@/core/database/entities/transaction.entity';
-import { Category } from '@/core/database/entities/category.entity';
+import { User } from '../../generated/prisma';
+import { Account, AccountType } from '../../generated/prisma';
+import { Transaction, TransactionType } from '../../generated/prisma';
+import { Category } from '../../generated/prisma';
 
 describe('Large Dataset Performance Tests', () => {
   let dataSource: DataSource;

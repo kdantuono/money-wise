@@ -2,7 +2,7 @@ import { JwtService } from '@nestjs/jwt';
 import { Repository, EntityManager, EntityMetadata } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
 
-import { User, UserStatus, UserRole } from '../../../core/database/entities/user.entity';
+import { User, UserStatus, UserRole } from '../../../generated/prisma';
 import { RegisterDto } from '../../dto/register.dto';
 import { LoginDto } from '../../dto/login.dto';
 import { AuthResponseDto } from '../../dto/auth-response.dto';

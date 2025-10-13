@@ -2,8 +2,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException, ForbiddenException } from '@nestjs/common';
 import { AccountsService } from '../../../src/accounts/accounts.service';
-import { AccountType, AccountStatus, AccountSource } from '../../../src/core/database/entities/account.entity';
-import { UserRole } from '../../../src/core/database/entities/user.entity';
+import { AccountType, AccountStatus, AccountSource } from '../../../generated/prisma';
+import { UserRole } from '../../../generated/prisma';
 import { CreateAccountDto } from '../../../src/accounts/dto/create-account.dto';
 import { UpdateAccountDto } from '../../../src/accounts/dto/update-account.dto';
 import { PrismaService } from '../../../src/core/database/prisma/prisma.service';

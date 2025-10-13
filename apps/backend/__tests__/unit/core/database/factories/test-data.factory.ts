@@ -5,10 +5,10 @@
 
 import { DataSource } from 'typeorm';
 import { v4 as uuidv4 } from 'uuid';
-import { User, UserStatus, UserRole } from '@/core/database/entities/user.entity';
-import { Account, AccountType, AccountSource } from '@/core/database/entities/account.entity';
-import { Category, CategoryType, CategoryStatus } from '@/core/database/entities/category.entity';
-import { Transaction, TransactionType, TransactionSource } from '@/core/database/entities/transaction.entity';
+import { User, UserStatus, UserRole } from '../../generated/prisma';
+import { Account, AccountType, AccountSource } from '../../generated/prisma';
+import { Category, CategoryType, CategoryStatus } from '../../generated/prisma';
+import { Transaction, TransactionType, TransactionSource } from '../../generated/prisma';
 
 /**
  * Base factory interface

@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException, ConflictException, ForbiddenException } from '@nestjs/common';
 import { UsersService } from '../../../src/users/users.service';
-import { UserRole, UserStatus } from '../../../src/core/database/entities/user.entity';
+import { UserRole, UserStatus } from '../../../generated/prisma';
 import { UpdateUserDto, UpdateUserStatusDto } from '../../../src/users/dto/update-user.dto';
 import { PrismaUserService } from '../../../src/core/database/prisma/services/user.service';
 import type { User } from '../../../generated/prisma';

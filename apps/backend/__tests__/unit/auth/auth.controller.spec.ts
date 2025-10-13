@@ -12,7 +12,7 @@ import {
   User,
   UserStatus,
   UserRole,
-} from '@/core/database/entities/user.entity';
+} from '../../../generated/prisma';
 
 describe('AuthController', () => {
   let controller: AuthController;

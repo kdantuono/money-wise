@@ -1,6 +1,6 @@
 import { faker } from '@faker-js/faker';
 import { Account, AccountType } from '@/modules/accounts/entities/account.entity';
-import { User } from '@/core/database/entities/user.entity';
+import { User } from '../../generated/prisma';
 import { DeepPartial } from 'typeorm';
 
 /**

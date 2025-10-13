@@ -13,7 +13,7 @@ import {
   AccountType,
   AccountStatus,
   AccountSource,
-} from '@/core/database/entities';
+} from '../../generated/prisma';
 
 describe('AccountRepository', () => {
   let accountRepository: AccountRepository;

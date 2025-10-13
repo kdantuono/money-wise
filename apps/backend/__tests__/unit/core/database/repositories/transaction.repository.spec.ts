@@ -13,7 +13,7 @@ import {
   TransactionType,
   TransactionStatus,
   TransactionSource,
-} from '@/core/database/entities';
+} from '../../generated/prisma';
 
 describe('TransactionRepository', () => {
   let transactionRepository: TransactionRepository;

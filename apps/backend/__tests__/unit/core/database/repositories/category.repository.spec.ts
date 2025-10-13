@@ -12,7 +12,7 @@ import {
   Category,
   CategoryType,
   CategoryStatus,
-} from '@/core/database/entities';
+} from '../../generated/prisma';
 
 describe('CategoryRepository', () => {
   let categoryRepository: CategoryRepository;

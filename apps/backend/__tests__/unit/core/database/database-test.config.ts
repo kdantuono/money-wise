@@ -4,12 +4,12 @@
  */
 
 import { DataSource } from 'typeorm';
-import { User } from '@/core/database/entities/user.entity';
-import { Account } from '@/core/database/entities/account.entity';
-import { Category } from '@/core/database/entities/category.entity';
-import { Transaction } from '@/core/database/entities/transaction.entity';
-import { AuditLog } from '@/core/database/entities/audit-log.entity';
-import { PasswordHistory } from '@/core/database/entities/password-history.entity';
+import { User } from '../../generated/prisma';
+import { Account } from '../../generated/prisma';
+import { Category } from '../../generated/prisma';
+import { Transaction } from '../../generated/prisma';
+import { AuditLog } from '../../generated/prisma';
+import { PasswordHistory } from '../../generated/prisma';
 
 let testDataSource: DataSource | null = null;
 

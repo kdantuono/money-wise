@@ -4,7 +4,7 @@ import { PasswordController } from '@/auth/controllers/password.controller';
 import { PasswordSecurityService } from '@/auth/services/password-security.service';
 import { PasswordResetService } from '@/auth/services/password-reset.service';
 import { RateLimitService } from '@/auth/services/rate-limit.service';
-import { User, UserRole, UserStatus } from '@/core/database/entities/user.entity';
+import { User, UserRole, UserStatus } from '../../generated/prisma';
 
 describe('PasswordController', () => {
   let controller: PasswordController;

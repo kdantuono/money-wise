@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException, ForbiddenException, ConflictException } from '@nestjs/common';
 import { UsersController } from '../../../src/users/users.controller';
 import { UsersService } from '../../../src/users/users.service';
-import { User, UserRole, UserStatus } from '../../../src/core/database/entities/user.entity';
+import { User, UserRole, UserStatus } from '../../../generated/prisma';
 import { UpdateUserDto, UpdateUserStatusDto } from '../../../src/users/dto/update-user.dto';
 
 describe('UsersController', () => {

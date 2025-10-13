@@ -1,11 +1,11 @@
 import { faker } from '@faker-js/faker';
 import { DataSource } from 'typeorm';
-import { User, UserRole, UserStatus } from '@/core/database/entities/user.entity';
-import { Account, AccountType, AccountSource } from '@/core/database/entities/account.entity';
-import { Transaction, TransactionType } from '@/core/database/entities/transaction.entity';
-import { Category } from '@/core/database/entities/category.entity';
-import { AuditLog, AuditEventType } from '@/core/database/entities/audit-log.entity';
-import { PasswordHistory } from '@/core/database/entities/password-history.entity';
+import { User, UserRole, UserStatus } from '../../generated/prisma';
+import { Account, AccountType, AccountSource } from '../../generated/prisma';
+import { Transaction, TransactionType } from '../../generated/prisma';
+import { Category } from '../../generated/prisma';
+import { AuditLog, AuditEventType } from '../../generated/prisma';
+import { PasswordHistory } from '../../generated/prisma';
 
 /**
  * TestDataBuilder - Utility for creating consistent test data

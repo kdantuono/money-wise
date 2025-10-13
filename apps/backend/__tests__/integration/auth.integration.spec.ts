@@ -45,9 +45,9 @@ import {
   User,
   UserStatus,
   UserRole,
-} from '@/core/database/entities/user.entity';
-import { AuditLog } from '@/core/database/entities/audit-log.entity';
-import { PasswordHistory } from '@/core/database/entities/password-history.entity';
+} from '../../generated/prisma';
+import { AuditLog } from '../../generated/prisma';
+import { PasswordHistory } from '../../generated/prisma';
 import { PasswordSecurityService } from '@/auth/services/password-security.service';
 import { RateLimitService } from '@/auth/services/rate-limit.service';
 import { AccountLockoutService } from '@/auth/services/account-lockout.service';

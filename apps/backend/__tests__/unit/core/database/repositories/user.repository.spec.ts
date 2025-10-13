@@ -8,7 +8,7 @@ import { Test } from '@nestjs/testing';
 import { DataSource, Repository, SelectQueryBuilder, UpdateResult } from 'typeorm';
 import { Logger } from '@nestjs/common';
 import { UserRepository } from '@/core/database/repositories/impl/user.repository';
-import { User, UserRole, UserStatus } from '@/core/database/entities';
+import { User, UserRole, UserStatus } from '../../generated/prisma';
 
 describe('UserRepository', () => {
   let userRepository: UserRepository;
