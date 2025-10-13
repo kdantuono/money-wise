@@ -5,7 +5,7 @@
 
 import { DataSource } from 'typeorm';
 import { setupTestDatabase, teardownTestDatabase, DatabaseTestManager } from '@/core/database/tests/database-test.config';
-import { entities } from '@/core/database/entities';
+import { entities } from '../../generated/prisma';
 
 describe('Database Migrations', () => {
   let dataSource: DataSource;

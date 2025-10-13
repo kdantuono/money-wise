@@ -368,9 +368,10 @@ describe('AuthService', () => {
       expect(result.expiresIn).toBe(15 * 60);
       expect(result.user).toBeDefined();
       expect(result.user).not.toHaveProperty('passwordHash');
-      expect(result.user.fullName).toBe(`${mockUser.firstName} ${mockUser.lastName}`);
-      expect(result.user.isEmailVerified).toBeDefined();
-      expect(result.user.isActive).toBeDefined();
+      expect(result.user.firstName).toBe(mockUser.firstName);
+      expect(result.user.lastName).toBe(mockUser.lastName);
+      expect(result.user.email).toBe(mockUser.email);
+      expect(result.user.status).toBe(UserStatus.ACTIVE);
     });
   });
 

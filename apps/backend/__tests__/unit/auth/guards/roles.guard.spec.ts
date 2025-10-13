@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { Reflector } from '@nestjs/core';
 import { ExecutionContext } from '@nestjs/common';
 import { RolesGuard } from '../../../../src/auth/guards/roles.guard';
-import { UserRole } from '../../../../src/core/database/entities/user.entity';
+import { UserRole } from '../../../../generated/prisma';
 import { ROLES_KEY } from '../../../../src/auth/decorators/roles.decorator';
 
 describe('RolesGuard', () => {
@@ -61,7 +61,7 @@ describe('RolesGuard', () => {
       it('should return true (allow all)', () => {
         // Arrange
         mockReflector.getAllAndOverride.mockReturnValueOnce(undefined);
-        const context = createMockExecutionContext({ role: UserRole.USER });
+        const context = createMockExecutionContext({ role: UserRole.MEMBER });
 
         // Act
         const result = guard.canActivate(context);
@@ -115,8 +115,8 @@ describe('RolesGuard', () => {
 
         it('should return true when user has the required USER role', () => {
           // Arrange
-          mockReflector.getAllAndOverride.mockReturnValueOnce([UserRole.USER]);
-          const context = createMockExecutionContext({ role: UserRole.USER });
+          mockReflector.getAllAndOverride.mockReturnValueOnce([UserRole.MEMBER]);
+          const context = createMockExecutionContext({ role: UserRole.MEMBER });
 
           // Act
           const result = guard.canActivate(context);
@@ -128,7 +128,7 @@ describe('RolesGuard', () => {
         it('should return false when user does not have the required ADMIN role', () => {
           // Arrange
           mockReflector.getAllAndOverride.mockReturnValueOnce([UserRole.ADMIN]);
-          const context = createMockExecutionContext({ role: UserRole.USER });
+          const context = createMockExecutionContext({ role: UserRole.MEMBER });
 
           // Act
           const result = guard.canActivate(context);
@@ -139,7 +139,7 @@ describe('RolesGuard', () => {
 
         it('should return false when user does not have the required USER role', () => {
           // Arrange
-          mockReflector.getAllAndOverride.mockReturnValueOnce([UserRole.USER]);
+          mockReflector.getAllAndOverride.mockReturnValueOnce([UserRole.MEMBER]);
           const context = createMockExecutionContext({ role: UserRole.ADMIN });
 
           // Act
@@ -155,7 +155,7 @@ describe('RolesGuard', () => {
           // Arrange
           mockReflector.getAllAndOverride.mockReturnValueOnce([
             UserRole.ADMIN,
-            UserRole.USER,
+            UserRole.MEMBER,
           ]);
           const context = createMockExecutionContext({ role: UserRole.ADMIN });
 
@@ -170,9 +170,9 @@ describe('RolesGuard', () => {
           // Arrange
           mockReflector.getAllAndOverride.mockReturnValueOnce([
             UserRole.ADMIN,
-            UserRole.USER,
+            UserRole.MEMBER,
           ]);
-          const context = createMockExecutionContext({ role: UserRole.USER });
+          const context = createMockExecutionContext({ role: UserRole.MEMBER });
 
           // Act
           const result = guard.canActivate(context);
@@ -238,8 +238,8 @@ describe('RolesGuard', () => {
         it('should prioritize handler-level metadata over class-level', () => {
           // Arrange
           // getAllAndOverride handles this internally, we just verify it's called correctly
-          mockReflector.getAllAndOverride.mockReturnValueOnce([UserRole.USER]);
-          const context = createMockExecutionContext({ role: UserRole.USER });
+          mockReflector.getAllAndOverride.mockReturnValueOnce([UserRole.MEMBER]);
+          const context = createMockExecutionContext({ role: UserRole.MEMBER });
 
           // Act
           const result = guard.canActivate(context);

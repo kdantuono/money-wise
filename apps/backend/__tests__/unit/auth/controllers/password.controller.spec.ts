@@ -4,7 +4,7 @@ import { PasswordController } from '@/auth/controllers/password.controller';
 import { PasswordSecurityService } from '@/auth/services/password-security.service';
 import { PasswordResetService } from '@/auth/services/password-reset.service';
 import { RateLimitService } from '@/auth/services/rate-limit.service';
-import { User, UserRole, UserStatus } from '../../generated/prisma';
+import { User, UserRole, UserStatus } from '../../../../generated/prisma';
 
 describe('PasswordController', () => {
   let controller: PasswordController;
@@ -18,15 +18,17 @@ describe('PasswordController', () => {
     firstName: 'Test',
     lastName: 'User',
     passwordHash: '$argon2id$v=19$m=65536,t=3,p=1$hash',
-    role: UserRole.USER,
+    role: UserRole.MEMBER,
     status: UserStatus.ACTIVE,
     currency: 'USD',
+    avatar: null,
+    timezone: null,
+    preferences: null,
+    lastLoginAt: null,
+    emailVerifiedAt: null,
+    familyId: 'family-1',
     createdAt: new Date(),
     updatedAt: new Date(),
-    accounts: [],
-    fullName: 'Test User',
-    isEmailVerified: false,
-    isActive: true,
   } as User;
 
   const mockRequest = {
