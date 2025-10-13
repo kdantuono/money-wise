@@ -335,6 +335,21 @@ describe('AccountsService Integration Tests (Real Database)', () => {
       expect(account).toBeDefined();
       expect(account.id).toBe(familyAccount.id);
     });
+
+    it('should allow admin to access family account without providing familyId', async () => {
+      const familyAccount = await service.create(
+        { name: 'Family Account', type: AccountType.CHECKING, source: AccountSource.MANUAL, currentBalance: 10000 },
+        undefined,
+        testFamilyId
+      );
+
+      // Admin accesses family account without providing familyId
+      const account = await service.findOne(familyAccount.id, testUserId2, undefined, UserRole.ADMIN);
+
+      expect(account).toBeDefined();
+      expect(account.id).toBe(familyAccount.id);
+      expect(account.userId).toBeNull(); // Verify it's a family account (not a personal account)
+    });
   });
 
   describe('update()', () => {
