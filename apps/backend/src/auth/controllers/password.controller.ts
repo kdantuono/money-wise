@@ -210,6 +210,7 @@ export class PasswordController {
     return (
       (request.headers['x-forwarded-for'] as string)?.split(',')[0] ||
       (request.headers['x-real-ip'] as string) ||
+      (request as any).connection?.remoteAddress ||
       request.socket.remoteAddress ||
       'unknown'
     );
