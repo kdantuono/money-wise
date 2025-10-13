@@ -52,7 +52,8 @@ export class AccountsController {
     @Body() createAccountDto: CreateAccountDto,
     @CurrentUser() user: User,
   ): Promise<AccountResponseDto> {
-    return this.accountsService.create(user.id, createAccountDto);
+    // TODO: Add familyId support when User entity is migrated to Prisma
+    return this.accountsService.create(createAccountDto, user.id, undefined);
   }
 
   @Get()
@@ -67,7 +68,8 @@ export class AccountsController {
     description: 'Unauthorized - invalid or missing token',
   })
   async findAll(@CurrentUser() user: User): Promise<AccountResponseDto[]> {
-    return this.accountsService.findAll(user.id);
+    // TODO: Add familyId support when User entity is migrated to Prisma
+    return this.accountsService.findAll(user.id, undefined);
   }
 
   @Get('summary')
@@ -82,7 +84,8 @@ export class AccountsController {
     description: 'Unauthorized - invalid or missing token',
   })
   async getSummary(@CurrentUser() user: User): Promise<AccountSummaryDto> {
-    return this.accountsService.getSummary(user.id);
+    // TODO: Add familyId support when User entity is migrated to Prisma
+    return this.accountsService.getSummary(user.id, undefined);
   }
 
   @Get(':id')
@@ -109,7 +112,8 @@ export class AccountsController {
     @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser() user: User,
   ): Promise<AccountResponseDto> {
-    return this.accountsService.findOne(id, user.id, user.role);
+    // TODO: Add familyId support when User entity is migrated to Prisma
+    return this.accountsService.findOne(id, user.id, undefined, user.role as any);
   }
 
   @Get(':id/balance')
@@ -139,7 +143,8 @@ export class AccountsController {
     @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser() user: User,
   ): Promise<{ currentBalance: number; availableBalance: number | null; currency: string }> {
-    return this.accountsService.getBalance(id, user.id, user.role);
+    // TODO: Add familyId support when User entity is migrated to Prisma
+    return this.accountsService.getBalance(id, user.id, undefined, user.role as any);
   }
 
   @Put(':id')
@@ -163,7 +168,8 @@ export class AccountsController {
     @Body() updateAccountDto: UpdateAccountDto,
     @CurrentUser() user: User,
   ): Promise<AccountResponseDto> {
-    return this.accountsService.update(id, user.id, user.role, updateAccountDto);
+    // TODO: Add familyId support when User entity is migrated to Prisma
+    return this.accountsService.update(id, updateAccountDto, user.id, undefined, user.role as any);
   }
 
   @Delete(':id')
@@ -186,7 +192,8 @@ export class AccountsController {
     @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser() user: User,
   ): Promise<void> {
-    return this.accountsService.remove(id, user.id, user.role);
+    // TODO: Add familyId support when User entity is migrated to Prisma
+    return this.accountsService.remove(id, user.id, undefined, user.role as any);
   }
 
   @Post(':id/sync')
@@ -209,6 +216,7 @@ export class AccountsController {
     @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser() user: User,
   ): Promise<AccountResponseDto> {
-    return this.accountsService.syncAccount(id, user.id, user.role);
+    // TODO: Add familyId support when User entity is migrated to Prisma
+    return this.accountsService.syncAccount(id, user.id, undefined, user.role as any);
   }
 }

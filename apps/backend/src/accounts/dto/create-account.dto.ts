@@ -1,6 +1,6 @@
 import { IsEnum, IsString, IsNumber, IsOptional, IsBoolean, Min } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { AccountType, AccountSource } from '../../core/database/entities/account.entity';
+import { AccountType, AccountSource, AccountStatus } from '../../../generated/prisma';
 
 export class CreateAccountDto {
   @ApiProperty({ description: 'Account name', example: 'Chase Checking' })
@@ -10,6 +10,11 @@ export class CreateAccountDto {
   @ApiProperty({ description: 'Account type', enum: AccountType })
   @IsEnum(AccountType)
   type: AccountType;
+
+  @ApiProperty({ description: 'Account status', enum: AccountStatus, required: false })
+  @IsOptional()
+  @IsEnum(AccountStatus)
+  status?: AccountStatus;
 
   @ApiProperty({ description: 'Account source', enum: AccountSource })
   @IsEnum(AccountSource)
@@ -49,6 +54,25 @@ export class CreateAccountDto {
   @IsOptional()
   @IsString()
   routingNumber?: string;
+
+  @ApiProperty({ description: 'Plaid account ID', required: false })
+  @IsOptional()
+  @IsString()
+  plaidAccountId?: string;
+
+  @ApiProperty({ description: 'Plaid item ID', required: false })
+  @IsOptional()
+  @IsString()
+  plaidItemId?: string;
+
+  @ApiProperty({ description: 'Plaid access token', required: false })
+  @IsOptional()
+  @IsString()
+  plaidAccessToken?: string;
+
+  @ApiProperty({ description: 'Plaid metadata', required: false })
+  @IsOptional()
+  plaidMetadata?: any;
 
   @ApiProperty({ description: 'Enable automatic sync', default: true, required: false })
   @IsOptional()
