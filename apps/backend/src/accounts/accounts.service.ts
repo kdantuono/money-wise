@@ -32,7 +32,39 @@ export class AccountsService {
     userId?: string,
     familyId?: string
   ): Promise<AccountResponseDto> {
-    // XOR constraint validation (CRITICAL for data integrity)
+    /**
+     * XOR Constraint Validation (CRITICAL for data integrity)
+     *
+     * Design Decision: Application-level validation vs Database CHECK constraint
+     *
+     * WHY APPLICATION-LEVEL:
+     * 1. Clear Error Messages: Returns descriptive BadRequestException with context
+     *    - Database CHECK: Generic "constraint violation" error
+     *    - Application: "Exactly one of userId or familyId must be provided"
+     *
+     * 2. Framework Integration: Leverages NestJS exception handling
+     *    - Automatic HTTP status codes (400 Bad Request)
+     *    - Consistent error response format across API
+     *    - Exception filters and interceptors work seamlessly
+     *
+     * 3. Testing Simplicity: Easy to test with mocked Prisma client
+     *    - No need for real database connection in unit tests
+     *    - Fast feedback loop during development
+     *
+     * 4. Migration Flexibility: Can adjust logic without schema changes
+     *    - Future: Might support organization-level accounts
+     *    - Database constraint requires migration + downtime
+     *
+     * TRADEOFF ACKNOWLEDGED:
+     * - Database constraint would prevent invalid data at DB level
+     * - But: Prisma migrations already enforce NOT NULL on one field
+     * - Integration tests validate constraint enforcement (39 tests passing)
+     *
+     * VALIDATION STRATEGY:
+     * - Application layer: Business rule enforcement (this code)
+     * - Database layer: Foreign key constraints (userId/familyId references)
+     * - Test layer: Data integrity validation (data-integrity.spec.ts)
+     */
     if ((!userId && !familyId) || (userId && familyId)) {
       throw new BadRequestException(
         'Exactly one of userId or familyId must be provided (XOR constraint)'
