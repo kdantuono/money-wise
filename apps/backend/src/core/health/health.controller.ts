@@ -1,11 +1,11 @@
 import { Controller, Get, Inject, HttpStatus, HttpException } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
-import { DataSource } from 'typeorm';
 import { Redis } from 'ioredis';
 import * as Sentry from '@sentry/node';
 import { AppConfig } from '../config/app.config';
 import { Public } from '../../auth/decorators/public.decorator';
+import { PrismaService } from '../database/prisma/prisma.service';
 
 interface HealthCheckResponse {
   status: 'ok' | 'error';
@@ -22,22 +22,12 @@ interface HealthCheckResponse {
   };
 }
 
-interface PostgresDriver {
-  master?: {
-    pool?: {
-      totalCount: number;
-      idleCount: number;
-      waitingCount: number;
-    };
-  };
-}
-
 @ApiTags('Health')
 @Controller('health')
 export class HealthController {
   constructor(
     private readonly configService: ConfigService,
-    private readonly dataSource: DataSource,
+    private readonly prisma: PrismaService,
     @Inject('default') private readonly redis: Redis,
   ) {}
 
@@ -104,11 +94,9 @@ export class HealthController {
     };
 
     try {
-      // Check database connection
-      if (this.dataSource.isInitialized) {
-        await this.dataSource.query('SELECT 1');
-        checks.database = true;
-      }
+      // Check database connection using Prisma
+      await this.prisma.$queryRaw`SELECT 1`;
+      checks.database = true;
     } catch (error) {
       Sentry.captureException(error, {
         tags: { healthCheck: 'database' },
@@ -262,30 +250,16 @@ export class HealthController {
     try {
       const start = Date.now();
 
-      // Check database connection
-      if (!this.dataSource.isInitialized) {
-        throw new Error('Database not initialized');
-      }
-
       // Execute simple query to verify connectivity
-      await this.dataSource.query('SELECT 1 as health');
-
-      // Get connection pool stats
-      const driver = this.dataSource.driver as PostgresDriver;
-      const poolStats = driver.master?.pool
-        ? {
-            total: driver.master.pool.totalCount,
-            idle: driver.master.pool.idleCount,
-            waiting: driver.master.pool.waitingCount,
-          }
-        : undefined;
+      await this.prisma.$queryRaw`SELECT 1 as health`;
 
       const responseTime = Date.now() - start;
 
+      // Note: Prisma doesn't expose connection pool stats directly
+      // Pool is managed internally by Prisma's connection management
       return {
         status: 'ok',
         responseTime,
-        details: poolStats ? { pool: poolStats } : undefined,
       };
     } catch (error) {
       Sentry.captureException(error, {

@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
 import { HealthController } from './health.controller';
 import { RedisModule } from '../redis/redis.module';
+import { PrismaModule } from '../database/prisma/prisma.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([]), RedisModule],
+  imports: [PrismaModule, RedisModule],
   controllers: [HealthController],
 })
 export class HealthModule {}

@@ -6,11 +6,11 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { HealthController } from '@/core/health/health.controller';
 import { ConfigService } from '@nestjs/config';
-import { DataSource } from 'typeorm';
+import { PrismaService } from '@/core/database/prisma/prisma.service';
 
 describe('HealthController', () => {
   let controller: HealthController;
-  let mockDataSource: jest.Mocked<DataSource>;
+  let mockPrisma: jest.Mocked<PrismaService>;
   let mockRedis: any;
 
   beforeEach(async () => {
@@ -21,18 +21,8 @@ describe('HealthController', () => {
       }),
     };
 
-    mockDataSource = {
-      isInitialized: true,
-      query: jest.fn().mockResolvedValue([{ health: 1 }]),
-      driver: {
-        master: {
-          pool: {
-            totalCount: 10,
-            idleCount: 5,
-            waitingCount: 0,
-          },
-        },
-      },
+    mockPrisma = {
+      $queryRaw: jest.fn().mockResolvedValue([{ health: 1 }]),
     } as any;
 
     mockRedis = {
@@ -48,8 +38,8 @@ describe('HealthController', () => {
           useValue: mockConfigService,
         },
         {
-          provide: DataSource,
-          useValue: mockDataSource,
+          provide: PrismaService,
+          useValue: mockPrisma,
         },
         {
           provide: 'default',
@@ -120,7 +110,6 @@ describe('HealthController', () => {
           database: {
             status: 'ok',
             responseTime: expect.any(Number),
-            details: expect.any(Object),
           },
           redis: {
             status: 'ok',
@@ -137,16 +126,11 @@ describe('HealthController', () => {
       expect(result.services.database.responseTime).toBeGreaterThanOrEqual(0);
     });
 
-    it('should include connection pool stats', async () => {
+    it('should not include connection pool stats (Prisma manages pool internally)', async () => {
       const result = await controller.getDetailedHealth();
 
-      expect(result.services.database.details).toEqual({
-        pool: {
-          total: 10,
-          idle: 5,
-          waiting: 0,
-        },
-      });
+      // Prisma doesn't expose pool stats - managed internally
+      expect(result.services.database.details).toBeUndefined();
     });
 
     it('should include Redis version', async () => {
@@ -173,10 +157,7 @@ describe('HealthController', () => {
     });
 
     it('should throw 503 when database is not ready', async () => {
-      Object.defineProperty(mockDataSource, 'isInitialized', {
-        value: false,
-        writable: true,
-      });
+      mockPrisma.$queryRaw.mockRejectedValue(new Error('Database not connected'));
 
       await expect(controller.getReadiness()).rejects.toThrow();
     });
