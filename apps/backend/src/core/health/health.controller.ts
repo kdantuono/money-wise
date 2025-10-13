@@ -250,8 +250,13 @@ export class HealthController {
     try {
       const start = Date.now();
 
-      // Execute simple query to verify connectivity
-      await this.prisma.$queryRaw`SELECT 1 as health`;
+      // Execute simple query with 5-second timeout to prevent hanging
+      const healthCheck = this.prisma.$queryRaw`SELECT 1 as health`;
+      const timeout = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Database health check timeout (5s)')), 5000)
+      );
+
+      await Promise.race([healthCheck, timeout]);
 
       const responseTime = Date.now() - start;
 
@@ -277,15 +282,22 @@ export class HealthController {
     try {
       const start = Date.now();
 
-      // Ping Redis
-      const pong = await this.redis.ping();
+      // Create 5-second timeout promise
+      const timeout = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Redis health check timeout (5s)')), 5000)
+      );
+
+      // Ping Redis with timeout
+      const pingPromise = this.redis.ping();
+      const pong = await Promise.race([pingPromise, timeout]);
 
       if (pong !== 'PONG') {
         throw new Error(`Unexpected Redis response: ${pong}`);
       }
 
-      // Get Redis info
-      const info = await this.redis.info('server');
+      // Get Redis info with timeout
+      const infoPromise = this.redis.info('server');
+      const info = await Promise.race([infoPromise, timeout]) as string;
       const versionMatch = info.match(/redis_version:([^\r\n]+)/);
       const version = versionMatch ? versionMatch[1] : 'unknown';
 

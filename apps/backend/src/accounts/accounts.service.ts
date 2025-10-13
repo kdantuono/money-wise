@@ -430,6 +430,41 @@ export class AccountsService {
     };
   }
 
+  /**
+   * Determines if a Plaid account needs synchronization based on business rules.
+   *
+   * **Business Rule**: Plaid accounts require sync if data is older than 1 hour
+   *
+   * Sync Requirements:
+   * - Account must be PLAID source (not MANUAL)
+   * - syncEnabled must be true
+   * - lastSyncAt either null OR > 1 hour old
+   *
+   * **1-Hour Threshold Rationale**:
+   * - Balance freshness: Financial data should be reasonably current
+   * - API rate limits: Avoid excessive Plaid API calls
+   * - User experience: Show sync indicator when data is stale
+   * - Cost optimization: Plaid charges per API call
+   *
+   * @param account - Prisma Account model with sync metadata
+   * @returns true if account needs sync, false otherwise
+   *
+   * @example
+   * // Never synced - needs sync
+   * account.lastSyncAt = null → returns true
+   *
+   * @example
+   * // Synced 30 minutes ago - fresh
+   * account.lastSyncAt = 30 minutes ago → returns false
+   *
+   * @example
+   * // Synced 2 hours ago - stale
+   * account.lastSyncAt = 2 hours ago → returns true
+   *
+   * @example
+   * // Manual account - never needs sync
+   * account.source = MANUAL → returns false
+   */
   private computeNeedsSync(account: PrismaAccount): boolean {
     if (!account.syncEnabled || account.source !== AccountSource.PLAID) return false;
     if (!account.lastSyncAt) return true;
