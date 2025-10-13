@@ -4,7 +4,6 @@ import {
   Account as PrismaAccount,
   AccountSource,
   AccountStatus,
-  AccountType,
   UserRole,
   Prisma
 } from '../../generated/prisma';
