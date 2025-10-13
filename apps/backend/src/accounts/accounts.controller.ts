@@ -24,7 +24,7 @@ import { UpdateAccountDto } from './dto/update-account.dto';
 import { AccountResponseDto, AccountSummaryDto } from './dto/account-response.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { User } from '../core/database/entities/user.entity';
+import { User } from '../../generated/prisma';
 
 @ApiTags('Accounts')
 @Controller('accounts')

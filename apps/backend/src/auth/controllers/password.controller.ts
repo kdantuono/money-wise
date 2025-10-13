@@ -13,7 +13,7 @@ import {
 import { Request } from 'express';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { CurrentUser } from '../decorators/current-user.decorator';
-import { User } from '../../core/database/entities/user.entity';
+import { User } from '../../../generated/prisma';
 import { PasswordSecurityService } from '../services/password-security.service';
 import { PasswordResetService } from '../services/password-reset.service';
 import { RateLimitService } from '../services/rate-limit.service';
@@ -210,7 +210,6 @@ export class PasswordController {
     return (
       (request.headers['x-forwarded-for'] as string)?.split(',')[0] ||
       (request.headers['x-real-ip'] as string) ||
-      request.connection.remoteAddress ||
       request.socket.remoteAddress ||
       'unknown'
     );

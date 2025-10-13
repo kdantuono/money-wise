@@ -64,7 +64,8 @@
       "Bash(pnpm build:*)",
       "Bash(NODE_ENV=production pnpm build)",
       "Bash(NEXT_PUBLIC_API_URL=http://localhost:3001 pnpm build)",
-      "Bash(NEXT_PUBLIC_API_URL=http://localhost:3001 pnpm --filter @money-wise/web build)"
+      "Bash(NEXT_PUBLIC_API_URL=http://localhost:3001 pnpm --filter @money-wise/web build)",
+      "Bash(pnpm --filter @money-wise/backend test:integration)"
     ],
     "deny": [],
     "ask": []

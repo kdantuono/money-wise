@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException, ConflictException, ForbiddenException } from '@nestjs/common';
-import { UserRole } from '../core/database/entities/user.entity';
+import { UserRole } from '../../generated/prisma';
 import { UpdateUserDto, UpdateUserStatusDto } from './dto/update-user.dto';
 import { UserResponseDto, PaginatedUsersResponseDto } from './dto/user-response.dto';
 import { PrismaUserService } from '../core/database/prisma/services/user.service';

@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule } from './core/config/config.module';
-import { DatabaseModule } from './core/database/database.module';
+import { PrismaModule } from './core/database/prisma/prisma.module';
 import { RedisModule } from './core/redis/redis.module';
 import { HealthModule } from './core/health/health.module';
 import { MonitoringModule } from './core/monitoring/monitoring.module';
@@ -13,7 +13,7 @@ import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
   imports: [
     // Core modules
     ConfigModule,
-    DatabaseModule,
+    PrismaModule,
     RedisModule.forRoot({ isGlobal: true }),
     HealthModule,
     MonitoringModule,
