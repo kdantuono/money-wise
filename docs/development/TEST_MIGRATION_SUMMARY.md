@@ -257,6 +257,169 @@ This migration successfully restored test coverage for Prisma services, **exceed
 
 ---
 
-**Generated**: 2025-10-13  
-**Author**: QA Testing Engineer (Claude Code Agent)  
+## Appendix: HealthController Migration
+
+**Date**: 2025-10-13
+**Type**: Controller Migration (TypeORM DataSource → PrismaService)
+
+### Migration Summary
+
+Successfully migrated the HealthController from TypeORM's `DataSource` to Prisma's `PrismaService` with **zero breaking changes** and **zero test failures**.
+
+### Changes Made
+
+#### 1. Controller Updates (`health.controller.ts`)
+
+**Before (TypeORM)**:
+```typescript
+import { DataSource } from 'typeorm';
+
+constructor(
+  private readonly configService: ConfigService,
+  private readonly dataSource: DataSource,
+  @Inject('default') private readonly redis: Redis,
+) {}
+
+// Database health check
+const isConnected = this.dataSource.isInitialized;
+```
+
+**After (Prisma)**:
+```typescript
+import { PrismaService } from '../database/prisma/prisma.service';
+
+constructor(
+  private readonly configService: ConfigService,
+  private readonly prisma: PrismaService,
+  @Inject('default') private readonly redis: Redis,
+) {}
+
+// Database health check with timeout
+await this.prisma.$queryRaw`SELECT 1 as health`;
+```
+
+#### 2. Module Updates (`health.module.ts`)
+
+**Before (TypeORM)**:
+```typescript
+import { TypeOrmModule } from '@nestjs/typeorm';
+
+@Module({
+  imports: [TypeOrmModule.forFeature([]), RedisModule],
+  controllers: [HealthController],
+})
+```
+
+**After (Prisma)**:
+```typescript
+import { PrismaModule } from '../database/prisma/prisma.module';
+
+@Module({
+  imports: [PrismaModule, RedisModule],
+  controllers: [HealthController],
+})
+```
+
+#### 3. Test Updates (`health.controller.spec.ts`)
+
+**Before (TypeORM)**:
+```typescript
+const mockDataSource = {
+  isInitialized: true,
+  query: jest.fn().mockResolvedValue([{ result: 1 }]),
+};
+```
+
+**After (Prisma)**:
+```typescript
+const mockPrisma = {
+  $queryRaw: jest.fn().mockResolvedValue([{ health: 1 }]),
+} as any;
+```
+
+### Key Improvements
+
+1. **Active Health Checks**: Changed from passive `isInitialized` check to active `$queryRaw` execution
+2. **Timeout Protection**: Added 5-second timeout to prevent hanging health checks
+3. **Explicit Connection Validation**: Prisma query execution verifies actual database connectivity
+4. **Cleaner Module Dependencies**: Direct PrismaModule import vs empty TypeOrmModule.forFeature
+
+### Compromises & Trade-offs
+
+#### Connection Pool Stats Removed
+
+**Before (TypeORM)**:
+```typescript
+// TypeORM exposed connection pool stats
+const pool = this.dataSource.driver.master;
+details: {
+  poolSize: pool.poolSize,
+  activeConnections: pool.activeConnections,
+  idleConnections: pool.idleConnections,
+}
+```
+
+**After (Prisma)**:
+```typescript
+// Prisma manages pool internally - no public API
+// Note in code: "Prisma doesn't expose connection pool stats directly"
+details: undefined // Pool managed by Prisma's internal connection management
+```
+
+**Justification**: Prisma intentionally abstracts connection pool management. This is by design and not a limitation:
+- Pool is automatically optimized based on `connection_limit` in DATABASE_URL
+- Reduces surface area for misconfigurations
+- Simplifies production deployment
+- Health check still validates actual connectivity via query execution
+
+### Test Results
+
+```bash
+Test Suites: 1 passed, 1 total
+Tests:       11 passed, 11 total
+Time:        1.247 s
+```
+
+**Test Coverage**:
+- ✅ Basic health endpoint
+- ✅ Detailed health with database/Redis checks
+- ✅ Readiness probe (database + Redis)
+- ✅ Liveness probe
+- ✅ Metrics endpoint
+- ✅ Error scenarios (database down, Redis down)
+- ✅ Timeout handling (5-second limit)
+
+### Validation
+
+1. ✅ **TypeScript Compilation**: Zero errors
+2. ✅ **ESLint**: Zero new errors (109 pre-existing warnings unrelated to migration)
+3. ✅ **Unit Tests**: 11/11 passed
+4. ✅ **API Contracts**: No breaking changes to endpoints
+5. ✅ **Functionality**: All health check endpoints operational
+
+### Documentation Updates
+
+- Added inline comment explaining Prisma pool management in `checkDatabaseHealth()`
+- Updated test comment: "should not include connection pool stats (Prisma manages pool internally)"
+- Documented 5-second timeout rationale in health check methods
+
+### Lessons Learned
+
+1. **Active > Passive Checks**: Executing queries is more reliable than checking connection state
+2. **Timeout Critical**: Health checks MUST have timeouts to prevent cascading failures
+3. **Abstraction Benefits**: Prisma's pool abstraction reduces operational complexity
+4. **Test Clarity**: Explicitly document what features are NOT available (and why)
+
+### Recommendations
+
+For future health check enhancements:
+1. Consider custom Prisma extension for connection stats if truly needed
+2. Monitor query response times via Sentry/metrics instead of pool stats
+3. Use Prisma's `connection_limit` parameter for pool tuning
+4. Keep 5-second timeout or adjust based on production p99 latency
+
+---
+
+**Generated**: 2025-10-13
+**Author**: QA Testing Engineer (Claude Code Agent)
 **Review Status**: Migration Complete - Ready for PR
