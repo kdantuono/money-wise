@@ -1,8 +1,9 @@
 import { withSentryConfig } from '@sentry/nextjs';
+import bundleAnalyzer from '@next/bundle-analyzer';
 
 // Bundle analyzer for development bundle size analysis
 // Enable with: ANALYZE=true pnpm build
-const withBundleAnalyzer = require('@next/bundle-analyzer')({
+const withBundleAnalyzer = bundleAnalyzer({
   enabled: process.env.ANALYZE === 'true',
 });
 
