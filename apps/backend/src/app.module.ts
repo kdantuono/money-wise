@@ -7,6 +7,8 @@ import { HealthModule } from './core/health/health.module';
 import { MonitoringModule } from './core/monitoring/monitoring.module';
 import { LoggingModule } from './core/logging/logging.module';
 import { AuthModule } from './auth/auth.module';
+import { AccountsModule } from './accounts/accounts.module';
+import { TransactionsModule } from './transactions/transactions.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 
 @Module({
@@ -21,6 +23,8 @@ import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 
     // Feature modules
     AuthModule,
+    AccountsModule,
+    TransactionsModule,
   ],
   controllers: [],
   providers: [
