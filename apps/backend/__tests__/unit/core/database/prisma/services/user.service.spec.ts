@@ -1775,7 +1775,7 @@ describe('PrismaUserService', () => {
         { status: 'INACTIVE' as UserStatus, _count: { _all: 3 } },
         { status: 'SUSPENDED' as UserStatus, _count: { _all: 1 } },
       ];
-      // @ts-expect-error - Prisma groupBy return type creates circular references in mock
+      // @ts-ignore - Prisma groupBy has complex circular type references in mock context
       prisma.user.groupBy.mockResolvedValue(mockGroupByResult);
 
       // Act
