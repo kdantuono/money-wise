@@ -4,7 +4,7 @@
   "description": "MoneyWise NestJS Backend API",
   "private": true,
   "scripts": {
-    "build": "nest build",
+    "build": "prisma generate && nest build",
     "dev": "nest start --watch",
     "start": "nest start",
     "start:prod": "node dist/main",
