@@ -29,6 +29,7 @@ concurrency:
 env:
   NODE_VERSION: '18'
   PNPM_VERSION: '8.15.1'
+  TURBO_TELEMETRY_DISABLED: '1'  # Opt-out of anonymous telemetry
 
 jobs:
   # ===================================================================

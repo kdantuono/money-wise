@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { AuthService, JwtPayload } from '../auth.service';
-import { User } from '../../core/database/entities/user.entity';
+import type { User } from '../../../generated/prisma';
 import { AuthConfig } from '../../core/config/auth.config';
 
 @Injectable()

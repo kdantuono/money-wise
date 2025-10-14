@@ -5,27 +5,46 @@ jest.mock('ioredis', () => {
 });
 
 import { Test, TestingModule } from '@nestjs/testing';
-import { Repository } from 'typeorm';
-import { getRepositoryToken } from '@nestjs/typeorm';
 import { ConfigService } from '@nestjs/config';
 import { AccountLockoutService, LockoutInfo } from '@/auth/services/account-lockout.service';
-import { User, UserStatus } from '@/core/database/entities/user.entity';
+import { UserStatus } from '../../../../generated/prisma';
+import { PrismaUserService } from '@/core/database/prisma/services/user.service';
 import { MockRedis, createMockRedis } from '../../../mocks/redis.mock';
+
+// Mock user type matching Prisma User
+interface MockUser {
+  id: string;
+  email: string;
+  passwordHash: string;
+  firstName: string;
+  lastName: string;
+  role: any;
+  status: UserStatus;
+  emailVerifiedAt: Date | null;
+  lastLoginAt: Date | null;
+  currency: string;
+  timezone: string;
+  avatar: string | null;
+  preferences: any;
+  createdAt: Date;
+  updatedAt: Date;
+  familyId: string;
+}
 
 describe('AccountLockoutService', () => {
   let service: AccountLockoutService;
-  let mockUserRepository: jest.Mocked<Repository<User>>;
+  let mockPrismaUserService: jest.Mocked<PrismaUserService>;
   let mockConfigService: jest.Mocked<ConfigService>;
   let mockRedis: MockRedis;
 
-  const createMockUser = (overrides?: Partial<User>): User => {
-    const baseUser = {
+  const createMockUser = (overrides?: Partial<MockUser>): MockUser => {
+    return {
       id: 'user-123',
       email: 'test@example.com',
       passwordHash: 'hashed_password',
       firstName: 'Test',
       lastName: 'User',
-      role: 0 as any,
+      role: 'MEMBER' as any,
       status: UserStatus.ACTIVE,
       emailVerifiedAt: new Date('2025-01-01'),
       lastLoginAt: null,
@@ -35,20 +54,9 @@ describe('AccountLockoutService', () => {
       preferences: null,
       createdAt: new Date('2025-01-01'),
       updatedAt: new Date('2025-01-01'),
-      accounts: [],
+      familyId: 'family-123',
       ...overrides,
     };
-
-    // Add getter for fullName virtual property
-    Object.defineProperty(baseUser, 'fullName', {
-      get() {
-        return `${this.firstName} ${this.lastName}`;
-      },
-      enumerable: true,
-      configurable: true,
-    });
-
-    return baseUser as User;
   };
 
   beforeEach(async () => {
@@ -58,11 +66,10 @@ describe('AccountLockoutService', () => {
       providers: [
         AccountLockoutService,
         {
-          provide: getRepositoryToken(User),
+          provide: PrismaUserService,
           useValue: {
-            findOne: jest.fn(),
+            findByIdentifier: jest.fn(),
             update: jest.fn(),
-            save: jest.fn(),
           },
         },
         {
@@ -79,7 +86,7 @@ describe('AccountLockoutService', () => {
     }).compile();
 
     service = module.get<AccountLockoutService>(AccountLockoutService);
-    mockUserRepository = module.get(getRepositoryToken(User));
+    mockPrismaUserService = module.get(PrismaUserService);
     mockConfigService = module.get(ConfigService);
 
     // Reset mocks
@@ -168,7 +175,7 @@ describe('AccountLockoutService', () => {
     it('should lock account after 5 failed attempts with default settings', async () => {
       const firstFailedAt = now - 4000;
       mockRedis.hmget.mockResolvedValueOnce(['4', null, '0', String(firstFailedAt)]);
-      mockUserRepository.findOne.mockResolvedValueOnce(createMockUser());
+      mockPrismaUserService.findByIdentifier.mockResolvedValueOnce(createMockUser());
 
       const result = await service.recordFailedAttempt(identifier);
 
@@ -197,10 +204,8 @@ describe('AccountLockoutService', () => {
       );
 
       // Verify user status updated to SUSPENDED
-      expect(mockUserRepository.findOne).toHaveBeenCalledWith({
-        where: { email: identifier },
-      });
-      expect(mockUserRepository.update).toHaveBeenCalledWith('user-123', {
+      expect(mockPrismaUserService.findByIdentifier).toHaveBeenCalledWith(identifier);
+      expect(mockPrismaUserService.update).toHaveBeenCalledWith('user-123', {
         status: UserStatus.SUSPENDED,
       });
     });
@@ -243,7 +248,7 @@ describe('AccountLockoutService', () => {
     it('should apply progressive lockout on second lockout (2x multiplier)', async () => {
       const firstFailedAt = now - 4000;
       mockRedis.hmget.mockResolvedValueOnce(['4', null, '1', String(firstFailedAt)]);
-      mockUserRepository.findOne.mockResolvedValueOnce(createMockUser());
+      mockPrismaUserService.findByIdentifier.mockResolvedValueOnce(createMockUser());
 
       const result = await service.recordFailedAttempt(identifier);
 
@@ -269,7 +274,7 @@ describe('AccountLockoutService', () => {
     it('should apply progressive lockout on third lockout (4x multiplier)', async () => {
       const firstFailedAt = now - 4000;
       mockRedis.hmget.mockResolvedValueOnce(['4', null, '2', String(firstFailedAt)]);
-      mockUserRepository.findOne.mockResolvedValueOnce(createMockUser());
+      mockPrismaUserService.findByIdentifier.mockResolvedValueOnce(createMockUser());
 
       const result = await service.recordFailedAttempt(identifier);
 
@@ -289,7 +294,7 @@ describe('AccountLockoutService', () => {
     it('should apply progressive lockout on fourth lockout (8x multiplier)', async () => {
       const firstFailedAt = now - 4000;
       mockRedis.hmget.mockResolvedValueOnce(['4', null, '3', String(firstFailedAt)]);
-      mockUserRepository.findOne.mockResolvedValueOnce(createMockUser());
+      mockPrismaUserService.findByIdentifier.mockResolvedValueOnce(createMockUser());
 
       const result = await service.recordFailedAttempt(identifier);
 
@@ -303,7 +308,7 @@ describe('AccountLockoutService', () => {
     it('should apply progressive lockout on fifth lockout (16x multiplier)', async () => {
       const firstFailedAt = now - 4000;
       mockRedis.hmget.mockResolvedValueOnce(['4', null, '4', String(firstFailedAt)]);
-      mockUserRepository.findOne.mockResolvedValueOnce(createMockUser());
+      mockPrismaUserService.findByIdentifier.mockResolvedValueOnce(createMockUser());
 
       const result = await service.recordFailedAttempt(identifier);
 
@@ -317,7 +322,7 @@ describe('AccountLockoutService', () => {
     it('should cap progressive lockout at 48x multiplier', async () => {
       const firstFailedAt = now - 4000;
       mockRedis.hmget.mockResolvedValueOnce(['4', null, '10', String(firstFailedAt)]);
-      mockUserRepository.findOne.mockResolvedValueOnce(createMockUser());
+      mockPrismaUserService.findByIdentifier.mockResolvedValueOnce(createMockUser());
 
       const result = await service.recordFailedAttempt(identifier);
 
@@ -336,7 +341,7 @@ describe('AccountLockoutService', () => {
 
     it('should respect custom maxFailedAttempts setting', async () => {
       mockRedis.hmget.mockResolvedValueOnce(['2', null, '0', String(now - 2000)]);
-      mockUserRepository.findOne.mockResolvedValueOnce(createMockUser());
+      mockPrismaUserService.findByIdentifier.mockResolvedValueOnce(createMockUser());
 
       const result = await service.recordFailedAttempt(identifier, {
         maxFailedAttempts: 3,
@@ -348,7 +353,7 @@ describe('AccountLockoutService', () => {
 
     it('should respect custom lockoutDurationMs setting', async () => {
       mockRedis.hmget.mockResolvedValueOnce(['4', null, '0', String(now - 4000)]);
-      mockUserRepository.findOne.mockResolvedValueOnce(createMockUser());
+      mockPrismaUserService.findByIdentifier.mockResolvedValueOnce(createMockUser());
 
       const customDuration = 60 * 60 * 1000; // 1 hour
       const result = await service.recordFailedAttempt(identifier, {
@@ -361,7 +366,7 @@ describe('AccountLockoutService', () => {
 
     it('should disable progressive lockout when progressiveLockout is false', async () => {
       mockRedis.hmget.mockResolvedValueOnce(['4', null, '5', String(now - 4000)]);
-      mockUserRepository.findOne.mockResolvedValueOnce(createMockUser());
+      mockPrismaUserService.findByIdentifier.mockResolvedValueOnce(createMockUser());
 
       const result = await service.recordFailedAttempt(identifier, {
         progressiveLockout: false,
@@ -376,40 +381,36 @@ describe('AccountLockoutService', () => {
     it('should handle user ID identifier (UUID)', async () => {
       const userId = 'user-123';
       mockRedis.hmget.mockResolvedValueOnce(['4', null, '0', String(now - 4000)]);
-      mockUserRepository.findOne.mockResolvedValueOnce(createMockUser());
+      mockPrismaUserService.findByIdentifier.mockResolvedValueOnce(createMockUser());
 
       await service.recordFailedAttempt(userId);
 
-      expect(mockUserRepository.findOne).toHaveBeenCalledWith({
-        where: { id: userId },
-      });
+      expect(mockPrismaUserService.findByIdentifier).toHaveBeenCalledWith(userId);
     });
 
     it('should handle email identifier', async () => {
       mockRedis.hmget.mockResolvedValueOnce(['4', null, '0', String(now - 4000)]);
-      mockUserRepository.findOne.mockResolvedValueOnce(createMockUser());
+      mockPrismaUserService.findByIdentifier.mockResolvedValueOnce(createMockUser());
 
       await service.recordFailedAttempt(identifier);
 
-      expect(mockUserRepository.findOne).toHaveBeenCalledWith({
-        where: { email: identifier },
-      });
+      expect(mockPrismaUserService.findByIdentifier).toHaveBeenCalledWith(identifier);
     });
 
     it('should handle user not found gracefully', async () => {
       mockRedis.hmget.mockResolvedValueOnce(['4', null, '0', String(now - 4000)]);
-      mockUserRepository.findOne.mockResolvedValueOnce(null);
+      mockPrismaUserService.findByIdentifier.mockResolvedValueOnce(null);
 
       const result = await service.recordFailedAttempt(identifier);
 
       // Should still lock in Redis even if user not found in DB
       expect(result.isLocked).toBe(true);
-      expect(mockUserRepository.update).not.toHaveBeenCalled();
+      expect(mockPrismaUserService.update).not.toHaveBeenCalled();
     });
 
     it('should handle user already SUSPENDED', async () => {
       mockRedis.hmget.mockResolvedValueOnce(['4', null, '0', String(now - 4000)]);
-      mockUserRepository.findOne.mockResolvedValueOnce(
+      mockPrismaUserService.findByIdentifier.mockResolvedValueOnce(
         createMockUser({ status: UserStatus.SUSPENDED })
       );
 
@@ -417,7 +418,7 @@ describe('AccountLockoutService', () => {
 
       expect(result.isLocked).toBe(true);
       // Should not update status since already SUSPENDED
-      expect(mockUserRepository.update).not.toHaveBeenCalled();
+      expect(mockPrismaUserService.update).not.toHaveBeenCalled();
     });
 
     it('should return safe default on Redis error', async () => {
@@ -450,7 +451,7 @@ describe('AccountLockoutService', () => {
 
     it('should clear failed attempts from Redis', async () => {
       mockRedis.del.mockResolvedValueOnce(1);
-      mockUserRepository.findOne.mockResolvedValueOnce(
+      mockPrismaUserService.findByIdentifier.mockResolvedValueOnce(
         createMockUser({ status: UserStatus.SUSPENDED })
       );
 
@@ -461,35 +462,33 @@ describe('AccountLockoutService', () => {
 
     it('should update user status to ACTIVE if currently SUSPENDED', async () => {
       mockRedis.del.mockResolvedValueOnce(1);
-      mockUserRepository.findOne.mockResolvedValueOnce(
+      mockPrismaUserService.findByIdentifier.mockResolvedValueOnce(
         createMockUser({ status: UserStatus.SUSPENDED })
       );
 
       await service.clearFailedAttempts(identifier);
 
-      expect(mockUserRepository.findOne).toHaveBeenCalledWith({
-        where: { email: identifier },
-      });
-      expect(mockUserRepository.update).toHaveBeenCalledWith('user-123', {
+      expect(mockPrismaUserService.findByIdentifier).toHaveBeenCalledWith(identifier);
+      expect(mockPrismaUserService.update).toHaveBeenCalledWith('user-123', {
         status: UserStatus.ACTIVE,
       });
     });
 
     it('should not update user status if already ACTIVE', async () => {
       mockRedis.del.mockResolvedValueOnce(1);
-      mockUserRepository.findOne.mockResolvedValueOnce(createMockUser());
+      mockPrismaUserService.findByIdentifier.mockResolvedValueOnce(createMockUser());
 
       await service.clearFailedAttempts(identifier);
 
-      expect(mockUserRepository.update).not.toHaveBeenCalled();
+      expect(mockPrismaUserService.update).not.toHaveBeenCalled();
     });
 
     it('should handle user not found gracefully', async () => {
       mockRedis.del.mockResolvedValueOnce(1);
-      mockUserRepository.findOne.mockResolvedValueOnce(null);
+      mockPrismaUserService.findByIdentifier.mockResolvedValueOnce(null);
 
       await expect(service.clearFailedAttempts(identifier)).resolves.not.toThrow();
-      expect(mockUserRepository.update).not.toHaveBeenCalled();
+      expect(mockPrismaUserService.update).not.toHaveBeenCalled();
     });
 
     it('should handle Redis error gracefully', async () => {
@@ -500,7 +499,7 @@ describe('AccountLockoutService', () => {
 
     it('should handle database error gracefully', async () => {
       mockRedis.del.mockResolvedValueOnce(1);
-      mockUserRepository.findOne.mockRejectedValueOnce(new Error('Database error'));
+      mockPrismaUserService.findByIdentifier.mockRejectedValueOnce(new Error('Database error'));
 
       await expect(service.clearFailedAttempts(identifier)).resolves.not.toThrow();
     });
@@ -592,7 +591,7 @@ describe('AccountLockoutService', () => {
 
     it('should clear lockout data from Redis', async () => {
       mockRedis.del.mockResolvedValueOnce(1);
-      mockUserRepository.findOne.mockResolvedValueOnce(
+      mockPrismaUserService.findByIdentifier.mockResolvedValueOnce(
         createMockUser({ status: UserStatus.SUSPENDED })
       );
 
@@ -603,35 +602,33 @@ describe('AccountLockoutService', () => {
 
     it('should update user status to ACTIVE', async () => {
       mockRedis.del.mockResolvedValueOnce(1);
-      mockUserRepository.findOne.mockResolvedValueOnce(
+      mockPrismaUserService.findByIdentifier.mockResolvedValueOnce(
         createMockUser({ status: UserStatus.SUSPENDED })
       );
 
       await service.unlockAccount(identifier);
 
-      expect(mockUserRepository.findOne).toHaveBeenCalledWith({
-        where: { email: identifier },
-      });
-      expect(mockUserRepository.update).toHaveBeenCalledWith('user-123', {
+      expect(mockPrismaUserService.findByIdentifier).toHaveBeenCalledWith(identifier);
+      expect(mockPrismaUserService.update).toHaveBeenCalledWith('user-123', {
         status: UserStatus.ACTIVE,
       });
     });
 
     it('should not update status if already ACTIVE', async () => {
       mockRedis.del.mockResolvedValueOnce(1);
-      mockUserRepository.findOne.mockResolvedValueOnce(createMockUser());
+      mockPrismaUserService.findByIdentifier.mockResolvedValueOnce(createMockUser());
 
       await service.unlockAccount(identifier);
 
-      expect(mockUserRepository.update).not.toHaveBeenCalled();
+      expect(mockPrismaUserService.update).not.toHaveBeenCalled();
     });
 
     it('should handle user not found gracefully', async () => {
       mockRedis.del.mockResolvedValueOnce(1);
-      mockUserRepository.findOne.mockResolvedValueOnce(null);
+      mockPrismaUserService.findByIdentifier.mockResolvedValueOnce(null);
 
       await expect(service.unlockAccount(identifier)).resolves.not.toThrow();
-      expect(mockUserRepository.update).not.toHaveBeenCalled();
+      expect(mockPrismaUserService.update).not.toHaveBeenCalled();
     });
 
     it('should handle Redis error gracefully', async () => {
@@ -642,7 +639,7 @@ describe('AccountLockoutService', () => {
 
     it('should handle database error gracefully', async () => {
       mockRedis.del.mockResolvedValueOnce(1);
-      mockUserRepository.findOne.mockRejectedValueOnce(new Error('Database error'));
+      mockPrismaUserService.findByIdentifier.mockRejectedValueOnce(new Error('Database error'));
 
       await expect(service.unlockAccount(identifier)).resolves.not.toThrow();
     });
@@ -849,7 +846,7 @@ describe('AccountLockoutService', () => {
 
     it('should handle lockout at exact threshold', async () => {
       mockRedis.hmget.mockResolvedValueOnce(['4', null, '0', String(now - 4000)]);
-      mockUserRepository.findOne.mockResolvedValueOnce(createMockUser());
+      mockPrismaUserService.findByIdentifier.mockResolvedValueOnce(createMockUser());
 
       const result = await service.recordFailedAttempt(identifier);
 
@@ -877,7 +874,7 @@ describe('AccountLockoutService', () => {
 
     it('should handle very long lockout duration', async () => {
       mockRedis.hmget.mockResolvedValueOnce(['4', null, '10', String(now - 4000)]);
-      mockUserRepository.findOne.mockResolvedValueOnce(createMockUser());
+      mockPrismaUserService.findByIdentifier.mockResolvedValueOnce(createMockUser());
 
       const result = await service.recordFailedAttempt(identifier);
 

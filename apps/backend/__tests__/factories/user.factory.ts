@@ -1,5 +1,5 @@
 import { faker } from '@faker-js/faker';
-import { User, UserRole, UserStatus } from '@/core/database/entities/user.entity';
+import { User, UserRole, UserStatus } from '../../generated/prisma';
 import * as bcrypt from 'bcrypt';
 import { DeepPartial } from 'typeorm';
 

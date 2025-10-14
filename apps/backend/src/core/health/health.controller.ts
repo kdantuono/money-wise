@@ -1,10 +1,11 @@
 import { Controller, Get, Inject, HttpStatus, HttpException } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
-import { DataSource } from 'typeorm';
 import { Redis } from 'ioredis';
 import * as Sentry from '@sentry/node';
 import { AppConfig } from '../config/app.config';
+import { Public } from '../../auth/decorators/public.decorator';
+import { PrismaService } from '../database/prisma/prisma.service';
 
 interface HealthCheckResponse {
   status: 'ok' | 'error';
@@ -21,25 +22,16 @@ interface HealthCheckResponse {
   };
 }
 
-interface PostgresDriver {
-  master?: {
-    pool?: {
-      totalCount: number;
-      idleCount: number;
-      waitingCount: number;
-    };
-  };
-}
-
 @ApiTags('Health')
 @Controller('health')
 export class HealthController {
   constructor(
     private readonly configService: ConfigService,
-    private readonly dataSource: DataSource,
+    private readonly prisma: PrismaService,
     @Inject('default') private readonly redis: Redis,
   ) {}
 
+  @Public()
   @Get()
   @ApiOperation({ summary: 'Health check endpoint' })
   @ApiResponse({
@@ -84,6 +76,7 @@ export class HealthController {
     };
   }
 
+  @Public()
   @Get('ready')
   @ApiOperation({ summary: 'Readiness probe endpoint' })
   @ApiResponse({
@@ -101,11 +94,9 @@ export class HealthController {
     };
 
     try {
-      // Check database connection
-      if (this.dataSource.isInitialized) {
-        await this.dataSource.query('SELECT 1');
-        checks.database = true;
-      }
+      // Check database connection using Prisma
+      await this.prisma.$queryRaw`SELECT 1`;
+      checks.database = true;
     } catch (error) {
       Sentry.captureException(error, {
         tags: { healthCheck: 'database' },
@@ -144,6 +135,7 @@ export class HealthController {
     };
   }
 
+  @Public()
   @Get('live')
   @ApiOperation({ summary: 'Liveness probe endpoint' })
   @ApiResponse({
@@ -157,6 +149,7 @@ export class HealthController {
     };
   }
 
+  @Public()
   @Get('detailed')
   @ApiOperation({ summary: 'Detailed health check with service dependencies' })
   @ApiResponse({
@@ -200,6 +193,7 @@ export class HealthController {
     );
   }
 
+  @Public()
   @Get('metrics')
   @ApiOperation({ summary: 'Application metrics and resource usage' })
   @ApiResponse({
@@ -256,30 +250,21 @@ export class HealthController {
     try {
       const start = Date.now();
 
-      // Check database connection
-      if (!this.dataSource.isInitialized) {
-        throw new Error('Database not initialized');
-      }
+      // Execute simple query with 5-second timeout to prevent hanging
+      const healthCheck = this.prisma.$queryRaw`SELECT 1 as health`;
+      const timeout = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Database health check timeout (5s)')), 5000)
+      );
 
-      // Execute simple query to verify connectivity
-      await this.dataSource.query('SELECT 1 as health');
-
-      // Get connection pool stats
-      const driver = this.dataSource.driver as PostgresDriver;
-      const poolStats = driver.master?.pool
-        ? {
-            total: driver.master.pool.totalCount,
-            idle: driver.master.pool.idleCount,
-            waiting: driver.master.pool.waitingCount,
-          }
-        : undefined;
+      await Promise.race([healthCheck, timeout]);
 
       const responseTime = Date.now() - start;
 
+      // Note: Prisma doesn't expose connection pool stats directly
+      // Pool is managed internally by Prisma's connection management
       return {
         status: 'ok',
         responseTime,
-        details: poolStats ? { pool: poolStats } : undefined,
       };
     } catch (error) {
       Sentry.captureException(error, {
@@ -297,15 +282,22 @@ export class HealthController {
     try {
       const start = Date.now();
 
-      // Ping Redis
-      const pong = await this.redis.ping();
+      // Create 5-second timeout promise
+      const timeout = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Redis health check timeout (5s)')), 5000)
+      );
+
+      // Ping Redis with timeout
+      const pingPromise = this.redis.ping();
+      const pong = await Promise.race([pingPromise, timeout]);
 
       if (pong !== 'PONG') {
         throw new Error(`Unexpected Redis response: ${pong}`);
       }
 
-      // Get Redis info
-      const info = await this.redis.info('server');
+      // Get Redis info with timeout
+      const infoPromise = this.redis.info('server');
+      const info = await Promise.race([infoPromise, timeout]) as string;
       const versionMatch = info.match(/redis_version:([^\r\n]+)/);
       const version = versionMatch ? versionMatch[1] : 'unknown';
 
@@ -340,6 +332,7 @@ export class HealthController {
    * 3. Trigger error: curl http://localhost:3001/api/health/sentry-test
    * 4. Check Sentry dashboard for error
    */
+  @Public()
   @Get('sentry-test')
   @ApiOperation({
     summary: 'Test Sentry error tracking (DEV ONLY)',

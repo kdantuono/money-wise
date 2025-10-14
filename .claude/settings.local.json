@@ -53,7 +53,20 @@
       "Bash(pnpm --filter @money-wise/web test:unit -- --coverage --coverageReporters=text-summary)",
       "Bash(git branch:*)",
       "Bash(pnpm --filter @money-wise/backend test:unit -- --coverage --coverageReporters=text-summary --passWithNoTests)",
-      "Bash(xargs:*)"
+      "Bash(xargs:*)",
+      "Bash(git push:*)",
+      "Bash(gh api:*)",
+      "Bash(DATABASE_URL=postgresql://test:test@localhost:5432/test_db pnpm db:migrate)",
+      "Bash(git checkout:*)",
+      "Bash(pnpm install:*)",
+      "Bash(pnpm --filter @money-wise/backend build)",
+      "Bash(pnpm --filter @money-wise/web build)",
+      "Bash(pnpm build:*)",
+      "Bash(NODE_ENV=production pnpm build)",
+      "Bash(NEXT_PUBLIC_API_URL=http://localhost:3001 pnpm build)",
+      "Bash(NEXT_PUBLIC_API_URL=http://localhost:3001 pnpm --filter @money-wise/web build)",
+      "Bash(pnpm --filter @money-wise/backend test:integration)",
+      "Bash(pnpm --filter @money-wise/backend test:unit -- rate-limit.guard.spec.ts --verbose)"
     ],
     "deny": [],
     "ask": []

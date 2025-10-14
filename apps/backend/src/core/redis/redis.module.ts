@@ -1,4 +1,4 @@
-import { Module, DynamicModule, Global, Provider } from '@nestjs/common';
+import { Module, DynamicModule, Global, Provider, OnModuleDestroy, Injectable, Inject } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
 
@@ -7,9 +7,33 @@ export interface RedisModuleOptions {
   useFactory?: (configService: ConfigService) => Redis;
 }
 
+@Injectable()
+class RedisConnectionManager implements OnModuleDestroy {
+  constructor(
+    @Inject('default') private readonly redis: Redis,
+  ) {}
+
+  async onModuleDestroy() {
+    try {
+      // Use disconnect() instead of quit() for faster cleanup
+      // disconnect() doesn't wait for pending replies, reducing race conditions
+      if (this.redis && typeof this.redis.disconnect === 'function') {
+        const status = this.redis.status;
+        if (status !== 'end' && status !== 'close') {
+          this.redis.disconnect();
+        }
+      }
+    } catch (error) {
+      // Silently ignore all errors during cleanup
+      // This is expected if connection is already closed by app.close()
+    }
+  }
+}
+
 @Global()
 @Module({})
 export class RedisModule {
+
   static forRoot(options: RedisModuleOptions = {}): DynamicModule {
     const redisProvider: Provider = {
       provide: 'default',
@@ -32,7 +56,7 @@ export class RedisModule {
     return {
       module: RedisModule,
       global: options.isGlobal !== false,
-      providers: [redisProvider],
+      providers: [redisProvider, RedisConnectionManager],
       exports: ['default'],
     };
   }

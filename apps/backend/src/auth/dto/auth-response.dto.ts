@@ -1,4 +1,4 @@
-import { User } from '../../core/database/entities/user.entity';
+import { User } from '../../../generated/prisma';
 
 export class AuthResponseDto {
   accessToken: string;

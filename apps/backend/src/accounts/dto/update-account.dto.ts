@@ -1,6 +1,6 @@
 import { IsEnum, IsString, IsNumber, IsOptional, IsBoolean } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { AccountType, AccountStatus } from '../../core/database/entities/account.entity';
+import { AccountType, AccountStatus } from '../../../generated/prisma';
 
 export class UpdateAccountDto {
   @ApiProperty({ description: 'Account name', example: 'Chase Checking', required: false })

@@ -9,23 +9,22 @@ jest.mock('speakeasy');
 jest.mock('qrcode');
 
 import { Test, TestingModule } from '@nestjs/testing';
-import { Repository } from 'typeorm';
-import { getRepositoryToken } from '@nestjs/typeorm';
 import { ConfigService } from '@nestjs/config';
 import { BadRequestException } from '@nestjs/common';
 import { TwoFactorAuthService, BackupCode } from '@/auth/services/two-factor-auth.service';
-import { User, UserStatus } from '@/core/database/entities/user.entity';
+import { UserStatus } from '../../../../generated/prisma';
+import { PrismaUserService } from '@/core/database/prisma/services/user.service';
 import { MockRedis, createMockRedis } from '../../../mocks/redis.mock';
 import * as speakeasy from 'speakeasy';
 import * as qrcode from 'qrcode';
 
 describe('TwoFactorAuthService', () => {
   let service: TwoFactorAuthService;
-  let mockUserRepository: jest.Mocked<Repository<User>>;
+  let mockPrismaUserService: jest.Mocked<PrismaUserService>;
   let mockConfigService: jest.Mocked<ConfigService>;
   let mockRedis: MockRedis;
 
-  const createMockUser = (overrides?: Partial<User>): User => {
+  const createMockUser = (overrides?: any): any => {
     const baseUser = {
       id: 'user-123',
       email: 'test@example.com',
@@ -55,7 +54,7 @@ describe('TwoFactorAuthService', () => {
       configurable: true,
     });
 
-    return baseUser as User;
+    return baseUser;
   };
 
   beforeEach(async () => {
@@ -65,10 +64,9 @@ describe('TwoFactorAuthService', () => {
       providers: [
         TwoFactorAuthService,
         {
-          provide: getRepositoryToken(User),
+          provide: PrismaUserService,
           useValue: {
             findOne: jest.fn(),
-            save: jest.fn(),
           },
         },
         {
@@ -80,11 +78,15 @@ describe('TwoFactorAuthService', () => {
             }),
           },
         },
+        {
+          provide: 'default',
+          useValue: createMockRedis(),
+        },
       ],
     }).compile();
 
     service = module.get<TwoFactorAuthService>(TwoFactorAuthService);
-    mockUserRepository = module.get(getRepositoryToken(User));
+    mockPrismaUserService = module.get(PrismaUserService);
     mockConfigService = module.get(ConfigService);
 
     // Replace the service's Redis instance with our mock
@@ -106,7 +108,7 @@ describe('TwoFactorAuthService', () => {
         otpauth_url: 'otpauth://totp/MoneyWise(test@example.com)?secret=JBSWY3DPEHPK3PXP&issuer=MoneyWise',
       };
 
-      mockUserRepository.findOne.mockResolvedValue(user);
+      mockPrismaUserService.findOne.mockResolvedValue(user);
       (speakeasy.generateSecret as jest.Mock).mockReturnValue(mockSecret);
       (qrcode.toDataURL as jest.Mock).mockResolvedValue('data:image/png;base64,mockQRCode');
 
@@ -126,7 +128,7 @@ describe('TwoFactorAuthService', () => {
     });
 
     it('should throw error if user not found', async () => {
-      mockUserRepository.findOne.mockResolvedValue(null);
+      mockPrismaUserService.findOne.mockResolvedValue(null);
 
       await expect(service.setupTwoFactor('invalid-user')).rejects.toThrow('Failed to setup two-factor authentication');
     });
@@ -138,7 +140,7 @@ describe('TwoFactorAuthService', () => {
         otpauth_url: 'otpauth://totp/MoneyWise(test@example.com)?secret=JBSWY3DPEHPK3PXP&issuer=MoneyWise',
       };
 
-      mockUserRepository.findOne.mockResolvedValue(user);
+      mockPrismaUserService.findOne.mockResolvedValue(user);
       (speakeasy.generateSecret as jest.Mock).mockReturnValue(mockSecret);
       (qrcode.toDataURL as jest.Mock).mockRejectedValue(new Error('QR generation failed'));
 
@@ -152,7 +154,7 @@ describe('TwoFactorAuthService', () => {
         otpauth_url: 'otpauth://totp/MoneyWise(test@example.com)?secret=JBSWY3DPEHPK3PXP&issuer=MoneyWise',
       };
 
-      mockUserRepository.findOne.mockResolvedValue(user);
+      mockPrismaUserService.findOne.mockResolvedValue(user);
       (speakeasy.generateSecret as jest.Mock).mockReturnValue(mockSecret);
       (qrcode.toDataURL as jest.Mock).mockResolvedValue('data:image/png;base64,mockQRCode');
 
@@ -169,7 +171,7 @@ describe('TwoFactorAuthService', () => {
         otpauth_url: 'otpauth://totp/MoneyWise(test@example.com)?secret=JBSWY3DPEHPK3PXP&issuer=MoneyWise',
       };
 
-      mockUserRepository.findOne.mockResolvedValue(user);
+      mockPrismaUserService.findOne.mockResolvedValue(user);
       (speakeasy.generateSecret as jest.Mock).mockReturnValue(mockSecret);
       (qrcode.toDataURL as jest.Mock).mockResolvedValue('data:image/png;base64,mockQRCode');
 
@@ -581,7 +583,7 @@ describe('TwoFactorAuthService', () => {
         otpauth_url: 'otpauth://totp/MoneyWise(test@example.com)?secret=JBSWY3DPEHPK3PXP&issuer=MoneyWise',
       };
 
-      mockUserRepository.findOne.mockResolvedValue(user);
+      mockPrismaUserService.findOne.mockResolvedValue(user);
       (speakeasy.generateSecret as jest.Mock).mockReturnValue(mockSecret);
       (qrcode.toDataURL as jest.Mock).mockResolvedValue('data:image/png;base64,mockQRCode');
 
@@ -719,7 +721,7 @@ describe('TwoFactorAuthService', () => {
         otpauth_url: 'otpauth://totp/MoneyWise(test@example.com)?secret=JBSWY3DPEHPK3PXP&issuer=MoneyWise',
       };
 
-      mockUserRepository.findOne.mockResolvedValue(user);
+      mockPrismaUserService.findOne.mockResolvedValue(user);
       (speakeasy.generateSecret as jest.Mock).mockReturnValue(mockSecret);
       (qrcode.toDataURL as jest.Mock).mockResolvedValue('data:image/png;base64,mockQRCode');
 

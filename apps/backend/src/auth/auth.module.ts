@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
-import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
@@ -15,13 +14,11 @@ import { AccountLockoutService } from './services/account-lockout.service';
 import { EmailVerificationService } from './services/email-verification.service';
 import { PasswordResetService } from './services/password-reset.service';
 import { AuditLogService } from './services/audit-log.service';
-import { User } from '../core/database/entities/user.entity';
-import { AuditLog } from '../core/database/entities/audit-log.entity';
-import { PasswordHistory } from '../core/database/entities/password-history.entity';
+import { PrismaModule } from '../core/database/prisma/prisma.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User, AuditLog, PasswordHistory]),
+    PrismaModule, // Prisma module provides all Prisma services
     PassportModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],

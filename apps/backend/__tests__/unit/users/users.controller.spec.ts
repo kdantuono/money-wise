@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException, ForbiddenException, ConflictException } from '@nestjs/common';
 import { UsersController } from '../../../src/users/users.controller';
 import { UsersService } from '../../../src/users/users.service';
-import { User, UserRole, UserStatus } from '../../../src/core/database/entities/user.entity';
+import { User, UserRole, UserStatus } from '../../../generated/prisma';
 import { UpdateUserDto, UpdateUserStatusDto } from '../../../src/users/dto/update-user.dto';
 
 describe('UsersController', () => {
@@ -15,15 +15,17 @@ describe('UsersController', () => {
     firstName: 'Test',
     lastName: 'User',
     passwordHash: 'hashed_password',
-    role: UserRole.USER,
+    role: UserRole.MEMBER,
     status: UserStatus.ACTIVE,
     currency: 'USD',
+    avatar: null,
+    timezone: null,
+    preferences: null,
+    lastLoginAt: null,
+    emailVerifiedAt: new Date('2025-01-01'),
+    familyId: 'family-1',
     createdAt: new Date('2025-01-01'),
     updatedAt: new Date('2025-01-01'),
-    accounts: [],
-    get fullName() { return `${this.firstName} ${this.lastName}`; },
-    get isEmailVerified() { return !!this.emailVerifiedAt; },
-    get isActive() { return this.status === UserStatus.ACTIVE; },
   } as User;
 
   const mockAdminUser: User = {
@@ -125,12 +127,10 @@ describe('UsersController', () => {
         email: mockUser.email,
         firstName: mockUser.firstName,
         lastName: mockUser.lastName,
-        fullName: mockUser.fullName,
         role: mockUser.role,
         status: mockUser.status,
         currency: mockUser.currency,
-        isEmailVerified: mockUser.isEmailVerified,
-        isActive: mockUser.isActive,
+        emailVerifiedAt: mockUser.emailVerifiedAt,
         createdAt: mockUser.createdAt,
         updatedAt: mockUser.updatedAt,
       };
@@ -169,12 +169,10 @@ describe('UsersController', () => {
         email: mockUser.email,
         firstName: mockUser.firstName,
         lastName: mockUser.lastName,
-        fullName: mockUser.fullName,
         role: mockUser.role,
         status: mockUser.status,
         currency: mockUser.currency,
-        isEmailVerified: mockUser.isEmailVerified,
-        isActive: mockUser.isActive,
+        emailVerifiedAt: mockUser.emailVerifiedAt,
         createdAt: mockUser.createdAt,
         updatedAt: mockUser.updatedAt,
       };

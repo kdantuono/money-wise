@@ -21,6 +21,7 @@ on:
 env:
   NODE_VERSION: '18'
   FORCE_COLORS: '1'
+  TURBO_TELEMETRY_DISABLED: '1'  # Opt-out of anonymous telemetry
 
 permissions:
   actions: read
@@ -539,6 +540,12 @@ jobs:
 
       - name: 📥 Install Dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: 🔧 Generate Prisma Client
+        run: |
+          echo "🔧 Generating Prisma Client for tests..."
+          cd apps/backend && pnpm prisma:generate && cd ../..
+          echo "✅ Prisma Client generated"
 
       - name: 🧪 Unit Tests
         env:

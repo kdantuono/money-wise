@@ -249,9 +249,11 @@ describe('cn utility function', () => {
 
   describe('Edge cases', () => {
     it('should handle very long class strings', () => {
-      const longClass = Array(100).fill('class').join(' ');
+      // twMerge only deduplicates Tailwind conflicting classes, not generic classes
+      // For Tailwind classes that conflict, later ones override earlier ones
+      const longClass = Array(100).fill('p-4').join(' ');
       const result = cn(longClass);
-      expect(result).toBe('class');
+      expect(result).toBe('p-4'); // twMerge deduplicates conflicting Tailwind classes
     });
 
     it('should handle special characters in class names', () => {

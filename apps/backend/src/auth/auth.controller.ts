@@ -29,7 +29,7 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RateLimitGuard, RateLimit, AuthRateLimits } from './guards/rate-limit.guard';
 import { Public } from './decorators/public.decorator';
 import { CurrentUser } from './decorators/current-user.decorator';
-import { User } from '../core/database/entities/user.entity';
+import { User } from '../../generated/prisma';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -138,28 +138,9 @@ export class AuthController {
     description: 'Unauthorized - invalid or missing token',
   })
   async getProfile(@CurrentUser() user: User): Promise<Omit<User, 'passwordHash'>> {
-    // Create user object without password and include virtual properties
-    return {
-      id: user.id,
-      email: user.email,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      role: user.role,
-      status: user.status,
-      avatar: user.avatar,
-      timezone: user.timezone,
-      currency: user.currency,
-      preferences: user.preferences,
-      lastLoginAt: user.lastLoginAt,
-      emailVerifiedAt: user.emailVerifiedAt,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
-      accounts: user.accounts,
-      // Virtual properties
-      fullName: user.fullName,
-      isEmailVerified: user.isEmailVerified,
-      isActive: user.isActive,
-    };
+    // Return user without password (Prisma User type)
+    const { passwordHash: _passwordHash, ...userWithoutPassword } = user;
+    return userWithoutPassword;
   }
 
   @Post('logout')

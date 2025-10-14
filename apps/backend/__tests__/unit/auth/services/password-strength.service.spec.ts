@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PasswordStrengthService } from '@/auth/services/password-strength.service';
-import { DEFAULT_PASSWORD_POLICY } from '@/auth/config/password-policy.config';
+import { DEFAULT_PASSWORD_POLICY } from '@/core/config/auth-password-policy.config';
 
 describe('PasswordStrengthService', () => {
   let service: PasswordStrengthService;

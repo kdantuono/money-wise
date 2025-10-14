@@ -7,10 +7,10 @@
 
 import { faker } from '@faker-js/faker';
 import { DataSource, Repository } from 'typeorm';
-import { User, UserRole, UserStatus } from '../../entities/user.entity';
-import { Account, AccountType, AccountStatus, AccountSource } from '../../entities/account.entity';
-import { Category, CategoryType, CategoryStatus } from '../../entities/category.entity';
-import { Transaction, TransactionType, TransactionStatus, TransactionSource } from '../../entities/transaction.entity';
+import { User, UserRole, UserStatus } from '../../generated/prisma';
+import { Account, AccountType, AccountStatus, AccountSource } from '../../generated/prisma';
+import { Category, CategoryType, CategoryStatus } from '../../generated/prisma';
+import { Transaction, TransactionType, TransactionStatus, TransactionSource } from '../../generated/prisma';
 
 /**
  * Base factory interface

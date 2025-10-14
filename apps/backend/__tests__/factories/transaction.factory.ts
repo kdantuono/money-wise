@@ -2,7 +2,7 @@ import { faker } from '@faker-js/faker';
 import { Transaction, TransactionType, TransactionStatus } from '@/modules/transactions/entities/transaction.entity';
 import { Account } from '@/modules/accounts/entities/account.entity';
 import { Category } from '@/modules/categories/entities/category.entity';
-import { User } from '@/core/database/entities/user.entity';
+import { User } from '../../generated/prisma';
 import { DeepPartial } from 'typeorm';
 
 /**

@@ -12,7 +12,7 @@ import {
   User,
   UserStatus,
   UserRole,
-} from '@/core/database/entities/user.entity';
+} from '../../../generated/prisma';
 
 describe('AuthController', () => {
   let controller: AuthController;
@@ -25,21 +25,17 @@ describe('AuthController', () => {
     email: 'test@example.com',
     firstName: 'John',
     lastName: 'Doe',
-    role: UserRole.USER,
+    role: UserRole.MEMBER,
     status: UserStatus.ACTIVE,
     currency: 'USD',
+    avatar: null,
+    timezone: null,
+    preferences: null,
+    lastLoginAt: null,
+    emailVerifiedAt: new Date(),
     createdAt: new Date(),
     updatedAt: new Date(),
-    accounts: [],
-    get fullName() {
-      return `${this.firstName} ${this.lastName}`;
-    },
-    get isEmailVerified() {
-      return this.emailVerifiedAt !== null;
-    },
-    get isActive() {
-      return this.status === UserStatus.ACTIVE;
-    },
+    familyId: 'family-1',
   } as Omit<User, 'passwordHash'>;
 
   const mockAuthResponse: AuthResponseDto = {
@@ -254,15 +250,14 @@ describe('AuthController', () => {
 
       const result = await controller.getProfile(userWithPassword);
 
-      expect(result).toEqual(mockUser);
       expect(result).not.toHaveProperty('passwordHash');
-      expect(result.fullName).toBe(
-        `${mockUser.firstName} ${mockUser.lastName}`
-      );
-      expect(result.isActive).toBe(true);
+      expect(result.id).toBe(mockUser.id);
+      expect(result.email).toBe(mockUser.email);
+      expect(result.firstName).toBe(mockUser.firstName);
+      expect(result.lastName).toBe(mockUser.lastName);
     });
 
-    it('should include virtual properties in profile', async () => {
+    it('should include all user fields except password', async () => {
       const userWithData = {
         ...mockUser,
         passwordHash: 'hashedPassword',
@@ -271,9 +266,11 @@ describe('AuthController', () => {
 
       const result = await controller.getProfile(userWithData);
 
-      expect(result.fullName).toBe('John Doe');
-      expect(result.isEmailVerified).toBe(true);
-      expect(result.isActive).toBe(true);
+      expect(result).not.toHaveProperty('passwordHash');
+      expect(result.firstName).toBe('John');
+      expect(result.lastName).toBe('Doe');
+      expect(result.status).toBe(UserStatus.ACTIVE);
+      expect(result.emailVerifiedAt).toBeDefined();
     });
 
     it('should handle user with null optional fields', async () => {
@@ -285,17 +282,15 @@ describe('AuthController', () => {
         preferences: null,
         lastLoginAt: null,
         emailVerifiedAt: null,
-        get isEmailVerified() {
-          return this.emailVerifiedAt !== null;
-        },
       } as User;
 
       const result = await controller.getProfile(userWithNulls);
 
       expect(result).toBeDefined();
+      expect(result).not.toHaveProperty('passwordHash');
       expect(result.avatar).toBeNull();
       expect(result.timezone).toBeNull();
-      expect(result.isEmailVerified).toBe(false);
+      expect(result.emailVerifiedAt).toBeNull();
     });
   });
 

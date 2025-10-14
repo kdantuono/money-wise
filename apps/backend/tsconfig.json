@@ -24,5 +24,14 @@
     }
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "test", "**/*spec.ts"]
+  "exclude": [
+    "node_modules",
+    "dist",
+    "test",
+    "**/*spec.ts",
+    "**/__tests__/**/*",
+    "src/core/database/test-database.module.ts",
+    "src/core/database/tests/**/*",
+    "src/core/database/migrations/archive/**/*"
+  ]
 }

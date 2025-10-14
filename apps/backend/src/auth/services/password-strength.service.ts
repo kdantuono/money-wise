@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { PasswordPolicyConfig, SPECIAL_CHARACTERS, COMMON_PASSWORDS } from '../config/password-policy.config';
+import { PasswordPolicyConfig, SPECIAL_CHARACTERS, COMMON_PASSWORDS } from '../../core/config/auth-password-policy.config';
 
 export interface PasswordStrengthResult {
   score: number; // 0-100

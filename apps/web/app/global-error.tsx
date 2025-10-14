@@ -26,14 +26,14 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
   }, [error]);
 
   return (
-    <html>
+    <html lang="en">
       <body>
         <div className="flex min-h-screen flex-col items-center justify-center p-4">
           <div className="w-full max-w-md space-y-4 rounded-lg border border-red-200 bg-white p-6 shadow-lg">
             <div className="space-y-2">
-              <h1 className="text-2xl font-bold text-red-600">
+              <h2 className="text-2xl font-bold text-red-600">
                 Something went wrong!
-              </h1>
+              </h2>
               <p className="text-gray-600">
                 An unexpected error occurred. Our team has been notified and is
                 working on a fix.

@@ -3,11 +3,11 @@ import { UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtStrategy } from '@/auth/strategies/jwt.strategy';
 import { AuthService, JwtPayload } from '@/auth/auth.service';
+import type { User } from '../../../generated/prisma';
 import {
-  User,
   UserStatus,
   UserRole,
-} from '@/core/database/entities/user.entity';
+} from '../../../generated/prisma';
 
 describe('JwtStrategy', () => {
   let strategy: JwtStrategy;
@@ -19,22 +19,18 @@ describe('JwtStrategy', () => {
     firstName: 'John',
     lastName: 'Doe',
     passwordHash: 'hashedPassword',
-    role: UserRole.USER,
-    status: UserStatus.ACTIVE,
+    familyId: 'test-family-id',
+    role: 'MEMBER' as any,
+    status: 'ACTIVE' as any,
+    avatar: null,
+    timezone: 'UTC',
     currency: 'USD',
+    preferences: null,
+    lastLoginAt: new Date(),
+    emailVerifiedAt: new Date(),
     createdAt: new Date(),
     updatedAt: new Date(),
-    accounts: [],
-    get fullName() {
-      return `${this.firstName} ${this.lastName}`;
-    },
-    get isEmailVerified() {
-      return this.emailVerifiedAt !== null;
-    },
-    get isActive() {
-      return this.status === UserStatus.ACTIVE;
-    },
-  } as User;
+  };
 
   beforeEach(async () => {
     // Set environment variables for JWT secret
@@ -132,12 +128,12 @@ describe('JwtStrategy', () => {
         role: 'admin',
       };
 
-      const adminUser = {
+      const adminUser: User = {
         ...mockUser,
         id: '2',
         email: 'admin@example.com',
-        role: UserRole.ADMIN,
-      } as User;
+        role: 'ADMIN' as any,
+      };
 
       authService.validateUser.mockResolvedValue(adminUser);
 
@@ -145,7 +141,7 @@ describe('JwtStrategy', () => {
 
       expect(authService.validateUser).toHaveBeenCalledWith(adminPayload);
       expect(result).toEqual(adminUser);
-      expect(result.role).toBe(UserRole.ADMIN);
+      expect(result.role).toBe('ADMIN'); // Prisma enum value is uppercase
     });
 
     it('should handle payload with missing fields', async () => {
@@ -232,16 +228,16 @@ describe('JwtStrategy', () => {
         role: 'user',
       };
 
-      const user1 = {
+      const user1: User = {
         ...mockUser,
         id: '1',
         email: 'test1@example.com',
-      } as User;
-      const user2 = {
+      };
+      const user2: User = {
         ...mockUser,
         id: '2',
         email: 'test2@example.com',
-      } as User;
+      };
 
       authService.validateUser
         .mockResolvedValueOnce(user1)

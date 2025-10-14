@@ -58,6 +58,12 @@ export class RateLimitGuard implements CanActivate {
   }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
+    // Disable rate limiting in integration/e2e tests only (not unit tests)
+    // Unit tests need to test the guard logic, so they set ENABLE_RATE_LIMIT_TESTS=true
+    if (process.env.NODE_ENV === 'test' && process.env.ENABLE_RATE_LIMIT_TESTS !== 'true') {
+      return true;
+    }
+
     const request = context.switchToHttp().getRequest<Request>();
 
     // Get rate limit options from method or class

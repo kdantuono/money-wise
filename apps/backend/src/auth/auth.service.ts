@@ -6,16 +6,17 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { User, UserStatus } from '../core/database/entities/user.entity';
-import { AuditLog, AuditEventType } from '../core/database/entities/audit-log.entity';
+import type { User, AuditEventType } from '../../generated/prisma';
+import { UserStatus } from '../../generated/prisma';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { AuthResponseDto } from './dto/auth-response.dto';
 import { PasswordSecurityService, HashingAlgorithm } from './services/password-security.service';
 import { RateLimitService } from './services/rate-limit.service';
 import { AuthConfig } from '../core/config/auth.config';
+import { PrismaUserService } from '../core/database/prisma/services/user.service';
+import { PrismaAuditLogService } from '../core/database/prisma/services/audit-log.service';
+import { enrichUserWithVirtuals } from '../core/database/prisma/utils/user-virtuals';
 
 export interface JwtPayload {
   sub: string;
@@ -31,14 +32,12 @@ export class AuthService {
   private readonly jwtRefreshExpiresIn: string;
 
   constructor(
-    @InjectRepository(User)
-    private userRepository: Repository<User>,
-    @InjectRepository(AuditLog)
-    private auditLogRepository: Repository<AuditLog>,
-    private jwtService: JwtService,
-    private passwordSecurityService: PasswordSecurityService,
-    private rateLimitService: RateLimitService,
-    private configService: ConfigService,
+    private readonly prismaUserService: PrismaUserService,
+    private readonly prismaAuditLogService: PrismaAuditLogService,
+    private readonly jwtService: JwtService,
+    private readonly passwordSecurityService: PasswordSecurityService,
+    private readonly rateLimitService: RateLimitService,
+    private readonly configService: ConfigService,
   ) {
     // Cache JWT configuration for performance and fail fast if missing
     const authConfig = this.configService.get<AuthConfig>('auth');
@@ -60,9 +59,7 @@ export class AuthService {
     const { email, password, firstName, lastName } = registerDto;
 
     // Check if user already exists
-    const existingUser = await this.userRepository.findOne({
-      where: { email },
-    });
+    const existingUser = await this.prismaUserService.findByEmail(email);
 
     if (existingUser) {
       throw new ConflictException('User with this email already exists');
@@ -85,21 +82,20 @@ export class AuthService {
       HashingAlgorithm.ARGON2
     );
 
-    // Create user
-    const user = this.userRepository.create({
+    // Create user with pre-hashed password
+    // Note: familyId is optional for auth flows (will be set to null, updated later)
+    const savedUser = await this.prismaUserService.createWithHash({
       email,
+      passwordHash,
       firstName,
       lastName,
-      passwordHash,
       status: UserStatus.ACTIVE,
     });
-
-    const savedUser = await this.userRepository.save(user);
 
     // Log account creation
     await this.logAuthEvent(
       savedUser.id,
-      AuditEventType.ACCOUNT_CREATED,
+      'ACCOUNT_CREATED',
       'User account created successfully',
       metadata?.ipAddress,
       metadata?.userAgent,
@@ -130,7 +126,7 @@ export class AuthService {
       // Log the rate limit event
       await this.logAuthEvent(
         null,
-        AuditEventType.LOGIN_LOCKED,
+        'LOGIN_LOCKED',
         `Login rate limit exceeded for email: ${email}`,
         metadata?.ipAddress,
         metadata?.userAgent,
@@ -140,11 +136,8 @@ export class AuthService {
       throw new UnauthorizedException(message);
     }
 
-    // Find user with password
-    const user = await this.userRepository.findOne({
-      where: { email },
-      select: ['id', 'email', 'firstName', 'lastName', 'passwordHash', 'role', 'status', 'updatedAt'],
-    });
+    // Find user by email
+    const user = await this.prismaUserService.findByEmail(email);
 
     if (!user) {
       // Record failed attempt
@@ -152,7 +145,7 @@ export class AuthService {
 
       await this.logAuthEvent(
         null,
-        AuditEventType.LOGIN_FAILED,
+        'LOGIN_FAILED',
         `Login attempt with non-existent email: ${email}`,
         metadata?.ipAddress,
         metadata?.userAgent,
@@ -168,7 +161,7 @@ export class AuthService {
 
       await this.logAuthEvent(
         user.id,
-        AuditEventType.LOGIN_FAILED,
+        'LOGIN_FAILED',
         `Login attempt for inactive user: ${email}`,
         metadata?.ipAddress,
         metadata?.userAgent,
@@ -183,7 +176,7 @@ export class AuthService {
     if (isPasswordExpired) {
       await this.logAuthEvent(
         user.id,
-        AuditEventType.LOGIN_FAILED,
+        'LOGIN_FAILED',
         'Login attempt with expired password',
         metadata?.ipAddress,
         metadata?.userAgent,
@@ -193,7 +186,7 @@ export class AuthService {
       throw new UnauthorizedException('Password has expired. Please reset your password.');
     }
 
-    // Verify password
+    // Verify password (using PrismaUserService which handles hash internally)
     const isPasswordValid = await this.passwordSecurityService.verifyPassword(
       password,
       user.passwordHash
@@ -205,7 +198,7 @@ export class AuthService {
 
       await this.logAuthEvent(
         user.id,
-        AuditEventType.LOGIN_FAILED,
+        'LOGIN_FAILED',
         'Login attempt with invalid password',
         metadata?.ipAddress,
         metadata?.userAgent,
@@ -219,14 +212,12 @@ export class AuthService {
     await this.rateLimitService.recordAttempt(identifier, 'login', true);
 
     // Update last login
-    await this.userRepository.update(user.id, {
-      lastLoginAt: new Date(),
-    });
+    await this.prismaUserService.updateLastLogin(user.id);
 
     // Log successful login
     await this.logAuthEvent(
       user.id,
-      AuditEventType.LOGIN_SUCCESS,
+      'LOGIN_SUCCESS',
       'User logged in successfully',
       metadata?.ipAddress,
       metadata?.userAgent,
@@ -256,9 +247,7 @@ export class AuthService {
         secret: this.jwtRefreshSecret,
       });
 
-      const user = await this.userRepository.findOne({
-        where: { id: payload.sub },
-      });
+      const user = await this.prismaUserService.findOne(payload.sub);
 
       if (!user || user.status !== UserStatus.ACTIVE) {
         throw new UnauthorizedException('Invalid refresh token');
@@ -271,9 +260,7 @@ export class AuthService {
   }
 
   async validateUser(payload: JwtPayload): Promise<User> {
-    const user = await this.userRepository.findOne({
-      where: { id: payload.sub },
-    });
+    const user = await this.prismaUserService.findOne(payload.sub);
 
     if (!user || user.status !== UserStatus.ACTIVE) {
       throw new UnauthorizedException('User not found or inactive');
@@ -299,33 +286,20 @@ export class AuthService {
       expiresIn: this.jwtRefreshExpiresIn,
     });
 
+    // Enrich user with virtual properties (fullName, isEmailVerified, isActive)
+    const enrichedUser = enrichUserWithVirtuals(user);
+
     // Create user object without password and include virtual properties
-    const userWithoutPassword = {
-      id: user.id,
-      email: user.email,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      role: user.role,
-      status: user.status,
-      avatar: user.avatar,
-      timezone: user.timezone,
-      currency: user.currency,
-      preferences: user.preferences,
-      lastLoginAt: user.lastLoginAt,
-      emailVerifiedAt: user.emailVerifiedAt,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
-      accounts: user.accounts,
-      // Virtual properties
-      fullName: user.fullName,
-      isEmailVerified: user.isEmailVerified,
-      isActive: user.isActive,
+    // Note: We exclude passwordHash and include computed virtual properties
+    const { passwordHash: _, ...userWithoutPassword } = {
+      ...enrichedUser,
+      // Virtual properties are already part of enrichedUser from enrichUserWithVirtuals
     };
 
     return {
       accessToken,
       refreshToken,
-      user: userWithoutPassword,
+      user: userWithoutPassword as any, // Type assertion needed due to DTO mismatch
       expiresIn: 15 * 60, // 15 minutes in seconds
     };
   }
@@ -338,7 +312,7 @@ export class AuthService {
     userAgent?: string,
     metadata?: Record<string, unknown>
   ): Promise<void> {
-    const auditLog = this.auditLogRepository.create({
+    await this.prismaAuditLogService.create({
       userId,
       eventType,
       description,
@@ -347,7 +321,5 @@ export class AuthService {
       metadata,
       isSecurityEvent: true,
     });
-
-    await this.auditLogRepository.save(auditLog);
   }
 }
