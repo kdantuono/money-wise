@@ -4,12 +4,12 @@
  */
 
 import { DataSource } from 'typeorm';
-import { User } from '../../generated/prisma';
-import { Account } from '../../generated/prisma';
-import { Category } from '../../generated/prisma';
-import { Transaction } from '../../generated/prisma';
-import { AuditLog } from '../../generated/prisma';
-import { PasswordHistory } from '../../generated/prisma';
+import { User } from '../../../../generated/prisma';
+import { Account } from '../../../../generated/prisma';
+import { Category } from '../../../../generated/prisma';
+import { Transaction } from '../../../../generated/prisma';
+import { AuditLog } from '../../../../generated/prisma';
+import { PasswordHistory } from '../../../../generated/prisma';
 
 let testDataSource: DataSource | null = null;
 
