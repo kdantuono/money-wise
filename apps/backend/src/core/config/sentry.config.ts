@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsUrl, Min, Max, IsNumber } from 'class-validator';
+import { IsString, IsOptional, IsUrl, Min, Max, IsNumber, ValidateIf } from 'class-validator';
 
 /**
  * Sentry Error Tracking Configuration
@@ -14,10 +14,16 @@ export class SentryConfig {
    * - Production: moneywise-production
    * If empty, Sentry is disabled
    */
-  @IsUrl({
-    protocols: ['https'],
-    require_protocol: true,
-  })
+  @ValidateIf((o) => o.SENTRY_DSN && o.SENTRY_DSN.length > 0)
+  @IsUrl(
+    {
+      protocols: ['https'],
+      require_protocol: true,
+    },
+    {
+      message: 'SENTRY_DSN must be a valid HTTPS URL or empty to disable Sentry',
+    }
+  )
   @IsOptional()
   SENTRY_DSN?: string;
 
