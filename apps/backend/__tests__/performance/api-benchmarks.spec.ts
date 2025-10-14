@@ -53,6 +53,11 @@ describe('API Performance Benchmarks', () => {
   };
 
   beforeAll(async () => {
+    // Set required environment variables for AppModule config validation
+    process.env.PORT = '3001';
+    process.env.NODE_ENV = 'test';
+    process.env.DATABASE_URL = 'postgresql://test:test@localhost:5432/test_db';
+
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
