@@ -13,10 +13,16 @@ This directory contains definitions for specialized AI agents that work together
 **Outputs**: ADRs, design documents, architectural diagrams
 
 #### DevOps Engineer
-**File**: `devops-engineer.md`
-**Triggers**: deploy, docker, ci/cd, infrastructure, pipeline
-**Expertise**: Containerization, GitHub Actions, AWS deployment, monitoring setup
-**Outputs**: Dockerfiles, CI/CD configs, deployment scripts
+**File**: `devops-specialist.md`
+**Triggers**: deploy, docker, infrastructure, monitoring
+**Expertise**: Containerization, AWS deployment, monitoring setup
+**Outputs**: Dockerfiles, deployment scripts, infrastructure configs
+
+#### CI/CD Pipeline Agent
+**File**: `cicd-pipeline-agent.md`
+**Triggers**: ci/cd, pipeline, github actions, workflow, quality gates
+**Expertise**: GitHub Actions, automated testing, security scanning, deployment automation
+**Outputs**: Workflow configs, quality gates, security scans, deployment pipelines
 
 #### Database Specialist
 **File**: `database-specialist.md`
@@ -142,6 +148,7 @@ Coordination: project-orchestrator
 |-------|------|--------|-----------|------|--------|--------|----------|
 | Architect | ✅ | ✅ | ❌ | ❌ | ✅ | ❌ | ✅ |
 | DevOps | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ |
+| CI/CD Pipeline | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Database | ❌ | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ |
 | Backend Dev | ❌ | ❌ | ✅ | ✅ | ❌ | ❌ | ❌ |
 | Frontend | ❌ | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
@@ -321,6 +328,6 @@ Track agent effectiveness in `../.claude/reports/agent-metrics.md`:
 
 ---
 
-**Agent Count**: 13 specialized agents
-**Last Updated**: 2025-10-06
+**Agent Count**: 14 specialized agents
+**Last Updated**: 2025-10-14
 **Maintained By**: Development Team
