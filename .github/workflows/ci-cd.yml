@@ -541,6 +541,12 @@ jobs:
       - name: 📥 Install Dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: 🔧 Generate Prisma Client
+        run: |
+          echo "🔧 Generating Prisma Client for tests..."
+          cd apps/backend && pnpm prisma:generate && cd ../..
+          echo "✅ Prisma Client generated"
+
       - name: 🧪 Unit Tests
         env:
           DB_HOST: localhost
