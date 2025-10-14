@@ -69,6 +69,9 @@ describe('RateLimitGuard', () => {
   let guard: RateLimitGuard;
 
   beforeAll(() => {
+    // Enable rate limit logic in unit tests (bypass test environment check)
+    process.env.ENABLE_RATE_LIMIT_TESTS = 'true';
+
     jest.spyOn(Logger.prototype, 'warn').mockImplementation(mockLoggerWarn);
     jest.spyOn(Logger.prototype, 'error').mockImplementation(mockLoggerError);
   });
@@ -89,6 +92,9 @@ describe('RateLimitGuard', () => {
   });
 
   afterAll(() => {
+    // Clean up environment variable
+    delete process.env.ENABLE_RATE_LIMIT_TESTS;
+
     jest.restoreAllMocks();
   });
 
