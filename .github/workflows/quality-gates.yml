@@ -103,6 +103,12 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Generate Prisma Client
+        run: |
+          echo '🔧 Generating Prisma Client for unit tests...'
+          cd apps/backend && pnpm prisma:generate
+          echo '✅ Prisma Client generated'
+
       - name: Run unit tests with coverage
         run: |
           cd apps/${{ matrix.project }}
@@ -211,6 +217,12 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Generate Prisma Client
+        run: |
+          echo '🔧 Generating Prisma Client for integration tests...'
+          cd apps/backend && pnpm prisma:generate
+          echo '✅ Prisma Client generated'
+
       - name: Wait for PostgreSQL to be ready
         run: |
           echo "Waiting for PostgreSQL to be ready..."
@@ -295,6 +307,12 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma Client
+        run: |
+          echo '🔧 Generating Prisma Client for E2E tests...'
+          cd apps/backend && pnpm prisma:generate
+          echo '✅ Prisma Client generated'
 
       # OPTIMIZATION: Cache Playwright browsers
       - name: Cache Playwright browsers
@@ -418,6 +436,12 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma Client
+        run: |
+          echo '🔧 Generating Prisma Client for performance tests...'
+          cd apps/backend && pnpm prisma:generate
+          echo '✅ Prisma Client generated'
 
       - name: Run performance benchmarks
         run: |
