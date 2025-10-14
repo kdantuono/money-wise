@@ -104,17 +104,28 @@ export class AccountsService {
   /**
    * Find all accounts for a user or family.
    * Exactly one of userId or familyId must be provided (XOR constraint).
+   * Admin users can access all accounts by passing userRole parameter.
    *
    * @param userId - User ID for personal accounts (optional)
    * @param familyId - Family ID for family accounts (optional)
+   * @param userRole - User role (ADMIN can access all accounts)
    * @returns List of accounts
    * @throws BadRequestException if XOR constraint is violated
    */
   async findAll(
     userId?: string,
-    familyId?: string
+    familyId?: string,
+    userRole?: UserRole
   ): Promise<AccountResponseDto[]> {
-    // XOR constraint validation
+    // Admin users can access all accounts
+    if (userRole === UserRole.ADMIN) {
+      const accounts = await this.prisma.account.findMany({
+        orderBy: { createdAt: 'desc' },
+      });
+      return accounts.map(account => this.toResponseDto(account));
+    }
+
+    // XOR constraint validation for non-admin users
     if ((!userId && !familyId) || (userId && familyId)) {
       throw new BadRequestException(
         'Exactly one of userId or familyId must be provided (XOR constraint)'
@@ -259,26 +270,38 @@ export class AccountsService {
   /**
    * Get account summary statistics.
    * Exactly one of userId or familyId must be provided (XOR constraint).
+   * Admin users can access summary for all accounts by passing userRole parameter.
    *
    * @param userId - User ID for personal accounts (optional)
    * @param familyId - Family ID for family accounts (optional)
+   * @param userRole - User role (ADMIN can access all accounts)
    * @returns Account summary statistics
    * @throws BadRequestException if XOR constraint is violated
    */
   async getSummary(
     userId?: string,
-    familyId?: string
+    familyId?: string,
+    userRole?: UserRole
   ): Promise<AccountSummaryDto> {
-    // XOR constraint validation
-    if ((!userId && !familyId) || (userId && familyId)) {
-      throw new BadRequestException(
-        'Exactly one of userId or familyId must be provided (XOR constraint)'
-      );
-    }
+    let accounts;
 
-    const accounts = await this.prisma.account.findMany({
-      where: userId ? { userId, isActive: true } : { familyId, isActive: true },
-    });
+    // Admin users can access all accounts
+    if (userRole === UserRole.ADMIN) {
+      accounts = await this.prisma.account.findMany({
+        where: { isActive: true },
+      });
+    } else {
+      // XOR constraint validation for non-admin users
+      if ((!userId && !familyId) || (userId && familyId)) {
+        throw new BadRequestException(
+          'Exactly one of userId or familyId must be provided (XOR constraint)'
+        );
+      }
+
+      accounts = await this.prisma.account.findMany({
+        where: userId ? { userId, isActive: true } : { familyId, isActive: true },
+      });
+    }
 
     const totalBalance = accounts.reduce((sum, acc) => sum + acc.currentBalance.toNumber(), 0);
     const activeAccounts = accounts.filter(acc => acc.status === AccountStatus.ACTIVE).length;

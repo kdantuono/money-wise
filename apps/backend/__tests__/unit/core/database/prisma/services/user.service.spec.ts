@@ -1770,11 +1770,13 @@ describe('PrismaUserService', () => {
   describe('countByStatus', () => {
     it('should return counts grouped by status', async () => {
       // Arrange
-      prisma.user.groupBy.mockResolvedValue([
+      const mockGroupByResult = [
         { status: 'ACTIVE' as UserStatus, _count: { _all: 10 } },
         { status: 'INACTIVE' as UserStatus, _count: { _all: 3 } },
         { status: 'SUSPENDED' as UserStatus, _count: { _all: 1 } },
-      ] as any);
+      ];
+      // @ts-expect-error - Prisma groupBy return type creates circular references in mock
+      prisma.user.groupBy.mockResolvedValue(mockGroupByResult);
 
       // Act
       const result = await service.countByStatus();
@@ -1794,9 +1796,10 @@ describe('PrismaUserService', () => {
 
     it('should return zero counts for missing statuses', async () => {
       // Arrange
-      prisma.user.groupBy.mockResolvedValue([
+      const mockGroupByResult = [
         { status: 'ACTIVE' as UserStatus, _count: { _all: 5 } },
-      ] as any);
+      ];
+      prisma.user.groupBy.mockResolvedValue(mockGroupByResult as any);
 
       // Act
       const result = await service.countByStatus();
@@ -1829,10 +1832,11 @@ describe('PrismaUserService', () => {
     it('should filter counts by familyId when provided', async () => {
       // Arrange
       const familyId = 'f1234567-89ab-cdef-0123-456789abcdef';
-      prisma.user.groupBy.mockResolvedValue([
+      const mockGroupByResult = [
         { status: 'ACTIVE' as UserStatus, _count: { _all: 7 } },
         { status: 'INACTIVE' as UserStatus, _count: { _all: 2 } },
-      ] as any);
+      ];
+      prisma.user.groupBy.mockResolvedValue(mockGroupByResult as any);
 
       // Act
       const result = await service.countByStatus(familyId);

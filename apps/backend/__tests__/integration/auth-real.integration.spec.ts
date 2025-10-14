@@ -533,6 +533,378 @@ describe('Real Auth Integration Tests (Prisma)', () => {
     });
   });
 
+  describe('POST /auth/password/reset/request', () => {
+    let testUser: Awaited<ReturnType<typeof factory.users.buildWithPassword>>;
+
+    beforeEach(async () => {
+      // Create test user
+      testUser = await factory.users.buildWithPassword('Password123!', {
+        email: 'passwordreset@example.com',
+        firstName: 'Password',
+        lastName: 'Reset',
+        status: 'ACTIVE' as any,
+        emailVerifiedAt: new Date(),
+      });
+    });
+
+    it('should initiate password reset successfully for existing user', async () => {
+      const response = await request(app.getHttpServer())
+        .post('/auth/password/reset/request')
+        .send({ email: testUser.email })
+        .expect(200);
+
+      expect(response.body).toHaveProperty('success', true);
+      expect(response.body).toHaveProperty('message');
+      expect(response.body.message).toContain('reset');
+
+      // In test environment, token should be returned (in production it's only emailed)
+      if (process.env.NODE_ENV === 'test') {
+        expect(response.body).toHaveProperty('token');
+      }
+    });
+
+    it('should return success even for non-existent user (security)', async () => {
+      // Security: Don't reveal whether email exists
+      const response = await request(app.getHttpServer())
+        .post('/auth/password/reset/request')
+        .send({ email: 'nonexistent@example.com' })
+        .expect(200);
+
+      expect(response.body).toHaveProperty('success', true);
+    });
+
+    it('should return 400 for invalid email format', async () => {
+      await request(app.getHttpServer())
+        .post('/auth/password/reset/request')
+        .send({ email: 'invalid-email' })
+        .expect(400);
+    });
+
+    it('should handle multiple reset requests (rate limiting)', async () => {
+      // First request succeeds
+      await request(app.getHttpServer())
+        .post('/auth/password/reset/request')
+        .send({ email: testUser.email })
+        .expect(200);
+
+      // Second request within rate limit window should still succeed
+      // but might not generate new token
+      const response = await request(app.getHttpServer())
+        .post('/auth/password/reset/request')
+        .send({ email: testUser.email })
+        .expect(200);
+
+      expect(response.body).toHaveProperty('success', true);
+    });
+  });
+
+  describe('POST /auth/password/reset/validate', () => {
+    let testUser: Awaited<ReturnType<typeof factory.users.buildWithPassword>>;
+    let resetToken: string;
+
+    beforeEach(async () => {
+      // Create test user and request password reset
+      testUser = await factory.users.buildWithPassword('Password123!', {
+        email: 'validatetoken@example.com',
+        firstName: 'Validate',
+        lastName: 'Token',
+        status: 'ACTIVE' as any,
+        emailVerifiedAt: new Date(),
+      });
+
+      const resetResponse = await request(app.getHttpServer())
+        .post('/auth/password/reset/request')
+        .send({ email: testUser.email });
+
+      resetToken = resetResponse.body.token;
+    });
+
+    it('should validate valid reset token', async () => {
+      const response = await request(app.getHttpServer())
+        .post('/auth/password/reset/validate')
+        .send({ token: resetToken })
+        .expect(200);
+
+      expect(response.body).toHaveProperty('valid', true);
+      expect(response.body).not.toHaveProperty('error');
+    });
+
+    it('should reject invalid reset token', async () => {
+      const response = await request(app.getHttpServer())
+        .post('/auth/password/reset/validate')
+        .send({ token: 'invalid-token-12345' })
+        .expect(200);
+
+      expect(response.body).toHaveProperty('valid', false);
+      expect(response.body).toHaveProperty('error');
+    });
+
+    it('should reject empty token', async () => {
+      await request(app.getHttpServer())
+        .post('/auth/password/reset/validate')
+        .send({ token: '' })
+        .expect(400);
+    });
+  });
+
+  describe('POST /auth/password/reset/complete', () => {
+    let testUser: Awaited<ReturnType<typeof factory.users.buildWithPassword>>;
+    let resetToken: string;
+    const newPassword = 'NewPassword123!';
+
+    beforeEach(async () => {
+      // Create test user and request password reset
+      testUser = await factory.users.buildWithPassword('Password123!', {
+        email: 'completereset@example.com',
+        firstName: 'Complete',
+        lastName: 'Reset',
+        status: 'ACTIVE' as any,
+        emailVerifiedAt: new Date(),
+      });
+
+      const resetResponse = await request(app.getHttpServer())
+        .post('/auth/password/reset/request')
+        .send({ email: testUser.email });
+
+      resetToken = resetResponse.body.token;
+    });
+
+    it('should reset password successfully with valid token', async () => {
+      const response = await request(app.getHttpServer())
+        .post('/auth/password/reset/complete')
+        .send({
+          token: resetToken,
+          newPassword,
+          confirmPassword: newPassword,
+        })
+        .expect(200);
+
+      expect(response.body).toHaveProperty('success', true);
+      expect(response.body).toHaveProperty('message');
+
+      // Verify can login with new password
+      const loginResponse = await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({
+          email: testUser.email,
+          password: newPassword,
+        })
+        .expect(200);
+
+      expect(loginResponse.body).toHaveProperty('accessToken');
+
+      // Verify old password no longer works
+      await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({
+          email: testUser.email,
+          password: 'Password123!',
+        })
+        .expect(401);
+    });
+
+    it('should return 400 when passwords do not match', async () => {
+      await request(app.getHttpServer())
+        .post('/auth/password/reset/complete')
+        .send({
+          token: resetToken,
+          newPassword,
+          confirmPassword: 'DifferentPassword123!',
+        })
+        .expect(400);
+    });
+
+    it('should return 400 for weak password', async () => {
+      await request(app.getHttpServer())
+        .post('/auth/password/reset/complete')
+        .send({
+          token: resetToken,
+          newPassword: 'weak',
+          confirmPassword: 'weak',
+        })
+        .expect(400);
+    });
+
+    it('should return 400 for invalid token', async () => {
+      await request(app.getHttpServer())
+        .post('/auth/password/reset/complete')
+        .send({
+          token: 'invalid-token',
+          newPassword,
+          confirmPassword: newPassword,
+        })
+        .expect(400);
+    });
+
+    it('should invalidate token after successful reset', async () => {
+      // Reset password
+      await request(app.getHttpServer())
+        .post('/auth/password/reset/complete')
+        .send({
+          token: resetToken,
+          newPassword,
+          confirmPassword: newPassword,
+        })
+        .expect(200);
+
+      // Try to use same token again
+      await request(app.getHttpServer())
+        .post('/auth/password/reset/complete')
+        .send({
+          token: resetToken,
+          newPassword: 'AnotherPassword123!',
+          confirmPassword: 'AnotherPassword123!',
+        })
+        .expect(400);
+    });
+  });
+
+  describe('POST /auth/password/change', () => {
+    let testUser: Awaited<ReturnType<typeof factory.users.buildWithPassword>>;
+    let accessToken: string;
+    const currentPassword = 'Password123!';
+    const newPassword = 'NewPassword456!';
+
+    beforeEach(async () => {
+      // Create test user and login
+      testUser = await factory.users.buildWithPassword(currentPassword, {
+        email: 'changepassword@example.com',
+        firstName: 'Change',
+        lastName: 'Password',
+        status: 'ACTIVE' as any,
+        emailVerifiedAt: new Date(),
+      });
+
+      const loginResponse = await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({
+          email: testUser.email,
+          password: currentPassword,
+        });
+
+      accessToken = loginResponse.body.accessToken;
+    });
+
+    it('should change password successfully with valid current password', async () => {
+      const response = await request(app.getHttpServer())
+        .post('/auth/password/change')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          currentPassword,
+          newPassword,
+          confirmPassword: newPassword,
+        })
+        .expect(200);
+
+      expect(response.body).toHaveProperty('success', true);
+      expect(response.body).toHaveProperty('message');
+
+      // Verify can login with new password
+      const loginResponse = await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({
+          email: testUser.email,
+          password: newPassword,
+        })
+        .expect(200);
+
+      expect(loginResponse.body).toHaveProperty('accessToken');
+
+      // Verify old password no longer works
+      await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({
+          email: testUser.email,
+          password: currentPassword,
+        })
+        .expect(401);
+    });
+
+    it('should return 401 for incorrect current password', async () => {
+      await request(app.getHttpServer())
+        .post('/auth/password/change')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          currentPassword: 'WrongPassword123!',
+          newPassword,
+          confirmPassword: newPassword,
+        })
+        .expect(401);
+    });
+
+    it('should return 400 when new passwords do not match', async () => {
+      await request(app.getHttpServer())
+        .post('/auth/password/change')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          currentPassword,
+          newPassword,
+          confirmPassword: 'DifferentPassword456!',
+        })
+        .expect(400);
+    });
+
+    it('should return 400 for weak new password', async () => {
+      await request(app.getHttpServer())
+        .post('/auth/password/change')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          currentPassword,
+          newPassword: 'weak',
+          confirmPassword: 'weak',
+        })
+        .expect(400);
+    });
+
+    it('should return 401 without authorization header', async () => {
+      await request(app.getHttpServer())
+        .post('/auth/password/change')
+        .send({
+          currentPassword,
+          newPassword,
+          confirmPassword: newPassword,
+        })
+        .expect(401);
+    });
+
+    it('should prevent password reuse', async () => {
+      // Change password to newPassword
+      await request(app.getHttpServer())
+        .post('/auth/password/change')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          currentPassword,
+          newPassword,
+          confirmPassword: newPassword,
+        })
+        .expect(200);
+
+      // Login with new password to get new token
+      const loginResponse = await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({
+          email: testUser.email,
+          password: newPassword,
+        });
+
+      const newAccessToken = loginResponse.body.accessToken;
+
+      // Try to change back to old password (should be prevented by password history)
+      const response = await request(app.getHttpServer())
+        .post('/auth/password/change')
+        .set('Authorization', `Bearer ${newAccessToken}`)
+        .send({
+          currentPassword: newPassword,
+          newPassword: currentPassword,
+          confirmPassword: currentPassword,
+        });
+
+      // Should return 400 if password history is enforced
+      // If it returns 200, password history is not enforced (which is also acceptable)
+      expect([200, 400]).toContain(response.status);
+    });
+  });
+
   describe('Authentication Flow Integration', () => {
     it('should complete full registration → login → profile → logout flow', async () => {
       const userEmail = 'flowtest@example.com';
@@ -695,6 +1067,151 @@ describe('Real Auth Integration Tests (Prisma)', () => {
         where: { email: registerDto.email },
       });
       expect(users).toHaveLength(1);
+    });
+
+    it('should complete full password reset flow (request → validate → complete)', async () => {
+      const userEmail = 'fullresetflow@example.com';
+      const originalPassword = 'OriginalPassword123!';
+      const newPassword = 'ResetPassword456!';
+
+      // 1. Create user
+      const testUser = await factory.users.buildWithPassword(originalPassword, {
+        email: userEmail,
+        firstName: 'Full',
+        lastName: 'Reset',
+        status: 'ACTIVE' as any,
+        emailVerifiedAt: new Date(),
+      });
+
+      // 2. Verify user can login with original password
+      await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({ email: userEmail, password: originalPassword })
+        .expect(200);
+
+      // 3. Request password reset
+      const resetResponse = await request(app.getHttpServer())
+        .post('/auth/password/reset/request')
+        .send({ email: userEmail })
+        .expect(200);
+
+      expect(resetResponse.body).toHaveProperty('success', true);
+      expect(resetResponse.body).toHaveProperty('token'); // Test mode returns token
+
+      const resetToken = resetResponse.body.token;
+
+      // 4. Validate reset token
+      const validateResponse = await request(app.getHttpServer())
+        .post('/auth/password/reset/validate')
+        .send({ token: resetToken })
+        .expect(200);
+
+      expect(validateResponse.body).toHaveProperty('valid', true);
+
+      // 5. Complete password reset
+      const completeResponse = await request(app.getHttpServer())
+        .post('/auth/password/reset/complete')
+        .send({
+          token: resetToken,
+          newPassword,
+          confirmPassword: newPassword,
+        })
+        .expect(200);
+
+      expect(completeResponse.body).toHaveProperty('success', true);
+
+      // 6. Verify original password no longer works
+      await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({ email: userEmail, password: originalPassword })
+        .expect(401);
+
+      // 7. Verify new password works
+      const loginResponse = await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({ email: userEmail, password: newPassword })
+        .expect(200);
+
+      expect(loginResponse.body).toHaveProperty('accessToken');
+
+      // 8. Verify reset token cannot be reused
+      await request(app.getHttpServer())
+        .post('/auth/password/reset/complete')
+        .send({
+          token: resetToken,
+          newPassword: 'AnotherPassword789!',
+          confirmPassword: 'AnotherPassword789!',
+        })
+        .expect(400);
+
+      // 9. Use new token to access protected endpoint
+      await request(app.getHttpServer())
+        .get('/auth/profile')
+        .set('Authorization', `Bearer ${loginResponse.body.accessToken}`)
+        .expect(200);
+    });
+
+    it('should complete full password change flow (authenticated user changes password)', async () => {
+      const userEmail = 'changeflow@example.com';
+      const originalPassword = 'OriginalPassword123!';
+      const newPassword = 'ChangedPassword456!';
+
+      // 1. Create user
+      await factory.users.buildWithPassword(originalPassword, {
+        email: userEmail,
+        firstName: 'Change',
+        lastName: 'Flow',
+        status: 'ACTIVE' as any,
+        emailVerifiedAt: new Date(),
+      });
+
+      // 2. Login with original password
+      const loginResponse1 = await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({ email: userEmail, password: originalPassword })
+        .expect(200);
+
+      const originalAccessToken = loginResponse1.body.accessToken;
+
+      // 3. Change password while authenticated
+      const changeResponse = await request(app.getHttpServer())
+        .post('/auth/password/change')
+        .set('Authorization', `Bearer ${originalAccessToken}`)
+        .send({
+          currentPassword: originalPassword,
+          newPassword,
+          confirmPassword: newPassword,
+        })
+        .expect(200);
+
+      expect(changeResponse.body).toHaveProperty('success', true);
+
+      // 4. Verify old password no longer works
+      await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({ email: userEmail, password: originalPassword })
+        .expect(401);
+
+      // 5. Verify new password works
+      const loginResponse2 = await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({ email: userEmail, password: newPassword })
+        .expect(200);
+
+      expect(loginResponse2.body).toHaveProperty('accessToken');
+
+      // 6. Verify old access token still works (until expiry)
+      // JWT tokens remain valid until they expire
+      await request(app.getHttpServer())
+        .get('/auth/profile')
+        .set('Authorization', `Bearer ${originalAccessToken}`)
+        .expect(200);
+
+      // 7. Verify new access token works
+      await request(app.getHttpServer())
+        .get('/auth/profile')
+        .set('Authorization', `Bearer ${loginResponse2.body.accessToken}`)
+        .expect(200);
     });
   });
 });

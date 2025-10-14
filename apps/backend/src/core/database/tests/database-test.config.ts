@@ -243,7 +243,12 @@ export class DatabaseTestManager {
    */
   async stop(): Promise<void> {
     if (this.prismaClient) {
-      await this.prismaClient.$disconnect();
+      try {
+        await this.prismaClient.$disconnect();
+      } catch (error) {
+        // Ignore disconnect errors (connection may already be closed by NestJS)
+        console.warn('⚠️  Prisma disconnect warning (may already be closed):', error.message);
+      }
       this.prismaClient = null;
     }
 

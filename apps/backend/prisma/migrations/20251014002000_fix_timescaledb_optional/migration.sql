@@ -1,20 +1,51 @@
 -- Add TimescaleDB Support for Time-Series Optimization
 -- Ported from TypeORM migration: 1760000000002-AddTimescaleDBSupport
 
--- Enable TimescaleDB extension (idempotent - safe to run multiple times)
-CREATE EXTENSION IF NOT EXISTS timescaledb CASCADE;
+-- Enable TimescaleDB extension (gracefully skip if not available)
+-- This allows tests to run without TimescaleDB while production benefits from it
+DO $$
+BEGIN
+    CREATE EXTENSION IF NOT EXISTS timescaledb CASCADE;
+    RAISE NOTICE 'TimescaleDB extension enabled';
+EXCEPTION
+    WHEN SQLSTATE '0A000' THEN
+        RAISE WARNING 'TimescaleDB extension not available - skipping time-series optimizations';
+    WHEN OTHERS THEN
+        RAISE WARNING 'Failed to enable TimescaleDB: % (SQLSTATE: %)', SQLERRM, SQLSTATE;
+END $$;
 
 -- Convert transactions table to hypertable for time-series optimization
 -- Only if:
--- 1. Not already a hypertable
--- 2. Table is empty (to avoid data migration complexities)
+-- 1. TimescaleDB is available
+-- 2. Not already a hypertable
+-- 3. Table is empty (to avoid data migration complexities)
 DO $$
+DECLARE
+    timescaledb_available BOOLEAN;
+    is_hypertable BOOLEAN := FALSE;
 BEGIN
-    -- Check if transactions is already a hypertable
+    -- Check if TimescaleDB extension is available
+    SELECT EXISTS (
+        SELECT 1 FROM pg_extension WHERE extname = 'timescaledb'
+    ) INTO timescaledb_available;
+
+    IF NOT timescaledb_available THEN
+        RAISE NOTICE 'TimescaleDB not available - skipping hypertable creation';
+        RETURN;
+    END IF;
+
+    -- Check if timescaledb_information schema exists (indicates TimescaleDB is actually installed)
     IF NOT EXISTS (
-        SELECT 1 FROM timescaledb_information.hypertables
-        WHERE hypertable_name = 'transactions'
+        SELECT 1 FROM information_schema.schemata WHERE schema_name = 'timescaledb_information'
     ) THEN
+        RAISE NOTICE 'TimescaleDB schema not found - skipping hypertable creation';
+        RETURN;
+    END IF;
+
+    -- Check if transactions is already a hypertable (using dynamic SQL to avoid parse-time errors)
+    EXECUTE 'SELECT EXISTS (SELECT 1 FROM timescaledb_information.hypertables WHERE hypertable_name = ''transactions'')' INTO is_hypertable;
+
+    IF NOT is_hypertable THEN
         -- Only create hypertable if table is empty (safe for tests and fresh installs)
         IF (SELECT COUNT(*) FROM transactions) = 0 THEN
             BEGIN
@@ -40,11 +71,30 @@ END $$;
 -- Create time-series optimized indexes
 -- Only if transactions is a hypertable
 DO $$
+DECLARE
+    timescaledb_available BOOLEAN;
+    is_hypertable BOOLEAN := FALSE;
 BEGIN
-    IF EXISTS (
-        SELECT 1 FROM timescaledb_information.hypertables
-        WHERE hypertable_name = 'transactions'
+    -- Check if TimescaleDB extension is available
+    SELECT EXISTS (
+        SELECT 1 FROM pg_extension WHERE extname = 'timescaledb'
+    ) INTO timescaledb_available;
+
+    IF NOT timescaledb_available THEN
+        RETURN;
+    END IF;
+
+    -- Check if timescaledb_information schema exists
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.schemata WHERE schema_name = 'timescaledb_information'
     ) THEN
+        RETURN;
+    END IF;
+
+    -- Check if transactions is a hypertable (using dynamic SQL to avoid parse-time errors)
+    EXECUTE 'SELECT EXISTS (SELECT 1 FROM timescaledb_information.hypertables WHERE hypertable_name = ''transactions'')' INTO is_hypertable;
+
+    IF is_hypertable THEN
         -- Time-bucket index for account-based queries
         CREATE INDEX IF NOT EXISTS idx_transactions_time_bucket_account
             ON transactions (time_bucket('1 day', date), account_id);
@@ -61,11 +111,28 @@ END $$;
 -- Reduces storage by ~10x for historical data
 -- Only if hypertable exists
 DO $$
+DECLARE
+    timescaledb_available BOOLEAN;
+    is_hypertable BOOLEAN := FALSE;
 BEGIN
-    IF EXISTS (
-        SELECT 1 FROM timescaledb_information.hypertables
-        WHERE hypertable_name = 'transactions'
+    SELECT EXISTS (
+        SELECT 1 FROM pg_extension WHERE extname = 'timescaledb'
+    ) INTO timescaledb_available;
+
+    IF NOT timescaledb_available THEN
+        RETURN;
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.schemata WHERE schema_name = 'timescaledb_information'
     ) THEN
+        RETURN;
+    END IF;
+
+    -- Check if transactions is a hypertable (using dynamic SQL to avoid parse-time errors)
+    EXECUTE 'SELECT EXISTS (SELECT 1 FROM timescaledb_information.hypertables WHERE hypertable_name = ''transactions'')' INTO is_hypertable;
+
+    IF is_hypertable THEN
         PERFORM add_compression_policy('transactions', INTERVAL '7 days', if_not_exists => TRUE);
         RAISE NOTICE 'Added compression policy: compress data older than 7 days';
     END IF;
@@ -75,11 +142,28 @@ END $$;
 -- Automatically removes old transaction data to save storage
 -- Only if hypertable exists
 DO $$
+DECLARE
+    timescaledb_available BOOLEAN;
+    is_hypertable BOOLEAN := FALSE;
 BEGIN
-    IF EXISTS (
-        SELECT 1 FROM timescaledb_information.hypertables
-        WHERE hypertable_name = 'transactions'
+    SELECT EXISTS (
+        SELECT 1 FROM pg_extension WHERE extname = 'timescaledb'
+    ) INTO timescaledb_available;
+
+    IF NOT timescaledb_available THEN
+        RETURN;
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.schemata WHERE schema_name = 'timescaledb_information'
     ) THEN
+        RETURN;
+    END IF;
+
+    -- Check if transactions is a hypertable (using dynamic SQL to avoid parse-time errors)
+    EXECUTE 'SELECT EXISTS (SELECT 1 FROM timescaledb_information.hypertables WHERE hypertable_name = ''transactions'')' INTO is_hypertable;
+
+    IF is_hypertable THEN
         PERFORM add_retention_policy('transactions', INTERVAL '7 years', if_not_exists => TRUE);
         RAISE NOTICE 'Added retention policy: drop data older than 7 years';
     END IF;
@@ -89,11 +173,28 @@ END $$;
 -- Pre-aggregates transaction data by day and account for faster queries
 -- Only if hypertable exists
 DO $$
+DECLARE
+    timescaledb_available BOOLEAN;
+    is_hypertable BOOLEAN := FALSE;
 BEGIN
-    IF EXISTS (
-        SELECT 1 FROM timescaledb_information.hypertables
-        WHERE hypertable_name = 'transactions'
+    SELECT EXISTS (
+        SELECT 1 FROM pg_extension WHERE extname = 'timescaledb'
+    ) INTO timescaledb_available;
+
+    IF NOT timescaledb_available THEN
+        RETURN;
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.schemata WHERE schema_name = 'timescaledb_information'
     ) THEN
+        RETURN;
+    END IF;
+
+    -- Check if transactions is a hypertable (using dynamic SQL to avoid parse-time errors)
+    EXECUTE 'SELECT EXISTS (SELECT 1 FROM timescaledb_information.hypertables WHERE hypertable_name = ''transactions'')' INTO is_hypertable;
+
+    IF is_hypertable THEN
         CREATE MATERIALIZED VIEW IF NOT EXISTS daily_account_balances
         WITH (timescaledb.continuous) AS
         SELECT
@@ -113,11 +214,28 @@ END $$;
 -- Pre-aggregates spending by category per day
 -- Only if hypertable exists
 DO $$
+DECLARE
+    timescaledb_available BOOLEAN;
+    is_hypertable BOOLEAN := FALSE;
 BEGIN
-    IF EXISTS (
-        SELECT 1 FROM timescaledb_information.hypertables
-        WHERE hypertable_name = 'transactions'
+    SELECT EXISTS (
+        SELECT 1 FROM pg_extension WHERE extname = 'timescaledb'
+    ) INTO timescaledb_available;
+
+    IF NOT timescaledb_available THEN
+        RETURN;
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.schemata WHERE schema_name = 'timescaledb_information'
     ) THEN
+        RETURN;
+    END IF;
+
+    -- Check if transactions is a hypertable (using dynamic SQL to avoid parse-time errors)
+    EXECUTE 'SELECT EXISTS (SELECT 1 FROM timescaledb_information.hypertables WHERE hypertable_name = ''transactions'')' INTO is_hypertable;
+
+    IF is_hypertable THEN
         CREATE MATERIALIZED VIEW IF NOT EXISTS daily_category_spending
         WITH (timescaledb.continuous) AS
         SELECT

@@ -2,7 +2,7 @@ import {
   Controller,
   Get,
   Post,
-  Put,
+  Patch,
   Delete,
   Body,
   Param,
@@ -69,7 +69,7 @@ export class AccountsController {
   })
   async findAll(@CurrentUser() user: User): Promise<AccountResponseDto[]> {
     // TODO: Add familyId support when User entity is migrated to Prisma
-    return this.accountsService.findAll(user.id, undefined);
+    return this.accountsService.findAll(user.id, undefined, user.role as any);
   }
 
   @Get('summary')
@@ -85,7 +85,7 @@ export class AccountsController {
   })
   async getSummary(@CurrentUser() user: User): Promise<AccountSummaryDto> {
     // TODO: Add familyId support when User entity is migrated to Prisma
-    return this.accountsService.getSummary(user.id, undefined);
+    return this.accountsService.getSummary(user.id, undefined, user.role as any);
   }
 
   @Get(':id')
@@ -147,8 +147,8 @@ export class AccountsController {
     return this.accountsService.getBalance(id, user.id, undefined, user.role as any);
   }
 
-  @Put(':id')
-  @ApiOperation({ summary: 'Update account' })
+  @Patch(':id')
+  @ApiOperation({ summary: 'Update account (partial update)' })
   @ApiParam({ name: 'id', description: 'Account UUID' })
   @ApiResponse({
     status: 200,

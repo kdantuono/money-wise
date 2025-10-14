@@ -72,7 +72,7 @@ export class TransactionsService {
     },
   ): Promise<TransactionResponseDto[]> {
     // Build where clause
-    let where: Prisma.TransactionWhereInput = {};
+    const where: Prisma.TransactionWhereInput = {};
 
     // Admin can see all transactions
     if (userRole === UserRole.ADMIN) {
