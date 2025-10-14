@@ -505,10 +505,10 @@ jobs:
           # Get bundle sizes (static and server folders only, exclude cache)
           BUNDLE_SIZE=$(du -sb .next/static .next/server 2>/dev/null | awk '{sum+=$1} END {print sum}')
           BUNDLE_SIZE_MB=$(echo "scale=2; $BUNDLE_SIZE / 1024 / 1024" | bc)
-          
+
           echo "📦 Bundle Size Report"
           echo "Total bundle size: ${BUNDLE_SIZE_MB} MB"
-          
+
           # Set threshold: 50MB (Next.js typical max for static + server)
           MAX_SIZE_MB=50
           if (( $(echo "$BUNDLE_SIZE_MB > $MAX_SIZE_MB" | bc -l) )); then
@@ -516,9 +516,9 @@ jobs:
             echo "::error::Bundle size ${BUNDLE_SIZE_MB} MB exceeds ${MAX_SIZE_MB} MB limit"
             exit 1
           fi
-          
+
           echo "✅ Bundle size is within limits (${BUNDLE_SIZE_MB} MB < ${MAX_SIZE_MB} MB)"
-          
+
       - name: Comment PR with bundle size
         if: always()
         uses: actions/github-script@v7
@@ -526,21 +526,21 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const { execSync } = require('child_process');
-            
+
             // Calculate bundle size (static + server folders only)
             const bundleSize = execSync('du -sb apps/web/.next/static apps/web/.next/server 2>/dev/null | awk \'{sum+=$1} END {print sum}\'', { encoding: 'utf-8' });
             const sizeBytes = parseInt(bundleSize.trim());
             const sizeMB = (sizeBytes / 1024 / 1024).toFixed(2);
-            
+
             const comment = `### Bundle Size Report 📦
-            
+
             | Metric | Size | Status |
             |--------|------|--------|
             | Total Bundle | ${sizeMB} MB | ${sizeMB < 50 ? '✅' : '❌'} |
             | Threshold | 50 MB | - |
-            
+
             ${sizeMB >= 50 ? '⚠️ Bundle size exceeds recommended limit!' : '✅ Bundle size is within limits'}`;
-            
+
             github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
@@ -565,7 +565,7 @@ jobs:
             const unitResult = '${{ needs.unit-tests.result }}';
             const integrationResult = '${{ needs.integration-tests.result }}';
             const e2eResult = '${{ needs.e2e-tests.result }}';
-            
+
             const failed = [lintResult, unitResult, integrationResult, e2eResult].filter(r => r === 'failure').length;
             const emoji = failed === 0 ? '✅' : '❌';
             const status = failed === 0 ? 'PASSED' : 'FAILED';
