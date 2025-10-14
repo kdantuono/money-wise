@@ -12,16 +12,26 @@ export class SentryConfig {
    * - Development: moneywise-development
    * - Staging: moneywise-staging
    * - Production: moneywise-production
-   * If empty, Sentry is disabled
+   * 
+   * SECURITY: Required in production/staging, optional in development/test
    */
-  @ValidateIf((o) => o.SENTRY_DSN && o.SENTRY_DSN.length > 0)
+  @ValidateIf((o) => {
+    const nodeEnv = process.env.NODE_ENV || 'development';
+    // Only allow empty DSN in test/development environments
+    if (nodeEnv === 'test' || nodeEnv === 'development') {
+      // In test/dev: validate only if DSN is provided
+      return o.SENTRY_DSN && o.SENTRY_DSN.length > 0;
+    }
+    // In staging/production: always validate (DSN required)
+    return true;
+  })
   @IsUrl(
     {
       protocols: ['https'],
       require_protocol: true,
     },
     {
-      message: 'SENTRY_DSN must be a valid HTTPS URL or empty to disable Sentry',
+      message: 'SENTRY_DSN is required in production/staging and must be a valid HTTPS URL. In development/test, it can be empty to disable Sentry.',
     }
   )
   @IsOptional()
