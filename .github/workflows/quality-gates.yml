@@ -188,7 +188,7 @@ jobs:
         ports:
           - 5432:5432
         options: >-
-          --health-cmd pg_isready
+          --health-cmd "pg_isready -U test -d test_db"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -273,7 +273,7 @@ jobs:
         ports:
           - 5432:5432
         options: >-
-          --health-cmd pg_isready
+          --health-cmd "pg_isready -U test -d test_db"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -502,46 +502,45 @@ jobs:
       - name: Check bundle size
         run: |
           cd apps/web
-          # Get bundle sizes
-          BUNDLE_SIZE=$(du -sb .next | cut -f1)
+          # Get bundle sizes (static and server folders only, exclude cache)
+          BUNDLE_SIZE=$(du -sb .next/static .next/server 2>/dev/null | awk '{sum+=$1} END {print sum}')
           BUNDLE_SIZE_MB=$(echo "scale=2; $BUNDLE_SIZE / 1024 / 1024" | bc)
-          
+
           echo "📦 Bundle Size Report"
           echo "Total bundle size: ${BUNDLE_SIZE_MB} MB"
-          
-          # Set threshold: 50MB (Next.js typical max)
+
+          # Set threshold: 50MB (Next.js typical max for static + server)
           MAX_SIZE_MB=50
           if (( $(echo "$BUNDLE_SIZE_MB > $MAX_SIZE_MB" | bc -l) )); then
             echo "❌ Bundle size exceeds ${MAX_SIZE_MB} MB limit!"
             echo "::error::Bundle size ${BUNDLE_SIZE_MB} MB exceeds ${MAX_SIZE_MB} MB limit"
             exit 1
           fi
-          
+
           echo "✅ Bundle size is within limits (${BUNDLE_SIZE_MB} MB < ${MAX_SIZE_MB} MB)"
-          
+
       - name: Comment PR with bundle size
         if: always()
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const fs = require('fs');
-            const path = require('path');
             const { execSync } = require('child_process');
-            
-            const bundleSize = execSync('du -sb apps/web/.next', { encoding: 'utf-8' });
-            const sizeBytes = parseInt(bundleSize.split('\t')[0]);
+
+            // Calculate bundle size (static + server folders only)
+            const bundleSize = execSync('du -sb apps/web/.next/static apps/web/.next/server 2>/dev/null | awk \'{sum+=$1} END {print sum}\'', { encoding: 'utf-8' });
+            const sizeBytes = parseInt(bundleSize.trim());
             const sizeMB = (sizeBytes / 1024 / 1024).toFixed(2);
-            
-            const comment = \`### Bundle Size Report 📦
-            
+
+            const comment = `### Bundle Size Report 📦
+
             | Metric | Size | Status |
             |--------|------|--------|
-            | Total Bundle | \${sizeMB} MB | \${sizeMB < 50 ? '✅' : '❌'} |
+            | Total Bundle | ${sizeMB} MB | ${sizeMB < 50 ? '✅' : '❌'} |
             | Threshold | 50 MB | - |
-            
-            \${sizeMB >= 50 ? '⚠️ Bundle size exceeds recommended limit!' : '✅ Bundle size is within limits'}\`;
-            
+
+            ${sizeMB >= 50 ? '⚠️ Bundle size exceeds recommended limit!' : '✅ Bundle size is within limits'}`;
+
             github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
@@ -566,7 +565,7 @@ jobs:
             const unitResult = '${{ needs.unit-tests.result }}';
             const integrationResult = '${{ needs.integration-tests.result }}';
             const e2eResult = '${{ needs.e2e-tests.result }}';
-            
+
             const failed = [lintResult, unitResult, integrationResult, e2eResult].filter(r => r === 'failure').length;
             const emoji = failed === 0 ? '✅' : '❌';
             const status = failed === 0 ? 'PASSED' : 'FAILED';
