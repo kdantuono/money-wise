@@ -238,19 +238,13 @@ jobs:
           cd apps/backend
           pnpm db:migrate
 
+      - name: Setup test environment
+        run: |
+          # Copy test environment configuration
+          cp apps/backend/.env.test apps/backend/.env
+          echo "✅ Test environment configured"
+
       - name: Run integration tests
-        env:
-          # Database configuration (Integration tests use individual vars, not DATABASE_URL)
-          DB_HOST: localhost
-          DB_PORT: 5432
-          DB_USERNAME: test
-          DB_PASSWORD: test
-          DB_NAME: test_db
-          DB_SCHEMA: public
-          # Redis configuration
-          REDIS_URL: redis://localhost:6379
-          # Application configuration
-          NODE_ENV: test
         run: |
           cd apps/backend
           pnpm test:integration
@@ -344,32 +338,15 @@ jobs:
           pnpm build:web
 
       - name: Run database migrations
-        env:
-          DATABASE_URL: postgresql://test:testpass@localhost:5432/test_db
         run: |
+          # Copy test environment configuration
+          cp apps/backend/.env.test apps/backend/.env
           cd apps/backend
           pnpm db:migrate
+        env:
+          DATABASE_URL: postgresql://test:testpass@localhost:5432/test_db
 
       - name: Run E2E tests (shard ${{ matrix.shard }}/4)
-        env:
-          # Database configuration (NestJS requires individual vars for validation)
-          DB_HOST: localhost
-          DB_PORT: 5432
-          DB_USERNAME: test
-          DB_PASSWORD: testpass
-          DB_NAME: test_db
-          DB_SCHEMA: public
-          # Redis configuration
-          REDIS_URL: redis://localhost:6379
-          # Application configuration
-          NODE_ENV: test
-          # Auth configuration (required for NestJS validation)
-          JWT_ACCESS_SECRET: test-jwt-access-secret-minimum-32-characters-long-for-testing
-          JWT_REFRESH_SECRET: test-jwt-refresh-secret-minimum-32-characters-long-for-testing
-          JWT_EXPIRES_IN: 15m
-          JWT_REFRESH_EXPIRES_IN: 7d
-          # Frontend URL
-          NEXT_PUBLIC_API_URL: http://localhost:3001
         run: |
           # Start backend server on port 3001
           cd apps/backend
@@ -445,6 +422,12 @@ jobs:
           cd apps/backend && pnpm prisma:generate
           echo '✅ Prisma Client generated'
 
+      - name: Setup test environment
+        run: |
+          # Copy test environment configuration
+          cp apps/backend/.env.test apps/backend/.env
+          echo "✅ Test environment configured"
+
       - name: Run performance benchmarks
         run: |
           cd apps/backend
@@ -516,12 +499,54 @@ jobs:
           pnpm build
           pnpm analyze
 
-      - name: Check bundle size limits
-        uses: andresz1/size-limit-action@v1
+      - name: Check bundle size
+        run: |
+          cd apps/web
+          # Get bundle sizes
+          BUNDLE_SIZE=$(du -sb .next | cut -f1)
+          BUNDLE_SIZE_MB=$(echo "scale=2; $BUNDLE_SIZE / 1024 / 1024" | bc)
+          
+          echo "📦 Bundle Size Report"
+          echo "Total bundle size: ${BUNDLE_SIZE_MB} MB"
+          
+          # Set threshold: 50MB (Next.js typical max)
+          MAX_SIZE_MB=50
+          if (( $(echo "$BUNDLE_SIZE_MB > $MAX_SIZE_MB" | bc -l) )); then
+            echo "❌ Bundle size exceeds ${MAX_SIZE_MB} MB limit!"
+            echo "::error::Bundle size ${BUNDLE_SIZE_MB} MB exceeds ${MAX_SIZE_MB} MB limit"
+            exit 1
+          fi
+          
+          echo "✅ Bundle size is within limits (${BUNDLE_SIZE_MB} MB < ${MAX_SIZE_MB} MB)"
+          
+      - name: Comment PR with bundle size
+        if: always()
+        uses: actions/github-script@v7
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          directory: apps/web
-          build_script: build
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            const { execSync } = require('child_process');
+            
+            const bundleSize = execSync('du -sb apps/web/.next', { encoding: 'utf-8' });
+            const sizeBytes = parseInt(bundleSize.split('\t')[0]);
+            const sizeMB = (sizeBytes / 1024 / 1024).toFixed(2);
+            
+            const comment = \`### Bundle Size Report 📦
+            
+            | Metric | Size | Status |
+            |--------|------|--------|
+            | Total Bundle | \${sizeMB} MB | \${sizeMB < 50 ? '✅' : '❌'} |
+            | Threshold | 50 MB | - |
+            
+            \${sizeMB >= 50 ? '⚠️ Bundle size exceeds recommended limit!' : '✅ Bundle size is within limits'}\`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
 
   # Job 8: Quality Report
   quality-report:
