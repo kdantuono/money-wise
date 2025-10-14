@@ -131,7 +131,6 @@ pids/
 *.pid.lock
 
 # Additional environment files
-.env.test
 .env.production
 .env.staging
 .claude/worktrees/
