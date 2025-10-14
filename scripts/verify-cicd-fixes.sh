@@ -2,7 +2,7 @@
 # CI/CD Pipeline Verification Script
 # This script validates that the CI/CD fixes are working correctly
 
-set -e  # Exit on error
+# Note: We don't use 'set -e' here because we want to continue testing even if some tests fail
 
 echo "🔍 CI/CD Pipeline Verification Script"
 echo "======================================"
@@ -20,10 +20,10 @@ TESTS_FAILED=0
 
 test_step() {
     local name=$1
-    local command=$2
+    shift  # Remove first argument, remaining args are the command
     
     echo "Testing: $name"
-    if eval "$command" > /dev/null 2>&1; then
+    if "$@" > /dev/null 2>&1; then
         echo -e "${GREEN}✅ PASSED${NC}: $name"
         ((TESTS_PASSED++))
     else
@@ -37,7 +37,7 @@ test_step() {
 # Test 1: Lockfile is in sync
 echo "Test 1: Lockfile Synchronization"
 echo "---------------------------------"
-test_step "Frozen lockfile install" "pnpm install --frozen-lockfile" || true
+test_step "Frozen lockfile install" pnpm install --frozen-lockfile
 
 # Test 2: Linting
 echo "Test 2: Code Linting"
@@ -56,7 +56,7 @@ echo ""
 # Test 3: Backend TypeScript
 echo "Test 3: Backend TypeScript"
 echo "--------------------------"
-test_step "Backend typecheck" "cd apps/backend && pnpm typecheck" || true
+(cd apps/backend && test_step "Backend typecheck" pnpm typecheck)
 
 # Test 4: Web Linting
 echo "Test 4: Web Linting"
@@ -73,7 +73,7 @@ echo ""
 # Test 5: Verify bundle analyzer import
 echo "Test 5: Bundle Analyzer Import"
 echo "-------------------------------"
-if grep -q "import bundleAnalyzer from '@next/bundle-analyzer'" /home/runner/work/money-wise/money-wise/apps/web/next.config.mjs; then
+if grep -q "import bundleAnalyzer from '@next/bundle-analyzer'" apps/web/next.config.mjs; then
     echo -e "${GREEN}✅ PASSED${NC}: ES module import is correct"
     ((TESTS_PASSED++))
 else
