@@ -229,7 +229,7 @@ If issues arise:
 
 ## Changelog
 
-- **2025-10-14:** Initial fixes implemented
+- **2024-10-14:** Initial fixes implemented
   - Created .env.test
   - Added typeorm devDependency
   - Replaced bundle size action
