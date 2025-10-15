@@ -245,6 +245,8 @@ jobs:
           echo "✅ Test environment configured"
 
       - name: Run integration tests
+        env:
+          DATABASE_URL: postgresql://test:testpass@localhost:5432/test_db
         run: |
           cd apps/backend
           pnpm test:integration
@@ -400,6 +402,31 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
+    services:
+      postgres:
+        image: timescale/timescaledb:latest-pg15
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: testpass
+          POSTGRES_DB: test_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U test -d test_db"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - uses: actions/checkout@v4
 
@@ -422,6 +449,19 @@ jobs:
           cd apps/backend && pnpm prisma:generate
           echo '✅ Prisma Client generated'
 
+      - name: Wait for PostgreSQL to be ready
+        run: |
+          echo "Waiting for PostgreSQL to be ready..."
+          timeout 120 bash -c 'until pg_isready -h localhost -p 5432 -U test > /dev/null 2>&1; do sleep 2; done'
+          echo "✅ PostgreSQL is ready"
+
+      - name: Run database migrations
+        env:
+          DATABASE_URL: postgresql://test:testpass@localhost:5432/test_db
+        run: |
+          cd apps/backend
+          pnpm db:migrate
+
       - name: Setup test environment
         run: |
           # Copy test environment configuration
@@ -429,6 +469,8 @@ jobs:
           echo "✅ Test environment configured"
 
       - name: Run performance benchmarks
+        env:
+          DATABASE_URL: postgresql://test:testpass@localhost:5432/test_db
         run: |
           cd apps/backend
           pnpm test:performance

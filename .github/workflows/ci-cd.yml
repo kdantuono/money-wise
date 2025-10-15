@@ -547,6 +547,14 @@ jobs:
           cd apps/backend && pnpm prisma:generate && cd ../..
           echo "✅ Prisma Client generated"
 
+      - name: 🔧 Run Database Migrations
+        env:
+          DATABASE_URL: postgresql://postgres:testpassword@localhost:5432/moneywise_test
+        run: |
+          echo "🔧 Running database migrations..."
+          cd apps/backend && pnpm db:migrate && cd ../..
+          echo "✅ Migrations completed"
+
       - name: 🧪 Unit Tests
         env:
           DB_HOST: localhost
@@ -554,6 +562,7 @@ jobs:
           DB_USERNAME: postgres
           DB_PASSWORD: testpassword
           DB_NAME: moneywise_test
+          DATABASE_URL: postgresql://postgres:testpassword@localhost:5432/moneywise_test
           DATABASE_HOST: localhost
           DATABASE_PORT: 5432
           REDIS_HOST: localhost
@@ -571,6 +580,7 @@ jobs:
           DB_USERNAME: postgres
           DB_PASSWORD: testpassword
           DB_NAME: moneywise_test
+          DATABASE_URL: postgresql://postgres:testpassword@localhost:5432/moneywise_test
           DATABASE_HOST: localhost
           DATABASE_PORT: 5432
           REDIS_HOST: localhost
@@ -588,6 +598,7 @@ jobs:
           DB_USERNAME: postgres
           DB_PASSWORD: testpassword
           DB_NAME: moneywise_test
+          DATABASE_URL: postgresql://postgres:testpassword@localhost:5432/moneywise_test
           DATABASE_HOST: localhost
           DATABASE_PORT: 5432
           REDIS_HOST: localhost
