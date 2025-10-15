@@ -499,7 +499,7 @@ jobs:
           
           # Create placeholder performance results if tests are skipped
           if [ ! -f "performance-results.json" ]; then
-            echo '{"benchmarks": [{"name": "placeholder", "unit": "ms", "value": 0}]}' > performance-results.json
+            echo '[{"name": "placeholder", "unit": "ms", "value": 0}]' > performance-results.json
             echo "⚠️ Performance tests skipped - created placeholder results"
           fi
 
