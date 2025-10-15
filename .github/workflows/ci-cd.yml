@@ -502,13 +502,13 @@ jobs:
       postgres:
         image: timescale/timescaledb:latest-pg15
         env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: testpassword
-          POSTGRES_DB: moneywise_test
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: testpass
+          POSTGRES_DB: test_db
         ports:
           - 5432:5432
         options: >-
-          --health-cmd pg_isready
+          --health-cmd "pg_isready -U test -d test_db"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -549,7 +549,7 @@ jobs:
 
       - name: 🔧 Run Database Migrations
         env:
-          DATABASE_URL: postgresql://postgres:testpassword@localhost:5432/moneywise_test
+          DATABASE_URL: postgresql://test:testpass@localhost:5432/test_db
         run: |
           echo "🔧 Running database migrations..."
           cd apps/backend && pnpm db:migrate && cd ../..
@@ -559,17 +559,17 @@ jobs:
         env:
           DB_HOST: localhost
           DB_PORT: 5432
-          DB_USERNAME: postgres
-          DB_PASSWORD: testpassword
-          DB_NAME: moneywise_test
-          DATABASE_URL: postgresql://postgres:testpassword@localhost:5432/moneywise_test
+          DB_USERNAME: test
+          DB_PASSWORD: testpass
+          DB_NAME: test_db
+          DATABASE_URL: postgresql://test:testpass@localhost:5432/test_db
           DATABASE_HOST: localhost
           DATABASE_PORT: 5432
           REDIS_HOST: localhost
           REDIS_PORT: 6379
           REDIS_PASSWORD: ""
-          JWT_ACCESS_SECRET: test-jwt-access-secret-for-ci-only
-          JWT_REFRESH_SECRET: test-jwt-refresh-secret-for-ci-only
+          JWT_ACCESS_SECRET: test-jwt-access-secret-minimum-32-characters-long-for-testing-purposes
+          JWT_REFRESH_SECRET: test-jwt-refresh-secret-minimum-32-characters-long-different-from-access
           NODE_ENV: test
         run: pnpm test:unit | tee unit-tests.log
 
@@ -577,17 +577,17 @@ jobs:
         env:
           DB_HOST: localhost
           DB_PORT: 5432
-          DB_USERNAME: postgres
-          DB_PASSWORD: testpassword
-          DB_NAME: moneywise_test
-          DATABASE_URL: postgresql://postgres:testpassword@localhost:5432/moneywise_test
+          DB_USERNAME: test
+          DB_PASSWORD: testpass
+          DB_NAME: test_db
+          DATABASE_URL: postgresql://test:testpass@localhost:5432/test_db
           DATABASE_HOST: localhost
           DATABASE_PORT: 5432
           REDIS_HOST: localhost
           REDIS_PORT: 6379
           REDIS_PASSWORD: ""
-          JWT_ACCESS_SECRET: test-jwt-access-secret-for-ci-only
-          JWT_REFRESH_SECRET: test-jwt-refresh-secret-for-ci-only
+          JWT_ACCESS_SECRET: test-jwt-access-secret-minimum-32-characters-long-for-testing-purposes
+          JWT_REFRESH_SECRET: test-jwt-refresh-secret-minimum-32-characters-long-different-from-access
           NODE_ENV: test
         run: pnpm test:integration | tee integration-tests.log
 
@@ -595,17 +595,17 @@ jobs:
         env:
           DB_HOST: localhost
           DB_PORT: 5432
-          DB_USERNAME: postgres
-          DB_PASSWORD: testpassword
-          DB_NAME: moneywise_test
-          DATABASE_URL: postgresql://postgres:testpassword@localhost:5432/moneywise_test
+          DB_USERNAME: test
+          DB_PASSWORD: testpass
+          DB_NAME: test_db
+          DATABASE_URL: postgresql://test:testpass@localhost:5432/test_db
           DATABASE_HOST: localhost
           DATABASE_PORT: 5432
           REDIS_HOST: localhost
           REDIS_PORT: 6379
           REDIS_PASSWORD: ""
-          JWT_ACCESS_SECRET: test-jwt-access-secret-for-ci-only
-          JWT_REFRESH_SECRET: test-jwt-refresh-secret-for-ci-only
+          JWT_ACCESS_SECRET: test-jwt-access-secret-minimum-32-characters-long-for-testing-purposes
+          JWT_REFRESH_SECRET: test-jwt-refresh-secret-minimum-32-characters-long-different-from-access
           NODE_ENV: test
         run: pnpm test:performance | tee performance-tests.log
 
@@ -613,16 +613,17 @@ jobs:
         env:
           DB_HOST: localhost
           DB_PORT: 5432
-          DB_USERNAME: postgres
-          DB_PASSWORD: testpassword
-          DB_NAME: moneywise_test
+          DB_USERNAME: test
+          DB_PASSWORD: testpass
+          DB_NAME: test_db
+          DATABASE_URL: postgresql://test:testpass@localhost:5432/test_db
           DATABASE_HOST: localhost
           DATABASE_PORT: 5432
           REDIS_HOST: localhost
           REDIS_PORT: 6379
           REDIS_PASSWORD: ""
-          JWT_ACCESS_SECRET: test-jwt-access-secret-for-ci-only
-          JWT_REFRESH_SECRET: test-jwt-refresh-secret-for-ci-only
+          JWT_ACCESS_SECRET: test-jwt-access-secret-minimum-32-characters-long-for-testing-purposes
+          JWT_REFRESH_SECRET: test-jwt-refresh-secret-minimum-32-characters-long-different-from-access
           NODE_ENV: test
         run: pnpm test:coverage
 
