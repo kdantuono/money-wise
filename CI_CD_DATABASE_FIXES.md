@@ -1,5 +1,7 @@
 # CI/CD Database Configuration Fixes
 
+> **Security Note**: This document contains test-only credentials that are already present in the repository's `.env.test` file and CI/CD workflows. These are NOT production secrets and are explicitly designed for testing purposes only. Production credentials are managed via GitHub Secrets and environment variables.
+
 ## Problem Statement
 The CI/CD pipeline was failing due to inconsistent database configurations across different workflow files and environment settings. This was causing authentication errors and test failures in the GitHub Actions workflows.
 
@@ -64,6 +66,7 @@ env:
   REDIS_HOST: localhost
   REDIS_PORT: 6379
   REDIS_PASSWORD: ""
+  # Note: These are test-only JWT secrets from .env.test, NOT production secrets
   JWT_ACCESS_SECRET: test-jwt-access-secret-minimum-32-characters-long-for-testing-purposes
   JWT_REFRESH_SECRET: test-jwt-refresh-secret-minimum-32-characters-long-different-from-access
   NODE_ENV: test
@@ -81,6 +84,7 @@ env:
   REDIS_HOST: localhost
   REDIS_PORT: 6379
   REDIS_PASSWORD: ""
+  # Note: These are test-only JWT secrets from .env.test, NOT production secrets
   JWT_ACCESS_SECRET: test-jwt-access-secret-minimum-32-characters-long-for-testing-purposes
   JWT_REFRESH_SECRET: test-jwt-refresh-secret-minimum-32-characters-long-different-from-access
   NODE_ENV: test
