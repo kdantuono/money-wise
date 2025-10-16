@@ -10,7 +10,7 @@ echo ""
 
 # Check 1: Verify benchmark workflow has skip-fetch-gh-pages
 echo "✅ Check 1: Benchmark workflow configuration"
-if grep -q "skip-fetch-gh-pages: true" .github/workflows/quality-gates.yml; then
+if grep -q "skip-fetch-gh-pages: true" .github/workflows/ci-cd.yml; then
   echo "   ✓ skip-fetch-gh-pages is enabled"
 else
   echo "   ✗ skip-fetch-gh-pages is NOT enabled"
@@ -20,7 +20,7 @@ fi
 # Check 2: Verify performance results JSON format
 echo ""
 echo "✅ Check 2: Performance results JSON format"
-if grep -q '"unit": "ops/sec"' .github/workflows/quality-gates.yml; then
+if grep -q '"unit": "ops/sec"' .github/workflows/ci-cd.yml; then
   echo "   ✓ Using ops/sec unit (correct for customBiggerIsBetter)"
 else
   echo "   ✗ Not using ops/sec unit"
