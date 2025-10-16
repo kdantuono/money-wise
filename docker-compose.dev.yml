@@ -1,7 +1,7 @@
 services:
-  # PostgreSQL Database
+  # TimescaleDB Database (PostgreSQL + Time-series extension)
   postgres:
-    image: postgres:15-alpine
+    image: timescale/timescaledb:latest-pg15
     container_name: postgres-dev
     environment:
       POSTGRES_DB: moneywise
@@ -12,6 +12,7 @@ services:
       - '5432:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./infrastructure/docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - app-network
     healthcheck:

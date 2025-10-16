@@ -1,0 +1,23 @@
+{
+  "created_count": 2,
+  "created_issues": [
+    {
+      "task_id": "TASK-001-001",
+      "title": "Initialize Git Repository",
+      "url": "https://github.com/kdantuono/money-wise/issues/82",
+      "parent_story": "STORY-001"
+    },
+    {
+      "task_id": "TASK-001-002",
+      "title": "Create Monorepo Root Structure",
+      "url": "https://github.com/kdantuono/money-wise/issues/83",
+      "parent_story": "STORY-001"
+    }
+  ],
+  "summary_by_story": {
+    "STORY-001": [
+      "TASK-001-001",
+      "TASK-001-002"
+    ]
+  }
+}

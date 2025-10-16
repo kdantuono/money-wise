@@ -1,5 +1,0 @@
-
-> @money-wise/web@0.1.0 test /home/nemesi/dev/money-wise/apps/web
-> jest --passWithNoTests
-
-No tests found, exiting with code 0

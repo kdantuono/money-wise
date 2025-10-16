@@ -1,0 +1,29 @@
+# Node modules
+node_modules/
+
+# Build outputs
+dist/
+coverage/
+.next/
+.turbo/
+
+# Claude configuration - has specific formatting requirements
+.claude/
+
+# Test utilities - may have JSX/TSX mixed syntax
+test-utils/
+
+# Lock files
+pnpm-lock.yaml
+package-lock.json
+yarn.lock
+
+# Generated files
+*.generated.ts
+*.generated.js
+
+# Documentation that may have specific formatting
+CHANGELOG.md
+
+# Environment files
+.env*

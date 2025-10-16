@@ -1,0 +1,81 @@
+# MoneyWise Pre-commit Configuration
+# Following Milestone 1 requirements (TASK-001-020)
+
+repos:
+  # Pre-commit hooks for basic file hygiene
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+        name: Trim Trailing Whitespace
+      - id: end-of-file-fixer
+        name: Fix End of Files
+      - id: check-merge-conflict
+        name: Check for merge conflicts
+      - id: check-added-large-files
+        name: Check for large files
+        args: ['--maxkb=1000']
+      - id: check-yaml
+        name: Check YAML
+        files: \.(yaml|yml)$
+      - id: check-json
+        name: Check JSON
+        files: \.json$
+
+  # TypeScript/JavaScript linting
+  - repo: local
+    hooks:
+      - id: eslint
+        name: ESLint
+        entry: pnpm lint
+        language: system
+        types: [typescript, javascript, tsx, jsx]
+        pass_filenames: false
+        description: 'Run ESLint on TypeScript and JavaScript files'
+
+      - id: prettier
+        name: Prettier
+        entry: pnpm format
+        language: system
+        types: [typescript, javascript, tsx, jsx, json, yaml, markdown]
+        pass_filenames: false
+        description: 'Format code with Prettier'
+
+      - id: typecheck
+        name: TypeScript Check
+        entry: pnpm typecheck
+        language: system
+        types: [typescript, tsx]
+        pass_filenames: false
+        description: 'Run TypeScript type checking'
+
+  # Security scanning
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.4.0
+    hooks:
+      - id: detect-secrets
+        name: Detect Secrets
+        args: ['--baseline', '.secrets.baseline']
+        exclude: package-lock.json|pnpm-lock.yaml
+
+  # Markdown linting
+  - repo: https://github.com/igorshubovych/markdownlint-cli
+    rev: v0.37.0
+    hooks:
+      - id: markdownlint
+        name: Markdown Lint
+        args: ['--fix']
+        files: \.md$
+
+  # YAML validation
+  - repo: https://github.com/adrienverge/yamllint.git
+    rev: v1.33.0
+    hooks:
+      - id: yamllint
+        name: YAML Lint
+        args: [-c=.yamllint.yml]
+        files: \.(yaml|yml)$
+
+# Configuration
+fail_fast: false
+default_stages: [commit]

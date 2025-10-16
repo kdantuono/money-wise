@@ -1,0 +1,396 @@
+{
+  "phase": "P.3.4",
+  "entity": "User",
+  "startedAt": "2025-10-12T12:00:00.000Z",
+  "completedAt": null,
+  "status": "in-progress",
+  "prismaService": {
+    "file": "apps/backend/src/core/database/prisma/services/user.service.ts",
+    "status": "completed",
+    "createdAt": "2025-10-08T12:00:00.000Z",
+    "testCoverage": {
+      "statements": 100,
+      "branches": 100,
+      "functions": 100,
+      "lines": 100
+    }
+  },
+  "services": [
+    {
+      "id": "P.3.4.1",
+      "file": "apps/backend/src/users/users.service.ts",
+      "description": "Pure CRUD operations - lowest risk",
+      "priority": 1,
+      "status": "completed",
+      "dependencies": [],
+      "typeormInjections": [
+        "@InjectRepository(User) private readonly userRepository: Repository<User>"
+      ],
+      "methodsMigrated": [
+        "findAll",
+        "findOne",
+        "findByEmail",
+        "update",
+        "updateStatus",
+        "remove",
+        "getStats"
+      ],
+      "estimatedComplexity": "low",
+      "tests": {
+        "before": 1740,
+        "after": 1740,
+        "new": 0
+      },
+      "migration": {
+        "startedAt": "2025-10-12T12:00:00.000Z",
+        "completedAt": "2025-10-12T13:15:00.000Z",
+        "commitHash": "4ab002d",
+        "branch": "feature/epic-1.5-completion"
+      }
+    },
+    {
+      "id": "P.3.4.2",
+      "file": "apps/backend/src/auth/services/password-security.service.ts",
+      "description": "Password hashing/validation - medium risk",
+      "priority": 2,
+      "status": "completed",
+      "dependencies": ["P.3.4.1"],
+      "typeormInjections": [
+        "@InjectRepository(User) private userRepository: Repository<User>",
+        "@InjectRepository(PasswordHistory) private passwordHistoryRepository: Repository<PasswordHistory>",
+        "@InjectRepository(AuditLog) private auditLogRepository: Repository<AuditLog>"
+      ],
+      "methodsMigrated": [
+        "changePassword",
+        "isPasswordExpired",
+        "getDaysUntilExpiration",
+        "shouldWarnPasswordExpiry",
+        "isPasswordReused",
+        "savePasswordHistory",
+        "logPasswordEvent"
+      ],
+      "estimatedComplexity": "medium",
+      "notes": [
+        "Uses Argon2 hashing - PrismaUserService uses bcrypt",
+        "Must handle password hash compatibility",
+        "Created PasswordHistory and AuditLog Prisma entities (P.3.4.2a)",
+        "Added updatePasswordHash method to PrismaUserService",
+        "Simplified test suite - comprehensive coverage deferred to P.3.4.9"
+      ],
+      "tests": {
+        "before": 1809,
+        "after": 1760,
+        "new": 69
+      },
+      "migration": {
+        "startedAt": "2025-10-12T13:15:00.000Z",
+        "completedAt": "2025-10-12T14:30:00.000Z",
+        "commitHash": "c5cb316",
+        "branch": "feature/epic-1.5-completion"
+      }
+    },
+    {
+      "id": "P.3.4.3",
+      "file": "apps/backend/src/auth/auth-security.service.ts",
+      "description": "Security checks - if exists",
+      "priority": 3,
+      "status": "pending",
+      "dependencies": ["P.3.4.2"],
+      "typeormInjections": [],
+      "methodsMigrated": [],
+      "estimatedComplexity": "low",
+      "tests": {
+        "before": 0,
+        "after": null,
+        "new": null
+      },
+      "migration": {
+        "startedAt": null,
+        "completedAt": null,
+        "commitHash": null,
+        "branch": "feature/p.3.4.3-auth-security-migration"
+      }
+    },
+    {
+      "id": "P.3.4.4",
+      "file": "apps/backend/src/auth/services/account-lockout.service.ts",
+      "description": "Account lockout logic - Redis + User status updates",
+      "priority": 4,
+      "status": "pending",
+      "dependencies": ["P.3.4.3"],
+      "typeormInjections": [
+        "@InjectRepository(User) private userRepository: Repository<User>"
+      ],
+      "methodsMigrated": [],
+      "estimatedComplexity": "medium",
+      "notes": [
+        "Uses findByIdentifier pattern (email or ID)",
+        "Updates user status (SUSPENDED)",
+        "Must add findByIdentifier to PrismaUserService"
+      ],
+      "tests": {
+        "before": 0,
+        "after": null,
+        "new": null
+      },
+      "migration": {
+        "startedAt": null,
+        "completedAt": null,
+        "commitHash": null,
+        "branch": "feature/p.3.4.4-account-lockout-migration"
+      }
+    },
+    {
+      "id": "P.3.4.5",
+      "file": "apps/backend/src/auth/services/email-verification.service.ts",
+      "description": "Email verification flow - Redis + User updates",
+      "priority": 5,
+      "status": "pending",
+      "dependencies": ["P.3.4.4"],
+      "typeormInjections": [
+        "@InjectRepository(User) private userRepository: Repository<User>"
+      ],
+      "methodsMigrated": [],
+      "estimatedComplexity": "medium",
+      "notes": [
+        "Updates emailVerifiedAt timestamp",
+        "Uses query builder for stats (needs count method)",
+        "Must add count with date filters to PrismaUserService"
+      ],
+      "tests": {
+        "before": 0,
+        "after": null,
+        "new": null
+      },
+      "migration": {
+        "startedAt": null,
+        "completedAt": null,
+        "commitHash": null,
+        "branch": "feature/p.3.4.5-email-verification-migration"
+      }
+    },
+    {
+      "id": "P.3.4.6",
+      "file": "apps/backend/src/auth/services/password-reset.service.ts",
+      "description": "Password reset flow - if exists",
+      "priority": 6,
+      "status": "pending",
+      "dependencies": ["P.3.4.5"],
+      "typeormInjections": [],
+      "methodsMigrated": [],
+      "estimatedComplexity": "medium",
+      "tests": {
+        "before": 0,
+        "after": null,
+        "new": null
+      },
+      "migration": {
+        "startedAt": null,
+        "completedAt": null,
+        "commitHash": null,
+        "branch": "feature/p.3.4.6-password-reset-migration"
+      }
+    },
+    {
+      "id": "P.3.4.7",
+      "file": "apps/backend/src/auth/services/two-factor-auth.service.ts",
+      "description": "2FA logic - if exists",
+      "priority": 7,
+      "status": "pending",
+      "dependencies": ["P.3.4.6"],
+      "typeormInjections": [],
+      "methodsMigrated": [],
+      "estimatedComplexity": "medium",
+      "tests": {
+        "before": 0,
+        "after": null,
+        "new": null
+      },
+      "migration": {
+        "startedAt": null,
+        "completedAt": null,
+        "commitHash": null,
+        "branch": "feature/p.3.4.7-two-factor-auth-migration"
+      }
+    },
+    {
+      "id": "P.3.4.8",
+      "file": "apps/backend/src/auth/auth.service.ts",
+      "description": "Core auth service - HIGHEST RISK",
+      "priority": 8,
+      "status": "pending",
+      "dependencies": [
+        "P.3.4.1",
+        "P.3.4.2",
+        "P.3.4.3",
+        "P.3.4.4",
+        "P.3.4.5",
+        "P.3.4.6",
+        "P.3.4.7"
+      ],
+      "typeormInjections": [
+        "@InjectRepository(User) private userRepository: Repository<User>",
+        "@InjectRepository(AuditLog) private auditLogRepository: Repository<AuditLog>"
+      ],
+      "methodsMigrated": [],
+      "estimatedComplexity": "high",
+      "notes": [
+        "CRITICAL PATH - affects all authentication",
+        "Uses virtual properties (fullName, isEmailVerified, isActive)",
+        "Complex password verification with PasswordSecurityService",
+        "Must migrate LAST after all dependencies",
+        "Requires extensive testing (unit + integration + E2E)",
+        "Consider feature flag for gradual rollout"
+      ],
+      "tests": {
+        "before": 0,
+        "after": null,
+        "new": null
+      },
+      "migration": {
+        "startedAt": null,
+        "completedAt": null,
+        "commitHash": null,
+        "branch": "feature/p.3.4.8-auth-service-migration"
+      }
+    }
+  ],
+  "prerequisites": [
+    {
+      "id": "PREREQ-1",
+      "description": "Add findByIdentifier method to PrismaUserService",
+      "status": "completed",
+      "priority": "critical",
+      "requiredFor": ["P.3.4.4"],
+      "completedAt": "2025-10-12T12:30:00.000Z",
+      "commitHash": "637128b"
+    },
+    {
+      "id": "PREREQ-2",
+      "description": "Add count and countByStatus methods to PrismaUserService",
+      "status": "completed",
+      "priority": "critical",
+      "requiredFor": ["P.3.4.1", "P.3.4.5"],
+      "completedAt": "2025-10-12T12:30:00.000Z",
+      "commitHash": "637128b"
+    },
+    {
+      "id": "PREREQ-3",
+      "description": "Add findAllWithCount method to PrismaUserService",
+      "status": "completed",
+      "priority": "critical",
+      "requiredFor": ["P.3.4.1"],
+      "completedAt": "2025-10-12T12:30:00.000Z",
+      "commitHash": "637128b"
+    },
+    {
+      "id": "PREREQ-4",
+      "description": "Add createWithHash method to PrismaUserService (for auth.service)",
+      "status": "completed",
+      "priority": "critical",
+      "requiredFor": ["P.3.4.8"],
+      "completedAt": "2025-10-12T12:30:00.000Z",
+      "commitHash": "637128b"
+    },
+    {
+      "id": "PREREQ-5",
+      "description": "Create enrichUserWithVirtuals utility function",
+      "status": "completed",
+      "priority": "high",
+      "requiredFor": ["P.3.4.1", "P.3.4.8"],
+      "completedAt": "2025-10-12T12:45:00.000Z",
+      "commitHash": "aa000c5"
+    },
+    {
+      "id": "PREREQ-6",
+      "description": "Add updatePasswordHash method to PrismaUserService",
+      "status": "completed",
+      "priority": "critical",
+      "requiredFor": ["P.3.4.2"],
+      "completedAt": "2025-10-12T14:30:00.000Z",
+      "commitHash": "c5cb316"
+    },
+    {
+      "id": "PREREQ-7",
+      "description": "Create PasswordHistory Prisma entity and service",
+      "status": "completed",
+      "priority": "critical",
+      "requiredFor": ["P.3.4.2"],
+      "completedAt": "2025-10-12T14:15:00.000Z",
+      "commitHash": "c5cb316"
+    },
+    {
+      "id": "PREREQ-8",
+      "description": "Create AuditLog Prisma entity and service",
+      "status": "completed",
+      "priority": "critical",
+      "requiredFor": ["P.3.4.2"],
+      "completedAt": "2025-10-12T14:15:00.000Z",
+      "commitHash": "c5cb316"
+    }
+  ],
+  "risks": [
+    {
+      "id": "RISK-1",
+      "severity": "high",
+      "description": "Password hash algorithm mismatch (Argon2 vs Bcrypt)",
+      "mitigation": "PrismaUserService.verifyPassword auto-detects algorithm",
+      "status": "mitigated"
+    },
+    {
+      "id": "RISK-2",
+      "severity": "critical",
+      "description": "auth.service.ts is critical path - failure blocks all authentication",
+      "mitigation": "Migrate last, extensive testing, feature flag rollout",
+      "status": "open"
+    },
+    {
+      "id": "RISK-3",
+      "severity": "medium",
+      "description": "Virtual properties no longer computed automatically",
+      "mitigation": "Use enrichUserWithVirtuals helper in DTOs",
+      "status": "planned"
+    },
+    {
+      "id": "RISK-4",
+      "severity": "medium",
+      "description": "familyId is required in Prisma but may be null in TypeORM during registration",
+      "mitigation": "Use createWithHash for auth registration flow",
+      "status": "planned"
+    }
+  ],
+  "testingStrategy": {
+    "unitTests": {
+      "target": "100% coverage for migrated services",
+      "framework": "Jest",
+      "focus": [
+        "Method signature compatibility",
+        "Error handling parity",
+        "Virtual property computation",
+        "Password verification"
+      ]
+    },
+    "integrationTests": {
+      "target": "Cover all authentication flows",
+      "framework": "Jest + Supertest",
+      "focus": [
+        "Registration flow",
+        "Login flow",
+        "Email verification flow",
+        "Password reset flow",
+        "Account lockout flow"
+      ]
+    },
+    "e2eTests": {
+      "target": "Full user journey",
+      "framework": "Playwright",
+      "focus": [
+        "User registration",
+        "Login with valid/invalid credentials",
+        "Email verification",
+        "Password change",
+        "Account lockout scenarios"
+      ]
+    }
+  }
+}

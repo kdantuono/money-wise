@@ -294,6 +294,43 @@ update_progress() {
 
 ## Quality Gates Integration
 
+### 🚨 MANDATORY GITHUB COPILOT REVIEW WORKFLOW
+
+#### **CRITICAL RULE ENFORCEMENT**
+```bash
+# BLOCKED - Direct completion not allowed
+./board-status.sh complete "Story Title"  # ❌ WILL FAIL
+
+# REQUIRED - Mandatory review workflow
+./board-status.sh review "Story Title"         # 1. Move to review
+# [Request @copilot review on GitHub]          # 2. Get AI review
+./board-status.sh confirm-review "Story Title" # 3. Confirm → Done
+```
+
+#### **Workflow Enforcement Mechanism**
+```bash
+validate_review_workflow() {
+    # Ensures no bypass of review process
+    # Validates status transitions
+    # Blocks direct In Progress → Done
+    # Requires In Review → GitHub Copilot → User Approval → Done
+}
+```
+
+#### **Quality Gate Integration**
+- **Gate 1**: Implementation ready → Move to "In Review"
+- **Gate 2**: AI Review → GitHub Copilot comprehensive analysis
+- **Gate 3**: Human Approval → User confirms review complete
+- **Gate 4**: Completion → Automated transition to "Done"
+
+#### **Review Requirements**
+```
+@copilot review all changes for [ITEM] including:
+• Implementation completeness • Code quality patterns
+• Test coverage             • Security considerations
+• Performance implications  • Documentation accuracy
+```
+
 ### Board-Integrated Definition of Done
 
 #### ❌ WRONG - Incomplete DoD
@@ -304,9 +341,9 @@ update_progress() {
 - Board marked "Done" without full workflow ≠ Done
 ```
 
-#### ✅ CORRECT - Complete DoD Checklist
+#### ✅ CORRECT - Complete DoD Checklist with MANDATORY REVIEW
 ```markdown
-## Definition of Done Checklist
+## Definition of Done Checklist with GitHub Copilot Review
 
 ### Development Phase
 - [ ] 1. Feature branch created and used (never work on main)
@@ -327,16 +364,22 @@ update_progress() {
 - [ ] 12. Code review completed and approved
 - [ ] 13. Security review passed (if applicable)
 
+### 🚨 MANDATORY REVIEW PHASE (NEW)
+- [ ] 14. Board status moved to "In Review" (.claude/scripts/board-status.sh review)
+- [ ] 15. GitHub Copilot comprehensive review requested on GitHub
+- [ ] 16. Copilot review feedback addressed and implemented
+- [ ] 17. Review completion confirmed (.claude/scripts/board-status.sh confirm-review)
+
 ### Integration Phase
-- [ ] 14. Pull request created and approved
-- [ ] 15. Merged to main with --no-ff
-- [ ] 16. CI/CD pipeline GREEN on main branch
-- [ ] 17. Deployment successful (if auto-deploy enabled)
+- [ ] 18. Pull request created and approved
+- [ ] 19. Merged to main with --no-ff
+- [ ] 20. CI/CD pipeline GREEN on main branch
+- [ ] 21. Deployment successful (if auto-deploy enabled)
 
 ### Completion Phase
-- [ ] 18. Feature branch deleted (local + remote)
-- [ ] 19. Board status updated to "Done"
-- [ ] 20. Stakeholder notification (if required)
+- [ ] 22. Feature branch deleted (local + remote)
+- [ ] 23. Board status automatically updated to "Done" (via review workflow)
+- [ ] 24. Stakeholder notification (if required)
 ```
 
 ### Automated DoD Validation

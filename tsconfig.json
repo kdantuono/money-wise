@@ -12,7 +12,18 @@
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "noEmit": true
+    "noEmit": true,
+    "baseUrl": ".",
+    "paths": {
+      "@money-wise/types": ["packages/types/src"],
+      "@money-wise/types/*": ["packages/types/src/*"],
+      "@money-wise/utils": ["packages/utils/src"],
+      "@money-wise/utils/*": ["packages/utils/src/*"],
+      "@money-wise/ui": ["packages/ui/src"],
+      "@money-wise/ui/*": ["packages/ui/src/*"],
+      "@money-wise/test-utils": ["packages/test-utils/src"],
+      "@money-wise/test-utils/*": ["packages/test-utils/src/*"]
+    }
   },
   "exclude": [
     "node_modules",

@@ -1,0 +1,152 @@
+version: 2
+updates:
+  # NPM dependencies for root workspace
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "automated"
+    reviewers:
+      - "kdantuono"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+
+  # Backend NPM dependencies
+  - package-ecosystem: "npm"
+    directory: "/apps/backend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "backend"
+      - "automated"
+    reviewers:
+      - "kdantuono"
+    commit-message:
+      prefix: "chore(backend)"
+
+  # Web NPM dependencies
+  - package-ecosystem: "npm"
+    directory: "/apps/web"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "web"
+      - "automated"
+    reviewers:
+      - "kdantuono"
+    commit-message:
+      prefix: "chore(web)"
+
+  # Mobile NPM dependencies
+  - package-ecosystem: "npm"
+    directory: "/apps/mobile"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "mobile"
+      - "automated"
+    reviewers:
+      - "kdantuono"
+    commit-message:
+      prefix: "chore(mobile)"
+
+  # Shared packages NPM dependencies
+  - package-ecosystem: "npm"
+    directory: "/packages/types"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 3
+    labels:
+      - "dependencies"
+      - "packages"
+      - "automated"
+    reviewers:
+      - "kdantuono"
+    commit-message:
+      prefix: "chore(types)"
+
+  - package-ecosystem: "npm"
+    directory: "/packages/ui"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 3
+    labels:
+      - "dependencies"
+      - "packages"
+      - "automated"
+    reviewers:
+      - "kdantuono"
+    commit-message:
+      prefix: "chore(ui)"
+
+  - package-ecosystem: "npm"
+    directory: "/packages/utils"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 3
+    labels:
+      - "dependencies"
+      - "packages"
+      - "automated"
+    reviewers:
+      - "kdantuono"
+    commit-message:
+      prefix: "chore(utils)"
+
+  # Docker dependencies
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "docker"
+      - "automated"
+    reviewers:
+      - "kdantuono"
+    commit-message:
+      prefix: "chore(docker)"
+
+  # GitHub Actions dependencies
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "github-actions"
+      - "automated"
+    reviewers:
+      - "kdantuono"
+    commit-message:
+      prefix: "chore(actions)"

@@ -1,0 +1,40 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# MoneyWise pre-commit hook
+# Runs essential checks before allowing commit
+
+echo "🔍 Running pre-commit checks..."
+
+# Check if Prisma Client is generated (backend only)
+if [ -d "apps/backend" ] && [ ! -d "apps/backend/generated/prisma" ]; then
+  echo "  ⚠️  Prisma Client not generated. Generating now..."
+  cd apps/backend && pnpm prisma:generate && cd ../.. || {
+    echo "❌ Prisma Client generation failed."
+    exit 1
+  }
+  echo "  ✅ Prisma Client generated"
+fi
+
+# Run linting
+echo "  ✨ Linting..."
+pnpm lint || {
+  echo "❌ Linting failed. Please fix errors and try again."
+  exit 1
+}
+
+# Run type checking
+echo "  🔍 Type checking..."
+pnpm typecheck || {
+  echo "❌ Type checking failed. Please fix errors and try again."
+  exit 1
+}
+
+# Run unit tests (fast)
+echo "  🧪 Running unit tests..."
+pnpm test:unit || {
+  echo "❌ Unit tests failed. Please fix failing tests and try again."
+  exit 1
+}
+
+echo "✅ Pre-commit checks passed!"

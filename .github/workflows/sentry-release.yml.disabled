@@ -1,0 +1,229 @@
+name: Sentry Release Management
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    tags:
+      - 'v*'
+  pull_request:
+    branches:
+      - main
+      - develop
+
+env:
+  SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+  SENTRY_PROJECT_BACKEND: ${{ secrets.SENTRY_PROJECT_BACKEND }}
+  SENTRY_PROJECT_WEB: ${{ secrets.SENTRY_PROJECT_WEB }}
+  SENTRY_PROJECT_MOBILE: ${{ secrets.SENTRY_PROJECT_MOBILE }}
+  SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+
+jobs:
+  create-sentry-release:
+    name: Create Sentry Release
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/'))
+
+    outputs:
+      release-version: ${{ steps.create-release.outputs.version }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate release version
+        id: generate-version
+        run: |
+          if [[ $GITHUB_REF == refs/tags/* ]]; then
+            VERSION=${GITHUB_REF#refs/tags/}
+          else
+            VERSION="${GITHUB_SHA:0:8}-$(date +%Y%m%d%H%M%S)"
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Generated version: $VERSION"
+
+      - name: Install Sentry CLI
+        run: |
+          curl -sL https://sentry.io/get-cli/ | bash
+
+      - name: Create Sentry release
+        id: create-release
+        run: |
+          VERSION="${{ steps.generate-version.outputs.version }}"
+
+          # Create release for backend
+          sentry-cli releases new -p $SENTRY_PROJECT_BACKEND $VERSION
+          sentry-cli releases set-commits --auto $VERSION
+
+          # Create release for web
+          sentry-cli releases new -p $SENTRY_PROJECT_WEB $VERSION
+          sentry-cli releases set-commits --auto $VERSION
+
+          # Create release for mobile
+          sentry-cli releases new -p $SENTRY_PROJECT_MOBILE $VERSION
+          sentry-cli releases set-commits --auto $VERSION
+
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Created Sentry release: $VERSION"
+
+  upload-sourcemaps:
+    name: Upload Source Maps
+    runs-on: ubuntu-latest
+    needs: create-sentry-release
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/'))
+
+    strategy:
+      matrix:
+        app: [backend, web]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: latest
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build application
+        run: |
+          if [ "${{ matrix.app }}" = "backend" ]; then
+            pnpm build:backend
+          elif [ "${{ matrix.app }}" = "web" ]; then
+            pnpm build:web
+          fi
+        env:
+          SENTRY_RELEASE: ${{ needs.create-sentry-release.outputs.release-version }}
+          SENTRY_ORG: ${{ env.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ matrix.app == 'backend' && env.SENTRY_PROJECT_BACKEND || env.SENTRY_PROJECT_WEB }}
+          SENTRY_AUTH_TOKEN: ${{ env.SENTRY_AUTH_TOKEN }}
+
+      - name: Install Sentry CLI
+        run: |
+          curl -sL https://sentry.io/get-cli/ | bash
+
+      - name: Upload source maps (Backend)
+        if: matrix.app == 'backend'
+        run: |
+          sentry-cli sourcemaps upload \
+            --release=${{ needs.create-sentry-release.outputs.release-version }} \
+            --project=$SENTRY_PROJECT_BACKEND \
+            apps/backend/dist
+
+      - name: Upload source maps (Web)
+        if: matrix.app == 'web'
+        run: |
+          sentry-cli sourcemaps upload \
+            --release=${{ needs.create-sentry-release.outputs.release-version }} \
+            --project=$SENTRY_PROJECT_WEB \
+            apps/web/.next
+
+  finalize-release:
+    name: Finalize Sentry Release
+    runs-on: ubuntu-latest
+    needs: [create-sentry-release, upload-sourcemaps]
+    if: always() && needs.create-sentry-release.result == 'success'
+
+    steps:
+      - name: Install Sentry CLI
+        run: |
+          curl -sL https://sentry.io/get-cli/ | bash
+
+      - name: Finalize Sentry releases
+        run: |
+          VERSION="${{ needs.create-sentry-release.outputs.release-version }}"
+
+          # Finalize backend release
+          sentry-cli releases finalize -p $SENTRY_PROJECT_BACKEND $VERSION
+
+          # Finalize web release
+          sentry-cli releases finalize -p $SENTRY_PROJECT_WEB $VERSION
+
+          # Finalize mobile release
+          sentry-cli releases finalize -p $SENTRY_PROJECT_MOBILE $VERSION
+
+          echo "Finalized Sentry releases for version: $VERSION"
+
+  deploy-notification:
+    name: Send Deployment Notification
+    runs-on: ubuntu-latest
+    needs: [create-sentry-release, finalize-release]
+    if: always() && needs.create-sentry-release.result == 'success'
+
+    steps:
+      - name: Install Sentry CLI
+        run: |
+          curl -sL https://sentry.io/get-cli/ | bash
+
+      - name: Create deployment
+        run: |
+          VERSION="${{ needs.create-sentry-release.outputs.release-version }}"
+          ENVIRONMENT=$([ "${{ github.ref }}" = "refs/heads/main" ] && echo "production" || echo "staging")
+
+          # Create deployment notifications
+          sentry-cli releases deploys $VERSION new -e $ENVIRONMENT -p $SENTRY_PROJECT_BACKEND
+          sentry-cli releases deploys $VERSION new -e $ENVIRONMENT -p $SENTRY_PROJECT_WEB
+          sentry-cli releases deploys $VERSION new -e $ENVIRONMENT -p $SENTRY_PROJECT_MOBILE
+
+          echo "Created deployment notifications for $ENVIRONMENT"
+
+  monitor-deployment:
+    name: Monitor Deployment Health
+    runs-on: ubuntu-latest
+    needs: [create-sentry-release, deploy-notification]
+    if: always() && needs.create-sentry-release.result == 'success'
+
+    steps:
+      - name: Wait for deployment stabilization
+        run: |
+          echo "Waiting 5 minutes for deployment to stabilize..."
+          sleep 300
+
+      - name: Install Sentry CLI
+        run: |
+          curl -sL https://sentry.io/get-cli/ | bash
+
+      - name: Check error rates
+        run: |
+          VERSION="${{ needs.create-sentry-release.outputs.release-version }}"
+          ENVIRONMENT=$([ "${{ github.ref }}" = "refs/heads/main" ] && echo "production" || echo "staging")
+
+          echo "Monitoring release health for version: $VERSION"
+          echo "Environment: $ENVIRONMENT"
+
+          # Query for recent errors (this would typically use Sentry API)
+          echo "Note: Implement error rate monitoring based on your Sentry API access"
+          echo "Consider setting up alerts in Sentry dashboard for automatic monitoring"
+
+  error-notification:
+    name: Handle Release Errors
+    runs-on: ubuntu-latest
+    needs: [create-sentry-release, upload-sourcemaps, finalize-release]
+    if: failure()
+
+    steps:
+      - name: Install Sentry CLI
+        run: |
+          curl -sL https://sentry.io/get-cli/ | bash
+
+      - name: Report release failure
+        run: |
+          VERSION="${{ needs.create-sentry-release.outputs.release-version || 'unknown' }}"
+
+          # Create an issue in Sentry about the failed release
+          echo "Release process failed for version: $VERSION"
+          echo "Consider implementing Sentry API calls to create issues or send notifications"
+
+          # You could also integrate with Slack, Discord, or other notification systems here
