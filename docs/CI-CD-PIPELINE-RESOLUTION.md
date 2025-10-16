@@ -163,8 +163,8 @@ env:
 
 - GitHub Actions Workflow Syntax: https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions
 - YAML Specification: https://yaml.org/spec/1.2.2/
-- Project CI/CD Guide: [docs/development/ci-cd-workflow-guide.md](./docs/development/ci-cd-workflow-guide.md)
-- Workflow Documentation: [.github/workflows/README.md](./.github/workflows/README.md)
+- Project CI/CD Guide: [development/ci-cd-workflow-guide.md](./development/ci-cd-workflow-guide.md)
+- Workflow Documentation: [../.github/workflows/README.md](../.github/workflows/README.md)
 
 ## Commit History
 
@@ -179,4 +179,4 @@ env:
 
 **Issue Resolved**: CI/CD pipeline is now functional and optimized  
 **Date**: 2025-10-16  
-**Author**: GitHub Copilot
+**Fixed By**: Automated CI/CD pipeline repair
