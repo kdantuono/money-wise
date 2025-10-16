@@ -7,7 +7,6 @@ import { PrismaUserService } from '../../core/database/prisma/services/user.serv
 import { PrismaAuditLogService } from '../../core/database/prisma/services/audit-log.service';
 import { PasswordSecurityService } from './password-security.service';
 import { RateLimitService } from './rate-limit.service';
-import { AppConfig } from '../../core/config/app.config';
 
 // Enhanced interface combining both approaches
 export interface PasswordResetToken {
