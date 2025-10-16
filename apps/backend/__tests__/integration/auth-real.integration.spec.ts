@@ -540,8 +540,8 @@ describe('Real Auth Integration Tests (Prisma)', () => {
       // Create test user
       testUser = await factory.users.buildWithPassword('Password123!', {
         email: 'passwordreset@example.com',
-        firstName: 'Password',
-        lastName: 'Reset',
+        firstName: 'John',
+        lastName: 'Johnson',
         status: 'ACTIVE' as any,
         emailVerifiedAt: new Date(),
       });
@@ -656,8 +656,8 @@ describe('Real Auth Integration Tests (Prisma)', () => {
       // Create test user and request password reset
       testUser = await factory.users.buildWithPassword('Password123!', {
         email: 'completereset@example.com',
-        firstName: 'Complete',
-        lastName: 'Reset',
+        firstName: 'Jane',
+        lastName: 'Doe',
         status: 'ACTIVE' as any,
         emailVerifiedAt: new Date(),
       });
@@ -763,14 +763,14 @@ describe('Real Auth Integration Tests (Prisma)', () => {
     let testUser: Awaited<ReturnType<typeof factory.users.buildWithPassword>>;
     let accessToken: string;
     const currentPassword = 'Password123!';
-    const newPassword = 'NewPassword456!';
+    const newPassword = 'SecureKey789!';
 
     beforeEach(async () => {
       // Create test user and login
       testUser = await factory.users.buildWithPassword(currentPassword, {
         email: 'changepassword@example.com',
-        firstName: 'Change',
-        lastName: 'Password',
+        firstName: 'Alice',
+        lastName: 'Smith',
         status: 'ACTIVE' as any,
         emailVerifiedAt: new Date(),
       });
@@ -1072,13 +1072,13 @@ describe('Real Auth Integration Tests (Prisma)', () => {
     it('should complete full password reset flow (request → validate → complete)', async () => {
       const userEmail = 'fullresetflow@example.com';
       const originalPassword = 'OriginalPassword123!';
-      const newPassword = 'ResetPassword456!';
+      const newPassword = 'UpdatedKey456!';
 
       // 1. Create user
       const testUser = await factory.users.buildWithPassword(originalPassword, {
         email: userEmail,
-        firstName: 'Full',
-        lastName: 'Reset',
+        firstName: 'Robert',
+        lastName: 'Wilson',
         status: 'ACTIVE' as any,
         emailVerifiedAt: new Date(),
       });
@@ -1154,13 +1154,13 @@ describe('Real Auth Integration Tests (Prisma)', () => {
     it('should complete full password change flow (authenticated user changes password)', async () => {
       const userEmail = 'changeflow@example.com';
       const originalPassword = 'OriginalPassword123!';
-      const newPassword = 'ChangedPassword456!';
+      const newPassword = 'ModifiedKey789!';
 
       // 1. Create user
       await factory.users.buildWithPassword(originalPassword, {
         email: userEmail,
-        firstName: 'Change',
-        lastName: 'Flow',
+        firstName: 'Michael',
+        lastName: 'Brown',
         status: 'ACTIVE' as any,
         emailVerifiedAt: new Date(),
       });

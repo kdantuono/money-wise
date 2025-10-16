@@ -97,6 +97,12 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Generate Prisma Client
+        run: |
+          echo '🔧 Generating Prisma Client for unit tests...'
+          cd apps/backend && pnpm prisma:generate
+          echo '✅ Prisma Client generated'
+
       - name: Run unit tests
         run: |
           cd apps/${{ matrix.project }}

@@ -62,22 +62,28 @@ const mockRedisClient = createMockRedis();
 
 describe.skip('Auth Integration Tests', () => {
   let app: INestApplication;
-  let userRepository: jest.Mocked<Repository<User>>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let userRepository: jest.Mocked<any>; // Repository<User> - TypeORM type removed
   let jwtService: JwtService;
 
-  const mockUser: User = {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const mockUser: any = { // User type - will be fixed in P.3.5
     id: 'user-123',
     email: 'test@example.com',
     firstName: 'John',
     lastName: 'Doe',
     passwordHash: 'hashedPassword123',
-    role: UserRole.USER,
+    role: UserRole.MEMBER, // Fixed: USER -> MEMBER
     status: UserStatus.ACTIVE,
     currency: 'USD',
     createdAt: new Date('2023-01-01'),
     updatedAt: new Date('2023-01-01'),
     lastLoginAt: null,
     emailVerifiedAt: null,
+    avatar: null, // Added missing field
+    timezone: 'UTC', // Added missing field
+    preferences: null, // Added missing field
+    familyId: null, // Added missing field
     accounts: [],
     get fullName() {
       return `${this.firstName} ${this.lastName}`;
@@ -88,7 +94,7 @@ describe.skip('Auth Integration Tests', () => {
     get isActive() {
       return this.status === UserStatus.ACTIVE;
     },
-  } as User;
+  };
 
   beforeEach(async () => {
     // Set environment variables for ConfigService
@@ -149,6 +155,8 @@ describe.skip('Auth Integration Tests', () => {
       })
       // RateLimitGuard now uses injected Redis from RedisModule.forTest()
       // No need to override - it will automatically use the mock Redis
+      // TypeORM tokens removed - will be replaced with Prisma in P.3.5
+      /* 
       .overrideProvider(getRepositoryToken(User))
       .useValue({
         findOne: jest.fn(),
@@ -170,6 +178,7 @@ describe.skip('Auth Integration Tests', () => {
         find: jest.fn(),
         findOne: jest.fn(),
       })
+      */
       .compile();
 
     app = moduleFixture.createNestApplication();
@@ -177,7 +186,8 @@ describe.skip('Auth Integration Tests', () => {
       new ValidationPipe({ transform: true, whitelist: true })
     );
 
-    userRepository = moduleFixture.get(getRepositoryToken(User));
+    // TypeORM repository removed - will be replaced with Prisma in P.3.5
+    // userRepository = moduleFixture.get(getRepositoryToken(User));
     jwtService = moduleFixture.get(JwtService);
 
     await app.init();
@@ -297,7 +307,8 @@ describe.skip('Auth Integration Tests', () => {
 
     it('should login user successfully', async () => {
       userRepository.findOne.mockResolvedValue(mockUser);
-      userRepository.update.mockResolvedValue({} as UpdateResult);
+      // TypeORM UpdateResult removed - will be fixed in P.3.5
+      // userRepository.update.mockResolvedValue({} as UpdateResult);
       (mockedBcrypt.compare as jest.Mock).mockResolvedValue(true);
 
       const response = await request(app.getHttpServer())
@@ -549,7 +560,8 @@ describe.skip('Auth Integration Tests', () => {
     it('should handle token refresh flow', async () => {
       // 1. Login to get tokens
       userRepository.findOne.mockResolvedValue(mockUser);
-      userRepository.update.mockResolvedValue({} as UpdateResult);
+      // TypeORM UpdateResult removed - will be fixed in P.3.5
+      // userRepository.update.mockResolvedValue({} as UpdateResult);
       (mockedBcrypt.compare as jest.Mock).mockResolvedValue(true);
 
       const loginResponse = await request(app.getHttpServer())

@@ -2,7 +2,7 @@ import { IsString, MinLength, MaxLength, Matches } from 'class-validator';
 
 export class ChangePasswordDto {
   @IsString()
-  @MinLength(8)
+  @MinLength(1)
   currentPassword: string;
 
   @IsString()
@@ -17,5 +17,6 @@ export class ChangePasswordDto {
   newPassword: string;
 
   @IsString()
+  @MinLength(1)
   confirmPassword: string;
 }

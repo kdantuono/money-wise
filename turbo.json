@@ -107,6 +107,19 @@
         "package.json"
       ]
     },
+    "test:performance": {
+      "dependsOn": ["^build"],
+      "outputs": ["performance-results/**"],
+      "inputs": [
+        "src/**/*.{ts,tsx,js,jsx}",
+        "test/**/*.{ts,tsx,js,jsx}",
+        "__tests__/**/*.{ts,tsx,js,jsx}",
+        "jest.config.{js,ts,json}",
+        "jest.setup.{js,ts}",
+        "tsconfig.json",
+        "package.json"
+      ]
+    },
     "clean": {
       "cache": false,
       "outputs": []

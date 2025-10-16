@@ -1,4 +1,11 @@
 import { withSentryConfig } from '@sentry/nextjs';
+import bundleAnalyzer from '@next/bundle-analyzer';
+
+// Bundle analyzer for development bundle size analysis
+// Enable with: ANALYZE=true pnpm build
+const withBundleAnalyzer = bundleAnalyzer({
+  enabled: process.env.ANALYZE === 'true',
+});
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -63,5 +70,9 @@ const sentryWebpackPluginOptions = {
   autoInstrumentMiddleware: true,
 };
 
-// Export Next.js config wrapped with Sentry
-export default withSentryConfig(nextConfig, sentryWebpackPluginOptions);
+// Export Next.js config wrapped with bundle analyzer and Sentry
+// Order matters: bundle analyzer wraps Next config, then Sentry wraps that
+export default withSentryConfig(
+  withBundleAnalyzer(nextConfig),
+  sentryWebpackPluginOptions
+);

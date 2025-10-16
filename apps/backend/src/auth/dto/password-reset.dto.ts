@@ -1,4 +1,4 @@
-import { IsEmail, IsString, MinLength, MaxLength, Matches, IsUUID } from 'class-validator';
+import { IsEmail, IsString, MinLength, MaxLength, Matches } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class PasswordResetRequestDto {
@@ -16,7 +16,7 @@ export class ValidateResetTokenDto {
     example: 'a1b2c3d4-e5f6-7890-ab12-cdef34567890',
   })
   @IsString()
-  @IsUUID()
+  @MinLength(1)
   token: string;
 }
 
@@ -26,7 +26,7 @@ export class ResetPasswordDto {
     example: 'a1b2c3d4-e5f6-7890-ab12-cdef34567890',
   })
   @IsString()
-  @IsUUID()
+  @MinLength(1)
   token: string;
 
   @ApiProperty({

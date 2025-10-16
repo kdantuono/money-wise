@@ -4,9 +4,9 @@
 import { Global, INestApplication, Module } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigModule } from '@nestjs/config';
-import { DataSource } from 'typeorm';
 import { HealthModule } from '@/core/health/health.module';
 import { RedisModule } from '@/core/redis/redis.module';
+import { PrismaService } from '@/core/database/prisma/prisma.service';
 import request from 'supertest';
 import { SuperTest, Test as SuperTestType } from 'supertest';
 import { createMockRedis } from '../mocks/redis.mock';
@@ -20,39 +20,31 @@ export class TestClient {
     // Create mock Redis to avoid real Redis connections in integration tests
     this.mockRedis = createMockRedis();
 
-    // Create a mock DataSource for testing
-    const mockDataSource = {
-      isInitialized: true,
-      query: jest.fn().mockResolvedValue([{ health: 1 }]),
-      driver: {
-        master: {
-          pool: {
-            totalCount: 10,
-            idleCount: 5,
-            waitingCount: 0,
-          },
-        },
-      },
-    } as unknown as DataSource;
+    // Create a mock PrismaService for testing
+    const mockPrismaService = {
+      $queryRaw: jest.fn().mockResolvedValue([{ health: 1 }]),
+      $connect: jest.fn().mockResolvedValue(undefined),
+      $disconnect: jest.fn().mockResolvedValue(undefined),
+    } as unknown as PrismaService;
 
-    // Create a global test module that provides DataSource
+    // Create a global test module that provides PrismaService
     @Global()
     @Module({
       providers: [
         {
-          provide: DataSource,
-          useValue: mockDataSource,
+          provide: PrismaService,
+          useValue: mockPrismaService,
         },
       ],
-      exports: [DataSource],
+      exports: [PrismaService],
     })
-    class MockDataSourceModule {}
+    class MockPrismaModule {}
 
-    // Build test module with required modules but using MockRedis and MockDataSource
+    // Build test module with required modules but using MockRedis and MockPrisma
     // Integration tests use mocked dependencies, not real database connections
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [
-        MockDataSourceModule,  // Provide DataSource globally
+        MockPrismaModule,  // Provide PrismaService globally
         ConfigModule.forRoot({
           isGlobal: true,
           envFilePath: ['.env.test', '.env'],

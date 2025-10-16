@@ -70,6 +70,14 @@ IF security || vulnerability:
    LOAD: .claude/agents/security-specialist.md
    PRIORITY: Critical
 
+IF ci/cd || pipeline || github actions || workflow || quality gates:
+   LOAD: .claude/agents/cicd-pipeline-agent.md
+   EXECUTE: CI/CD pipeline configuration
+
+IF deploy || infrastructure || monitoring:
+   LOAD: .claude/agents/devops-specialist.md
+   EXECUTE: Deployment and infrastructure setup
+
 IF bug || fix || issue:
    ANALYZE: Domain → Load appropriate specialists
 ```
@@ -129,7 +137,7 @@ gh run watch [run-id]                     # Wait for completion
 **Stage**: MVP Development
 **Architecture**: Monorepo (apps/, packages/)
 
-## 🤖 Available Agents (12 Specialists)
+## 🤖 Available Agents (13 Specialists)
 
 | Agent | Trigger Keywords | Specialization |
 |-------|-----------------|----------------|
@@ -144,7 +152,8 @@ gh run watch [run-id]                     # Wait for completion
 | security-specialist | security, auth, vulnerability | OWASP, JWT |
 | orchestrator | epic, orchestrate | Multi-agent coordination |
 | product-manager | story, requirement | GitHub Projects |
-| devops-specialist | deploy, ci, pipeline | Docker, GitHub Actions |
+| **cicd-pipeline-agent** | ci/cd, pipeline, workflow, quality gates | GitHub Actions, automated testing, deployment |
+| devops-specialist | deploy, infrastructure, monitoring | Docker, cloud deployment |
 
 ## 📚 References
 
