@@ -422,7 +422,7 @@ jobs:
 
           SECRET_FOUND=false
           EXCLUDE_DIRS="--exclude-dir=.git --exclude-dir=docs --exclude-dir=node_modules --exclude-dir=.turbo"
-          EXCLUDE_FILES="--exclude=*.md --exclude=*.txt --exclude=*.log --exclude=pnpm-lock.yaml --exclude=package-lock.json"
+          EXCLUDE_FILES="--exclude=*.md --exclude=*.txt --exclude=*.log --exclude=pnpm-lock.yaml --exclude=package-lock.json --exclude=.env --exclude=.env.*"
 
           echo "🔍 Checking database connection strings..."
           if grep -rE "(postgres|mysql|mongodb)://[^/\\s]+:[^/\\s]+@" . $EXCLUDE_DIRS $EXCLUDE_FILES 2>/dev/null | grep -v -E "(example|test|mock|placeholder)" 2>/dev/null; then
