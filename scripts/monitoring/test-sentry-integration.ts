@@ -216,11 +216,11 @@ class SentryIntegrationTester {
 
     try {
       // Check if Sentry workflow exists
-      const sentryWorkflow = this.checkFileExists('.github/workflows/sentry-release.yml');
+      const sentryWorkflow = this.checkFileExists('.github/workflows/release.yml');
 
       if (sentryWorkflow) {
         // Check if main CI workflow includes Sentry
-        const ciContent = execSync('cat .github/workflows/progressive-ci-cd.yml', { encoding: 'utf8' });
+        const ciContent = execSync('cat .github/workflows/ci-cd.yml', { encoding: 'utf8' });
         const hasSentryEnv = ciContent.includes('SENTRY_ORG') || ciContent.includes('SENTRY_AUTH_TOKEN');
 
         if (hasSentryEnv) {
