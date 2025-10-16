@@ -29,7 +29,7 @@ permissions:
   pull-requests: write
 
 env:
-  NODE_VERSION: '18'
+  NODE_VERSION: '20.x'
   PNPM_VERSION: '8.15.1'
   TURBO_TELEMETRY_DISABLED: '1'  # Opt-out of anonymous telemetry
   SENTRY_ORG: ${{ secrets.SENTRY_ORG }}

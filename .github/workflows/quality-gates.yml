@@ -15,7 +15,7 @@ on:
 
 env:
   NODE_VERSION: '20.x'
-  PNPM_VERSION: '8'
+  PNPM_VERSION: '8.15.1'
   TURBO_TELEMETRY_DISABLED: '1'  # Opt-out of anonymous telemetry
 
 # Cancel outdated runs on new push
@@ -499,15 +499,7 @@ jobs:
           
           # Create properly formatted placeholder performance results if tests are skipped
           if [ ! -f "performance-results.json" ]; then
-            cat > performance-results.json << 'EOF'
-[
-  {
-    "name": "API Response Time",
-    "unit": "ops/sec",
-    "value": 100
-  }
-]
-EOF
+            echo '[{"name":"API Response Time","unit":"ops/sec","value":100}]' > performance-results.json
             echo "⚠️ Performance tests skipped - created placeholder results"
           fi
 

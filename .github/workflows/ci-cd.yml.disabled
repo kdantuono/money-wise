@@ -19,7 +19,8 @@ on:
         type: boolean
 
 env:
-  NODE_VERSION: '18'
+  NODE_VERSION: '20.x'
+  PNPM_VERSION: '8.15.1'
   FORCE_COLORS: '1'
   TURBO_TELEMETRY_DISABLED: '1'  # Opt-out of anonymous telemetry
 
@@ -143,7 +144,7 @@ jobs:
       - name: 📦 Setup pnpm
         uses: pnpm/action-setup@v2
         with:
-          version: '8.15.1'
+          version: ${{ env.PNPM_VERSION }}
 
       - name: 📦 Setup Node.js
         uses: actions/setup-node@v4
@@ -270,7 +271,7 @@ jobs:
         if: steps.should-run.outputs.run == 'true'
         uses: pnpm/action-setup@v2
         with:
-          version: '8.15.1'
+          version: ${{ env.PNPM_VERSION }}
 
       - name: 📦 Setup Node.js
         if: steps.should-run.outputs.run == 'true'
@@ -372,7 +373,7 @@ jobs:
         if: steps.should-run.outputs.run == 'true'
         uses: pnpm/action-setup@v2
         with:
-          version: '8.15.1'
+          version: ${{ env.PNPM_VERSION }}
 
       - name: 📦 Setup Node.js
         if: steps.should-run.outputs.run == 'true'
@@ -530,7 +531,7 @@ jobs:
       - name: 📦 Setup pnpm
         uses: pnpm/action-setup@v2
         with:
-          version: '8.15.1'
+          version: ${{ env.PNPM_VERSION }}
 
       - name: 📦 Setup Node.js
         uses: actions/setup-node@v4
@@ -675,7 +676,7 @@ jobs:
         if: steps.check-app.outputs.exists == 'true'
         uses: pnpm/action-setup@v2
         with:
-          version: '8.15.1'
+          version: ${{ env.PNPM_VERSION }}
 
       - name: 📦 Setup Node.js
         if: steps.check-app.outputs.exists == 'true'
