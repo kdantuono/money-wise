@@ -1,0 +1,36 @@
+{
+  "validation_rules": {
+    "epic": {
+      "required_fields": ["title", "scope", "stories", "definition_of_done"],
+      "validation_steps": ["scope_validation", "story_breakdown", "dependency_check", "acceptance_criteria"],
+      "quality_gates": ["architecture_review", "technical_feasibility", "resource_allocation"],
+      "completion_criteria": ["all_stories_complete", "integration_validated", "documentation_updated"]
+    },
+    "story": {
+      "required_fields": ["title", "description", "acceptance_criteria", "story_points"],
+      "validation_steps": ["invest_check", "acceptance_criteria", "task_breakdown", "dependency_validation"],
+      "quality_gates": ["code_review", "testing_complete", "security_check", "performance_validated"],
+      "completion_criteria": ["all_tasks_complete", "tests_passing", "code_merged", "documentation_updated"]
+    },
+    "task": {
+      "required_fields": ["title", "description", "assignee", "estimated_hours"],
+      "validation_steps": ["scope_definition", "dependency_check", "implementation_plan"],
+      "quality_gates": ["code_review", "unit_tests", "integration_tests"],
+      "completion_criteria": ["implementation_complete", "tests_passing", "code_reviewed"]
+    }
+  },
+  "monitoring": {
+    "check_interval": 30,
+    "max_monitoring_time": 7200,
+    "alert_thresholds": {
+      "stale_time": 3600,
+      "review_timeout": 1800
+    }
+  },
+  "integrations": {
+    "github_issues": true,
+    "project_board": true,
+    "ci_cd_pipelines": true,
+    "review_systems": ["copilot", "human"]
+  }
+}

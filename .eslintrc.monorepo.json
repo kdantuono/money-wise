@@ -1,0 +1,42 @@
+{
+  "extends": [],
+  "rules": {
+    "@typescript-eslint/no-restricted-imports": [
+      "error",
+      {
+        "patterns": [
+          {
+            "group": ["@money-wise/backend", "@money-wise/backend/*"],
+            "message": "Apps should not import from @money-wise/backend. Extract shared code to packages."
+          },
+          {
+            "group": ["@money-wise/web", "@money-wise/web/*"],
+            "message": "Apps should not import from @money-wise/web. Extract shared code to packages."
+          },
+          {
+            "group": ["@money-wise/mobile", "@money-wise/mobile/*"],
+            "message": "Apps should not import from @money-wise/mobile. Extract shared code to packages."
+          }
+        ]
+      }
+    ]
+  },
+  "overrides": [
+    {
+      "files": ["packages/**/*"],
+      "rules": {
+        "@typescript-eslint/no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["@money-wise/backend", "@money-wise/backend/*", "@money-wise/web", "@money-wise/web/*", "@money-wise/mobile", "@money-wise/mobile/*"],
+                "message": "Packages must not import from apps. Keep packages independent."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

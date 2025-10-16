@@ -1,18 +1,36 @@
-import { IsEnum, IsNumber, IsOptional, IsString } from 'class-validator';
+/**
+ * Application Configuration
+ *
+ * Core application settings including environment, port, CORS, and API configuration.
+ */
+import { registerAs } from '@nestjs/config';
+import {
+  IsString,
+  IsNumber,
+  IsOptional,
+  IsEnum,
+  Matches,
+  Min,
+  Max,
+} from 'class-validator';
 
 export enum Environment {
   Development = 'development',
+  Staging = 'staging',
   Production = 'production',
   Test = 'test',
 }
 
 export class AppConfig {
-  @IsEnum(Environment)
-  NODE_ENV: Environment = Environment.Development;
+  @IsEnum(Environment, {
+    message: 'NODE_ENV must be one of: development, staging, production, test',
+  })
+  NODE_ENV: Environment;
 
   @IsNumber()
-  @IsOptional()
-  PORT?: number = 3001;
+  @Min(1024, { message: 'PORT must be at least 1024' })
+  @Max(65535, { message: 'PORT must not exceed 65535' })
+  PORT: number;
 
   @IsString()
   @IsOptional()
@@ -20,7 +38,7 @@ export class AppConfig {
 
   @IsString()
   @IsOptional()
-  APP_VERSION?: string = '0.1.0';
+  APP_VERSION?: string;
 
   @IsString()
   @IsOptional()
@@ -28,5 +46,15 @@ export class AppConfig {
 
   @IsString()
   @IsOptional()
+  @Matches(/^https?:\/\/.+/, { message: 'CORS_ORIGIN must be a valid URL starting with http:// or https://' })
   CORS_ORIGIN?: string = 'http://localhost:3000';
 }
+
+export default registerAs('app', () => ({
+  NODE_ENV: process.env.NODE_ENV as Environment,
+  PORT: parseInt(process.env.PORT, 10) || 3001,
+  APP_NAME: process.env.APP_NAME,
+  APP_VERSION: process.env.APP_VERSION, // Optional - set explicitly in .env if needed
+  API_PREFIX: process.env.API_PREFIX,
+  CORS_ORIGIN: process.env.CORS_ORIGIN || 'http://localhost:3000',
+}));

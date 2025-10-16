@@ -1,0 +1,214 @@
+{
+  "epic": "EPIC-1.5",
+  "epic_title": "Development Infrastructure & Quality Foundation",
+  "orchestrator_branch": "epic/1.5-infrastructure",
+  "base_branch": "develop",
+  "parallel_capacity": 3,
+  "created_at": "2025-10-06T10:00:00Z",
+  "last_updated": "2025-10-06T10:00:00Z",
+  "stories": [
+    {
+      "id": "STORY-1.5.1",
+      "issue_number": 103,
+      "title": "Code Quality & Architecture Cleanup",
+      "branch": "feat/code-quality-cleanup",
+      "agent": "senior-backend-dev",
+      "status": "in_progress",
+      "dependencies": [],
+      "story_points": 8,
+      "estimated_hours": 50,
+      "priority": "P0",
+      "project_board_id": "PVTI_lAHOADnPXc4BDdMtzgfggC8",
+      "tasks": [
+        "Remove deprecated code and unused dependencies",
+        "Standardize error handling patterns",
+        "Consolidate configuration management",
+        "Improve code organization and naming conventions",
+        "Add missing type definitions"
+      ]
+    },
+    {
+      "id": "STORY-1.5.2",
+      "issue_number": 104,
+      "title": "Monitoring & Observability Integration",
+      "branch": "merged_to_epic",
+      "agent": "devops-engineer",
+      "status": "review",
+      "dependencies": [],
+      "story_points": 5,
+      "estimated_hours": 30,
+      "priority": "P0",
+      "project_board_id": "PVTI_lAHOADnPXc4BDdMtzgfggDA",
+      "completion_date": "2025-10-05T18:00:00Z"
+    },
+    {
+      "id": "STORY-1.5.3",
+      "issue_number": 105,
+      "title": "Documentation Consolidation & Architecture",
+      "branch": "feat/documentation-architecture",
+      "agent": "documentation-specialist",
+      "status": "ready",
+      "dependencies": [],
+      "story_points": 5,
+      "estimated_hours": 30,
+      "priority": "P1",
+      "project_board_id": "PVTI_lAHOADnPXc4BDdMtzgfggDE",
+      "tasks": [
+        "Consolidate all planning documents",
+        "Create architectural decision records",
+        "Generate API documentation",
+        "Update README and setup guides",
+        "Create developer onboarding guide"
+      ]
+    },
+    {
+      "id": "STORY-1.5.4",
+      "issue_number": 106,
+      "title": "Configuration Management Consolidation",
+      "branch": "feat/config-consolidation",
+      "agent": "devops-engineer",
+      "status": "ready",
+      "dependencies": ["STORY-1.5.1"],
+      "story_points": 3,
+      "estimated_hours": 20,
+      "priority": "P1",
+      "project_board_id": "PVTI_lAHOADnPXc4BDdMtzgfggDM",
+      "tasks": [
+        "Centralize environment configuration",
+        "Implement config validation",
+        "Create config documentation",
+        "Migrate to single source of truth"
+      ]
+    },
+    {
+      "id": "STORY-1.5.5",
+      "issue_number": 107,
+      "title": ".claude/ Directory Cleanup & Organization",
+      "branch": "feat/claude-organization",
+      "agent": "quality-evolution-specialist",
+      "status": "ready",
+      "dependencies": [],
+      "story_points": 2,
+      "estimated_hours": 15,
+      "priority": "P2",
+      "project_board_id": "PVTI_lAHOADnPXc4BDdMtzgfggDU",
+      "tasks": [
+        "Organize agent definitions",
+        "Consolidate workflows",
+        "Remove duplicated content",
+        "Create index documentation"
+      ]
+    },
+    {
+      "id": "STORY-1.5.6",
+      "issue_number": 108,
+      "title": "Project Structure Optimization",
+      "branch": "feat/project-structure",
+      "agent": "architect",
+      "status": "ready",
+      "dependencies": ["STORY-1.5.1"],
+      "story_points": 5,
+      "estimated_hours": 30,
+      "priority": "P1",
+      "project_board_id": "PVTI_lAHOADnPXc4BDdMtzgfggDk",
+      "tasks": [
+        "Reorganize monorepo structure",
+        "Optimize build configuration",
+        "Improve module boundaries",
+        "Clean up circular dependencies"
+      ]
+    },
+    {
+      "id": "STORY-1.5.7",
+      "issue_number": 109,
+      "title": "Testing Infrastructure Hardening",
+      "branch": "feat/test-infrastructure",
+      "agent": "qa-testing-engineer",
+      "status": "ready",
+      "dependencies": ["STORY-1.5.1"],
+      "story_points": 5,
+      "estimated_hours": 35,
+      "priority": "P0",
+      "project_board_id": "PVTI_lAHOADnPXc4BDdMtzgfggD4",
+      "tasks": [
+        "Increase code coverage to 80%",
+        "Add integration test suite",
+        "Implement E2E test framework",
+        "Create test data fixtures",
+        "Add performance testing"
+      ]
+    }
+  ],
+  "workflow_state": {
+    "active_branches": ["feat/code-quality-cleanup"],
+    "blocked": ["STORY-1.5.4", "STORY-1.5.6", "STORY-1.5.7"],
+    "completed": [],
+    "in_review": ["STORY-1.5.2"],
+    "next_to_start": ["STORY-1.5.3", "STORY-1.5.5"]
+  },
+  "merge_strategy": {
+    "feature_to_epic": "squash merge with story completion",
+    "epic_to_develop": "merge commit after all stories done",
+    "branch_cleanup": "delete all feature branches after epic merge",
+    "board_updates": "move to Done after epic merge to develop",
+    "conflict_resolution": "rebase feature branches on epic/1.5-infrastructure daily"
+  },
+  "parallelization_strategy": {
+    "wave_1": {
+      "stories": ["STORY-1.5.1"],
+      "status": "in_progress",
+      "started": "2025-10-06T08:00:00Z"
+    },
+    "wave_2": {
+      "stories": ["STORY-1.5.3", "STORY-1.5.5", "STORY-1.5.7"],
+      "status": "ready_to_start",
+      "can_start": "immediately"
+    },
+    "wave_3": {
+      "stories": ["STORY-1.5.4", "STORY-1.5.6"],
+      "status": "blocked",
+      "blocked_by": "STORY-1.5.1 completion"
+    }
+  },
+  "agent_assignments": {
+    "senior-backend-dev": {
+      "stories": ["STORY-1.5.1"],
+      "capacity": "full",
+      "estimated_completion": "2025-10-08"
+    },
+    "documentation-specialist": {
+      "stories": ["STORY-1.5.3"],
+      "capacity": "available",
+      "estimated_completion": "2025-10-07"
+    },
+    "quality-evolution-specialist": {
+      "stories": ["STORY-1.5.5"],
+      "capacity": "available",
+      "estimated_completion": "2025-10-07"
+    },
+    "qa-testing-engineer": {
+      "stories": ["STORY-1.5.7"],
+      "capacity": "available",
+      "estimated_completion": "2025-10-08"
+    },
+    "devops-engineer": {
+      "stories": ["STORY-1.5.2", "STORY-1.5.4"],
+      "capacity": "partial",
+      "estimated_completion": "2025-10-07"
+    },
+    "architect": {
+      "stories": ["STORY-1.5.6"],
+      "capacity": "blocked",
+      "estimated_completion": "2025-10-09"
+    }
+  },
+  "success_criteria": {
+    "code_coverage": ">= 80%",
+    "documentation_coverage": "100%",
+    "ci_cd_pipelines": "all green",
+    "monitoring": "Sentry integrated",
+    "technical_debt": "reduced by 40%",
+    "build_time": "< 5 minutes",
+    "test_time": "< 10 minutes"
+  }
+}

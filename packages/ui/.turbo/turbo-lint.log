@@ -1,4 +1,0 @@
-
-> @money-wise/ui@0.1.0 lint /home/nemesi/dev/money-wise/packages/ui
-> eslint src --ext .ts,.tsx
-

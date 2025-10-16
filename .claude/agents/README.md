@@ -1,233 +1,333 @@
-# MoneyWise Agent System
+# Specialized AI Agents
 
-## Overview
-Specialized AI agents that handle specific domains of the MoneyWise application development.
+This directory contains definitions for specialized AI agents that work together to implement MoneyWise features. Each agent has specific expertise and responsibilities within the development workflow.
 
-## Available Agents
+## 🎯 Agent Categories
 
-### Architecture & Design
-| Agent | Specialization | Max Instances | Trigger Keywords |
-|-------|---------------|---------------|------------------|
-| `architect` | System Design, Scalability | 1 | architecture, design, scalability, pattern |
+### 1️⃣ Infrastructure & Architecture
 
-### Process & Quality Evolution
-| Agent | Specialization | Max Instances | Trigger Keywords |
-|-------|---------------|---------------|------------------|
-| `analytics-specialist` | Metrics, Event Tracking | 1 | analytics, monitoring, events, metrics |
-| `documentation-specialist` | Auto-docs, Standards | 1 | documentation, docs, readme, changelog |
-| `quality-evolution-specialist` | Continuous Improvement | 1 | quality, review, incident, debt |
+#### Architect Agent
+**File**: `architect-agent.md`
+**Triggers**: architecture, design, scalability, patterns, ADR
+**Expertise**: System design, technology selection, architectural decision records
+**Outputs**: ADRs, design documents, architectural diagrams
 
-### Core Development
-| Agent | Specialization | Max Instances | Trigger Keywords |
-|-------|---------------|---------------|------------------|
-| `backend-specialist` | NestJS, API, Services | 3 | api, endpoint, service, backend |
-| `frontend-specialist` | React, Next.js, UI | 2 | ui, component, frontend, react |
-| `database-specialist` | PostgreSQL, TypeORM | 1 | database, schema, migration, query |
+#### DevOps Engineer
+**File**: `devops-specialist.md`
+**Triggers**: deploy, docker, infrastructure, monitoring
+**Expertise**: Containerization, AWS deployment, monitoring setup
+**Outputs**: Dockerfiles, deployment scripts, infrastructure configs
 
-### Quality & Security
-| Agent | Specialization | Max Instances | Trigger Keywords |
-|-------|---------------|---------------|------------------|
-| `test-specialist` | Jest, Playwright, Coverage | 3 | test, coverage, e2e, jest |
-| `security-specialist` | OWASP, Auth, Vulnerabilities | 1 | security, vulnerability, auth |
+#### CI/CD Pipeline Agent
+**File**: `cicd-pipeline-agent.md`
+**Triggers**: ci/cd, pipeline, github actions, workflow, quality gates
+**Expertise**: GitHub Actions, automated testing, security scanning, deployment automation
+**Outputs**: Workflow configs, quality gates, security scans, deployment pipelines
 
-### Operations
-| Agent | Specialization | Max Instances | Trigger Keywords |
-|-------|---------------|---------------|------------------|
-| `devops-specialist` | Docker, CI/CD, Deployment | 1 | deploy, docker, ci, pipeline |
-| `orchestrator` | Multi-agent coordination | 1 | epic, orchestrate, parallel |
-| `product-manager` | Requirements, Stories | 1 | story, requirement, acceptance |
+#### Database Specialist
+**File**: `database-specialist.md`
+**Triggers**: schema, migration, query, database, sql
+**Expertise**: PostgreSQL, TypeORM, TimescaleDB, query optimization
+**Outputs**: Entity definitions, migrations, database documentation
 
-## Agent Capabilities
+### 2️⃣ Development Agents
 
-### Architect
-- ✅ System architecture design and review
-- ✅ Technology stack evaluation and ADRs
-- ✅ Scalability and performance planning
-- ✅ Microservices and distributed systems
-- ✅ API design patterns and standards
-- ✅ Cloud architecture frameworks
+#### Senior Backend Developer
+**File**: `senior-backend-dev.md`
+**Triggers**: api, endpoint, service, controller, backend
+**Expertise**: NestJS, TypeScript, REST APIs, business logic, authentication
+**Outputs**: Controllers, services, DTOs, validation, API tests
 
-### Analytics Specialist
-- ✅ Event tracking architecture for financial apps
-- ✅ Performance metrics implementation
-- ✅ User behavior analysis and conversion funnels
-- ✅ Error monitoring and alerting systems
-- ✅ Privacy-compliant analytics (GDPR/CCPA)
-- ✅ Financial domain-specific KPIs
+#### Frontend Specialist
+**File**: `frontend-specialist.md`
+**Triggers**: component, ui, react, next.js, frontend
+**Expertise**: Next.js, React, TypeScript, Tailwind CSS, accessibility
+**Outputs**: React components, pages, forms, client-side state management
 
-### Documentation Specialist
-- ✅ Auto-documentation generation from code
-- ✅ README/CHANGELOG maintenance automation
-- ✅ Newcomer accessibility testing and improvement
-- ✅ Documentation quality gates and validation
-- ✅ Cross-agent documentation synchronization
-- ✅ Feature documentation templates
+#### Test Specialist
+**File**: `test-specialist.md`
+**Triggers**: test, coverage, e2e, integration, unit
+**Expertise**: Jest, React Testing Library, Playwright, test strategy
+**Outputs**: Unit tests, integration tests, E2E tests, coverage reports
 
-### Quality Evolution Specialist
-- ✅ Incident tracking and systematic learning
-- ✅ Technical debt identification and prioritization
-- ✅ PR checklist automation and quality analysis
-- ✅ Continuous improvement process design
-- ✅ Quality metrics tracking and evolution
-- ✅ Code review standards enforcement
+### 3️⃣ Quality & Process
 
-### Backend Specialist
-- ✅ API design and implementation
-- ✅ Business logic development
-- ✅ Database integration
-- ✅ Authentication/Authorization
-- ✅ Performance optimization
-- ✅ Unit and integration testing
+#### Analytics Specialist
+**File**: `analytics-specialist.md`
+**Triggers**: analytics, metrics, tracking, events, monitoring
+**Expertise**: Event tracking, user behavior analysis, performance metrics
+**Outputs**: Analytics implementation, event schemas, dashboards
 
-### Frontend Specialist
-- ✅ React component development
-- ✅ Next.js page routing
-- ✅ State management (Zustand)
-- ✅ Responsive design
-- ✅ Accessibility (WCAG)
-- ✅ Component testing
+#### Documentation Specialist
+**File**: `documentation-specialist.md`
+**Triggers**: docs, documentation, readme, api-docs
+**Expertise**: API documentation, README files, onboarding guides
+**Outputs**: API docs, architecture docs, setup guides, newcomer docs
 
-### Database Specialist
-- ✅ Schema design
-- ✅ Migration creation
-- ✅ Query optimization
-- ✅ Index strategy
-- ✅ Data modeling
-- ✅ Redis caching
+#### Quality Evolution Specialist
+**File**: `quality-evolution-specialist.md`
+**Triggers**: incident, postmortem, technical debt, quality
+**Expertise**: Incident analysis, continuous improvement, debt management
+**Outputs**: Incident reports, improvement roadmaps, refactoring plans
 
-### Test Specialist
-- ✅ Test strategy design
-- ✅ Unit test creation
-- ✅ Integration testing
-- ✅ E2E test automation
-- ✅ Coverage analysis
-- ✅ Performance testing
+#### Security Specialist
+**File**: `security-specialist.md`
+**Triggers**: security, vulnerability, auth, owasp
+**Expertise**: Security review, OWASP compliance, authentication patterns
+**Outputs**: Security audits, vulnerability fixes, auth implementations
 
-### Security Specialist
-- ✅ Vulnerability assessment
-- ✅ OWASP Top 10 validation
-- ✅ Authentication review
-- ✅ Authorization checks
-- ✅ Dependency scanning
-- ✅ Security best practices
+#### Code Reviewer
+**File**: `code-reviewer.md`
+**Triggers**: review, quality, standards, refactor
+**Expertise**: Code quality assessment, standards enforcement, refactoring
+**Outputs**: Code review reports, refactoring suggestions, style fixes
 
-### DevOps Specialist
-- ✅ Docker containerization
-- ✅ CI/CD pipeline setup
-- ✅ GitHub Actions workflows
-- ✅ Deployment automation
-- ✅ Infrastructure as code
-- ✅ Monitoring setup
+### 4️⃣ Orchestration
 
-### Orchestrator
-- ✅ Epic decomposition
-- ✅ Multi-agent coordination
-- ✅ Parallel task execution
-- ✅ Dependency management
-- ✅ Progress tracking
-- ✅ Merge orchestration
+#### Project Orchestrator
+**File**: `project-orchestrator.md`
+**Triggers**: epic, orchestrate, coordinate, workflow
+**Expertise**: Multi-agent coordination, workflow management, GitHub Projects
+**Outputs**: Workflow states, task assignments, progress tracking
 
-### Product Manager
-- ✅ User story creation
-- ✅ Acceptance criteria
-- ✅ GitHub issue management
-- ✅ Sprint planning
-- ✅ Requirements analysis
-- ✅ Stakeholder communication
+#### Product Manager
+**File**: `product-manager.md`
+**Triggers**: story, requirements, acceptance criteria
+**Expertise**: Requirements analysis, user story creation, backlog management
+**Outputs**: User stories, acceptance criteria, story decomposition
 
-## Usage Examples
+## 🚀 Agent Invocation
 
-### Single Agent
-```bash
-# Direct agent invocation
-claude "As backend-specialist, implement user authentication API"
+### Automatic Selection
+
+Claude Code automatically selects agents based on keywords in your request:
+
+```
+User: "Design the authentication system architecture"
+→ Triggers: "architecture", "system"
+→ Agent Selected: architect-agent
+
+User: "Implement user login endpoint"
+→ Triggers: "implement", "endpoint"
+→ Agent Selected: senior-backend-dev
+
+User: "Create a dashboard component"
+→ Triggers: "create", "component"
+→ Agent Selected: frontend-specialist
 ```
 
-### Multiple Agents
-```bash
-# Coordinated agents
-claude "Use backend and frontend specialists to implement transaction feature"
+### Explicit Invocation
+
+You can explicitly request an agent:
+
+```
+"Use the database-specialist agent to design the transactions schema"
+"Have the test-specialist agent add coverage for auth service"
+"Ask the security-specialist to review the password reset flow"
 ```
 
-### Epic Orchestration
-```bash
-# Full orchestration
-claude "/epic:init user-authentication"
-claude "/epic:execute user-authentication"
+### Multi-Agent Workflows
+
+For complex tasks, multiple agents work in sequence or parallel:
+
+```
+Epic: "User Authentication System"
+├─ architect-agent: Design authentication architecture
+├─ security-specialist: Review security requirements
+├─ database-specialist: Create users/sessions schema (parallel)
+├─ senior-backend-dev: Implement auth API (parallel)
+├─ frontend-specialist: Build login/register UI (parallel)
+└─ test-specialist: Add E2E authentication tests
+
+Coordination: project-orchestrator
 ```
 
-## Agent Communication
+## 📋 Agent Responsibilities Matrix
 
-Agents communicate through:
-1. **Shared context store** (read-only)
-2. **Task handoffs** via orchestrator
-3. **Merge events** in git workflow
-4. **Status updates** in state files
+| Agent | Plan | Design | Implement | Test | Review | Deploy | Document |
+|-------|------|--------|-----------|------|--------|--------|----------|
+| Architect | ✅ | ✅ | ❌ | ❌ | ✅ | ❌ | ✅ |
+| DevOps | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ |
+| CI/CD Pipeline | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Database | ❌ | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ |
+| Backend Dev | ❌ | ❌ | ✅ | ✅ | ❌ | ❌ | ❌ |
+| Frontend | ❌ | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
+| Test Specialist | ✅ | ❌ | ✅ | ✅ | ✅ | ❌ | ❌ |
+| Analytics | ❌ | ✅ | ✅ | ✅ | ❌ | ❌ | ✅ |
+| Documentation | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
+| Quality Evol. | ✅ | ❌ | ❌ | ❌ | ✅ | ❌ | ✅ |
+| Security | ❌ | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ |
+| Code Reviewer | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
+| Orchestrator | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
+| Product Mgr | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
 
-## Agent Selection Matrix
+## 🔄 Workflow Patterns
 
-The system automatically selects agents based on task keywords:
+### Pattern 1: Feature Development
 
-```yaml
-IF contains("architecture", "design", "scalability"):
-  SELECT architect
-  PRIORITY critical
-
-IF contains("analytics", "monitoring", "events"):
-  SELECT analytics-specialist
-
-IF contains("documentation", "docs", "readme"):
-  SELECT documentation-specialist
-
-IF contains("quality", "review", "incident"):
-  SELECT quality-evolution-specialist
-  PRIORITY high
-
-IF contains("api", "backend", "service"):
-  SELECT backend-specialist
-
-IF contains("ui", "component", "react"):
-  SELECT frontend-specialist
-
-IF contains("test", "coverage"):
-  SELECT test-specialist
-
-IF contains("security", "vulnerability"):
-  SELECT security-specialist
-  PRIORITY critical
+```
+1. product-manager: Decompose feature → user stories
+2. architect-agent: Design technical approach (if complex)
+3. database-specialist: Create schema/migrations (if needed)
+4. [backend-dev | frontend-specialist]: Implement feature
+5. test-specialist: Add comprehensive tests
+6. code-reviewer: Review implementation
+7. documentation-specialist: Update docs
 ```
 
-## Performance Considerations
+### Pattern 2: Bug Fix
 
-- **Stateless agents**: Can run multiple instances (backend, frontend, test)
-- **Stateful agents**: Single instance only (architect, database, orchestrator, process agents)
-- **Memory limits**: 32-48MB per agent (64MB for architect)
-- **Parallel execution**: Up to 12 agents simultaneously
-- **Priority levels**: Critical (architect, security) > High (quality) > Normal
+```
+1. [Relevant agent]: Reproduce and diagnose
+2. [Relevant agent]: Implement fix
+3. test-specialist: Add regression test
+4. code-reviewer: Verify fix quality
+```
 
-## Best Practices
+### Pattern 3: Epic Implementation
 
-1. **Let agents specialize** - Don't ask backend agent to do frontend work
-2. **Use orchestrator for complex tasks** - Multiple stories or parallel work
-3. **Chain agents properly** - Database → Backend → Frontend → Test
-4. **Monitor agent load** - Check pool availability before large epics
-5. **Trust agent decisions** - They know their domain best
+```
+1. project-orchestrator: Decompose epic → stories
+2. Multiple agents: Work in parallel on stories
+3. project-orchestrator: Coordinate merges
+4. quality-evolution: Post-epic retrospective
+```
 
-## Troubleshooting
+### Pattern 4: Security Audit
 
-| Issue | Solution |
-|-------|----------|
-| Agent not responding | Check if max instances reached |
-| Wrong agent selected | Use explicit agent directive |
-| Agent conflict | Let orchestrator resolve |
-| Agent blocked | Check dependency status |
-| Agent error | Review agent-specific logs |
+```
+1. security-specialist: Scan for vulnerabilities
+2. [Relevant agents]: Fix identified issues
+3. test-specialist: Add security tests
+4. documentation-specialist: Document security measures
+```
 
-## Extension
+## 🎯 Best Practices
 
-To add a new agent:
-1. Create `.claude/agents/[agent-name].md`
-2. Add to `agent-matrix.yaml`
-3. Define capabilities and triggers
-4. Test with sample task
-5. Document in this README
+### 1. Agent Specialization
+
+✅ **Do**: Use agents for their specialized domain
+```
+"Use database-specialist to optimize the transactions query"
+```
+
+❌ **Don't**: Ask agents to work outside their expertise
+```
+"Have database-specialist build the React login form"
+```
+
+### 2. Incremental Work
+
+✅ **Do**: Break large tasks into agent-sized chunks
+```
+Story 1: database-specialist creates schema
+Story 2: backend-dev implements CRUD
+Story 3: frontend creates UI
+```
+
+❌ **Don't**: Give agents overwhelming scope
+```
+"Implement entire authentication system end-to-end"
+```
+
+### 3. Parallel Execution
+
+✅ **Do**: Run independent agents concurrently
+```
+Parallel:
+- database-specialist: users schema
+- backend-dev: email service
+- frontend: dashboard layout
+```
+
+❌ **Don't**: Run dependent agents in parallel
+```
+Bad: backend-dev starts before database-specialist finishes schema
+```
+
+### 4. Context Management
+
+✅ **Do**: Provide clear, focused context
+```
+"Use senior-backend-dev to add password reset endpoint.
+ Schema already exists. Follow auth patterns from ADR-002."
+```
+
+❌ **Don't**: Assume agents have implicit context
+```
+"Add the reset thing" (vague, no context)
+```
+
+## 📊 Agent Performance Metrics
+
+Track agent effectiveness in `../.claude/reports/agent-metrics.md`:
+
+- **Invocation Count**: How often each agent is used
+- **Success Rate**: % of agent tasks completed successfully
+- **Token Usage**: Average tokens consumed per invocation
+- **Commit Quality**: PR approval rate for agent-generated code
+- **Parallel Efficiency**: % of time multiple agents run concurrently
+
+## 🔧 Customization
+
+### Adding a New Agent
+
+1. **Create Agent File**:
+   ```bash
+   touch .claude/agents/my-agent.md
+   ```
+
+2. **Use Template**:
+   ```markdown
+   # My Agent
+
+   ## Role
+   [Specialized responsibility]
+
+   ## Expertise
+   - [Skill 1]
+   - [Skill 2]
+
+   ## Triggers
+   [Keywords that invoke this agent]
+
+   ## Workflow
+   1. [Step 1]
+   2. [Step 2]
+
+   ## Outputs
+   - [Artifact 1]
+   - [Artifact 2]
+
+   ## Dependencies
+   - [Required agent 1]
+   - [Required agent 2]
+   ```
+
+3. **Update Root CLAUDE.md**:
+   Add trigger keywords to agent selection logic.
+
+4. **Test Invocation**:
+   ```
+   "Use my-agent to [task description]"
+   ```
+
+### Modifying Existing Agent
+
+1. Read current agent file
+2. Update responsibilities/triggers
+3. Test with sample invocations
+4. Update this README if triggers change
+
+## 🔗 Related Documentation
+
+- **[Orchestration Patterns](../orchestration/README.md)** - Multi-agent workflows
+- **[Epic Workflow](../workflows/epic-workflow.md)** - Epic → Stories → Agents
+- **[Board Integration](../orchestration/board-integration.md)** - GitHub Projects sync
+- **[Best Practices](../best-practices.md)** - Development standards
+
+---
+
+**Agent Count**: 14 specialized agents
+**Last Updated**: 2025-10-14
+**Maintained By**: Development Team

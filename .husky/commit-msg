@@ -1,0 +1,31 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# MoneyWise commit message validation
+# Ensures commit messages follow conventional commit format
+
+commit_msg_file=$1
+commit_msg=$(cat $commit_msg_file)
+
+# Conventional commit pattern: type(scope): description
+# Examples:
+#   feat(auth): add password reset functionality
+#   fix(ui): resolve button alignment issue
+#   docs: update API documentation
+
+conventional_commit_pattern="^(feat|fix|docs|style|refactor|test|chore|perf|ci|build|revert)(\(.+\))?: .{1,50}"
+
+if echo "$commit_msg" | grep -qE "$conventional_commit_pattern"; then
+  echo "✅ Commit message follows conventional format"
+else
+  echo "❌ Invalid commit message format!"
+  echo ""
+  echo "Please use conventional commit format:"
+  echo "  type(scope): description"
+  echo ""
+  echo "Types: feat, fix, docs, style, refactor, test, chore, perf, ci, build, revert"
+  echo "Example: feat(auth): add password reset functionality"
+  echo ""
+  echo "Your message: $commit_msg"
+  exit 1
+fi

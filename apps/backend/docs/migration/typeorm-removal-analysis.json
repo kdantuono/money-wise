@@ -1,0 +1,799 @@
+{
+  "summary": {
+    "total_entity_files": 6,
+    "total_entity_lines": 971,
+    "total_typeorm_imports": 58,
+    "affected_source_files": 23,
+    "affected_test_files": 29,
+    "total_modules_using_typeorm": 7,
+    "typeorm_module_usages": 8,
+    "inject_repository_usages": 3,
+    "migration_files": 5,
+    "safe_to_remove": false,
+    "migration_status": "PARTIALLY_MIGRATED",
+    "prisma_migration_complete": true,
+    "reason_not_safe": "Active services (AccountsService, AuditLogService) and multiple modules still depend on TypeORM. Complete service migration to Prisma required first."
+  },
+  "entity_files": [
+    {
+      "path": "/home/nemesi/dev/money-wise/apps/backend/src/core/database/entities/user.entity.ts",
+      "lines": 123,
+      "entity_name": "User",
+      "has_relations": true,
+      "imports": [
+        "Entity",
+        "PrimaryGeneratedColumn",
+        "Column",
+        "CreateDateColumn",
+        "UpdateDateColumn",
+        "OneToMany",
+        "Index"
+      ]
+    },
+    {
+      "path": "/home/nemesi/dev/money-wise/apps/backend/src/core/database/entities/account.entity.ts",
+      "lines": 228,
+      "entity_name": "Account",
+      "has_relations": true,
+      "imports": [
+        "Entity",
+        "PrimaryGeneratedColumn",
+        "Column",
+        "CreateDateColumn",
+        "UpdateDateColumn",
+        "ManyToOne",
+        "OneToMany",
+        "JoinColumn",
+        "Index"
+      ]
+    },
+    {
+      "path": "/home/nemesi/dev/money-wise/apps/backend/src/core/database/entities/category.entity.ts",
+      "lines": 249,
+      "entity_name": "Category",
+      "has_relations": true,
+      "imports": [
+        "Entity",
+        "PrimaryGeneratedColumn",
+        "Column",
+        "CreateDateColumn",
+        "UpdateDateColumn",
+        "ManyToOne",
+        "OneToMany",
+        "JoinColumn",
+        "Index",
+        "Tree",
+        "TreeChildren",
+        "TreeParent"
+      ]
+    },
+    {
+      "path": "/home/nemesi/dev/money-wise/apps/backend/src/core/database/entities/transaction.entity.ts",
+      "lines": 270,
+      "entity_name": "Transaction",
+      "has_relations": true,
+      "imports": [
+        "Entity",
+        "PrimaryGeneratedColumn",
+        "Column",
+        "CreateDateColumn",
+        "UpdateDateColumn",
+        "ManyToOne",
+        "Index",
+        "JoinColumn"
+      ]
+    },
+    {
+      "path": "/home/nemesi/dev/money-wise/apps/backend/src/core/database/entities/audit-log.entity.ts",
+      "lines": 63,
+      "entity_name": "AuditLog",
+      "has_relations": false,
+      "imports": [
+        "Entity",
+        "PrimaryGeneratedColumn",
+        "Column",
+        "CreateDateColumn",
+        "Index"
+      ]
+    },
+    {
+      "path": "/home/nemesi/dev/money-wise/apps/backend/src/core/database/entities/password-history.entity.ts",
+      "lines": 38,
+      "entity_name": "PasswordHistory",
+      "has_relations": true,
+      "imports": [
+        "Entity",
+        "PrimaryGeneratedColumn",
+        "Column",
+        "CreateDateColumn",
+        "ManyToOne",
+        "JoinColumn",
+        "Index"
+      ]
+    }
+  ],
+  "typeorm_imports": {
+    "source_files": [
+      {
+        "path": "/home/nemesi/dev/money-wise/apps/backend/src/database/database.providers.ts",
+        "imports": ["DataSource"],
+        "usage_count": 1,
+        "is_critical": false,
+        "purpose": "Legacy database provider"
+      },
+      {
+        "path": "/home/nemesi/dev/money-wise/apps/backend/src/database/timescaledb.service.ts",
+        "imports": ["DataSource"],
+        "usage_count": 1,
+        "is_critical": true,
+        "purpose": "TimescaleDB service - needs migration"
+      },
+      {
+        "path": "/home/nemesi/dev/money-wise/apps/backend/src/core/health/health.controller.ts",
+        "imports": ["DataSource"],
+        "usage_count": 1,
+        "is_critical": true,
+        "purpose": "Health check - database connection verification"
+      },
+      {
+        "path": "/home/nemesi/dev/money-wise/apps/backend/src/config/database.ts",
+        "imports": ["DataSource"],
+        "usage_count": 1,
+        "is_critical": false,
+        "purpose": "TypeORM CLI configuration for migrations"
+      },
+      {
+        "path": "/home/nemesi/dev/money-wise/apps/backend/src/auth/__tests__/test-utils/auth-test.factory.ts",
+        "imports": ["Repository", "EntityManager", "EntityMetadata"],
+        "usage_count": 3,
+        "is_critical": false,
+        "purpose": "Test factory utilities"
+      },
+      {
+        "path": "/home/nemesi/dev/money-wise/apps/backend/src/accounts/accounts.service.ts",
+        "imports": ["Repository"],
+        "usage_count": 1,
+        "is_critical": true,
+        "purpose": "ACTIVE SERVICE - uses @InjectRepository decorator - MUST MIGRATE"
+      },
+      {
+        "path": "/home/nemesi/dev/money-wise/apps/backend/src/core/database/test-database.module.ts",
+        "imports": ["DataSource"],
+        "usage_count": 1,
+        "is_critical": false,
+        "purpose": "Test database setup"
+      },
+      {
+        "path": "/home/nemesi/dev/money-wise/apps/backend/src/core/database/tests/jest.database.setup.ts",
+        "imports": ["DataSource"],
+        "usage_count": 1,
+        "is_critical": false,
+        "purpose": "Jest test setup"
+      },
+      {
+        "path": "/home/nemesi/dev/money-wise/apps/backend/src/core/database/tests/database-test-suite.ts",
+        "imports": ["DataSource"],
+        "usage_count": 1,
+        "is_critical": false,
+        "purpose": "Test suite utilities"
+      },
+      {
+        "path": "/home/nemesi/dev/money-wise/apps/backend/src/core/database/tests/factories/test-data.factory.ts",
+        "imports": ["DataSource", "Repository"],
+        "usage_count": 2,
+        "is_critical": false,
+        "purpose": "Test data factories"
+      },
+      {
+        "path": "/home/nemesi/dev/money-wise/apps/backend/src/core/database/repositories/impl/base.repository.ts",
+        "imports": [
+          "Repository",
+          "FindOptionsWhere",
+          "FindManyOptions",
+          "FindOneOptions",
+          "DeepPartial",
+          "UpdateResult",
+          "DeleteResult"
+        ],
+        "usage_count": 7,
+        "is_critical": true,
+        "purpose": "Base repository implementation - LEGACY - replaced by Prisma"
+      },
+      {
+        "path": "/home/nemesi/dev/money-wise/apps/backend/src/core/database/repositories/impl/category.repository.ts",
+        "imports": ["DataSource"],
+        "usage_count": 1,
+        "is_critical": false,
+        "purpose": "Category repository - LEGACY - replaced by Prisma"
+      },
+      {
+        "path": "/home/nemesi/dev/money-wise/apps/backend/src/core/database/repositories/impl/account.repository.ts",
+        "imports": ["DataSource", "FindOptionsWhere"],
+        "usage_count": 2,
+        "is_critical": false,
+        "purpose": "Account repository - LEGACY - replaced by Prisma"
+      },
+      {
+        "path": "/home/nemesi/dev/money-wise/apps/backend/src/core/database/repositories/impl/transaction.repository.ts",
+        "imports": ["DataSource"],
+        "usage_count": 1,
+        "is_critical": false,
+        "purpose": "Transaction repository - LEGACY - replaced by Prisma"
+      },
+      {
+        "path": "/home/nemesi/dev/money-wise/apps/backend/src/core/database/repositories/impl/user.repository.ts",
+        "imports": ["DataSource"],
+        "usage_count": 1,
+        "is_critical": false,
+        "purpose": "User repository - LEGACY - replaced by Prisma"
+      },
+      {
+        "path": "/home/nemesi/dev/money-wise/apps/backend/src/core/database/repositories/interfaces/base-repository.interface.ts",
+        "imports": [
+          "FindOptionsWhere",
+          "FindManyOptions",
+          "FindOneOptions",
+          "DeepPartial",
+          "UpdateResult",
+          "DeleteResult"
+        ],
+        "usage_count": 6,
+        "is_critical": false,
+        "purpose": "Interface definitions - type imports only"
+      },
+      {
+        "path": "/home/nemesi/dev/money-wise/apps/backend/src/core/database/repositories/interfaces/base.repository.interface.ts",
+        "imports": ["FindOptionsWhere", "FindManyOptions", "FindOneOptions"],
+        "usage_count": 3,
+        "is_critical": false,
+        "purpose": "Interface definitions - type imports only"
+      },
+      {
+        "path": "/home/nemesi/dev/money-wise/apps/backend/src/core/database/entities/user.entity.ts",
+        "imports": [
+          "Entity",
+          "PrimaryGeneratedColumn",
+          "Column",
+          "CreateDateColumn",
+          "UpdateDateColumn",
+          "OneToMany",
+          "Index"
+        ],
+        "usage_count": 7,
+        "is_critical": false,
+        "purpose": "Entity definition - will be replaced by Prisma models"
+      },
+      {
+        "path": "/home/nemesi/dev/money-wise/apps/backend/src/core/database/entities/account.entity.ts",
+        "imports": [
+          "Entity",
+          "PrimaryGeneratedColumn",
+          "Column",
+          "CreateDateColumn",
+          "UpdateDateColumn",
+          "ManyToOne",
+          "OneToMany",
+          "JoinColumn",
+          "Index"
+        ],
+        "usage_count": 9,
+        "is_critical": false,
+        "purpose": "Entity definition - will be replaced by Prisma models"
+      },
+      {
+        "path": "/home/nemesi/dev/money-wise/apps/backend/src/core/database/entities/category.entity.ts",
+        "imports": [
+          "Entity",
+          "PrimaryGeneratedColumn",
+          "Column",
+          "CreateDateColumn",
+          "UpdateDateColumn",
+          "ManyToOne",
+          "OneToMany",
+          "JoinColumn",
+          "Index",
+          "Tree",
+          "TreeChildren",
+          "TreeParent"
+        ],
+        "usage_count": 12,
+        "is_critical": false,
+        "purpose": "Entity definition - will be replaced by Prisma models"
+      },
+      {
+        "path": "/home/nemesi/dev/money-wise/apps/backend/src/core/database/entities/transaction.entity.ts",
+        "imports": [
+          "Entity",
+          "PrimaryGeneratedColumn",
+          "Column",
+          "CreateDateColumn",
+          "UpdateDateColumn",
+          "ManyToOne",
+          "Index",
+          "JoinColumn"
+        ],
+        "usage_count": 8,
+        "is_critical": false,
+        "purpose": "Entity definition - will be replaced by Prisma models"
+      },
+      {
+        "path": "/home/nemesi/dev/money-wise/apps/backend/src/core/database/entities/audit-log.entity.ts",
+        "imports": [
+          "Entity",
+          "PrimaryGeneratedColumn",
+          "Column",
+          "CreateDateColumn",
+          "Index"
+        ],
+        "usage_count": 5,
+        "is_critical": false,
+        "purpose": "Entity definition - will be replaced by Prisma models"
+      },
+      {
+        "path": "/home/nemesi/dev/money-wise/apps/backend/src/core/database/entities/password-history.entity.ts",
+        "imports": [
+          "Entity",
+          "PrimaryGeneratedColumn",
+          "Column",
+          "CreateDateColumn",
+          "ManyToOne",
+          "JoinColumn",
+          "Index"
+        ],
+        "usage_count": 7,
+        "is_critical": false,
+        "purpose": "Entity definition - will be replaced by Prisma models"
+      }
+    ],
+    "test_files": [
+      {
+        "path": "/home/nemesi/dev/money-wise/apps/backend/__tests__/unit/accounts/accounts.service.spec.ts",
+        "imports": ["getRepositoryToken", "Repository"],
+        "usage_count": 2,
+        "type": "unit"
+      },
+      {
+        "path": "/home/nemesi/dev/money-wise/apps/backend/__tests__/integration/auth.integration.spec.ts",
+        "imports": ["getRepositoryToken", "Repository", "UpdateResult"],
+        "usage_count": 3,
+        "type": "integration"
+      },
+      {
+        "path": "/home/nemesi/dev/money-wise/apps/backend/__tests__/integration/database/repository-operations.test.ts",
+        "imports": ["DataSource", "Repository"],
+        "usage_count": 2,
+        "type": "integration"
+      },
+      {
+        "path": "/home/nemesi/dev/money-wise/apps/backend/__tests__/integration/setup.ts",
+        "imports": ["TypeOrmModule", "DataSource"],
+        "usage_count": 2,
+        "type": "setup"
+      },
+      {
+        "path": "/home/nemesi/dev/money-wise/apps/backend/__tests__/integration/client.ts",
+        "imports": ["DataSource"],
+        "usage_count": 1,
+        "type": "setup"
+      },
+      {
+        "path": "/home/nemesi/dev/money-wise/apps/backend/__tests__/integration/global-setup.ts",
+        "imports": ["DataSource"],
+        "usage_count": 1,
+        "type": "setup"
+      },
+      {
+        "path": "/home/nemesi/dev/money-wise/apps/backend/__tests__/e2e/setup.ts",
+        "imports": ["DataSource"],
+        "usage_count": 1,
+        "type": "e2e"
+      },
+      {
+        "path": "/home/nemesi/dev/money-wise/apps/backend/__tests__/e2e/setup-e2e.ts",
+        "imports": ["DataSource"],
+        "usage_count": 1,
+        "type": "e2e"
+      },
+      {
+        "path": "/home/nemesi/dev/money-wise/apps/backend/__tests__/e2e/helpers/test-app.ts",
+        "imports": ["DataSource"],
+        "usage_count": 1,
+        "type": "e2e"
+      },
+      {
+        "path": "/home/nemesi/dev/money-wise/apps/backend/__tests__/e2e/database/test-database.ts",
+        "imports": ["DataSource"],
+        "usage_count": 1,
+        "type": "e2e"
+      },
+      {
+        "path": "/home/nemesi/dev/money-wise/apps/backend/__tests__/e2e/packages/test-utils/src/database.ts",
+        "imports": ["DataSource", "EntityManager"],
+        "usage_count": 2,
+        "type": "e2e"
+      },
+      {
+        "path": "/home/nemesi/dev/money-wise/apps/backend/__tests__/performance/large-dataset.test.ts",
+        "imports": ["DataSource"],
+        "usage_count": 1,
+        "type": "performance"
+      },
+      {
+        "path": "/home/nemesi/dev/money-wise/apps/backend/__tests__/performance/timescale-performance.test.ts",
+        "imports": ["DataSource"],
+        "usage_count": 1,
+        "type": "performance"
+      },
+      {
+        "path": "/home/nemesi/dev/money-wise/apps/backend/__tests__/utils/test-data-builder.ts",
+        "imports": ["DataSource"],
+        "usage_count": 1,
+        "type": "utility"
+      },
+      {
+        "path": "/home/nemesi/dev/money-wise/apps/backend/__tests__/factories/user.factory.ts",
+        "imports": ["DeepPartial"],
+        "usage_count": 1,
+        "type": "factory"
+      },
+      {
+        "path": "/home/nemesi/dev/money-wise/apps/backend/__tests__/factories/account.factory.ts",
+        "imports": ["DeepPartial"],
+        "usage_count": 1,
+        "type": "factory"
+      },
+      {
+        "path": "/home/nemesi/dev/money-wise/apps/backend/__tests__/factories/transaction.factory.ts",
+        "imports": ["DeepPartial"],
+        "usage_count": 1,
+        "type": "factory"
+      },
+      {
+        "path": "/home/nemesi/dev/money-wise/apps/backend/__tests__/unit/core/health/health.controller.spec.ts",
+        "imports": ["DataSource"],
+        "usage_count": 1,
+        "type": "unit"
+      },
+      {
+        "path": "/home/nemesi/dev/money-wise/apps/backend/__tests__/unit/database/timescaledb.service.spec.ts",
+        "imports": ["DataSource"],
+        "usage_count": 1,
+        "type": "unit"
+      },
+      {
+        "path": "/home/nemesi/dev/money-wise/apps/backend/__tests__/unit/core/database/database-test.config.ts",
+        "imports": ["DataSource"],
+        "usage_count": 1,
+        "type": "config"
+      },
+      {
+        "path": "/home/nemesi/dev/money-wise/apps/backend/__tests__/unit/core/database/factories/test-data.factory.ts",
+        "imports": ["DataSource"],
+        "usage_count": 1,
+        "type": "factory"
+      },
+      {
+        "path": "/home/nemesi/dev/money-wise/apps/backend/__tests__/unit/core/database/repositories/account.repository.spec.ts",
+        "imports": ["DataSource", "Repository", "SelectQueryBuilder"],
+        "usage_count": 3,
+        "type": "unit"
+      },
+      {
+        "path": "/home/nemesi/dev/money-wise/apps/backend/__tests__/unit/core/database/repositories/base.repository.spec.ts",
+        "imports": [
+          "DataSource",
+          "Repository",
+          "FindManyOptions",
+          "FindOneOptions",
+          "FindOptionsWhere"
+        ],
+        "usage_count": 5,
+        "type": "unit"
+      },
+      {
+        "path": "/home/nemesi/dev/money-wise/apps/backend/__tests__/unit/core/database/repositories/category.repository.spec.ts",
+        "imports": ["DataSource", "Repository", "SelectQueryBuilder", "EntityManager"],
+        "usage_count": 4,
+        "type": "unit"
+      },
+      {
+        "path": "/home/nemesi/dev/money-wise/apps/backend/__tests__/unit/core/database/repositories/transaction.repository.spec.ts",
+        "imports": ["DataSource", "Repository", "SelectQueryBuilder", "EntityManager"],
+        "usage_count": 4,
+        "type": "unit"
+      },
+      {
+        "path": "/home/nemesi/dev/money-wise/apps/backend/__tests__/unit/core/database/repositories/user.repository.spec.ts",
+        "imports": ["DataSource", "Repository", "SelectQueryBuilder", "UpdateResult"],
+        "usage_count": 4,
+        "type": "unit"
+      }
+    ]
+  },
+  "module_usage": [
+    {
+      "file": "/home/nemesi/dev/money-wise/apps/backend/src/database/database.module.ts",
+      "usage_type": "forRoot",
+      "details": "TypeOrmModule.forRootAsync() - Legacy root configuration",
+      "is_critical": false,
+      "notes": "Duplicate module - can be removed in favor of src/core/database/database.module.ts"
+    },
+    {
+      "file": "/home/nemesi/dev/money-wise/apps/backend/src/core/database/database.module.ts",
+      "usage_type": "forRoot",
+      "details": "TypeOrmModule.forRootAsync() - Main database configuration",
+      "is_critical": true,
+      "notes": "Primary database module imported by app.module.ts"
+    },
+    {
+      "file": "/home/nemesi/dev/money-wise/apps/backend/src/core/database/test-database.module.ts",
+      "usage_type": "forRoot",
+      "details": "TypeOrmModule.forRootAsync() - Test database configuration",
+      "is_critical": false,
+      "notes": "Used for test environment setup"
+    },
+    {
+      "file": "/home/nemesi/dev/money-wise/apps/backend/src/users/users.module.ts",
+      "usage_type": "forFeature",
+      "details": "TypeOrmModule.forFeature([User])",
+      "is_critical": true,
+      "notes": "ACTIVE MODULE - provides User repository to UsersService"
+    },
+    {
+      "file": "/home/nemesi/dev/money-wise/apps/backend/src/accounts/accounts.module.ts",
+      "usage_type": "forFeature",
+      "details": "TypeOrmModule.forFeature([Account])",
+      "is_critical": true,
+      "notes": "ACTIVE MODULE - provides Account repository to AccountsService"
+    },
+    {
+      "file": "/home/nemesi/dev/money-wise/apps/backend/src/core/database/repositories/repository.module.ts",
+      "usage_type": "forFeature",
+      "details": "TypeOrmModule.forFeature([User, Account, Category, Transaction])",
+      "is_critical": false,
+      "notes": "Legacy repository module - replaced by Prisma services"
+    },
+    {
+      "file": "/home/nemesi/dev/money-wise/apps/backend/src/core/health/health.module.ts",
+      "usage_type": "forFeature",
+      "details": "TypeOrmModule.forFeature([])",
+      "is_critical": false,
+      "notes": "Empty forFeature - only for DataSource injection"
+    },
+    {
+      "file": "/home/nemesi/dev/money-wise/apps/backend/__tests__/integration/setup.ts",
+      "usage_type": "forRoot",
+      "details": "TypeOrmModule.forRootAsync() - Integration test setup",
+      "is_critical": false,
+      "notes": "Test configuration"
+    }
+  ],
+  "inject_repository_usage": [
+    {
+      "file": "/home/nemesi/dev/money-wise/apps/backend/src/accounts/accounts.service.ts",
+      "decorator": "@InjectRepository(Account)",
+      "entity": "Account",
+      "is_active": true,
+      "service_name": "AccountsService",
+      "notes": "CRITICAL - Active service in production use"
+    },
+    {
+      "file": "/home/nemesi/dev/money-wise/apps/backend/src/auth/services/audit-log.service.ts",
+      "decorator": "@InjectRepository(AuditLog)",
+      "entity": "AuditLog",
+      "is_active": false,
+      "service_name": "AuditLogService",
+      "notes": "Commented out in code (line 102) - uses in-memory storage for demo"
+    }
+  ],
+  "configuration_files": [
+    {
+      "path": "/home/nemesi/dev/money-wise/apps/backend/src/config/database.ts",
+      "type": "typeorm_cli_datasource",
+      "purpose": "TypeORM CLI configuration for migrations",
+      "is_critical": false,
+      "notes": "Used by migration commands: db:migrate, db:migrate:revert, db:generate"
+    },
+    {
+      "path": "/home/nemesi/dev/money-wise/apps/backend/package.json",
+      "type": "package_dependencies",
+      "typeorm_dependencies": [
+        {
+          "package": "typeorm",
+          "version": "^0.3.17",
+          "dependency_type": "dependencies"
+        },
+        {
+          "package": "@nestjs/typeorm",
+          "version": "^10.0.1",
+          "dependency_type": "dependencies"
+        }
+      ],
+      "migration_scripts": [
+        "db:migrate",
+        "db:migrate:revert",
+        "db:generate"
+      ]
+    }
+  ],
+  "migration_files": [
+    {
+      "path": "/home/nemesi/dev/money-wise/apps/backend/src/core/database/migrations/1760000000000-ConsolidatedCompleteSchema.ts",
+      "name": "ConsolidatedCompleteSchema",
+      "timestamp": 1760000000000,
+      "is_archived": false,
+      "notes": "Primary schema migration"
+    },
+    {
+      "path": "/home/nemesi/dev/money-wise/apps/backend/src/core/database/migrations/1760000000001-UpdateUserTimezoneLength.ts",
+      "name": "UpdateUserTimezoneLength",
+      "timestamp": 1760000000001,
+      "is_archived": false,
+      "notes": "Schema update for user timezone"
+    },
+    {
+      "path": "/home/nemesi/dev/money-wise/apps/backend/src/core/database/migrations/1760000000002-AddTimescaleDBSupport.ts",
+      "name": "AddTimescaleDBSupport",
+      "timestamp": 1760000000002,
+      "is_archived": false,
+      "notes": "TimescaleDB hypertable setup"
+    },
+    {
+      "path": "/home/nemesi/dev/money-wise/apps/backend/src/core/database/migrations/archive/BACKUP_1758926681909-InitialSchema.ts",
+      "name": "InitialSchema",
+      "timestamp": 1758926681909,
+      "is_archived": true,
+      "notes": "Archived - replaced by consolidated schema"
+    },
+    {
+      "path": "/home/nemesi/dev/money-wise/apps/backend/src/core/database/migrations/archive/BACKUP_1759002732450-FixInitialSchema.ts",
+      "name": "FixInitialSchema",
+      "timestamp": 1759002732450,
+      "is_archived": true,
+      "notes": "Archived - replaced by consolidated schema"
+    }
+  ],
+  "test_statistics": {
+    "total_test_files_affected": 29,
+    "unit_tests": {
+      "files": 11,
+      "estimated_lines": 800
+    },
+    "integration_tests": {
+      "files": 6,
+      "total_lines": 1607
+    },
+    "e2e_tests": {
+      "files": 9,
+      "total_lines": 2339
+    },
+    "performance_tests": {
+      "files": 2,
+      "total_lines": 1897
+    },
+    "factories_and_utilities": {
+      "files": 7,
+      "estimated_lines": 450
+    },
+    "total_test_lines_affected": 7093
+  },
+  "risks": [
+    "CRITICAL: AccountsService is actively used in production and depends on @InjectRepository",
+    "CRITICAL: UsersModule imports TypeOrmModule.forFeature - migration incomplete",
+    "HIGH: HealthController uses DataSource for database health checks",
+    "HIGH: TimescaleDBService depends on TypeORM DataSource",
+    "MEDIUM: 29 test files need migration to Prisma-based testing",
+    "MEDIUM: 7,093 lines of test code affected",
+    "MEDIUM: 6 entity files (971 lines) need conversion to Prisma models",
+    "LOW: TypeORM migrations may need to be preserved for schema history",
+    "LOW: Legacy repository implementations exist but are unused",
+    "BLOCKER: Cannot remove TypeORM until all services are migrated to Prisma"
+  ],
+  "dependencies": {
+    "critical_services": [
+      "AccountsService - uses @InjectRepository(Account)",
+      "HealthController - uses DataSource for health checks",
+      "TimescaleDBService - uses DataSource for TimescaleDB operations"
+    ],
+    "module_chain": [
+      "app.module.ts → DatabaseModule → TypeOrmModule.forRoot",
+      "app.module.ts → UsersModule → TypeOrmModule.forFeature([User])",
+      "app.module.ts → AccountsModule → TypeOrmModule.forFeature([Account])",
+      "HealthModule → TypeOrmModule.forFeature([])"
+    ],
+    "test_dependencies": [
+      "E2E tests: 2,339 lines - DataSource setup required",
+      "Integration tests: 1,607 lines - TypeOrmModule configuration",
+      "Performance tests: 1,897 lines - DataSource and Repository usage",
+      "Unit tests: 800+ lines - Mock Repository patterns"
+    ]
+  },
+  "removal_order": [
+    "PHASE 0: PREREQUISITES (Must complete before removal)",
+    "0.1. Migrate AccountsService from TypeORM Repository to Prisma",
+    "0.2. Migrate UsersService from TypeORM Repository to Prisma (if not done)",
+    "0.3. Migrate HealthController DataSource checks to Prisma health checks",
+    "0.4. Migrate TimescaleDBService from TypeORM DataSource to Prisma raw queries",
+    "0.5. Verify all production services are Prisma-only",
+    "",
+    "PHASE 1: TEST MIGRATION (3,000+ lines)",
+    "1.1. Migrate E2E test setup (setup.ts, setup-e2e.ts, test-database.ts)",
+    "1.2. Migrate integration test setup (setup.ts, client.ts, global-setup.ts)",
+    "1.3. Migrate unit test mocks (replace Repository mocks with Prisma mocks)",
+    "1.4. Migrate performance tests to use Prisma",
+    "1.5. Migrate test factories (user.factory.ts, account.factory.ts, transaction.factory.ts)",
+    "1.6. Run full test suite to verify all tests pass with Prisma",
+    "",
+    "PHASE 2: MODULE CLEANUP",
+    "2.1. Remove TypeOrmModule.forFeature from AccountsModule",
+    "2.2. Remove TypeOrmModule.forFeature from UsersModule",
+    "2.3. Remove TypeOrmModule.forFeature from HealthModule",
+    "2.4. Remove TypeOrmModule.forFeature from RepositoryModule",
+    "2.5. Remove TypeOrmModule.forRoot from core DatabaseModule",
+    "2.6. Delete legacy database module (src/database/database.module.ts)",
+    "2.7. Delete test database module (src/core/database/test-database.module.ts)",
+    "",
+    "PHASE 3: REPOSITORY CLEANUP",
+    "3.1. Delete TypeORM repository implementations (impl/ directory)",
+    "3.2. Delete TypeORM repository interfaces (interfaces/ directory)",
+    "3.3. Delete repository.module.ts",
+    "3.4. Remove database.providers.ts",
+    "",
+    "PHASE 4: ENTITY CLEANUP",
+    "4.1. Export enums from entities (UserRole, UserStatus, TransactionType, etc.)",
+    "4.2. Create type-only exports for enums in shared location",
+    "4.3. Update imports across codebase to use new enum locations",
+    "4.4. Delete all *.entity.ts files (user, account, category, transaction, audit-log, password-history)",
+    "4.5. Verify no broken imports remain",
+    "",
+    "PHASE 5: CONFIGURATION CLEANUP",
+    "5.1. Archive or delete TypeORM migration files (keep for historical reference if needed)",
+    "5.2. Delete src/config/database.ts (TypeORM CLI configuration)",
+    "5.3. Remove TypeORM scripts from package.json (db:migrate, db:migrate:revert, db:generate)",
+    "5.4. Update documentation to reflect Prisma-only workflow",
+    "",
+    "PHASE 6: DEPENDENCY REMOVAL",
+    "6.1. Remove 'typeorm' from package.json dependencies",
+    "6.2. Remove '@nestjs/typeorm' from package.json dependencies",
+    "6.3. Run 'pnpm install' to clean up node_modules",
+    "6.4. Search for any remaining 'typeorm' or '@nestjs/typeorm' imports",
+    "6.5. Run full CI/CD pipeline to verify no breakage",
+    "",
+    "PHASE 7: FINAL VERIFICATION",
+    "7.1. Run all test suites: unit, integration, e2e, performance",
+    "7.2. Verify health check endpoint works correctly",
+    "7.3. Test database operations in development environment",
+    "7.4. Review application logs for any TypeORM-related errors",
+    "7.5. Update CHANGELOG.md with migration completion notes",
+    "7.6. Create documentation for team on Prisma patterns used"
+  ],
+  "recommended_action_plan": {
+    "priority": "HIGH",
+    "estimated_effort": "16-24 hours",
+    "complexity": "HIGH",
+    "risk_level": "MEDIUM",
+    "next_steps": [
+      "1. Complete Phase 0 (Prerequisites) - Migrate all active services to Prisma",
+      "2. Create feature branch: feature/remove-typeorm-dependencies",
+      "3. Execute phases sequentially with testing after each phase",
+      "4. Use TDD approach: write Prisma-based tests before removing TypeORM code",
+      "5. Maintain backward compatibility until all tests pass",
+      "6. Final smoke test on staging environment before production merge"
+    ],
+    "prerequisites_completion": {
+      "accounts_service": "NOT STARTED - Currently uses @InjectRepository",
+      "users_service": "POSSIBLY COMPLETE - Need to verify",
+      "health_controller": "NOT STARTED - Uses TypeORM DataSource",
+      "timescaledb_service": "NOT STARTED - Uses TypeORM DataSource"
+    }
+  },
+  "metadata": {
+    "analysis_date": "2025-10-13",
+    "backend_version": "0.4.1",
+    "prisma_version": "6.17.1",
+    "typeorm_version": "0.3.17",
+    "migration_status": "Phase 3 Complete (Entities migrated to Prisma), Phase 4-5 in progress",
+    "analyst": "Claude Code Assistant",
+    "codebase_location": "/home/nemesi/dev/money-wise/apps/backend"
+  }
+}

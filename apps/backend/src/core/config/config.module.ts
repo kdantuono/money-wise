@@ -1,56 +1,80 @@
+/**
+ * Configuration Module
+ *
+ * Provides type-safe, validated configuration access across the application.
+ * Uses NestJS ConfigModule with class-validator for fail-fast validation.
+ *
+ * Configuration Domains:
+ * - app: Application settings (NODE_ENV, PORT, CORS)
+ * - database: PostgreSQL/TimescaleDB connection
+ * - auth: JWT authentication secrets
+ * - redis: Redis connection for sessions/cache
+ * - sentry: Sentry error tracking
+ * - monitoring: CloudWatch metrics and monitoring
+ */
 import { Module } from '@nestjs/common';
 import { ConfigModule as NestConfigModule } from '@nestjs/config';
-import { plainToClass } from 'class-transformer';
+import { plainToInstance } from 'class-transformer';
 import { validateSync } from 'class-validator';
 import { AppConfig } from './app.config';
 import { DatabaseConfig } from './database.config';
+import { AuthConfig } from './auth.config';
+import { RedisConfig } from './redis.config';
+import { SentryConfig } from './sentry.config';
+import { MonitoringConfig } from './monitoring.config';
+import { formatValidationErrors } from './utils/format-validation-errors';
 
 /**
  * Configuration validation function
  * Validates environment variables against configuration classes
+ * Enhanced with detailed error messages and security hardening
  */
 function validateConfig(config: Record<string, unknown>) {
-  // Transform to configuration objects
-  const appConfig = plainToClass(AppConfig, config, {
-    enableImplicitConversion: true,
-  });
+  // Transform to configuration objects with implicit conversion
+  const configs = {
+    app: plainToInstance(AppConfig, config, { enableImplicitConversion: true }),
+    database: plainToInstance(DatabaseConfig, config, { enableImplicitConversion: true }),
+    auth: plainToInstance(AuthConfig, config, { enableImplicitConversion: true }),
+    redis: plainToInstance(RedisConfig, config, { enableImplicitConversion: true }),
+    sentry: plainToInstance(SentryConfig, config, { enableImplicitConversion: true }),
+    monitoring: plainToInstance(MonitoringConfig, config, { enableImplicitConversion: true }),
+  };
 
-  const databaseConfig = plainToClass(DatabaseConfig, config, {
-    enableImplicitConversion: true,
-  });
+  // Validate all configurations with security hardening
+  const allErrors = Object.entries(configs).flatMap(([name, configObject]) => {
+    const errors = validateSync(configObject, {
+      skipMissingProperties: false,
+      whitelist: true,
+      forbidNonWhitelisted: false, // Allow unknown env vars (npm, system vars, etc.)
+    });
 
-  // Validate app configuration
-  const appErrors = validateSync(appConfig, {
-    skipMissingProperties: false,
+    // Prefix errors with config domain name for clarity
+    return errors.map((error) => ({
+      ...error,
+      property: `${name}.${error.property}`,
+    }));
   });
-
-  // Validate database configuration
-  const dbErrors = validateSync(databaseConfig, {
-    skipMissingProperties: false,
-  });
-
-  const allErrors = [...appErrors, ...dbErrors];
 
   if (allErrors.length > 0) {
-    const errorMessages = allErrors
-      .map((error) => Object.values(error.constraints || {}))
-      .flat();
-
-    throw new Error(`Configuration validation failed: ${errorMessages.join(', ')}`);
+    throw new Error(formatValidationErrors(allErrors));
   }
 
-  return {
-    app: appConfig,
-    database: databaseConfig,
-  };
+  return configs;
 }
 
 @Module({
   imports: [
     NestConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: ['.env.local', '.env'],
+      envFilePath: [
+        '.env.local', // Local overrides (gitignored)
+        `.env.${process.env.NODE_ENV}`, // Environment-specific
+        '.env', // Default
+      ],
       validate: validateConfig,
+      validationOptions: {
+        abortEarly: false, // Show all validation errors
+      },
       cache: true,
     }),
   ],

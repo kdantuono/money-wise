@@ -31,6 +31,7 @@ Commands for tracking progress and system state.
 | `/status` | Show overall system status | `/status` |
 | `/agents` | Show agent pool status | `/agents` |
 | `/tasks` | List active tasks | `/tasks` |
+| `/resume-work` | **Recover last session (todos + context)** | `/resume-work` |
 
 ## Command Details
 
@@ -150,6 +151,28 @@ Shows:
   - Agent assignments
   - Queue per agent
   - Performance metrics
+```
+
+#### `/resume-work`
+**Automatic session recovery at start of new session.**
+```yaml
+Process:
+  1. Find most recent todo file
+  2. Parse and restore todo list
+  3. Gather git context (commits, branch, status)
+  4. Check recent documentation changes
+  5. Check project board status
+  6. Synthesize "where we left off" summary
+
+Auto-executes:
+  - No permission prompts
+  - Restores todos with exact status
+  - Provides actionable next steps
+
+Best Practice:
+  - Run at start of EVERY new session
+  - Ensures continuity across sessions
+  - Prevents context loss
 ```
 
 ## Command Arguments

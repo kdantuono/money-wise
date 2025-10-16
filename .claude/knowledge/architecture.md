@@ -1,5 +1,25 @@
 # MoneyWise Architecture
 
+## Architecture Decision Records (ADRs)
+
+### ADR-002: Tech Stack Consolidation (2025-10-04)
+**Status**: Proposed | **File**: [adr-002-tech-stack-consolidation.md](./adr-002-tech-stack-consolidation.md)
+
+**Decision**: Implement Sentry (application errors) + CloudWatch (infrastructure metrics) while removing CodeQL and simplifying workflows.
+
+**Key Changes**:
+- ✅ **IMPLEMENT**: Sentry backend (minimal, production-only)
+- ✅ **KEEP**: CloudWatch (100% complete, production-ready)
+- ❌ **REMOVE**: CodeQL (requires GitHub org, architecturally impossible)
+- ✅ **KEEP**: Semgrep, pnpm audit, Dependabot, TruffleHog
+- 📋 **DEFER**: Frontend Sentry (M3+), Advanced SAST (M5+)
+
+**Impact**: Zero cost increase, 14→12 workflows (-14%), Fortune 500 quality monitoring on $0 budget.
+
+**Quick Reference**: [Monitoring Decision Matrix](./monitoring-decision-matrix.md)
+
+---
+
 ## System Overview
 
 MoneyWise is a personal finance management system built as a monorepo with microservices architecture principles.
