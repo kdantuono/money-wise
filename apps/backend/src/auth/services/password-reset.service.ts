@@ -177,12 +177,16 @@ export class PasswordResetService {
       this.logger.log(`Password reset token generated for user ${user.id}`);
 
       // In a real application, you would send an email here
-      // For development, we'll return the token
-      const env = this.configService.get<AppConfig>('app')?.NODE_ENV;
+      // For development and testing, we'll return the token
+      // Use process.env.NODE_ENV directly as ConfigService might not have 'app' namespace in tests
+      const isDevelopmentOrTest =
+        process.env.NODE_ENV === 'test' ||
+        process.env.NODE_ENV === 'development';
+
       return {
         success: true,
         message: successMessage,
-        token: env === 'development' ? resetToken : undefined,
+        token: isDevelopmentOrTest ? resetToken : undefined,
       };
     } catch (error) {
       this.logger.error(`Failed to generate password reset token for ${email}:`, error);
@@ -361,6 +365,10 @@ export class PasswordResetService {
 
     const tokenData: PasswordResetToken = JSON.parse(tokenDataStr);
 
+    // Convert date strings back to Date objects
+    tokenData.createdAt = new Date(tokenData.createdAt);
+    tokenData.expiresAt = new Date(tokenData.expiresAt);
+
     // Check if token is expired
     if (new Date() > tokenData.expiresAt) {
       await this.redis.del(tokenKey);
@@ -397,6 +405,10 @@ export class PasswordResetService {
       if (tokenDataStr) {
         const tokenData: PasswordResetToken = JSON.parse(tokenDataStr);
 
+        // Convert date strings back to Date objects
+        tokenData.createdAt = new Date(tokenData.createdAt);
+        tokenData.expiresAt = new Date(tokenData.expiresAt);
+
         // Clean up if expired
         if (new Date() > tokenData.expiresAt) {
           await this.redis.del(tokenKey);
@@ -417,6 +429,10 @@ export class PasswordResetService {
 
       if (tokenDataStr) {
         const tokenData: PasswordResetToken = JSON.parse(tokenDataStr);
+
+        // Convert date strings back to Date objects
+        tokenData.createdAt = new Date(tokenData.createdAt);
+        tokenData.expiresAt = new Date(tokenData.expiresAt);
 
         // If token was created less than 5 minutes ago, keep it
         if (Date.now() - tokenData.createdAt.getTime() < 5 * 60 * 1000) {
@@ -471,6 +487,10 @@ export class PasswordResetService {
         if (tokenDataStr) {
           const tokenData: PasswordResetToken = JSON.parse(tokenDataStr);
 
+          // Convert date strings back to Date objects
+          tokenData.createdAt = new Date(tokenData.createdAt);
+          tokenData.expiresAt = new Date(tokenData.expiresAt);
+
           if (tokenData.used) {
             usedTokens++;
           } else if (now > tokenData.expiresAt) {
@@ -511,6 +531,10 @@ export class PasswordResetService {
         const tokenDataStr = await this.redis.get(key);
         if (tokenDataStr) {
           const tokenData: PasswordResetToken = JSON.parse(tokenDataStr);
+
+          // Convert date strings back to Date objects
+          tokenData.createdAt = new Date(tokenData.createdAt);
+          tokenData.expiresAt = new Date(tokenData.expiresAt);
 
           // Delete if expired and not recently used (keep used tokens for audit)
           if (
