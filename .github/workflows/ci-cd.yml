@@ -632,19 +632,22 @@ jobs:
           NODE_ENV: test
         run: pnpm test:performance | tee performance-tests.log
 
-      - name: 📊 Generate Performance Results JSON
+      - name: 📊 Performance Results Validation
         if: always()
         run: |
-          echo "📊 Generating performance results JSON..."
-
-          # Create placeholder if performance-results.json doesn't exist
+          echo "📊 Validating performance results..."
           if [ ! -f "apps/backend/performance-results.json" ]; then
-            mkdir -p apps/backend
-            echo '[{"name": "performance", "unit": "ops/sec", "value": 1000}]' > apps/backend/performance-results.json
-            echo "⚠️ Performance tests skipped - created placeholder results"
+            echo "⚠️ No performance results generated - tests may have been skipped"
+            echo "✅ Skipping benchmark storage for feature branches"
+          else
+            if node -e "JSON.parse(require('fs').readFileSync('apps/backend/performance-results.json'))"; then
+              echo "✅ Performance results JSON is valid"
+              echo "📈 Results ready for benchmark storage"
+            else
+              echo "❌ Performance results JSON is invalid - check format"
+              exit 1
+            fi
           fi
-
-          echo "✅ Performance results JSON ready"
 
       - name: 📊 Test Coverage
         env:

@@ -9,11 +9,11 @@ import { PrismaService } from '@/core/database/prisma/prisma.service';
  *
  * Tests to measure API response times after Prisma migration.
  * Ensures no performance regressions compared to TypeORM baseline.
- * 
- * TEMPORARILY SKIPPED: Requires full environment setup with all config vars
- * TODO: Add proper test environment configuration
+ *
+ * Performance thresholds help catch regressions early in development.
+ * These tests are optional and can be skipped in resource-constrained CI environments.
  */
-describe.skip('Prisma Performance Benchmarks', () => {
+describe('Prisma Performance Benchmarks', () => {
   let app: INestApplication;
   let prisma: PrismaService;
   let accessToken: string;
