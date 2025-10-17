@@ -225,6 +225,7 @@ describe('Prisma Performance Benchmarks', () => {
           type: 'CHECKING',
           currency: 'USD',
           currentBalance: 1000,
+          source: 'MANUAL',
         })
         .expect(201);
 
@@ -267,6 +268,7 @@ describe('Prisma Performance Benchmarks', () => {
               type: 'SAVINGS',
               currency: 'USD',
               currentBalance: 5000,
+              source: 'MANUAL',
             })
             .expect(201),
         THRESHOLDS.accounts.create
@@ -287,6 +289,7 @@ describe('Prisma Performance Benchmarks', () => {
           type: 'CHECKING',
           currency: 'USD',
           currentBalance: 10000,
+          source: 'MANUAL',
         })
         .expect(201);
 
