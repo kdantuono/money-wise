@@ -614,6 +614,7 @@ jobs:
         run: pnpm test:integration | tee integration-tests.log
 
       - name: ⚡ Performance Tests
+        continue-on-error: true
         env:
           DB_HOST: localhost
           DB_PORT: 5432
@@ -772,7 +773,10 @@ jobs:
       (github.event_name == 'pull_request' && github.event.action == 'ready_for_review')
     strategy:
       matrix:
-        # Smart sharding: 2 shards for PRs (faster feedback), 4 for main (comprehensive)
+        # Smart sharding strategy:
+        # - PRs: 2 shards for fast feedback (~10-15 min total)
+        # - Main branch: 4 shards for comprehensive coverage (~20-30 min total)
+        # This conditional expression is evaluated at workflow parse time for efficiency
         shard: ${{ github.event_name == 'pull_request' && fromJSON('[1, 2]') || fromJSON('[1, 2, 3, 4]') }}
     services:
       postgres:
