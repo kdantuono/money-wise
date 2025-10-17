@@ -1,0 +1,7 @@
+packages:
+  - "apps/*"
+  - "packages/types"
+  - "packages/ui"
+  - "packages/utils"
+  # Temporarily excluded - needs proper TypeScript setup
+  # - "packages/test-utils"

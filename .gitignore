@@ -1,0 +1,146 @@
+
+# Dependencies
+
+node_modules/
+
+*.pyc
+
+__pycache__/
+
+.venv/
+
+venv/
+
+# Package managers (use pnpm only)
+package-lock.json
+yarn.lock
+
+
+
+# Environment
+
+.env
+
+.env.local
+
+.env.*.local
+
+
+
+# Build outputs
+
+dist/
+
+build/
+
+*.egg-info/
+
+.next/
+
+out/
+
+
+
+# IDE
+
+.vscode/
+
+.idea/
+
+*.swp
+
+*.swo
+
+
+
+# OS
+
+.DS_Store
+
+Thumbs.db
+
+
+
+# Testing
+
+coverage/
+
+.coverage
+
+htmlcov/
+
+.pytest_cache/
+
+
+
+# Docker
+
+docker-compose.override.yml
+
+
+
+# Personal Claude configuration
+
+CLAUDE.local.md
+
+
+
+# Session temporary files
+.claude/sessions/current/
+
+# Security sensitive files
+*.key
+*.pem
+*.p12
+*.crt
+*.csr
+*.pfx
+secrets/
+credentials/
+
+# Additional Node.js patterns
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.npm
+.eslintcache
+.yarn-integrity
+.cache
+.parcel-cache
+.turbo/
+**/.turbo/
+*.tsbuildinfo
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Test results
+test-results/
+playwright-report/
+.jest/
+
+# Runtime files
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Additional environment files
+.env.production
+.env.staging
+.claude/worktrees/
+
+# Turbo logs
+**/.turbo/*.log
+**/.turbo/turbo-*.log
+
+# Test scripts (temporary)
+apps/backend/test-sentry*.js
+
+# Generated TypeScript files
+**/next-env.d.ts

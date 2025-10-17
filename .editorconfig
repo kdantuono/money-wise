@@ -1,0 +1,141 @@
+# EditorConfig is awesome: https://EditorConfig.org
+
+# top-most EditorConfig file
+root = true
+
+# All files
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 2
+
+# Markdown files
+[*.md]
+trim_trailing_whitespace = false
+
+# YAML files
+[*.{yml,yaml}]
+indent_size = 2
+
+# JSON files
+[*.json]
+indent_size = 2
+
+# JavaScript and TypeScript files
+[*.{js,jsx,ts,tsx}]
+indent_size = 2
+
+# CSS and SCSS files
+[*.{css,scss,sass}]
+indent_size = 2
+
+# HTML files
+[*.html]
+indent_size = 2
+
+# Python files
+[*.py]
+indent_size = 4
+
+# Dockerfile
+[Dockerfile*]
+indent_size = 2
+
+# Shell scripts
+[*.sh]
+indent_size = 2
+
+# Configuration files
+[*.{ini,cfg,conf}]
+indent_size = 2
+
+# SQL files
+[*.sql]
+indent_size = 2
+
+# Prisma schema files
+[*.prisma]
+indent_size = 2
+
+# GraphQL files
+[*.{gql,graphql}]
+indent_size = 2
+
+# XML files
+[*.xml]
+indent_size = 2
+
+# Package.json and lock files
+[package*.json]
+indent_size = 2
+
+[{pnpm-lock.yaml,yarn.lock}]
+indent_size = 2
+insert_final_newline = false
+
+# Makefile
+[Makefile]
+indent_style = tab
+
+# Go files
+[*.go]
+indent_style = tab
+
+# Rust files
+[*.rs]
+indent_size = 4
+
+# C/C++ files
+[*.{c,cpp,h,hpp}]
+indent_size = 4
+
+# Java files
+[*.java]
+indent_size = 4
+
+# Environment files
+[.env*]
+indent_size = 2
+
+# Config files that might need different formatting
+[.{gitignore,gitattributes,dockerignore}]
+indent_size = 2
+
+# GitHub workflow files
+[.github/workflows/*.{yml,yaml}]
+indent_size = 2
+
+# ESLint and Prettier config
+[.{eslintrc,prettierrc}*]
+indent_size = 2
+
+# TypeScript config
+[tsconfig*.json]
+indent_size = 2
+
+# Tailwind config
+[tailwind.config.*]
+indent_size = 2
+
+# Next.js config
+[next.config.*]
+indent_size = 2
+
+# Playwright config
+[playwright*.config.*]
+indent_size = 2
+
+# Vitest config
+[vitest*.config.*]
+indent_size = 2
+
+# Jest config
+[jest*.config.*]
+indent_size = 2
+
+# Turborepo config
+[turbo.json]
+indent_size = 2

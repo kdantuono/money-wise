@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MoneyWise - Performance Benchmarks</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 2rem;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      padding: 3rem;
+    }
+    h1 {
+      color: #333;
+      margin-bottom: 1rem;
+      font-size: 2.5rem;
+    }
+    .subtitle {
+      color: #666;
+      margin-bottom: 2rem;
+      font-size: 1.1rem;
+    }
+    .branches {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 2rem;
+      margin-top: 2rem;
+    }
+    .branch-card {
+      background: #f8f9fa;
+      border: 2px solid #e9ecef;
+      border-radius: 8px;
+      padding: 1.5rem;
+      transition: all 0.3s ease;
+    }
+    .branch-card:hover {
+      border-color: #667eea;
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.1);
+      transform: translateY(-2px);
+    }
+    .branch-name {
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 0.5rem;
+      font-size: 1.1rem;
+    }
+    .branch-description {
+      color: #666;
+      font-size: 0.9rem;
+      margin-bottom: 1rem;
+    }
+    .benchmark-link {
+      display: inline-block;
+      padding: 0.75rem 1.5rem;
+      background: #667eea;
+      color: white;
+      text-decoration: none;
+      border-radius: 6px;
+      transition: background 0.3s ease;
+      font-size: 0.95rem;
+    }
+    .benchmark-link:hover {
+      background: #764ba2;
+    }
+    .status {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      background: #e8f5e9;
+      color: #2e7d32;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      margin-left: 0.5rem;
+    }
+    .empty-state {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: #999;
+    }
+    .empty-state p {
+      margin-bottom: 1rem;
+      font-size: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📊 MoneyWise - Performance Benchmarks</h1>
+    <p class="subtitle">Real-time API performance tracking across branches</p>
+
+    <div class="branches">
+      <div class="branch-card">
+        <div class="branch-name">
+          🌿 Main Branch
+          <span class="status">Production</span>
+        </div>
+        <p class="branch-description">Baseline performance metrics from main branch</p>
+        <a href="./data/main/index.html" class="benchmark-link">View Benchmarks →</a>
+      </div>
+
+      <div class="branch-card">
+        <div class="branch-name">
+          🔄 Develop Branch
+          <span class="status">Staging</span>
+        </div>
+        <p class="branch-description">Performance metrics from develop branch</p>
+        <a href="./data/develop/index.html" class="benchmark-link">View Benchmarks →</a>
+      </div>
+
+      <div class="branch-card">
+        <div class="branch-name">
+          📈 Performance Trends
+          <span class="status">Analytics</span>
+        </div>
+        <p class="branch-description">Historical performance data and trends</p>
+        <a href="./data/trends/index.html" class="benchmark-link">View Trends →</a>
+      </div>
+    </div>
+
+    <div class="empty-state" style="margin-top: 3rem;">
+      <p>📝 Benchmarks are automatically generated and stored on each pipeline run</p>
+      <p>🔗 Start with the <strong>Main Branch</strong> for baseline metrics</p>
+    </div>
+  </div>
+</body>
+</html>
