@@ -49,6 +49,8 @@ jobs:
       has_apps: ${{ steps.detect.outputs.has_apps }}
       has_docker: ${{ steps.detect.outputs.has_docker }}
       project_stage: ${{ steps.detect.outputs.project_stage }}
+      should_test: ${{ steps.changes.outputs.should_test }}
+      should_build: ${{ steps.changes.outputs.should_build }}
 
     steps:
       - name: 📥 Checkout Repository
@@ -124,6 +126,39 @@ jobs:
           fi
 
           echo "✅ Repository health check passed"
+
+      - name: 🔄 Smart Change Detection
+        id: changes
+        run: |
+          echo "🔍 Analyzing changes since main branch..."
+
+          # Detect what changed (handle both PR and push events)
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD 2>/dev/null || echo "all")
+          else
+            CHANGED_FILES=$(git diff --name-only HEAD^ HEAD 2>/dev/null || echo "all")
+          fi
+
+          echo "📝 Changed files:"
+          echo "$CHANGED_FILES" | head -20
+
+          # Determine if we should run tests
+          if echo "$CHANGED_FILES" | grep -E "\.(ts|tsx|js|jsx|prisma|json|spec|test)$|package\.lock\.json|pnpm-lock.yaml"; then
+            echo "should_test=true" >> $GITHUB_OUTPUT
+            echo "✅ Code/dependency changes detected - Tests will run"
+          else
+            echo "should_test=false" >> $GITHUB_OUTPUT
+            echo "⏭️ Only documentation/config changes - Skipping tests"
+          fi
+
+          # Determine if we should build
+          if echo "$CHANGED_FILES" | grep -E "^(apps|packages|Dockerfile|\.github|docker-compose)"; then
+            echo "should_build=true" >> $GITHUB_OUTPUT
+            echo "✅ App/package changes detected - Build will run"
+          else
+            echo "should_build=false" >> $GITHUB_OUTPUT
+            echo "⏭️ No app/package changes - Skipping build"
+          fi
 
   # ===================================================================
   # 📦 DEVELOPMENT: Code quality checks
@@ -577,6 +612,32 @@ jobs:
           cd apps/backend && pnpm db:migrate && cd ../..
           echo "✅ Migrations completed"
 
+      - name: 🔄 Validate Prisma Migration Status
+        env:
+          DATABASE_URL: postgresql://test:testpass@localhost:5432/test_db
+        run: |
+          echo "🔍 Validating migration status..."
+          cd apps/backend
+
+          # Check migration status
+          MIGRATION_STATUS=$(pnpm prisma migrate status 2>&1)
+          echo "$MIGRATION_STATUS"
+
+          # Verify all migrations are applied (no pending migrations)
+          if echo "$MIGRATION_STATUS" | grep -q "pending"; then
+            echo "❌ FAILED: Pending migrations detected"
+            echo "This indicates migrations failed to apply properly"
+            exit 1
+          fi
+
+          if echo "$MIGRATION_STATUS" | grep -q "have not been executed"; then
+            echo "❌ FAILED: Unapplied migrations found"
+            exit 1
+          fi
+
+          echo "✅ All migrations applied successfully"
+          echo "📝 Migration validation complete - database schema is in valid state"
+
       - name: 🧪 Unit Tests
         env:
           DB_HOST: localhost
@@ -678,6 +739,84 @@ jobs:
           fail_ci_if_error: false
           verbose: true
           name: coverage-report-${{ github.run_id }}
+
+      - name: 📊 Comment PR with Coverage Report
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        continue-on-error: true
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            try {
+              // Try to read backend coverage
+              let backendCoverage = null;
+              if (fs.existsSync('apps/backend/coverage/coverage-summary.json')) {
+                const backendData = JSON.parse(fs.readFileSync('apps/backend/coverage/coverage-summary.json'));
+                if (backendData.total) {
+                  backendCoverage = backendData.total;
+                }
+              }
+
+              // Try to read web coverage
+              let webCoverage = null;
+              if (fs.existsSync('apps/web/coverage/coverage-summary.json')) {
+                const webData = JSON.parse(fs.readFileSync('apps/web/coverage/coverage-summary.json'));
+                if (webData.total) {
+                  webCoverage = webData.total;
+                }
+              }
+
+              if (!backendCoverage && !webCoverage) {
+                console.log('⚠️ No coverage data found');
+                return;
+              }
+
+              // Format coverage badges
+              const getCoverageBadge = (pct) => {
+                if (pct >= 80) return '🟢';
+                if (pct >= 60) return '🟡';
+                return '🔴';
+              };
+
+              let comment = '## 📊 Coverage Report\n\n';
+
+              if (backendCoverage) {
+                const linesPct = backendCoverage.lines.pct;
+                comment += `### Backend\n`;
+                comment += `| Metric | Coverage | Status |\n`;
+                comment += `|--------|----------|--------|\n`;
+                comment += `| Lines | ${linesPct}% | ${getCoverageBadge(linesPct)} |\n`;
+                comment += `| Statements | ${backendCoverage.statements.pct}% | ${getCoverageBadge(backendCoverage.statements.pct)} |\n`;
+                comment += `| Functions | ${backendCoverage.functions.pct}% | ${getCoverageBadge(backendCoverage.functions.pct)} |\n`;
+                comment += `| Branches | ${backendCoverage.branches.pct}% | ${getCoverageBadge(backendCoverage.branches.pct)} |\n\n`;
+              }
+
+              if (webCoverage) {
+                const linesPct = webCoverage.lines.pct;
+                comment += `### Web\n`;
+                comment += `| Metric | Coverage | Status |\n`;
+                comment += `|--------|----------|--------|\n`;
+                comment += `| Lines | ${linesPct}% | ${getCoverageBadge(linesPct)} |\n`;
+                comment += `| Statements | ${webCoverage.statements.pct}% | ${getCoverageBadge(webCoverage.statements.pct)} |\n`;
+                comment += `| Functions | ${webCoverage.functions.pct}% | ${getCoverageBadge(webCoverage.functions.pct)} |\n`;
+                comment += `| Branches | ${webCoverage.branches.pct}% | ${getCoverageBadge(webCoverage.branches.pct)} |\n\n`;
+              }
+
+              comment += `> Target: 80% for all metrics`;
+
+              // Post the comment
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: comment
+              });
+
+              console.log('✅ Coverage report posted to PR');
+            } catch (e) {
+              console.log('⚠️ Failed to post coverage report:', e.message);
+            }
 
       - name: 📊 Store Performance Benchmark Results
         uses: benchmark-action/github-action-benchmark@v1
