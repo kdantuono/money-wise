@@ -678,7 +678,7 @@ jobs:
 
       - name: 📊 Store Performance Benchmark Results
         uses: benchmark-action/github-action-benchmark@v1
-        if: always()
+        if: always() && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
         with:
           tool: 'customBiggerIsBetter'
           output-file-path: apps/backend/performance-results.json
