@@ -111,6 +111,71 @@ docker exec redis-dev redis-cli ping
 3. Create Next.js frontend application
 4. Implement authentication system
 
+## GitHub Actions Validation Tools
+
+### actionlint
+
+We use **actionlint** to validate GitHub Actions workflows locally before pushing. This catches configuration errors early and prevents CI/CD failures.
+
+#### Automatic Setup
+
+actionlint is installed automatically during the initial setup:
+
+```bash
+./.claude/scripts/setup-dev-environment.sh
+```
+
+#### Manual Installation
+
+You can install actionlint manually anytime:
+
+```bash
+pnpm setup:actionlint
+```
+
+#### Validating Workflows
+
+**Validate all workflows:**
+```bash
+pnpm lint:workflows
+```
+
+**Validate specific workflow:**
+```bash
+./.claude/tools/actionlint .github/workflows/ci-cd.yml
+```
+
+#### Pre-commit Hook
+
+actionlint is automatically run on any commits that modify `.github/workflows/` files. If issues are found, the commit will be blocked until they're fixed:
+
+```bash
+# This will check workflows if any are modified
+git add .github/workflows/ci-cd.yml
+git commit -m "fix(ci): update workflow"
+
+# If actionlint finds issues:
+# ❌ GitHub Actions workflows have errors:
+# Please fix workflow errors before committing.
+```
+
+#### Troubleshooting
+
+**actionlint not found in pre-commit:**
+```bash
+pnpm setup:actionlint
+```
+
+**Skip validation for specific commit (not recommended):**
+```bash
+git commit --no-verify -m "message"
+```
+
+**Manual actionlint installation from GitHub:**
+- Visit: https://github.com/rhysd/actionlint/releases
+- Download latest release for your platform
+- Place binary in `./.claude/tools/actionlint`
+
 ## Validation
 
 Run the environment validation script anytime:

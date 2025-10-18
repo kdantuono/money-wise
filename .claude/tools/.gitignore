@@ -1,0 +1,19 @@
+# Binary executables (platform-specific)
+/actionlint
+
+# Downloaded archives
+*.tar.gz
+*.zip
+
+# Temporary files
+*.tmp
+*.log
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Keep scripts and configuration files
+!*.sh
+!*.json
+!.gitignore
