@@ -9,7 +9,7 @@
     "test-utils"
   ],
   "overrides": {
-    "ip": "^3.0.0"
+    "ip": "npm:@webpod/ip@^0.6.1"
   },
   "scripts": {
     "dev": "turbo run dev --parallel",
