@@ -15,11 +15,18 @@ export class AuthHelpers {
     await this.page.goto('/login');
     await this.page.fill('[data-testid="email"]', email);
     await this.page.fill('[data-testid="password"]', password);
-    await this.page.click('[data-testid="login-button"]');
 
-    // Wait for redirect to dashboard
-    await this.page.waitForURL('/dashboard');
-    await expect(this.page.locator('[data-testid="dashboard"]')).toBeVisible();
+    // FIX: Wait for API response + navigation simultaneously to avoid race condition
+    const [response] = await Promise.all([
+      this.page.waitForResponse(response =>
+        response.url().includes('/api/auth/login') && response.status() === 200
+      ),
+      this.page.click('[data-testid="login-button"]')
+    ]);
+
+    // Wait for redirect to dashboard after API confirms success
+    await this.page.waitForURL('/dashboard', { timeout: 5000 });
+    await expect(this.page.locator('[data-testid="dashboard"]')).toBeVisible({ timeout: 5000 });
   }
 
   async logout() {
@@ -40,7 +47,14 @@ export class AuthHelpers {
     await this.page.fill('[data-testid="email"]', userData.email);
     await this.page.fill('[data-testid="password"]', userData.password);
     await this.page.fill('[data-testid="confirm-password"]', userData.password);
-    await this.page.click('[data-testid="signup-button"]');
+
+    // FIX: Wait for API response to avoid race condition
+    await Promise.all([
+      this.page.waitForResponse(response =>
+        response.url().includes('/api/auth/signup') && response.status() === 201
+      ),
+      this.page.click('[data-testid="signup-button"]')
+    ]);
   }
 }
 

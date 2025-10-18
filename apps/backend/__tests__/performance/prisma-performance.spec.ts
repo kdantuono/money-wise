@@ -9,11 +9,11 @@ import { PrismaService } from '@/core/database/prisma/prisma.service';
  *
  * Tests to measure API response times after Prisma migration.
  * Ensures no performance regressions compared to TypeORM baseline.
- * 
- * TEMPORARILY SKIPPED: Requires full environment setup with all config vars
- * TODO: Add proper test environment configuration
+ *
+ * Performance thresholds help catch regressions early in development.
+ * These tests are optional and can be skipped in resource-constrained CI environments.
  */
-describe.skip('Prisma Performance Benchmarks', () => {
+describe('Prisma Performance Benchmarks', () => {
   let app: INestApplication;
   let prisma: PrismaService;
   let accessToken: string;
@@ -225,6 +225,7 @@ describe.skip('Prisma Performance Benchmarks', () => {
           type: 'CHECKING',
           currency: 'USD',
           currentBalance: 1000,
+          source: 'MANUAL',
         })
         .expect(201);
 
@@ -267,6 +268,7 @@ describe.skip('Prisma Performance Benchmarks', () => {
               type: 'SAVINGS',
               currency: 'USD',
               currentBalance: 5000,
+              source: 'MANUAL',
             })
             .expect(201),
         THRESHOLDS.accounts.create
@@ -287,6 +289,7 @@ describe.skip('Prisma Performance Benchmarks', () => {
           type: 'CHECKING',
           currency: 'USD',
           currentBalance: 10000,
+          source: 'MANUAL',
         })
         .expect(201);
 
@@ -303,6 +306,7 @@ describe.skip('Prisma Performance Benchmarks', () => {
             amount: Math.random() * 1000,
             description: `Transaction ${i}`,
             date: new Date().toISOString(),
+            source: 'MANUAL',
           });
       }
     });
@@ -333,6 +337,7 @@ describe.skip('Prisma Performance Benchmarks', () => {
               amount: 50,
               description: 'Performance test transaction',
               date: new Date().toISOString(),
+              source: 'MANUAL',
             })
             .expect(201),
         THRESHOLDS.transactions.create
