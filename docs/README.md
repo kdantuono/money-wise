@@ -7,6 +7,7 @@
 ### Core Project Information
 - [`money-wise-overview.md`](./money-wise-overview.md) - Project vision and requirements
 - [`mvp_eng_plan.md`](./mvp_eng_plan.md) - 12-week implementation roadmap
+- [`planning/`](./planning/) - Project roadmaps and implementation specifications
 
 ### Development Progress
 - [`development/`](./development/) - Live development documentation
@@ -14,12 +15,19 @@
   - Database schema and migration progress
   - API development status
   - Frontend implementation progress
+  - Live progress tracking
 
 ### Architecture Decisions
 - [`decisions/`](./decisions/) - Architecture Decision Records (ADRs)
   - Real architectural decisions as we make them
   - Technology choices and rationale
   - Design patterns and trade-offs
+
+### Archived Documentation
+- [`archives/`](./archives/) - Historical documentation and old CI/CD analyses
+  - Old CI/CD architecture and fixes (archived on 2025-10-18)
+  - Previous implementation approaches
+  - Reference material for understanding project evolution
 
 ## 🎯 Documentation Philosophy
 
