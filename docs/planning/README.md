@@ -15,7 +15,9 @@
   - Team coordination and velocity targets
 
 ### Development Milestones
-- [`milestones/`](./milestones/) - 6 detailed milestone breakdowns
+- [`milestones/`](./milestones/) - 6 milestone overview and historical planning
+  - ⚠️ **Historical Reference**: Planning templates with obsolete tech stack
+  - **Current Progress**: See [`../development/progress.md`](../development/progress.md)
   - **Milestone 1**: Foundation (Infrastructure, Git, Docker)
   - **Milestone 2**: Authentication & Core Models
   - **Milestone 3**: Banking Integration & Plaid
