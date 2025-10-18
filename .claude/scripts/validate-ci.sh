@@ -16,7 +16,7 @@ NC='\033[0m'
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 VALIDATION_DIR="$SCRIPT_DIR/ci-validation"
 
-LEVELS=${1:-8}  # Default: run levels 1-8 (pre-push validation)
+LEVELS=${1:-10}  # Default: run levels 1-10 (MANDATORY comprehensive validation)
 MODE=${2:-pre-push}
 
 # Make all scripts executable

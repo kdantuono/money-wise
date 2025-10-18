@@ -9,21 +9,26 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
-echo -e "${YELLOW}🔍 LEVEL 10: Full GitHub Actions Local Test (act)${NC}"
+echo -e "${YELLOW}🔍 LEVEL 10: Full GitHub Actions Local Test (act) - MANDATORY${NC}"
 echo ""
 
 if ! command -v act &> /dev/null; then
-  echo -e "${YELLOW}⚠️  act not installed - skipping full test${NC}"
-  echo "For full simulation: curl -s https://raw.githubusercontent.com/nektos/act/master/install.sh | bash"
+  echo -e "${RED}❌ act not installed - REQUIRED for pre-push validation${NC}"
+  echo "Install using one of these methods:"
+  echo "  • Automatic: pnpm setup:act"
+  echo "  • Manual: curl -s https://raw.githubusercontent.com/nektos/act/master/install.sh | bash"
+  echo "  • Homebrew: brew install act"
   echo ""
-  echo -e "${BLUE}ℹ️  This is manual/optional - not blocking${NC}"
-  exit 0
+  echo -e "${RED}BLOCKING: act is mandatory for local workflow testing${NC}"
+  exit 1  # MANDATORY
 fi
 
 if ! docker ps &> /dev/null; then
-  echo -e "${RED}❌ Docker not running${NC}"
+  echo -e "${RED}❌ Docker not running - REQUIRED for act execution${NC}"
   echo "Start Docker: docker desktop or docker daemon"
-  exit 1
+  echo ""
+  echo -e "${RED}BLOCKING: Docker is mandatory for local workflow testing${NC}"
+  exit 1  # MANDATORY
 fi
 
 echo -e "${BLUE}ℹ️  Running lightweight foundation jobs locally...${NC}"
@@ -43,7 +48,7 @@ if [ $? -eq 0 ]; then
   exit 0
 else
   echo ""
-  echo -e "${YELLOW}⚠️  Local workflow execution had issues${NC}"
+  echo -e "${RED}❌ Local workflow execution failed${NC}"
   echo "For full details: act pull_request -W .github/workflows/ci-cd.yml --verbose"
-  exit 0  # Non-blocking for pre-push
+  exit 1  # MANDATORY - block if execution fails
 fi
