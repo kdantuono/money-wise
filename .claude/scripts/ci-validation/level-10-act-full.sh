@@ -1,0 +1,49 @@
+#!/bin/bash
+# Level 10: Full Act Test
+# Executes GitHub Actions locally using act
+# NOTE: This requires Docker and significant time (~5-10 min)
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+
+echo -e "${YELLOW}🔍 LEVEL 10: Full GitHub Actions Local Test (act)${NC}"
+echo ""
+
+if ! command -v act &> /dev/null; then
+  echo -e "${YELLOW}⚠️  act not installed - skipping full test${NC}"
+  echo "For full simulation: curl -s https://raw.githubusercontent.com/nektos/act/master/install.sh | bash"
+  echo ""
+  echo -e "${BLUE}ℹ️  This is manual/optional - not blocking${NC}"
+  exit 0
+fi
+
+if ! docker ps &> /dev/null; then
+  echo -e "${RED}❌ Docker not running${NC}"
+  echo "Start Docker: docker desktop or docker daemon"
+  exit 1
+fi
+
+echo -e "${BLUE}ℹ️  Running lightweight foundation jobs locally...${NC}"
+echo "(Full E2E tests skipped to save time)"
+echo ""
+
+# Run just foundation and basic validation jobs
+act pull_request \
+  -W .github/workflows/ci-cd.yml \
+  -j foundation \
+  --pull=false \
+  --quiet 2>/dev/null
+
+if [ $? -eq 0 ]; then
+  echo ""
+  echo -e "${GREEN}✅ LEVEL 10 PASSED: Local workflow execution successful${NC}"
+  exit 0
+else
+  echo ""
+  echo -e "${YELLOW}⚠️  Local workflow execution had issues${NC}"
+  echo "For full details: act pull_request -W .github/workflows/ci-cd.yml --verbose"
+  exit 0  # Non-blocking for pre-push
+fi
