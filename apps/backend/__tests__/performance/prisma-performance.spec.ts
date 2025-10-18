@@ -306,6 +306,7 @@ describe('Prisma Performance Benchmarks', () => {
             amount: Math.random() * 1000,
             description: `Transaction ${i}`,
             date: new Date().toISOString(),
+            source: 'MANUAL',
           });
       }
     });
@@ -336,6 +337,7 @@ describe('Prisma Performance Benchmarks', () => {
               amount: 50,
               description: 'Performance test transaction',
               date: new Date().toISOString(),
+              source: 'MANUAL',
             })
             .expect(201),
         THRESHOLDS.transactions.create
