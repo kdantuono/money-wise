@@ -10,7 +10,7 @@ module.exports = {
     node: true,
     es2022: true,
   },
-  plugins: ['@typescript-eslint'],
+  plugins: ['@typescript-eslint', 'security', 'no-secrets'],
   extends: [
     'eslint:recommended',
     'plugin:@typescript-eslint/recommended',
@@ -38,6 +38,24 @@ module.exports = {
     'no-console': ['warn', { allow: ['warn', 'error'] }],
     'prefer-const': 'error',
     'no-var': 'error',
+
+    // Security rules
+    'security/detect-object-injection': 'warn',
+    'security/detect-non-literal-regexp': 'warn',
+    'security/detect-unsafe-regex': 'error',
+    'security/detect-buffer-noassert': 'error',
+    'security/detect-child-process': 'warn',
+    'security/detect-disable-mustache-escape': 'error',
+    'security/detect-no-csrf-before-method-override': 'error',
+    'security/detect-non-literal-fs-filename': 'warn',
+    'security/detect-non-literal-regexp': 'warn',
+    'security/detect-unsafe-regex': 'error',
+    'no-secrets/no-secrets': [
+      'warn',
+      {
+        additionalDelimiters: [':', '=', ',', ';'],
+      },
+    ],
   },
   overrides: [
     {
