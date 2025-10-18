@@ -143,6 +143,41 @@ Fixes #123
 - Once approved, a maintainer will merge your PR
 - After merge, your branch will be automatically deleted
 
+### Review Timeline & Expectations
+
+**What to expect after submitting a PR:**
+
+1. **Automated Checks** (immediate)
+   - CI pipeline runs linting, tests, type checking
+   - All checks must pass before human review
+   - Fix any failures and push updates
+
+2. **Initial Response** (within 48 hours)
+   - Maintainer comments or assigns reviewers
+   - May request clarifications or changes
+   - May label PR for tracking
+
+3. **Code Review** (within 5 business days)
+   - Reviewer examines code quality, tests, documentation
+   - Feedback provided as inline comments
+   - May request changes or approve
+
+4. **Revisions** (your timeline)
+   - Address feedback within 1 week (preferred)
+   - Push updates to same branch
+   - Request re-review when ready
+
+5. **Approval & Merge** (1-2 days after approval)
+   - Requires 1+ maintainer approval
+   - All conversations resolved
+   - Branch up-to-date with target branch
+
+**If your PR gets stale:**
+- No response after 7 days? Comment to bump
+- Blocked by another PR? Maintainer will communicate
+- Needs work but no time? Explain in comment
+- Lost interest? Close PR so issue can be reassigned
+
 ---
 
 ## ✅ Code Quality Standards
@@ -171,6 +206,39 @@ Run before committing:
 pnpm lint:fix
 pnpm format
 ```
+
+---
+
+## 🌱 Finding Your First Issue
+
+### Recommended Starting Points
+
+1. **Documentation Improvements** (easiest)
+   - Look for issues tagged `label:docs`
+   - Fix typos, improve clarity, add examples
+   - No code changes needed
+
+2. **Test Coverage** (good learning path)
+   - Look for issues tagged `label:testing`
+   - Add missing unit or integration tests
+   - Learn codebase while contributing
+
+3. **Good First Issues** (curated for beginners)
+   - Look for issues tagged `label:good-first-issue`
+   - Self-contained tasks with clear scope
+   - Maintainer support guaranteed
+
+4. **Bug Fixes** (after initial contributions)
+   - Look for `label:bug` + `label:help-wanted`
+   - Clear reproduction steps provided
+   - Good for understanding system behavior
+
+### Before You Start
+
+1. **Comment on the issue**: "I'd like to work on this"
+2. **Wait for assignment**: Maintainer will assign you (prevents duplicate work)
+3. **Ask questions**: Better to clarify upfront than submit wrong solution
+4. **Estimate time**: If too complex, ask for guidance or try another
 
 ---
 
@@ -223,6 +291,51 @@ describe('Auth API (Integration)', () => {
   });
 });
 ```
+
+---
+
+## 🔧 Troubleshooting Common Issues
+
+### Setup Problems
+
+| Problem | Solution |
+|---------|----------|
+| `pnpm install` fails | Update pnpm: `npm install -g pnpm@latest` |
+| Docker containers won't start | Ensure Docker Desktop is running: `docker ps` |
+| Database migrations fail | Reset database: `pnpm prisma migrate reset` |
+| Port 3000 already in use | Kill process: `lsof -ti:3000 \| xargs kill -9` |
+| TypeScript errors after pull | Clean and reinstall: `rm -rf node_modules && pnpm install` |
+| Tests fail locally but pass in CI | Check Node version matches CI (18.x): `node --version` |
+| Git pre-commit hook fails | Run validation manually: `./.claude/scripts/validate-ci.sh 10` |
+
+### Development Workflow Issues
+
+**Database Connection Error**:
+```
+Error: P1001: Can't reach database server
+```
+
+**Solution**:
+1. Verify Docker containers running: `docker compose ps`
+2. Check `.env` has correct `DATABASE_URL`
+3. Restart containers: `docker compose restart postgres redis`
+
+**TypeScript Compilation Errors**:
+```
+Error: Cannot find module '@money-wise/backend'
+```
+
+**Solution**:
+1. Ensure workspace is properly linked: `pnpm install`
+2. Clear TypeScript cache: `rm -rf .next node_modules/.cache`
+3. Rebuild workspace: `pnpm build`
+
+### Getting Help
+
+**Still stuck?** Create a [GitHub Discussion](https://github.com/kdantuono/money-wise/discussions) with:
+- What you tried
+- Error messages (full stack trace)
+- Environment details (`node --version`, `pnpm --version`, OS)
 
 ---
 
