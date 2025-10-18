@@ -346,7 +346,7 @@ jobs:
           echo "✅ Release assets prepared"
 
       - name: 🚀 Create GitHub Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ needs.validate-release.outputs.version }}
           name: Release ${{ needs.validate-release.outputs.version }}
@@ -435,7 +435,7 @@ jobs:
   deploy-notification:
     name: 📢 Deployment Notification
     runs-on: ubuntu-latest
-    needs: [validate-release, sentry-release, sentry-mobile]
+    needs: [validate-release, sentry-release, sentry-mobile, github-release, docker-release]
     if: always() && needs.validate-release.result == 'success'
     timeout-minutes: 5
 
