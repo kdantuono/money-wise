@@ -71,6 +71,17 @@ setup_git_hooks() {
     fi
 }
 
+setup_actionlint() {
+    log_info "Setting up actionlint for GitHub Actions validation..."
+
+    if bash ./.claude/scripts/setup-actionlint.sh; then
+        log_success "actionlint setup complete"
+    else
+        log_warning "actionlint setup encountered an issue (non-blocking)"
+        log_info "You can install manually later with: pnpm setup:actionlint"
+    fi
+}
+
 start_docker_services() {
     log_info "Starting Docker services..."
 
@@ -275,6 +286,7 @@ main() {
     create_environment_files
     install_dependencies
     setup_git_hooks
+    setup_actionlint
     start_docker_services
     create_basic_config_files
     create_development_shortcuts

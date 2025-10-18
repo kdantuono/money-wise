@@ -555,6 +555,11 @@ jobs:
     if: needs.foundation.outputs.has_tests == 'true' || github.event.inputs.force_full_pipeline == 'true'
     timeout-minutes: 30
 
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+
     services:
       postgres:
         image: timescale/timescaledb:latest-pg15
@@ -729,7 +734,7 @@ jobs:
         run: pnpm test:coverage
 
       - name: 📤 Upload Coverage to Codecov
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: |
@@ -1076,6 +1081,12 @@ jobs:
     timeout-minutes: 15
     needs: [foundation, development]
     if: github.event_name == 'pull_request'
+
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+
     steps:
       - name: 📥 Checkout Repository
         uses: actions/checkout@v4
@@ -1196,6 +1207,11 @@ jobs:
     timeout-minutes: 20
     needs: [foundation, development]
     if: github.event_name == 'pull_request'
+
+    permissions:
+      contents: read
+      pull-requests: write
+
     steps:
       - name: 📥 Checkout Repository
         uses: actions/checkout@v4

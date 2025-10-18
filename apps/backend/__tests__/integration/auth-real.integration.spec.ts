@@ -1042,7 +1042,7 @@ describe('Real Auth Integration Tests (Prisma)', () => {
 
     it('should handle concurrent registration attempts with same email', async () => {
       const registerDto = {
-        email: 'concurrent@example.com',
+        email: `concurrent-${Date.now()}@example.com`,
         firstName: 'Concurrent',
         lastName: 'Test',
         password: 'Password123!',

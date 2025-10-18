@@ -16,6 +16,35 @@ if [ -d "apps/backend" ] && [ ! -d "apps/backend/generated/prisma" ]; then
   echo "  ✅ Prisma Client generated"
 fi
 
+# Check GitHub Actions workflows if any are staged
+echo "  🔍 Checking GitHub Actions workflows..."
+if git diff --cached --name-only | grep -q "^\.github/workflows/"; then
+  echo "    📋 Workflow files detected in this commit"
+
+  # Try to validate with actionlint
+  ACTIONLINT_PATH="./.claude/tools/actionlint"
+
+  if [ -x "$ACTIONLINT_PATH" ]; then
+    echo "    📍 Validating with actionlint..."
+    if "$ACTIONLINT_PATH" -color .github/workflows/*.yml > /dev/null 2>&1; then
+      echo "    ✅ GitHub Actions workflows are valid"
+    else
+      echo "    ❌ GitHub Actions workflows have errors:"
+      "$ACTIONLINT_PATH" -color .github/workflows/*.yml || true
+      echo ""
+      echo "❌ Please fix workflow errors before committing."
+      exit 1
+    fi
+  else
+    echo "    ⚠️  actionlint not found, skipping detailed workflow validation"
+    echo "    💡 Install with: pnpm setup:actionlint"
+  fi
+else
+  echo "    ⏭️  No workflow files in this commit"
+fi
+
+echo ""
+
 # Run linting
 echo "  ✨ Linting..."
 pnpm lint || {
