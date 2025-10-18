@@ -23,15 +23,26 @@ for file in "$WORKFLOW_DIR"/*.yml; do
     # Check each job for 'needs' references
     while IFS= read -r job; do
       if [ -n "$job" ]; then
-        # Look for this job's needs
-        NEEDS=$(sed -n "/^  $job:/,/^  [a-z]/p" "$file" | grep -E "^\s+needs:" | head -1 | sed 's/.*needs: \[\(.*\)\].*/\1/' | tr ',' '\n' | sed 's/^[[:space:]]*//g' | sed 's/[[:space:]]*$//g')
+        # Look for this job's needs (handles both array and scalar formats)
+        # Format 1: needs: [job1, job2, ...]
+        # Format 2: needs: job
+        NEEDS_LINE=$(sed -n "/^  $job:/,/^  [a-zA-Z0-9_-]/p" "$file" | grep -E "^\s+needs:" | head -1)
 
-        if [ -n "$NEEDS" ]; then
-          for need in $NEEDS; do
+        if [ -n "$NEEDS_LINE" ]; then
+          # Handle both array format and scalar format
+          if echo "$NEEDS_LINE" | grep -q '\['; then
+            # Array format: needs: [job1, job2]
+            NEEDS=$(echo "$NEEDS_LINE" | sed 's/.*needs: \[\(.*\)\].*/\1/' | tr ',' '\n')
+          else
+            # Scalar format: needs: job
+            NEEDS=$(echo "$NEEDS_LINE" | sed 's/.*needs: \(.*\)/\1/')
+          fi
+
+          echo "$NEEDS" | while IFS= read -r need; do
             # Clean job name from needs
             need_clean=$(echo "$need" | sed "s/'//g" | sed 's/"//g' | tr -d '[:space:]')
 
-            if ! echo "$JOB_NAMES" | grep -q "^$need_clean$"; then
+            if [ -n "$need_clean" ] && ! echo "$JOB_NAMES" | grep -q "^$need_clean$"; then
               echo -e "${RED}❌ In $filename:${NC}"
               echo "   Job '$job' needs '$need_clean' which doesn't exist"
               FAILED=1
