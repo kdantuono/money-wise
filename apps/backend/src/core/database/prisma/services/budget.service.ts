@@ -986,15 +986,17 @@ export class BudgetService {
    * }
    * ```
    */
-  private handlePrismaError(error: any): never {
-    if (error.code === 'P2002') {
-      throw new ConflictException('Budget with these parameters already exists');
-    }
-    if (error.code === 'P2003') {
-      throw new BadRequestException('Invalid family or category reference');
-    }
-    if (error.code === 'P2025') {
-      throw new NotFoundException('Budget not found');
+  private handlePrismaError(error: unknown): never {
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      if (error.code === 'P2002') {
+        throw new ConflictException('Budget with these parameters already exists');
+      }
+      if (error.code === 'P2003') {
+        throw new BadRequestException('Invalid family or category reference');
+      }
+      if (error.code === 'P2025') {
+        throw new NotFoundException('Budget not found');
+      }
     }
     throw new InternalServerErrorException('An error occurred while processing the budget');
   }

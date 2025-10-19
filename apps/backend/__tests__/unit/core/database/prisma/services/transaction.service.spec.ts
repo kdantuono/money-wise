@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '@/core/database/prisma/prisma.service';
 import { TransactionService } from '@/core/database/prisma/services/transaction.service';
-import { TransactionType, TransactionStatus, TransactionSource } from '../../../../../../generated/prisma';
+import { TransactionType, TransactionStatus, TransactionSource, Prisma } from '../../../../../../generated/prisma';
 import {
   BadRequestException,
   NotFoundException,
@@ -221,10 +221,13 @@ describe('PrismaTransactionService', () => {
         plaidTransactionId: 'plaid_tx_duplicate',
       };
 
-      jest.spyOn(prisma.transaction, 'create').mockRejectedValue({
-        code: 'P2002',
-        meta: { target: ['plaidTransactionId'] },
-      });
+      jest.spyOn(prisma.transaction, 'create').mockRejectedValue(
+        new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
+          code: 'P2002',
+          clientVersion: '5.0.0',
+          meta: { target: ['plaidTransactionId'] },
+        }),
+      );
 
       await expect(service.create(createDto)).rejects.toThrow(ConflictException);
     });
@@ -662,7 +665,12 @@ describe('PrismaTransactionService', () => {
     });
 
     it('should throw NotFoundException for non-existent transaction', async () => {
-      jest.spyOn(prisma.transaction, 'update').mockRejectedValue({ code: 'P2025' });
+      jest.spyOn(prisma.transaction, 'update').mockRejectedValue(
+        new Prisma.PrismaClientKnownRequestError('Record not found', {
+          code: 'P2025',
+          clientVersion: '5.0.0',
+        }),
+      );
 
       await expect(
         service.update(mockTransactionId, { description: 'Test' }),
@@ -721,7 +729,12 @@ describe('PrismaTransactionService', () => {
     });
 
     it('should throw NotFoundException for non-existent transaction', async () => {
-      jest.spyOn(prisma.transaction, 'delete').mockRejectedValue({ code: 'P2025' });
+      jest.spyOn(prisma.transaction, 'delete').mockRejectedValue(
+        new Prisma.PrismaClientKnownRequestError('Record not found', {
+          code: 'P2025',
+          clientVersion: '5.0.0',
+        }),
+      );
 
       await expect(service.delete(mockTransactionId)).rejects.toThrow(NotFoundException);
     });

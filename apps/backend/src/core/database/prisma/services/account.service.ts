@@ -320,7 +320,7 @@ export class PrismaAccountService {
   ): Promise<Account[]> {
     this.validateUuid(userId);
 
-    const where: any = { userId };
+    const where: Prisma.AccountWhereInput = { userId };
 
     if (options?.status) {
       where.status = options.status;
@@ -357,7 +357,7 @@ export class PrismaAccountService {
   ): Promise<Account[]> {
     this.validateUuid(familyId);
 
-    const where: any = { familyId };
+    const where: Prisma.AccountWhereInput = { familyId };
 
     if (options?.status) {
       where.status = options.status;
@@ -528,7 +528,7 @@ export class PrismaAccountService {
   ): Promise<void> {
     this.validateUuid(id);
 
-    const data: any = {};
+    const data: Prisma.AccountUpdateInput = {};
 
     if (currentBalance !== undefined) {
       data.currentBalance = currentBalance;

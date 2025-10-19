@@ -382,7 +382,7 @@ export class PrismaUserService {
     }
 
     // Normalize email if provided
-    const updateData: any = { ...dto };
+    const updateData: Prisma.UserUpdateInput = { ...dto };
     if (dto.email) {
       updateData.email = dto.email.trim().toLowerCase();
     }
@@ -737,10 +737,9 @@ export class PrismaUserService {
       });
 
       return user;
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Transform Prisma errors to domain exceptions
-      // Check for Prisma error code property (more flexible for testing)
-      if (error.code) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
         // P2002: Unique constraint violation (duplicate email)
         if (error.code === 'P2002') {
           throw new ConflictException('Email already exists - user with this email is already registered');
@@ -985,7 +984,7 @@ export class PrismaUserService {
   ): Promise<User[]> {
     this.validateUuid(familyId);
 
-    const where: any = { familyId };
+    const where: Prisma.UserWhereInput = { familyId };
 
     if (options?.role) {
       where.role = options.role;

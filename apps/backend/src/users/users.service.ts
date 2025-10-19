@@ -4,6 +4,7 @@ import { UpdateUserDto, UpdateUserStatusDto } from './dto/update-user.dto';
 import { UserResponseDto, PaginatedUsersResponseDto } from './dto/user-response.dto';
 import { PrismaUserService } from '../core/database/prisma/services/user.service';
 import { enrichUserWithVirtuals } from '../core/database/prisma/utils/user-virtuals';
+import { UserPreferences } from '../core/database/types/metadata.types';
 
 @Injectable()
 export class UsersService {
@@ -117,12 +118,12 @@ export class UsersService {
       firstName: user.firstName,
       lastName: user.lastName,
       fullName: user.fullName,
-      role: user.role as any, // Type cast to handle enum mismatch
-      status: user.status as any, // Type cast to handle enum mismatch
+      role: user.role,
+      status: user.status,
       avatar: user.avatar,
       timezone: user.timezone,
       currency: user.currency,
-      preferences: user.preferences as Record<string, any> | null,
+      preferences: user.preferences as UserPreferences | null,
       lastLoginAt: user.lastLoginAt,
       emailVerifiedAt: user.emailVerifiedAt,
       isEmailVerified: user.isEmailVerified,

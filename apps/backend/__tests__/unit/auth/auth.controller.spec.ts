@@ -36,7 +36,6 @@ describe('AuthController', () => {
     createdAt: new Date(),
     updatedAt: new Date(),
     familyId: 'family-1',
-    accounts: [],
     fullName: 'John Doe',
     isEmailVerified: true,
     isActive: true,

@@ -10,6 +10,7 @@ import {
 import { CreateAccountDto } from './dto/create-account.dto';
 import { UpdateAccountDto } from './dto/update-account.dto';
 import { AccountResponseDto, AccountSummaryDto } from './dto/account-response.dto';
+import { AccountSettings } from '../core/database/types/metadata.types';
 
 @Injectable()
 export class AccountsService {
@@ -185,7 +186,7 @@ export class AccountsService {
     await this.verifyAccountAccess(id, userId, familyId, userRole);
 
     // Convert number fields to Decimal if provided
-    const data: any = { ...updateAccountDto };
+    const data: Prisma.AccountUpdateInput = { ...updateAccountDto };
     if (updateAccountDto.currentBalance !== undefined) {
       data.currentBalance = new Prisma.Decimal(updateAccountDto.currentBalance);
     }
@@ -447,7 +448,7 @@ export class AccountsService {
       syncEnabled: account.syncEnabled,
       lastSyncAt: account.lastSyncAt,
       syncError: account.syncError,
-      settings: account.settings,
+      settings: account.settings as AccountSettings,
       createdAt: account.createdAt,
       updatedAt: account.updatedAt,
     };

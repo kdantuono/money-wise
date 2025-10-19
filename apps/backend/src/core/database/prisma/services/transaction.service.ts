@@ -369,21 +369,23 @@ export class TransactionService {
    * @throws InternalServerErrorException - Unexpected errors
    * @private
    */
-  private handlePrismaError(error: any): never {
-    if (error.code === 'P2002') {
-      // Unique constraint violation
-      const target = error.meta?.target || 'field';
-      throw new ConflictException(`Transaction with this ${target} already exists`);
-    }
+  private handlePrismaError(error: unknown): never {
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      if (error.code === 'P2002') {
+        // Unique constraint violation
+        const target = error.meta?.target || 'field';
+        throw new ConflictException(`Transaction with this ${target} already exists`);
+      }
 
-    if (error.code === 'P2025') {
-      // Record not found
-      throw new NotFoundException('Transaction not found');
-    }
+      if (error.code === 'P2025') {
+        // Record not found
+        throw new NotFoundException('Transaction not found');
+      }
 
-    if (error.code === 'P2003') {
-      // Foreign key constraint failed
-      throw new BadRequestException('Invalid account or category ID');
+      if (error.code === 'P2003') {
+        // Foreign key constraint failed
+        throw new BadRequestException('Invalid account or category ID');
+      }
     }
 
     // Unexpected error

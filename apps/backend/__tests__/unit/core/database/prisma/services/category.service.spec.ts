@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '@/core/database/prisma/prisma.service';
 import { CategoryService } from '@/core/database/prisma/services/category.service';
-import { CategoryType, CategoryStatus } from '../../../../../../generated/prisma';
+import { CategoryType, CategoryStatus, Prisma } from '../../../../../../generated/prisma';
 import {
   BadRequestException,
   NotFoundException,
@@ -282,10 +282,13 @@ describe('PrismaCategoryService', () => {
         familyId: mockFamilyId,
       };
 
-      jest.spyOn(prisma.category, 'create').mockRejectedValue({
-        code: 'P2002',
-        meta: { target: ['familyId', 'slug'] },
-      });
+      jest.spyOn(prisma.category, 'create').mockRejectedValue(
+        new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
+          code: 'P2002',
+          clientVersion: '5.0.0',
+          meta: { target: ['familyId', 'slug'] },
+        }),
+      );
 
       await expect(service.create(createDto)).rejects.toThrow(ConflictException);
     });
@@ -988,10 +991,13 @@ describe('PrismaCategoryService', () => {
         slug: 'existing-slug',
       };
 
-      jest.spyOn(prisma.category, 'update').mockRejectedValue({
-        code: 'P2002',
-        meta: { target: ['familyId', 'slug'] },
-      });
+      jest.spyOn(prisma.category, 'update').mockRejectedValue(
+        new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
+          code: 'P2002',
+          clientVersion: '5.0.0',
+          meta: { target: ['familyId', 'slug'] },
+        }),
+      );
 
       await expect(service.update(mockCategoryId, updateDto)).rejects.toThrow(
         ConflictException,
@@ -1003,7 +1009,12 @@ describe('PrismaCategoryService', () => {
         name: 'Updated Name',
       };
 
-      jest.spyOn(prisma.category, 'update').mockRejectedValue({ code: 'P2025' });
+      jest.spyOn(prisma.category, 'update').mockRejectedValue(
+        new Prisma.PrismaClientKnownRequestError('Record not found', {
+          code: 'P2025',
+          clientVersion: '5.0.0',
+        }),
+      );
 
       await expect(service.update(mockCategoryId, updateDto)).rejects.toThrow(
         NotFoundException,
