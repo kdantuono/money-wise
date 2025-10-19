@@ -36,7 +36,10 @@ describe('AuthController', () => {
     createdAt: new Date(),
     updatedAt: new Date(),
     familyId: 'family-1',
-  } as Omit<User, 'passwordHash'>;
+    fullName: 'John Doe',
+    isEmailVerified: true,
+    isActive: true,
+  };
 
   const mockAuthResponse: AuthResponseDto = {
     accessToken: 'access-token',

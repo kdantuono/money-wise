@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { Category, CategoryType, CategoryStatus, Prisma } from '../../../../../generated/prisma';
+import { CategoryWithRelations, CategoryWithOptionalRelations } from './types';
 
 /**
  * CategoryService - Prisma-based category management
@@ -237,7 +238,7 @@ export class CategoryService {
    * @returns Category with relations or null
    * @throws BadRequestException - Invalid UUID format
    */
-  async findOneWithRelations(id: string): Promise<any> {
+  async findOneWithRelations(id: string): Promise<CategoryWithRelations | null> {
     this.validateUuid(id);
 
     return await this.prisma.category.findUnique({
@@ -269,7 +270,7 @@ export class CategoryService {
    *
    * @param familyId - Family UUID
    * @param options - Query options
-   * @returns Array of categories
+   * @returns Array of categories (with or without relations based on include option)
    * @throws BadRequestException - Invalid UUID format
    */
   async findByFamilyId(
@@ -288,7 +289,7 @@ export class CategoryService {
         children?: boolean;
       };
     }
-  ): Promise<any[]> {
+  ): Promise<Category[] | CategoryWithOptionalRelations[]> {
     this.validateUuid(familyId);
 
     const {
@@ -353,7 +354,7 @@ export class CategoryService {
    *
    * @param parentId - Parent category UUID
    * @param options - Optional include for nested children
-   * @returns Array of child categories
+   * @returns Array of child categories (with or without relations based on include option)
    * @throws BadRequestException - Invalid UUID format
    */
   async findChildren(
@@ -363,7 +364,7 @@ export class CategoryService {
         children?: boolean;
       };
     }
-  ): Promise<any[]> {
+  ): Promise<Category[] | CategoryWithOptionalRelations[]> {
     this.validateUuid(parentId);
 
     return await this.prisma.category.findMany({

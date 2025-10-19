@@ -33,6 +33,14 @@ import {
   Prisma,
 } from '../../../../../generated/prisma';
 import * as bcrypt from 'bcryptjs';
+import {
+  toPrismaJson,
+  UserPreferences,
+  AccountSettings,
+  CategoryRules,
+  CategoryMetadata,
+  BudgetSettings,
+} from '../../../types/factory-metadata.types';
 
 /**
  * Base factory interface
@@ -125,7 +133,7 @@ export class UserFactory extends BasePrismaFactory<User> {
       avatar: overrides.avatar || faker.image.avatarGitHub(),
       timezone: overrides.timezone || faker.location.timeZone(),
       currency: overrides.currency || 'USD',
-      preferences: overrides.preferences || {
+      preferences: (overrides.preferences || {
         theme: 'light',
         language: 'en',
         notifications: {
@@ -134,7 +142,7 @@ export class UserFactory extends BasePrismaFactory<User> {
           categories: true,
           budgets: true,
         },
-      },
+      }) as UserPreferences,
       lastLoginAt: overrides.lastLoginAt || faker.date.recent(),
       emailVerifiedAt: overrides.emailVerifiedAt || faker.date.past(),
       createdAt: overrides.createdAt || new Date(),
@@ -164,7 +172,7 @@ export class UserFactory extends BasePrismaFactory<User> {
         avatar: data.avatar,
         timezone: data.timezone,
         currency: data.currency,
-        preferences: data.preferences as any,
+        preferences: toPrismaJson(data.preferences),
         lastLoginAt: data.lastLoginAt,
         emailVerifiedAt: data.emailVerifiedAt,
       },
@@ -235,12 +243,12 @@ export class AccountFactory extends BasePrismaFactory<Account> {
       syncEnabled: overrides.syncEnabled ?? true,
       lastSyncAt: overrides.lastSyncAt || faker.date.recent(),
       syncError: overrides.syncError || null,
-      settings: overrides.settings || {
+      settings: (overrides.settings || {
         autoSync: true,
         syncFrequency: 'daily',
         notifications: true,
         budgetIncluded: true,
-      },
+      }) as AccountSettings,
       plaidAccountId: overrides.plaidAccountId || null,
       plaidItemId: overrides.plaidItemId || null,
       plaidAccessToken: overrides.plaidAccessToken || null,
@@ -279,11 +287,11 @@ export class AccountFactory extends BasePrismaFactory<Account> {
         syncEnabled: data.syncEnabled,
         lastSyncAt: data.lastSyncAt,
         syncError: data.syncError,
-        settings: data.settings as any,
+        settings: toPrismaJson(data.settings),
         plaidAccountId: data.plaidAccountId,
         plaidItemId: data.plaidItemId,
         plaidAccessToken: data.plaidAccessToken,
-        plaidMetadata: data.plaidMetadata as any,
+        plaidMetadata: data.plaidMetadata ? toPrismaJson(data.plaidMetadata) : null,
       },
     });
   }
@@ -349,18 +357,18 @@ export class CategoryFactory extends BasePrismaFactory<Category> {
       isSystem: overrides.isSystem ?? false,
       sortOrder: overrides.sortOrder || faker.number.int({ min: 0, max: 100 }),
       parentId: overrides.parentId || null,
-      rules: overrides.rules || {
+      rules: (overrides.rules || {
         keywords: [faker.commerce.productName()],
         merchantPatterns: [faker.company.name()],
         autoAssign: true,
         confidence: faker.number.float({ min: 0.5, max: 1.0 }),
-      },
-      metadata: overrides.metadata || {
+      }) as CategoryRules,
+      metadata: (overrides.metadata || {
         budgetEnabled: true,
         monthlyLimit: parseFloat(faker.finance.amount({ min: 100, max: 2000 })),
         taxDeductible: faker.datatype.boolean(),
         businessExpense: faker.datatype.boolean(),
-      },
+      }) as CategoryMetadata,
       createdAt: overrides.createdAt || new Date(),
       updatedAt: overrides.updatedAt || new Date(),
     } as Category;
@@ -377,10 +385,10 @@ export class CategoryFactory extends BasePrismaFactory<Category> {
     const data = this.create({ ...overrides, familyId });
 
     // Build create data object conditionally based on parentId
-    const createData: any = {
+    const createData: Prisma.CategoryCreateInput = {
       name: data.name,
       slug: data.slug,
-      familyId: data.familyId,
+      family: { connect: { id: data.familyId } },
       description: data.description,
       type: data.type,
       status: data.status,
@@ -389,8 +397,8 @@ export class CategoryFactory extends BasePrismaFactory<Category> {
       isDefault: data.isDefault,
       isSystem: data.isSystem,
       sortOrder: data.sortOrder,
-      rules: data.rules as any,
-      metadata: data.metadata as any,
+      rules: toPrismaJson(data.rules),
+      metadata: toPrismaJson(data.metadata),
     };
 
     // Add parent relation only if parentId exists
@@ -511,10 +519,10 @@ export class TransactionFactory extends BasePrismaFactory<Transaction> {
         includeInBudget: data.includeInBudget,
         notes: data.notes,
         tags: data.tags,
-        location: data.location as any,
+        location: data.location ? toPrismaJson(data.location) : null,
         plaidTransactionId: data.plaidTransactionId,
         plaidAccountId: data.plaidAccountId,
-        plaidMetadata: data.plaidMetadata as any,
+        plaidMetadata: data.plaidMetadata ? toPrismaJson(data.plaidMetadata) : null,
       },
     });
   }
@@ -601,10 +609,10 @@ export class BudgetFactory extends BasePrismaFactory<Budget> {
       status: overrides.status || ('ACTIVE' as BudgetStatus),
       alertThresholds: overrides.alertThresholds || [50, 75, 90],
       notes: overrides.notes || null,
-      settings: overrides.settings || {
+      settings: (overrides.settings || {
         rollover: false,
         includeSubcategories: true,
-      },
+      }) as BudgetSettings,
       createdAt: overrides.createdAt || new Date(),
       updatedAt: overrides.updatedAt || new Date(),
     } as Budget;
@@ -632,7 +640,7 @@ export class BudgetFactory extends BasePrismaFactory<Budget> {
         status: data.status,
         alertThresholds: data.alertThresholds,
         notes: data.notes,
-        settings: data.settings as any,
+        settings: toPrismaJson(data.settings),
       },
     });
   }

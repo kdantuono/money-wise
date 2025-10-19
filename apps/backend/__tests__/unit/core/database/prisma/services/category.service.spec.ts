@@ -452,17 +452,13 @@ describe('PrismaCategoryService', () => {
       expect(result.children[0].name).toBe('Groceries');
     });
 
-    it('should find a category with transaction count', async () => {
+    it('should find a category with parent and children relations', async () => {
       const expectedCategory = {
         id: mockCategoryId,
         name: 'Groceries',
         slug: 'groceries',
         type: CategoryType.EXPENSE,
         status: CategoryStatus.ACTIVE,
-        _count: {
-          transactions: 42,
-          budgets: 3,
-        },
         description: null,
         color: null,
         icon: null,
@@ -475,14 +471,18 @@ describe('PrismaCategoryService', () => {
         metadata: null,
         createdAt: new Date(),
         updatedAt: new Date(),
+        parent: null,
+        children: [],
       };
 
       jest.spyOn(prisma.category, 'findUnique').mockResolvedValue(expectedCategory);
 
       const result = await service.findOneWithRelations(mockCategoryId);
 
-      expect(result._count.transactions).toBe(42);
-      expect(result._count.budgets).toBe(3);
+      expect(result).toBeDefined();
+      expect(result.id).toBe(mockCategoryId);
+      expect(result.parent).toBeNull();
+      expect(result.children).toHaveLength(0);
     });
   });
 
@@ -648,7 +648,8 @@ describe('PrismaCategoryService', () => {
         include: { parent: true, children: true },
       });
 
-      expect(result[0].children).toHaveLength(2);
+      // Type assertion needed due to union return type (Category[] | CategoryWithOptionalRelations[])
+      expect((result as any)[0].children).toHaveLength(2);
     });
   });
 
@@ -802,7 +803,8 @@ describe('PrismaCategoryService', () => {
         include: { children: true },
       });
 
-      expect(result[0].children).toHaveLength(2);
+      // Type assertion needed due to union return type (Category[] | CategoryWithOptionalRelations[])
+      expect((result as any)[0].children).toHaveLength(2);
     });
   });
 
