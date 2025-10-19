@@ -49,7 +49,7 @@ export class UsersService {
 
   async update(id: string, updateUserDto: UpdateUserDto, requestingUserId: string, requestingUserRole: UserRole): Promise<UserResponseDto> {
     // Authorization: users can update their own data, admins can update anyone
-    if (id !== requestingUserId && requestingUserRole as any !== 'ADMIN') {
+    if (id !== requestingUserId && requestingUserRole !== UserRole.ADMIN) {
       throw new ForbiddenException('You can only update your own profile');
     }
 
@@ -74,7 +74,7 @@ export class UsersService {
 
   async updateStatus(id: string, updateStatusDto: UpdateUserStatusDto, requestingUserRole: UserRole): Promise<UserResponseDto> {
     // Only admins can change user status
-    if (requestingUserRole as any !== 'ADMIN') {
+    if (requestingUserRole !== UserRole.ADMIN) {
       throw new ForbiddenException('Only administrators can change user status');
     }
 
@@ -85,7 +85,7 @@ export class UsersService {
     }
 
     const updatedUser = await this.prismaUserService.update(id, {
-      status: updateStatusDto.status as any, // Type cast to handle enum mismatch
+      status: updateStatusDto.status,
     });
 
     return this.toResponseDto(enrichUserWithVirtuals(updatedUser));
@@ -93,7 +93,7 @@ export class UsersService {
 
   async remove(id: string, requestingUserRole: UserRole): Promise<void> {
     // Only admins can delete users
-    if (requestingUserRole as any !== 'ADMIN') {
+    if (requestingUserRole !== UserRole.ADMIN) {
       throw new ForbiddenException('Only administrators can delete users');
     }
 

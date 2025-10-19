@@ -12,7 +12,7 @@ export interface CreateAuditLogDto {
   description: string;
   ipAddress?: string;
   userAgent?: string;
-  metadata?: any;
+  metadata?: Prisma.InputJsonValue | Record<string, unknown>;
   isSecurityEvent?: boolean;
 }
 
@@ -117,7 +117,7 @@ export class PrismaAuditLogService {
           description: dto.description,
           ipAddress: dto.ipAddress ?? null,
           userAgent: dto.userAgent ?? null,
-          metadata: dto.metadata ?? null,
+          metadata: (dto.metadata ?? null) as Prisma.InputJsonValue,
           isSecurityEvent: dto.isSecurityEvent ?? false,
         },
       });

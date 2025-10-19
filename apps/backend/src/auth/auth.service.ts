@@ -299,7 +299,7 @@ export class AuthService {
     return {
       accessToken,
       refreshToken,
-      user: userWithoutPassword as any, // Type assertion needed due to DTO mismatch
+      user: userWithoutPassword,
       expiresIn: 15 * 60, // 15 minutes in seconds
     };
   }

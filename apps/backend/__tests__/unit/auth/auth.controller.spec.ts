@@ -7,7 +7,7 @@ import { AuthSecurityService } from '@/auth/auth-security.service';
 import { RateLimitGuard } from '@/auth/guards/rate-limit.guard';
 import { RegisterDto } from '@/auth/dto/register.dto';
 import { LoginDto } from '@/auth/dto/login.dto';
-import { AuthResponseDto } from '@/auth/dto/auth-response.dto';
+import { AuthResponseDto, AuthResponseUserDto } from '@/auth/dto/auth-response.dto';
 import {
   User,
   UserStatus,
@@ -20,7 +20,7 @@ describe('AuthController', () => {
   let authSecurityService: jest.Mocked<AuthSecurityService>;
   let mockRequest: Partial<Request>;
 
-  const mockUser: Omit<User, 'passwordHash'> = {
+  const mockUser: AuthResponseUserDto = {
     id: '1',
     email: 'test@example.com',
     firstName: 'John',
@@ -36,6 +36,7 @@ describe('AuthController', () => {
     createdAt: new Date(),
     updatedAt: new Date(),
     familyId: 'family-1',
+    accounts: [],
     fullName: 'John Doe',
     isEmailVerified: true,
     isActive: true,

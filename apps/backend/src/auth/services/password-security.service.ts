@@ -498,7 +498,7 @@ export class PasswordSecurityService {
       description,
       ipAddress,
       userAgent,
-      metadata: metadata as any,
+      metadata,
       isSecurityEvent: true,
     });
   }
