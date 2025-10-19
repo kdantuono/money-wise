@@ -1,7 +1,20 @@
 import { User } from '../../../generated/prisma';
 
-export type AuthResponseUserDto = Omit<User, 'passwordHash'> & {
-  accounts: any[]; // Account array - empty by default for performance
+/**
+ * User DTO for auth responses
+ *
+ * Excludes:
+ * - passwordHash (security)
+ * - accounts relation (not needed in auth response for performance)
+ * - userAchievements relation (not needed in auth response)
+ * - passwordHistory relation (not needed in auth response)
+ * - auditLogs relation (not needed in auth response)
+ *
+ * Includes:
+ * - Virtual properties (fullName, isEmailVerified, isActive)
+ * - All essential user profile fields
+ */
+export type AuthResponseUserDto = Omit<User, 'passwordHash' | 'accounts' | 'userAchievements' | 'passwordHistory' | 'auditLogs'> & {
   fullName: string;
   isEmailVerified: boolean;
   isActive: boolean;
