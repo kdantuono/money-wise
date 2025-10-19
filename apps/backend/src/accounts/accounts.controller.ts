@@ -24,7 +24,7 @@ import { UpdateAccountDto } from './dto/update-account.dto';
 import { AccountResponseDto, AccountSummaryDto } from './dto/account-response.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { User } from '../../generated/prisma';
+import { CurrentUserPayload } from '../auth/types/current-user.types';
 
 @ApiTags('Accounts')
 @Controller('accounts')
@@ -50,7 +50,7 @@ export class AccountsController {
   })
   async create(
     @Body() createAccountDto: CreateAccountDto,
-    @CurrentUser() user: User,
+    @CurrentUser() user: CurrentUserPayload,
   ): Promise<AccountResponseDto> {
     // TODO: Add familyId support when User entity is migrated to Prisma
     return this.accountsService.create(createAccountDto, user.id, undefined);
@@ -67,9 +67,9 @@ export class AccountsController {
     status: 401,
     description: 'Unauthorized - invalid or missing token',
   })
-  async findAll(@CurrentUser() user: User): Promise<AccountResponseDto[]> {
+  async findAll(@CurrentUser() user: CurrentUserPayload): Promise<AccountResponseDto[]> {
     // TODO: Add familyId support when User entity is migrated to Prisma
-    return this.accountsService.findAll(user.id, undefined, user.role as any);
+    return this.accountsService.findAll(user.id, undefined, user.role);
   }
 
   @Get('summary')
@@ -83,9 +83,9 @@ export class AccountsController {
     status: 401,
     description: 'Unauthorized - invalid or missing token',
   })
-  async getSummary(@CurrentUser() user: User): Promise<AccountSummaryDto> {
+  async getSummary(@CurrentUser() user: CurrentUserPayload): Promise<AccountSummaryDto> {
     // TODO: Add familyId support when User entity is migrated to Prisma
-    return this.accountsService.getSummary(user.id, undefined, user.role as any);
+    return this.accountsService.getSummary(user.id, undefined, user.role);
   }
 
   @Get(':id')
@@ -110,10 +110,10 @@ export class AccountsController {
   })
   async findOne(
     @Param('id', ParseUUIDPipe) id: string,
-    @CurrentUser() user: User,
+    @CurrentUser() user: CurrentUserPayload,
   ): Promise<AccountResponseDto> {
     // TODO: Add familyId support when User entity is migrated to Prisma
-    return this.accountsService.findOne(id, user.id, undefined, user.role as any);
+    return this.accountsService.findOne(id, user.id, undefined, user.role);
   }
 
   @Get(':id/balance')
@@ -141,10 +141,10 @@ export class AccountsController {
   })
   async getBalance(
     @Param('id', ParseUUIDPipe) id: string,
-    @CurrentUser() user: User,
+    @CurrentUser() user: CurrentUserPayload,
   ): Promise<{ currentBalance: number; availableBalance: number | null; currency: string }> {
     // TODO: Add familyId support when User entity is migrated to Prisma
-    return this.accountsService.getBalance(id, user.id, undefined, user.role as any);
+    return this.accountsService.getBalance(id, user.id, undefined, user.role);
   }
 
   @Patch(':id')
@@ -166,10 +166,10 @@ export class AccountsController {
   async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateAccountDto: UpdateAccountDto,
-    @CurrentUser() user: User,
+    @CurrentUser() user: CurrentUserPayload,
   ): Promise<AccountResponseDto> {
     // TODO: Add familyId support when User entity is migrated to Prisma
-    return this.accountsService.update(id, updateAccountDto, user.id, undefined, user.role as any);
+    return this.accountsService.update(id, updateAccountDto, user.id, undefined, user.role);
   }
 
   @Delete(':id')
@@ -190,10 +190,10 @@ export class AccountsController {
   })
   async remove(
     @Param('id', ParseUUIDPipe) id: string,
-    @CurrentUser() user: User,
+    @CurrentUser() user: CurrentUserPayload,
   ): Promise<void> {
     // TODO: Add familyId support when User entity is migrated to Prisma
-    return this.accountsService.remove(id, user.id, undefined, user.role as any);
+    return this.accountsService.remove(id, user.id, undefined, user.role);
   }
 
   @Post(':id/sync')
@@ -214,9 +214,9 @@ export class AccountsController {
   })
   async syncAccount(
     @Param('id', ParseUUIDPipe) id: string,
-    @CurrentUser() user: User,
+    @CurrentUser() user: CurrentUserPayload,
   ): Promise<AccountResponseDto> {
     // TODO: Add familyId support when User entity is migrated to Prisma
-    return this.accountsService.syncAccount(id, user.id, undefined, user.role as any);
+    return this.accountsService.syncAccount(id, user.id, undefined, user.role);
   }
 }
