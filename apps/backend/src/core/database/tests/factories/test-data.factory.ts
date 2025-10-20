@@ -309,10 +309,10 @@ export class CategoryFactory extends BaseFactory<Category> {
     // Apply overrides last (except parent/parentId which are handled in build())
     const safeOverrides = Object.entries(overrides)
       .filter(([key]) => key !== 'parent' && key !== 'parentId')
-      .reduce((acc, [key, value]) => ({
-        ...acc,
-        [key]: value,
-      }), {} as Partial<Category>);
+      .reduce((acc, [key, value]) => {
+        acc[key] = value;
+        return acc;
+      }, {} as Partial<Category>);
 
     Object.assign(category, safeOverrides);
 
