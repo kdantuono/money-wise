@@ -18,8 +18,14 @@ for file in "$WORKFLOW_DIR"/*.yml; do
   if [ -f "$file" ]; then
     filename=$(basename "$file")
 
-    # Check each job for timeout-minutes
-    JOBS=$(grep -E "^  [a-zA-Z0-9_-]+:" "$file" | grep -v "outputs:" | sed 's/^  \([^:]*\):.*/\1/')
+    # Extract jobs section (everything between "jobs:" and next top-level section or EOF)
+    jobs_section=$(sed -n '/^jobs:/,/^[a-z]/p' "$file" | head -n -1)
+
+    # Get two-space indented items in jobs section (potential job names)
+    # Exclude known non-job keywords: env, permissions, strategy, defaults, concurrency, outputs, if, runs
+    all_items=$(echo "$jobs_section" | grep -E "^  [a-zA-Z0-9_-]+:" | sed 's/^  \([^:]*\):.*/\1/')
+
+    JOBS=$(echo "$all_items" | grep -v -E "^(env|permissions|strategy|defaults|concurrency|outputs|if|runs|needs)$")
 
     while IFS= read -r job; do
       if [ -n "$job" ]; then

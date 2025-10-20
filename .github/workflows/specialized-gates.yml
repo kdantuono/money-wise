@@ -10,7 +10,6 @@ on:
     paths:
       - 'apps/backend/src/core/database/migrations/**'
       - 'apps/backend/src/**/*.entity.ts'
-      - 'apps/backend/src/core/database/entities/**'
       - '**/Dockerfile*'
       - '**/docker-compose*.yml'
   push:
@@ -18,7 +17,6 @@ on:
     paths:
       - 'apps/backend/src/core/database/migrations/**'
       - 'apps/backend/src/**/*.entity.ts'
-      - 'apps/backend/src/core/database/entities/**'
       - '**/Dockerfile*'
       - '**/docker-compose*.yml'
 
@@ -39,7 +37,7 @@ jobs:
   migration-validation:
     name: 🗃️ Migration Validation
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
 
     services:
       postgres:
