@@ -61,13 +61,28 @@ jobs:
       - name: 🔍 Detect Project Stage & Components
         id: detect
         run: |
+          set -e  # Exit on first error
           echo "🔍 Analyzing project structure..."
 
+          # Enable debugging
+          pwd
+          ls -la | head -20
+          echo "---"
+
           HAS_PACKAGE_JSON=$([[ -f "package.json" ]] && echo "true" || echo "false")
+          echo "✅ HAS_PACKAGE_JSON=$HAS_PACKAGE_JSON"
+
           HAS_SOURCE_CODE=$([[ -n "$(find . -name "*.ts" -o -name "*.js" -o -name "*.tsx" -o -name "*.jsx" | head -1)" ]] && echo "true" || echo "false")
+          echo "✅ HAS_SOURCE_CODE=$HAS_SOURCE_CODE"
+
           HAS_TESTS=$([[ -n "$(find . -name "*.test.*" -o -name "*.spec.*" | head -1)" ]] && echo "true" || echo "false")
+          echo "✅ HAS_TESTS=$HAS_TESTS"
+
           HAS_APPS=$([[ -d "apps" && -n "$(ls -A apps 2>/dev/null)" ]] && echo "true" || echo "false")
+          echo "✅ HAS_APPS=$HAS_APPS"
+
           HAS_DOCKER=$([[ -f "docker-compose.yml" || -f "docker-compose.dev.yml" || -f "Dockerfile" ]] && echo "true" || echo "false")
+          echo "✅ HAS_DOCKER=$HAS_DOCKER"
 
           if [[ "$HAS_SOURCE_CODE" == "true" && "$HAS_APPS" == "true" ]]; then
             STAGE="MMP"
@@ -77,13 +92,14 @@ jobs:
             STAGE="GREENFIELD"
           fi
 
-          echo "has_package_json=$HAS_PACKAGE_JSON" >> $GITHUB_OUTPUT
-          echo "has_source_code=$HAS_SOURCE_CODE" >> $GITHUB_OUTPUT
-          echo "has_tests=$HAS_TESTS" >> $GITHUB_OUTPUT
-          echo "has_apps=$HAS_APPS" >> $GITHUB_OUTPUT
-          echo "has_docker=$HAS_DOCKER" >> $GITHUB_OUTPUT
-          echo "project_stage=$STAGE" >> $GITHUB_OUTPUT
+          echo "has_package_json=$HAS_PACKAGE_JSON" >> $GITHUB_OUTPUT || { echo "❌ Failed to set has_package_json"; exit 1; }
+          echo "has_source_code=$HAS_SOURCE_CODE" >> $GITHUB_OUTPUT || { echo "❌ Failed to set has_source_code"; exit 1; }
+          echo "has_tests=$HAS_TESTS" >> $GITHUB_OUTPUT || { echo "❌ Failed to set has_tests"; exit 1; }
+          echo "has_apps=$HAS_APPS" >> $GITHUB_OUTPUT || { echo "❌ Failed to set has_apps"; exit 1; }
+          echo "has_docker=$HAS_DOCKER" >> $GITHUB_OUTPUT || { echo "❌ Failed to set has_docker"; exit 1; }
+          echo "project_stage=$STAGE" >> $GITHUB_OUTPUT || { echo "❌ Failed to set project_stage"; exit 1; }
 
+          echo ""
           echo "📊 PROJECT ANALYSIS:"
           echo "🎯 Stage: $STAGE"
           echo "📦 Package.json: $HAS_PACKAGE_JSON"
@@ -91,9 +107,11 @@ jobs:
           echo "🧪 Tests: $HAS_TESTS"
           echo "📁 Apps: $HAS_APPS"
           echo "🐳 Docker: $HAS_DOCKER"
+          echo "✅ Detect step completed successfully"
 
       - name: 📋 Repository Health Check
         run: |
+          set -e  # Exit on first error
           echo "🔍 Repository Health Validation..."
           HEALTH_SCORE=0
 
@@ -121,7 +139,7 @@ jobs:
           echo "📊 Repository Health Score: $HEALTH_SCORE/3"
 
           if [[ $HEALTH_SCORE -lt 2 ]]; then
-            echo "⚠️ Repository health below threshold"
+            echo "❌ FAILED: Repository health below threshold ($HEALTH_SCORE < 2)"
             exit 1
           fi
 
@@ -130,35 +148,50 @@ jobs:
       - name: 🔄 Smart Change Detection
         id: changes
         run: |
+          set -e  # Exit on first error
           echo "🔍 Analyzing changes since main branch..."
+          echo "Event: ${{ github.event_name }}"
+          echo "Ref: ${{ github.ref }}"
+          echo "Base Ref: ${{ github.base_ref }}"
+          echo ""
 
           # Detect what changed (handle both PR and push events)
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD 2>/dev/null || echo "all")
+            BASE_REF="${{ github.base_ref }}"
+            if [[ -z "$BASE_REF" ]]; then
+              echo "⚠️ Base ref is empty, using main as fallback"
+              BASE_REF="main"
+            fi
+            echo "📋 PR detected - comparing with origin/$BASE_REF"
+            CHANGED_FILES=$(git diff --name-only "origin/$BASE_REF...HEAD" 2>&1 || echo "all")
           else
-            CHANGED_FILES=$(git diff --name-only HEAD^ HEAD 2>/dev/null || echo "all")
+            echo "📋 Push detected - comparing HEAD^ to HEAD"
+            CHANGED_FILES=$(git diff --name-only HEAD^ HEAD 2>&1 || echo "all")
           fi
 
-          echo "📝 Changed files:"
-          echo "$CHANGED_FILES" | head -20
+          echo "✅ Change detection completed"
+          echo "📝 Changed files (first 20):"
+          echo "$CHANGED_FILES" | head -20 || echo "(no files)"
 
           # Determine if we should run tests
           if echo "$CHANGED_FILES" | grep -E "\.(ts|tsx|js|jsx|prisma|json|spec|test)$|package\.lock\.json|pnpm-lock.yaml"; then
-            echo "should_test=true" >> $GITHUB_OUTPUT
+            echo "should_test=true" >> $GITHUB_OUTPUT || { echo "❌ Failed to set should_test=true"; exit 1; }
             echo "✅ Code/dependency changes detected - Tests will run"
           else
-            echo "should_test=false" >> $GITHUB_OUTPUT
+            echo "should_test=false" >> $GITHUB_OUTPUT || { echo "❌ Failed to set should_test=false"; exit 1; }
             echo "⏭️ Only documentation/config changes - Skipping tests"
           fi
 
           # Determine if we should build
           if echo "$CHANGED_FILES" | grep -E "^(apps|packages|Dockerfile|\.github|docker-compose)"; then
-            echo "should_build=true" >> $GITHUB_OUTPUT
+            echo "should_build=true" >> $GITHUB_OUTPUT || { echo "❌ Failed to set should_build=true"; exit 1; }
             echo "✅ App/package changes detected - Build will run"
           else
-            echo "should_build=false" >> $GITHUB_OUTPUT
+            echo "should_build=false" >> $GITHUB_OUTPUT || { echo "❌ Failed to set should_build=false"; exit 1; }
             echo "⏭️ No app/package changes - Skipping build"
           fi
+
+          echo "✅ Change detection step completed successfully"
 
   # ===================================================================
   # 📦 DEVELOPMENT: Code quality checks
