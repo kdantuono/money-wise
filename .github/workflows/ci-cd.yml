@@ -63,10 +63,13 @@ jobs:
         run: |
           set -e  # Exit on first error
           echo "🔍 Analyzing project structure..."
+          echo "DEBUG: Starting Detect step"
 
           # Enable debugging
           pwd
+          echo "DEBUG: Current directory listed:"
           ls -la | head -20
+          echo "DEBUG: End of directory listing"
           echo "---"
 
           HAS_PACKAGE_JSON=$([[ -f "package.json" ]] && echo "true" || echo "false")
