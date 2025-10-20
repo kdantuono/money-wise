@@ -35,9 +35,13 @@ done
 
 echo ""
 if [ $WARNINGS -gt 0 ]; then
-  echo -e "${YELLOW}⚠️  Found $WARNINGS jobs without timeout-minutes${NC}"
-  echo "Add: timeout-minutes: 15  (adjust as needed)"
+  echo -e "${RED}❌ BLOCKING ERROR: Found $WARNINGS jobs without timeout-minutes${NC}"
+  echo "ZERO TOLERANCE: All jobs MUST have explicit timeout-minutes"
+  echo "Add: timeout-minutes: 15  (adjust as needed for your jobs)"
+  echo ""
+  echo "Why? Hanging jobs exhaust resources and block workflows for all developers."
+  exit 1
 fi
 
-echo -e "${GREEN}✅ LEVEL 6 PASSED: Resource limits check complete${NC}"
+echo -e "${GREEN}✅ LEVEL 6 PASSED: All jobs have timeout-minutes configured${NC}"
 exit 0

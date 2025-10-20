@@ -46,5 +46,12 @@ for file in "$WORKFLOW_DIR"/*.yml; do
 done
 
 echo ""
-echo -e "${GREEN}✅ LEVEL 7 PASSED: Path filters validation complete${NC}"
+if [ $WARNINGS -gt 0 ]; then
+  echo -e "${RED}❌ BLOCKING ERROR: Found $WARNINGS invalid path filters${NC}"
+  echo "ZERO TOLERANCE: All path filters MUST reference existing directories"
+  echo "Invalid paths prevent workflow triggers from ever firing."
+  exit 1
+fi
+
+echo -e "${GREEN}✅ LEVEL 7 PASSED: All path filters reference valid locations${NC}"
 exit 0
