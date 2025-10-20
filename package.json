@@ -41,6 +41,7 @@
     "sentry:sourcemaps": "sentry-cli sourcemaps upload --release=$npm_package_version dist",
     "sentry:finalize": "sentry-cli releases finalize $npm_package_version",
     "setup:actionlint": "bash ./.claude/scripts/setup-actionlint.sh",
+    "setup:act": "bash ./.claude/scripts/setup-act.sh",
     "clean": "pnpm --recursive clean && rm -rf node_modules",
     "db:migrate": "pnpm --filter @money-wise/backend db:migrate",
     "db:seed": "pnpm --filter @money-wise/backend db:seed",

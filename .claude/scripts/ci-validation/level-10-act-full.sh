@@ -12,7 +12,13 @@ NC='\033[0m'
 echo -e "${YELLOW}🔍 LEVEL 10: Full GitHub Actions Local Test (act) - MANDATORY${NC}"
 echo ""
 
-if ! command -v act &> /dev/null; then
+# Determine act path - check local first, then system
+ACT_PATH=""
+if [ -f "./.claude/tools/act" ]; then
+  ACT_PATH="./.claude/tools/act"
+elif command -v act &> /dev/null; then
+  ACT_PATH="act"
+else
   echo -e "${RED}❌ act not installed - REQUIRED for pre-push validation${NC}"
   echo "Install using one of these methods:"
   echo "  • Automatic: pnpm setup:act"
@@ -36,7 +42,7 @@ echo "(Full E2E tests skipped to save time)"
 echo ""
 
 # Run just foundation and basic validation jobs
-act pull_request \
+"$ACT_PATH" pull_request \
   -W .github/workflows/ci-cd.yml \
   -j foundation \
   --pull=false \
@@ -49,6 +55,6 @@ if [ $? -eq 0 ]; then
 else
   echo ""
   echo -e "${RED}❌ Local workflow execution failed${NC}"
-  echo "For full details: act pull_request -W .github/workflows/ci-cd.yml --verbose"
+  echo "For full details: $ACT_PATH pull_request -W .github/workflows/ci-cd.yml --verbose"
   exit 1  # MANDATORY - block if execution fails
 fi

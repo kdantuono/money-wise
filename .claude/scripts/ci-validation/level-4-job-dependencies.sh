@@ -1,21 +1,32 @@
 #!/bin/bash
 # Level 4: Job Dependency Graph Validation
 # Checks that all job dependencies reference existing jobs
+#
+# Phase 1 Enhancement:
+#   ✅ Exit-code based validation (SWE-Factory)
+#   ✅ TRAIL error taxonomy (LOGIC type)
+#   ✅ Trace collection for diagnostics
+#   ✅ Standardized reporting functions
 
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m'
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+source "$SCRIPT_DIR/validation-core.sh"
+
+# Initialize tracing
+init_trace_collection 4
 
 echo -e "${YELLOW}🔍 LEVEL 4: Job Dependency Graph Validation${NC}"
 echo ""
 
 WORKFLOW_DIR=".github/workflows"
-FAILED=0
+ERRORS=0
+
+# Start timing this level
+TIMER_START=$(start_timer)
 
 for file in "$WORKFLOW_DIR"/*.yml; do
   if [ -f "$file" ]; then
     filename=$(basename "$file")
+    display_path=$(get_display_path "$file")
 
     # Extract job names from jobs: section
     JOB_NAMES=$(grep -E "^  [a-zA-Z0-9_-]+:" "$file" | grep -v "outputs:" | sed 's/^  \([^:]*\):.*/\1/' | sort -u)
@@ -43,9 +54,16 @@ for file in "$WORKFLOW_DIR"/*.yml; do
             need_clean=$(echo "$need" | sed "s/'//g" | sed 's/"//g' | tr -d '[:space:]')
 
             if [ -n "$need_clean" ] && ! echo "$JOB_NAMES" | grep -q "^$need_clean$"; then
-              echo -e "${RED}❌ In $filename:${NC}"
-              echo "   Job '$job' needs '$need_clean' which doesn't exist"
-              FAILED=1
+              echo -e "${RED}❌ LOGIC ERROR: In $filename:${NC}"
+              echo -e "${RED}   Job '$job' needs '$need_clean' which doesn't exist${NC}"
+              echo -e "${RED}   Available jobs: $(echo "$JOB_NAMES" | tr '\n' ',' | sed 's/,/, /g')${NC}"
+
+              record_trace 4 "missing-dependency" "blocking" "L" \
+                "$display_path" "jobs.$job" \
+                "Job dependency references non-existent job: $need_clean" \
+                "Use one of existing jobs: $(echo "$JOB_NAMES" | tr '\n' ', ')"
+
+              ERRORS=$((ERRORS + 1))
             fi
           done
         fi
@@ -55,10 +73,15 @@ for file in "$WORKFLOW_DIR"/*.yml; do
 done
 
 echo ""
-if [ $FAILED -eq 1 ]; then
-  echo -e "${RED}❌ LEVEL 4 FAILED: Fix job dependency issues${NC}"
-  exit 1
+
+# End timing
+TIMER_END=$(end_timer $TIMER_START)
+
+if [ $ERRORS -gt 0 ]; then
+  report_blocking 4 "Found $ERRORS invalid job dependency reference(s)" \
+    "Update dependencies to reference existing jobs"
+  exit $EXIT_BLOCKING
 fi
 
-echo -e "${GREEN}✅ LEVEL 4 PASSED: All job dependencies are valid${NC}"
-exit 0
+report_success 4 "All job dependencies are valid"
+exit $EXIT_SUCCESS

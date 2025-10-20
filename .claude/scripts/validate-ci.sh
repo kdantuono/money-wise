@@ -34,8 +34,9 @@ PASSED=0
 FAILED=0
 SKIPPED=0
 
-# Run each validation level
-for level in $(seq 1 $LEVELS); do
+# Run standard validation levels (1-8 only)
+# Levels 9-10 are handled separately with Docker/act requirements
+for level in $(seq 1 8); do
   SCRIPT=$(ls "$VALIDATION_DIR"/level-$level-*.sh 2>/dev/null | head -1)
 
   if [ -f "$SCRIPT" ]; then
