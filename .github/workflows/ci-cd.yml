@@ -139,26 +139,32 @@ jobs:
           echo "🔍 Repository Health Validation..."
           HEALTH_SCORE=0
 
+          echo "DEBUG: Checking CLAUDE.md..."
           if [[ -f "CLAUDE.md" ]]; then
             echo "✅ CLAUDE.md found"
             HEALTH_SCORE=$((HEALTH_SCORE + 1))
           else
             echo "❌ CLAUDE.md missing"
           fi
+          echo "DEBUG: HEALTH_SCORE=$HEALTH_SCORE"
 
+          echo "DEBUG: Checking .claude..."
           if [[ -d ".claude" ]]; then
             echo "✅ .claude directory found"
             HEALTH_SCORE=$((HEALTH_SCORE + 1))
           else
             echo "❌ .claude directory missing"
           fi
+          echo "DEBUG: HEALTH_SCORE=$HEALTH_SCORE"
 
+          echo "DEBUG: Checking docs..."
           if [[ -d "docs" && -n "$(ls -A docs 2>/dev/null)" ]]; then
             echo "✅ Documentation directory found"
             HEALTH_SCORE=$((HEALTH_SCORE + 1))
           else
             echo "⚠️ Documentation directory empty or missing"
           fi
+          echo "DEBUG: HEALTH_SCORE=$HEALTH_SCORE"
 
           echo "📊 Repository Health Score: $HEALTH_SCORE/3"
 
