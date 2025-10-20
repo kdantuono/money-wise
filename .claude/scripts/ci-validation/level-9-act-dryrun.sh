@@ -11,7 +11,13 @@ NC='\033[0m'
 echo -e "${YELLOW}🔍 LEVEL 9: GitHub Actions Dry-Run (act) - MANDATORY${NC}"
 echo ""
 
-if ! command -v act &> /dev/null; then
+# Determine act path - check local first, then system
+ACT_PATH=""
+if [ -f "./.claude/tools/act" ]; then
+  ACT_PATH="./.claude/tools/act"
+elif command -v act &> /dev/null; then
+  ACT_PATH="act"
+else
   echo -e "${RED}❌ act not installed - REQUIRED for pre-push validation${NC}"
   echo "Install using one of these methods:"
   echo "  • Automatic: pnpm setup:act"
@@ -29,7 +35,7 @@ if ! docker ps &> /dev/null; then
 fi
 
 echo "Running dry-run for main workflow..."
-act pull_request --list -W .github/workflows/ci-cd.yml
+"$ACT_PATH" pull_request --list -W .github/workflows/ci-cd.yml
 
 echo ""
 echo -e "${GREEN}✅ LEVEL 9 PASSED: Act dry-run validation complete${NC}"
