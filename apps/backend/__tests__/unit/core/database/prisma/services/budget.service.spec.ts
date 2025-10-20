@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '@/core/database/prisma/prisma.service';
 import { BudgetService } from '@/core/database/prisma/services/budget.service';
-import { BudgetPeriod, BudgetStatus } from '../../../../../../generated/prisma';
+import { BudgetPeriod, BudgetStatus, Prisma } from '../../../../../../generated/prisma';
 import {
   BadRequestException,
   NotFoundException,
@@ -1170,7 +1170,12 @@ describe('PrismaBudgetService', () => {
         name: 'Updated Name',
       };
 
-      jest.spyOn(prisma.budget, 'update').mockRejectedValue({ code: 'P2025' });
+      jest.spyOn(prisma.budget, 'update').mockRejectedValue(
+        new Prisma.PrismaClientKnownRequestError('Record not found', {
+          code: 'P2025',
+          clientVersion: '5.0.0',
+        }),
+      );
 
       await expect(service.update(mockBudgetId, updateDto)).rejects.toThrow(
         NotFoundException,
@@ -1245,7 +1250,12 @@ describe('PrismaBudgetService', () => {
     });
 
     it('should throw NotFoundException for non-existent budget', async () => {
-      jest.spyOn(prisma.budget, 'delete').mockRejectedValue({ code: 'P2025' });
+      jest.spyOn(prisma.budget, 'delete').mockRejectedValue(
+        new Prisma.PrismaClientKnownRequestError('Record not found', {
+          code: 'P2025',
+          clientVersion: '5.0.0',
+        }),
+      );
 
       await expect(service.delete(mockBudgetId)).rejects.toThrow(NotFoundException);
     });

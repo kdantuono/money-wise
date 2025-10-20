@@ -130,6 +130,149 @@ gh run watch [run-id]                     # Wait for completion
 3. **NO FALSE CLAIMS**: Never report success without actual pipeline verification
 4. **BLOCKING REQUIREMENT**: Failed CI/CD blocks ALL development work
 
+## 🔒 STRICT WORKFLOW DISCIPLINE
+
+### Pre-Push Validation (MANDATORY)
+
+**BEFORE ANY GIT PUSH, EXECUTE:**
+
+```bash
+# Run comprehensive local validation (levels 1-10)
+./.claude/scripts/validate-ci.sh 10
+
+# Result must be:
+# ✅ ALL 10 LEVELS PASSED before push is allowed
+# ✅ All ZERO TOLERANCE checks green
+# ✅ Local workflow simulation successful (act)
+```
+
+**Levels Breakdown:**
+- **Levels 1-8**: Blocking pre-push checks (linting, types, tests, integration)
+- **Levels 9-10**: Mandatory workflow simulation (requires Docker + act installed)
+  - Level 9: Dry-run (parse workflows, verify syntax)
+  - Level 10: Full execution (run foundation job locally)
+
+**Installation Check:**
+```bash
+# Verify act is installed (required for levels 9-10)
+command -v act &> /dev/null || pnpm setup:act
+
+# Verify Docker is running
+docker ps > /dev/null || (echo "Start Docker and try again" && exit 1)
+```
+
+### ZERO TOLERANCE Enforcement
+
+**Three-Tier Validation System:**
+
+1. **Pre-Commit Hook** (automatic)
+   - Linting + type checking on staged files
+   - Fails commit if violations found
+   - Cannot be bypassed with `--no-verify`
+
+2. **Pre-Push Validation** (automatic)
+   - Runs `./.claude/scripts/validate-ci.sh 10`
+   - All 10 levels must pass
+   - Git hook blocks push if any level fails
+   - Manual override: `./.claude/scripts/validate-ci.sh 10` then `git push --force-with-lease` (use sparingly)
+
+3. **GitHub Actions** (automatic on push)
+   - CI/CD Pipeline runs all workflows
+   - All status checks must pass before merge allowed
+   - Branch protection prevents merge if any check fails
+   - Pull request review required (1+ reviewers)
+
+### Branch Protection Compliance
+
+**Protected Branches:** main, develop, gh-pages, safety/*
+
+**Merge Requirements:**
+- ✅ All status checks passing
+- ✅ 1+ pull request approvals
+- ✅ Branch up-to-date with base branch
+- ✅ Code owners approval (if applicable)
+- ✅ No stale approvals (auto-dismissed on new commits)
+
+**Key Rules:**
+- ❌ NO direct commits to protected branches
+- ❌ NO force pushes allowed on protected branches
+- ❌ NO merging without PR review and green CI/CD
+- ✅ Emergency hotfixes use `safety/` branches (still require PR + validation)
+
+**See:** `.github/BRANCH_PROTECTION.md` for complete rules
+
+### Commit Quality Standards
+
+**Commit Messages:**
+```
+type(scope): description
+
+Details explaining why this change was made (if needed).
+
+References: #issue-number (if applicable)
+```
+
+**Types:** fix, feat, refactor, test, docs, chore, ci, perf, style
+
+**Atomic Commits:**
+- One logical change per commit
+- Commit only related files
+- Each commit should pass validation independently
+- Avoid bundling unrelated changes
+
+**Pre-Commit Checklist:**
+- [ ] Code follows project style guide
+- [ ] All tests pass locally
+- [ ] Types check with no errors
+- [ ] Linting passes
+- [ ] No console logs or debug code
+- [ ] Commit message is clear and descriptive
+
+### Session Discipline
+
+**Start of Session:**
+```bash
+# 1. Restore previous work
+/resume-work
+
+# 2. Verify environment
+./.claude/scripts/init-session.sh
+
+# 3. Check branch status
+git status
+git branch --show-current  # Should NOT be 'main'
+
+# 4. Pull latest from develop
+git pull origin develop
+```
+
+**End of Session (Before Push):**
+```bash
+# 1. Review changes
+git diff
+
+# 2. Run comprehensive validation
+./.claude/scripts/validate-ci.sh 10
+
+# 3. Only after ALL levels pass:
+git push origin [branch]
+
+# 4. Watch CI/CD
+gh run watch $(gh run list --branch [branch] -L1 --json number -q)
+
+# 5. Verify completion
+gh run view [run-id] --json conclusion
+```
+
+**Session Suspension (Mid-Work):**
+```bash
+# Save incomplete work
+git stash  # or create WIP commit if preferred
+
+# Your todos are auto-saved in .claude/todos/
+# Next session: /resume-work will restore everything
+```
+
 ## 📊 Project Context
 
 **Application**: MoneyWise Personal Finance

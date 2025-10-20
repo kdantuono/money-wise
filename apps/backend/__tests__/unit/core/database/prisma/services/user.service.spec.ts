@@ -19,6 +19,7 @@
 
 import { Test, TestingModule } from '@nestjs/testing';
 import type { PrismaClient, User, Family, Account, UserAchievement, UserRole, UserStatus } from '../../../../../../generated/prisma';
+import { Prisma } from '../../../../../../generated/prisma';
 import { DeepMockProxy, mockDeep, mockReset } from 'jest-mock-extended';
 import { PrismaService } from '../../../../../../src/core/database/prisma/prisma.service';
 import { PrismaUserService } from '../../../../../../src/core/database/prisma/services/user.service';
@@ -2083,16 +2084,14 @@ describe('PrismaUserService', () => {
 
     it('should reject duplicate email', async () => {
       // Arrange
-      const error = Object.assign(
-        new Error('Unique constraint failed on the fields: (`email`)'),
+      const error = new Prisma.PrismaClientKnownRequestError(
+        'Unique constraint failed on the fields: (`email`)',
         {
           code: 'P2002',
           clientVersion: '5.0.0',
           meta: { target: ['email'] },
         }
       );
-      // Make it look like a PrismaClientKnownRequestError
-      Object.setPrototypeOf(error, Error.prototype);
       prisma.user.create.mockRejectedValue(error);
 
       // Act & Assert

@@ -8,6 +8,7 @@ import {
 import { PrismaService } from '../prisma.service';
 import { Prisma, TransactionType } from '../../../../../generated/prisma';
 import { Decimal } from '@prisma/client/runtime/library';
+import { TransactionCreateDto } from './types';
 
 /**
  * Transaction Service - Prisma Implementation
@@ -39,29 +40,40 @@ export class TransactionService {
   /**
    * Create a new transaction
    *
-   * @param data - Transaction creation data
+   * @param data - Transaction creation data with proper typing
    * @returns Created transaction
    * @throws BadRequestException - Invalid UUID or negative amount
    * @throws ConflictException - Duplicate plaidTransactionId
+   *
+   * @architectural-decision
+   * TransactionCreateDto uses simple ID fields (accountId, categoryId) instead of
+   * Prisma's nested connect structures for cleaner API layer interface
    */
-  async create(data: any) {
+  async create(data: TransactionCreateDto) {
     // Validate UUIDs
-    if (data.accountId) {
-      this.validateUuid(data.accountId);
-    }
+    this.validateUuid(data.accountId);
     if (data.categoryId) {
       this.validateUuid(data.categoryId);
     }
 
+    // Convert amount to Decimal if it's a number
+    const amount = typeof data.amount === 'number'
+      ? new Decimal(data.amount)
+      : data.amount;
+
     // Validate amount is positive (architectural decision: store absolute values)
-    if (data.amount && new Decimal(data.amount.toString()).lessThan(0)) {
+    if (amount && new Decimal(amount.toString()).lessThan(0)) {
       throw new BadRequestException('Amount must be a positive value');
     }
 
     // Transform accountId/categoryId to Prisma nested structure
-    const { accountId, categoryId, ...rest } = data;
+    const { accountId, categoryId, type, status, source, ...rest } = data;
     const prismaData: Prisma.TransactionCreateInput = {
       ...rest,
+      amount,
+      type: type as any, // Cast from string to enum
+      status: status as any, // Cast from string to enum (if provided)
+      source: (source || 'MANUAL') as any, // Default to MANUAL if not provided, cast to enum
       account: {
         connect: { id: accountId },
       },
@@ -357,21 +369,23 @@ export class TransactionService {
    * @throws InternalServerErrorException - Unexpected errors
    * @private
    */
-  private handlePrismaError(error: any): never {
-    if (error.code === 'P2002') {
-      // Unique constraint violation
-      const target = error.meta?.target || 'field';
-      throw new ConflictException(`Transaction with this ${target} already exists`);
-    }
+  private handlePrismaError(error: unknown): never {
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      if (error.code === 'P2002') {
+        // Unique constraint violation
+        const target = error.meta?.target || 'field';
+        throw new ConflictException(`Transaction with this ${target} already exists`);
+      }
 
-    if (error.code === 'P2025') {
-      // Record not found
-      throw new NotFoundException('Transaction not found');
-    }
+      if (error.code === 'P2025') {
+        // Record not found
+        throw new NotFoundException('Transaction not found');
+      }
 
-    if (error.code === 'P2003') {
-      // Foreign key constraint failed
-      throw new BadRequestException('Invalid account or category ID');
+      if (error.code === 'P2003') {
+        // Foreign key constraint failed
+        throw new BadRequestException('Invalid account or category ID');
+      }
     }
 
     // Unexpected error

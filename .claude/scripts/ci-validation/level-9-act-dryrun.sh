@@ -8,27 +8,29 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
-echo -e "${YELLOW}🔍 LEVEL 9: GitHub Actions Dry-Run (act)${NC}"
+echo -e "${YELLOW}🔍 LEVEL 9: GitHub Actions Dry-Run (act) - MANDATORY${NC}"
 echo ""
 
 if ! command -v act &> /dev/null; then
-  echo -e "${YELLOW}⚠️  act not installed - skipping dry-run${NC}"
-  echo "Install: curl -s https://raw.githubusercontent.com/nektos/act/master/install.sh | bash"
-  echo "Or: brew install act"
+  echo -e "${RED}❌ act not installed - REQUIRED for pre-push validation${NC}"
+  echo "Install using one of these methods:"
+  echo "  • Automatic: pnpm setup:act"
+  echo "  • Manual: curl -s https://raw.githubusercontent.com/nektos/act/master/install.sh | bash"
+  echo "  • Homebrew: brew install act"
   echo ""
-  echo -e "${BLUE}ℹ️  This is optional for pre-push validation${NC}"
-  exit 0  # Not blocking
+  echo -e "${RED}BLOCKING: act is mandatory for local workflow simulation${NC}"
+  exit 1  # MANDATORY - block if not installed
 fi
 
 if ! docker ps &> /dev/null; then
-  echo -e "${YELLOW}⚠️  Docker not running - skipping act dry-run${NC}"
-  echo "Start Docker and try again."
-  exit 0  # Not blocking
+  echo -e "${RED}❌ Docker not running - REQUIRED for act simulation${NC}"
+  echo "Start Docker daemon and try again."
+  exit 1  # MANDATORY - block if Docker not running
 fi
 
 echo "Running dry-run for main workflow..."
 act pull_request --list -W .github/workflows/ci-cd.yml
 
 echo ""
-echo -e "${GREEN}✅ LEVEL 9: Act dry-run ready (execution optional)${NC}"
+echo -e "${GREEN}✅ LEVEL 9 PASSED: Act dry-run validation complete${NC}"
 exit 0

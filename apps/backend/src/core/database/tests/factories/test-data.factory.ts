@@ -307,12 +307,14 @@ export class CategoryFactory extends BaseFactory<Category> {
     };
 
     // Apply overrides last (except parent/parentId which are handled in build())
-    Object.keys(overrides).forEach(key => {
-      if (key !== 'parent' && key !== 'parentId') {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (category as any)[key] = overrides[key as keyof Category];
-      }
-    });
+    const safeOverrides = Object.entries(overrides)
+      .filter(([key]) => key !== 'parent' && key !== 'parentId')
+      .reduce((acc, [key, value]) => {
+        acc[key] = value;
+        return acc;
+      }, {} as Partial<Category>);
+
+    Object.assign(category, safeOverrides);
 
     return category;
   }

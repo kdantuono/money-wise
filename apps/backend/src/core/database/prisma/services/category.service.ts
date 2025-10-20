@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { Category, CategoryType, CategoryStatus, Prisma } from '../../../../../generated/prisma';
+import { CategoryWithRelations, CategoryWithOptionalRelations } from './types';
 
 /**
  * CategoryService - Prisma-based category management
@@ -187,17 +188,19 @@ export class CategoryService {
       return await this.prisma.category.create({
         data,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Handle Prisma errors
-      if (error.code === 'P2002') {
-        // Unique constraint violation (slug)
-        throw new ConflictException(
-          `Category with slug '${createCategoryDto.slug}' already exists for this family`
-        );
-      }
-      if (error.code === 'P2003') {
-        // Foreign key constraint violation
-        throw new BadRequestException('Invalid familyId or parentId - referenced entity does not exist');
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (error.code === 'P2002') {
+          // Unique constraint violation (slug)
+          throw new ConflictException(
+            `Category with slug '${createCategoryDto.slug}' already exists for this family`
+          );
+        }
+        if (error.code === 'P2003') {
+          // Foreign key constraint violation
+          throw new BadRequestException('Invalid familyId or parentId - referenced entity does not exist');
+        }
       }
       throw error;
     }
@@ -237,7 +240,7 @@ export class CategoryService {
    * @returns Category with relations or null
    * @throws BadRequestException - Invalid UUID format
    */
-  async findOneWithRelations(id: string): Promise<any> {
+  async findOneWithRelations(id: string): Promise<CategoryWithRelations | null> {
     this.validateUuid(id);
 
     return await this.prisma.category.findUnique({
@@ -269,7 +272,7 @@ export class CategoryService {
    *
    * @param familyId - Family UUID
    * @param options - Query options
-   * @returns Array of categories
+   * @returns Array of categories (with or without relations based on include option)
    * @throws BadRequestException - Invalid UUID format
    */
   async findByFamilyId(
@@ -288,7 +291,7 @@ export class CategoryService {
         children?: boolean;
       };
     }
-  ): Promise<any[]> {
+  ): Promise<Category[] | CategoryWithOptionalRelations[]> {
     this.validateUuid(familyId);
 
     const {
@@ -353,7 +356,7 @@ export class CategoryService {
    *
    * @param parentId - Parent category UUID
    * @param options - Optional include for nested children
-   * @returns Array of child categories
+   * @returns Array of child categories (with or without relations based on include option)
    * @throws BadRequestException - Invalid UUID format
    */
   async findChildren(
@@ -363,7 +366,7 @@ export class CategoryService {
         children?: boolean;
       };
     }
-  ): Promise<any[]> {
+  ): Promise<Category[] | CategoryWithOptionalRelations[]> {
     this.validateUuid(parentId);
 
     return await this.prisma.category.findMany({
@@ -411,8 +414,8 @@ export class CategoryService {
       icon: string;
       status: CategoryStatus;
       parentId: string;
-      rules: any;
-      metadata: any;
+      rules: Prisma.JsonValue;
+      metadata: Prisma.JsonValue;
       sortOrder: number;
     }>
   ): Promise<Category> {
@@ -447,16 +450,18 @@ export class CategoryService {
         where: { id },
         data,
       });
-    } catch (error: any) {
-      if (error.code === 'P2002') {
-        // Unique constraint violation (slug)
-        throw new ConflictException(
-          `Category with slug '${updateCategoryDto.slug}' already exists for this family`
-        );
-      }
-      if (error.code === 'P2025') {
-        // Record not found
-        throw new NotFoundException('Category not found');
+    } catch (error: unknown) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (error.code === 'P2002') {
+          // Unique constraint violation (slug)
+          throw new ConflictException(
+            `Category with slug '${updateCategoryDto.slug}' already exists for this family`
+          );
+        }
+        if (error.code === 'P2025') {
+          // Record not found
+          throw new NotFoundException('Category not found');
+        }
       }
       throw error;
     }
@@ -503,9 +508,11 @@ export class CategoryService {
       return await this.prisma.category.delete({
         where: { id },
       });
-    } catch (error: any) {
-      if (error.code === 'P2025') {
-        throw new NotFoundException('Category not found');
+    } catch (error: unknown) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (error.code === 'P2025') {
+          throw new NotFoundException('Category not found');
+        }
       }
       throw error;
     }

@@ -149,7 +149,7 @@ export class AuthSecurityService {
         lastName,
         passwordHash,
         familyId: family.id, // Link user to newly created family
-        status: UserStatus.INACTIVE as any, // Require email verification - cast to handle enum type
+        status: UserStatus.INACTIVE, // Require email verification
       });
 
       // Generate email verification token
@@ -684,7 +684,7 @@ export class AuthSecurityService {
 
     // Enrich user with virtual properties (fullName, isEmailVerified, isActive)
     // MIGRATION: TypeORM virtual properties (getters) → Prisma utility function
-    const enrichedUser = enrichUserWithVirtuals(user as any);
+    const enrichedUser = enrichUserWithVirtuals(user);
 
     // Create user object without password and include virtual properties
     const userWithoutPassword = {
@@ -700,6 +700,7 @@ export class AuthSecurityService {
       preferences: enrichedUser.preferences,
       lastLoginAt: enrichedUser.lastLoginAt,
       emailVerifiedAt: enrichedUser.emailVerifiedAt,
+      familyId: enrichedUser.familyId,
       createdAt: enrichedUser.createdAt,
       updatedAt: enrichedUser.updatedAt,
       accounts: [], // Default empty - not loaded by default for performance
@@ -712,7 +713,7 @@ export class AuthSecurityService {
     return {
       accessToken,
       refreshToken,
-      user: userWithoutPassword as any, // Type cast to handle enum differences between TypeORM and Prisma
+      user: userWithoutPassword,
       expiresIn: 15 * 60, // 15 minutes in seconds
     };
   }

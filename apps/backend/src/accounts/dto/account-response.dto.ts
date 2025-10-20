@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { AccountType, AccountStatus, AccountSource } from '../../../generated/prisma';
+import { AccountSettings } from '../../core/database/types/metadata.types';
 
 export class AccountResponseDto {
   @ApiProperty({ description: 'Account ID', example: '123e4567-e89b-12d3-a456-426614174000' })
@@ -63,7 +64,7 @@ export class AccountResponseDto {
   syncError?: string;
 
   @ApiProperty({ description: 'Account settings', required: false })
-  settings?: any;
+  settings?: AccountSettings;
 
   @ApiProperty({ description: 'Account creation timestamp' })
   createdAt: Date;

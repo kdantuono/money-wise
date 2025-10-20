@@ -16,7 +16,7 @@ NC='\033[0m'
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 VALIDATION_DIR="$SCRIPT_DIR/ci-validation"
 
-LEVELS=${1:-8}  # Default: run levels 1-8 (pre-push validation)
+LEVELS=${1:-10}  # Default: run levels 1-10 (MANDATORY comprehensive validation)
 MODE=${2:-pre-push}
 
 # Make all scripts executable
@@ -58,9 +58,52 @@ for level in $(seq 1 $LEVELS); do
   echo ""
 done
 
-# Optional: Run level 9 (act dry-run) if act is available
-if command -v act &> /dev/null && [ "$LEVELS" -gt 8 ]; then
-  bash "$VALIDATION_DIR/level-9-act-dryrun.sh" || true
+# MANDATORY: Run levels 9-10 (act dry-run + comprehensive testing)
+# These are NO LONGER OPTIONAL - they are required for ZERO TOLERANCE
+if [ "$LEVELS" -gt 8 ]; then
+  echo -e "${YELLOW}🔍 LEVEL 9: GitHub Actions Dry-Run (act) - MANDATORY${NC}"
+  echo ""
+
+  # Check local act first, then system act
+  ACT_BIN="${SCRIPT_DIR}/../../bin/act"
+  if [ ! -f "$ACT_BIN" ]; then
+    ACT_BIN=$(command -v act 2>/dev/null || echo "")
+  fi
+
+  if [ -z "$ACT_BIN" ] || [ ! -f "$ACT_BIN" ]; then
+    echo -e "${RED}❌ BLOCKING: act is MANDATORY but not found${NC}"
+    echo ""
+    echo "Install act using:"
+    echo "  curl -s https://raw.githubusercontent.com/nektos/act/master/install.sh | bash"
+    echo ""
+    exit 1
+  fi
+
+  if ! bash "$VALIDATION_DIR/level-9-act-dryrun.sh"; then
+    echo ""
+    echo -e "${RED}❌ Validation failed at LEVEL 9 (MANDATORY)${NC}"
+    exit 1
+  fi
+  PASSED=$((PASSED + 1))
+  echo ""
+fi
+
+# Level 10: Comprehensive act full workflow validation
+if [ "$LEVELS" -gt 9 ]; then
+  echo -e "${YELLOW}🔍 LEVEL 10: Full Workflow Simulation (act full) - MANDATORY${NC}"
+  echo ""
+
+  if [ -f "$VALIDATION_DIR/level-10-act-full.sh" ]; then
+    if ! bash "$VALIDATION_DIR/level-10-act-full.sh"; then
+      echo ""
+      echo -e "${RED}❌ Validation failed at LEVEL 10 (MANDATORY)${NC}"
+      exit 1
+    fi
+    PASSED=$((PASSED + 1))
+  else
+    echo -e "${YELLOW}⚠️  Level 10 script not found, skipping${NC}"
+    SKIPPED=$((SKIPPED + 1))
+  fi
   echo ""
 fi
 

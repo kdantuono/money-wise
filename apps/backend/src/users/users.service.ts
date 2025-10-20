@@ -4,6 +4,7 @@ import { UpdateUserDto, UpdateUserStatusDto } from './dto/update-user.dto';
 import { UserResponseDto, PaginatedUsersResponseDto } from './dto/user-response.dto';
 import { PrismaUserService } from '../core/database/prisma/services/user.service';
 import { enrichUserWithVirtuals } from '../core/database/prisma/utils/user-virtuals';
+import { UserPreferences } from '../core/database/types/metadata.types';
 
 @Injectable()
 export class UsersService {
@@ -49,7 +50,7 @@ export class UsersService {
 
   async update(id: string, updateUserDto: UpdateUserDto, requestingUserId: string, requestingUserRole: UserRole): Promise<UserResponseDto> {
     // Authorization: users can update their own data, admins can update anyone
-    if (id !== requestingUserId && requestingUserRole as any !== 'ADMIN') {
+    if (id !== requestingUserId && requestingUserRole !== UserRole.ADMIN) {
       throw new ForbiddenException('You can only update your own profile');
     }
 
@@ -74,7 +75,7 @@ export class UsersService {
 
   async updateStatus(id: string, updateStatusDto: UpdateUserStatusDto, requestingUserRole: UserRole): Promise<UserResponseDto> {
     // Only admins can change user status
-    if (requestingUserRole as any !== 'ADMIN') {
+    if (requestingUserRole !== UserRole.ADMIN) {
       throw new ForbiddenException('Only administrators can change user status');
     }
 
@@ -85,7 +86,7 @@ export class UsersService {
     }
 
     const updatedUser = await this.prismaUserService.update(id, {
-      status: updateStatusDto.status as any, // Type cast to handle enum mismatch
+      status: updateStatusDto.status,
     });
 
     return this.toResponseDto(enrichUserWithVirtuals(updatedUser));
@@ -93,7 +94,7 @@ export class UsersService {
 
   async remove(id: string, requestingUserRole: UserRole): Promise<void> {
     // Only admins can delete users
-    if (requestingUserRole as any !== 'ADMIN') {
+    if (requestingUserRole !== UserRole.ADMIN) {
       throw new ForbiddenException('Only administrators can delete users');
     }
 
@@ -117,12 +118,12 @@ export class UsersService {
       firstName: user.firstName,
       lastName: user.lastName,
       fullName: user.fullName,
-      role: user.role as any, // Type cast to handle enum mismatch
-      status: user.status as any, // Type cast to handle enum mismatch
+      role: user.role,
+      status: user.status,
       avatar: user.avatar,
       timezone: user.timezone,
       currency: user.currency,
-      preferences: user.preferences as Record<string, any> | null,
+      preferences: user.preferences as UserPreferences | null,
       lastLoginAt: user.lastLoginAt,
       emailVerifiedAt: user.emailVerifiedAt,
       isEmailVerified: user.isEmailVerified,

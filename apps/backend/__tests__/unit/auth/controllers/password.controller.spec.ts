@@ -771,8 +771,7 @@ describe('PasswordController', () => {
       const mockResult = { success: true, message: 'Reset email sent' };
       const requestWithConnection = {
         headers: { 'user-agent': 'test-agent' },
-        connection: { remoteAddress: '172.16.0.1' },
-        socket: {},
+        socket: { remoteAddress: '172.16.0.1' },
       } as any;
 
       jest.spyOn(passwordResetService, 'requestPasswordReset').mockResolvedValue(mockResult);

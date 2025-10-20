@@ -26,7 +26,8 @@ import { UpdateTransactionDto } from './dto/update-transaction.dto';
 import { TransactionResponseDto } from './dto/transaction-response.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { User, TransactionType } from '../../generated/prisma';
+import { CurrentUserPayload } from '../auth/types/current-user.types';
+import { TransactionType } from '../../generated/prisma';
 
 /**
  * Transactions REST API Controller
@@ -64,9 +65,9 @@ export class TransactionsController {
   })
   async create(
     @Body() createTransactionDto: CreateTransactionDto,
-    @CurrentUser() user: User,
+    @CurrentUser() user: CurrentUserPayload,
   ): Promise<TransactionResponseDto> {
-    return this.transactionsService.create(createTransactionDto, user.id, user.role as any);
+    return this.transactionsService.create(createTransactionDto, user.id, user.role);
   }
 
   @Get()
@@ -86,14 +87,14 @@ export class TransactionsController {
     description: 'Unauthorized - invalid or missing token',
   })
   async findAll(
-    @CurrentUser() user: User,
+    @CurrentUser() user: CurrentUserPayload,
     @Query('accountId') accountId?: string,
     @Query('type') type?: TransactionType,
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
     @Query('search') search?: string,
   ): Promise<TransactionResponseDto[]> {
-    return this.transactionsService.findAll(user.id, user.role as any, {
+    return this.transactionsService.findAll(user.id, user.role, {
       accountId,
       type,
       startDate,
@@ -124,9 +125,9 @@ export class TransactionsController {
   })
   async findOne(
     @Param('id', ParseUUIDPipe) id: string,
-    @CurrentUser() user: User,
+    @CurrentUser() user: CurrentUserPayload,
   ): Promise<TransactionResponseDto> {
-    return this.transactionsService.findOne(id, user.id, user.role as any);
+    return this.transactionsService.findOne(id, user.id, user.role);
   }
 
   @Patch(':id')
@@ -148,9 +149,9 @@ export class TransactionsController {
   async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateTransactionDto: UpdateTransactionDto,
-    @CurrentUser() user: User,
+    @CurrentUser() user: CurrentUserPayload,
   ): Promise<TransactionResponseDto> {
-    return this.transactionsService.update(id, updateTransactionDto, user.id, user.role as any);
+    return this.transactionsService.update(id, updateTransactionDto, user.id, user.role);
   }
 
   @Delete(':id')
@@ -171,8 +172,8 @@ export class TransactionsController {
   })
   async remove(
     @Param('id', ParseUUIDPipe) id: string,
-    @CurrentUser() user: User,
+    @CurrentUser() user: CurrentUserPayload,
   ): Promise<void> {
-    return this.transactionsService.remove(id, user.id, user.role as any);
+    return this.transactionsService.remove(id, user.id, user.role);
   }
 }

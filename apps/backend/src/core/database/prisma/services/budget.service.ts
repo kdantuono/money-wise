@@ -2,6 +2,7 @@ import { Injectable, BadRequestException, NotFoundException, ConflictException, 
 import { PrismaService } from '../prisma.service';
 import { Budget, Prisma, BudgetStatus, BudgetPeriod } from '../../../../../generated/prisma';
 import { Decimal } from '@prisma/client/runtime/library';
+import { BudgetWithRelations } from './types';
 
 /**
  * Data Transfer Object for creating a new Budget
@@ -215,7 +216,7 @@ export class BudgetService {
    * 3. Query optimization (Prisma can optimize eager loading)
    *
    * @param id - Budget UUID
-   * @returns Promise<Budget & { category: Category; family: Family } | null>
+   * @returns Promise<BudgetWithRelations | null> - Budget with category and family relations
    * @throws BadRequestException - Invalid UUID format
    *
    * @example
@@ -226,7 +227,7 @@ export class BudgetService {
    * }
    * ```
    */
-  async findOneWithRelations(id: string): Promise<any> {
+  async findOneWithRelations(id: string): Promise<BudgetWithRelations | null> {
     this.validateUuid(id);
 
     return this.prisma.budget.findUnique({
@@ -985,15 +986,17 @@ export class BudgetService {
    * }
    * ```
    */
-  private handlePrismaError(error: any): never {
-    if (error.code === 'P2002') {
-      throw new ConflictException('Budget with these parameters already exists');
-    }
-    if (error.code === 'P2003') {
-      throw new BadRequestException('Invalid family or category reference');
-    }
-    if (error.code === 'P2025') {
-      throw new NotFoundException('Budget not found');
+  private handlePrismaError(error: unknown): never {
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      if (error.code === 'P2002') {
+        throw new ConflictException('Budget with these parameters already exists');
+      }
+      if (error.code === 'P2003') {
+        throw new BadRequestException('Invalid family or category reference');
+      }
+      if (error.code === 'P2025') {
+        throw new NotFoundException('Budget not found');
+      }
     }
     throw new InternalServerErrorException('An error occurred while processing the budget');
   }

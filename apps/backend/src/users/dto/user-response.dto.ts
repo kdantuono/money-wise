@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { UserRole, UserStatus } from '../../../generated/prisma';
+import { UserPreferences } from '../../core/database/types/metadata.types';
 
 export class UserResponseDto {
   @ApiProperty({ description: 'User ID', example: '123e4567-e89b-12d3-a456-426614174000' })
@@ -33,16 +34,7 @@ export class UserResponseDto {
   currency: string;
 
   @ApiProperty({ description: 'User preferences', required: false })
-  preferences?: {
-    theme?: 'light' | 'dark' | 'auto';
-    language?: string;
-    notifications?: {
-      email?: boolean;
-      push?: boolean;
-      categories?: boolean;
-      budgets?: boolean;
-    };
-  };
+  preferences?: UserPreferences | null;
 
   @ApiProperty({ description: 'Last login timestamp', required: false })
   lastLoginAt?: Date;

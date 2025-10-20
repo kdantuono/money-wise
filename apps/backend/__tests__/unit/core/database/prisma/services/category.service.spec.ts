@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '@/core/database/prisma/prisma.service';
 import { CategoryService } from '@/core/database/prisma/services/category.service';
-import { CategoryType, CategoryStatus } from '../../../../../../generated/prisma';
+import { CategoryType, CategoryStatus, Prisma } from '../../../../../../generated/prisma';
 import {
   BadRequestException,
   NotFoundException,
@@ -282,10 +282,13 @@ describe('PrismaCategoryService', () => {
         familyId: mockFamilyId,
       };
 
-      jest.spyOn(prisma.category, 'create').mockRejectedValue({
-        code: 'P2002',
-        meta: { target: ['familyId', 'slug'] },
-      });
+      jest.spyOn(prisma.category, 'create').mockRejectedValue(
+        new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
+          code: 'P2002',
+          clientVersion: '5.0.0',
+          meta: { target: ['familyId', 'slug'] },
+        }),
+      );
 
       await expect(service.create(createDto)).rejects.toThrow(ConflictException);
     });
@@ -452,17 +455,13 @@ describe('PrismaCategoryService', () => {
       expect(result.children[0].name).toBe('Groceries');
     });
 
-    it('should find a category with transaction count', async () => {
+    it('should find a category with parent and children relations', async () => {
       const expectedCategory = {
         id: mockCategoryId,
         name: 'Groceries',
         slug: 'groceries',
         type: CategoryType.EXPENSE,
         status: CategoryStatus.ACTIVE,
-        _count: {
-          transactions: 42,
-          budgets: 3,
-        },
         description: null,
         color: null,
         icon: null,
@@ -475,14 +474,18 @@ describe('PrismaCategoryService', () => {
         metadata: null,
         createdAt: new Date(),
         updatedAt: new Date(),
+        parent: null,
+        children: [],
       };
 
       jest.spyOn(prisma.category, 'findUnique').mockResolvedValue(expectedCategory);
 
       const result = await service.findOneWithRelations(mockCategoryId);
 
-      expect(result._count.transactions).toBe(42);
-      expect(result._count.budgets).toBe(3);
+      expect(result).toBeDefined();
+      expect(result.id).toBe(mockCategoryId);
+      expect(result.parent).toBeNull();
+      expect(result.children).toHaveLength(0);
     });
   });
 
@@ -648,7 +651,8 @@ describe('PrismaCategoryService', () => {
         include: { parent: true, children: true },
       });
 
-      expect(result[0].children).toHaveLength(2);
+      // Type assertion needed due to union return type (Category[] | CategoryWithOptionalRelations[])
+      expect((result as any)[0].children).toHaveLength(2);
     });
   });
 
@@ -802,7 +806,8 @@ describe('PrismaCategoryService', () => {
         include: { children: true },
       });
 
-      expect(result[0].children).toHaveLength(2);
+      // Type assertion needed due to union return type (Category[] | CategoryWithOptionalRelations[])
+      expect((result as any)[0].children).toHaveLength(2);
     });
   });
 
@@ -986,10 +991,13 @@ describe('PrismaCategoryService', () => {
         slug: 'existing-slug',
       };
 
-      jest.spyOn(prisma.category, 'update').mockRejectedValue({
-        code: 'P2002',
-        meta: { target: ['familyId', 'slug'] },
-      });
+      jest.spyOn(prisma.category, 'update').mockRejectedValue(
+        new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
+          code: 'P2002',
+          clientVersion: '5.0.0',
+          meta: { target: ['familyId', 'slug'] },
+        }),
+      );
 
       await expect(service.update(mockCategoryId, updateDto)).rejects.toThrow(
         ConflictException,
@@ -1001,7 +1009,12 @@ describe('PrismaCategoryService', () => {
         name: 'Updated Name',
       };
 
-      jest.spyOn(prisma.category, 'update').mockRejectedValue({ code: 'P2025' });
+      jest.spyOn(prisma.category, 'update').mockRejectedValue(
+        new Prisma.PrismaClientKnownRequestError('Record not found', {
+          code: 'P2025',
+          clientVersion: '5.0.0',
+        }),
+      );
 
       await expect(service.update(mockCategoryId, updateDto)).rejects.toThrow(
         NotFoundException,
