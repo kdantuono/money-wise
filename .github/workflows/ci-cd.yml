@@ -58,6 +58,27 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: 🔧 DIAGNOSTICS - GitHub Context
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REF: ${{ github.ref }}
+          BASE_REF: ${{ github.base_ref }}
+          HEAD_REF: ${{ github.head_ref }}
+        run: |
+          echo "===== GITHUB CONTEXT ====="
+          echo "event: $EVENT_NAME"
+          echo "ref: $REF"
+          echo "base_ref: $BASE_REF"
+          echo "head_ref: $HEAD_REF"
+          echo "===== REPO STRUCTURE ====="
+          pwd
+          ls -la | head -20
+          echo "===== FILES ====="
+          [[ -f "CLAUDE.md" ]] && echo "✅ CLAUDE.md found" || echo "❌ CLAUDE.md missing"
+          [[ -d ".claude" ]] && echo "✅ .claude found" || echo "❌ .claude missing"
+          [[ -d "docs" ]] && echo "✅ docs found" || echo "❌ docs missing"
+          echo "===== END DIAGNOSTICS ====="
+
       - name: 🔍 Detect Project Stage & Components
         id: detect
         run: |
