@@ -5,6 +5,22 @@
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 source "$SCRIPT_DIR/validation-core.sh"
 
+# Helper function to find and run level scripts
+run_level() {
+  local level=$1
+  local script
+
+  # Find the script with matching pattern
+  script=$(find "$SCRIPT_DIR" -maxdepth 1 -name "level-$level-*.sh" -type f | head -1)
+
+  if [ -z "$script" ]; then
+    echo "❌ Error: Level $level script not found"
+    return 1
+  fi
+
+  bash "$script" || return 1
+}
+
 # ============================================================================
 # SECTION 1: Validation Modes
 # ============================================================================
@@ -18,8 +34,8 @@ mode_quick() {
   echo "├─ Use when: Committing code locally"
   echo ""
 
-  bash "$SCRIPT_DIR/level-1-*.sh" || return 1
-  bash "$SCRIPT_DIR/level-2-*.sh" || return 1
+  run_level 1 || return 1
+  run_level 2 || return 1
 
   echo "✅ Quick validation passed (2 levels)"
 }
@@ -34,8 +50,7 @@ mode_standard() {
   echo ""
 
   for level in {1..8}; do
-    local script="$SCRIPT_DIR/level-$level-*.sh"
-    [ -f "$script" ] && bash "$script" || return 1
+    run_level $level || return 1
   done
 
   echo "✅ Standard validation passed (8 levels)"
@@ -51,8 +66,7 @@ mode_full() {
   echo ""
 
   for level in {1..10}; do
-    local script="$SCRIPT_DIR/level-$level-*.sh"
-    [ -f "$script" ] && bash "$script" || return 1
+    run_level $level || return 1
   done
 
   echo "✅ Full validation passed (10 levels - ALL MANDATORY)"
@@ -68,11 +82,8 @@ mode_custom() {
 
   for level in $levels; do
     if [[ $level =~ ^[0-9]+$ ]] && [ "$level" -ge 1 ] && [ "$level" -le 10 ]; then
-      local script="$SCRIPT_DIR/level-$level-*.sh"
-      if [ -f "$script" ]; then
-        echo "Running Level $level..."
-        bash "$script" || return 1
-      fi
+      echo "Running Level $level..."
+      run_level $level || return 1
     fi
   done
 
@@ -93,7 +104,7 @@ retry_with_backoff() {
   while [ $attempt -le $max_attempts ]; do
     echo "Attempt $attempt/$max_attempts for Level $level..."
 
-    bash "$SCRIPT_DIR/level-$level-*.sh" && return 0
+    run_level $level && return 0
 
     if [ $attempt -lt $max_attempts ]; then
       echo "⏳ Retrying in ${delay}s..."
@@ -125,7 +136,7 @@ mode_incremental() {
   for level in $levels; do
     echo ""
     echo "--- Level $level ---"
-    if bash "$SCRIPT_DIR/level-$level-*.sh"; then
+    if run_level $level; then
       ((passed++))
     else
       ((failed++))
