@@ -6,8 +6,11 @@ export function MSWProvider({ children }: { children: React.ReactNode }) {
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    if (process.env.NODE_ENV === 'development') {
-      // Initialize MSW in development
+    // MSW is DISABLED - Set USE_MSW=true in .env.local to enable
+    const useMSW = process.env.NEXT_PUBLIC_USE_MSW === 'true';
+
+    if (process.env.NODE_ENV === 'development' && useMSW) {
+      // Initialize MSW in development (when explicitly enabled)
       const initMSW = async () => {
         try {
           const { startWorker } = await import('../../__mocks__/api/browser');
@@ -24,6 +27,10 @@ export function MSWProvider({ children }: { children: React.ReactNode }) {
 
       initMSW();
     } else {
+      if (process.env.NODE_ENV === 'development' && !useMSW) {
+        // eslint-disable-next-line no-console
+        console.log('✅ MSW disabled - Using real backend API at http://localhost:3001');
+      }
       setIsReady(true);
     }
   }, []);
