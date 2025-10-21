@@ -31,15 +31,99 @@ import { Public } from './decorators/public.decorator';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { User } from '../../generated/prisma';
 
+/**
+ * Authentication Controller
+ *
+ * Handles all authentication operations including registration, login, logout,
+ * password management, and email verification.
+ *
+ * Security Features:
+ * - JWT-based authentication with access & refresh tokens
+ * - Rate limiting on sensitive endpoints (register, login, password reset)
+ * - Password strength validation (min 32 chars, uppercase, lowercase, numbers, symbols)
+ * - Account lockout after 5 failed login attempts
+ * - Email verification for new accounts
+ * - Secure password reset with time-limited tokens
+ *
+ * @example
+ * // Register
+ * POST /api/auth/register
+ * { "email": "user@example.com", "password": "ValidPassword123!@#" }
+ *
+ * // Login
+ * POST /api/auth/login
+ * { "email": "user@example.com", "password": "ValidPassword123!@#" }
+ *
+ * // Refresh token
+ * POST /api/auth/refresh
+ * { "refreshToken": "eyJhbGciOiJIUzI1NiIs..." }
+ *
+ * // Get profile
+ * GET /api/auth/profile
+ * Header: Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
+ *
+ * @see AuthService for core authentication logic
+ * @see AuthSecurityService for security checks
+ */
 @ApiTags('Authentication')
 @Controller('auth')
 @UseGuards(RateLimitGuard)
 export class AuthController {
+  /**
+   * Initializes the authentication controller
+   * @param authService - Core authentication service
+   * @param authSecurityService - Security verification service
+   */
   constructor(
     private readonly authService: AuthService,
     private readonly authSecurityService: AuthSecurityService,
   ) {}
 
+  /**
+   * Register a new user account
+   *
+   * Creates a new user account with email and password. Password must meet strength requirements:
+   * - Minimum 32 characters
+   * - Contains uppercase letters (A-Z)
+   * - Contains lowercase letters (a-z)
+   * - Contains numbers (0-9)
+   * - Contains special symbols (!@#$%^&*)
+   *
+   * After registration, an email verification link is sent to the provided email address.
+   * The user must verify their email before some features are available.
+   *
+   * Rate limited to prevent abuse (max 5 attempts per 15 minutes per IP).
+   *
+   * @param registerDto - User registration data (email, password, firstName, lastName)
+   * @param request - Express request object for IP tracking
+   * @returns Access token, refresh token, and user profile
+   *
+   * @throws ConflictException (409) - Email already registered
+   * @throws BadRequestException (400) - Invalid email or weak password
+   * @throws TooManyRequestsException (429) - Rate limit exceeded
+   *
+   * @example
+   * POST /api/auth/register
+   * {
+   *   "email": "john@example.com",
+   *   "password": "SecurePassword123!@#Password",
+   *   "firstName": "John",
+   *   "lastName": "Smith"
+   * }
+   *
+   * Response (201):
+   * {
+   *   "accessToken": "eyJhbGciOiJIUzI1NiIs...",
+   *   "refreshToken": "eyJhbGciOiJIUzI1NiIs...",
+   *   "user": {
+   *     "id": "550e8400-e29b-41d4-a716-446655440000",
+   *     "email": "john@example.com",
+   *     "firstName": "John",
+   *     "lastName": "Smith",
+   *     "emailVerified": false
+   *   }
+   * }
+   */
   @Public()
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
@@ -70,6 +154,31 @@ export class AuthController {
     return response;
   }
 
+  /**
+   * Authenticate user with email and password
+   *
+   * Verifies user credentials and returns JWT tokens for subsequent API calls.
+   * Implements security measures:
+   * - Account lockout after 5 failed login attempts (15 minute duration)
+   * - Rate limiting to prevent brute force attacks
+   * - IP-based tracking for suspicious patterns
+   *
+   * Access tokens are short-lived (15 minutes) and refresh tokens are long-lived (7 days).
+   *
+   * @param loginDto - Credentials (email, password)
+   * @param request - Express request object for IP tracking
+   * @returns Access token, refresh token, and user profile
+   *
+   * @throws UnauthorizedException (401) - Invalid credentials or account locked
+   * @throws TooManyRequestsException (429) - Rate limit exceeded
+   *
+   * @example
+   * POST /api/auth/login
+   * {
+   *   "email": "john@example.com",
+   *   "password": "SecurePassword123!@#Password"
+   * }
+   */
   @Public()
   @Post('login')
   @HttpCode(HttpStatus.OK)

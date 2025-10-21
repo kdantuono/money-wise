@@ -428,6 +428,215 @@ describe('Real Auth Integration Tests (Prisma)', () => {
     });
   });
 
+  describe('Complete Registration-to-Login Data Flow', () => {
+    /**
+     * CRITICAL TEST SUITE: Verifies data integrity throughout the complete registration cycle
+     * Tests the exact scenario: Register → Data Stored → Activate → Login → Data Retrieved
+     */
+
+    it('should register user, store data, and allow login with same credentials', async () => {
+      // === PHASE 1: DATA SUBMISSION & REGISTRATION ===
+      const registrationData = {
+        firstName: 'Complete',
+        lastName: 'Flow',
+        email: 'completeflow@example.com',
+        password: 'SecureTest123!@', // Must not contain firstName/lastName/email
+      };
+
+      const registerResponse = await request(app.getHttpServer())
+        .post('/auth/register')
+        .send(registrationData)
+        .expect(201);
+
+      // Verify registration response
+      expect(registerResponse.body).toHaveProperty('accessToken');
+      expect(registerResponse.body).toHaveProperty('user');
+      const registeredUser = registerResponse.body.user;
+
+      // === PHASE 2: VERIFY DATA STORAGE ===
+      // Check exact data stored in database
+      const storedUser = await prismaService.user.findUnique({
+        where: { email: registrationData.email.toLowerCase() },
+      });
+
+      expect(storedUser).toBeTruthy();
+      expect(storedUser!.firstName).toBe(registrationData.firstName);
+      expect(storedUser!.lastName).toBe(registrationData.lastName);
+      expect(storedUser!.email).toBe(registrationData.email.toLowerCase());
+      expect(storedUser!.status).toBe('INACTIVE'); // New users are inactive until email verified
+      expect(storedUser!.passwordHash).toBeTruthy(); // Password should be hashed
+      expect(storedUser!.passwordHash).not.toBe(registrationData.password); // Should NOT be plaintext
+
+      // === PHASE 3: ACTIVATE USER FOR LOGIN ===
+      // Simulate email verification
+      const activatedUser = await prismaService.user.update({
+        where: { id: storedUser!.id },
+        data: {
+          status: 'ACTIVE',
+          emailVerifiedAt: new Date(),
+        },
+      });
+
+      // === PHASE 4: LOGIN WITH SAME CREDENTIALS ===
+      const loginResponse = await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({
+          email: registrationData.email,
+          password: registrationData.password,
+        })
+        .expect(200);
+
+      // === PHASE 5: VERIFY DATA CONSISTENCY ===
+      expect(loginResponse.body).toHaveProperty('accessToken');
+      expect(loginResponse.body).toHaveProperty('refreshToken');
+      expect(loginResponse.body).toHaveProperty('user');
+
+      const loggedInUser = loginResponse.body.user;
+
+      // Verify returned user matches registered data
+      expect(loggedInUser.firstName).toBe(registrationData.firstName);
+      expect(loggedInUser.lastName).toBe(registrationData.lastName);
+      expect(loggedInUser.email).toBe(registrationData.email.toLowerCase());
+      expect(loggedInUser.status).toBe('ACTIVE');
+      expect(loggedInUser).not.toHaveProperty('passwordHash');
+
+      // Verify JWT tokens are valid and contain correct user info
+      const decodedToken = JSON.parse(
+        Buffer.from(loginResponse.body.accessToken.split('.')[1], 'base64').toString()
+      );
+      expect(decodedToken.sub).toBe(loggedInUser.id);
+      expect(decodedToken.email).toBe(registrationData.email.toLowerCase());
+    });
+
+    it('should reject login with registered email but wrong password', async () => {
+      // Register user
+      const registrationData = {
+        firstName: 'Wrong',
+        lastName: 'Password',
+        email: 'wrongpass@example.com',
+        password: 'SecureKey123!@#', // Must not contain firstName/lastName/email
+      };
+
+      await request(app.getHttpServer())
+        .post('/auth/register')
+        .send(registrationData)
+        .expect(201);
+
+      // Activate user
+      const user = await prismaService.user.findUnique({
+        where: { email: registrationData.email.toLowerCase() },
+      });
+      await prismaService.user.update({
+        where: { id: user!.id },
+        data: { status: 'ACTIVE', emailVerifiedAt: new Date() },
+      });
+
+      // Try login with wrong password
+      const response = await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({
+          email: registrationData.email,
+          password: 'DifferentKey456!@',
+        })
+        .expect(401);
+
+      expect(response.body.message).toContain('Invalid');
+    });
+
+    it('should preserve data integrity across multiple login attempts', async () => {
+      // Register user with specific data
+      const registrationData = {
+        firstName: 'Multi',
+        lastName: 'Login',
+        email: 'multilogin@example.com',
+        password: 'SecureAccess987!@', // Must not contain firstName/lastName/email
+      };
+
+      await request(app.getHttpServer())
+        .post('/auth/register')
+        .send(registrationData)
+        .expect(201);
+
+      // Activate user
+      const user = await prismaService.user.findUnique({
+        where: { email: registrationData.email.toLowerCase() },
+      });
+      await prismaService.user.update({
+        where: { id: user!.id },
+        data: { status: 'ACTIVE', emailVerifiedAt: new Date() },
+      });
+
+      // Login multiple times
+      for (let i = 0; i < 3; i++) {
+        const response = await request(app.getHttpServer())
+          .post('/auth/login')
+          .send({
+            email: registrationData.email,
+            password: registrationData.password,
+          })
+          .expect(200);
+
+        // Verify data consistency on each login
+        expect(response.body.user.firstName).toBe(registrationData.firstName);
+        expect(response.body.user.lastName).toBe(registrationData.lastName);
+        expect(response.body.user.email).toBe(registrationData.email.toLowerCase());
+        expect(response.body.user.status).toBe('ACTIVE');
+      }
+
+      // Verify lastLoginAt was updated
+      const finalUser = await prismaService.user.findUnique({
+        where: { email: registrationData.email.toLowerCase() },
+      });
+      expect(finalUser!.lastLoginAt).toBeTruthy();
+    });
+
+    it('should handle data normalization consistently (uppercase email)', async () => {
+      // Register with mixed case email
+      const registrationData = {
+        firstName: 'Norm',
+        lastName: 'Case',
+        email: 'NormCase@EXAMPLE.COM',
+        password: 'ValidKey456!@#', // Must not contain firstName/lastName/email
+      };
+
+      const registerResponse = await request(app.getHttpServer())
+        .post('/auth/register')
+        .send(registrationData)
+        .expect(201);
+
+      // Should return lowercase email
+      expect(registerResponse.body.user.email).toBe('normcase@example.com');
+
+      // Activate user
+      const user = await prismaService.user.findUnique({
+        where: { email: 'normcase@example.com' },
+      });
+      await prismaService.user.update({
+        where: { id: user!.id },
+        data: { status: 'ACTIVE', emailVerifiedAt: new Date() },
+      });
+
+      // Login with different case variations should all work
+      const loginVariations = [
+        'normcase@example.com',
+        'NORMCASE@EXAMPLE.COM',
+        'NormCase@Example.Com',
+      ];
+
+      for (const emailVariation of loginVariations) {
+        const response = await request(app.getHttpServer())
+          .post('/auth/login')
+          .send({
+            email: emailVariation,
+            password: registrationData.password,
+          })
+          .expect(200);
+
+        expect(response.body.user.email).toBe('normcase@example.com');
+      }
+    });
+  });
+
   describe('GET /auth/profile', () => {
     let testUser: Awaited<ReturnType<typeof factory.users.buildWithPassword>>;
     let accessToken: string;

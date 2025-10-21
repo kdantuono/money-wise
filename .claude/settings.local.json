@@ -93,7 +93,9 @@
       "Bash(curl -s https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)",
       "Bash(curl -s https://api.github.com/repos/rhysd/actionlint/releases/latest)",
       "Bash(chmod +x /home/nemesi/dev/money-wise/.claude/scripts/setup-actionlint.sh)",
-      "Bash(/home/nemesi/dev/money-wise/.claude/scripts/setup-actionlint.sh)"
+      "Bash(/home/nemesi/dev/money-wise/.claude/scripts/setup-actionlint.sh)",
+      "mcp__hugging-face__hf_doc_search",
+      "mcp__hugging-face__paper_search"
     ],
     "deny": [],
     "ask": []

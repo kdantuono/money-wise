@@ -147,3 +147,5 @@ apps/backend/test-sentry*.js
 
 # Local binaries (act, tools, etc.)
 bin/
+.claude/tools/
+.claude/traces/
