@@ -261,10 +261,14 @@ export class AccountsService {
       },
     });
 
+    if (!account) {
+      throw new NotFoundException('Account not found');
+    }
+
     return {
-      currentBalance: account!.currentBalance.toNumber(),
-      availableBalance: account!.availableBalance?.toNumber() ?? null,
-      currency: account!.currency,
+      currentBalance: account.currentBalance.toNumber(),
+      availableBalance: account.availableBalance?.toNumber() ?? null,
+      currency: account.currency,
     };
   }
 

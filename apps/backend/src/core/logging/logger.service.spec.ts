@@ -3,6 +3,7 @@
  *
  * Tests structured logging service with Sentry integration
  */
+/* eslint-disable no-console */
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import * as Sentry from '@sentry/node';
