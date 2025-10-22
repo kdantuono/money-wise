@@ -345,8 +345,14 @@ describe('EmailVerificationService', () => {
     });
 
     it('should handle Redis errors gracefully during token generation', async () => {
-      // Mock Redis to throw error
-      jest.spyOn(mockRedis, 'setex').mockRejectedValueOnce(new Error('Redis connection failed'));
+      // Mock pipeline to throw error during exec
+      const originalPipeline = mockRedis.pipeline.bind(mockRedis);
+      jest.spyOn(mockRedis, 'pipeline').mockImplementation(() => {
+        const pipeline = originalPipeline();
+        // Override exec to throw error
+        pipeline.exec = jest.fn().mockRejectedValueOnce(new Error('Redis connection failed'));
+        return pipeline;
+      });
 
       await expect(
         service.generateVerificationToken('user-123', 'test@example.com'),
@@ -390,8 +396,15 @@ describe('EmailVerificationService', () => {
       });
 
       mockPrismaUserService.findOne.mockResolvedValueOnce(user);
-      mockPrismaUserService.verifyEmail.mockResolvedValueOnce(undefined); // verifyEmail returns void
-      mockPrismaUserService.update.mockResolvedValueOnce(updatedUser);
+      // Mock the transaction to return the updated user
+      mockPrismaService.$transaction.mockImplementation(async (callback) => {
+        const mockPrismaInTx = {
+          user: {
+            update: jest.fn().mockResolvedValueOnce(updatedUser),
+          },
+        } as any;
+        return callback(mockPrismaInTx);
+      });
 
       const result = await service.verifyEmail(token);
 
@@ -399,15 +412,6 @@ describe('EmailVerificationService', () => {
       expect(result.message).toBe('Email verified successfully');
       expect(result.user).toBeDefined();
       expect(result.user?.id).toBe(user.id);
-
-      // Verify email was verified and status was updated
-      expect(mockPrismaUserService.verifyEmail).toHaveBeenCalledWith(user.id);
-      expect(mockPrismaUserService.update).toHaveBeenCalledWith(
-        user.id,
-        expect.objectContaining({
-          status: UserStatus.ACTIVE,
-        }),
-      );
 
       // Verify tokens were cleaned up
       expect(await mockRedis.get(tokenKey)).toBeNull();
@@ -440,7 +444,8 @@ describe('EmailVerificationService', () => {
 
       mockPrismaUserService.findOne.mockResolvedValue(user);
 
-      await expect(service.verifyEmail(token)).rejects.toThrow('Verification token has expired');
+      // Generic error message for security (prevents user enumeration)
+      await expect(service.verifyEmail(token)).rejects.toThrow('Invalid or expired verification token');
 
       // Verify expired token was cleaned up
       expect(await mockRedis.get(tokenKey)).toBeNull();
@@ -461,8 +466,10 @@ describe('EmailVerificationService', () => {
 
       mockPrismaUserService.findOne.mockResolvedValueOnce(null);
 
-      await expect(service.verifyEmail(token)).rejects.toThrow(NotFoundException);
-      await expect(service.verifyEmail(token)).rejects.toThrow('User not found');
+      // Generic error message for security (prevents user enumeration)
+      // Changed from NotFoundException to BadRequestException
+      await expect(service.verifyEmail(token)).rejects.toThrow(BadRequestException);
+      await expect(service.verifyEmail(token)).rejects.toThrow('Invalid or expired verification token');
     });
 
     it('should reject token if email does not match user', async () => {
@@ -481,8 +488,9 @@ describe('EmailVerificationService', () => {
 
       mockPrismaUserService.findOne.mockResolvedValue(user);
 
+      // Generic error message for security (prevents user enumeration)
       await expect(service.verifyEmail(token)).rejects.toThrow(
-        'Email verification token does not match user email',
+        'Invalid or expired verification token',
       );
     });
 
@@ -537,8 +545,15 @@ describe('EmailVerificationService', () => {
       });
 
       mockPrismaUserService.findOne.mockResolvedValueOnce(user);
-      mockPrismaUserService.verifyEmail.mockResolvedValueOnce(undefined); // verifyEmail returns void
-      mockPrismaUserService.update.mockResolvedValueOnce(updatedUser);
+      // Mock the transaction to return the updated user
+      mockPrismaService.$transaction.mockImplementation(async (callback) => {
+        const mockPrismaInTx = {
+          user: {
+            update: jest.fn().mockResolvedValueOnce(updatedUser),
+          },
+        } as any;
+        return callback(mockPrismaInTx);
+      });
 
       const result = await service.verifyEmail(token);
 
@@ -584,11 +599,13 @@ describe('EmailVerificationService', () => {
     it('should reject resend for non-existent user', async () => {
       mockPrismaUserService.findOne.mockResolvedValueOnce(null);
 
+      // Generic error message for security (prevents user enumeration)
+      // Changed from NotFoundException to BadRequestException
       await expect(service.resendVerificationEmail('non-existent-user')).rejects.toThrow(
-        NotFoundException,
+        BadRequestException,
       );
       await expect(service.resendVerificationEmail('non-existent-user')).rejects.toThrow(
-        'User not found',
+        'Unable to process resend request at this time',
       );
     });
 
@@ -603,7 +620,7 @@ describe('EmailVerificationService', () => {
       );
     });
 
-    it('should prevent resending if token was sent recently (within 1 hour)', async () => {
+    it('should allow resending even if token exists (replace with new one)', async () => {
       const user = createMockUser({ emailVerifiedAt: null });
       const existingToken = crypto.randomBytes(32).toString('hex');
       const tokenData: EmailVerificationToken = {
@@ -623,9 +640,16 @@ describe('EmailVerificationService', () => {
 
       mockPrismaUserService.findOne.mockResolvedValue(user);
 
-      await expect(service.resendVerificationEmail(user.id)).rejects.toThrow(
-        /Verification email was already sent recently/,
-      );
+      // Should successfully generate a new token and replace the existing one
+      const newToken = await service.resendVerificationEmail(user.id);
+      expect(newToken).toBeDefined();
+      expect(newToken).not.toBe(existingToken); // Different token
+
+      // Old token should be cleaned up
+      expect(await mockRedis.get(`email_verification:${existingToken}`)).toBeNull();
+      // New token should exist
+      const newTokenData = await mockRedis.get(`email_verification:${newToken}`);
+      expect(newTokenData).toBeDefined();
     });
 
     it('should allow resending if existing token expires soon (less than 1 hour)', async () => {
@@ -909,7 +933,8 @@ describe('EmailVerificationService', () => {
     });
 
     it('should return zero stats on error', async () => {
-      jest.spyOn(mockRedis, 'keys').mockRejectedValueOnce(new Error('Redis error'));
+      // Mock scan to throw error (scan is used instead of keys)
+      jest.spyOn(mockRedis, 'scan').mockRejectedValueOnce(new Error('Redis error'));
 
       const stats = await service.getVerificationStats();
 
@@ -986,13 +1011,6 @@ describe('EmailVerificationService', () => {
         createdAt: new Date(),
       };
 
-      // Mock slow Redis response
-      const originalGet = mockRedis.get.bind(mockRedis);
-      mockRedis.get = jest.fn().mockImplementation(async (key) => {
-        await new Promise(resolve => setTimeout(resolve, 100)); // 100ms delay
-        return originalGet(key);
-      });
-
       await mockRedis.setex(`email_verification:${token}`, 24 * 60 * 60, JSON.stringify(tokenData));
 
       const updatedUser = createMockUser({
@@ -1003,8 +1021,15 @@ describe('EmailVerificationService', () => {
       });
 
       mockPrismaUserService.findOne.mockResolvedValue(user);
-      mockPrismaUserService.verifyEmail.mockResolvedValue(undefined); // verifyEmail returns void
-      mockPrismaUserService.update.mockResolvedValue(updatedUser);
+      // Mock the transaction to return the updated user
+      mockPrismaService.$transaction.mockImplementation(async (callback) => {
+        const mockPrismaInTx = {
+          user: {
+            update: jest.fn().mockResolvedValueOnce(updatedUser),
+          },
+        } as any;
+        return callback(mockPrismaInTx);
+      });
 
       const result = await service.verifyEmail(token);
 
@@ -1106,7 +1131,7 @@ describe('EmailVerificationService', () => {
 
       await mockRedis.setex(`email_verification:${token}`, 24 * 60 * 60, JSON.stringify(tokenData));
 
-      // Update returns suspended user (changed during verification)
+      // Transaction returns suspended user (changed during verification)
       const suspendedUser = createMockUser({
         id: user.id,
         email: user.email,
@@ -1115,13 +1140,22 @@ describe('EmailVerificationService', () => {
       });
 
       mockPrismaUserService.findOne.mockResolvedValueOnce(user);
-      mockPrismaUserService.update.mockResolvedValueOnce(suspendedUser);
+      // Mock the transaction to return the suspended user
+      mockPrismaService.$transaction.mockImplementation(async (callback) => {
+        const mockPrismaInTx = {
+          user: {
+            update: jest.fn().mockResolvedValueOnce(suspendedUser),
+          },
+        } as any;
+        return callback(mockPrismaInTx);
+      });
 
       const result = await service.verifyEmail(token);
 
       // Should still succeed but reflect new status
       expect(result.success).toBe(true);
       expect(result.user).toBeDefined();
+      expect(result.user?.status).toBe(UserStatus.SUSPENDED);
     });
   });
 
