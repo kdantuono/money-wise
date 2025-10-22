@@ -8,6 +8,7 @@ import {
 } from '../../../../src/auth/services/email-verification.service';
 import { UserStatus } from '../../../../generated/prisma';
 import { PrismaUserService } from '../../../../src/core/database/prisma/services/user.service';
+import { PrismaService } from '../../../../src/core/database/prisma/prisma.service';
 import type { User } from '../../../../generated/prisma';
 
 // Mock Redis implementation with date serialization handling
@@ -56,6 +57,62 @@ class MockRedis {
     return Array.from(this.store.keys()).filter((key) => regex.test(key));
   }
 
+  async scan(cursor: string, ...args: any[]): Promise<[string, string[]]> {
+    let match = '*';
+    let count = 10;
+
+    // Parse MATCH and COUNT arguments
+    for (let i = 0; i < args.length; i += 2) {
+      if (args[i] === 'MATCH') match = args[i + 1];
+      if (args[i] === 'COUNT') count = args[i + 1];
+    }
+
+    const regex = new RegExp('^' + match.replace(/\*/g, '.*') + '$');
+    const allKeys = Array.from(this.store.keys()).filter((key) => regex.test(key));
+
+    // Simple cursor implementation: divide keys into chunks
+    const startIdx = cursor === '0' ? 0 : parseInt(cursor);
+    const endIdx = Math.min(startIdx + count, allKeys.length);
+    const keys = allKeys.slice(startIdx, endIdx);
+    const nextCursor = endIdx >= allKeys.length ? '0' : endIdx.toString();
+
+    return [nextCursor, keys];
+  }
+
+  async getdel(key: string): Promise<string | null> {
+    const entry = this.store.get(key);
+    if (!entry) return null;
+
+    // Check if expired
+    if (entry.expiresAt && Date.now() > entry.expiresAt) {
+      this.store.delete(key);
+      return null;
+    }
+
+    // Delete and return
+    this.store.delete(key);
+    return entry.value;
+  }
+
+  async incr(key: string): Promise<number> {
+    const entry = this.store.get(key);
+    const currentValue = entry ? parseInt(entry.value) : 0;
+    const newValue = currentValue + 1;
+    this.store.set(key, { value: newValue.toString() });
+    return newValue;
+  }
+
+  async expire(key: string, seconds: number): Promise<number> {
+    const entry = this.store.get(key);
+    if (!entry) return 0;
+    entry.expiresAt = Date.now() + seconds * 1000;
+    return 1;
+  }
+
+  pipeline(): MockRedisPipeline {
+    return new MockRedisPipeline(this.store);
+  }
+
   on(event: string, handler: (...args: any[]) => void): void {
     // Mock event listener
   }
@@ -70,9 +127,86 @@ class MockRedis {
   }
 }
 
+class MockRedisPipeline {
+  private commands: Array<{ cmd: string; args: any[] }> = [];
+
+  constructor(private store: Map<string, { value: string; expiresAt?: number }>) {}
+
+  get(key: string): this {
+    this.commands.push({ cmd: 'get', args: [key] });
+    return this;
+  }
+
+  del(key: string): this {
+    this.commands.push({ cmd: 'del', args: [key] });
+    return this;
+  }
+
+  setex(key: string, seconds: number, value: string): this {
+    this.commands.push({ cmd: 'setex', args: [key, seconds, value] });
+    return this;
+  }
+
+  incr(key: string): this {
+    this.commands.push({ cmd: 'incr', args: [key] });
+    return this;
+  }
+
+  expire(key: string, seconds: number): this {
+    this.commands.push({ cmd: 'expire', args: [key, seconds] });
+    return this;
+  }
+
+  async exec(): Promise<any[]> {
+    const results: any[] = [];
+
+    for (const { cmd, args } of this.commands) {
+      if (cmd === 'get') {
+        const entry = this.store.get(args[0]);
+        if (!entry) {
+          results.push([null, null]);
+        } else {
+          if (entry.expiresAt && Date.now() > entry.expiresAt) {
+            this.store.delete(args[0]);
+            results.push([null, null]);
+          } else {
+            results.push([null, entry.value]);
+          }
+        }
+      } else if (cmd === 'del') {
+        const deleted = this.store.delete(args[0]) ? 1 : 0;
+        results.push([null, deleted]);
+      } else if (cmd === 'setex') {
+        this.store.set(args[0], {
+          value: args[2],
+          expiresAt: Date.now() + args[1] * 1000,
+        });
+        results.push([null, 'OK']);
+      } else if (cmd === 'incr') {
+        const entry = this.store.get(args[0]);
+        const currentValue = entry ? parseInt(entry.value) : 0;
+        const newValue = currentValue + 1;
+        this.store.set(args[0], { value: newValue.toString() });
+        results.push([null, newValue]);
+      } else if (cmd === 'expire') {
+        const entry = this.store.get(args[0]);
+        if (entry) {
+          entry.expiresAt = Date.now() + args[1] * 1000;
+          results.push([null, 1]);
+        } else {
+          results.push([null, 0]);
+        }
+      }
+    }
+
+    return results;
+  }
+}
+
 describe('EmailVerificationService', () => {
   let service: EmailVerificationService;
   let mockPrismaUserService: jest.Mocked<PrismaUserService>;
+  let mockPrismaService: jest.Mocked<PrismaService>;
   let mockConfigService: jest.Mocked<ConfigService>;
   let mockRedis: MockRedis;
 
@@ -124,6 +258,10 @@ describe('EmailVerificationService', () => {
       countVerifiedSince: jest.fn(),
     } as any;
 
+    mockPrismaService = {
+      $transaction: jest.fn(),
+    } as any;
+
     mockConfigService = {
       get: jest.fn(),
     } as any;
@@ -134,6 +272,10 @@ describe('EmailVerificationService', () => {
         {
           provide: PrismaUserService,
           useValue: mockPrismaUserService,
+        },
+        {
+          provide: PrismaService,
+          useValue: mockPrismaService,
         },
         {
           provide: ConfigService,

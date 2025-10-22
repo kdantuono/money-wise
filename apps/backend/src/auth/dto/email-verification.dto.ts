@@ -1,13 +1,20 @@
-import { IsString, MinLength } from 'class-validator';
+import { IsString, MinLength, MaxLength, Matches } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class EmailVerificationDto {
   @ApiProperty({
-    description: 'Email verification token received via email',
-    example: 'a1b2c3d4e5f6...',
+    description: 'Email verification token received via email (64-character hexadecimal string)',
+    example: 'a1b2c3d4e5f6789abcdef1234567890a1b2c3d4e5f6789abcdef1234567890',
+    minLength: 64,
+    maxLength: 64,
+    pattern: '^[a-f0-9]{64}$',
   })
   @IsString()
-  @MinLength(1)
+  @MinLength(64, { message: 'Verification token must be exactly 64 characters' })
+  @MaxLength(64, { message: 'Verification token must be exactly 64 characters' })
+  @Matches(/^[a-f0-9]{64}$/, {
+    message: 'Verification token must be a valid hexadecimal string',
+  })
   token: string;
 }
 

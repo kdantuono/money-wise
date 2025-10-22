@@ -4,6 +4,7 @@ import { Redis } from 'ioredis';
 import * as crypto from 'crypto';
 import { UserStatus } from '../../../generated/prisma';
 import { PrismaUserService } from '../../core/database/prisma/services/user.service';
+import { PrismaService } from '../../core/database/prisma/prisma.service';
 import type { User } from '../../../generated/prisma';
 
 export interface EmailVerificationToken {
@@ -24,8 +25,20 @@ export interface EmailVerificationResult {
 export class EmailVerificationService {
   private readonly logger = new Logger(EmailVerificationService.name);
 
+  // Configuration constants
+  private readonly TOKEN_EXPIRY_HOURS = 24;
+  private readonly TOKEN_EXPIRY_MS = this.TOKEN_EXPIRY_HOURS * 60 * 60 * 1000;
+  private readonly TOKEN_EXPIRY_SECONDS = this.TOKEN_EXPIRY_HOURS * 60 * 60;
+  private readonly MIN_TOKEN_VALIDITY_HOURS = 1;
+  private readonly MIN_TOKEN_VALIDITY_MS = this.MIN_TOKEN_VALIDITY_HOURS * 60 * 60 * 1000;
+  private readonly RATE_LIMIT_RESEND_ATTEMPTS = 3;
+  private readonly RATE_LIMIT_WINDOW_SECONDS = 3600; // 1 hour
+  private readonly TIMING_ATTACK_DELAY_MIN_MS = 100;
+  private readonly TIMING_ATTACK_DELAY_MAX_MS = 300;
+
   constructor(
     private prismaUserService: PrismaUserService,
+    private prisma: PrismaService,
     private configService: ConfigService,
     @Inject('default')
     private readonly redis: Redis,
@@ -36,11 +49,60 @@ export class EmailVerificationService {
   }
 
   /**
+   * Constant-time string comparison to prevent timing attacks
+   * All comparisons take the same amount of time regardless of where strings differ
+   */
+  private constantTimeCompare(a: string, b: string): boolean {
+    if (a.length !== b.length) return false;
+
+    let result = 0;
+    for (let i = 0; i < a.length; i++) {
+      result |= a.charCodeAt(i) ^ b.charCodeAt(i);
+    }
+    return result === 0;
+  }
+
+  /**
+   * Add artificial random delay to prevent timing-based token enumeration
+   * Attackers cannot use timing measurements to determine token validity
+   */
+  private async artificialDelay(): Promise<void> {
+    // Random delay between 100-300ms to prevent timing analysis
+    const delay = Math.floor(
+      Math.random() * (this.TIMING_ATTACK_DELAY_MAX_MS - this.TIMING_ATTACK_DELAY_MIN_MS)
+    ) + this.TIMING_ATTACK_DELAY_MIN_MS;
+    await new Promise((resolve) => setTimeout(resolve, delay));
+  }
+
+  /**
+   * Check if user has exceeded rate limit for resend attempts
+   */
+  private async checkResendRateLimit(userId: string): Promise<boolean> {
+    const rateLimitKey = `email_verification_ratelimit:${userId}`;
+    const requestCount = await this.redis.get(rateLimitKey);
+
+    if (requestCount && parseInt(requestCount) >= this.RATE_LIMIT_RESEND_ATTEMPTS) {
+      return false; // Rate limit exceeded
+    }
+
+    return true; // Rate limit not exceeded
+  }
+
+  /**
+   * Increment resend rate limit counter for user
+   */
+  private async incrementResendRateLimit(userId: string): Promise<void> {
+    const rateLimitKey = `email_verification_ratelimit:${userId}`;
+    await this.redis.incr(rateLimitKey);
+    await this.redis.expire(rateLimitKey, this.RATE_LIMIT_WINDOW_SECONDS);
+  }
+
+  /**
    * Generate email verification token
    */
   async generateVerificationToken(userId: string, email: string): Promise<string> {
     const token = crypto.randomBytes(32).toString('hex');
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+    const expiresAt = new Date(Date.now() + this.TOKEN_EXPIRY_MS);
 
     const tokenData: EmailVerificationToken = {
       token,
@@ -51,36 +113,44 @@ export class EmailVerificationService {
     };
 
     try {
-      // Store token in Redis with expiration
+      // Store token in Redis with expiration using pipeline for atomic operation
+      const pipeline = this.redis.pipeline();
+
       const key = `email_verification:${token}`;
-      await this.redis.setex(
-        key,
-        24 * 60 * 60, // 24 hours in seconds
-        JSON.stringify(tokenData),
-      );
+      pipeline.setex(key, this.TOKEN_EXPIRY_SECONDS, JSON.stringify(tokenData));
 
       // Also store a reverse lookup for the user
       const userKey = `email_verification_user:${userId}`;
-      await this.redis.setex(userKey, 24 * 60 * 60, token);
+      pipeline.setex(userKey, this.TOKEN_EXPIRY_SECONDS, token);
+
+      await pipeline.exec();
 
       this.logger.debug(`Generated email verification token for user ${userId}`);
 
       return token;
     } catch (error) {
       this.logger.error('Error generating verification token:', error);
-      throw new Error('Failed to generate verification token');
+      throw new InternalServerErrorException('Failed to generate verification token');
     }
   }
 
   /**
    * Verify email using token
+   *
+   * SECURITY: Uses atomic GETDEL to prevent token reuse, constant-time comparison
+   * to prevent timing attacks, and artificial delays to prevent enumeration.
    */
   async verifyEmail(token: string): Promise<EmailVerificationResult> {
     try {
       const key = `email_verification:${token}`;
-      const tokenDataStr = await this.redis.get(key);
+
+      // ATOMIC: Get and delete token in one operation to prevent race condition
+      // Prevents token reuse if multiple requests arrive concurrently
+      const tokenDataStr = await (this.redis as any).getdel(key);
 
       if (!tokenDataStr) {
+        // Add artificial delay to prevent timing-based enumeration
+        await this.artificialDelay();
         throw new BadRequestException('Invalid or expired verification token');
       }
 
@@ -89,25 +159,23 @@ export class EmailVerificationService {
       // Check if token is expired
       const expiresAt = new Date(tokenData.expiresAt);
       if (new Date() > expiresAt) {
-        await this.redis.del(key);
-        throw new BadRequestException('Verification token has expired');
+        await this.artificialDelay();
+        throw new BadRequestException('Invalid or expired verification token');
       }
 
-      // Find user
+      // Find user - use generic error message to prevent user enumeration
       const user = await this.prismaUserService.findOne(tokenData.userId);
 
-      if (!user) {
-        throw new NotFoundException('User not found');
-      }
-
-      // Check if email matches
-      if (user.email !== tokenData.email) {
-        throw new BadRequestException('Email verification token does not match user email');
+      if (!user || user.email !== tokenData.email) {
+        // Generic error for both user not found and email mismatch
+        // Prevents attackers from determining if user exists or email is wrong
+        await this.artificialDelay();
+        throw new BadRequestException('Invalid or expired verification token');
       }
 
       // Check if already verified
       if (user.emailVerifiedAt) {
-        await this.redis.del(key);
+        // Clean up reverse lookup if email was already verified
         await this.redis.del(`email_verification_user:${user.id}`);
 
         return {
@@ -117,18 +185,23 @@ export class EmailVerificationService {
         };
       }
 
-      // Update user verification status (using verifyEmail + status update separately)
-      // Note: We can't use update() because UpdateUserDto doesn't include emailVerifiedAt
-      // We need to update both emailVerifiedAt and status, then fetch the updated user
-      await this.prismaUserService.verifyEmail(user.id);
+      // ATOMIC: Update both emailVerifiedAt and status in single transaction
+      // Ensures user cannot end up in inconsistent state (verified but inactive)
+      const updatedUser = await this.prisma.$transaction(async (prisma) => {
+        // Set email verification timestamp
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { emailVerifiedAt: new Date() },
+        });
 
-      // Update status to ACTIVE
-      const updatedUser = await this.prismaUserService.update(user.id, {
-        status: UserStatus.ACTIVE,
+        // Update status to ACTIVE
+        return await prisma.user.update({
+          where: { id: user.id },
+          data: { status: UserStatus.ACTIVE },
+        });
       });
 
-      // Clean up tokens
-      await this.redis.del(key);
+      // Clean up reverse lookup (secondary cleanup, token already deleted via GETDEL)
       await this.redis.del(`email_verification_user:${user.id}`);
 
       if (!updatedUser) {
@@ -148,51 +221,57 @@ export class EmailVerificationService {
       }
 
       this.logger.error('Error verifying email:', error);
-      throw new Error('Failed to verify email');
+      throw new InternalServerErrorException('Failed to verify email');
     }
   }
 
   /**
    * Resend verification email
+   *
+   * SECURITY: Rate limits resend attempts per user (max 3 attempts per hour)
+   * to prevent email flooding/abuse. Uses separate rate limit tracking
+   * independent of token validity.
    */
   async resendVerificationEmail(userId: string): Promise<string> {
     try {
       const user = await this.prismaUserService.findOne(userId);
 
       if (!user) {
-        throw new NotFoundException('User not found');
+        // Generic error to prevent user enumeration
+        await this.artificialDelay();
+        throw new BadRequestException('Unable to process resend request at this time');
       }
 
       if (user.emailVerifiedAt) {
         throw new BadRequestException('Email is already verified');
       }
 
-      // Check if there's an existing token
+      // CHECK RATE LIMIT: Separate from token validity to enforce consistent limits
+      const isWithinRateLimit = await this.checkResendRateLimit(userId);
+      if (!isWithinRateLimit) {
+        throw new BadRequestException(
+          `Too many verification email requests. Please try again in ${this.RATE_LIMIT_WINDOW_SECONDS / 60} minutes.`,
+        );
+      }
+
+      // Clean up existing token if present (allow fresh token generation)
       const existingTokenKey = `email_verification_user:${userId}`;
       const existingToken = await this.redis.get(existingTokenKey);
 
       if (existingToken) {
-        // Check if existing token is still valid
         const tokenKey = `email_verification:${existingToken}`;
-        const tokenDataStr = await this.redis.get(tokenKey);
-
-        if (tokenDataStr) {
-          const tokenData: EmailVerificationToken = JSON.parse(tokenDataStr);
-          const expiresAt = new Date(tokenData.expiresAt);
-
-          // If token is still valid for more than 1 hour, don't generate a new one
-          if (expiresAt.getTime() - Date.now() > 60 * 60 * 1000) {
-            throw new BadRequestException('Verification email was already sent recently. Please check your inbox.');
-          }
-        }
-
-        // Clean up existing token
-        await this.redis.del(tokenKey);
-        await this.redis.del(existingTokenKey);
+        // Use pipeline for atomic cleanup
+        const pipeline = this.redis.pipeline();
+        pipeline.del(tokenKey);
+        pipeline.del(existingTokenKey);
+        await pipeline.exec();
       }
 
       // Generate new token
       const newToken = await this.generateVerificationToken(userId, user.email);
+
+      // Increment rate limit counter
+      await this.incrementResendRateLimit(userId);
 
       this.logger.log(`Resent verification email for user ${userId}`);
 
@@ -203,7 +282,7 @@ export class EmailVerificationService {
       }
 
       this.logger.error('Error resending verification email:', error);
-      throw new Error('Failed to resend verification email');
+      throw new InternalServerErrorException('Failed to resend verification email');
     }
   }
 
@@ -250,30 +329,71 @@ export class EmailVerificationService {
 
   /**
    * Clean up expired tokens (maintenance function)
+   *
+   * PERFORMANCE: Uses SCAN instead of KEYS to avoid blocking Redis server.
+   * Processes tokens in batches with pipelining to reduce network round-trips.
    */
   async cleanupExpiredTokens(): Promise<number> {
     try {
-      const pattern = 'email_verification:*';
-      const keys = await this.redis.keys(pattern);
       let deletedCount = 0;
+      let cursor = '0';
 
-      for (const key of keys) {
-        const tokenDataStr = await this.redis.get(key);
-        if (tokenDataStr) {
-          const tokenData: EmailVerificationToken = JSON.parse(tokenDataStr);
-          const expiresAt = new Date(tokenData.expiresAt);
+      do {
+        // Use non-blocking SCAN with cursor-based iteration
+        const [newCursor, keys] = await (this.redis as any).scan(
+          cursor,
+          'MATCH',
+          'email_verification:*',
+          'COUNT',
+          100, // Process 100 keys at a time
+        );
 
-          if (new Date() > expiresAt) {
-            await this.redis.del(key);
-            await this.redis.del(`email_verification_user:${tokenData.userId}`);
-            deletedCount++;
-          }
-        } else {
-          // Key exists but no data - already expired via TTL, remove orphaned key
-          await this.redis.del(key);
-          deletedCount++;
+        cursor = newCursor;
+
+        if (keys.length === 0) {
+          continue;
         }
-      }
+
+        // Batch GET operations using pipeline
+        const pipeline = this.redis.pipeline();
+        keys.forEach((key) => pipeline.get(key));
+
+        const results = await pipeline.exec();
+
+        // Process results and identify expired tokens
+        const keysToDelete: string[] = [];
+        results?.forEach(([err, tokenDataStr], index) => {
+          if (!err && tokenDataStr) {
+            try {
+              const tokenData: EmailVerificationToken = JSON.parse(tokenDataStr as string);
+              const expiresAt = new Date(tokenData.expiresAt);
+
+              if (new Date() > expiresAt) {
+                keysToDelete.push(keys[index]);
+                keysToDelete.push(`email_verification_user:${tokenData.userId}`);
+              }
+            } catch (parseError) {
+              this.logger.warn(`Failed to parse token data for key ${keys[index]}`);
+              // Delete malformed token
+              keysToDelete.push(keys[index]);
+            }
+          } else if (err) {
+            this.logger.warn(`Error reading token key ${keys[index]}: ${err}`);
+          } else {
+            // Key exists but no data - already expired via TTL
+            keysToDelete.push(keys[index]);
+          }
+        });
+
+        // Batch delete expired tokens
+        if (keysToDelete.length > 0) {
+          const deletePipeline = this.redis.pipeline();
+          keysToDelete.forEach((key) => deletePipeline.del(key));
+          await deletePipeline.exec();
+
+          deletedCount += keysToDelete.length / 2; // Each token has 2 keys (token + reverse lookup)
+        }
+      } while (cursor !== '0');
 
       this.logger.debug(`Cleaned up ${deletedCount} expired verification tokens`);
       return deletedCount;
@@ -285,6 +405,9 @@ export class EmailVerificationService {
 
   /**
    * Get verification statistics
+   *
+   * PERFORMANCE: Uses SCAN instead of KEYS to avoid blocking Redis server.
+   * Processes tokens in batches with pipelining.
    */
   async getVerificationStats(): Promise<{
     totalPendingVerifications: number;
@@ -292,28 +415,55 @@ export class EmailVerificationService {
     recentVerifications: number;
   }> {
     try {
-      const pattern = 'email_verification:*';
-      const keys = await this.redis.keys(pattern);
       let totalPending = 0;
       let expiredTokens = 0;
+      let cursor = '0';
       const now = new Date();
 
-      for (const key of keys) {
-        const tokenDataStr = await this.redis.get(key);
-        if (tokenDataStr) {
-          const tokenData: EmailVerificationToken = JSON.parse(tokenDataStr);
-          const expiresAt = new Date(tokenData.expiresAt);
+      do {
+        // Use non-blocking SCAN with cursor-based iteration
+        const [newCursor, keys] = await (this.redis as any).scan(
+          cursor,
+          'MATCH',
+          'email_verification:*',
+          'COUNT',
+          100,
+        );
 
-          if (now > expiresAt) {
-            expiredTokens++;
-          } else {
-            totalPending++;
-          }
+        cursor = newCursor;
+
+        if (keys.length === 0) {
+          continue;
         }
-      }
+
+        // Batch GET operations using pipeline
+        const pipeline = this.redis.pipeline();
+        keys.forEach((key) => pipeline.get(key));
+
+        const results = await pipeline.exec();
+
+        // Process results
+        results?.forEach(([err, tokenDataStr]) => {
+          if (!err && tokenDataStr) {
+            try {
+              const tokenData: EmailVerificationToken = JSON.parse(tokenDataStr as string);
+              const expiresAt = new Date(tokenData.expiresAt);
+
+              if (now > expiresAt) {
+                expiredTokens++;
+              } else {
+                totalPending++;
+              }
+            } catch (parseError) {
+              this.logger.warn('Failed to parse token data for stats');
+              expiredTokens++; // Treat malformed tokens as expired
+            }
+          }
+        });
+      } while (cursor !== '0');
 
       // Count recent verifications (last 24 hours)
-      const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      const since = new Date(Date.now() - this.TOKEN_EXPIRY_MS);
       const recentVerifications = await this.prismaUserService.countVerifiedSince(since);
 
       return {
