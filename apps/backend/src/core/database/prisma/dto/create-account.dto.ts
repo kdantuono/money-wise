@@ -7,6 +7,7 @@ import {
   IsNumber,
   IsJSON,
 } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { AccountType, AccountStatus, AccountSource } from '../../../../../generated/prisma';
 
 /**
@@ -73,6 +74,11 @@ export class CreateAccountDto {
    * - Max 255 characters
    * - User-defined label (e.g., "Personal Checking", "Emergency Fund")
    */
+  @ApiProperty({
+    description: 'Account name',
+    example: 'Personal Checking',
+    maxLength: 255,
+  })
   @IsNotEmpty({ message: 'Name is required' })
   @MaxLength(255, { message: 'Name cannot exceed 255 characters' })
   name!: string;
@@ -83,6 +89,10 @@ export class CreateAccountDto {
    * - MANUAL: User-entered data
    * - PLAID: Synced from bank via Plaid API
    */
+  @ApiProperty({
+    description: 'Account source (MANUAL or PLAID)',
+    enum: AccountSource,
+  })
   @IsNotEmpty({ message: 'Source is required' })
   @IsEnum(AccountSource, { message: 'Invalid account source' })
   source!: AccountSource;
@@ -95,6 +105,10 @@ export class CreateAccountDto {
    * - Set userId for personal accounts
    * - Leave null for family accounts
    */
+  @ApiPropertyOptional({
+    description: 'User ID (UUID) - for personal accounts',
+    example: 'u1234567-89ab-cdef-0123-456789abcdef',
+  })
   @IsOptional()
   @IsUUID('4', { message: 'userId must be a valid UUID' })
   userId?: string;
@@ -107,6 +121,10 @@ export class CreateAccountDto {
    * - Set familyId for shared family accounts
    * - Leave null for personal accounts
    */
+  @ApiPropertyOptional({
+    description: 'Family ID (UUID) - for family accounts',
+    example: 'f1234567-89ab-cdef-0123-456789abcdef',
+  })
   @IsOptional()
   @IsUUID('4', { message: 'familyId must be a valid UUID' })
   familyId?: string;
@@ -117,6 +135,11 @@ export class CreateAccountDto {
    * - CHECKING, SAVINGS, CREDIT_CARD, INVESTMENT, LOAN, CASH, OTHER
    * - Used for categorization and reporting
    */
+  @ApiPropertyOptional({
+    description: 'Account type',
+    enum: AccountType,
+    default: AccountType.OTHER,
+  })
   @IsOptional()
   @IsEnum(AccountType, { message: 'Invalid account type' })
   type?: AccountType;
@@ -129,6 +152,11 @@ export class CreateAccountDto {
    * - CLOSED: Permanently closed
    * - ERROR: Sync error (Plaid accounts)
    */
+  @ApiPropertyOptional({
+    description: 'Account status',
+    enum: AccountStatus,
+    default: AccountStatus.ACTIVE,
+  })
   @IsOptional()
   @IsEnum(AccountStatus, { message: 'Invalid account status' })
   status?: AccountStatus;
@@ -140,6 +168,11 @@ export class CreateAccountDto {
    * - Negative values allowed (overdrafts, credit card debt)
    * - Range: -9999999999999.99 to 9999999999999.99
    */
+  @ApiPropertyOptional({
+    description: 'Current balance',
+    example: 1000.00,
+    default: 0.00,
+  })
   @IsOptional()
   @IsNumber({}, { message: 'currentBalance must be a number' })
   currentBalance?: number;
@@ -151,6 +184,10 @@ export class CreateAccountDto {
    * - For checking: currentBalance - pending debits
    * - For credit cards: creditLimit - currentBalance
    */
+  @ApiPropertyOptional({
+    description: 'Available balance',
+    example: 950.00,
+  })
   @IsOptional()
   @IsNumber({}, { message: 'availableBalance must be a number' })
   availableBalance?: number;
@@ -161,6 +198,10 @@ export class CreateAccountDto {
    * - Only relevant for credit card accounts
    * - Max credit available to user
    */
+  @ApiPropertyOptional({
+    description: 'Credit limit (for credit cards)',
+    example: 5000.00,
+  })
   @IsOptional()
   @IsNumber({}, { message: 'creditLimit must be a number' })
   creditLimit?: number;
@@ -171,6 +212,12 @@ export class CreateAccountDto {
    * - ISO 4217 currency code (e.g., USD, EUR, GBP)
    * - Max 3 characters
    */
+  @ApiPropertyOptional({
+    description: 'Currency code (ISO 4217)',
+    example: 'USD',
+    default: 'USD',
+    maxLength: 3,
+  })
   @IsOptional()
   @MaxLength(3, { message: 'Currency code cannot exceed 3 characters' })
   currency?: string;
@@ -181,6 +228,11 @@ export class CreateAccountDto {
    * - Max 255 characters
    * - Displayed in UI (e.g., "Chase Bank", "Wells Fargo")
    */
+  @ApiPropertyOptional({
+    description: 'Institution name',
+    example: 'Chase Bank',
+    maxLength: 255,
+  })
   @IsOptional()
   @MaxLength(255, { message: 'Institution name cannot exceed 255 characters' })
   institutionName?: string;
@@ -192,6 +244,10 @@ export class CreateAccountDto {
    * - Globally unique identifier from Plaid API
    * - Unique constraint enforced at database level
    */
+  @ApiPropertyOptional({
+    description: 'Plaid Account ID',
+    example: 'plaid_account_123',
+  })
   @IsOptional()
   plaidAccountId?: string;
 
@@ -201,6 +257,10 @@ export class CreateAccountDto {
    * - Links multiple accounts from same bank (e.g., checking + savings)
    * - Multiple accounts can share same plaidItemId
    */
+  @ApiPropertyOptional({
+    description: 'Plaid Item ID',
+    example: 'plaid_item_456',
+  })
   @IsOptional()
   plaidItemId?: string;
 
@@ -211,6 +271,10 @@ export class CreateAccountDto {
    * - Sensitive credential (encrypted at rest)
    * - Never exposed in API responses
    */
+  @ApiPropertyOptional({
+    description: 'Plaid Access Token (encrypted)',
+    example: 'access-sandbox-token',
+  })
   @IsOptional()
   plaidAccessToken?: string;
 
@@ -220,6 +284,10 @@ export class CreateAccountDto {
    * - Stores arbitrary JSON from Plaid API
    * - Example: { mask: "1234", subtype: "checking", officialName: "Chase Checking" }
    */
+  @ApiPropertyOptional({
+    description: 'Plaid metadata (JSONB)',
+    example: { mask: '1234', subtype: 'checking' },
+  })
   @IsOptional()
   @IsJSON({ message: 'plaidMetadata must be valid JSON' })
   plaidMetadata?: any;
@@ -230,6 +298,10 @@ export class CreateAccountDto {
    * - User-defined settings
    * - Example: { autoSync: true, syncFrequency: "daily", budgetIncluded: true }
    */
+  @ApiPropertyOptional({
+    description: 'Account settings (JSONB)',
+    example: { autoSync: true, syncFrequency: 'daily' },
+  })
   @IsOptional()
   @IsJSON({ message: 'settings must be valid JSON' })
   settings?: any;

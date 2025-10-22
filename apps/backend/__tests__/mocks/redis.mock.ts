@@ -98,6 +98,25 @@ export class MockRedis extends EventEmitter {
     return Promise.resolve(count);
   });
 
+  getdel = jest.fn((key: string) => {
+    this.recordCall('getdel', [key]);
+    // Check if key has expired
+    const expiration = this.expirations.get(key);
+    if (expiration && Date.now() >= expiration) {
+      this.storage.delete(key);
+      this.expirations.delete(key);
+      return Promise.resolve(null);
+    }
+
+    const value = this.storage.get(key);
+    // Delete the key and its expiration after getting the value
+    if (value !== undefined) {
+      this.storage.delete(key);
+      this.expirations.delete(key);
+    }
+    return Promise.resolve(value || null);
+  });
+
   // Number operations
   incr = jest.fn((key: string) => {
     this.recordCall('incr', [key]);
@@ -180,6 +199,10 @@ export class MockRedis extends EventEmitter {
         commands.push(['set', key, value]);
         return pipelineObj;
       },
+      setex: (key: string, seconds: number, value: string) => {
+        commands.push(['setex', key, seconds, value]);
+        return pipelineObj;
+      },
       del: (...keys: string[]) => {
         commands.push(['del', ...keys]);
         return pipelineObj;
@@ -216,6 +239,15 @@ export class MockRedis extends EventEmitter {
           }
           if (method === 'set') {
             this.storage.set(args[0], args[1]);
+            return [null, 'OK'];
+          }
+          if (method === 'setex') {
+            // setex(key, seconds, value)
+            const key = args[0];
+            const seconds = args[1];
+            const value = args[2];
+            this.storage.set(key, value);
+            this.expirations.set(key, Date.now() + seconds * 1000);
             return [null, 'OK'];
           }
           if (method === 'del') {
@@ -279,6 +311,43 @@ export class MockRedis extends EventEmitter {
   disconnect = jest.fn(() => {
     this.recordCall('disconnect', []);
     this.removeAllListeners();
+  });
+
+  // Scripting operations
+  eval = jest.fn((script: string, numKeys: number, ...args: any[]) => {
+    this.recordCall('eval', [script, numKeys, ...args]);
+
+    // Parse KEYS and ARGV from args
+    const keys = args.slice(0, numKeys);
+    const argv = args.slice(numKeys);
+
+    try {
+      // Handle the specific Lua scripts used in EmailVerificationService
+      // Script: redis.call('INCR', KEYS[1]); redis.call('EXPIRE', KEYS[1], ARGV[1]); return 1
+
+      if (keys.length > 0) {
+        const key = keys[0];
+
+        // INCR operation
+        const current = parseInt(this.storage.get(key) || '0', 10);
+        const newValue = current + 1;
+        this.storage.set(key, newValue.toString());
+
+        // EXPIRE operation (if ARGV provided)
+        if (argv.length > 0) {
+          const ttlSeconds = parseInt(argv[0], 10);
+          if (ttlSeconds > 0) {
+            this.expirations.set(key, Date.now() + ttlSeconds * 1000);
+          }
+        }
+
+        return Promise.resolve(1);
+      }
+
+      return Promise.resolve(null);
+    } catch (error) {
+      return Promise.reject(error);
+    }
   });
 
   // Hash operations

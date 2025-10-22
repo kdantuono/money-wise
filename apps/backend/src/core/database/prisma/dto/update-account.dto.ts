@@ -8,6 +8,7 @@ import {
   IsDate,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { ApiPropertyOptional } from '@nestjs/swagger';
 import { AccountType, AccountStatus } from '../../../../../generated/prisma';
 
 /**
@@ -71,6 +72,11 @@ export class UpdateAccountDto {
    * - Max 255 characters
    * - User-defined label (e.g., "Personal Checking", "Emergency Fund")
    */
+  @ApiPropertyOptional({
+    description: 'Account name',
+    example: 'Updated Checking',
+    maxLength: 255,
+  })
   @IsOptional()
   @MaxLength(255, { message: 'Name cannot exceed 255 characters' })
   name?: string;
@@ -81,6 +87,10 @@ export class UpdateAccountDto {
    * - CHECKING, SAVINGS, CREDIT_CARD, INVESTMENT, LOAN, CASH, OTHER
    * - Used for categorization and reporting
    */
+  @ApiPropertyOptional({
+    description: 'Account type',
+    enum: AccountType,
+  })
   @IsOptional()
   @IsEnum(AccountType, { message: 'Invalid account type' })
   type?: AccountType;
@@ -93,6 +103,10 @@ export class UpdateAccountDto {
    * - CLOSED: Permanently closed
    * - ERROR: Sync error (Plaid accounts)
    */
+  @ApiPropertyOptional({
+    description: 'Account status',
+    enum: AccountStatus,
+  })
   @IsOptional()
   @IsEnum(AccountStatus, { message: 'Invalid account status' })
   status?: AccountStatus;
@@ -104,6 +118,10 @@ export class UpdateAccountDto {
    * - Negative values allowed (overdrafts, credit card debt)
    * - Range: -9999999999999.99 to 9999999999999.99
    */
+  @ApiPropertyOptional({
+    description: 'Current balance',
+    example: 1500.00,
+  })
   @IsOptional()
   @IsNumber({}, { message: 'currentBalance must be a number' })
   currentBalance?: number;
@@ -113,6 +131,10 @@ export class UpdateAccountDto {
    * - OPTIONAL (partial update)
    * - Different from currentBalance for accounts with pending transactions
    */
+  @ApiPropertyOptional({
+    description: 'Available balance',
+    example: 1400.00,
+  })
   @IsOptional()
   @IsNumber({}, { message: 'availableBalance must be a number' })
   availableBalance?: number;
@@ -122,6 +144,10 @@ export class UpdateAccountDto {
    * - OPTIONAL (partial update)
    * - Only relevant for credit card accounts
    */
+  @ApiPropertyOptional({
+    description: 'Credit limit',
+    example: 5000.00,
+  })
   @IsOptional()
   @IsNumber({}, { message: 'creditLimit must be a number' })
   creditLimit?: number;
@@ -132,6 +158,10 @@ export class UpdateAccountDto {
    * - ISO 4217 currency code (e.g., USD, EUR, GBP)
    * - Max 3 characters
    */
+  @ApiPropertyOptional({
+    description: 'Currency code (ISO 4217)',
+    example: 'USD',
+  })
   @IsOptional()
   @MaxLength(3, { message: 'Currency code cannot exceed 3 characters' })
   currency?: string;
@@ -141,6 +171,10 @@ export class UpdateAccountDto {
    * - OPTIONAL (partial update)
    * - Max 255 characters
    */
+  @ApiPropertyOptional({
+    description: 'Institution name',
+    example: 'Chase Bank',
+  })
   @IsOptional()
   @MaxLength(255, { message: 'Institution name cannot exceed 255 characters' })
   institutionName?: string;
@@ -150,6 +184,10 @@ export class UpdateAccountDto {
    * - OPTIONAL (partial update)
    * - Globally unique identifier from Plaid API
    */
+  @ApiPropertyOptional({
+    description: 'Plaid Account ID',
+    example: 'plaid_account_123',
+  })
   @IsOptional()
   plaidAccountId?: string;
 
@@ -158,6 +196,10 @@ export class UpdateAccountDto {
    * - OPTIONAL (partial update)
    * - Links multiple accounts from same bank
    */
+  @ApiPropertyOptional({
+    description: 'Plaid Item ID',
+    example: 'plaid_item_456',
+  })
   @IsOptional()
   plaidItemId?: string;
 
@@ -167,6 +209,10 @@ export class UpdateAccountDto {
    * - Required for Plaid API requests
    * - Sensitive credential (encrypted at rest)
    */
+  @ApiPropertyOptional({
+    description: 'Plaid Access Token (encrypted)',
+    example: 'access-sandbox-token',
+  })
   @IsOptional()
   plaidAccessToken?: string;
 
@@ -175,6 +221,10 @@ export class UpdateAccountDto {
    * - OPTIONAL (partial update)
    * - Stores arbitrary JSON from Plaid API
    */
+  @ApiPropertyOptional({
+    description: 'Plaid metadata (JSONB)',
+    example: { mask: '1234', subtype: 'checking' },
+  })
   @IsOptional()
   @IsJSON({ message: 'plaidMetadata must be valid JSON' })
   plaidMetadata?: any;
@@ -184,6 +234,10 @@ export class UpdateAccountDto {
    * - OPTIONAL (partial update)
    * - Quick enable/disable without changing status
    */
+  @ApiPropertyOptional({
+    description: 'Account active flag',
+    example: true,
+  })
   @IsOptional()
   @IsBoolean({ message: 'isActive must be a boolean' })
   isActive?: boolean;
@@ -193,6 +247,10 @@ export class UpdateAccountDto {
    * - OPTIONAL (partial update)
    * - Enable/disable automatic syncing for Plaid accounts
    */
+  @ApiPropertyOptional({
+    description: 'Enable/disable automatic syncing',
+    example: true,
+  })
   @IsOptional()
   @IsBoolean({ message: 'syncEnabled must be a boolean' })
   syncEnabled?: boolean;
@@ -202,6 +260,10 @@ export class UpdateAccountDto {
    * - OPTIONAL (partial update)
    * - Updated after successful Plaid sync
    */
+  @ApiPropertyOptional({
+    description: 'Last sync timestamp',
+    example: '2024-01-15T10:00:00Z',
+  })
   @IsOptional()
   @IsDate({ message: 'lastSyncAt must be a valid date' })
   @Type(() => Date)
@@ -213,6 +275,10 @@ export class UpdateAccountDto {
    * - Set when Plaid sync fails (e.g., "Item login required")
    * - Cleared on successful sync (set to null)
    */
+  @ApiPropertyOptional({
+    description: 'Sync error message',
+    example: 'Item login required',
+  })
   @IsOptional()
   syncError?: string | null;
 
@@ -222,6 +288,10 @@ export class UpdateAccountDto {
    * - User-defined settings
    * - Example: { autoSync: true, syncFrequency: "daily", budgetIncluded: true }
    */
+  @ApiPropertyOptional({
+    description: 'Account settings (JSONB)',
+    example: { autoSync: true, syncFrequency: 'daily' },
+  })
   @IsOptional()
   @IsJSON({ message: 'settings must be valid JSON' })
   settings?: any;
@@ -232,6 +302,10 @@ export class UpdateAccountDto {
    * - Last 4 digits or masked number (e.g., "****1234")
    * - Sensitive field (encrypted at rest)
    */
+  @ApiPropertyOptional({
+    description: 'Account number (masked)',
+    example: '****1234',
+  })
   @IsOptional()
   accountNumber?: string | null;
 
@@ -241,6 +315,10 @@ export class UpdateAccountDto {
    * - Bank routing number (US only)
    * - Sensitive field (encrypted at rest)
    */
+  @ApiPropertyOptional({
+    description: 'Routing number',
+    example: '021000021',
+  })
   @IsOptional()
   routingNumber?: string | null;
 }

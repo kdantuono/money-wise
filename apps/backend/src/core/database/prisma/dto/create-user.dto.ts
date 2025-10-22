@@ -8,6 +8,7 @@ import {
   MaxLength,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
+import { ApiProperty } from '@nestjs/swagger';
 import { UserRole, UserStatus } from '../../../../../generated/prisma';
 
 /**
@@ -52,6 +53,10 @@ export class CreateUserDto {
    * - Automatically lowercased and trimmed
    * - Unique constraint enforced at database level
    */
+  @ApiProperty({
+    description: 'User email address (unique, case-insensitive)',
+    example: 'john.doe@example.com',
+  })
   @IsNotEmpty({ message: 'Email is required' })
   @IsEmail({}, { message: 'Invalid email format' })
   @MaxLength(255, { message: 'Email cannot exceed 255 characters' })
@@ -66,6 +71,11 @@ export class CreateUserDto {
    * - NEVER stored in plain text
    * - NEVER returned in API responses
    */
+  @ApiProperty({
+    description: 'User password (minimum 8 characters, hashed with bcrypt before storage)',
+    example: 'SecurePassword123!',
+    minLength: 8,
+  })
   @IsNotEmpty({ message: 'Password is required' })
   @MinLength(8, { message: 'Password must be at least 8 characters long' })
   password!: string;
@@ -77,6 +87,10 @@ export class CreateUserDto {
    * - Foreign key constraint enforced at database level
    * - IMMUTABLE after creation (users cannot change families)
    */
+  @ApiProperty({
+    description: 'Family ID (UUID) - users must belong to a family',
+    example: 'f1234567-89ab-cdef-0123-456789abcdef',
+  })
   @IsNotEmpty({ message: 'familyId is required - users must belong to a family' })
   @IsUUID('4', { message: 'familyId must be a valid UUID' })
   familyId!: string;
@@ -87,6 +101,11 @@ export class CreateUserDto {
    * - Max 255 characters
    * - No special character restrictions (supports unicode)
    */
+  @ApiProperty({
+    description: 'User first name',
+    example: 'John',
+    required: false,
+  })
   @IsOptional()
   @MaxLength(255, { message: 'First name cannot exceed 255 characters' })
   firstName?: string;
@@ -97,6 +116,11 @@ export class CreateUserDto {
    * - Max 255 characters
    * - No special character restrictions (supports unicode)
    */
+  @ApiProperty({
+    description: 'User last name',
+    example: 'Doe',
+    required: false,
+  })
   @IsOptional()
   @MaxLength(255, { message: 'Last name cannot exceed 255 characters' })
   lastName?: string;
@@ -108,6 +132,12 @@ export class CreateUserDto {
    * - MEMBER: Standard access (default)
    * - VIEWER: Read-only (for children)
    */
+  @ApiProperty({
+    description: 'User role (ADMIN, MEMBER, VIEWER)',
+    enum: UserRole,
+    default: UserRole.MEMBER,
+    required: false,
+  })
   @IsOptional()
   @IsEnum(UserRole, { message: 'Invalid user role' })
   role?: UserRole;
@@ -119,6 +149,12 @@ export class CreateUserDto {
    * - INACTIVE: Temporarily disabled
    * - SUSPENDED: System-level suspension
    */
+  @ApiProperty({
+    description: 'User account status (ACTIVE, INACTIVE, SUSPENDED)',
+    enum: UserStatus,
+    default: UserStatus.ACTIVE,
+    required: false,
+  })
   @IsOptional()
   @IsEnum(UserStatus, { message: 'Invalid user status' })
   status?: UserStatus;
