@@ -109,6 +109,43 @@ class MockRedis {
     return 1;
   }
 
+  async eval(
+    script: string,
+    numKeys: number,
+    ...args: any[]
+  ): Promise<any> {
+    // Simple mock for Lua script evaluation
+    // In this case, we're mainly supporting INCR + EXPIRE pattern
+    // Extract keys and argv from args
+    const keys = args.slice(0, numKeys);
+    const argv = args.slice(numKeys);
+
+    // Mock the common INCR + EXPIRE pattern
+    if (
+      script.includes('INCR') &&
+      script.includes('EXPIRE') &&
+      keys.length > 0
+    ) {
+      const key = keys[0];
+      const ttl = argv[0];
+
+      // Perform INCR
+      const entry = this.store.get(key);
+      const currentValue = entry ? parseInt(entry.value) : 0;
+      const newValue = currentValue + 1;
+
+      // Set with expiration
+      this.store.set(key, {
+        value: newValue.toString(),
+        expiresAt: Date.now() + ttl * 1000,
+      });
+
+      return 1; // Return value from script
+    }
+
+    return 1; // Default return
+  }
+
   pipeline(): MockRedisPipeline {
     return new MockRedisPipeline(this.store);
   }

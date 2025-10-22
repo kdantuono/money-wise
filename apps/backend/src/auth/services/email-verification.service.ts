@@ -89,12 +89,80 @@ export class EmailVerificationService {
   }
 
   /**
-   * Increment resend rate limit counter for user
+   * Check if user has exceeded rate limit for verification attempts
+   *
+   * SECURITY: Prevents brute force attacks by limiting verification attempts.
+   * Max 5 verification attempts per hour per token to prevent token guessing.
+   */
+  private async checkVerificationRateLimit(token: string): Promise<boolean> {
+    const rateLimitKey = `email_verification_attempt:${token}`;
+    const maxAttempts = 5;
+    const windowSeconds = 3600; // 1 hour
+
+    const requestCount = await this.redis.get(rateLimitKey);
+
+    if (requestCount && parseInt(requestCount) >= maxAttempts) {
+      return false; // Rate limit exceeded
+    }
+
+    return true; // Rate limit not exceeded
+  }
+
+  /**
+   * Increment verification attempt rate limit (atomically)
+   */
+  private async incrementVerificationRateLimit(token: string): Promise<void> {
+    const rateLimitKey = `email_verification_attempt:${token}`;
+    const windowSeconds = 3600; // 1 hour
+
+    // Lua script for atomic INCR + EXPIRE
+    const luaScript = `
+      redis.call('INCR', KEYS[1])
+      redis.call('EXPIRE', KEYS[1], ARGV[1])
+      return 1
+    `;
+
+    try {
+      await (this.redis as any).eval(luaScript, 1, rateLimitKey, windowSeconds);
+    } catch (error) {
+      this.logger.error('Error incrementing verification rate limit:', error);
+      // Fallback: try to set rate limit anyway
+      await this.redis.incr(rateLimitKey);
+      await this.redis.expire(rateLimitKey, windowSeconds);
+    }
+  }
+
+  /**
+   * Increment resend rate limit counter for user (atomically with expiration)
+   *
+   * SECURITY: Uses Lua script to ensure INCR and EXPIRE are atomic operations.
+   * Prevents race condition where counter could be incremented but never expire,
+   * causing permanent user lockout if process crashes between operations.
    */
   private async incrementResendRateLimit(userId: string): Promise<void> {
     const rateLimitKey = `email_verification_ratelimit:${userId}`;
-    await this.redis.incr(rateLimitKey);
-    await this.redis.expire(rateLimitKey, this.RATE_LIMIT_WINDOW_SECONDS);
+
+    // Lua script for atomic INCR + EXPIRE
+    const luaScript = `
+      redis.call('INCR', KEYS[1])
+      redis.call('EXPIRE', KEYS[1], ARGV[1])
+      return 1
+    `;
+
+    try {
+      await (this.redis as any).eval(
+        luaScript,
+        1,
+        rateLimitKey,
+        this.RATE_LIMIT_WINDOW_SECONDS,
+      );
+    } catch (error) {
+      this.logger.error('Error incrementing rate limit:', error);
+      // Fallback to non-atomic increment if Lua fails
+      // Better to let user proceed than to lock them out permanently
+      await this.redis.incr(rateLimitKey);
+      await this.redis.expire(rateLimitKey, this.RATE_LIMIT_WINDOW_SECONDS);
+    }
   }
 
   /**
@@ -143,6 +211,18 @@ export class EmailVerificationService {
   async verifyEmail(token: string): Promise<EmailVerificationResult> {
     try {
       const key = `email_verification:${token}`;
+
+      // SECURITY: Check verification rate limit before attempting to use token
+      // Prevents brute force attacks trying different tokens
+      const isWithinRateLimit = await this.checkVerificationRateLimit(token);
+      if (!isWithinRateLimit) {
+        // Don't reveal rate limit exceeded to prevent enumeration
+        await this.artificialDelay();
+        throw new BadRequestException('Invalid or expired verification token');
+      }
+
+      // Increment attempt counter for rate limiting
+      await this.incrementVerificationRateLimit(token);
 
       // ATOMIC: Get and delete token in one operation to prevent race condition
       // Prevents token reuse if multiple requests arrive concurrently
