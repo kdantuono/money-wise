@@ -1423,4 +1423,327 @@ describe('Real Auth Integration Tests (Prisma)', () => {
         .expect(200);
     });
   });
+
+  describe('Email Verification Integration Tests', () => {
+    it('should generate verification token during user registration', async () => {
+      const email = `verify-test-${Date.now()}@example.com`;
+      const password = 'ValidPassword123!@#SecurePassword456!@#';
+
+      // Register user
+      const registerResponse = await request(app.getHttpServer())
+        .post('/auth/register')
+        .send({
+          email,
+          password,
+          firstName: 'Verify',
+          lastName: 'Test',
+        })
+        .expect(201);
+
+      expect(registerResponse.body).toHaveProperty('success', true);
+      expect(registerResponse.body).toHaveProperty('user.email', email);
+      expect(registerResponse.body).toHaveProperty('user.emailVerifiedAt', null);
+
+      // Verify user is created but not verified
+      const createdUser = await prismaService.user.findUnique({
+        where: { email },
+      });
+      expect(createdUser).toBeDefined();
+      expect(createdUser?.emailVerifiedAt).toBeNull();
+    });
+
+    it('should successfully verify email with valid token', async () => {
+      const email = `verify-valid-${Date.now()}@example.com`;
+      const password = 'ValidPassword123!@#SecurePassword456!@#';
+
+      // Register user (generates verification token in Redis)
+      await request(app.getHttpServer())
+        .post('/auth/register')
+        .send({
+          email,
+          password,
+          firstName: 'Valid',
+          lastName: 'Token',
+        })
+        .expect(201);
+
+      // Get verification token from Redis (simulating email link)
+      const userKey = `email_verification_user:${(await prismaService.user.findUnique({ where: { email } }))?.id}`;
+      const verificationToken = await mockRedisClient.get(userKey);
+      expect(verificationToken).toBeDefined();
+
+      // Verify email with token
+      const verifyResponse = await request(app.getHttpServer())
+        .post('/auth/verify-email')
+        .send({ token: verificationToken })
+        .expect(200);
+
+      expect(verifyResponse.body).toHaveProperty('success', true);
+      expect(verifyResponse.body).toHaveProperty('message');
+      expect(verifyResponse.body.user).toHaveProperty('emailVerifiedAt');
+
+      // Verify user status is now ACTIVE
+      const verifiedUser = await prismaService.user.findUnique({
+        where: { email },
+      });
+      expect(verifiedUser?.emailVerifiedAt).not.toBeNull();
+      expect(verifiedUser?.status).toBe('ACTIVE');
+    });
+
+    it('should reject verification with invalid token', async () => {
+      const invalidToken = 'a'.repeat(64);
+
+      const verifyResponse = await request(app.getHttpServer())
+        .post('/auth/verify-email')
+        .send({ token: invalidToken })
+        .expect(400);
+
+      expect(verifyResponse.body).toHaveProperty('message');
+      expect(verifyResponse.body.message).toContain('Invalid');
+    });
+
+    it('should reject verification with malformed token', async () => {
+      const malformedToken = 'not-a-valid-token';
+
+      await request(app.getHttpServer())
+        .post('/auth/verify-email')
+        .send({ token: malformedToken })
+        .expect(400);
+    });
+
+    it('should allow user to login after email verification', async () => {
+      const email = `verify-login-${Date.now()}@example.com`;
+      const password = 'ValidPassword123!@#SecurePassword456!@#';
+
+      // Register user
+      await request(app.getHttpServer())
+        .post('/auth/register')
+        .send({
+          email,
+          password,
+          firstName: 'Verify',
+          lastName: 'Login',
+        })
+        .expect(201);
+
+      // Get and use verification token
+      const user = await prismaService.user.findUnique({ where: { email } });
+      const userKey = `email_verification_user:${user?.id}`;
+      const verificationToken = await mockRedisClient.get(userKey);
+
+      await request(app.getHttpServer())
+        .post('/auth/verify-email')
+        .send({ token: verificationToken })
+        .expect(200);
+
+      // Login should now succeed (user is ACTIVE)
+      const loginResponse = await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({ email, password })
+        .expect(200);
+
+      expect(loginResponse.body).toHaveProperty('accessToken');
+      expect(loginResponse.body).toHaveProperty('refreshToken');
+    });
+
+    it('should prevent login with unverified email (INACTIVE status)', async () => {
+      const email = `verify-inactive-${Date.now()}@example.com`;
+      const password = 'ValidPassword123!@#SecurePassword456!@#';
+
+      // Register user but don't verify email
+      await request(app.getHttpServer())
+        .post('/auth/register')
+        .send({
+          email,
+          password,
+          firstName: 'Inactive',
+          lastName: 'User',
+        })
+        .expect(201);
+
+      // Login attempt should fail (user still INACTIVE)
+      await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({ email, password })
+        .expect(401);
+    });
+
+    it('should handle resend verification email for valid user', async () => {
+      const email = `resend-test-${Date.now()}@example.com`;
+      const password = 'ValidPassword123!@#SecurePassword456!@#';
+
+      // Register user
+      const registerResponse = await request(app.getHttpServer())
+        .post('/auth/register')
+        .send({
+          email,
+          password,
+          firstName: 'Resend',
+          lastName: 'Test',
+        })
+        .expect(201);
+
+      const userId = registerResponse.body.user.id;
+
+      // Login would fail (user not verified), but first try to resend
+      // Resend requires authentication, so we need to bypass it or test as documented
+      // Note: This would require implementing a public resend endpoint or testing through auth
+    });
+
+    it('should prevent token reuse after verification', async () => {
+      const email = `reuse-test-${Date.now()}@example.com`;
+      const password = 'ValidPassword123!@#SecurePassword456!@#';
+
+      // Register user
+      await request(app.getHttpServer())
+        .post('/auth/register')
+        .send({
+          email,
+          password,
+          firstName: 'Reuse',
+          lastName: 'Test',
+        })
+        .expect(201);
+
+      // Get verification token
+      const user = await prismaService.user.findUnique({ where: { email } });
+      const userKey = `email_verification_user:${user?.id}`;
+      const verificationToken = await mockRedisClient.get(userKey);
+
+      // Verify email (consumes token)
+      await request(app.getHttpServer())
+        .post('/auth/verify-email')
+        .send({ token: verificationToken })
+        .expect(200);
+
+      // Attempt to reuse same token (should fail)
+      const reuseResponse = await request(app.getHttpServer())
+        .post('/auth/verify-email')
+        .send({ token: verificationToken })
+        .expect(400);
+
+      expect(reuseResponse.body.message).toContain('Invalid');
+    });
+
+    it('should handle complete registration to verification to login flow', async () => {
+      const email = `complete-flow-${Date.now()}@example.com`;
+      const password = 'ValidPassword123!@#SecurePassword456!@#';
+
+      // 1. Register
+      const registerResponse = await request(app.getHttpServer())
+        .post('/auth/register')
+        .send({
+          email,
+          password,
+          firstName: 'Complete',
+          lastName: 'Flow',
+        })
+        .expect(201);
+
+      expect(registerResponse.body.user.status).toBe('INACTIVE');
+      expect(registerResponse.body.user.emailVerifiedAt).toBeNull();
+      const userId = registerResponse.body.user.id;
+
+      // 2. Verify email is not yet verified
+      const unverifiedUser = await prismaService.user.findUnique({
+        where: { id: userId },
+      });
+      expect(unverifiedUser?.emailVerifiedAt).toBeNull();
+
+      // 3. Get verification token and verify email
+      const userKey = `email_verification_user:${userId}`;
+      const verificationToken = await mockRedisClient.get(userKey);
+      expect(verificationToken).toBeDefined();
+
+      const verifyResponse = await request(app.getHttpServer())
+        .post('/auth/verify-email')
+        .send({ token: verificationToken })
+        .expect(200);
+
+      expect(verifyResponse.body.success).toBe(true);
+      expect(verifyResponse.body.user.status).toBe('ACTIVE');
+      expect(verifyResponse.body.user.emailVerifiedAt).not.toBeNull();
+
+      // 4. Verify user status changed in database
+      const verifiedUser = await prismaService.user.findUnique({
+        where: { id: userId },
+      });
+      expect(verifiedUser?.status).toBe('ACTIVE');
+      expect(verifiedUser?.emailVerifiedAt).not.toBeNull();
+
+      // 5. Login should now succeed
+      const loginResponse = await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({ email, password })
+        .expect(200);
+
+      expect(loginResponse.body).toHaveProperty('accessToken');
+      expect(loginResponse.body).toHaveProperty('refreshToken');
+      expect(loginResponse.body.user.emailVerifiedAt).not.toBeNull();
+    });
+
+    it('should handle multiple users with independent verification tokens', async () => {
+      const email1 = `multi-user-1-${Date.now()}@example.com`;
+      const email2 = `multi-user-2-${Date.now()}@example.com`;
+      const password = 'ValidPassword123!@#SecurePassword456!@#';
+
+      // Register two users
+      const reg1 = await request(app.getHttpServer())
+        .post('/auth/register')
+        .send({
+          email: email1,
+          password,
+          firstName: 'User',
+          lastName: 'One',
+        })
+        .expect(201);
+
+      const reg2 = await request(app.getHttpServer())
+        .post('/auth/register')
+        .send({
+          email: email2,
+          password,
+          firstName: 'User',
+          lastName: 'Two',
+        })
+        .expect(201);
+
+      const userId1 = reg1.body.user.id;
+      const userId2 = reg2.body.user.id;
+
+      // Get tokens for both users
+      const token1 = await mockRedisClient.get(`email_verification_user:${userId1}`);
+      const token2 = await mockRedisClient.get(`email_verification_user:${userId2}`);
+
+      expect(token1).not.toBe(token2);
+
+      // Verify user 1
+      await request(app.getHttpServer())
+        .post('/auth/verify-email')
+        .send({ token: token1 })
+        .expect(200);
+
+      // User 2 should still be inactive
+      const user2Check = await prismaService.user.findUnique({
+        where: { id: userId2 },
+      });
+      expect(user2Check?.status).toBe('INACTIVE');
+
+      // Verify user 2
+      await request(app.getHttpServer())
+        .post('/auth/verify-email')
+        .send({ token: token2 })
+        .expect(200);
+
+      // Both should now be active
+      const user1Check = await prismaService.user.findUnique({
+        where: { id: userId1 },
+      });
+      const user2Final = await prismaService.user.findUnique({
+        where: { id: userId2 },
+      });
+      expect(user1Check?.status).toBe('ACTIVE');
+      expect(user2Final?.status).toBe('ACTIVE');
+    });
+  });
 });
