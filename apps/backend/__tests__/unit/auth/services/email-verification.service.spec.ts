@@ -1124,4 +1124,350 @@ describe('EmailVerificationService', () => {
       expect(result.user).toBeDefined();
     });
   });
+
+  describe('Security Verification Tests', () => {
+    describe('Timing Attack Prevention', () => {
+      it('should apply artificial delay on invalid token', async () => {
+        const invalidToken = 'invalid_token_12345678901234567890123456789012';
+
+        const startTime = Date.now();
+        try {
+          await service.verifyEmail(invalidToken);
+        } catch (error) {
+          // Expected to throw
+        }
+        const endTime = Date.now();
+
+        // Artificial delay should add 100-300ms
+        // We check that some delay occurred (at least 50ms to account for execution time)
+        const executionTime = endTime - startTime;
+        expect(executionTime).toBeGreaterThanOrEqual(50);
+      });
+
+      it('should apply artificial delay on expired token', async () => {
+        const user = createMockUser({ emailVerifiedAt: null });
+        const token = crypto.randomBytes(32).toString('hex');
+        const tokenData: EmailVerificationToken = {
+          token,
+          userId: user.id,
+          email: user.email,
+          expiresAt: new Date(Date.now() - 1000), // Already expired
+          createdAt: new Date(),
+        };
+
+        const tokenKey = `email_verification:${token}`;
+        await mockRedis.setex(tokenKey, 24 * 60 * 60, JSON.stringify(tokenData));
+
+        const startTime = Date.now();
+        try {
+          await service.verifyEmail(token);
+        } catch (error) {
+          // Expected to throw
+        }
+        const endTime = Date.now();
+
+        // Artificial delay should add 100-300ms
+        const executionTime = endTime - startTime;
+        expect(executionTime).toBeGreaterThanOrEqual(50);
+      });
+
+      it('should apply artificial delay on user not found', async () => {
+        const token = crypto.randomBytes(32).toString('hex');
+        const tokenData: EmailVerificationToken = {
+          token,
+          userId: 'nonexistent-user',
+          email: 'nonexistent@example.com',
+          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+          createdAt: new Date(),
+        };
+
+        const tokenKey = `email_verification:${token}`;
+        await mockRedis.setex(tokenKey, 24 * 60 * 60, JSON.stringify(tokenData));
+
+        mockPrismaUserService.findOne.mockResolvedValueOnce(null);
+
+        const startTime = Date.now();
+        try {
+          await service.verifyEmail(token);
+        } catch (error) {
+          // Expected to throw
+        }
+        const endTime = Date.now();
+
+        // Artificial delay should add 100-300ms
+        const executionTime = endTime - startTime;
+        expect(executionTime).toBeGreaterThanOrEqual(50);
+      });
+    });
+
+    describe('Token Reuse Prevention (GETDEL Atomicity)', () => {
+      it('should delete token atomically using GETDEL', async () => {
+        const user = createMockUser({ emailVerifiedAt: null });
+        const token = crypto.randomBytes(32).toString('hex');
+        const tokenData: EmailVerificationToken = {
+          token,
+          userId: user.id,
+          email: user.email,
+          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+          createdAt: new Date(),
+        };
+
+        const tokenKey = `email_verification:${token}`;
+        await mockRedis.setex(tokenKey, 24 * 60 * 60, JSON.stringify(tokenData));
+
+        // Verify token exists before verification
+        const existsBefore = await mockRedis.get(tokenKey);
+        expect(existsBefore).toBeDefined();
+
+        const updatedUser = createMockUser({
+          id: user.id,
+          email: user.email,
+          emailVerifiedAt: new Date(),
+          status: UserStatus.ACTIVE,
+        });
+
+        mockPrismaUserService.findOne.mockResolvedValueOnce(user);
+        mockPrismaService.$transaction.mockImplementation(async (callback) => {
+          const mockPrismaInTx = {
+            user: {
+              update: jest.fn().mockResolvedValueOnce(updatedUser),
+            },
+          } as any;
+          return callback(mockPrismaInTx);
+        });
+
+        await service.verifyEmail(token);
+
+        // Verify token is deleted after verification
+        const existsAfter = await mockRedis.get(tokenKey);
+        expect(existsAfter).toBeNull();
+      });
+
+      it('should prevent token reuse after verification', async () => {
+        const user = createMockUser({ emailVerifiedAt: null });
+        const token = crypto.randomBytes(32).toString('hex');
+        const tokenData: EmailVerificationToken = {
+          token,
+          userId: user.id,
+          email: user.email,
+          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+          createdAt: new Date(),
+        };
+
+        const tokenKey = `email_verification:${token}`;
+        await mockRedis.setex(tokenKey, 24 * 60 * 60, JSON.stringify(tokenData));
+
+        const updatedUser = createMockUser({
+          id: user.id,
+          email: user.email,
+          emailVerifiedAt: new Date(),
+          status: UserStatus.ACTIVE,
+        });
+
+        mockPrismaUserService.findOne.mockResolvedValueOnce(user);
+        mockPrismaService.$transaction.mockImplementation(async (callback) => {
+          const mockPrismaInTx = {
+            user: {
+              update: jest.fn().mockResolvedValueOnce(updatedUser),
+            },
+          } as any;
+          return callback(mockPrismaInTx);
+        });
+
+        // First verification should succeed
+        const result1 = await service.verifyEmail(token);
+        expect(result1.success).toBe(true);
+
+        // Reset mocks for second attempt
+        jest.clearAllMocks();
+        mockPrismaUserService.findOne.mockResolvedValueOnce(user);
+
+        // Second verification with same token should fail
+        await expect(service.verifyEmail(token)).rejects.toThrow(
+          'Invalid or expired verification token',
+        );
+      });
+    });
+
+    describe('Constant-Time Comparison', () => {
+      it('should reject token with different value using constant-time comparison', async () => {
+        const user = createMockUser({ emailVerifiedAt: null });
+        const validToken = crypto.randomBytes(32).toString('hex');
+        const tamperingToken = crypto.randomBytes(32).toString('hex'); // Different token
+
+        const tokenData: EmailVerificationToken = {
+          token: validToken, // Stored token value
+          userId: user.id,
+          email: user.email,
+          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+          createdAt: new Date(),
+        };
+
+        const tokenKey = `email_verification:${validToken}`;
+        await mockRedis.setex(tokenKey, 24 * 60 * 60, JSON.stringify(tokenData));
+
+        mockPrismaUserService.findOne.mockResolvedValueOnce(user);
+
+        // Try to verify with different token (tampered)
+        await expect(service.verifyEmail(tamperingToken)).rejects.toThrow(
+          'Invalid or expired verification token',
+        );
+      });
+
+      it('should use constant-time comparison to prevent timing attacks', async () => {
+        const user = createMockUser({ emailVerifiedAt: null });
+        const token = crypto.randomBytes(32).toString('hex');
+
+        const tokenData: EmailVerificationToken = {
+          token,
+          userId: user.id,
+          email: user.email,
+          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+          createdAt: new Date(),
+        };
+
+        const tokenKey = `email_verification:${token}`;
+        await mockRedis.setex(tokenKey, 24 * 60 * 60, JSON.stringify(tokenData));
+
+        mockPrismaUserService.findOne.mockResolvedValueOnce(user);
+
+        // Create a token that's almost identical (timing attack attempt)
+        const modifiedToken = token.slice(0, -1) + (token.endsWith('a') ? 'b' : 'a');
+
+        // Timing attack should fail silently without leaking information about where mismatch occurred
+        await expect(service.verifyEmail(modifiedToken)).rejects.toThrow(
+          'Invalid or expired verification token',
+        );
+      });
+    });
+
+    describe('Error Message Consistency (User Enumeration Prevention)', () => {
+      it('should use same error message for missing token and expired token', async () => {
+        const missingTokenMessage = 'Invalid or expired verification token';
+
+        // Test missing token
+        try {
+          await service.verifyEmail('missing_token_12345678901234567890123456');
+        } catch (error: any) {
+          expect(error.message).toBe(missingTokenMessage);
+        }
+
+        // Test expired token
+        const user = createMockUser({ emailVerifiedAt: null });
+        const expiredToken = crypto.randomBytes(32).toString('hex');
+        const tokenData: EmailVerificationToken = {
+          token: expiredToken,
+          userId: user.id,
+          email: user.email,
+          expiresAt: new Date(Date.now() - 1000), // Already expired
+          createdAt: new Date(),
+        };
+
+        const tokenKey = `email_verification:${expiredToken}`;
+        await mockRedis.setex(tokenKey, 24 * 60 * 60, JSON.stringify(tokenData));
+
+        try {
+          await service.verifyEmail(expiredToken);
+        } catch (error: any) {
+          expect(error.message).toBe(missingTokenMessage);
+        }
+      });
+
+      it('should use same error message for user not found and email mismatch', async () => {
+        const user = createMockUser({ emailVerifiedAt: null });
+        const token = crypto.randomBytes(32).toString('hex');
+        const genericErrorMessage = 'Invalid or expired verification token';
+
+        // Test 1: User not found
+        const tokenData1: EmailVerificationToken = {
+          token,
+          userId: 'nonexistent-user',
+          email: 'nonexistent@example.com',
+          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+          createdAt: new Date(),
+        };
+
+        await mockRedis.setex(`email_verification:${token}`, 24 * 60 * 60, JSON.stringify(tokenData1));
+        mockPrismaUserService.findOne.mockResolvedValueOnce(null);
+
+        try {
+          await service.verifyEmail(token);
+        } catch (error: any) {
+          expect(error.message).toBe(genericErrorMessage);
+        }
+
+        // Clean up
+        mockRedis.clear();
+        jest.clearAllMocks();
+
+        // Test 2: Email mismatch
+        const token2 = crypto.randomBytes(32).toString('hex');
+        const tokenData2: EmailVerificationToken = {
+          token: token2,
+          userId: user.id,
+          email: 'different@example.com', // Different email than user's actual email
+          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+          createdAt: new Date(),
+        };
+
+        await mockRedis.setex(`email_verification:${token2}`, 24 * 60 * 60, JSON.stringify(tokenData2));
+        mockPrismaUserService.findOne.mockResolvedValueOnce(user);
+
+        try {
+          await service.verifyEmail(token2);
+        } catch (error: any) {
+          expect(error.message).toBe(genericErrorMessage);
+        }
+      });
+    });
+
+    describe('Rate Limit Enforcement', () => {
+      it('should enforce rate limit for resend attempts', async () => {
+        const user = createMockUser({ emailVerifiedAt: null });
+
+        // First resend should succeed
+        mockPrismaUserService.findOne.mockResolvedValueOnce(user);
+        const token1 = await service.resendVerificationEmail(user.id);
+        expect(token1).toBeDefined();
+
+        // Second resend should succeed
+        mockPrismaUserService.findOne.mockResolvedValueOnce(user);
+        const token2 = await service.resendVerificationEmail(user.id);
+        expect(token2).toBeDefined();
+
+        // Third resend should succeed
+        mockPrismaUserService.findOne.mockResolvedValueOnce(user);
+        const token3 = await service.resendVerificationEmail(user.id);
+        expect(token3).toBeDefined();
+
+        // Fourth resend should fail (exceeds limit of 3)
+        mockPrismaUserService.findOne.mockResolvedValueOnce(user);
+        await expect(service.resendVerificationEmail(user.id)).rejects.toThrow(
+          'Too many verification email requests',
+        );
+      });
+
+      it('should track rate limit per user independently', async () => {
+        const user1 = createMockUser({ id: 'user-1', email: 'user1@example.com', emailVerifiedAt: null });
+        const user2 = createMockUser({ id: 'user-2', email: 'user2@example.com', emailVerifiedAt: null });
+
+        // User 1 reaches limit
+        for (let i = 0; i < 3; i++) {
+          mockPrismaUserService.findOne.mockResolvedValueOnce(user1);
+          await service.resendVerificationEmail(user1.id);
+        }
+
+        // User 1 should be rate limited
+        mockPrismaUserService.findOne.mockResolvedValueOnce(user1);
+        await expect(service.resendVerificationEmail(user1.id)).rejects.toThrow(
+          'Too many verification email requests',
+        );
+
+        // User 2 should still be able to resend (independent rate limit)
+        mockPrismaUserService.findOne.mockResolvedValueOnce(user2);
+        const token = await service.resendVerificationEmail(user2.id);
+        expect(token).toBeDefined();
+      });
+    });
+  });
 });

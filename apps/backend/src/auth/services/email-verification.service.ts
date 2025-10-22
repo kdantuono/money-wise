@@ -156,6 +156,13 @@ export class EmailVerificationService {
 
       const tokenData: EmailVerificationToken = JSON.parse(tokenDataStr);
 
+      // SECURITY: Verify token hasn't been tampered with using constant-time comparison
+      // Prevents timing attacks that could be used to forge or validate tokens
+      if (!this.constantTimeCompare(token, tokenData.token)) {
+        await this.artificialDelay();
+        throw new BadRequestException('Invalid or expired verification token');
+      }
+
       // Check if token is expired
       const expiresAt = new Date(tokenData.expiresAt);
       if (new Date() > expiresAt) {
@@ -185,19 +192,16 @@ export class EmailVerificationService {
         };
       }
 
-      // ATOMIC: Update both emailVerifiedAt and status in single transaction
-      // Ensures user cannot end up in inconsistent state (verified but inactive)
+      // ATOMIC: Update both emailVerifiedAt and status in single database operation
+      // Single UPDATE is more efficient and ensures atomic consistency
+      // Prevents any race condition window between two separate updates
       const updatedUser = await this.prisma.$transaction(async (prisma) => {
-        // Set email verification timestamp
-        await prisma.user.update({
-          where: { id: user.id },
-          data: { emailVerifiedAt: new Date() },
-        });
-
-        // Update status to ACTIVE
         return await prisma.user.update({
           where: { id: user.id },
-          data: { status: UserStatus.ACTIVE },
+          data: {
+            emailVerifiedAt: new Date(),
+            status: UserStatus.ACTIVE,
+          },
         });
       });
 
