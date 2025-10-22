@@ -11,6 +11,7 @@
  * - redis: Redis connection for sessions/cache
  * - sentry: Sentry error tracking
  * - monitoring: CloudWatch metrics and monitoring
+ * - emailVerification: Email verification security and rate limiting
  */
 import { Module } from '@nestjs/common';
 import { ConfigModule as NestConfigModule } from '@nestjs/config';
@@ -22,6 +23,7 @@ import { AuthConfig } from './auth.config';
 import { RedisConfig } from './redis.config';
 import { SentryConfig } from './sentry.config';
 import { MonitoringConfig } from './monitoring.config';
+import { EmailVerificationConfig } from './email-verification.config';
 import { formatValidationErrors } from './utils/format-validation-errors';
 
 /**
@@ -38,6 +40,7 @@ function validateConfig(config: Record<string, unknown>) {
     redis: plainToInstance(RedisConfig, config, { enableImplicitConversion: true }),
     sentry: plainToInstance(SentryConfig, config, { enableImplicitConversion: true }),
     monitoring: plainToInstance(MonitoringConfig, config, { enableImplicitConversion: true }),
+    emailVerification: plainToInstance(EmailVerificationConfig, config, { enableImplicitConversion: true }),
   };
 
   // Validate all configurations with security hardening

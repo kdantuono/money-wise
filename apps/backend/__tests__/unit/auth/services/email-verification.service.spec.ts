@@ -6,6 +6,7 @@ import {
   EmailVerificationService,
   EmailVerificationToken,
 } from '../../../../src/auth/services/email-verification.service';
+import { EmailVerificationConfig } from '../../../../src/core/config/email-verification.config';
 import { UserStatus } from '../../../../generated/prisma';
 import { PrismaUserService } from '../../../../src/core/database/prisma/services/user.service';
 import { PrismaService } from '../../../../src/core/database/prisma/prisma.service';
@@ -299,8 +300,23 @@ describe('EmailVerificationService', () => {
       $transaction: jest.fn(),
     } as any;
 
+    // Create default email verification config
+    const emailVerificationConfig = new EmailVerificationConfig({
+      EMAIL_VERIFICATION_TOKEN_EXPIRY_HOURS: 24,
+      EMAIL_VERIFICATION_MIN_VALIDITY_HOURS: 1,
+      EMAIL_VERIFICATION_RESEND_RATE_LIMIT: 3,
+      EMAIL_VERIFICATION_VERIFICATION_RATE_LIMIT: 5,
+      EMAIL_VERIFICATION_TIMING_ATTACK_DELAY_MIN_MS: 100,
+      EMAIL_VERIFICATION_TIMING_ATTACK_DELAY_MAX_MS: 300,
+    });
+
     mockConfigService = {
-      get: jest.fn(),
+      get: jest.fn().mockImplementation((key: string) => {
+        if (key === 'emailVerification') {
+          return emailVerificationConfig;
+        }
+        return null;
+      }),
     } as any;
 
     const module: TestingModule = await Test.createTestingModule({

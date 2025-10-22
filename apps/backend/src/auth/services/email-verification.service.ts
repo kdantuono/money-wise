@@ -5,6 +5,7 @@ import * as crypto from 'crypto';
 import { UserStatus } from '../../../generated/prisma';
 import { PrismaUserService } from '../../core/database/prisma/services/user.service';
 import { PrismaService } from '../../core/database/prisma/prisma.service';
+import { EmailVerificationConfig } from '../../core/config/email-verification.config';
 import type { User } from '../../../generated/prisma';
 
 export interface EmailVerificationToken {
@@ -25,16 +26,8 @@ export interface EmailVerificationResult {
 export class EmailVerificationService {
   private readonly logger = new Logger(EmailVerificationService.name);
 
-  // Configuration constants
-  private readonly TOKEN_EXPIRY_HOURS = 24;
-  private readonly TOKEN_EXPIRY_MS = this.TOKEN_EXPIRY_HOURS * 60 * 60 * 1000;
-  private readonly TOKEN_EXPIRY_SECONDS = this.TOKEN_EXPIRY_HOURS * 60 * 60;
-  private readonly MIN_TOKEN_VALIDITY_HOURS = 1;
-  private readonly MIN_TOKEN_VALIDITY_MS = this.MIN_TOKEN_VALIDITY_HOURS * 60 * 60 * 1000;
-  private readonly RATE_LIMIT_RESEND_ATTEMPTS = 3;
-  private readonly RATE_LIMIT_WINDOW_SECONDS = 3600; // 1 hour
-  private readonly TIMING_ATTACK_DELAY_MIN_MS = 100;
-  private readonly TIMING_ATTACK_DELAY_MAX_MS = 300;
+  // Email verification configuration (loaded from environment variables)
+  private emailVerificationConfig: EmailVerificationConfig;
 
   constructor(
     private prismaUserService: PrismaUserService,
@@ -46,6 +39,11 @@ export class EmailVerificationService {
     this.redis.on('error', (error) => {
       this.logger.error('Redis connection error:', error);
     });
+
+    // Load email verification configuration from environment variables
+    this.emailVerificationConfig = this.configService.get<EmailVerificationConfig>(
+      'emailVerification',
+    ) || new EmailVerificationConfig();
   }
 
   /**
@@ -67,10 +65,11 @@ export class EmailVerificationService {
    * Attackers cannot use timing measurements to determine token validity
    */
   private async artificialDelay(): Promise<void> {
-    // Random delay between 100-300ms to prevent timing analysis
+    const config = this.emailVerificationConfig;
+    // Random delay between configured min and max to prevent timing analysis
     const delay = Math.floor(
-      Math.random() * (this.TIMING_ATTACK_DELAY_MAX_MS - this.TIMING_ATTACK_DELAY_MIN_MS)
-    ) + this.TIMING_ATTACK_DELAY_MIN_MS;
+      Math.random() * (config.EMAIL_VERIFICATION_TIMING_ATTACK_DELAY_MAX_MS - config.EMAIL_VERIFICATION_TIMING_ATTACK_DELAY_MIN_MS)
+    ) + config.EMAIL_VERIFICATION_TIMING_ATTACK_DELAY_MIN_MS;
     await new Promise((resolve) => setTimeout(resolve, delay));
   }
 
@@ -80,8 +79,9 @@ export class EmailVerificationService {
   private async checkResendRateLimit(userId: string): Promise<boolean> {
     const rateLimitKey = `email_verification_ratelimit:${userId}`;
     const requestCount = await this.redis.get(rateLimitKey);
+    const config = this.emailVerificationConfig;
 
-    if (requestCount && parseInt(requestCount) >= this.RATE_LIMIT_RESEND_ATTEMPTS) {
+    if (requestCount && parseInt(requestCount) >= config.EMAIL_VERIFICATION_RESEND_RATE_LIMIT) {
       return false; // Rate limit exceeded
     }
 
@@ -92,16 +92,15 @@ export class EmailVerificationService {
    * Check if user has exceeded rate limit for verification attempts
    *
    * SECURITY: Prevents brute force attacks by limiting verification attempts.
-   * Max 5 verification attempts per hour per token to prevent token guessing.
+   * Configurable verification attempts per hour per token to prevent token guessing.
    */
   private async checkVerificationRateLimit(token: string): Promise<boolean> {
     const rateLimitKey = `email_verification_attempt:${token}`;
-    const maxAttempts = 5;
-    const windowSeconds = 3600; // 1 hour
+    const config = this.emailVerificationConfig;
 
     const requestCount = await this.redis.get(rateLimitKey);
 
-    if (requestCount && parseInt(requestCount) >= maxAttempts) {
+    if (requestCount && parseInt(requestCount) >= config.EMAIL_VERIFICATION_VERIFICATION_RATE_LIMIT) {
       return false; // Rate limit exceeded
     }
 
@@ -113,7 +112,7 @@ export class EmailVerificationService {
    */
   private async incrementVerificationRateLimit(token: string): Promise<void> {
     const rateLimitKey = `email_verification_attempt:${token}`;
-    const windowSeconds = 3600; // 1 hour
+    const config = this.emailVerificationConfig;
 
     // Lua script for atomic INCR + EXPIRE
     const luaScript = `
@@ -123,12 +122,12 @@ export class EmailVerificationService {
     `;
 
     try {
-      await (this.redis as any).eval(luaScript, 1, rateLimitKey, windowSeconds);
+      await (this.redis as any).eval(luaScript, 1, rateLimitKey, config.RATE_LIMIT_WINDOW_SECONDS);
     } catch (error) {
       this.logger.error('Error incrementing verification rate limit:', error);
       // Fallback: try to set rate limit anyway
       await this.redis.incr(rateLimitKey);
-      await this.redis.expire(rateLimitKey, windowSeconds);
+      await this.redis.expire(rateLimitKey, config.RATE_LIMIT_WINDOW_SECONDS);
     }
   }
 
@@ -141,6 +140,7 @@ export class EmailVerificationService {
    */
   private async incrementResendRateLimit(userId: string): Promise<void> {
     const rateLimitKey = `email_verification_ratelimit:${userId}`;
+    const config = this.emailVerificationConfig;
 
     // Lua script for atomic INCR + EXPIRE
     const luaScript = `
@@ -154,14 +154,14 @@ export class EmailVerificationService {
         luaScript,
         1,
         rateLimitKey,
-        this.RATE_LIMIT_WINDOW_SECONDS,
+        config.RATE_LIMIT_WINDOW_SECONDS,
       );
     } catch (error) {
       this.logger.error('Error incrementing rate limit:', error);
       // Fallback to non-atomic increment if Lua fails
       // Better to let user proceed than to lock them out permanently
       await this.redis.incr(rateLimitKey);
-      await this.redis.expire(rateLimitKey, this.RATE_LIMIT_WINDOW_SECONDS);
+      await this.redis.expire(rateLimitKey, config.RATE_LIMIT_WINDOW_SECONDS);
     }
   }
 
@@ -169,8 +169,9 @@ export class EmailVerificationService {
    * Generate email verification token
    */
   async generateVerificationToken(userId: string, email: string): Promise<string> {
+    const config = this.emailVerificationConfig;
     const token = crypto.randomBytes(32).toString('hex');
-    const expiresAt = new Date(Date.now() + this.TOKEN_EXPIRY_MS);
+    const expiresAt = new Date(Date.now() + config.TOKEN_EXPIRY_MS);
 
     const tokenData: EmailVerificationToken = {
       token,
@@ -185,11 +186,11 @@ export class EmailVerificationService {
       const pipeline = this.redis.pipeline();
 
       const key = `email_verification:${token}`;
-      pipeline.setex(key, this.TOKEN_EXPIRY_SECONDS, JSON.stringify(tokenData));
+      pipeline.setex(key, config.TOKEN_EXPIRY_SECONDS, JSON.stringify(tokenData));
 
       // Also store a reverse lookup for the user
       const userKey = `email_verification_user:${userId}`;
-      pipeline.setex(userKey, this.TOKEN_EXPIRY_SECONDS, token);
+      pipeline.setex(userKey, config.TOKEN_EXPIRY_SECONDS, token);
 
       await pipeline.exec();
 
@@ -333,8 +334,9 @@ export class EmailVerificationService {
       // CHECK RATE LIMIT: Separate from token validity to enforce consistent limits
       const isWithinRateLimit = await this.checkResendRateLimit(userId);
       if (!isWithinRateLimit) {
+        const config = this.emailVerificationConfig;
         throw new BadRequestException(
-          `Too many verification email requests. Please try again in ${this.RATE_LIMIT_WINDOW_SECONDS / 60} minutes.`,
+          `Too many verification email requests. Please try again in ${config.RATE_LIMIT_WINDOW_SECONDS / 60} minutes.`,
         );
       }
 
@@ -546,8 +548,9 @@ export class EmailVerificationService {
         });
       } while (cursor !== '0');
 
-      // Count recent verifications (last 24 hours)
-      const since = new Date(Date.now() - this.TOKEN_EXPIRY_MS);
+      // Count recent verifications (within token expiry period)
+      const config = this.emailVerificationConfig;
+      const since = new Date(Date.now() - config.TOKEN_EXPIRY_MS);
       const recentVerifications = await this.prismaUserService.countVerifiedSince(since);
 
       return {
