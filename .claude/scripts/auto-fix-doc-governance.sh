@@ -16,6 +16,7 @@ WHITELIST=(
     "CHANGELOG.md"
     "CONTRIBUTING.md"
     "LICENSE.md"
+    "CLAUDE.md"
 )
 
 # Pattern mappings (pattern -> destination)
