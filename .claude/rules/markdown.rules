@@ -1,0 +1,62 @@
+# Documentation Governance Rules
+# Auto-enforced by pre-commit hook
+
+# ✅ WHITELIST: Allowed in root level ONLY
+root_allowed:
+  - README.md
+  - FRONTEND_HANDOFF.md
+  - CHANGELOG.md
+  - CONTRIBUTING.md
+  - LICENSE.md
+
+# ❌ BLACKLIST: Auto-move patterns to correct location
+auto_move:
+  "*ANALYSIS*.md": "docs/archive/"
+  "*SUMMARY*.md": "docs/archive/"
+  "*PROGRESS*.md": "docs/archive/"
+  "*EXECUTIVE*.md": "docs/archive/"
+  "*SESSION*.md": ".claude/sessions/"
+  "*TEMPORARY*.md": "docs/archive/"
+  "*WIP*.md": "docs/archive/"
+  "*MILESTONE*.md": "docs/archive/"
+  "*SWAGGER*.md": "docs/archive/"
+  "*STATUS*.md": "docs/archive/"
+  "*RECOVERY*.md": ".claude/sessions/"
+  "*IMPLEMENTATION*.md": "docs/archive/"
+
+# 📋 Documentation location guidelines
+location_guidelines:
+  architecture_decisions: "docs/architecture/adr-*.md"
+  planning_documents: "docs/planning/"
+  development_guides: "docs/development/"
+  feature_specifications: "docs/planning/"
+  api_documentation: "automatically generated via Swagger"
+  intermediate_analysis: "docs/archive/"
+  session_notes: ".claude/sessions/"
+  deferred_work_tracking: "docs/"
+
+# 🏗️ Structure overview
+structure:
+  docs/:
+    - INDEX.md (navigation hub)
+    - SKIPPED_TESTS_DOCUMENTATION.md (deferred work)
+    - DOCUMENTATION_STRUCTURE.md (governance guide)
+    - planning/ (roadmaps and specs)
+    - development/ (setup and progress)
+    - architecture/ (ADRs and patterns)
+    - archive/ (historical/intermediate work)
+
+  .claude/:
+    - CLAUDE.md (project instructions)
+    - rules/markdown.rules (this file)
+    - scripts/ (automation)
+    - agents/ (specialized agents)
+    - commands/ (slash commands)
+    - sessions/ (session-specific notes)
+
+# ⚙️ Enforcement
+enforcement:
+  mechanism: "pre-commit hook"
+  script: ".claude/scripts/auto-fix-doc-governance.sh"
+  behavior: "automatic (non-blocking, auto-fixes)"
+  visibility: "user sees what was moved in commit"
