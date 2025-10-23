@@ -108,6 +108,39 @@ git commit -m "type(scope): description"
 task → story → epic → dev → main
 ```
 
+## 📋 Documentation Governance (AUTO-ENFORCED)
+
+### How It Works
+All markdown files are automatically organized by a pre-commit hook. **You never have to think about file organization.**
+
+**The hook**:
+- Scans staged markdown files
+- Compares against whitelist and patterns
+- Auto-moves violations to correct location
+- Stages changes and continues commit (never blocks)
+
+**Files allowed in root**: `README.md`, `FRONTEND_HANDOFF.md`, `CHANGELOG.md`, `CONTRIBUTING.md`, `LICENSE.md`
+
+**Auto-move patterns**:
+```
+*ANALYSIS*.md       → docs/archive/
+*SUMMARY*.md        → docs/archive/
+*PROGRESS*.md       → docs/archive/
+*SESSION*.md        → .claude/sessions/
+*TEMPORARY*.md      → docs/archive/
+(and more - see .claude/rules/markdown.rules)
+```
+
+**For You (Claude)**:
+- Create markdown files anywhere (or in root by mistake)
+- Hook automatically moves them to correct location
+- No manual consolidation needed
+- Repository stays organized automatically
+
+**Key Document**: See `.claude/DOC_GOVERNANCE_SYSTEM.md` for details
+
+---
+
 ## 🚨 MANDATORY CI/CD VERIFICATION
 
 **ABSOLUTE REQUIREMENT AFTER ANY PUSH:**
