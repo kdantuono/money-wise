@@ -10,7 +10,63 @@ root_allowed:
   - LICENSE.md
   - CLAUDE.md
 
-# ❌ BLACKLIST: Auto-move patterns to correct location
+# 📄 FILE TYPES GOVERNANCE
+# Defines rules for different file types (markdown, text, logs, etc)
+file_types:
+
+  # Markdown files (.md)
+  markdown:
+    patterns: ["*.md"]
+    whitelist:
+      - README.md
+      - FRONTEND_HANDOFF.md
+      - CHANGELOG.md
+      - CONTRIBUTING.md
+      - LICENSE.md
+      - CLAUDE.md
+    auto_move:
+      "*ANALYSIS*.md": "docs/archive/"
+      "*SUMMARY*.md": "docs/archive/"
+      "*PROGRESS*.md": "docs/archive/"
+      "*EXECUTIVE*.md": "docs/archive/"
+      "*SESSION*.md": ".claude/sessions/"
+      "*TEMPORARY*.md": "docs/archive/"
+      "*WIP*.md": "docs/archive/"
+      "*MILESTONE*.md": "docs/archive/"
+      "*SWAGGER*.md": "docs/archive/"
+      "*STATUS*.md": "docs/archive/"
+      "*RECOVERY*.md": ".claude/sessions/"
+      "*IMPLEMENTATION*.md": "docs/archive/"
+    default_destination: "docs/archive/"
+
+  # Text files (.txt)
+  text:
+    patterns: ["*.txt"]
+    whitelist: []  # No text files allowed in root
+    auto_move:
+      "*SUMMARY*.txt": "docs/archive/"
+      "*ANALYSIS*.txt": "docs/archive/"
+      "*EXECUTIVE*.txt": "docs/archive/"
+      "*BATCH*.txt": "docs/archive/"
+      "*PROGRESS*.txt": "docs/archive/"
+      "*TEMPORARY*.txt": "docs/archive/"
+      "*QUICK_REFERENCE*.txt": "docs/archive/"
+      "*STATUS*.txt": "docs/archive/"
+      "*SESSION*.txt": ".claude/sessions/"
+    default_destination: "docs/archive/"
+
+  # Log files (.log)
+  log:
+    patterns: ["*.log"]
+    whitelist: []  # No log files in root
+    auto_move:
+      "*DEBUG*.log": "docs/archive/"
+      "*ERROR*.log": "docs/archive/"
+      "*WARNING*.log": "docs/archive/"
+    default_destination: "docs/archive/"
+
+# ❌ LEGACY BLACKLIST: Auto-move patterns (DEPRECATED - kept for compatibility)
+# Note: New patterns should be added to file_types section above
 auto_move:
   "*ANALYSIS*.md": "docs/archive/"
   "*SUMMARY*.md": "docs/archive/"
