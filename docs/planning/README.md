@@ -30,6 +30,17 @@
   - Plaid integration hyper-granular tasks for AI agents
   - Banking API implementation specifications
 
+### Open Banking Provider Research
+- [`BANKING-PROVIDER-RESEARCH-PHASE4.md`](./BANKING-PROVIDER-RESEARCH-PHASE4.md) - Comprehensive comparative analysis
+  - Evidence-based study of 5 open banking providers (GoCardless, SaltEdge, Plaid, Tink, TrueLayer)
+  - 6-dimensional scoring matrix with 43 verified sources
+  - 3-year TCO projections and risk assessment
+  - **Recommendation**: GoCardless (Nordigen) for MVP - €15,400-28,700 savings vs. Plaid
+- [`BANKING-PROVIDER-EXECUTIVE-SUMMARY.md`](./BANKING-PROVIDER-EXECUTIVE-SUMMARY.md) - Quick reference guide
+  - One-page decision summary with key metrics
+  - Implementation roadmap (2-4 weeks)
+  - Risk mitigation strategies
+
 ## 🎯 Project Vision
 
 **Target**: Multi-generational finance platform (ages 7-70+)

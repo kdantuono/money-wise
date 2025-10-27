@@ -136,7 +136,7 @@ describe.skip('AccountsController', () => {
       const result = await controller.create(createDto, mockUser);
 
       expect(result).toEqual(mockAccountResponse);
-      expect(service.create).toHaveBeenCalledWith(mockUser.id, createDto);
+      expect(service.create).toHaveBeenCalledWith(createDto, mockUser.id, undefined);
     });
 
     it('should create account with default currency if not provided', async () => {
@@ -145,7 +145,7 @@ describe.skip('AccountsController', () => {
 
       await controller.create(dtoWithoutCurrency, mockUser);
 
-      expect(service.create).toHaveBeenCalledWith(mockUser.id, dtoWithoutCurrency);
+      expect(service.create).toHaveBeenCalledWith(dtoWithoutCurrency, mockUser.id, undefined);
     });
 
     it('should create account with optional fields', async () => {
@@ -173,7 +173,7 @@ describe.skip('AccountsController', () => {
 
       expect(result.availableBalance).toBe(950.00);
       expect(result.institutionName).toBe('Chase Bank');
-      expect(service.create).toHaveBeenCalledWith(mockUser.id, dtoWithOptionals);
+      expect(service.create).toHaveBeenCalledWith(dtoWithOptionals, mockUser.id, undefined);
     });
   });
 
@@ -185,7 +185,7 @@ describe.skip('AccountsController', () => {
       const result = await controller.findAll(mockUser);
 
       expect(result).toEqual(accounts);
-      expect(service.findAll).toHaveBeenCalledWith(mockUser.id);
+      expect(service.findAll).toHaveBeenCalledWith(mockUser.id, undefined, mockUser.role);
     });
 
     it('should return empty array when user has no accounts', async () => {
@@ -194,7 +194,7 @@ describe.skip('AccountsController', () => {
       const result = await controller.findAll(mockUser);
 
       expect(result).toEqual([]);
-      expect(service.findAll).toHaveBeenCalledWith(mockUser.id);
+      expect(service.findAll).toHaveBeenCalledWith(mockUser.id, undefined, mockUser.role);
     });
 
     it('should return multiple accounts', async () => {
@@ -209,7 +209,7 @@ describe.skip('AccountsController', () => {
       const result = await controller.findAll(mockUser);
 
       expect(result).toHaveLength(3);
-      expect(service.findAll).toHaveBeenCalledWith(mockUser.id);
+      expect(service.findAll).toHaveBeenCalledWith(mockUser.id, undefined, mockUser.role);
     });
   });
 
@@ -232,7 +232,7 @@ describe.skip('AccountsController', () => {
       const result = await controller.getSummary(mockUser);
 
       expect(result).toEqual(summary);
-      expect(service.getSummary).toHaveBeenCalledWith(mockUser.id);
+      expect(service.getSummary).toHaveBeenCalledWith(mockUser.id, undefined, mockUser.role);
     });
 
     it('should return summary with no accounts', async () => {
@@ -249,7 +249,7 @@ describe.skip('AccountsController', () => {
       const result = await controller.getSummary(mockUser);
 
       expect(result).toEqual(summary);
-      expect(service.getSummary).toHaveBeenCalledWith(mockUser.id);
+      expect(service.getSummary).toHaveBeenCalledWith(mockUser.id, undefined, mockUser.role);
     });
   });
 
@@ -260,7 +260,7 @@ describe.skip('AccountsController', () => {
       const result = await controller.findOne(mockAccount.id as string, mockUser);
 
       expect(result).toEqual(mockAccountResponse);
-      expect(service.findOne).toHaveBeenCalledWith(mockAccount.id, mockUser.id, mockUser.role);
+      expect(service.findOne).toHaveBeenCalledWith(mockAccount.id, mockUser.id, undefined, mockUser.role);
     });
 
     it('should allow admin to access any account', async () => {
@@ -269,7 +269,7 @@ describe.skip('AccountsController', () => {
       const result = await controller.findOne(mockAccount.id as string, mockAdminUser);
 
       expect(result).toEqual(mockAccountResponse);
-      expect(service.findOne).toHaveBeenCalledWith(mockAccount.id, mockAdminUser.id, mockAdminUser.role);
+      expect(service.findOne).toHaveBeenCalledWith(mockAccount.id, mockAdminUser.id, undefined, mockAdminUser.role);
     });
 
     it('should throw NotFoundException when account not found', async () => {
@@ -304,7 +304,7 @@ describe.skip('AccountsController', () => {
       const result = await controller.getBalance(mockAccount.id as string, mockUser);
 
       expect(result).toEqual(balance);
-      expect(service.getBalance).toHaveBeenCalledWith(mockAccount.id, mockUser.id, mockUser.role);
+      expect(service.getBalance).toHaveBeenCalledWith(mockAccount.id, mockUser.id, undefined, mockUser.role);
     });
 
     it('should return balance with null available balance', async () => {
@@ -364,9 +364,10 @@ describe.skip('AccountsController', () => {
       expect(result).toEqual(updatedAccount);
       expect(service.update).toHaveBeenCalledWith(
         mockAccount.id,
+        updateDto,
         mockUser.id,
-        mockUser.role,
-        updateDto
+        undefined,
+        mockUser.role
       );
     });
 
@@ -380,9 +381,10 @@ describe.skip('AccountsController', () => {
       expect(result).toEqual(updatedAccount);
       expect(service.update).toHaveBeenCalledWith(
         mockAccount.id,
+        updateDto,
         mockAdminUser.id,
-        mockAdminUser.role,
-        updateDto
+        undefined,
+        mockAdminUser.role
       );
     });
 
@@ -446,7 +448,7 @@ describe.skip('AccountsController', () => {
 
       await controller.remove(mockAccount.id as string, mockUser);
 
-      expect(service.remove).toHaveBeenCalledWith(mockAccount.id, mockUser.id, mockUser.role);
+      expect(service.remove).toHaveBeenCalledWith(mockAccount.id, mockUser.id, undefined, mockUser.role);
     });
 
     it('should allow admin to delete any account', async () => {
@@ -457,6 +459,7 @@ describe.skip('AccountsController', () => {
       expect(service.remove).toHaveBeenCalledWith(
         mockAccount.id,
         mockAdminUser.id,
+        undefined,
         mockAdminUser.role
       );
     });
@@ -503,7 +506,7 @@ describe.skip('AccountsController', () => {
 
       expect(result).toEqual(syncedAccount);
       expect(result.lastSyncAt).toBeDefined();
-      expect(service.syncAccount).toHaveBeenCalledWith(mockAccount.id, mockUser.id, mockUser.role);
+      expect(service.syncAccount).toHaveBeenCalledWith(mockAccount.id, mockUser.id, undefined, mockUser.role);
     });
 
     it('should throw ForbiddenException when trying to sync manual account', async () => {

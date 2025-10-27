@@ -1440,7 +1440,8 @@ describe('Real Auth Integration Tests (Prisma)', () => {
         })
         .expect(201);
 
-      expect(registerResponse.body).toHaveProperty('success', true);
+      expect(registerResponse.body).toHaveProperty('accessToken');
+      expect(registerResponse.body).toHaveProperty('refreshToken');
       expect(registerResponse.body).toHaveProperty('user.email', email);
       expect(registerResponse.body).toHaveProperty('user.emailVerifiedAt', null);
 
@@ -1454,10 +1455,10 @@ describe('Real Auth Integration Tests (Prisma)', () => {
 
     it('should successfully verify email with valid token', async () => {
       const email = `verify-valid-${Date.now()}@example.com`;
-      const password = 'ValidPassword123!@#SecurePassword456!@#';
+      const password = 'SecurePassword123!@#StrongKey456!@#'; // Changed: removed "Valid" from password
 
       // Register user (generates verification token in Redis)
-      await request(app.getHttpServer())
+      const registerResponse = await request(app.getHttpServer())
         .post('/auth/register')
         .send({
           email,

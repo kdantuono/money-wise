@@ -6,6 +6,13 @@
 
 echo "🔍 Running pre-commit checks..."
 
+# Documentation governance (auto-fix)
+echo "  📋 Documentation governance..."
+./.claude/scripts/auto-fix-doc-governance.sh || {
+  echo "❌ Documentation governance check failed."
+  exit 1
+}
+
 # Check if Prisma Client is generated (backend only)
 if [ -d "apps/backend" ] && [ ! -d "apps/backend/generated/prisma" ]; then
   echo "  ⚠️  Prisma Client not generated. Generating now..."

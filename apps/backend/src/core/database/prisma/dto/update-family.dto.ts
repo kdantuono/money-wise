@@ -1,4 +1,5 @@
 import { IsString, IsOptional, MaxLength } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
 
 /**
  * UpdateFamilyDto - Validation DTO for updating an existing Family
@@ -24,6 +25,12 @@ export class UpdateFamilyDto {
    * @minLength 1 (if provided)
    * @maxLength 255
    */
+  @ApiProperty({
+    description: 'Family name (optional)',
+    example: 'Updated Family Name',
+    required: false,
+    maxLength: 255,
+  })
   @IsString()
   @IsOptional()
   @MaxLength(255)

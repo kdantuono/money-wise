@@ -104,7 +104,7 @@ describe.skip('AccountsService', () => {
       mockPrismaService.create.mockReturnValue(mockAccount);
       mockPrismaService.save.mockResolvedValue(mockAccount);
 
-      const result = await service.create('user-123', createDto);
+      const result = await service.create(createDto, 'user-123', undefined);
 
       expect(prisma.account.create).toHaveBeenCalledWith({
         ...createDto,
@@ -147,7 +147,7 @@ describe.skip('AccountsService', () => {
       mockPrismaService.create.mockReturnValue(mockAccount);
       mockPrismaService.save.mockResolvedValue(mockAccount);
 
-      await service.create('user-123', dtoWithoutCurrency);
+      await service.create(dtoWithoutCurrency, 'user-123', undefined);
 
       expect(prisma.account.create).toHaveBeenCalledWith({
         ...dtoWithoutCurrency,
@@ -164,7 +164,7 @@ describe.skip('AccountsService', () => {
       mockPrismaService.create.mockReturnValue(mockAccount);
       mockPrismaService.save.mockResolvedValue(mockAccount);
 
-      await service.create('user-123', dtoWithoutSyncEnabled);
+      await service.create(dtoWithoutSyncEnabled, 'user-123', undefined);
 
       expect(prisma.account.create).toHaveBeenCalledWith({
         ...dtoWithoutSyncEnabled,
@@ -181,7 +181,7 @@ describe.skip('AccountsService', () => {
       mockPrismaService.create.mockReturnValue(mockAccount);
       mockPrismaService.save.mockResolvedValue(mockAccount);
 
-      await service.create('user-123', dtoWithSyncDisabled);
+      await service.create(dtoWithSyncDisabled, 'user-123', undefined);
 
       expect(prisma.account.create).toHaveBeenCalledWith({
         ...dtoWithSyncDisabled,
@@ -197,7 +197,7 @@ describe.skip('AccountsService', () => {
       mockPrismaService.create.mockReturnValue(mockAccount);
       mockPrismaService.save.mockResolvedValue(mockAccount);
 
-      await service.create('user-123', createDto);
+      await service.create(createDto, 'user-123', undefined);
 
       expect(prisma.account.create).toHaveBeenCalledWith(
         expect.objectContaining({ isActive: true })
@@ -223,7 +223,7 @@ describe.skip('AccountsService', () => {
       mockPrismaService.create.mockReturnValue(mockAccount);
       mockPrismaService.save.mockResolvedValue(mockAccount);
 
-      const result = await service.create('user-123', dtoWithOptionals);
+      const result = await service.create(dtoWithOptionals, 'user-123', undefined);
 
       expect(prisma.account.create).toHaveBeenCalledWith({
         ...dtoWithOptionals,
@@ -241,7 +241,7 @@ describe.skip('AccountsService', () => {
       mockPrismaService.create.mockReturnValue(mockAccount);
       mockPrismaService.save.mockResolvedValue(mockAccount);
 
-      const result = await service.create('user-123', createDto);
+      const result = await service.create(createDto, 'user-123', undefined);
 
       expect(result).toHaveProperty('id');
       expect(result).toHaveProperty('userId');
@@ -270,7 +270,7 @@ describe.skip('AccountsService', () => {
       ];
       mockPrismaService.find.mockResolvedValue(mockAccounts);
 
-      const result = await service.findAll('user-123');
+      const result = await service.findAll('user-123', undefined);
 
       expect(prisma.account.findMany).toHaveBeenCalledWith({
         where: { userId: 'user-123' },
@@ -292,7 +292,7 @@ describe.skip('AccountsService', () => {
       });
       mockPrismaService.find.mockResolvedValue([newAccount, oldAccount]);
 
-      await service.findAll('user-123');
+      await service.findAll('user-123', undefined);
 
       expect(prisma.account.findMany).toHaveBeenCalledWith({
         where: { userId: 'user-123' },
@@ -303,7 +303,7 @@ describe.skip('AccountsService', () => {
     it('should return empty array when user has no accounts', async () => {
       mockPrismaService.find.mockResolvedValue([]);
 
-      const result = await service.findAll('user-123');
+      const result = await service.findAll('user-123', undefined);
 
       expect(result).toEqual([]);
     });
@@ -312,7 +312,7 @@ describe.skip('AccountsService', () => {
       const mockAccounts = [createMockAccount()];
       mockPrismaService.find.mockResolvedValue(mockAccounts);
 
-      const result = await service.findAll('user-123');
+      const result = await service.findAll('user-123', undefined);
 
       expect(result[0]).toHaveProperty('id');
       expect(result[0]).toHaveProperty('userId');
@@ -328,7 +328,7 @@ describe.skip('AccountsService', () => {
       const mockAccount = createMockAccount();
       mockPrismaService.findOne.mockResolvedValue(mockAccount);
 
-      await service.findOne('acc-123', 'user-123', UserRole.USER);
+      await service.findOne('acc-123', 'user-123', undefined, UserRole.USER);
 
       expect(prisma.account.findManyOne).toHaveBeenCalledWith({
         where: { id: 'acc-123' },
@@ -340,10 +340,10 @@ describe.skip('AccountsService', () => {
       mockPrismaService.findOne.mockResolvedValue(null);
 
       await expect(
-        service.findOne('non-existent', 'user-123', UserRole.USER)
+        service.findOne('non-existent', 'user-123', undefined, UserRole.USER)
       ).rejects.toThrow(NotFoundException);
       await expect(
-        service.findOne('non-existent', 'user-123', UserRole.USER)
+        service.findOne('non-existent', 'user-123', undefined, UserRole.USER)
       ).rejects.toThrow('Account with ID non-existent not found');
     });
 
@@ -352,7 +352,7 @@ describe.skip('AccountsService', () => {
         const account = createMockAccount({ userId: 'user-123' });
         mockPrismaService.findOne.mockResolvedValue(account);
 
-        const result = await service.findOne('acc-123', 'user-123', UserRole.USER);
+        const result = await service.findOne('acc-123', 'user-123', undefined, UserRole.USER);
 
         expect(result).toBeDefined();
         expect(result.id).toBe('acc-123');
@@ -363,10 +363,10 @@ describe.skip('AccountsService', () => {
         mockPrismaService.findOne.mockResolvedValue(account);
 
         await expect(
-          service.findOne('acc-123', 'user-123', UserRole.USER)
+          service.findOne('acc-123', 'user-123', undefined, UserRole.USER)
         ).rejects.toThrow(ForbiddenException);
         await expect(
-          service.findOne('acc-123', 'user-123', UserRole.USER)
+          service.findOne('acc-123', 'user-123', undefined, UserRole.USER)
         ).rejects.toThrow('You can only access your own accounts');
       });
 
@@ -374,7 +374,7 @@ describe.skip('AccountsService', () => {
         const account = createMockAccount({ userId: 'user-456' });
         mockPrismaService.findOne.mockResolvedValue(account);
 
-        const result = await service.findOne('acc-123', 'admin-123', UserRole.ADMIN);
+        const result = await service.findOne('acc-123', 'admin-123', undefined, UserRole.ADMIN);
 
         expect(result).toBeDefined();
         expect(result.id).toBe('acc-123');
@@ -385,7 +385,7 @@ describe.skip('AccountsService', () => {
       const mockAccount = createMockAccount();
       mockPrismaService.findOne.mockResolvedValue(mockAccount);
 
-      const result = await service.findOne('acc-123', 'user-123', UserRole.USER);
+      const result = await service.findOne('acc-123', 'user-123', undefined, UserRole.USER);
 
       expect(result).toHaveProperty('id');
       expect(result).toHaveProperty('displayName');
@@ -405,10 +405,10 @@ describe.skip('AccountsService', () => {
       mockPrismaService.findOne.mockResolvedValue(null);
 
       await expect(
-        service.update('non-existent', 'user-123', UserRole.USER, updateDto)
+        service.update('non-existent', updateDto, 'user-123', undefined, UserRole.USER)
       ).rejects.toThrow(NotFoundException);
       await expect(
-        service.update('non-existent', 'user-123', UserRole.USER, updateDto)
+        service.update('non-existent', updateDto, 'user-123', undefined, UserRole.USER)
       ).rejects.toThrow('Account with ID non-existent not found');
     });
 
@@ -419,7 +419,7 @@ describe.skip('AccountsService', () => {
         mockPrismaService.findOne.mockResolvedValue(account);
         mockPrismaService.save.mockResolvedValue(updatedAccount);
 
-        const result = await service.update('acc-123', 'user-123', UserRole.USER, updateDto);
+        const result = await service.update('acc-123', updateDto, 'user-123', undefined, UserRole.USER);
 
         expect(result).toBeDefined();
         expect(result.name).toBe('Updated Account');
@@ -430,10 +430,10 @@ describe.skip('AccountsService', () => {
         mockPrismaService.findOne.mockResolvedValue(account);
 
         await expect(
-          service.update('acc-123', 'user-123', UserRole.USER, updateDto)
+          service.update('acc-123', updateDto, 'user-123', undefined, UserRole.USER)
         ).rejects.toThrow(ForbiddenException);
         await expect(
-          service.update('acc-123', 'user-123', UserRole.USER, updateDto)
+          service.update('acc-123', updateDto, 'user-123', undefined, UserRole.USER)
         ).rejects.toThrow('You can only update your own accounts');
       });
 
@@ -443,7 +443,7 @@ describe.skip('AccountsService', () => {
         mockPrismaService.findOne.mockResolvedValue(account);
         mockPrismaService.save.mockResolvedValue(updatedAccount);
 
-        const result = await service.update('acc-123', 'admin-123', UserRole.ADMIN, updateDto);
+        const result = await service.update('acc-123', updateDto, 'admin-123', undefined, UserRole.ADMIN);
 
         expect(result).toBeDefined();
         expect(result.name).toBe('Updated Account');
@@ -456,7 +456,7 @@ describe.skip('AccountsService', () => {
       mockPrismaService.findOne.mockResolvedValue(account);
       mockPrismaService.save.mockResolvedValue(updatedAccount);
 
-      await service.update('acc-123', 'user-123', UserRole.USER, updateDto);
+      await service.update('acc-123', updateDto, 'user-123', undefined, UserRole.USER);
 
       expect(prisma.account.create).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -472,7 +472,7 @@ describe.skip('AccountsService', () => {
       mockPrismaService.findOne.mockResolvedValue(account);
       mockPrismaService.save.mockResolvedValue(updatedAccount);
 
-      const result = await service.update('acc-123', 'user-123', UserRole.USER, updateDto);
+      const result = await service.update('acc-123', updateDto, 'user-123', undefined, UserRole.USER);
 
       expect(result).toHaveProperty('id');
       expect(result.name).toBe('Updated Account');
@@ -493,7 +493,7 @@ describe.skip('AccountsService', () => {
       mockPrismaService.findOne.mockResolvedValue(account);
       mockPrismaService.save.mockResolvedValue(updatedAccount);
 
-      const result = await service.update('acc-123', 'user-123', UserRole.USER, multiFieldUpdate);
+      const result = await service.update('acc-123', multiFieldUpdate, 'user-123', undefined, UserRole.USER);
 
       expect(result.name).toBe('New Name');
       expect(result.status).toBe(AccountStatus.INACTIVE);
@@ -509,10 +509,10 @@ describe.skip('AccountsService', () => {
       mockPrismaService.findOne.mockResolvedValue(null);
 
       await expect(
-        service.remove('non-existent', 'user-123', UserRole.USER)
+        service.remove('non-existent', 'user-123', undefined, UserRole.USER)
       ).rejects.toThrow(NotFoundException);
       await expect(
-        service.remove('non-existent', 'user-123', UserRole.USER)
+        service.remove('non-existent', 'user-123', undefined, UserRole.USER)
       ).rejects.toThrow('Account with ID non-existent not found');
     });
 
@@ -522,7 +522,7 @@ describe.skip('AccountsService', () => {
         mockPrismaService.findOne.mockResolvedValue(account);
         mockPrismaService.remove.mockResolvedValue(account);
 
-        await service.remove('acc-123', 'user-123', UserRole.USER);
+        await service.remove('acc-123', 'user-123', undefined, UserRole.USER);
 
         expect(prisma.account.delete).toHaveBeenCalledWith(account);
       });
@@ -532,10 +532,10 @@ describe.skip('AccountsService', () => {
         mockPrismaService.findOne.mockResolvedValue(account);
 
         await expect(
-          service.remove('acc-123', 'user-123', UserRole.USER)
+          service.remove('acc-123', 'user-123', undefined, UserRole.USER)
         ).rejects.toThrow(ForbiddenException);
         await expect(
-          service.remove('acc-123', 'user-123', UserRole.USER)
+          service.remove('acc-123', 'user-123', undefined, UserRole.USER)
         ).rejects.toThrow('You can only delete your own accounts');
       });
 
@@ -544,7 +544,7 @@ describe.skip('AccountsService', () => {
         mockPrismaService.findOne.mockResolvedValue(account);
         mockPrismaService.remove.mockResolvedValue(account);
 
-        await service.remove('acc-123', 'admin-123', UserRole.ADMIN);
+        await service.remove('acc-123', 'admin-123', undefined, UserRole.ADMIN);
 
         expect(prisma.account.delete).toHaveBeenCalledWith(account);
       });
@@ -555,7 +555,7 @@ describe.skip('AccountsService', () => {
       mockPrismaService.findOne.mockResolvedValue(account);
       mockPrismaService.remove.mockResolvedValue(account);
 
-      await service.remove('acc-123', 'user-123', UserRole.USER);
+      await service.remove('acc-123', 'user-123', undefined, UserRole.USER);
 
       expect(prisma.account.delete).toHaveBeenCalledWith(account);
       expect(prisma.account.delete).toHaveBeenCalledTimes(1);
@@ -566,7 +566,7 @@ describe.skip('AccountsService', () => {
       mockPrismaService.findOne.mockResolvedValue(account);
       mockPrismaService.remove.mockResolvedValue(account);
 
-      const result = await service.remove('acc-123', 'user-123', UserRole.USER);
+      const result = await service.remove('acc-123', 'user-123', undefined, UserRole.USER);
 
       expect(result).toBeUndefined();
     });
@@ -577,10 +577,10 @@ describe.skip('AccountsService', () => {
       mockPrismaService.findOne.mockResolvedValue(null);
 
       await expect(
-        service.getBalance('non-existent', 'user-123', UserRole.USER)
+        service.getBalance('non-existent', 'user-123', undefined, UserRole.USER)
       ).rejects.toThrow(NotFoundException);
       await expect(
-        service.getBalance('non-existent', 'user-123', UserRole.USER)
+        service.getBalance('non-existent', 'user-123', undefined, UserRole.USER)
       ).rejects.toThrow('Account with ID non-existent not found');
     });
 
@@ -589,7 +589,7 @@ describe.skip('AccountsService', () => {
         const account = createMockAccount({ userId: 'user-123', currentBalance: 1500 });
         mockPrismaService.findOne.mockResolvedValue(account);
 
-        const result = await service.getBalance('acc-123', 'user-123', UserRole.USER);
+        const result = await service.getBalance('acc-123', 'user-123', undefined, UserRole.USER);
 
         expect(result).toBeDefined();
         expect(result.currentBalance).toBe(1500);
@@ -600,10 +600,10 @@ describe.skip('AccountsService', () => {
         mockPrismaService.findOne.mockResolvedValue(account);
 
         await expect(
-          service.getBalance('acc-123', 'user-123', UserRole.USER)
+          service.getBalance('acc-123', 'user-123', undefined, UserRole.USER)
         ).rejects.toThrow(ForbiddenException);
         await expect(
-          service.getBalance('acc-123', 'user-123', UserRole.USER)
+          service.getBalance('acc-123', 'user-123', undefined, UserRole.USER)
         ).rejects.toThrow('You can only access your own account balances');
       });
 
@@ -611,7 +611,7 @@ describe.skip('AccountsService', () => {
         const account = createMockAccount({ userId: 'user-456', currentBalance: 2500 });
         mockPrismaService.findOne.mockResolvedValue(account);
 
-        const result = await service.getBalance('acc-123', 'admin-123', UserRole.ADMIN);
+        const result = await service.getBalance('acc-123', 'admin-123', undefined, UserRole.ADMIN);
 
         expect(result).toBeDefined();
         expect(result.currentBalance).toBe(2500);
@@ -627,7 +627,7 @@ describe.skip('AccountsService', () => {
       });
       mockPrismaService.findOne.mockResolvedValue(account);
 
-      const result = await service.getBalance('acc-123', 'user-123', UserRole.USER);
+      const result = await service.getBalance('acc-123', 'user-123', undefined, UserRole.USER);
 
       expect(result).toEqual({
         currentBalance: 1000,
@@ -645,7 +645,7 @@ describe.skip('AccountsService', () => {
       });
       mockPrismaService.findOne.mockResolvedValue(account);
 
-      const result = await service.getBalance('acc-123', 'user-123', UserRole.USER);
+      const result = await service.getBalance('acc-123', 'user-123', undefined, UserRole.USER);
 
       expect(result).toEqual({
         currentBalance: 1000,
@@ -663,7 +663,7 @@ describe.skip('AccountsService', () => {
       });
       mockPrismaService.findOne.mockResolvedValue(account);
 
-      const result = await service.getBalance('acc-123', 'user-123', UserRole.USER);
+      const result = await service.getBalance('acc-123', 'user-123', undefined, UserRole.USER);
 
       expect(result).toEqual({
         currentBalance: 5000,
@@ -678,7 +678,7 @@ describe.skip('AccountsService', () => {
       const activeAccount = createMockAccount({ isActive: true });
       mockPrismaService.find.mockResolvedValue([activeAccount]);
 
-      await service.getSummary('user-123');
+      await service.getSummary('user-123', undefined);
 
       expect(prisma.account.findMany).toHaveBeenCalledWith({
         where: { userId: 'user-123', isActive: true },
@@ -693,7 +693,7 @@ describe.skip('AccountsService', () => {
       ];
       mockPrismaService.find.mockResolvedValue(accounts);
 
-      const result = await service.getSummary('user-123');
+      const result = await service.getSummary('user-123', undefined);
 
       expect(result.totalBalance).toBe(3500);
     });
@@ -707,7 +707,7 @@ describe.skip('AccountsService', () => {
       ];
       mockPrismaService.find.mockResolvedValue(accounts);
 
-      const result = await service.getSummary('user-123');
+      const result = await service.getSummary('user-123', undefined);
 
       expect(result.activeAccounts).toBe(2);
     });
@@ -724,7 +724,7 @@ describe.skip('AccountsService', () => {
 
       mockPrismaService.find.mockResolvedValue([account1, account2, account3]);
 
-      const result = await service.getSummary('user-123');
+      const result = await service.getSummary('user-123', undefined);
 
       expect(result.accountsNeedingSync).toBe(2);
     });
@@ -754,7 +754,7 @@ describe.skip('AccountsService', () => {
       ];
       mockPrismaService.find.mockResolvedValue(accounts);
 
-      const result = await service.getSummary('user-123');
+      const result = await service.getSummary('user-123', undefined);
 
       expect(result.byType).toEqual({
         [AccountType.CHECKING]: { count: 2, totalBalance: 1500 },
@@ -782,7 +782,7 @@ describe.skip('AccountsService', () => {
 
       mockPrismaService.find.mockResolvedValue([account1, account2]);
 
-      const result = await service.getSummary('user-123');
+      const result = await service.getSummary('user-123', undefined);
 
       expect(result).toEqual({
         totalAccounts: 2,
@@ -799,7 +799,7 @@ describe.skip('AccountsService', () => {
     it('should return empty summary when user has no active accounts', async () => {
       mockPrismaService.find.mockResolvedValue([]);
 
-      const result = await service.getSummary('user-123');
+      const result = await service.getSummary('user-123', undefined);
 
       expect(result).toEqual({
         totalAccounts: 0,
@@ -821,7 +821,7 @@ describe.skip('AccountsService', () => {
       ];
       mockPrismaService.find.mockResolvedValue(accounts);
 
-      const result = await service.getSummary('user-123');
+      const result = await service.getSummary('user-123', undefined);
 
       expect(result.totalBalance).toBe(0);
       expect(result.byType[AccountType.CHECKING]).toEqual({
@@ -836,10 +836,10 @@ describe.skip('AccountsService', () => {
       mockPrismaService.findOne.mockResolvedValue(null);
 
       await expect(
-        service.syncAccount('non-existent', 'user-123', UserRole.USER)
+        service.syncAccount('non-existent', 'user-123', undefined, UserRole.USER)
       ).rejects.toThrow(NotFoundException);
       await expect(
-        service.syncAccount('non-existent', 'user-123', UserRole.USER)
+        service.syncAccount('non-existent', 'user-123', undefined, UserRole.USER)
       ).rejects.toThrow('Account with ID non-existent not found');
     });
 
@@ -855,7 +855,7 @@ describe.skip('AccountsService', () => {
         mockPrismaService.findOne.mockResolvedValue(account);
         mockPrismaService.save.mockResolvedValue(syncedAccount);
 
-        const result = await service.syncAccount('acc-123', 'user-123', UserRole.USER);
+        const result = await service.syncAccount('acc-123', 'user-123', undefined, UserRole.USER);
 
         expect(result).toBeDefined();
       });
@@ -870,10 +870,10 @@ describe.skip('AccountsService', () => {
         mockPrismaService.findOne.mockResolvedValue(account);
 
         await expect(
-          service.syncAccount('acc-123', 'user-123', UserRole.USER)
+          service.syncAccount('acc-123', 'user-123', undefined, UserRole.USER)
         ).rejects.toThrow(ForbiddenException);
         await expect(
-          service.syncAccount('acc-123', 'user-123', UserRole.USER)
+          service.syncAccount('acc-123', 'user-123', undefined, UserRole.USER)
         ).rejects.toThrow('You can only sync your own accounts');
       });
 
@@ -888,7 +888,7 @@ describe.skip('AccountsService', () => {
         mockPrismaService.findOne.mockResolvedValue(account);
         mockPrismaService.save.mockResolvedValue(syncedAccount);
 
-        const result = await service.syncAccount('acc-123', 'admin-123', UserRole.ADMIN);
+        const result = await service.syncAccount('acc-123', 'admin-123', undefined, UserRole.ADMIN);
 
         expect(result).toBeDefined();
       });
@@ -904,10 +904,10 @@ describe.skip('AccountsService', () => {
       mockPrismaService.findOne.mockResolvedValue(account);
 
       await expect(
-        service.syncAccount('acc-123', 'user-123', UserRole.USER)
+        service.syncAccount('acc-123', 'user-123', undefined, UserRole.USER)
       ).rejects.toThrow(ForbiddenException);
       await expect(
-        service.syncAccount('acc-123', 'user-123', UserRole.USER)
+        service.syncAccount('acc-123', 'user-123', undefined, UserRole.USER)
       ).rejects.toThrow('Only Plaid accounts can be synced');
     });
 
@@ -927,7 +927,7 @@ describe.skip('AccountsService', () => {
         return acc;
       });
 
-      await service.syncAccount('acc-123', 'user-123', UserRole.USER);
+      await service.syncAccount('acc-123', 'user-123', undefined, UserRole.USER);
 
       expect(prisma.account.create).toHaveBeenCalled();
       const savedAccount = prisma.account.create.mock.calls[0][0] as Account;
@@ -950,7 +950,7 @@ describe.skip('AccountsService', () => {
         return acc;
       });
 
-      await service.syncAccount('acc-123', 'user-123', UserRole.USER);
+      await service.syncAccount('acc-123', 'user-123', undefined, UserRole.USER);
 
       const savedAccount = prisma.account.create.mock.calls[0][0];
       expect(savedAccount.syncError).toBeNull();
@@ -971,7 +971,7 @@ describe.skip('AccountsService', () => {
       mockPrismaService.findOne.mockResolvedValue(account);
       mockPrismaService.save.mockResolvedValue(syncedAccount);
 
-      const result = await service.syncAccount('acc-123', 'user-123', UserRole.USER);
+      const result = await service.syncAccount('acc-123', 'user-123', undefined, UserRole.USER);
 
       expect(result).toHaveProperty('id');
       expect(result).toHaveProperty('lastSyncAt');
@@ -1019,7 +1019,7 @@ describe.skip('AccountsService', () => {
         currentBalance: 5000,
       };
 
-      return service.create('test-user', createDto).then(result => {
+      return service.create(createDto, 'test-user', undefined).then(result => {
         expect(result.id).toBe(mockAccount.id);
         expect(result.userId).toBe(mockAccount.userId);
         expect(result.name).toBe(mockAccount.name);

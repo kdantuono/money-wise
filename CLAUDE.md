@@ -108,6 +108,91 @@ git commit -m "type(scope): description"
 task → story → epic → dev → main
 ```
 
+## 📋 Documentation Governance (LAYERED APPROACH)
+
+### Architecture: 4 Layers of Organization
+
+```
+LAYER 1: Cleanup Script  → Remediation of OLD/ORPHAN files
+         .claude/scripts/cleanup-root.sh (--check, --fix, --report)
+
+LAYER 2: Pre-Commit Hook → Prevention of NEW violations
+         .husky/pre-commit → auto-fix-doc-governance.sh
+
+LAYER 3: Audit Command   → Periodic monitoring & verification
+         /doc-audit (--check, --fix, --report, --monitor)
+
+LAYER 4: Extended Rules  → Multi-type file governance
+         .claude/rules/markdown.rules (supports .md, .txt, .log, etc)
+```
+
+### Quick Reference
+
+#### 📋 Layer 1: One-Time Cleanup
+```bash
+./.claude/scripts/cleanup-root.sh --check    # See violations
+./.claude/scripts/cleanup-root.sh --fix      # Move violations
+./.claude/scripts/cleanup-root.sh --report   # Statistics
+```
+
+#### ⚙️ Layer 2: Automatic Prevention (Always Running)
+- ✅ Runs on every commit automatically
+- ✅ Prevents NEW markdown/text/log violations
+- ✅ Silent auto-fix (never blocks commits)
+- ✅ Only affects staged files
+
+#### 🔍 Layer 3: Monitoring Command
+```bash
+/doc-audit              # Default: check & report
+/doc-audit --check      # Dry-run showing violations
+/doc-audit --fix        # Apply fixes interactively
+/doc-audit --report     # Detailed statistics
+```
+
+#### 📄 Layer 4: File Types Governed
+- **Markdown** (.md): Whitelist + 12 auto-move patterns
+- **Text** (.txt): No whitelist, auto-moves to `docs/archive/`
+- **Logs** (.log): No whitelist, auto-moves to `docs/archive/`
+
+### Files Allowed in Root
+```
+✅ README.md
+✅ CHANGELOG.md
+✅ CONTRIBUTING.md
+✅ FRONTEND_HANDOFF.md
+✅ LICENSE.md
+✅ CLAUDE.md
+```
+
+### Key Features
+
+**For You (Claude)**:
+- Create files anywhere - they'll be auto-organized
+- No manual consolidation needed
+- Supported file types: `.md`, `.txt`, `.log`
+- Rules are configurable (see `.claude/rules/markdown.rules`)
+
+**Automatic Prevention**:
+- Hook prevents NEW violations at commit time
+- Pattern-based intelligent routing
+- Never fails or blocks commits
+- Silent auto-fix with transparent reporting
+
+**Periodic Maintenance**:
+- `/doc-audit` command for regular checks
+- Identifies orphan or stale files
+- Interactive fix mode with confirmation
+- Detailed violation statistics
+
+### Documentation References
+
+- **Complete System**: `.claude/DOC_GOVERNANCE_SYSTEM.md`
+- **Rules Definition**: `.claude/rules/markdown.rules`
+- **Cleanup Script**: `.claude/scripts/cleanup-root.sh`
+- **Audit Command**: `.claude/commands/doc-audit.md`
+
+---
+
 ## 🚨 MANDATORY CI/CD VERIFICATION
 
 **ABSOLUTE REQUIREMENT AFTER ANY PUSH:**

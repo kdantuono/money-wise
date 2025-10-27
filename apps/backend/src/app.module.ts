@@ -9,6 +9,7 @@ import { LoggingModule } from './core/logging/logging.module';
 import { AuthModule } from './auth/auth.module';
 import { AccountsModule } from './accounts/accounts.module';
 import { TransactionsModule } from './transactions/transactions.module';
+import { BankingModule } from './banking/banking.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 
 @Module({
@@ -25,6 +26,7 @@ import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
     AuthModule,
     AccountsModule,
     TransactionsModule,
+    BankingModule,
   ],
   controllers: [],
   providers: [

@@ -1,4 +1,5 @@
 import { IsString, IsNotEmpty, MaxLength } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
 
 /**
  * CreateFamilyDto - Validation DTO for creating a new Family
@@ -23,6 +24,12 @@ export class CreateFamilyDto {
    * @minLength 1
    * @maxLength 255
    */
+  @ApiProperty({
+    description: 'Family name',
+    example: 'Smith Family',
+    minLength: 1,
+    maxLength: 255,
+  })
   @IsString()
   @IsNotEmpty()
   @MaxLength(255)

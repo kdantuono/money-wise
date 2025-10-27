@@ -5,6 +5,7 @@ import {
   MaxLength,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
+import { ApiPropertyOptional } from '@nestjs/swagger';
 import { UserRole, UserStatus } from '../../../../../generated/prisma';
 
 /**
@@ -63,6 +64,10 @@ export class UpdateUserDto {
    * - Unique constraint enforced at database level
    * - Duplicate email will throw ConflictException
    */
+  @ApiPropertyOptional({
+    description: 'User email address (unique, case-insensitive)',
+    example: 'jane.doe@example.com',
+  })
   @IsOptional()
   @IsEmail({}, { message: 'Invalid email format' })
   @MaxLength(255, { message: 'Email cannot exceed 255 characters' })
@@ -75,6 +80,10 @@ export class UpdateUserDto {
    * - Max 255 characters
    * - No special character restrictions (supports unicode)
    */
+  @ApiPropertyOptional({
+    description: 'User first name',
+    example: 'Jane',
+  })
   @IsOptional()
   @MaxLength(255, { message: 'First name cannot exceed 255 characters' })
   firstName?: string;
@@ -85,6 +94,10 @@ export class UpdateUserDto {
    * - Max 255 characters
    * - No special character restrictions (supports unicode)
    */
+  @ApiPropertyOptional({
+    description: 'User last name',
+    example: 'Smith',
+  })
   @IsOptional()
   @MaxLength(255, { message: 'Last name cannot exceed 255 characters' })
   lastName?: string;
@@ -97,6 +110,10 @@ export class UpdateUserDto {
    * - VIEWER: Read-only
    * - Role changes typically require admin authorization
    */
+  @ApiPropertyOptional({
+    description: 'User role (ADMIN, MEMBER, VIEWER)',
+    enum: UserRole,
+  })
   @IsOptional()
   @IsEnum(UserRole, { message: 'Invalid user role' })
   role?: UserRole;
@@ -109,6 +126,10 @@ export class UpdateUserDto {
    * - SUSPENDED: System-level suspension
    * - Status changes typically require admin authorization
    */
+  @ApiPropertyOptional({
+    description: 'User account status (ACTIVE, INACTIVE, SUSPENDED)',
+    enum: UserStatus,
+  })
   @IsOptional()
   @IsEnum(UserStatus, { message: 'Invalid user status' })
   status?: UserStatus;
