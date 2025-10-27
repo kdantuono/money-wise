@@ -367,6 +367,35 @@ export enum SortOrder {
 }
 
 // ============================================================================
+// BANKING INTEGRATION TYPES
+// ============================================================================
+
+export enum BankingProvider {
+  MANUAL = 'MANUAL',
+  SALTEDGE = 'SALTEDGE',
+  TINK = 'TINK',
+  YAPILY = 'YAPILY',
+  TRUELAYER = 'TRUELAYER',
+}
+
+export enum BankingConnectionStatus {
+  PENDING = 'PENDING',
+  IN_PROGRESS = 'IN_PROGRESS',
+  AUTHORIZED = 'AUTHORIZED',
+  REVOKED = 'REVOKED',
+  EXPIRED = 'EXPIRED',
+  FAILED = 'FAILED',
+}
+
+export enum BankingSyncStatus {
+  PENDING = 'PENDING',
+  SYNCING = 'SYNCING',
+  SYNCED = 'SYNCED',
+  ERROR = 'ERROR',
+  DISCONNECTED = 'DISCONNECTED',
+}
+
+// ============================================================================
 // END OF TYPE DEFINITIONS
 // ============================================================================
 

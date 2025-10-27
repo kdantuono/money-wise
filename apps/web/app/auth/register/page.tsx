@@ -43,12 +43,7 @@ export default function RegisterPage() {
   const onSubmit = async (data: RegisterFormData) => {
     try {
       clearError()
-      await registerUser({
-        firstName: data.firstName,
-        lastName: data.lastName,
-        email: data.email,
-        password: data.password,
-      })
+      await registerUser(data.email, data.password, data.firstName, data.lastName)
       router.push('/dashboard')
     } catch (error) {
       // Error is handled by the store

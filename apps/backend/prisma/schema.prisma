@@ -71,13 +71,56 @@ enum AccountStatus {
 }
 
 /// Account data source
-/// PLAID: Synced via Plaid API
+/// SALTEDGE: Synced via SaltEdge API
+/// TINK: Synced via Tink API
+/// YAPILY: Synced via Yapily API
+/// PLAID: Synced via Plaid API (legacy)
 /// MANUAL: User-entered data
 enum AccountSource {
+  SALTEDGE
+  TINK
+  YAPILY
   PLAID
   MANUAL
 
   @@map("account_source")
+}
+
+/// Banking provider selection
+/// Used to route requests to correct API provider
+enum BankingProvider {
+  MANUAL       // User manually entered
+  SALTEDGE     // GoCardless SaltEdge (MVP)
+  TINK         // Tink by Visa (Phase 2)
+  YAPILY       // Yapily (Phase 3)
+  TRUELAYER    // TrueLayer (Phase 3)
+
+  @@map("banking_provider")
+}
+
+/// Banking connection status
+/// Tracks OAuth flow and account linking state
+enum BankingConnectionStatus {
+  PENDING      // Link initiated, user not yet authorized
+  IN_PROGRESS  // User in OAuth flow
+  AUTHORIZED   // Successfully authorized
+  REVOKED      // User disconnected
+  EXPIRED      // Link expired (90 days for SaltEdge)
+  FAILED       // Authorization failed
+
+  @@map("banking_connection_status")
+}
+
+/// Banking sync status
+/// Tracks account synchronization state
+enum BankingSyncStatus {
+  PENDING      // Awaiting first sync
+  SYNCING      // Currently syncing
+  SYNCED       // Successfully synced
+  ERROR        // Sync failed
+  DISCONNECTED // User disconnected, no syncing
+
+  @@map("banking_sync_status")
 }
 
 /// Transaction type
@@ -261,10 +304,11 @@ model User {
   // ARCHITECTURAL DECISION: User → Account relationship maintained
   // Users own their personal accounts, but family also has shared accounts
   // This enables both individual and family-level financial management
-  accounts         Account[]
-  userAchievements UserAchievement[]
-  passwordHistory  PasswordHistory[]
-  auditLogs        AuditLog[]
+  accounts           Account[]
+  bankingConnections BankingConnection[]
+  userAchievements   UserAchievement[]
+  passwordHistory    PasswordHistory[]
+  auditLogs          AuditLog[]
 
   // Indexes for query performance
   @@index([email], name: "idx_users_email")
@@ -319,6 +363,18 @@ model Account {
   // Expected shape: { mask, subtype, officialName, persistentAccountId }
   plaidMetadata Json? @db.JsonB
 
+  // Banking provider integration fields
+  // ARCHITECTURAL DECISION: Support multiple providers (SaltEdge, Tink, Yapily, etc.)
+  // Rationale: Enable provider switching without data loss
+  bankingProvider       BankingProvider?    @map("banking_provider")
+  saltEdgeAccountId     String?             @map("saltedge_account_id") @db.VarChar(255)
+  saltEdgeConnectionId  String?             @map("saltedge_connection_id") @db.VarChar(255)
+  tinkAccountId         String?             @map("tink_account_id") @db.VarChar(255)
+  yalilyAccountId       String?             @map("yapily_account_id") @db.VarChar(255)
+
+  // Sync tracking
+  syncStatus            BankingSyncStatus   @default(PENDING) @map("sync_status")
+
   // Sync settings
   isActive    Boolean   @default(true) @map("is_active")
   syncEnabled Boolean   @default(true) @map("sync_enabled")
@@ -344,20 +400,27 @@ model Account {
   family   Family? @relation(fields: [familyId], references: [id], onDelete: Cascade)
 
   // Relations
-  transactions Transaction[]
+  transactions   Transaction[]
+  syncLogs       BankingSyncLog[]
 
   @@unique([plaidAccountId], name: "uq_accounts_plaid_account")
+  @@unique([saltEdgeAccountId], name: "uq_accounts_saltedge_account")
+  @@unique([tinkAccountId], name: "uq_accounts_tink_account")
+  @@unique([yalilyAccountId], name: "uq_accounts_yapily_account")
+
   // Indexes for query performance
   // ARCHITECTURAL DECISION: Index strategy for common query patterns
   // 1. Ownership lookups: userId, familyId
   // 2. Account filtering: (userId/familyId, status) for "show active accounts"
   // 3. Plaid sync: plaidItemId for batch sync operations
-  // 4. Unique Plaid IDs: Prevent duplicate connections
+  // 4. Banking provider sync: (bankingProvider, syncStatus) for batch syncing
+  // 5. Unique provider IDs: Prevent duplicate connections
   @@index([userId], name: "idx_accounts_user_id")
   @@index([familyId], name: "idx_accounts_family_id")
   @@index([userId, status], name: "idx_accounts_user_status")
   @@index([familyId, status], name: "idx_accounts_family_status")
   @@index([plaidItemId], name: "idx_accounts_plaid_item")
+  @@index([bankingProvider, syncStatus], name: "idx_accounts_provider_sync")
   @@map("accounts")
 }
 
@@ -819,6 +882,86 @@ model AuditLog {
   @@index([ipAddress, createdAt], name: "idx_audit_logs_ip_created")
   @@index([isSecurityEvent, createdAt], name: "idx_audit_logs_security_created")
   @@map("audit_logs")
+}
+
+/// BankingConnection entity - Tracks OAuth flow and banking provider links
+/// ARCHITECTURAL DECISION: Separate from Account for OAuth state tracking
+/// - Connection tracks the OAuth link (redirect URLs, status, expiration)
+/// - Account records the linked accounts and their data
+/// - One Connection can result in multiple Account records
+model BankingConnection {
+  id                String                    @id @default(uuid()) @db.Uuid
+  userId            String                    @map("user_id") @db.Uuid
+  provider          BankingProvider
+  status            BankingConnectionStatus   @default(PENDING)
+
+  // Provider-specific identifiers
+  // SaltEdge
+  saltEdgeConnectionId  String?               @unique @map("saltedge_connection_id") @db.VarChar(255)
+  // Tink (Phase 2)
+  tinkConnectionId      String?               @unique @map("tink_connection_id") @db.VarChar(255)
+  // Yapily (Phase 3)
+  yalilyConnectionId    String?               @unique @map("yapily_connection_id") @db.VarChar(255)
+
+  // OAuth flow tracking
+  redirectUrl       String?                   @map("redirect_url") @db.Text
+  authorizationUrl  String?                   @map("authorization_url") @db.Text
+  expiresAt         DateTime?                 @map("expires_at") @db.Timestamptz
+  authorizedAt      DateTime?                 @map("authorized_at") @db.Timestamptz
+
+  // Provider metadata
+  metadata          Json?                     @db.JsonB  // Provider-specific data
+
+  // Timestamps
+  createdAt         DateTime                  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt         DateTime                  @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relations
+  user              User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Indexes
+  @@unique([userId, saltEdgeConnectionId], name: "uq_banking_conn_user_saltedge")
+  @@index([userId, status], name: "idx_banking_conn_user_status")
+  @@index([provider, status], name: "idx_banking_conn_provider_status")
+  @@index([expiresAt], name: "idx_banking_conn_expires")
+  @@map("banking_connections")
+}
+
+/// BankingSyncLog entity - Audit trail for account synchronization
+/// ARCHITECTURAL DECISION: Immutable sync history for debugging and monitoring
+/// - Records every sync attempt (success and failure)
+/// - Enables monitoring of sync health and troubleshooting
+/// - Supports analytics (sync patterns, error rates, performance)
+model BankingSyncLog {
+  id                String                    @id @default(uuid()) @db.Uuid
+  accountId         String                    @map("account_id") @db.Uuid
+  provider          BankingProvider
+  status            BankingSyncStatus
+
+  // Sync timing
+  startedAt         DateTime                  @default(now()) @map("started_at") @db.Timestamptz
+  completedAt       DateTime?                 @map("completed_at") @db.Timestamptz
+
+  // Results
+  accountsSynced    Int?                      @map("accounts_synced")
+  transactionsSynced Int?                     @map("transactions_synced")
+  balanceUpdated    Boolean                   @default(false) @map("balance_updated")
+
+  // Error tracking
+  error             String?                   @map("error") @db.Text
+  errorCode         String?                   @map("error_code") @db.VarChar(50)
+
+  // Metadata
+  metadata          Json?                     @db.JsonB  // Provider-specific sync details
+
+  // Relations
+  account           Account                   @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  // Indexes
+  @@index([accountId, startedAt], name: "idx_sync_logs_account_date")
+  @@index([provider, status], name: "idx_sync_logs_provider_status")
+  @@index([status, startedAt], name: "idx_sync_logs_status_date")
+  @@map("banking_sync_logs")
 }
 
 // ============================================================================

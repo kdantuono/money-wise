@@ -95,7 +95,10 @@
       "Bash(chmod +x /home/nemesi/dev/money-wise/.claude/scripts/setup-actionlint.sh)",
       "Bash(/home/nemesi/dev/money-wise/.claude/scripts/setup-actionlint.sh)",
       "mcp__hugging-face__hf_doc_search",
-      "mcp__hugging-face__paper_search"
+      "mcp__hugging-face__paper_search",
+      "WebFetch(domain:plaid.com)",
+      "WebFetch(domain:developer.gocardless.com)",
+      "WebFetch(domain:www.saltedge.com)"
     ],
     "deny": [],
     "ask": []

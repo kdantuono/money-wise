@@ -36,10 +36,7 @@ export default function LoginPage() {
   const onSubmit = async (data: LoginFormData) => {
     try {
       clearError()
-      await login({
-        email: data.email,
-        password: data.password,
-      })
+      await login(data.email, data.password)
       router.push('/dashboard')
     } catch (error) {
       // Error is handled by the store
