@@ -15,6 +15,8 @@ import { AccountLockoutService } from './services/account-lockout.service';
 import { EmailVerificationService } from './services/email-verification.service';
 import { PasswordResetService } from './services/password-reset.service';
 import { AuditLogService } from './services/audit-log.service';
+import { CsrfService } from './services/csrf.service';
+import { CsrfGuard } from './guards/csrf.guard';
 import { PrismaModule } from '../core/database/prisma/prisma.module';
 
 @Module({
@@ -39,23 +41,27 @@ import { PrismaModule } from '../core/database/prisma/prisma.module';
     JwtStrategy,
     JwtAuthGuard,
     RateLimitGuard,
+    CsrfGuard,
     RateLimitService,
     PasswordSecurityService,
     AccountLockoutService,
     EmailVerificationService,
     PasswordResetService,
     AuditLogService,
+    CsrfService,
   ],
   exports: [
     AuthService,
     AuthSecurityService,
     JwtAuthGuard,
     RateLimitGuard,
+    CsrfGuard,
     PasswordSecurityService,
     AccountLockoutService,
     EmailVerificationService,
     PasswordResetService,
     AuditLogService,
+    CsrfService,
   ],
 })
 export class AuthModule {}

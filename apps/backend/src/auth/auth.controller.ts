@@ -7,6 +7,8 @@ import {
   HttpCode,
   HttpStatus,
   Req,
+  Res,
+  UnauthorizedException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -15,9 +17,11 @@ import {
   ApiBearerAuth,
   ApiBody,
 } from '@nestjs/swagger';
-import { Request } from 'express';
+import { Request, Response } from 'express';
+import { ConfigService } from '@nestjs/config';
 import { AuthService } from './auth.service';
 import { AuthSecurityService } from './auth-security.service';
+import { CsrfService } from './services/csrf.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { AuthResponseDto } from './dto/auth-response.dto';
@@ -26,6 +30,7 @@ import { PasswordResetRequestDto, ResetPasswordDto, PasswordResetResponseDto, Pa
 import { EmailVerificationDto, EmailVerificationResponseDto, ResendEmailVerificationResponseDto } from './dto/email-verification.dto';
 import { PasswordStrengthCheckDto, PasswordStrengthResponseDto } from './dto/password-strength.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { CsrfGuard } from './guards/csrf.guard';
 import { RateLimitGuard, RateLimit, AuthRateLimits } from './guards/rate-limit.guard';
 import { Public } from './decorators/public.decorator';
 import { CurrentUser } from './decorators/current-user.decorator';
@@ -73,11 +78,30 @@ export class AuthController {
    * Initializes the authentication controller
    * @param authService - Core authentication service
    * @param authSecurityService - Security verification service
+   * @param csrfService - CSRF token service
+   * @param configService - Configuration service
    */
   constructor(
     private readonly authService: AuthService,
     private readonly authSecurityService: AuthSecurityService,
+    private readonly csrfService: CsrfService,
+    private readonly configService: ConfigService,
   ) {}
+
+  /**
+   * Get cookie options based on environment
+   * @private
+   */
+  private getCookieOptions(maxAge: number) {
+    const isProduction = this.configService.get<string>('NODE_ENV') === 'production';
+    return {
+      httpOnly: true,
+      secure: isProduction, // HTTPS only in production
+      sameSite: 'strict' as const,
+      maxAge,
+      path: '/',
+    };
+  }
 
   /**
    * Register a new user account
@@ -147,11 +171,27 @@ export class AuthController {
     status: 429,
     description: 'Too many registration attempts',
   })
-  async register(@Body() registerDto: RegisterDto, @Req() request: Request): Promise<AuthResponseDto> {
+  async register(
+    @Body() registerDto: RegisterDto,
+    @Req() request: Request,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<Omit<AuthResponseDto, 'accessToken' | 'refreshToken'> & { csrfToken: string }> {
     const result = await this.authSecurityService.register(registerDto, request);
-    // Remove verification token from response (used internally for email sending)
-    const { verificationToken: _verificationToken, ...response } = result;
-    return response;
+
+    // Set HttpOnly cookies for tokens
+    res.cookie('accessToken', result.accessToken, this.getCookieOptions(15 * 60 * 1000)); // 15 minutes
+    res.cookie('refreshToken', result.refreshToken, this.getCookieOptions(7 * 24 * 60 * 60 * 1000)); // 7 days
+
+    // Generate CSRF token
+    const csrfToken = this.csrfService.generateToken();
+
+    // Remove sensitive data from response
+    const { accessToken: _accessToken, refreshToken: _refreshToken, verificationToken: _verificationToken, ...response } = result;
+
+    return {
+      ...response,
+      csrfToken,
+    };
   }
 
   /**
@@ -198,40 +238,68 @@ export class AuthController {
     status: 429,
     description: 'Too many login attempts',
   })
-  async login(@Body() loginDto: LoginDto, @Req() request: Request): Promise<AuthResponseDto> {
-    return this.authSecurityService.login(loginDto, request);
+  async login(
+    @Body() loginDto: LoginDto,
+    @Req() request: Request,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<Omit<AuthResponseDto, 'accessToken' | 'refreshToken'> & { csrfToken: string }> {
+    const result = await this.authSecurityService.login(loginDto, request);
+
+    // Set HttpOnly cookies for tokens
+    res.cookie('accessToken', result.accessToken, this.getCookieOptions(15 * 60 * 1000)); // 15 minutes
+    res.cookie('refreshToken', result.refreshToken, this.getCookieOptions(7 * 24 * 60 * 60 * 1000)); // 7 days
+
+    // Generate CSRF token
+    const csrfToken = this.csrfService.generateToken();
+
+    // Remove tokens from response (they're in cookies now)
+    const { accessToken: _accessToken, refreshToken: _refreshToken, ...response } = result;
+
+    return {
+      ...response,
+      csrfToken,
+    };
   }
 
   @Public()
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Refresh access token' })
-  @ApiBody({
-    schema: {
-      type: 'object',
-      properties: {
-        refreshToken: {
-          type: 'string',
-          description: 'Valid refresh token',
-        },
-      },
-      required: ['refreshToken'],
-    },
-  })
+  @ApiOperation({ summary: 'Refresh access token using HttpOnly cookie' })
   @ApiResponse({
     status: 200,
     description: 'Token successfully refreshed',
-    type: AuthResponseDto,
   })
   @ApiResponse({
     status: 401,
-    description: 'Invalid refresh token',
+    description: 'Invalid or missing refresh token',
   })
   async refreshToken(
-    @Body('refreshToken') refreshToken: string,
     @Req() request: Request,
-  ): Promise<AuthResponseDto> {
-    return this.authSecurityService.refreshToken(refreshToken, request);
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<Omit<AuthResponseDto, 'accessToken' | 'refreshToken'> & { csrfToken: string }> {
+    // Extract refresh token from cookie
+    const refreshToken = request.cookies?.refreshToken;
+
+    if (!refreshToken) {
+      throw new UnauthorizedException('Refresh token not found in cookies');
+    }
+
+    const result = await this.authSecurityService.refreshToken(refreshToken, request);
+
+    // Set new HttpOnly cookies
+    res.cookie('accessToken', result.accessToken, this.getCookieOptions(15 * 60 * 1000)); // 15 minutes
+    res.cookie('refreshToken', result.refreshToken, this.getCookieOptions(7 * 24 * 60 * 60 * 1000)); // 7 days
+
+    // Generate new CSRF token
+    const csrfToken = this.csrfService.generateToken();
+
+    // Remove tokens from response
+    const { accessToken: _accessToken, refreshToken: _refreshToken, ...response } = result;
+
+    return {
+      ...response,
+      csrfToken,
+    };
   }
 
   @Get('profile')
@@ -253,10 +321,10 @@ export class AuthController {
   }
 
   @Post('logout')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, CsrfGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'User logout' })
+  @ApiOperation({ summary: 'User logout - clears auth cookies' })
   @ApiResponse({
     status: 204,
     description: 'User successfully logged out',
@@ -265,14 +333,74 @@ export class AuthController {
     status: 401,
     description: 'Unauthorized - invalid or missing token',
   })
-  async logout(@CurrentUser() user: User, @Req() request: Request): Promise<void> {
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - invalid or missing CSRF token',
+  })
+  async logout(
+    @CurrentUser() user: User,
+    @Req() request: Request,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<void> {
     await this.authSecurityService.logout(user.id, request);
+
+    // Clear auth cookies with same options used to set them
+    const isProduction = this.configService.get<string>('NODE_ENV') === 'production';
+    const clearOptions = {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: 'strict' as const,
+      path: '/',
+    };
+    res.clearCookie('accessToken', clearOptions);
+    res.clearCookie('refreshToken', clearOptions);
+  }
+
+  /**
+   * Get CSRF token
+   *
+   * Generates a new CSRF token for use in subsequent state-changing requests.
+   * This endpoint is public and doesn't require authentication.
+   *
+   * The CSRF token must be included in the X-CSRF-Token header for all
+   * POST, PUT, PATCH, and DELETE requests.
+   *
+   * @returns CSRF token
+   *
+   * @example
+   * GET /api/auth/csrf-token
+   *
+   * Response (200):
+   * {
+   *   "csrfToken": "a1b2c3d4...e5f6.1698765432000.9f8e7d6c..."
+   * }
+   */
+  @Public()
+  @Get('csrf-token')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Get CSRF token for secure requests' })
+  @ApiResponse({
+    status: 200,
+    description: 'CSRF token generated successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        csrfToken: {
+          type: 'string',
+          description: 'CSRF token to include in X-CSRF-Token header',
+        },
+      },
+    },
+  })
+  getCsrfToken(): { csrfToken: string } {
+    const csrfToken = this.csrfService.generateToken();
+    return { csrfToken };
   }
 
   // === NEW SECURITY ENDPOINTS ===
 
   @Post('change-password')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, CsrfGuard)
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Change user password' })
@@ -289,6 +417,10 @@ export class AuthController {
   @ApiResponse({
     status: 401,
     description: 'Unauthorized - invalid or missing token',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - invalid or missing CSRF token',
   })
   async changePassword(
     @CurrentUser() user: User,
@@ -382,7 +514,7 @@ export class AuthController {
   }
 
   @Post('resend-verification')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, CsrfGuard)
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()
   @RateLimit(AuthRateLimits.EMAIL_VERIFICATION)
@@ -399,6 +531,10 @@ export class AuthController {
   @ApiResponse({
     status: 401,
     description: 'Unauthorized - invalid or missing token',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - invalid or missing CSRF token',
   })
   @ApiResponse({
     status: 429,

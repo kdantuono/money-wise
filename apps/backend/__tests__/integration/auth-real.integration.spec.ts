@@ -17,6 +17,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import request from 'supertest';
+import cookieParser from 'cookie-parser';
 
 import { AuthModule } from '@/auth/auth.module';
 import { RedisModule } from '@/core/redis/redis.module';
@@ -32,6 +33,16 @@ import { RegisterDto } from '@/auth/dto/register.dto';
 import { LoginDto } from '@/auth/dto/login.dto';
 
 import { createMockRedis } from '../mocks/redis.mock';
+import {
+  parseCookies,
+  getCookieHeader,
+  verifyCookieAttributes,
+  verifyCookiesCleared,
+  extractCsrfToken,
+  makeAuthenticatedRequest,
+  assertCookieAuthResponse,
+  verifyCsrfTokenFormat,
+} from '../helpers/cookie-auth.helper';
 
 describe('Real Auth Integration Tests (Prisma)', () => {
   let app: INestApplication;
@@ -42,69 +53,100 @@ describe('Real Auth Integration Tests (Prisma)', () => {
   const mockRedisClient = createMockRedis();
 
   beforeAll(async () => {
-    // Setup test database (TestContainers or local PostgreSQL)
-    const testPrismaClient = await setupTestDatabase();
+    try {
+      console.log('[TEST SETUP] 🔧 Starting beforeAll hook...');
 
-    // Get test data factory
-    factory = await getTestDataFactory();
+      // Setup test database (TestContainers or local PostgreSQL)
+      console.log('[TEST SETUP] 📦 Setting up test database...');
+      const testPrismaClient = await setupTestDatabase();
+      console.log('[TEST SETUP] ✅ Test database setup complete');
 
-    // Set environment variables
-    process.env.NODE_ENV = 'test';
-    process.env.APP_NAME = 'MoneyWise Test';
-    process.env.APP_PORT = '4000';
-    process.env.APP_HOST = 'localhost';
-    process.env.APP_VERSION = '0.4.1';
+      // Get test data factory
+      console.log('[TEST SETUP] 🏭 Getting test data factory...');
+      factory = await getTestDataFactory();
+      console.log('[TEST SETUP] ✅ Test data factory ready');
 
-    // JWT Configuration (must be ≥32 chars AND different from each other)
-    process.env.JWT_ACCESS_SECRET = 'test-access-secret-exactly-32-chars-long-for-jwt!!';
-    process.env.JWT_REFRESH_SECRET = 'test-refresh-secret-exactly-32-chars-long-jwt!';
-    process.env.JWT_ACCESS_EXPIRES_IN = '15m';
-    process.env.JWT_REFRESH_EXPIRES_IN = '7d';
+      // Set environment variables
+      console.log('[TEST SETUP] ⚙️  Setting environment variables...');
+      process.env.NODE_ENV = 'test';
+      process.env.APP_NAME = 'MoneyWise Test';
+      process.env.APP_PORT = '4000';
+      process.env.APP_HOST = 'localhost';
+      process.env.APP_VERSION = '0.4.1';
 
-    // Redis Configuration
-    process.env.REDIS_HOST = 'localhost';
-    process.env.REDIS_PORT = '6379';
+      // JWT Configuration (must be ≥32 chars AND different from each other)
+      process.env.JWT_ACCESS_SECRET = 'test-access-secret-exactly-32-chars-long-for-jwt!!';
+      process.env.JWT_REFRESH_SECRET = 'test-refresh-secret-exactly-32-chars-long-jwt!';
+      process.env.JWT_ACCESS_EXPIRES_IN = '15m';
+      process.env.JWT_REFRESH_EXPIRES_IN = '7d';
 
-    // Security Configuration
-    process.env.CORS_ORIGIN = 'http://localhost:3000';
-    process.env.SESSION_SECRET = 'test-session-secret-min-32-characters-long';
-    process.env.CSRF_SECRET = 'test-csrf-secret-minimum-32-characters-long';
+      // Redis Configuration
+      process.env.REDIS_HOST = 'localhost';
+      process.env.REDIS_PORT = '6379';
 
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [
-        RedisModule.forTest(mockRedisClient), // Use testable Redis module
-        ConfigModule.forRoot({
-          isGlobal: true,
-          ignoreEnvFile: true, // Use process.env directly
-          cache: false, // Don't cache config in tests
-          load: [
-            // Test config factory - groups env vars into nested objects like production
-            () => ({
-              auth: {
-                JWT_ACCESS_SECRET: process.env.JWT_ACCESS_SECRET,
-                JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET,
-                JWT_ACCESS_EXPIRES_IN: process.env.JWT_ACCESS_EXPIRES_IN,
-                JWT_REFRESH_EXPIRES_IN: process.env.JWT_REFRESH_EXPIRES_IN,
-              },
-            }),
-          ],
-        }),
-        PrismaModule, // Real Prisma database
-        AuthModule,
-      ],
-    })
-      .overrideProvider(PrismaService)
-      .useValue(testPrismaClient) // Use test database Prisma client
-      .compile();
+      // Security Configuration
+      process.env.CORS_ORIGIN = 'http://localhost:3000';
+      process.env.SESSION_SECRET = 'test-session-secret-min-32-characters-long';
+      process.env.CSRF_SECRET = 'test-csrf-secret-minimum-32-characters-long';
+      console.log('[TEST SETUP] ✅ Environment variables set');
 
-    app = moduleFixture.createNestApplication();
-    app.useGlobalPipes(
-      new ValidationPipe({ transform: true, whitelist: true })
-    );
+      console.log('[TEST SETUP] 🏗️  Creating test module...');
+      const moduleFixture: TestingModule = await Test.createTestingModule({
+        imports: [
+          RedisModule.forTest(mockRedisClient), // Use testable Redis module
+          ConfigModule.forRoot({
+            isGlobal: true,
+            ignoreEnvFile: true, // Use process.env directly
+            cache: false, // Don't cache config in tests
+            load: [
+              // Test config factory - groups env vars into nested objects like production
+              () => ({
+                auth: {
+                  JWT_ACCESS_SECRET: process.env.JWT_ACCESS_SECRET,
+                  JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET,
+                  JWT_ACCESS_EXPIRES_IN: process.env.JWT_ACCESS_EXPIRES_IN,
+                  JWT_REFRESH_EXPIRES_IN: process.env.JWT_REFRESH_EXPIRES_IN,
+                },
+              }),
+            ],
+          }),
+          PrismaModule, // Real Prisma database
+          AuthModule,
+        ],
+      })
+        .overrideProvider(PrismaService)
+        .useValue(testPrismaClient) // Use test database Prisma client
+        .compile();
+      console.log('[TEST SETUP] ✅ Test module created');
 
-    prismaService = moduleFixture.get<PrismaService>(PrismaService);
+      console.log('[TEST SETUP] 🚀 Creating NestJS application...');
+      app = moduleFixture.createNestApplication();
+      app.setGlobalPrefix('api'); // Match production API prefix
 
-    await app.init();
+      // CRITICAL: Initialize cookie-parser middleware (matches main.ts)
+      const sessionSecret = process.env.SESSION_SECRET || 'test-session-secret-min-32-characters-long';
+      app.use(cookieParser(sessionSecret));
+      console.log('[TEST SETUP] ✅ Cookie-parser middleware initialized');
+
+      app.useGlobalPipes(
+        new ValidationPipe({ transform: true, whitelist: true })
+      );
+      console.log('[TEST SETUP] ✅ Application created with /api prefix');
+
+      console.log('[TEST SETUP] 🔌 Getting PrismaService...');
+      prismaService = moduleFixture.get<PrismaService>(PrismaService);
+      console.log('[TEST SETUP] ✅ PrismaService obtained');
+
+      console.log('[TEST SETUP] ⚡ Initializing application...');
+      await app.init();
+      console.log('[TEST SETUP] ✅ Application initialized successfully');
+      console.log('[TEST SETUP] 🎉 beforeAll hook completed!');
+    } catch (error) {
+      console.error('[TEST SETUP] ❌ FATAL ERROR in beforeAll:');
+      console.error('[TEST SETUP] Error message:', error.message);
+      console.error('[TEST SETUP] Error stack:', error.stack);
+      throw error;
+    }
   });
 
   afterAll(async () => {
@@ -135,23 +177,35 @@ describe('Real Auth Integration Tests (Prisma)', () => {
     it('should register a new user successfully', async () => {
       try {
         const response = await request(app.getHttpServer())
-          .post('/auth/register')
+          .post('/api/auth/register')
           .send(validRegisterDto);
 
         console.log('Response status:', response.status);
         console.log('Response body:', JSON.stringify(response.body, null, 2));
+        console.log('Set-Cookie headers:', response.headers['set-cookie']);
 
         expect(response.status).toBe(201);
-        expect(response.body).toHaveProperty('accessToken');
-        expect(response.body).toHaveProperty('refreshToken');
+
+        // ✅ NEW: Verify cookie-based auth response format
+        assertCookieAuthResponse(response);
+
+        // ✅ NEW: Verify cookie security attributes
+        verifyCookieAttributes(response, 'accessToken');
+        verifyCookieAttributes(response, 'refreshToken');
+
+        // ✅ NEW: Verify CSRF token format
+        const csrfToken = extractCsrfToken(response);
+        expect(csrfToken).toBeTruthy();
+        verifyCsrfTokenFormat(csrfToken!);
+
+        // ✅ Verify user data in response (unchanged)
         expect(response.body).toHaveProperty('user');
-        expect(response.body).toHaveProperty('expiresIn');
         expect(response.body.user).not.toHaveProperty('passwordHash');
         expect(response.body.user.email).toBe(validRegisterDto.email.toLowerCase());
         expect(response.body.user.firstName).toBe(validRegisterDto.firstName);
         expect(response.body.user.lastName).toBe(validRegisterDto.lastName);
 
-        // Verify user was actually created in database
+        // ✅ Verify user was actually created in database (unchanged)
         const user = await prismaService.user.findUnique({
           where: { email: validRegisterDto.email.toLowerCase() },
         });
@@ -176,7 +230,7 @@ describe('Real Auth Integration Tests (Prisma)', () => {
       });
 
       const response = await request(app.getHttpServer())
-        .post('/auth/register')
+        .post('/api/auth/register')
         .send(validRegisterDto)
         .expect(409);
 
@@ -190,7 +244,7 @@ describe('Real Auth Integration Tests (Prisma)', () => {
       };
 
       const response = await request(app.getHttpServer())
-        .post('/auth/register')
+        .post('/api/auth/register')
         .send(invalidDto)
         .expect(400);
 
@@ -204,7 +258,7 @@ describe('Real Auth Integration Tests (Prisma)', () => {
       };
 
       const response = await request(app.getHttpServer())
-        .post('/auth/register')
+        .post('/api/auth/register')
         .send(weakPasswordDto)
         .expect(400);
 
@@ -218,7 +272,7 @@ describe('Real Auth Integration Tests (Prisma)', () => {
       };
 
       await request(app.getHttpServer())
-        .post('/auth/register')
+        .post('/api/auth/register')
         .send(incompleteDto)
         .expect(400);
     });
@@ -230,13 +284,17 @@ describe('Real Auth Integration Tests (Prisma)', () => {
       };
 
       const response = await request(app.getHttpServer())
-        .post('/auth/register')
+        .post('/api/auth/register')
         .send(upperCaseEmailDto)
         .expect(201);
 
+      // ✅ Verify cookie-based auth response
+      assertCookieAuthResponse(response);
+
+      // ✅ Verify email normalization
       expect(response.body.user.email).toBe('newuser@example.com');
 
-      // Verify in database
+      // ✅ Verify in database
       const user = await prismaService.user.findUnique({
         where: { email: 'newuser@example.com' },
       });
@@ -266,18 +324,28 @@ describe('Real Auth Integration Tests (Prisma)', () => {
 
     it('should login user successfully', async () => {
       const response = await request(app.getHttpServer())
-        .post('/auth/login')
+        .post('/api/auth/login')
         .send(validLoginDto)
         .expect(200);
 
-      expect(response.body).toHaveProperty('accessToken');
-      expect(response.body).toHaveProperty('refreshToken');
+      // ✅ NEW: Verify cookie-based auth response format
+      assertCookieAuthResponse(response);
+
+      // ✅ NEW: Verify cookie security attributes
+      verifyCookieAttributes(response, 'accessToken');
+      verifyCookieAttributes(response, 'refreshToken');
+
+      // ✅ NEW: Verify CSRF token
+      const csrfToken = extractCsrfToken(response);
+      expect(csrfToken).toBeTruthy();
+      verifyCsrfTokenFormat(csrfToken!);
+
+      // ✅ Verify user data (unchanged)
       expect(response.body).toHaveProperty('user');
-      expect(response.body).toHaveProperty('expiresIn');
       expect(response.body.user).not.toHaveProperty('passwordHash');
       expect(response.body.user.email).toBe(testUser.email);
 
-      // Verify lastLoginAt was updated in database
+      // ✅ Verify lastLoginAt was updated in database (unchanged)
       const updatedUser = await prismaService.user.findUnique({
         where: { id: testUser.id },
       });
@@ -286,7 +354,7 @@ describe('Real Auth Integration Tests (Prisma)', () => {
 
     it('should return 401 for non-existent user', async () => {
       const response = await request(app.getHttpServer())
-        .post('/auth/login')
+        .post('/api/auth/login')
         .send({
           email: 'nonexistent@example.com',
           password: testPassword,
@@ -298,7 +366,7 @@ describe('Real Auth Integration Tests (Prisma)', () => {
 
     it('should return 401 for incorrect password', async () => {
       const response = await request(app.getHttpServer())
-        .post('/auth/login')
+        .post('/api/auth/login')
         .send({
           email: validLoginDto.email,
           password: 'WrongPassword123!',
@@ -316,7 +384,7 @@ describe('Real Auth Integration Tests (Prisma)', () => {
       });
 
       const response = await request(app.getHttpServer())
-        .post('/auth/login')
+        .post('/api/auth/login')
         .send(validLoginDto)
         .expect(401);
 
@@ -325,7 +393,7 @@ describe('Real Auth Integration Tests (Prisma)', () => {
 
     it('should handle case-insensitive email login', async () => {
       const response = await request(app.getHttpServer())
-        .post('/auth/login')
+        .post('/api/auth/login')
         .send({
           email: 'TESTLOGIN@EXAMPLE.COM', // uppercase
           password: testPassword,
@@ -337,7 +405,7 @@ describe('Real Auth Integration Tests (Prisma)', () => {
 
     it('should return 400 for invalid email format', async () => {
       await request(app.getHttpServer())
-        .post('/auth/login')
+        .post('/api/auth/login')
         .send({
           email: 'invalid-email',
           password: testPassword,
@@ -347,7 +415,7 @@ describe('Real Auth Integration Tests (Prisma)', () => {
 
     it('should return 400 for empty password', async () => {
       await request(app.getHttpServer())
-        .post('/auth/login')
+        .post('/api/auth/login')
         .send({
           email: validLoginDto.email,
           password: '',
@@ -358,10 +426,10 @@ describe('Real Auth Integration Tests (Prisma)', () => {
 
   describe('POST /auth/refresh', () => {
     let testUser: Awaited<ReturnType<typeof factory.users.buildWithPassword>>;
-    let refreshToken: string;
+    let cookies: string;
 
     beforeEach(async () => {
-      // Create test user and login to get refresh token
+      // Create test user and login to get cookies with refresh token
       testUser = await factory.users.buildWithPassword('Password123!', {
         email: 'testrefresh@example.com',
         firstName: 'Test',
@@ -370,13 +438,13 @@ describe('Real Auth Integration Tests (Prisma)', () => {
       });
 
       const loginResponse = await request(app.getHttpServer())
-        .post('/auth/login')
+        .post('/api/auth/login')
         .send({
           email: testUser.email,
           password: 'Password123!',
         });
 
-      refreshToken = loginResponse.body.refreshToken;
+      cookies = getCookieHeader(loginResponse);
     });
 
     it('should refresh token successfully', async () => {
@@ -384,32 +452,32 @@ describe('Real Auth Integration Tests (Prisma)', () => {
       await new Promise(resolve => setTimeout(resolve, 1000));
 
       const response = await request(app.getHttpServer())
-        .post('/auth/refresh')
-        .send({ refreshToken })
+        .post('/api/auth/refresh')
+        .set('Cookie', cookies)
         .expect(200);
 
-      expect(response.body).toHaveProperty('accessToken');
-      expect(response.body).toHaveProperty('refreshToken');
-      expect(response.body).toHaveProperty('user');
+      // Verify cookie-based auth response
+      assertCookieAuthResponse(response);
       expect(response.body.user.email).toBe(testUser.email);
 
-      // New tokens should be different from original (due to different iat)
-      expect(response.body.refreshToken).not.toBe(refreshToken);
+      // New cookies should be different from original (due to different iat)
+      const newCookies = parseCookies(response);
+      const oldCookies = parseCookies({ headers: { 'set-cookie': cookies } } as any);
+      expect(newCookies.refreshToken).not.toBe(oldCookies.refreshToken);
     });
 
-    it('should return 401 for invalid refresh token', async () => {
+    it('should return 401 for invalid refresh token cookie', async () => {
       const response = await request(app.getHttpServer())
-        .post('/auth/refresh')
-        .send({ refreshToken: 'invalid-token' })
+        .post('/api/auth/refresh')
+        .set('Cookie', 'refreshToken=invalid-token')
         .expect(401);
 
       expect(response.body.message).toContain('Invalid');
     });
 
-    it('should return 401 for missing refresh token', async () => {
+    it('should return 401 for missing refresh token cookie', async () => {
       await request(app.getHttpServer())
-        .post('/auth/refresh')
-        .send({})
+        .post('/api/auth/refresh')
         .expect(401);
     });
 
@@ -420,8 +488,8 @@ describe('Real Auth Integration Tests (Prisma)', () => {
       });
 
       const response = await request(app.getHttpServer())
-        .post('/auth/refresh')
-        .send({ refreshToken })
+        .post('/api/auth/refresh')
+        .set('Cookie', cookies)
         .expect(401);
 
       expect(response.body.message).toContain('Invalid');
@@ -444,13 +512,12 @@ describe('Real Auth Integration Tests (Prisma)', () => {
       };
 
       const registerResponse = await request(app.getHttpServer())
-        .post('/auth/register')
+        .post('/api/auth/register')
         .send(registrationData)
         .expect(201);
 
-      // Verify registration response
-      expect(registerResponse.body).toHaveProperty('accessToken');
-      expect(registerResponse.body).toHaveProperty('user');
+      // Verify cookie-based auth response
+      assertCookieAuthResponse(registerResponse);
       const registeredUser = registerResponse.body.user;
 
       // === PHASE 2: VERIFY DATA STORAGE ===
@@ -479,7 +546,7 @@ describe('Real Auth Integration Tests (Prisma)', () => {
 
       // === PHASE 4: LOGIN WITH SAME CREDENTIALS ===
       const loginResponse = await request(app.getHttpServer())
-        .post('/auth/login')
+        .post('/api/auth/login')
         .send({
           email: registrationData.email,
           password: registrationData.password,
@@ -487,9 +554,8 @@ describe('Real Auth Integration Tests (Prisma)', () => {
         .expect(200);
 
       // === PHASE 5: VERIFY DATA CONSISTENCY ===
-      expect(loginResponse.body).toHaveProperty('accessToken');
-      expect(loginResponse.body).toHaveProperty('refreshToken');
-      expect(loginResponse.body).toHaveProperty('user');
+      // Verify cookie-based auth response
+      assertCookieAuthResponse(loginResponse);
 
       const loggedInUser = loginResponse.body.user;
 
@@ -500,9 +566,10 @@ describe('Real Auth Integration Tests (Prisma)', () => {
       expect(loggedInUser.status).toBe('ACTIVE');
       expect(loggedInUser).not.toHaveProperty('passwordHash');
 
-      // Verify JWT tokens are valid and contain correct user info
+      // Verify JWT tokens are valid and contain correct user info (extract from cookies)
+      const cookies = parseCookies(loginResponse);
       const decodedToken = JSON.parse(
-        Buffer.from(loginResponse.body.accessToken.split('.')[1], 'base64').toString()
+        Buffer.from(cookies.accessToken!.split('.')[1], 'base64').toString()
       );
       expect(decodedToken.sub).toBe(loggedInUser.id);
       expect(decodedToken.email).toBe(registrationData.email.toLowerCase());
@@ -518,7 +585,7 @@ describe('Real Auth Integration Tests (Prisma)', () => {
       };
 
       await request(app.getHttpServer())
-        .post('/auth/register')
+        .post('/api/auth/register')
         .send(registrationData)
         .expect(201);
 
@@ -533,7 +600,7 @@ describe('Real Auth Integration Tests (Prisma)', () => {
 
       // Try login with wrong password
       const response = await request(app.getHttpServer())
-        .post('/auth/login')
+        .post('/api/auth/login')
         .send({
           email: registrationData.email,
           password: 'DifferentKey456!@',
@@ -553,7 +620,7 @@ describe('Real Auth Integration Tests (Prisma)', () => {
       };
 
       await request(app.getHttpServer())
-        .post('/auth/register')
+        .post('/api/auth/register')
         .send(registrationData)
         .expect(201);
 
@@ -569,7 +636,7 @@ describe('Real Auth Integration Tests (Prisma)', () => {
       // Login multiple times
       for (let i = 0; i < 3; i++) {
         const response = await request(app.getHttpServer())
-          .post('/auth/login')
+          .post('/api/auth/login')
           .send({
             email: registrationData.email,
             password: registrationData.password,
@@ -600,7 +667,7 @@ describe('Real Auth Integration Tests (Prisma)', () => {
       };
 
       const registerResponse = await request(app.getHttpServer())
-        .post('/auth/register')
+        .post('/api/auth/register')
         .send(registrationData)
         .expect(201);
 
@@ -625,7 +692,7 @@ describe('Real Auth Integration Tests (Prisma)', () => {
 
       for (const emailVariation of loginVariations) {
         const response = await request(app.getHttpServer())
-          .post('/auth/login')
+          .post('/api/auth/login')
           .send({
             email: emailVariation,
             password: registrationData.password,
@@ -639,10 +706,10 @@ describe('Real Auth Integration Tests (Prisma)', () => {
 
   describe('GET /auth/profile', () => {
     let testUser: Awaited<ReturnType<typeof factory.users.buildWithPassword>>;
-    let accessToken: string;
+    let cookies: string;
 
     beforeEach(async () => {
-      // Create test user and login to get access token
+      // Create test user and login to get cookies
       testUser = await factory.users.buildWithPassword('Password123!', {
         email: 'testprofile@example.com',
         firstName: 'Test',
@@ -651,19 +718,19 @@ describe('Real Auth Integration Tests (Prisma)', () => {
       });
 
       const loginResponse = await request(app.getHttpServer())
-        .post('/auth/login')
+        .post('/api/auth/login')
         .send({
           email: testUser.email,
           password: 'Password123!',
         });
 
-      accessToken = loginResponse.body.accessToken;
+      cookies = getCookieHeader(loginResponse);
     });
 
-    it('should return user profile with valid token', async () => {
+    it('should return user profile with valid cookies', async () => {
       const response = await request(app.getHttpServer())
-        .get('/auth/profile')
-        .set('Authorization', `Bearer ${accessToken}`)
+        .get('/api/auth/profile')
+        .set('Cookie', cookies)
         .expect(200);
 
       expect(response.body).toHaveProperty('id', testUser.id);
@@ -673,16 +740,16 @@ describe('Real Auth Integration Tests (Prisma)', () => {
       expect(response.body).not.toHaveProperty('passwordHash');
     });
 
-    it('should return 401 without authorization header', async () => {
+    it('should return 401 without cookies', async () => {
       await request(app.getHttpServer())
-        .get('/auth/profile')
+        .get('/api/auth/profile')
         .expect(401);
     });
 
-    it('should return 401 with invalid token', async () => {
+    it('should return 401 with invalid cookie token', async () => {
       await request(app.getHttpServer())
-        .get('/auth/profile')
-        .set('Authorization', 'Bearer invalid-token')
+        .get('/api/auth/profile')
+        .set('Cookie', 'accessToken=invalid-token')
         .expect(401);
     });
 
@@ -693,14 +760,15 @@ describe('Real Auth Integration Tests (Prisma)', () => {
       });
 
       await request(app.getHttpServer())
-        .get('/auth/profile')
-        .set('Authorization', `Bearer ${accessToken}`)
+        .get('/api/auth/profile')
+        .set('Cookie', cookies)
         .expect(401);
     });
   });
 
   describe('POST /auth/logout', () => {
-    let accessToken: string;
+    let cookies: string;
+    let csrfToken: string | null;
 
     beforeEach(async () => {
       // Create test user and login
@@ -712,33 +780,39 @@ describe('Real Auth Integration Tests (Prisma)', () => {
       });
 
       const loginResponse = await request(app.getHttpServer())
-        .post('/auth/login')
+        .post('/api/auth/login')
         .send({
           email: testUser.email,
           password: 'Password123!',
         });
 
-      accessToken = loginResponse.body.accessToken;
+      cookies = getCookieHeader(loginResponse);
+      csrfToken = extractCsrfToken(loginResponse);
     });
 
-    it('should logout successfully with valid token', async () => {
-      await request(app.getHttpServer())
-        .post('/auth/logout')
-        .set('Authorization', `Bearer ${accessToken}`)
+    it('should logout successfully with valid cookies and CSRF token', async () => {
+      const response = await request(app.getHttpServer())
+        .post('/api/auth/logout')
+        .set('Cookie', cookies)
+        .set('X-CSRF-Token', csrfToken!)
         .expect(204);
+
+      // Verify cookies are cleared
+      verifyCookiesCleared(response);
     });
 
-    it('should return 401 without authorization header', async () => {
+    it('should return 401 without cookies', async () => {
       await request(app.getHttpServer())
-        .post('/auth/logout')
+        .post('/api/auth/logout')
+        .set('X-CSRF-Token', csrfToken!)
         .expect(401);
     });
 
-    it('should return 401 with invalid token', async () => {
+    it('should return 403 without CSRF token', async () => {
       await request(app.getHttpServer())
-        .post('/auth/logout')
-        .set('Authorization', 'Bearer invalid-token')
-        .expect(401);
+        .post('/api/auth/logout')
+        .set('Cookie', cookies)
+        .expect(403);
     });
   });
 
@@ -758,7 +832,7 @@ describe('Real Auth Integration Tests (Prisma)', () => {
 
     it('should initiate password reset successfully for existing user', async () => {
       const response = await request(app.getHttpServer())
-        .post('/auth/password/reset/request')
+        .post('/api/auth/password/reset/request')
         .send({ email: testUser.email })
         .expect(200);
 
@@ -775,7 +849,7 @@ describe('Real Auth Integration Tests (Prisma)', () => {
     it('should return success even for non-existent user (security)', async () => {
       // Security: Don't reveal whether email exists
       const response = await request(app.getHttpServer())
-        .post('/auth/password/reset/request')
+        .post('/api/auth/password/reset/request')
         .send({ email: 'nonexistent@example.com' })
         .expect(200);
 
@@ -784,7 +858,7 @@ describe('Real Auth Integration Tests (Prisma)', () => {
 
     it('should return 400 for invalid email format', async () => {
       await request(app.getHttpServer())
-        .post('/auth/password/reset/request')
+        .post('/api/auth/password/reset/request')
         .send({ email: 'invalid-email' })
         .expect(400);
     });
@@ -792,14 +866,14 @@ describe('Real Auth Integration Tests (Prisma)', () => {
     it('should handle multiple reset requests (rate limiting)', async () => {
       // First request succeeds
       await request(app.getHttpServer())
-        .post('/auth/password/reset/request')
+        .post('/api/auth/password/reset/request')
         .send({ email: testUser.email })
         .expect(200);
 
       // Second request within rate limit window should still succeed
       // but might not generate new token
       const response = await request(app.getHttpServer())
-        .post('/auth/password/reset/request')
+        .post('/api/auth/password/reset/request')
         .send({ email: testUser.email })
         .expect(200);
 
@@ -822,7 +896,7 @@ describe('Real Auth Integration Tests (Prisma)', () => {
       });
 
       const resetResponse = await request(app.getHttpServer())
-        .post('/auth/password/reset/request')
+        .post('/api/auth/password/reset/request')
         .send({ email: testUser.email });
 
       resetToken = resetResponse.body.token;
@@ -830,7 +904,7 @@ describe('Real Auth Integration Tests (Prisma)', () => {
 
     it('should validate valid reset token', async () => {
       const response = await request(app.getHttpServer())
-        .post('/auth/password/reset/validate')
+        .post('/api/auth/password/reset/validate')
         .send({ token: resetToken })
         .expect(200);
 
@@ -840,7 +914,7 @@ describe('Real Auth Integration Tests (Prisma)', () => {
 
     it('should reject invalid reset token', async () => {
       const response = await request(app.getHttpServer())
-        .post('/auth/password/reset/validate')
+        .post('/api/auth/password/reset/validate')
         .send({ token: 'invalid-token-12345' })
         .expect(200);
 
@@ -850,7 +924,7 @@ describe('Real Auth Integration Tests (Prisma)', () => {
 
     it('should reject empty token', async () => {
       await request(app.getHttpServer())
-        .post('/auth/password/reset/validate')
+        .post('/api/auth/password/reset/validate')
         .send({ token: '' })
         .expect(400);
     });
@@ -872,7 +946,7 @@ describe('Real Auth Integration Tests (Prisma)', () => {
       });
 
       const resetResponse = await request(app.getHttpServer())
-        .post('/auth/password/reset/request')
+        .post('/api/auth/password/reset/request')
         .send({ email: testUser.email });
 
       resetToken = resetResponse.body.token;
@@ -880,7 +954,7 @@ describe('Real Auth Integration Tests (Prisma)', () => {
 
     it('should reset password successfully with valid token', async () => {
       const response = await request(app.getHttpServer())
-        .post('/auth/password/reset/complete')
+        .post('/api/auth/password/reset/complete')
         .send({
           token: resetToken,
           newPassword,
@@ -893,18 +967,19 @@ describe('Real Auth Integration Tests (Prisma)', () => {
 
       // Verify can login with new password
       const loginResponse = await request(app.getHttpServer())
-        .post('/auth/login')
+        .post('/api/auth/login')
         .send({
           email: testUser.email,
           password: newPassword,
         })
         .expect(200);
 
-      expect(loginResponse.body).toHaveProperty('accessToken');
+      // Verify cookie-based auth response
+      assertCookieAuthResponse(loginResponse);
 
       // Verify old password no longer works
       await request(app.getHttpServer())
-        .post('/auth/login')
+        .post('/api/auth/login')
         .send({
           email: testUser.email,
           password: 'Password123!',
@@ -914,7 +989,7 @@ describe('Real Auth Integration Tests (Prisma)', () => {
 
     it('should return 400 when passwords do not match', async () => {
       await request(app.getHttpServer())
-        .post('/auth/password/reset/complete')
+        .post('/api/auth/password/reset/complete')
         .send({
           token: resetToken,
           newPassword,
@@ -925,7 +1000,7 @@ describe('Real Auth Integration Tests (Prisma)', () => {
 
     it('should return 400 for weak password', async () => {
       await request(app.getHttpServer())
-        .post('/auth/password/reset/complete')
+        .post('/api/auth/password/reset/complete')
         .send({
           token: resetToken,
           newPassword: 'weak',
@@ -936,7 +1011,7 @@ describe('Real Auth Integration Tests (Prisma)', () => {
 
     it('should return 400 for invalid token', async () => {
       await request(app.getHttpServer())
-        .post('/auth/password/reset/complete')
+        .post('/api/auth/password/reset/complete')
         .send({
           token: 'invalid-token',
           newPassword,
@@ -948,7 +1023,7 @@ describe('Real Auth Integration Tests (Prisma)', () => {
     it('should invalidate token after successful reset', async () => {
       // Reset password
       await request(app.getHttpServer())
-        .post('/auth/password/reset/complete')
+        .post('/api/auth/password/reset/complete')
         .send({
           token: resetToken,
           newPassword,
@@ -958,7 +1033,7 @@ describe('Real Auth Integration Tests (Prisma)', () => {
 
       // Try to use same token again
       await request(app.getHttpServer())
-        .post('/auth/password/reset/complete')
+        .post('/api/auth/password/reset/complete')
         .send({
           token: resetToken,
           newPassword: 'AnotherPassword123!',
@@ -970,7 +1045,8 @@ describe('Real Auth Integration Tests (Prisma)', () => {
 
   describe('POST /auth/password/change', () => {
     let testUser: Awaited<ReturnType<typeof factory.users.buildWithPassword>>;
-    let accessToken: string;
+    let cookies: string;
+    let csrfToken: string | null;
     const currentPassword = 'Password123!';
     const newPassword = 'SecureKey789!';
 
@@ -985,19 +1061,21 @@ describe('Real Auth Integration Tests (Prisma)', () => {
       });
 
       const loginResponse = await request(app.getHttpServer())
-        .post('/auth/login')
+        .post('/api/auth/login')
         .send({
           email: testUser.email,
           password: currentPassword,
         });
 
-      accessToken = loginResponse.body.accessToken;
+      cookies = getCookieHeader(loginResponse);
+      csrfToken = extractCsrfToken(loginResponse);
     });
 
     it('should change password successfully with valid current password', async () => {
       const response = await request(app.getHttpServer())
-        .post('/auth/password/change')
-        .set('Authorization', `Bearer ${accessToken}`)
+        .post('/api/auth/password/change')
+        .set('Cookie', cookies)
+        .set('X-CSRF-Token', csrfToken!)
         .send({
           currentPassword,
           newPassword,
@@ -1010,18 +1088,19 @@ describe('Real Auth Integration Tests (Prisma)', () => {
 
       // Verify can login with new password
       const loginResponse = await request(app.getHttpServer())
-        .post('/auth/login')
+        .post('/api/auth/login')
         .send({
           email: testUser.email,
           password: newPassword,
         })
         .expect(200);
 
-      expect(loginResponse.body).toHaveProperty('accessToken');
+      // Verify cookie-based auth response
+      assertCookieAuthResponse(loginResponse);
 
       // Verify old password no longer works
       await request(app.getHttpServer())
-        .post('/auth/login')
+        .post('/api/auth/login')
         .send({
           email: testUser.email,
           password: currentPassword,
@@ -1031,8 +1110,9 @@ describe('Real Auth Integration Tests (Prisma)', () => {
 
     it('should return 401 for incorrect current password', async () => {
       await request(app.getHttpServer())
-        .post('/auth/password/change')
-        .set('Authorization', `Bearer ${accessToken}`)
+        .post('/api/auth/password/change')
+        .set('Cookie', cookies)
+        .set('X-CSRF-Token', csrfToken!)
         .send({
           currentPassword: 'WrongPassword123!',
           newPassword,
@@ -1043,8 +1123,9 @@ describe('Real Auth Integration Tests (Prisma)', () => {
 
     it('should return 400 when new passwords do not match', async () => {
       await request(app.getHttpServer())
-        .post('/auth/password/change')
-        .set('Authorization', `Bearer ${accessToken}`)
+        .post('/api/auth/password/change')
+        .set('Cookie', cookies)
+        .set('X-CSRF-Token', csrfToken!)
         .send({
           currentPassword,
           newPassword,
@@ -1055,8 +1136,9 @@ describe('Real Auth Integration Tests (Prisma)', () => {
 
     it('should return 400 for weak new password', async () => {
       await request(app.getHttpServer())
-        .post('/auth/password/change')
-        .set('Authorization', `Bearer ${accessToken}`)
+        .post('/api/auth/password/change')
+        .set('Cookie', cookies)
+        .set('X-CSRF-Token', csrfToken!)
         .send({
           currentPassword,
           newPassword: 'weak',
@@ -1065,9 +1147,10 @@ describe('Real Auth Integration Tests (Prisma)', () => {
         .expect(400);
     });
 
-    it('should return 401 without authorization header', async () => {
+    it('should return 401 without cookies', async () => {
       await request(app.getHttpServer())
-        .post('/auth/password/change')
+        .post('/api/auth/password/change')
+        .set('X-CSRF-Token', csrfToken!)
         .send({
           currentPassword,
           newPassword,
@@ -1079,8 +1162,9 @@ describe('Real Auth Integration Tests (Prisma)', () => {
     it('should prevent password reuse', async () => {
       // Change password to newPassword
       await request(app.getHttpServer())
-        .post('/auth/password/change')
-        .set('Authorization', `Bearer ${accessToken}`)
+        .post('/api/auth/password/change')
+        .set('Cookie', cookies)
+        .set('X-CSRF-Token', csrfToken!)
         .send({
           currentPassword,
           newPassword,
@@ -1088,20 +1172,22 @@ describe('Real Auth Integration Tests (Prisma)', () => {
         })
         .expect(200);
 
-      // Login with new password to get new token
+      // Login with new password to get new cookies
       const loginResponse = await request(app.getHttpServer())
-        .post('/auth/login')
+        .post('/api/auth/login')
         .send({
           email: testUser.email,
           password: newPassword,
         });
 
-      const newAccessToken = loginResponse.body.accessToken;
+      const newCookies = getCookieHeader(loginResponse);
+      const newCsrfToken = extractCsrfToken(loginResponse);
 
       // Try to change back to old password (should be prevented by password history)
       const response = await request(app.getHttpServer())
-        .post('/auth/password/change')
-        .set('Authorization', `Bearer ${newAccessToken}`)
+        .post('/api/auth/password/change')
+        .set('Cookie', newCookies)
+        .set('X-CSRF-Token', newCsrfToken!)
         .send({
           currentPassword: newPassword,
           newPassword: currentPassword,
@@ -1121,7 +1207,7 @@ describe('Real Auth Integration Tests (Prisma)', () => {
 
       // 1. Register
       const registerResponse = await request(app.getHttpServer())
-        .post('/auth/register')
+        .post('/api/auth/register')
         .send({
           email: userEmail,
           firstName: 'Flow',
@@ -1130,10 +1216,8 @@ describe('Real Auth Integration Tests (Prisma)', () => {
         })
         .expect(201);
 
-      expect(registerResponse.body).toHaveProperty('accessToken');
-      expect(registerResponse.body).toHaveProperty('refreshToken');
-
-      const { accessToken, refreshToken } = registerResponse.body;
+      // Verify cookie-based auth response
+      assertCookieAuthResponse(registerResponse);
 
       // 2. Activate user (simulate email verification)
       // NOTE: Users must be ACTIVE to use protected endpoints
@@ -1145,44 +1229,48 @@ describe('Real Auth Integration Tests (Prisma)', () => {
         },
       });
 
-      // 3. Login to get fresh tokens for ACTIVE user
+      // 3. Login to get fresh cookies for ACTIVE user
       const loginResponse = await request(app.getHttpServer())
-        .post('/auth/login')
+        .post('/api/auth/login')
         .send({
           email: userEmail,
           password: userPassword,
         })
         .expect(200);
 
-      const activeAccessToken = loginResponse.body.accessToken;
+      const loginCookies = getCookieHeader(loginResponse);
+      const csrfToken = extractCsrfToken(loginResponse);
 
-      // 4. Access profile with active user token
+      // 4. Access profile with active user cookies
       const profileResponse1 = await request(app.getHttpServer())
-        .get('/auth/profile')
-        .set('Authorization', `Bearer ${activeAccessToken}`)
+        .get('/api/auth/profile')
+        .set('Cookie', loginCookies)
         .expect(200);
 
       expect(profileResponse1.body.email).toBe(userEmail);
 
       // 5. Logout
       await request(app.getHttpServer())
-        .post('/auth/logout')
-        .set('Authorization', `Bearer ${activeAccessToken}`)
+        .post('/api/auth/logout')
+        .set('Cookie', loginCookies)
+        .set('X-CSRF-Token', csrfToken!)
         .expect(204);
 
       // 6. Login again with credentials (verify re-login works)
       const loginResponse2 = await request(app.getHttpServer())
-        .post('/auth/login')
+        .post('/api/auth/login')
         .send({
           email: userEmail,
           password: userPassword,
         })
         .expect(200);
 
-      // 7. Verify new tokens work
+      const loginCookies2 = getCookieHeader(loginResponse2);
+
+      // 7. Verify new cookies work
       const profileResponse2 = await request(app.getHttpServer())
-        .get('/auth/profile')
-        .set('Authorization', `Bearer ${loginResponse2.body.accessToken}`)
+        .get('/api/auth/profile')
+        .set('Cookie', loginCookies2)
         .expect(200);
 
       expect(profileResponse2.body.email).toBe(userEmail);
@@ -1198,7 +1286,7 @@ describe('Real Auth Integration Tests (Prisma)', () => {
     it('should handle token refresh flow', async () => {
       // 1. Register user
       const registerResponse = await request(app.getHttpServer())
-        .post('/auth/register')
+        .post('/api/auth/register')
         .send({
           email: 'refreshflow@example.com',
           firstName: 'Refresh',
@@ -1207,7 +1295,9 @@ describe('Real Auth Integration Tests (Prisma)', () => {
         })
         .expect(201);
 
-      const { accessToken: originalAccessToken, refreshToken } = registerResponse.body;
+      // Verify cookie-based auth response
+      assertCookieAuthResponse(registerResponse);
+      const originalCookies = parseCookies(registerResponse);
 
       // 2. Activate user (simulate email verification)
       await prismaService.user.update({
@@ -1221,32 +1311,25 @@ describe('Real Auth Integration Tests (Prisma)', () => {
       // Wait 1 second to ensure different iat timestamp
       await new Promise(resolve => setTimeout(resolve, 1000));
 
-      // 3. Refresh token
+      // 3. Refresh token (now reads from cookies)
       const refreshResponse = await request(app.getHttpServer())
-        .post('/auth/refresh')
-        .send({ refreshToken })
+        .post('/api/auth/refresh')
+        .set('Cookie', getCookieHeader(registerResponse))
         .expect(200);
 
-      expect(refreshResponse.body).toHaveProperty('accessToken');
-      expect(refreshResponse.body).toHaveProperty('refreshToken');
-      expect(refreshResponse.body.accessToken).not.toBe(originalAccessToken);
-      expect(refreshResponse.body.refreshToken).not.toBe(refreshToken);
+      // Verify new cookies are issued
+      assertCookieAuthResponse(refreshResponse);
+      const newCookies = parseCookies(refreshResponse);
+      expect(newCookies.accessToken).not.toBe(originalCookies.accessToken);
+      expect(newCookies.refreshToken).not.toBe(originalCookies.refreshToken);
 
-      // 3. Use new access token to access profile
+      // 4. Use new cookies to access profile
       const profileResponse = await request(app.getHttpServer())
-        .get('/auth/profile')
-        .set('Authorization', `Bearer ${refreshResponse.body.accessToken}`)
+        .get('/api/auth/profile')
+        .set('Cookie', getCookieHeader(refreshResponse))
         .expect(200);
 
       expect(profileResponse.body.email).toBe('refreshflow@example.com');
-
-      // 4. Old access token should still work (until it expires)
-      const profileResponse2 = await request(app.getHttpServer())
-        .get('/auth/profile')
-        .set('Authorization', `Bearer ${originalAccessToken}`)
-        .expect(200);
-
-      expect(profileResponse2.body.email).toBe('refreshflow@example.com');
     });
 
     it('should handle concurrent registration attempts with same email', async () => {
@@ -1259,8 +1342,8 @@ describe('Real Auth Integration Tests (Prisma)', () => {
 
       // Start two registration requests concurrently
       const [response1, response2] = await Promise.allSettled([
-        request(app.getHttpServer()).post('/auth/register').send(registerDto),
-        request(app.getHttpServer()).post('/auth/register').send(registerDto),
+        request(app.getHttpServer()).post('/api/auth/register').send(registerDto),
+        request(app.getHttpServer()).post('/api/auth/register').send(registerDto),
       ]);
 
       // One should succeed (201), one should fail (409)
@@ -1294,13 +1377,13 @@ describe('Real Auth Integration Tests (Prisma)', () => {
 
       // 2. Verify user can login with original password
       await request(app.getHttpServer())
-        .post('/auth/login')
+        .post('/api/auth/login')
         .send({ email: userEmail, password: originalPassword })
         .expect(200);
 
       // 3. Request password reset
       const resetResponse = await request(app.getHttpServer())
-        .post('/auth/password/reset/request')
+        .post('/api/auth/password/reset/request')
         .send({ email: userEmail })
         .expect(200);
 
@@ -1311,7 +1394,7 @@ describe('Real Auth Integration Tests (Prisma)', () => {
 
       // 4. Validate reset token
       const validateResponse = await request(app.getHttpServer())
-        .post('/auth/password/reset/validate')
+        .post('/api/auth/password/reset/validate')
         .send({ token: resetToken })
         .expect(200);
 
@@ -1319,7 +1402,7 @@ describe('Real Auth Integration Tests (Prisma)', () => {
 
       // 5. Complete password reset
       const completeResponse = await request(app.getHttpServer())
-        .post('/auth/password/reset/complete')
+        .post('/api/auth/password/reset/complete')
         .send({
           token: resetToken,
           newPassword,
@@ -1331,21 +1414,22 @@ describe('Real Auth Integration Tests (Prisma)', () => {
 
       // 6. Verify original password no longer works
       await request(app.getHttpServer())
-        .post('/auth/login')
+        .post('/api/auth/login')
         .send({ email: userEmail, password: originalPassword })
         .expect(401);
 
       // 7. Verify new password works
       const loginResponse = await request(app.getHttpServer())
-        .post('/auth/login')
+        .post('/api/auth/login')
         .send({ email: userEmail, password: newPassword })
         .expect(200);
 
-      expect(loginResponse.body).toHaveProperty('accessToken');
+      // Verify cookie-based auth response
+      assertCookieAuthResponse(loginResponse);
 
       // 8. Verify reset token cannot be reused
       await request(app.getHttpServer())
-        .post('/auth/password/reset/complete')
+        .post('/api/auth/password/reset/complete')
         .send({
           token: resetToken,
           newPassword: 'AnotherPassword789!',
@@ -1353,10 +1437,10 @@ describe('Real Auth Integration Tests (Prisma)', () => {
         })
         .expect(400);
 
-      // 9. Use new token to access protected endpoint
+      // 9. Use new cookies to access protected endpoint
       await request(app.getHttpServer())
-        .get('/auth/profile')
-        .set('Authorization', `Bearer ${loginResponse.body.accessToken}`)
+        .get('/api/auth/profile')
+        .set('Cookie', getCookieHeader(loginResponse))
         .expect(200);
     });
 
@@ -1376,16 +1460,18 @@ describe('Real Auth Integration Tests (Prisma)', () => {
 
       // 2. Login with original password
       const loginResponse1 = await request(app.getHttpServer())
-        .post('/auth/login')
+        .post('/api/auth/login')
         .send({ email: userEmail, password: originalPassword })
         .expect(200);
 
-      const originalAccessToken = loginResponse1.body.accessToken;
+      const originalCookies = getCookieHeader(loginResponse1);
+      const csrfToken = extractCsrfToken(loginResponse1);
 
       // 3. Change password while authenticated
       const changeResponse = await request(app.getHttpServer())
-        .post('/auth/password/change')
-        .set('Authorization', `Bearer ${originalAccessToken}`)
+        .post('/api/auth/password/change')
+        .set('Cookie', originalCookies)
+        .set('X-CSRF-Token', csrfToken!)
         .send({
           currentPassword: originalPassword,
           newPassword,
@@ -1397,29 +1483,30 @@ describe('Real Auth Integration Tests (Prisma)', () => {
 
       // 4. Verify old password no longer works
       await request(app.getHttpServer())
-        .post('/auth/login')
+        .post('/api/auth/login')
         .send({ email: userEmail, password: originalPassword })
         .expect(401);
 
       // 5. Verify new password works
       const loginResponse2 = await request(app.getHttpServer())
-        .post('/auth/login')
+        .post('/api/auth/login')
         .send({ email: userEmail, password: newPassword })
         .expect(200);
 
-      expect(loginResponse2.body).toHaveProperty('accessToken');
+      // Verify cookie-based auth response
+      assertCookieAuthResponse(loginResponse2);
 
-      // 6. Verify old access token still works (until expiry)
-      // JWT tokens remain valid until they expire
+      // 6. Verify old cookies still work (until expiry)
+      // Cookie tokens remain valid until they expire
       await request(app.getHttpServer())
-        .get('/auth/profile')
-        .set('Authorization', `Bearer ${originalAccessToken}`)
+        .get('/api/auth/profile')
+        .set('Cookie', originalCookies)
         .expect(200);
 
-      // 7. Verify new access token works
+      // 7. Verify new cookies work
       await request(app.getHttpServer())
-        .get('/auth/profile')
-        .set('Authorization', `Bearer ${loginResponse2.body.accessToken}`)
+        .get('/api/auth/profile')
+        .set('Cookie', getCookieHeader(loginResponse2))
         .expect(200);
     });
   });
@@ -1431,7 +1518,7 @@ describe('Real Auth Integration Tests (Prisma)', () => {
 
       // Register user
       const registerResponse = await request(app.getHttpServer())
-        .post('/auth/register')
+        .post('/api/auth/register')
         .send({
           email,
           password,
@@ -1440,8 +1527,8 @@ describe('Real Auth Integration Tests (Prisma)', () => {
         })
         .expect(201);
 
-      expect(registerResponse.body).toHaveProperty('accessToken');
-      expect(registerResponse.body).toHaveProperty('refreshToken');
+      // Verify cookie-based auth response
+      assertCookieAuthResponse(registerResponse);
       expect(registerResponse.body).toHaveProperty('user.email', email);
       expect(registerResponse.body).toHaveProperty('user.emailVerifiedAt', null);
 
@@ -1459,7 +1546,7 @@ describe('Real Auth Integration Tests (Prisma)', () => {
 
       // Register user (generates verification token in Redis)
       const registerResponse = await request(app.getHttpServer())
-        .post('/auth/register')
+        .post('/api/auth/register')
         .send({
           email,
           password,
@@ -1475,7 +1562,7 @@ describe('Real Auth Integration Tests (Prisma)', () => {
 
       // Verify email with token
       const verifyResponse = await request(app.getHttpServer())
-        .post('/auth/verify-email')
+        .post('/api/auth/verify-email')
         .send({ token: verificationToken })
         .expect(200);
 
@@ -1495,7 +1582,7 @@ describe('Real Auth Integration Tests (Prisma)', () => {
       const invalidToken = 'a'.repeat(64);
 
       const verifyResponse = await request(app.getHttpServer())
-        .post('/auth/verify-email')
+        .post('/api/auth/verify-email')
         .send({ token: invalidToken })
         .expect(400);
 
@@ -1507,7 +1594,7 @@ describe('Real Auth Integration Tests (Prisma)', () => {
       const malformedToken = 'not-a-valid-token';
 
       await request(app.getHttpServer())
-        .post('/auth/verify-email')
+        .post('/api/auth/verify-email')
         .send({ token: malformedToken })
         .expect(400);
     });
@@ -1518,7 +1605,7 @@ describe('Real Auth Integration Tests (Prisma)', () => {
 
       // Register user
       await request(app.getHttpServer())
-        .post('/auth/register')
+        .post('/api/auth/register')
         .send({
           email,
           password,
@@ -1533,18 +1620,18 @@ describe('Real Auth Integration Tests (Prisma)', () => {
       const verificationToken = await mockRedisClient.get(userKey);
 
       await request(app.getHttpServer())
-        .post('/auth/verify-email')
+        .post('/api/auth/verify-email')
         .send({ token: verificationToken })
         .expect(200);
 
       // Login should now succeed (user is ACTIVE)
       const loginResponse = await request(app.getHttpServer())
-        .post('/auth/login')
+        .post('/api/auth/login')
         .send({ email, password })
         .expect(200);
 
-      expect(loginResponse.body).toHaveProperty('accessToken');
-      expect(loginResponse.body).toHaveProperty('refreshToken');
+      // Verify cookie-based auth response
+      assertCookieAuthResponse(loginResponse);
     });
 
     it('should prevent login with unverified email (INACTIVE status)', async () => {
@@ -1553,7 +1640,7 @@ describe('Real Auth Integration Tests (Prisma)', () => {
 
       // Register user but don't verify email
       await request(app.getHttpServer())
-        .post('/auth/register')
+        .post('/api/auth/register')
         .send({
           email,
           password,
@@ -1564,7 +1651,7 @@ describe('Real Auth Integration Tests (Prisma)', () => {
 
       // Login attempt should fail (user still INACTIVE)
       await request(app.getHttpServer())
-        .post('/auth/login')
+        .post('/api/auth/login')
         .send({ email, password })
         .expect(401);
     });
@@ -1575,7 +1662,7 @@ describe('Real Auth Integration Tests (Prisma)', () => {
 
       // Register user
       const registerResponse = await request(app.getHttpServer())
-        .post('/auth/register')
+        .post('/api/auth/register')
         .send({
           email,
           password,
@@ -1597,7 +1684,7 @@ describe('Real Auth Integration Tests (Prisma)', () => {
 
       // Register user
       await request(app.getHttpServer())
-        .post('/auth/register')
+        .post('/api/auth/register')
         .send({
           email,
           password,
@@ -1613,13 +1700,13 @@ describe('Real Auth Integration Tests (Prisma)', () => {
 
       // Verify email (consumes token)
       await request(app.getHttpServer())
-        .post('/auth/verify-email')
+        .post('/api/auth/verify-email')
         .send({ token: verificationToken })
         .expect(200);
 
       // Attempt to reuse same token (should fail)
       const reuseResponse = await request(app.getHttpServer())
-        .post('/auth/verify-email')
+        .post('/api/auth/verify-email')
         .send({ token: verificationToken })
         .expect(400);
 
@@ -1632,7 +1719,7 @@ describe('Real Auth Integration Tests (Prisma)', () => {
 
       // 1. Register
       const registerResponse = await request(app.getHttpServer())
-        .post('/auth/register')
+        .post('/api/auth/register')
         .send({
           email,
           password,
@@ -1657,7 +1744,7 @@ describe('Real Auth Integration Tests (Prisma)', () => {
       expect(verificationToken).toBeDefined();
 
       const verifyResponse = await request(app.getHttpServer())
-        .post('/auth/verify-email')
+        .post('/api/auth/verify-email')
         .send({ token: verificationToken })
         .expect(200);
 
@@ -1674,12 +1761,12 @@ describe('Real Auth Integration Tests (Prisma)', () => {
 
       // 5. Login should now succeed
       const loginResponse = await request(app.getHttpServer())
-        .post('/auth/login')
+        .post('/api/auth/login')
         .send({ email, password })
         .expect(200);
 
-      expect(loginResponse.body).toHaveProperty('accessToken');
-      expect(loginResponse.body).toHaveProperty('refreshToken');
+      // Verify cookie-based auth response
+      assertCookieAuthResponse(loginResponse);
       expect(loginResponse.body.user.emailVerifiedAt).not.toBeNull();
     });
 
@@ -1690,7 +1777,7 @@ describe('Real Auth Integration Tests (Prisma)', () => {
 
       // Register two users
       const reg1 = await request(app.getHttpServer())
-        .post('/auth/register')
+        .post('/api/auth/register')
         .send({
           email: email1,
           password,
@@ -1700,7 +1787,7 @@ describe('Real Auth Integration Tests (Prisma)', () => {
         .expect(201);
 
       const reg2 = await request(app.getHttpServer())
-        .post('/auth/register')
+        .post('/api/auth/register')
         .send({
           email: email2,
           password,
@@ -1720,7 +1807,7 @@ describe('Real Auth Integration Tests (Prisma)', () => {
 
       // Verify user 1
       await request(app.getHttpServer())
-        .post('/auth/verify-email')
+        .post('/api/auth/verify-email')
         .send({ token: token1 })
         .expect(200);
 
@@ -1732,7 +1819,7 @@ describe('Real Auth Integration Tests (Prisma)', () => {
 
       // Verify user 2
       await request(app.getHttpServer())
-        .post('/auth/verify-email')
+        .post('/api/auth/verify-email')
         .send({ token: token2 })
         .expect(200);
 
