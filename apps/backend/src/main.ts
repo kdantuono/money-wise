@@ -13,6 +13,7 @@ import compression from 'compression';
 import cookieParser from 'cookie-parser';
 import { AppConfig } from './core/config/app.config';
 import { MonitoringInterceptor } from './core/monitoring/monitoring.interceptor';
+import { getHelmetConfig, ADDITIONAL_SECURITY_HEADERS } from './config/security.config';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
@@ -39,8 +40,21 @@ async function bootstrap() {
       throw new Error('Application configuration not found');
     }
 
-    // Security middleware
-    app.use(helmet());
+    // Security middleware with environment-specific configuration
+    // Implements defense-in-depth with multiple security headers
+    const helmetConfig = getHelmetConfig(
+      appConfig.NODE_ENV,
+      appConfig.CORS_ORIGIN || 'http://localhost:3000'
+    );
+    app.use(helmet(helmetConfig));
+
+    // Apply additional security headers not covered by helmet
+    app.use((req, res, next) => {
+      Object.entries(ADDITIONAL_SECURITY_HEADERS).forEach(([header, value]) => {
+        res.setHeader(header, value);
+      });
+      next();
+    });
 
     // Compression middleware
     app.use(compression());
