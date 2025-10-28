@@ -1,13 +1,14 @@
 import { http, HttpResponse } from 'msw';
 
-// Mock login handler that works with the auth store format
+/**
+ * Mock login handler with cookie-based authentication
+ * Returns user data and CSRF token (cookies set by browser in real scenario)
+ */
 const mockLoginHandler = async ({ request }: { request: Request }) => {
   const body = (await request.json()) as { email: string; password: string };
 
   if (body.email === 'test@example.com' && body.password === 'password') {
     return HttpResponse.json({
-      accessToken: 'mock-access-token',
-      refreshToken: 'mock-refresh-token',
       user: {
         id: '1',
         email: 'test@example.com',
@@ -21,14 +22,22 @@ const mockLoginHandler = async ({ request }: { request: Request }) => {
         createdAt: '2024-01-01T00:00:00Z',
         updatedAt: '2024-01-01T00:00:00Z',
       },
-      expiresIn: 3600,
+      csrfToken: 'mock-csrf-token',
+    }, {
+      headers: {
+        // In real scenario, backend sets HttpOnly cookies
+        'Set-Cookie': 'accessToken=mock-access-token; HttpOnly; SameSite=Strict',
+      }
     });
   }
 
   return HttpResponse.json({ error: 'Invalid credentials' }, { status: 401 });
 };
 
-// Mock register handler
+/**
+ * Mock register handler with cookie-based authentication
+ * Returns user data and CSRF token (cookies set by browser in real scenario)
+ */
 const mockRegisterHandler = async ({ request }: { request: Request }) => {
   const body = (await request.json()) as {
     email: string;
@@ -38,8 +47,6 @@ const mockRegisterHandler = async ({ request }: { request: Request }) => {
   };
 
   return HttpResponse.json({
-    accessToken: 'mock-access-token-new',
-    refreshToken: 'mock-refresh-token-new',
     user: {
       id: '2',
       email: body.email,
@@ -53,7 +60,12 @@ const mockRegisterHandler = async ({ request }: { request: Request }) => {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     },
-    expiresIn: 3600,
+    csrfToken: 'mock-csrf-token-new',
+  }, {
+    headers: {
+      // In real scenario, backend sets HttpOnly cookies
+      'Set-Cookie': 'accessToken=mock-access-token-new; HttpOnly; SameSite=Strict',
+    }
   });
 };
 
@@ -71,6 +83,14 @@ export const handlers = [
   }),
   http.post('/api/auth/logout', () => {
     return HttpResponse.json({ message: 'Logged out successfully' });
+  }),
+
+  // CSRF token endpoint
+  http.get('http://localhost:3001/api/auth/csrf-token', () => {
+    return HttpResponse.json({ csrfToken: 'mock-csrf-token-refreshed' });
+  }),
+  http.get('/api/auth/csrf-token', () => {
+    return HttpResponse.json({ csrfToken: 'mock-csrf-token-refreshed' });
   }),
 
   // User profile endpoints
