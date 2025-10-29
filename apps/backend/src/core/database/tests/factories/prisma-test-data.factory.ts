@@ -253,6 +253,14 @@ export class AccountFactory extends BasePrismaFactory<Account> {
       plaidItemId: overrides.plaidItemId || null,
       plaidAccessToken: overrides.plaidAccessToken || null,
       plaidMetadata: overrides.plaidMetadata || null,
+      // Banking provider integration fields
+      bankingProvider: overrides.bankingProvider || null,
+      saltEdgeAccountId: overrides.saltEdgeAccountId || null,
+      saltEdgeConnectionId: overrides.saltEdgeConnectionId || null,
+      tinkAccountId: overrides.tinkAccountId || null,
+      yalilyAccountId: overrides.yalilyAccountId || null,
+      // Sync tracking
+      syncStatus: overrides.syncStatus || ('PENDING' as any),
       createdAt: overrides.createdAt || new Date(),
       updatedAt: overrides.updatedAt || new Date(),
     } as Account;

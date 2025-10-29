@@ -9,6 +9,7 @@
  */
 
 import { getCsrfToken, setCsrfToken, clearCsrfToken, requiresCsrf, isCsrfError, refreshCsrfToken } from '@/utils/csrf'
+import { sanitizeUser } from '@/utils/sanitize'
 
 /**
  * User interface matching backend response
@@ -172,8 +173,12 @@ export const authService = {
     }
 
     const data: AuthResponse = await response.json()
+
+    // Sanitize user data before returning
+    const sanitizedUser = sanitizeUser(data.user)
+
     setCsrfToken(data.csrfToken)
-    return data
+    return { user: sanitizedUser, csrfToken: data.csrfToken }
   },
 
   /**
@@ -206,8 +211,12 @@ export const authService = {
     }
 
     const data: AuthResponse = await response.json()
+
+    // Sanitize user data before returning
+    const sanitizedUser = sanitizeUser(data.user)
+
     setCsrfToken(data.csrfToken)
-    return data
+    return { user: sanitizedUser, csrfToken: data.csrfToken }
   },
 
   /**
@@ -229,7 +238,10 @@ export const authService = {
       throw new Error('Failed to fetch profile')
     }
 
-    return response.json()
+    const rawUser = await response.json()
+
+    // Sanitize user data before returning
+    return sanitizeUser(rawUser)
   },
 
   /**

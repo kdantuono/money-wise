@@ -171,10 +171,10 @@ Component shows sync result
                          │
                          ▼
 ┌─────────────────────────────────────────────────────────────┐
-│ 2. Client Request                                           │
-│    → getAuthToken() reads localStorage('auth_token')        │
-│    → Request interceptor adds Authorization header          │
-│    → Request sent with Bearer token                         │
+│ 2. Client Request [UPDATED 2025-10-29]                     │
+│    → Browser automatically includes HttpOnly cookies        │
+│    → Request sent with credentials: 'include'               │
+│    → No manual token handling required                      │
 └─────────────────────────────────────────────────────────────┘
                          │
                          ▼
@@ -221,12 +221,12 @@ Component shows sync result
 
 ```
 services/
-├── banking.client.ts          # Main client implementation
+├── banking.client.ts          # Main client implementation [UPDATED 2025-10-29]
 │   ├── Type Definitions (BankingAccount, SyncResponse, etc.)
 │   ├── Error Classes (BankingApiError hierarchy)
-│   ├── HTTP Configuration (getApiBaseUrl, getAuthToken)
+│   ├── HTTP Configuration (getApiBaseUrl only - cookie auth)
 │   ├── Interceptors (logRequest, logResponse, handleError)
-│   ├── Request Function (request<T>)
+│   ├── Request Function (request<T> with credentials: 'include')
 │   └── API Methods (bankingClient object)
 │
 ├── banking.client.example.ts  # Usage examples

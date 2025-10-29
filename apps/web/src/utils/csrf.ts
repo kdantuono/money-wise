@@ -4,6 +4,11 @@
  * Manages CSRF tokens for secure cookie-based authentication.
  * Tokens are stored in localStorage and included in mutation requests.
  *
+ * Features:
+ * - Thread-safe CSRF token refresh with mutex
+ * - Deduplication of concurrent refresh requests
+ * - Automatic retry on refresh failure
+ *
  * @module utils/csrf
  */
 
@@ -11,6 +16,12 @@
  * Storage key for CSRF token
  */
 const CSRF_TOKEN_KEY = 'csrfToken';
+
+/**
+ * Mutex for CSRF token refresh operations
+ * Prevents concurrent refreshes and deduplicates requests
+ */
+let csrfRefreshPromise: Promise<string> | null = null;
 
 /**
  * Get stored CSRF token
@@ -61,7 +72,11 @@ export function clearCsrfToken(): void {
 }
 
 /**
- * Refresh CSRF token from backend
+ * Refresh CSRF token from backend with mutex protection
+ *
+ * This function uses a promise-based mutex to ensure only one refresh
+ * operation happens at a time. Concurrent calls will wait for the
+ * in-progress refresh to complete and return the same result.
  *
  * @param apiBaseUrl - Base URL for API requests
  * @returns New CSRF token
@@ -76,24 +91,39 @@ export function clearCsrfToken(): void {
  * }
  */
 export async function refreshCsrfToken(apiBaseUrl: string): Promise<string> {
-  const response = await fetch(`${apiBaseUrl}/auth/csrf-token`, {
-    method: 'GET',
-    credentials: 'include', // Include cookies
-  });
-
-  if (!response.ok) {
-    throw new Error(`CSRF token refresh failed: ${response.statusText}`);
+  // If a refresh is already in progress, wait for it and return the result
+  if (csrfRefreshPromise) {
+    return csrfRefreshPromise;
   }
 
-  const data = await response.json();
-  const { csrfToken } = data;
+  // Create new refresh promise and store in mutex
+  csrfRefreshPromise = (async () => {
+    try {
+      const response = await fetch(`${apiBaseUrl}/auth/csrf-token`, {
+        method: 'GET',
+        credentials: 'include', // Include cookies
+      });
 
-  if (!csrfToken) {
-    throw new Error('CSRF token not found in response');
-  }
+      if (!response.ok) {
+        throw new Error(`CSRF token refresh failed: ${response.statusText}`);
+      }
 
-  setCsrfToken(csrfToken);
-  return csrfToken;
+      const data = await response.json();
+      const { csrfToken } = data;
+
+      if (!csrfToken) {
+        throw new Error('CSRF token not found in response');
+      }
+
+      setCsrfToken(csrfToken);
+      return csrfToken;
+    } finally {
+      // Clear the mutex after completion (success or failure)
+      csrfRefreshPromise = null;
+    }
+  })();
+
+  return csrfRefreshPromise;
 }
 
 /**

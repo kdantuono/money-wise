@@ -39,7 +39,7 @@ interface AuthStore {
   logout: () => Promise<void>;
   validateSession: () => Promise<boolean>;
   clearError: () => void;
-  loadUserFromStorage: () => void;
+  loadUserFromStorage: () => Promise<void>;
   setUser: (user: User | null) => void;
 }
 
@@ -48,7 +48,7 @@ interface AuthStore {
  * Note: Cookies are cleared by backend, we only clear localStorage data
  */
 const clearAuthStorage = (): void => {
-  localStorage.removeItem('user');
+  // Only clear CSRF token - user data should never be in localStorage
   clearCsrfToken();
 };
 
@@ -92,27 +92,22 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   clearError: () => set({ error: null }),
 
   /**
-   * Load user from localStorage on app initialization
-   * Validates session with backend using HttpOnly cookies
+   * Initialize auth state on app startup
+   * Fetches user data from backend using HttpOnly cookies if CSRF token exists
    */
-  loadUserFromStorage: () => {
+  loadUserFromStorage: async () => {
     try {
-      const storedUser = localStorage.getItem('user');
       const csrfToken = getCsrfToken();
 
-      if (storedUser && csrfToken) {
-        const user = JSON.parse(storedUser);
-        set({ user, isAuthenticated: true });
-
-        // Validate session in background (backend checks cookie)
-        get().validateSession().catch(() => {
-          // Session invalid, clear state
-          get().logout();
-        });
+      if (csrfToken) {
+        // CSRF token exists, try to fetch user from backend
+        // This will succeed if the HttpOnly cookie is still valid
+        await get().validateSession();
       }
     } catch (error) {
-      console.error('Failed to load user from storage:', error);
+      console.error('Failed to initialize auth state:', error);
       clearAuthStorage();
+      set({ user: null, isAuthenticated: false });
     }
   },
 
@@ -126,9 +121,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     try {
       const { user } = await authService.login({ email, password });
 
-      // Store user data (cookies and CSRF handled by authService)
-      localStorage.setItem('user', JSON.stringify(user));
-
+      // User data stored only in memory (cookies and CSRF handled by authService)
       set({
         user,
         isAuthenticated: true,
@@ -167,9 +160,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         lastName
       });
 
-      // Store user data (cookies and CSRF handled by authService)
-      localStorage.setItem('user', JSON.stringify(user));
-
+      // User data stored only in memory (cookies and CSRF handled by authService)
       set({
         user,
         isAuthenticated: true,
@@ -227,8 +218,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     try {
       const user = await authService.getProfile();
 
-      // Update stored user data
-      localStorage.setItem('user', JSON.stringify(user));
+      // User data stored only in memory
       set({ user, isAuthenticated: true });
 
       return true;
