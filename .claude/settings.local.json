@@ -103,7 +103,8 @@
       "Bash(git config:*)",
       "Bash(./.claude/scripts/validate-ci.sh:*)",
       "Bash(gh auth status:*)",
-      "mcp__hugging-face__model_search"
+      "mcp__hugging-face__model_search",
+      "Bash(getent group:*)"
     ],
     "deny": [],
     "ask": []
