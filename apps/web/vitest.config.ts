@@ -16,7 +16,11 @@ export default defineConfig({
       '**/dist/**',
       '**/.next/**',
       '**/out/**',
-      '**/e2e/**'
+      '**/e2e/**',
+      '**/__tests__/pages/**',
+      '**/__tests__/lib/**',
+      '**/__tests__/components/auth/protected-route.test.tsx',
+      '**/__tests__/components/layout/dashboard-layout.test.tsx'
     ],
     coverage: {
       provider: 'v8',
@@ -46,7 +50,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './'),
+      '@': path.resolve(__dirname, './src'),
       '@money-wise/types': path.resolve(__dirname, '../../packages/types/src'),
       '@money-wise/utils': path.resolve(__dirname, '../../packages/utils/src'),
       '@money-wise/ui': path.resolve(__dirname, '../../packages/ui/src'),

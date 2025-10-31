@@ -6,8 +6,8 @@
 import React from 'react';
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '../../utils/test-utils';
-import { Label } from '../../../components/ui/label';
-import { Input } from '../../../components/ui/input';
+import { Label } from '../../../src/components/ui/label';
+import { Input } from '../../../src/components/ui/input';
 
 describe('Label Component', () => {
   describe('Rendering', () => {

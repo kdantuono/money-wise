@@ -6,7 +6,7 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '../../utils/test-utils';
-import { ProtectedRoute, withAuth } from '../../../components/auth/protected-route';
+import { ProtectedRoute, withAuth } from '../../../src/components/auth/protected-route';
 import { useAuthStore } from '../../../stores/auth-store';
 
 // Mock next/navigation
