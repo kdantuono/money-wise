@@ -25,7 +25,7 @@ import { CategoryService } from '../core/database/prisma/services/category.servi
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { CategoryResponseDto } from './dto/category-response.dto';
-import { Category, CategoryType } from '../../generated/prisma';
+import { CategoryType } from '../../generated/prisma';
 
 /**
  * Categories Controller
@@ -67,7 +67,7 @@ export class CategoriesController {
       familyId,
     });
 
-    return this.toResponseDto(category);
+    return CategoryResponseDto.fromEntity(category);
   }
 
   /**
@@ -75,7 +75,7 @@ export class CategoriesController {
    * GET /api/categories?type=EXPENSE
    */
   @Get()
-  @ApiOperation({ summary: 'Get all categories for user's family' })
+  @ApiOperation({ summary: "Get all categories for user's family" })
   @ApiQuery({
     name: 'type',
     required: false,
@@ -93,9 +93,11 @@ export class CategoriesController {
   ): Promise<CategoryResponseDto[]> {
     const familyId = req.user.familyId;
 
-    const categories = await this.categoryService.findByFamilyId(familyId, { type });
+    const categories = await this.categoryService.findByFamilyId(familyId,
+      type ? { where: { type } } : undefined
+    );
 
-    return categories.map(cat => this.toResponseDto(cat));
+    return categories.map(cat => CategoryResponseDto.fromEntity(cat));
   }
 
   /**
@@ -126,7 +128,7 @@ export class CategoriesController {
       throw new Error('Access denied to this category');
     }
 
-    return this.toResponseDto(category);
+    return CategoryResponseDto.fromEntity(category);
   }
 
   /**
@@ -159,7 +161,7 @@ export class CategoriesController {
 
     const category = await this.categoryService.update(id, updateDto);
 
-    return this.toResponseDto(category);
+    return CategoryResponseDto.fromEntity(category);
   }
 
   /**
@@ -190,33 +192,5 @@ export class CategoriesController {
     }
 
     await this.categoryService.delete(id);
-  }
-
-  /**
-   * Convert Prisma Category to Response DTO
-   */
-  private toResponseDto(category: Category): CategoryResponseDto {
-    return {
-      id: category.id,
-      name: category.name,
-      slug: category.slug,
-      description: category.description,
-      type: category.type,
-      status: category.status,
-      color: category.color,
-      icon: category.icon,
-      isDefault: category.isDefault,
-      isSystem: category.isSystem,
-      sortOrder: category.sortOrder,
-      parentId: category.parentId,
-      familyId: category.familyId,
-      rules: category.rules,
-      metadata: category.metadata,
-      createdAt: category.createdAt,
-      updatedAt: category.updatedAt,
-      // Include children/parent if available
-      children: category.children,
-      parent: category.parent,
-    };
   }
 }

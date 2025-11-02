@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { CategoryType, CategoryStatus } from '../../../generated/prisma';
+import { Category, CategoryType, CategoryStatus } from '../../../generated/prisma';
+import { CategoryWithOptionalRelations } from '../../core/database/prisma/services/types';
 
 /**
  * Category Response DTO
@@ -75,4 +76,33 @@ export class CategoryResponseDto {
 
   @ApiPropertyOptional({ type: () => CategoryResponseDto })
   parent?: CategoryResponseDto | null;
+
+  /**
+   * Static factory method to create CategoryResponseDto from Prisma Category entity
+   * Handles both Category and CategoryWithOptionalRelations types
+   */
+  static fromEntity(category: Category | CategoryWithOptionalRelations): CategoryResponseDto {
+    return {
+      id: category.id,
+      name: category.name,
+      slug: category.slug,
+      description: category.description,
+      type: category.type,
+      status: category.status,
+      color: category.color,
+      icon: category.icon,
+      isDefault: category.isDefault,
+      isSystem: category.isSystem,
+      sortOrder: category.sortOrder,
+      parentId: category.parentId,
+      familyId: category.familyId,
+      rules: category.rules,
+      metadata: category.metadata,
+      createdAt: category.createdAt,
+      updatedAt: category.updatedAt,
+      // Include children/parent if available (type guard)
+      children: 'children' in category ? category.children : undefined,
+      parent: 'parent' in category ? category.parent : undefined,
+    };
+  }
 }
