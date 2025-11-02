@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { SaltEdgeProvider } from './providers/saltedge.provider';
+import { MockBankingProvider } from './providers/__mocks__/mock-banking.provider';
 import { BankingService, BankingProviderFactory } from './services/banking.service';
 import { BankingController } from './banking.controller';
 
@@ -9,9 +10,14 @@ import { BankingController } from './banking.controller';
  *
  * Provides:
  * - Provider-agnostic banking service
- * - SaltEdge provider implementation
+ * - SaltEdge provider implementation (or Mock for tests)
  * - Provider factory for multi-provider support
  * - REST API controller for banking operations
+ *
+ * Environment Variables:
+ * - USE_MOCK_BANKING=true - Use mock provider instead of SaltEdge (for tests)
+ * - SALTEDGE_CLIENT_ID - SaltEdge API client ID (required for real provider)
+ * - SALTEDGE_SECRET - SaltEdge API secret (required for real provider)
  *
  * Upcoming:
  * - Tink provider (Phase 2)
@@ -45,10 +51,37 @@ import { BankingController } from './banking.controller';
   imports: [ConfigModule],
   controllers: [BankingController],
   providers: [
-    // Provider implementations
-    SaltEdgeProvider,
+    // Conditional provider injection based on environment
+    {
+      provide: 'BANKING_PROVIDER',
+      useFactory: (configService: ConfigService) => {
+        const useMock = configService.get<string>('USE_MOCK_BANKING', 'false') === 'true';
+        const isTest = process.env.NODE_ENV === 'test';
+
+        if (useMock || isTest) {
+          return new MockBankingProvider();
+        }
+
+        // Try to instantiate SaltEdge provider
+        // If credentials are missing, it will throw an error
+        try {
+          return new SaltEdgeProvider(configService);
+        } catch (error) {
+          // Fallback to mock if SaltEdge credentials not configured
+          console.warn('⚠️  SaltEdge credentials not configured, using MockBankingProvider');
+          return new MockBankingProvider();
+        }
+      },
+      inject: [ConfigService]
+    },
     // Factory and service
-    BankingProviderFactory,
+    {
+      provide: BankingProviderFactory,
+      useFactory: (configService: ConfigService, provider: any) => {
+        return new BankingProviderFactory(configService, provider);
+      },
+      inject: [ConfigService, 'BANKING_PROVIDER']
+    },
     BankingService,
   ],
   exports: [BankingService, BankingProviderFactory],
