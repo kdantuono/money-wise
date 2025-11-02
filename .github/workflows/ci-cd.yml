@@ -686,7 +686,6 @@ jobs:
         run: pnpm test:unit | tee unit-tests.log
 
       - name: 🔗 Integration Tests
-        continue-on-error: true  # TODO: Remove once pre-existing 184 test failures are fixed (Issue #TBD)
         env:
           DB_HOST: localhost
           DB_PORT: 5432
