@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../core/database/prisma/prisma.service';
-import { CategoryType } from '../../../generated/prisma';
+import { CategoryType, Prisma } from '../../../generated/prisma';
+import { CategoryRule } from '../../common/types/domain-types';
 
 /**
  * Transaction Categorization Engine
@@ -56,7 +57,7 @@ export interface CategorizationInput {
     category?: string; // SaltEdge category
     extra?: {
       merchant_name?: string;
-      [key: string]: any;
+      [key: string]: unknown;
     };
   } | null;
 }
@@ -66,14 +67,6 @@ export interface CategorizationResult {
   confidence: number; // 0-100
   matchedBy: 'manual' | 'enrichment' | 'merchant_exact' | 'merchant_partial' | 'keyword' | 'fallback';
   suggestedCategories?: Array<{ categoryId: string; confidence: number }>;
-}
-
-export interface CategoryRule {
-  keywords?: string[]; // Keywords to match in description
-  merchantPatterns?: string[]; // Merchant name patterns (case-insensitive)
-  amountRanges?: Array<{ min?: number; max?: number; }>; // Amount range filters
-  autoAssign?: boolean; // Auto-assign this category if matched
-  confidence?: number; // Base confidence for this rule (0-100)
 }
 
 @Injectable()
@@ -251,7 +244,7 @@ export class CategorizationService {
         // Update category rules
         await this.prisma.category.update({
           where: { id: categoryId },
-          data: { rules: updatedRules as any },
+          data: { rules: updatedRules as unknown as Prisma.InputJsonValue },
         });
 
         // Update cache

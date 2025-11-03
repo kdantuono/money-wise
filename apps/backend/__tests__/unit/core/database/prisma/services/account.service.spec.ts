@@ -1633,7 +1633,7 @@ describe('PrismaAccountService', () => {
       // Arrange
       const settings = {
         autoSync: true,
-        syncFrequency: 'daily',
+        syncFrequency: 'daily' as const,
         notifications: { enabled: true },
         budgetIncluded: true,
       };

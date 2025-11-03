@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Category, CategoryType, CategoryStatus } from '../../../generated/prisma';
 import { CategoryWithOptionalRelations } from '../../core/database/prisma/services/types';
+import { CategoryRule, CategoryMetadata } from '../../common/types/domain-types';
 
 /**
  * Category Response DTO
@@ -54,7 +55,7 @@ export class CategoryResponseDto {
       confidence: 85,
     },
   })
-  rules: any;
+  rules: CategoryRule | null;
 
   @ApiPropertyOptional({
     example: {
@@ -62,7 +63,7 @@ export class CategoryResponseDto {
       monthlyLimit: 500,
     },
   })
-  metadata: any;
+  metadata: CategoryMetadata | null;
 
   @ApiProperty()
   createdAt: Date;
@@ -96,13 +97,17 @@ export class CategoryResponseDto {
       sortOrder: category.sortOrder,
       parentId: category.parentId,
       familyId: category.familyId,
-      rules: category.rules,
-      metadata: category.metadata,
+      rules: category.rules as CategoryRule | null,
+      metadata: category.metadata as CategoryMetadata | null,
       createdAt: category.createdAt,
       updatedAt: category.updatedAt,
       // Include children/parent if available (type guard)
-      children: 'children' in category ? category.children : undefined,
-      parent: 'parent' in category ? category.parent : undefined,
+      children: 'children' in category && category.children
+        ? category.children.map(child => CategoryResponseDto.fromEntity(child))
+        : undefined,
+      parent: 'parent' in category && category.parent
+        ? CategoryResponseDto.fromEntity(category.parent)
+        : undefined,
     };
   }
 }

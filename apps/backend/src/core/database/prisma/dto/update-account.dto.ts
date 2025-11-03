@@ -10,6 +10,7 @@ import {
 import { Type } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { AccountType, AccountStatus } from '../../../../../generated/prisma';
+import { PlaidMetadata, AccountSettings } from '../../../../common/types/domain-types';
 
 /**
  * UpdateAccountDto - Data Transfer Object for Account updates
@@ -227,7 +228,7 @@ export class UpdateAccountDto {
   })
   @IsOptional()
   @IsJSON({ message: 'plaidMetadata must be valid JSON' })
-  plaidMetadata?: any;
+  plaidMetadata?: PlaidMetadata;
 
   /**
    * Account active flag
@@ -294,7 +295,7 @@ export class UpdateAccountDto {
   })
   @IsOptional()
   @IsJSON({ message: 'settings must be valid JSON' })
-  settings?: any;
+  settings?: AccountSettings;
 
   /**
    * Account number
