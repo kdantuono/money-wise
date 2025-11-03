@@ -92,7 +92,16 @@ function validateConfigPath(targetPath: string): string {
   const normalizedPath = path.normalize(path.resolve(targetPath));
 
   // Check if path is within any allowed base directory
-  const isAllowed = allowedBases.some(base => normalizedPath.startsWith(base));
+  // Using path.relative() instead of startsWith() to prevent bypass via similar directory names
+  // e.g., "/app/backend/config-evil/" would pass startsWith("/app/backend/config") but fail this check
+  const isAllowed = allowedBases.some(base => {
+    const relative = path.relative(base, normalizedPath);
+    // Path is allowed if:
+    // - relative path exists (not base directory itself)
+    // - doesn't start with '..' (not going up from base)
+    // - is not absolute (shouldn't happen after normalization, but extra safety)
+    return relative && !relative.startsWith('..') && !path.isAbsolute(relative);
+  });
 
   if (!isAllowed) {
     throw new Error(
