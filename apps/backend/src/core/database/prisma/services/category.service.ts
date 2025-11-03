@@ -106,8 +106,8 @@ export class CategoryService {
     color?: string;
     icon?: string;
     parentId?: string;
-    rules?: any;
-    metadata?: any;
+    rules?: Record<string, unknown>;
+    metadata?: Record<string, unknown>;
     isDefault?: boolean;
     isSystem?: boolean;
     sortOrder?: number;
@@ -171,10 +171,10 @@ export class CategoryService {
       data.sortOrder = createCategoryDto.sortOrder;
     }
     if (createCategoryDto.rules !== undefined) {
-      data.rules = createCategoryDto.rules;
+      data.rules = createCategoryDto.rules as Prisma.InputJsonValue;
     }
     if (createCategoryDto.metadata !== undefined) {
-      data.metadata = createCategoryDto.metadata;
+      data.metadata = createCategoryDto.metadata as Prisma.InputJsonValue;
     }
 
     // Add parent relation if provided

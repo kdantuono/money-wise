@@ -25,7 +25,7 @@ import { CategoryService } from '../core/database/prisma/services/category.servi
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { CategoryResponseDto } from './dto/category-response.dto';
-import { CategoryType } from '../../generated/prisma';
+import { CategoryType, Prisma } from '../../generated/prisma';
 
 /**
  * Categories Controller
@@ -159,7 +159,25 @@ export class CategoriesController {
       throw new Error('Access denied to this category');
     }
 
-    const category = await this.categoryService.update(id, updateDto);
+    // Cast DTO types to Prisma types for database layer
+    const prismaUpdateDto: Partial<{
+      name: string;
+      slug: string;
+      description: string;
+      color: string;
+      icon: string;
+      status: any; // CategoryStatus from Prisma
+      parentId: string;
+      rules: Prisma.JsonValue;
+      metadata: Prisma.JsonValue;
+      sortOrder: number;
+    }> = {
+      ...updateDto,
+      rules: updateDto.rules as Prisma.JsonValue | undefined,
+      metadata: updateDto.metadata as Prisma.JsonValue | undefined,
+    };
+
+    const category = await this.categoryService.update(id, prismaUpdateDto);
 
     return CategoryResponseDto.fromEntity(category);
   }

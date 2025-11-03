@@ -1,7 +1,7 @@
 import { Injectable, Logger, BadRequestException, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../core/database/prisma/prisma.service';
-import { BankingProvider, BankingConnectionStatus, BankingSyncStatus } from '../../../generated/prisma';
+import { BankingProvider, BankingConnectionStatus, BankingSyncStatus, Prisma } from '../../../generated/prisma';
 import {
   IBankingProvider,
   IBankingProviderFactory,
@@ -127,7 +127,7 @@ export class BankingService {
           }),
           // Other providers would follow similar pattern
           redirectUrl: result.redirectUrl,
-          metadata: result.metadata || {},
+          metadata: (result.metadata || {}) as Prisma.InputJsonValue,
         },
       });
 

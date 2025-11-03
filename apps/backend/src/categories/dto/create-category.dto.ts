@@ -103,7 +103,7 @@ export class CreateCategoryDto {
   })
   @IsObject()
   @IsOptional()
-  rules?: Record<string, any>;
+  rules?: Record<string, unknown>;
 
   @ApiPropertyOptional({
     example: {
@@ -115,5 +115,5 @@ export class CreateCategoryDto {
   })
   @IsObject()
   @IsOptional()
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }

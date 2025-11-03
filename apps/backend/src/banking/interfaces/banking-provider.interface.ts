@@ -9,7 +9,7 @@ export interface InitiateLinkResponse {
   /** URL to redirect user to for bank selection and authorization */
   redirectUrl: string;
   /** Optional provider-specific metadata */
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 /**
@@ -37,7 +37,7 @@ export interface BankingAccountData {
   /** Account status */
   status: 'active' | 'inactive' | 'closed';
   /** Optional provider-specific metadata */
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 /**
@@ -61,7 +61,7 @@ export interface BankingTransactionData {
   /** Transaction status */
   status: 'pending' | 'completed' | 'cancelled';
   /** Optional provider-specific metadata */
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 /**
@@ -99,7 +99,7 @@ export interface ConnectionStatusData {
   /** Accounts available from this connection */
   accounts?: BankingAccountData[];
   /** Provider-specific metadata */
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 /**
