@@ -19,7 +19,7 @@ export interface EmailVerificationToken {
 export interface EmailVerificationResult {
   success: boolean;
   message: string;
-  user?: Partial<User> | Partial<any>; // Accept any user-like object for compatibility
+  user?: Partial<User>; // User object from Prisma
 }
 
 @Injectable()
@@ -122,7 +122,7 @@ export class EmailVerificationService {
     `;
 
     try {
-      await (this.redis as any).eval(luaScript, 1, rateLimitKey, config.RATE_LIMIT_WINDOW_SECONDS);
+      await this.redis.eval(luaScript, 1, rateLimitKey, config.RATE_LIMIT_WINDOW_SECONDS);
     } catch (error) {
       this.logger.error('Error incrementing verification rate limit:', error);
       // Fallback: try to set rate limit anyway
@@ -150,7 +150,7 @@ export class EmailVerificationService {
     `;
 
     try {
-      await (this.redis as any).eval(
+      await this.redis.eval(
         luaScript,
         1,
         rateLimitKey,
@@ -227,7 +227,7 @@ export class EmailVerificationService {
 
       // ATOMIC: Get and delete token in one operation to prevent race condition
       // Prevents token reuse if multiple requests arrive concurrently
-      const tokenDataStr = await (this.redis as any).getdel(key);
+      const tokenDataStr = await this.redis.getdel(key);
 
       if (!tokenDataStr) {
         // Add artificial delay to prevent timing-based enumeration
@@ -426,7 +426,7 @@ export class EmailVerificationService {
 
       do {
         // Use non-blocking SCAN with cursor-based iteration
-        const [newCursor, keys] = await (this.redis as any).scan(
+        const [newCursor, keys] = await this.redis.scan(
           cursor,
           'MATCH',
           'email_verification:*',
@@ -508,7 +508,7 @@ export class EmailVerificationService {
 
       do {
         // Use non-blocking SCAN with cursor-based iteration
-        const [newCursor, keys] = await (this.redis as any).scan(
+        const [newCursor, keys] = await this.redis.scan(
           cursor,
           'MATCH',
           'email_verification:*',

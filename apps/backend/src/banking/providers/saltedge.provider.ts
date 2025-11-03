@@ -13,6 +13,36 @@ import {
 } from '../interfaces/banking-provider.interface';
 
 /**
+ * SaltEdge API types
+ * Based on https://docs.saltedge.com/account_information/v5/
+ */
+interface SaltEdgeAccount {
+  id: string;
+  name: string;
+  iban?: string;
+  currency_code?: string;
+  balance?: string;
+  nature?: string;
+  provider_name?: string;
+  country_code?: string;
+  holder_name?: string;
+  status?: string;
+  [key: string]: unknown;
+}
+
+interface SaltEdgeTransaction {
+  id: string;
+  amount?: string;
+  posted_date?: string;
+  made_on?: string;
+  description?: string;
+  category?: string;
+  reference_number?: unknown;
+  extra?: unknown;
+  [key: string]: unknown;
+}
+
+/**
  * SaltEdge Provider Implementation
  * Integrates with SaltEdge API for secure open banking integration
  *
@@ -189,7 +219,7 @@ export class SaltEdgeProvider implements IBankingProvider {
 
       this.logger.log(`Fetched ${accounts.length} accounts`);
 
-      return accounts.map((account: any) =>
+      return accounts.map((account: SaltEdgeAccount) =>
         this.mapSaltEdgeAccountToMoneyWise(account),
       );
     } catch (error) {
@@ -232,7 +262,7 @@ export class SaltEdgeProvider implements IBankingProvider {
 
       this.logger.log(`Fetched ${transactions.length} transactions`);
 
-      return transactions.map((tx: any) =>
+      return transactions.map((tx: SaltEdgeTransaction) =>
         this.mapSaltEdgeTransactionToMoneyWise(tx),
       );
     } catch (error) {
@@ -422,13 +452,13 @@ export class SaltEdgeProvider implements IBankingProvider {
   /**
    * Map SaltEdge account format to MoneyWise format
    */
-  private mapSaltEdgeAccountToMoneyWise(account: any): BankingAccountData {
+  private mapSaltEdgeAccountToMoneyWise(account: SaltEdgeAccount): BankingAccountData {
     return {
       id: account.id,
       name: account.name,
       iban: account.iban || '',
       currency: account.currency_code || 'EUR',
-      balance: parseFloat(account.balance || 0),
+      balance: parseFloat(account.balance || '0'),
       type: this.mapAccountType(account.nature),
       bankName: account.provider_name || '',
       bankCountry: account.country_code || '',
@@ -445,22 +475,28 @@ export class SaltEdgeProvider implements IBankingProvider {
   /**
    * Map SaltEdge transaction format to MoneyWise format
    */
-  private mapSaltEdgeTransactionToMoneyWise(transaction: any): BankingTransactionData {
-    const amount = Math.abs(parseFloat(transaction.amount || 0));
-    const type = parseFloat(transaction.amount || 0) >= 0 ? 'CREDIT' : 'DEBIT';
+  private mapSaltEdgeTransactionToMoneyWise(transaction: SaltEdgeTransaction): BankingTransactionData {
+    const amountValue = parseFloat(transaction.amount || '0');
+    const amount = Math.abs(amountValue);
+    const type = amountValue >= 0 ? 'CREDIT' : 'DEBIT';
+
+    // Safely extract merchant_name from unknown extra field
+    const merchantName = transaction.extra && typeof transaction.extra === 'object' && 'merchant_name' in transaction.extra
+      ? String(transaction.extra.merchant_name)
+      : undefined;
 
     return {
       id: transaction.id,
-      date: new Date(transaction.posted_date || transaction.made_on),
+      date: new Date(transaction.posted_date || transaction.made_on || new Date()),
       amount,
       type,
       description: transaction.description || '',
-      merchant: transaction.extra?.merchant_name,
-      reference: transaction.reference_number,
+      merchant: merchantName,
+      reference: typeof transaction.reference_number === 'string' ? transaction.reference_number : undefined,
       status: 'completed', // SaltEdge only returns completed transactions
       metadata: {
         saltedgeId: transaction.id,
-        category: transaction.category,
+        category: transaction.category || '',
         extra: transaction.extra,
       },
     };

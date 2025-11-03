@@ -1,7 +1,18 @@
 import { Injectable, Logger, BadRequestException, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../core/database/prisma/prisma.service';
-import { BankingProvider, BankingConnectionStatus, BankingSyncStatus, Prisma } from '../../../generated/prisma';
+import {
+  BankingProvider,
+  BankingConnectionStatus,
+  BankingSyncStatus,
+  AccountType,
+  AccountStatus,
+  AccountSource,
+  Account,
+  BankingConnection,
+  Prisma
+} from '../../../generated/prisma';
+import { AccountSettings } from '../../common/types/domain-types';
 import {
   IBankingProvider,
   IBankingProviderFactory,
@@ -240,19 +251,19 @@ export class BankingService {
             userId,
             name: account.name,
             accountNumber: account.iban,
-            bankingProvider: connection.provider as any,
+            bankingProvider: connection.provider,
             // Store provider-specific account ID
             ...(connection.provider === BankingProvider.SALTEDGE && {
               saltEdgeAccountId: account.id,
             }),
-            syncStatus: BankingSyncStatus.PENDING as any,
+            syncStatus: BankingSyncStatus.PENDING,
             // Banking metadata
             institutionName: account.bankName,
             currentBalance: account.balance,
             currency: account.currency,
-            source: 'SALTEDGE' as any, // Will be dynamic based on provider in future
-            type: 'CHECKING' as any, // Default type, can be refined from account.type
-            status: 'ACTIVE' as any,
+            source: AccountSource.SALTEDGE, // Will be dynamic based on provider in future
+            type: AccountType.CHECKING, // Default type, can be refined from account.type
+            status: AccountStatus.ACTIVE,
             // Store additional banking metadata in settings JSON
             settings: {
               bankCountry: account.bankCountry,
@@ -281,7 +292,20 @@ export class BankingService {
   /**
    * Get all linked banking accounts for a user
    */
-  async getLinkedAccounts(userId: string): Promise<any[]> {
+  async getLinkedAccounts(userId: string): Promise<Array<{
+    id: string;
+    name: string;
+    bankName: string | null;
+    balance: number;
+    currency: string;
+    syncStatus: BankingSyncStatus;
+    lastSynced: string | null;
+    linkedAt: string;
+    accountNumber: string | null;
+    bankCountry?: string;
+    accountHolderName?: string;
+    accountType?: string;
+  }>> {
     this.logger.log(`Fetching linked accounts for user ${userId}`);
 
     const accounts = await this.prisma.account.findMany({
@@ -303,17 +327,17 @@ export class BankingService {
       id: account.id,
       name: account.name,
       bankName: account.institutionName,
-      balance: account.currentBalance,
+      balance: account.currentBalance.toNumber(), // Convert Prisma.Decimal to number
       currency: account.currency,
       syncStatus: account.syncStatus,
-      lastSynced: account.syncLogs[0]?.completedAt,
-      linkedAt: account.createdAt,
+      lastSynced: account.syncLogs[0]?.completedAt?.toISOString() ?? null, // Convert Date to ISO string
+      linkedAt: account.createdAt.toISOString(), // Convert Date to ISO string
       accountNumber: account.accountNumber,
       // Extract metadata from settings if available
       ...(account.settings && typeof account.settings === 'object' && {
-        bankCountry: (account.settings as any)?.bankCountry,
-        accountHolderName: (account.settings as any)?.accountHolderName,
-        accountType: (account.settings as any)?.accountType,
+        bankCountry: (account.settings as AccountSettings)?.banking?.bankCountry,
+        accountHolderName: (account.settings as AccountSettings)?.banking?.accountHolderName,
+        accountType: (account.settings as AccountSettings)?.banking?.accountType,
       }),
     }));
   }
@@ -322,7 +346,13 @@ export class BankingService {
    * Sync an account with its banking provider
    * Fetches latest transactions and balance
    */
-  async syncAccount(userId: string, accountId: string): Promise<any> {
+  async syncAccount(userId: string, accountId: string): Promise<{
+    syncLogId: string;
+    status: BankingSyncStatus;
+    transactionsSynced: number;
+    balanceUpdated: boolean;
+    error?: string;
+  }> {
     this.logger.log(`Syncing account ${accountId} for user ${userId}`);
 
     const account = await this.prisma.account.findUnique({
@@ -446,7 +476,7 @@ export class BankingService {
   /**
    * Get provider-specific connection ID from banking connection
    */
-  private getProviderConnectionId(connection: any): string | null {
+  private getProviderConnectionId(connection: BankingConnection): string | null {
     switch (connection.provider) {
       case BankingProvider.SALTEDGE:
         return connection.saltEdgeConnectionId;
@@ -459,7 +489,7 @@ export class BankingService {
   /**
    * Get provider-specific account ID from account
    */
-  private getProviderAccountId(account: any): string | null {
+  private getProviderAccountId(account: Account): string | null {
     switch (account.bankingProvider) {
       case BankingProvider.SALTEDGE:
         return account.saltEdgeAccountId;
