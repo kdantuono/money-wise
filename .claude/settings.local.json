@@ -104,7 +104,8 @@
       "Bash(./.claude/scripts/validate-ci.sh:*)",
       "Bash(gh auth status:*)",
       "mcp__hugging-face__model_search",
-      "Bash(getent group:*)"
+      "Bash(getent group:*)",
+      "WebFetch(domain:docs.saltedge.com)"
     ],
     "deny": [],
     "ask": []

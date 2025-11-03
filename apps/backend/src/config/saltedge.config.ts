@@ -150,10 +150,12 @@ function loadPrivateKey(keyPath?: string): string | null {
       throw new Error(`Invalid private key format at: ${validatedPath}. Expected PEM format.`);
     }
 
+    // eslint-disable-next-line no-console -- Startup configuration logging before logger initialization
     console.log(`✅ Loaded SaltEdge private key from: ${validatedPath}`);
     return keyContent;
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
+    // eslint-disable-next-line no-console -- Startup configuration logging before logger initialization
     console.error(`❌ Failed to load SaltEdge private key: ${message}`);
     throw error;
   }
