@@ -1055,10 +1055,13 @@ jobs:
           DATABASE_URL: postgresql://test:testpass@localhost:5432/test_db
 
       - name: Run E2E tests (shard ${{ matrix.shard }}/${{ github.event_name == 'pull_request' && '2' || '4' }})
+        env:
+          DATABASE_URL: postgresql://test:testpass@localhost:5432/test_db
+          REDIS_URL: redis://localhost:6379
         run: |
           # Start backend server on port 3001
           cd apps/backend
-          PORT=3001 pnpm start:prod > backend.log 2>&1 &
+          PORT=3001 DATABASE_URL=$DATABASE_URL REDIS_URL=$REDIS_URL pnpm start:prod > backend.log 2>&1 &
           BACKEND_PID=$!
           echo "Backend started with PID: $BACKEND_PID"
 
