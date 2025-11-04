@@ -1058,10 +1058,12 @@ jobs:
         env:
           DATABASE_URL: postgresql://test:testpass@localhost:5432/test_db
           REDIS_URL: redis://localhost:6379
+          JWT_ACCESS_SECRET: test-jwt-access-secret-minimum-32-characters-long-for-testing-purposes
+          JWT_REFRESH_SECRET: test-jwt-refresh-secret-minimum-32-characters-long-different-from-access
         run: |
           # Start backend server on port 3001
           cd apps/backend
-          PORT=3001 DATABASE_URL=$DATABASE_URL REDIS_URL=$REDIS_URL pnpm start:prod > backend.log 2>&1 &
+          PORT=3001 DATABASE_URL=$DATABASE_URL REDIS_URL=$REDIS_URL JWT_ACCESS_SECRET="$JWT_ACCESS_SECRET" JWT_REFRESH_SECRET="$JWT_REFRESH_SECRET" pnpm start:prod > backend.log 2>&1 &
           BACKEND_PID=$!
           echo "Backend started with PID: $BACKEND_PID"
 
