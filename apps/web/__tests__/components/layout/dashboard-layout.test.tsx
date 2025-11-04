@@ -6,7 +6,7 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, within } from '../../utils/test-utils';
-import { DashboardLayout } from '../../../components/layout/dashboard-layout';
+import { DashboardLayout } from '../../../src/components/layout/dashboard-layout';
 import { useAuthStore } from '../../../stores/auth-store';
 
 // Mock next/navigation

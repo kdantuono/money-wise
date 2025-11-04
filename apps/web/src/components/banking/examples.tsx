@@ -226,8 +226,8 @@ export function AccountDetailsPageExample() {
   };
 
   const handleRevoke = async () => {
-    console.log('Account revoked');
     // Navigate back to accounts list
+    // Account revocation handled by store
   };
 
   return (
@@ -346,7 +346,7 @@ export function LoadingStatesExample() {
           title="Sync Failed"
           message="Unable to sync account transactions"
           details="Connection timeout after 30 seconds"
-          onDismiss={() => console.log('Dismissed')}
+          onDismiss={() => {}}
         />
       </section>
     </div>
@@ -388,8 +388,8 @@ export function CompleteIntegratedExample() {
     setSelectedAccount(account);
   };
 
-  const handleSync = async (accountId: string) => {
-    console.log('Syncing account:', accountId);
+  const handleSync = async (_accountId: string) => {
+    // Sync handled by store
   };
 
   const handleRevoke = async (accountId: string) => {

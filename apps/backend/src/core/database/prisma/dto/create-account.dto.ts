@@ -9,6 +9,7 @@ import {
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { AccountType, AccountStatus, AccountSource } from '../../../../../generated/prisma';
+import { PlaidMetadata, AccountSettings } from '../../../../common/types/domain-types';
 
 /**
  * CreateAccountDto - Data Transfer Object for Account creation
@@ -290,7 +291,7 @@ export class CreateAccountDto {
   })
   @IsOptional()
   @IsJSON({ message: 'plaidMetadata must be valid JSON' })
-  plaidMetadata?: any;
+  plaidMetadata?: PlaidMetadata;
 
   /**
    * Account settings (JSONB)
@@ -304,5 +305,5 @@ export class CreateAccountDto {
   })
   @IsOptional()
   @IsJSON({ message: 'settings must be valid JSON' })
-  settings?: any;
+  settings?: AccountSettings;
 }

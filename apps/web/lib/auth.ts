@@ -1,5 +1,19 @@
-import axios from 'axios'
+/**
+ * Auth API Client
+ *
+ * Provides authentication services using HttpOnly cookie-based auth with CSRF protection.
+ * Cookies (accessToken, refreshToken) are managed by the browser automatically.
+ * CSRF tokens are stored in localStorage and included in mutation requests.
+ *
+ * @module lib/auth
+ */
 
+import { getCsrfToken, setCsrfToken, clearCsrfToken, requiresCsrf, isCsrfError, refreshCsrfToken } from '@/utils/csrf'
+import { sanitizeUser } from '@/utils/sanitize'
+
+/**
+ * User interface matching backend response
+ */
 export interface User {
   id: string
   email: string
@@ -21,18 +35,26 @@ export interface User {
   isActive: boolean
 }
 
+/**
+ * Auth response from login/register endpoints
+ * Backend returns user data and CSRF token (cookies set automatically)
+ */
 export interface AuthResponse {
-  accessToken: string
-  refreshToken: string
   user: User
-  expiresIn: number
+  csrfToken: string
 }
 
+/**
+ * Login credentials
+ */
 export interface LoginCredentials {
   email: string
   password: string
 }
 
+/**
+ * Registration credentials
+ */
 export interface RegisterCredentials {
   email: string
   password: string
@@ -40,81 +62,220 @@ export interface RegisterCredentials {
   lastName: string
 }
 
-// API Client configuration
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001'
+/**
+ * Error response from backend
+ */
+export interface ErrorResponse {
+  statusCode: number
+  message: string | string[]
+  error?: string
+}
 
-export const authApi = axios.create({
-  baseURL: `${API_BASE_URL}/api`,
-  headers: {
+/**
+ * API Client configuration
+ */
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
+
+/**
+ * Make authenticated API request with cookie and CSRF support
+ *
+ * @param endpoint - API endpoint (e.g., '/auth/profile')
+ * @param options - Fetch options
+ * @returns Response object
+ * @throws Error if request fails
+ *
+ * @example
+ * const response = await apiRequest('/auth/profile', { method: 'GET' });
+ * const user = await response.json();
+ */
+async function apiRequest(
+  endpoint: string,
+  options: RequestInit = {}
+): Promise<Response> {
+  const csrfToken = getCsrfToken()
+  const headers: HeadersInit = {
     'Content-Type': 'application/json',
-  },
-})
-
-// Add request interceptor to include auth token
-authApi.interceptors.request.use((config) => {
-  const token = localStorage.getItem('accessToken')
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`
+    ...options.headers,
   }
-  return config
-})
 
-// Add response interceptor to handle token refresh
-authApi.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    const originalRequest = error.config
+  // Add CSRF token for mutation requests
+  if (requiresCsrf(options.method) && csrfToken) {
+    headers['X-CSRF-Token'] = csrfToken
+  }
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    ...options,
+    headers,
+    credentials: 'include', // Enable cookie sending
+  })
 
-      const refreshToken = localStorage.getItem('refreshToken')
-      if (refreshToken) {
+  // Handle CSRF token errors
+  if (response.status === 403) {
+    try {
+      const errorData: ErrorResponse = await response.json()
+      if (isCsrfError(errorData)) {
+        // Attempt to refresh CSRF token
         try {
-          const response = await axios.post(`${API_BASE_URL}/api/auth/refresh`, {
-            refreshToken,
+          await refreshCsrfToken(API_BASE_URL)
+          // Retry request with new token
+          const newCsrfToken = getCsrfToken()
+          if (newCsrfToken && requiresCsrf(options.method)) {
+            headers['X-CSRF-Token'] = newCsrfToken
+          }
+          return fetch(`${API_BASE_URL}${endpoint}`, {
+            ...options,
+            headers,
+            credentials: 'include',
           })
-
-          const { accessToken } = response.data
-          localStorage.setItem('accessToken', accessToken)
-
-          return authApi(originalRequest)
         } catch (refreshError) {
-          // Refresh failed, redirect to login
-          localStorage.removeItem('accessToken')
-          localStorage.removeItem('refreshToken')
-          window.location.href = '/auth/login'
+          console.error('CSRF token refresh failed:', refreshError)
+          throw new Error('CSRF token validation failed. Please refresh the page.')
         }
       }
+    } catch (parseError) {
+      // If we can't parse the error, just return the original response
+      return response
+    }
+  }
+
+  return response
+}
+
+/**
+ * Auth service with cookie-based authentication
+ */
+export const authService = {
+  /**
+   * Login user with email and password
+   * Backend sets HttpOnly cookies and returns CSRF token
+   *
+   * @param credentials - Login credentials
+   * @returns User data and CSRF token
+   * @throws Error if login fails
+   *
+   * @example
+   * const { user, csrfToken } = await authService.login({ email, password });
+   */
+  login: async (credentials: LoginCredentials): Promise<AuthResponse> => {
+    const response = await fetch(`${API_BASE_URL}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include', // Enable cookies
+      body: JSON.stringify(credentials),
+    })
+
+    if (!response.ok) {
+      const errorData: ErrorResponse = await response.json()
+      const errorMessage = Array.isArray(errorData.message)
+        ? errorData.message.join(', ')
+        : errorData.message || 'Login failed'
+      throw new Error(errorMessage)
     }
 
-    return Promise.reject(error)
-  }
-)
+    const data: AuthResponse = await response.json()
 
-// Auth API functions
-export const authService = {
-  login: async (credentials: LoginCredentials): Promise<AuthResponse> => {
-    const response = await authApi.post('/auth/login', credentials)
-    return response.data
+    // Sanitize user data before returning
+    const sanitizedUser = sanitizeUser(data.user)
+
+    setCsrfToken(data.csrfToken)
+    return { user: sanitizedUser, csrfToken: data.csrfToken }
   },
 
+  /**
+   * Register new user
+   * Backend sets HttpOnly cookies and returns CSRF token
+   *
+   * @param credentials - Registration credentials
+   * @returns User data and CSRF token
+   * @throws Error if registration fails
+   *
+   * @example
+   * const { user, csrfToken } = await authService.register({
+   *   email, password, firstName, lastName
+   * });
+   */
   register: async (credentials: RegisterCredentials): Promise<AuthResponse> => {
-    const response = await authApi.post('/auth/register', credentials)
-    return response.data
+    const response = await fetch(`${API_BASE_URL}/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include', // Enable cookies
+      body: JSON.stringify(credentials),
+    })
+
+    if (!response.ok) {
+      const errorData: ErrorResponse = await response.json()
+      const errorMessage = Array.isArray(errorData.message)
+        ? errorData.message.join(', ')
+        : errorData.message || 'Registration failed'
+      throw new Error(errorMessage)
+    }
+
+    const data: AuthResponse = await response.json()
+
+    // Sanitize user data before returning
+    const sanitizedUser = sanitizeUser(data.user)
+
+    setCsrfToken(data.csrfToken)
+    return { user: sanitizedUser, csrfToken: data.csrfToken }
   },
 
-  refreshToken: async (refreshToken: string): Promise<AuthResponse> => {
-    const response = await authApi.post('/auth/refresh', { refreshToken })
-    return response.data
-  },
-
+  /**
+   * Get current user profile
+   * Uses access token from HttpOnly cookie
+   *
+   * @returns User data
+   * @throws Error if request fails
+   *
+   * @example
+   * const user = await authService.getProfile();
+   */
   getProfile: async (): Promise<User> => {
-    const response = await authApi.get('/auth/profile')
-    return response.data
+    const response = await apiRequest('/auth/profile', {
+      method: 'GET',
+    })
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch profile')
+    }
+
+    const rawUser = await response.json()
+
+    // Sanitize user data before returning
+    return sanitizeUser(rawUser)
   },
 
+  /**
+   * Logout user
+   * Backend clears HttpOnly cookies
+   *
+   * @throws Error if logout fails
+   *
+   * @example
+   * await authService.logout();
+   * clearCsrfToken();
+   */
   logout: async (): Promise<void> => {
-    await authApi.post('/auth/logout')
+    try {
+      await apiRequest('/auth/logout', {
+        method: 'POST',
+      })
+    } finally {
+      // Always clear CSRF token, even if logout request fails
+      clearCsrfToken()
+    }
+  },
+
+  /**
+   * Refresh CSRF token
+   * Call this when CSRF token becomes invalid
+   *
+   * @returns New CSRF token
+   * @throws Error if refresh fails
+   *
+   * @example
+   * const newToken = await authService.refreshCsrfToken();
+   */
+  refreshCsrfToken: async (): Promise<string> => {
+    return refreshCsrfToken(API_BASE_URL)
   },
 }

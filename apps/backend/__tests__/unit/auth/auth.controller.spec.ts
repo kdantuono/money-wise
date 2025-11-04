@@ -1,10 +1,13 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConflictException, UnauthorizedException } from '@nestjs/common';
-import { Request } from 'express';
+import { Request, Response } from 'express';
+import { ConfigService } from '@nestjs/config';
 import { AuthController } from '@/auth/auth.controller';
 import { AuthService } from '@/auth/auth.service';
 import { AuthSecurityService } from '@/auth/auth-security.service';
 import { RateLimitGuard } from '@/auth/guards/rate-limit.guard';
+import { CsrfGuard } from '@/auth/guards/csrf.guard';
+import { CsrfService } from '@/auth/services/csrf.service';
 import { RegisterDto } from '@/auth/dto/register.dto';
 import { LoginDto } from '@/auth/dto/login.dto';
 import { AuthResponseDto, AuthResponseUserDto } from '@/auth/dto/auth-response.dto';
@@ -19,6 +22,7 @@ describe('AuthController', () => {
   let authService: jest.Mocked<AuthService>;
   let authSecurityService: jest.Mocked<AuthSecurityService>;
   let mockRequest: Partial<Request>;
+  let mockResponse: Partial<Response>;
 
   const mockUser: AuthResponseUserDto = {
     id: '1',
@@ -55,6 +59,14 @@ describe('AuthController', () => {
       headers: { 'user-agent': 'test-user-agent' },
     };
 
+    mockResponse = {
+      cookie: jest.fn(),
+      clearCookie: jest.fn(),
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn().mockReturnThis(),
+      send: jest.fn().mockReturnThis(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       controllers: [AuthController],
       providers: [
@@ -84,9 +96,24 @@ describe('AuthController', () => {
             },
           },
         },
+        {
+          provide: CsrfService,
+          useValue: {
+            generateToken: jest.fn().mockReturnValue('csrf-token'),
+            validateToken: jest.fn().mockReturnValue(true),
+          },
+        },
+        {
+          provide: ConfigService,
+          useValue: {
+            get: jest.fn().mockReturnValue('test-value'),
+          },
+        },
       ],
     })
     .overrideGuard(RateLimitGuard)
+    .useValue({ canActivate: () => true })
+    .overrideGuard(CsrfGuard)
     .useValue({ canActivate: () => true })
     .compile();
 
@@ -114,11 +141,13 @@ describe('AuthController', () => {
       };
       authSecurityService.register.mockResolvedValue(mockResponseWithToken);
 
-      const result = await controller.register(registerDto, mockRequest as Request);
+      const result = await controller.register(registerDto, mockRequest as Request, mockResponse as Response);
 
       expect(authSecurityService.register).toHaveBeenCalledWith(registerDto, mockRequest);
-      expect(result).toEqual(mockAuthResponse);
-      expect(result.user).not.toHaveProperty('passwordHash');
+      expect(result.user).toEqual(mockUser);
+      expect(result.csrfToken).toBeDefined();
+      expect(result).not.toHaveProperty('accessToken'); // Now in HttpOnly cookie
+      expect(result).not.toHaveProperty('refreshToken'); // Now in HttpOnly cookie
       expect(result).not.toHaveProperty('verificationToken');
     });
 
@@ -127,7 +156,7 @@ describe('AuthController', () => {
         new ConflictException('User with this email already exists')
       );
 
-      await expect(controller.register(registerDto, mockRequest as Request)).rejects.toThrow(
+      await expect(controller.register(registerDto, mockRequest as Request, mockResponse as Response)).rejects.toThrow(
         ConflictException
       );
       expect(authSecurityService.register).toHaveBeenCalledWith(registerDto, mockRequest);
@@ -143,7 +172,7 @@ describe('AuthController', () => {
       authSecurityService.register.mockRejectedValue(new Error('Validation failed'));
 
       await expect(
-        controller.register(invalidDto as RegisterDto, mockRequest as Request)
+        controller.register(invalidDto as RegisterDto, mockRequest as Request, mockResponse as Response)
       ).rejects.toThrow();
     });
   });
@@ -157,11 +186,13 @@ describe('AuthController', () => {
     it('should login user successfully', async () => {
       authSecurityService.login.mockResolvedValue(mockAuthResponse);
 
-      const result = await controller.login(loginDto, mockRequest as Request);
+      const result = await controller.login(loginDto, mockRequest as Request, mockResponse as Response);
 
       expect(authSecurityService.login).toHaveBeenCalledWith(loginDto, mockRequest);
-      expect(result).toEqual(mockAuthResponse);
-      expect(result.user).not.toHaveProperty('passwordHash');
+      expect(result.user).toEqual(mockUser);
+      expect(result.csrfToken).toBeDefined();
+      expect(result).not.toHaveProperty('accessToken'); // Now in HttpOnly cookie
+      expect(result).not.toHaveProperty('refreshToken'); // Now in HttpOnly cookie
     });
 
     it('should throw UnauthorizedException with invalid credentials', async () => {
@@ -169,7 +200,7 @@ describe('AuthController', () => {
         new UnauthorizedException('Invalid email or password')
       );
 
-      await expect(controller.login(loginDto, mockRequest as Request)).rejects.toThrow(
+      await expect(controller.login(loginDto, mockRequest as Request, mockResponse as Response)).rejects.toThrow(
         UnauthorizedException
       );
       expect(authSecurityService.login).toHaveBeenCalledWith(loginDto, mockRequest);
@@ -180,7 +211,7 @@ describe('AuthController', () => {
         new UnauthorizedException('Account is not active')
       );
 
-      await expect(controller.login(loginDto, mockRequest as Request)).rejects.toThrow(
+      await expect(controller.login(loginDto, mockRequest as Request, mockResponse as Response)).rejects.toThrow(
         UnauthorizedException
       );
     });
@@ -192,7 +223,7 @@ describe('AuthController', () => {
         new UnauthorizedException('Invalid email or password')
       );
 
-      await expect(controller.login(emptyDto as LoginDto, mockRequest as Request)).rejects.toThrow(
+      await expect(controller.login(emptyDto as LoginDto, mockRequest as Request, mockResponse as Response)).rejects.toThrow(
         UnauthorizedException
       );
     });
@@ -202,43 +233,52 @@ describe('AuthController', () => {
     const refreshToken = 'valid-refresh-token';
 
     it('should refresh token successfully', async () => {
+      // Add refresh token to request cookies
+      mockRequest.cookies = { refreshToken };
+
+      const mockRefreshResponse = {
+        user: mockUser,
+        csrfToken: 'new-csrf-token',
+      };
+
       authSecurityService.refreshToken.mockResolvedValue(mockAuthResponse);
 
-      const result = await controller.refreshToken(refreshToken, mockRequest as Request);
+      const result = await controller.refreshToken(mockRequest as Request, mockResponse as Response);
 
       expect(authSecurityService.refreshToken).toHaveBeenCalledWith(refreshToken, mockRequest);
-      expect(result).toEqual(mockAuthResponse);
-      expect(result.accessToken).toBeDefined();
-      expect(result.refreshToken).toBeDefined();
+      expect(result.user).toEqual(mockUser);
+      expect(result.csrfToken).toBeDefined();
     });
 
-    it('should throw UnauthorizedException with invalid refresh token', async () => {
-      authSecurityService.refreshToken.mockRejectedValue(
-        new UnauthorizedException('Invalid refresh token')
-      );
+    it('should throw UnauthorizedException with missing refresh token', async () => {
+      // No refresh token in cookies
+      mockRequest.cookies = {};
 
-      await expect(controller.refreshToken(refreshToken, mockRequest as Request)).rejects.toThrow(
+      await expect(controller.refreshToken(mockRequest as Request, mockResponse as Response)).rejects.toThrow(
         UnauthorizedException
       );
-      expect(authSecurityService.refreshToken).toHaveBeenCalledWith(refreshToken, mockRequest);
     });
 
     it('should throw UnauthorizedException with expired refresh token', async () => {
+      mockRequest.cookies = { refreshToken: 'expired-token' };
+
       authSecurityService.refreshToken.mockRejectedValue(
         new UnauthorizedException('Invalid refresh token')
       );
 
-      await expect(controller.refreshToken('expired-token', mockRequest as Request)).rejects.toThrow(
+      await expect(controller.refreshToken(mockRequest as Request, mockResponse as Response)).rejects.toThrow(
         UnauthorizedException
       );
     });
 
     it('should handle malformed refresh token', async () => {
+      mockRequest.cookies = { refreshToken: 'malformed.token' };
+
       authSecurityService.refreshToken.mockRejectedValue(
         new UnauthorizedException('Invalid refresh token')
       );
 
-      await expect(controller.refreshToken('malformed.token', mockRequest as Request)).rejects.toThrow(
+      await expect(controller.refreshToken(mockRequest as Request, mockResponse as Response)).rejects.toThrow(
         UnauthorizedException
       );
     });
@@ -306,7 +346,7 @@ describe('AuthController', () => {
 
       authSecurityService.logout.mockResolvedValue(undefined);
 
-      const result = await controller.logout(user, mockRequest as Request);
+      const result = await controller.logout(user, mockRequest as Request, mockResponse as Response);
 
       expect(authSecurityService.logout).toHaveBeenCalledWith(user.id, mockRequest);
       expect(result).toBeUndefined();
@@ -321,7 +361,7 @@ describe('AuthController', () => {
 
       authSecurityService.logout.mockResolvedValue(undefined);
 
-      const result = await controller.logout(adminUser, mockRequest as Request);
+      const result = await controller.logout(adminUser, mockRequest as Request, mockResponse as Response);
 
       expect(authSecurityService.logout).toHaveBeenCalledWith(adminUser.id, mockRequest);
       expect(result).toBeUndefined();
@@ -777,7 +817,7 @@ describe('AuthController', () => {
         new Error('Database connection failed')
       );
 
-      await expect(controller.register(registerDto, mockRequest as Request)).rejects.toThrow(
+      await expect(controller.register(registerDto, mockRequest as Request, mockResponse as Response)).rejects.toThrow(
         'Database connection failed'
       );
     });
@@ -790,7 +830,7 @@ describe('AuthController', () => {
 
       authSecurityService.login.mockRejectedValue(new Error('Unexpected error'));
 
-      await expect(controller.login(loginDto, mockRequest as Request)).rejects.toThrow(
+      await expect(controller.login(loginDto, mockRequest as Request, mockResponse as Response)).rejects.toThrow(
         'Unexpected error'
       );
     });
@@ -803,7 +843,7 @@ describe('AuthController', () => {
 
       authSecurityService.login.mockRejectedValue(new Error('Service timeout'));
 
-      await expect(controller.login(loginDto, mockRequest as Request)).rejects.toThrow(
+      await expect(controller.login(loginDto, mockRequest as Request, mockResponse as Response)).rejects.toThrow(
         'Service timeout'
       );
     });

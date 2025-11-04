@@ -262,18 +262,6 @@ function getApiBaseUrl(): string {
   return baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
 }
 
-/**
- * Get authentication token from localStorage
- *
- * @returns JWT token or null if not found
- */
-function getAuthToken(): string | null {
-  if (typeof window === 'undefined') {
-    return null; // Server-side rendering
-  }
-
-  return localStorage.getItem('auth_token');
-}
 
 /**
  * Check if code is running in development mode
@@ -387,7 +375,6 @@ async function request<T>(
 ): Promise<T> {
   const baseUrl = getApiBaseUrl();
   const url = `${baseUrl}${endpoint}`;
-  const token = getAuthToken();
 
   // Build headers
   const headers: Record<string, string> = {
@@ -395,18 +382,14 @@ async function request<T>(
     ...((options.headers as Record<string, string>) || {}),
   };
 
-  // Add authentication header
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
-
   // Log request in development
   logRequest(options.method || 'GET', url, options.body);
 
-  // Make request
+  // Make request with cookies (authentication handled by HttpOnly cookies)
   const response = await fetch(url, {
     ...options,
     headers,
+    credentials: 'include', // Enable cookie sending for authentication
   });
 
   // Handle errors

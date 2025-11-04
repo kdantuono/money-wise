@@ -10,8 +10,10 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import helmet from 'helmet';
 import compression from 'compression';
+import cookieParser from 'cookie-parser';
 import { AppConfig } from './core/config/app.config';
 import { MonitoringInterceptor } from './core/monitoring/monitoring.interceptor';
+import { getHelmetConfig, ADDITIONAL_SECURITY_HEADERS } from './config/security.config';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
@@ -38,18 +40,42 @@ async function bootstrap() {
       throw new Error('Application configuration not found');
     }
 
-    // Security middleware
-    app.use(helmet());
+    // Security middleware with environment-specific configuration
+    // Implements defense-in-depth with multiple security headers
+    const helmetConfig = getHelmetConfig(
+      appConfig.NODE_ENV,
+      appConfig.CORS_ORIGIN || 'http://localhost:3000'
+    );
+    app.use(helmet(helmetConfig));
+
+    // Apply additional security headers not covered by helmet
+    app.use((req, res, next) => {
+      Object.entries(ADDITIONAL_SECURITY_HEADERS).forEach(([header, value]) => {
+        res.setHeader(header, value);
+      });
+      next();
+    });
 
     // Compression middleware
     app.use(compression());
+
+    // Cookie parser middleware (MUST be before CORS)
+    // Uses SESSION_SECRET from environment for cookie signing
+    const sessionSecret = process.env.SESSION_SECRET || 'fallback-secret-change-in-production';
+    app.use(cookieParser(sessionSecret));
 
     // CORS configuration
     app.enableCors({
       origin: appConfig.CORS_ORIGIN || 'http://localhost:3000',
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization', 'x-requested-with'],
+      allowedHeaders: [
+        'Content-Type',
+        'Authorization',
+        'x-requested-with',
+        'X-CSRF-Token', // Allow CSRF token header
+      ],
+      exposedHeaders: ['X-CSRF-Token'], // Expose CSRF token to client
     });
 
     // Global validation pipe

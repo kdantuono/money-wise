@@ -247,8 +247,8 @@ export class PrismaAccountService {
           plaidAccountId: dto.plaidAccountId ?? null,
           plaidItemId: dto.plaidItemId ?? null,
           plaidAccessToken: dto.plaidAccessToken ?? null,
-          plaidMetadata: dto.plaidMetadata ?? null,
-          settings: dto.settings ?? null,
+          plaidMetadata: (dto.plaidMetadata as unknown as Prisma.InputJsonValue) ?? null,
+          settings: (dto.settings as unknown as Prisma.InputJsonValue) ?? null,
           userId: dto.userId ?? null,
           familyId: dto.familyId ?? null,
         },
@@ -482,7 +482,11 @@ export class PrismaAccountService {
     try {
       const account = await this.prisma.account.update({
         where: { id },
-        data: dto,
+        data: {
+          ...dto,
+          plaidMetadata: dto.plaidMetadata ? (dto.plaidMetadata as unknown as Prisma.InputJsonValue) : undefined,
+          settings: dto.settings ? (dto.settings as unknown as Prisma.InputJsonValue) : undefined,
+        },
       });
 
       return account;

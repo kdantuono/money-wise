@@ -1,26 +1,31 @@
 /**
  * Label Component
  *
- * Reusable label component for form fields.
+ * Accessible label component for form inputs following shadcn/ui patterns.
+ * Uses cn() utility for proper Tailwind class merging.
+ *
+ * @module components/ui/label
  */
 
-import React from 'react';
+import * as React from 'react';
+import { cn } from '@/lib/utils';
 
-interface LabelProps extends React.LabelHTMLAttributes<HTMLLabelElement> {
-  required?: boolean;
-}
+export interface LabelProps
+  extends React.LabelHTMLAttributes<HTMLLabelElement> {}
 
 const Label = React.forwardRef<HTMLLabelElement, LabelProps>(
-  ({ className, required, children, ...props }, ref) => (
-    <label
-      ref={ref}
-      className={`block text-sm font-medium text-gray-700 ${className || ''}`}
-      {...props}
-    >
-      {children}
-      {required && <span className="text-red-500 ml-1">*</span>}
-    </label>
-  )
+  ({ className, ...props }, ref) => {
+    return (
+      <label
+        ref={ref}
+        className={cn(
+          'text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70',
+          className
+        )}
+        {...props}
+      />
+    );
+  }
 );
 
 Label.displayName = 'Label';

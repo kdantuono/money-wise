@@ -11,7 +11,7 @@ import {
   LoadingScreen,
   LoadingCard,
   LoadingButton,
-} from '../../../components/ui/loading';
+} from '../../../src/components/ui/loading';
 
 describe('Loading Components', () => {
   describe('LoadingSpinner', () => {

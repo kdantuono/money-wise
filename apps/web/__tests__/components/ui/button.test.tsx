@@ -4,7 +4,7 @@
 
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '../../utils/test-utils';
-import { Button } from '../../../components/ui/button';
+import { Button } from '../../../src/components/ui/button';
 
 describe('Button Component', () => {
   it('renders with default props', () => {

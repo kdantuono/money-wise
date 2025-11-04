@@ -24,6 +24,7 @@ export type AuthResponseUserDto = Omit<User, 'passwordHash' | 'accounts' | 'user
 export class AuthResponseDto {
   @ApiProperty({
     description: 'JWT access token for API authentication',
+    // eslint-disable-next-line no-secrets/no-secrets -- Example JWT token for API documentation
     example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
   })
   accessToken: string;

@@ -378,11 +378,14 @@ export class PasswordSecurityService {
    * Generate a secure temporary password
    */
   generateTemporaryPassword(length: number = 16): string {
+    // eslint-disable-next-line no-secrets/no-secrets -- Character set for password generation, not a secret
     const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
     let password = '';
 
     // Ensure at least one character from each required category
+    // eslint-disable-next-line no-secrets/no-secrets -- Character set for password generation, not a secret
     password += this.getRandomChar('ABCDEFGHIJKLMNOPQRSTUVWXYZ');
+    // eslint-disable-next-line no-secrets/no-secrets -- Character set for password generation, not a secret
     password += this.getRandomChar('abcdefghijklmnopqrstuvwxyz');
     password += this.getRandomChar('0123456789');
     password += this.getRandomChar('!@#$%^&*');

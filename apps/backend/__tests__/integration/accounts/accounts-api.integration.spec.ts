@@ -24,6 +24,11 @@ import { setupTestDatabase, teardownTestDatabase } from '../../../src/core/datab
 import { AccountType, AccountSource, UserRole, PrismaClient } from '../../../generated/prisma';
 import { CreateAccountDto } from '../../../src/accounts/dto/create-account.dto';
 import { UpdateAccountDto } from '../../../src/accounts/dto/update-account.dto';
+import {
+  getCookieHeader,
+  extractCsrfToken,
+  assertCookieAuthResponse,
+} from '../../helpers/cookie-auth.helper';
 
 describe('Accounts API Integration Tests (HTTP)', () => {
   let app: INestApplication;
@@ -36,10 +41,13 @@ describe('Accounts API Integration Tests (HTTP)', () => {
   let testFamilyId2: string;
   let testAccountId: string;
 
-  // Authentication tokens
-  let userToken: string;
-  let user2Token: string;
-  let adminToken: string;
+  // Authentication cookies and CSRF tokens
+  let userCookies: string;
+  let user2Cookies: string;
+  let adminCookies: string;
+  let userCsrfToken: string | null;
+  let user2CsrfToken: string | null;
+  let adminCsrfToken: string | null;
 
   beforeAll(async () => {
     prisma = await setupTestDatabase();
@@ -52,6 +60,11 @@ describe('Accounts API Integration Tests (HTTP)', () => {
       .compile();
 
     app = moduleFixture.createNestApplication();
+
+    // CRITICAL: Initialize cookie-parser middleware (matches main.ts)
+    const sessionSecret = process.env.SESSION_SECRET || 'test-session-secret-min-32-characters-long';
+    const cookieParserMiddleware = (await import('cookie-parser')).default;
+    app.use(cookieParserMiddleware(sessionSecret));
 
     // Apply global pipes (same as main.ts)
     app.useGlobalPipes(
@@ -92,8 +105,10 @@ describe('Accounts API Integration Tests (HTTP)', () => {
       throw new Error(`User1 registration failed: ${JSON.stringify(registerResponse1.body)}`);
     }
 
+    assertCookieAuthResponse(registerResponse1);
     testUserId = registerResponse1.body.user.id;
-    userToken = registerResponse1.body.accessToken;
+    userCookies = getCookieHeader(registerResponse1);
+    userCsrfToken = extractCsrfToken(registerResponse1);
 
     // Update user1: set to ACTIVE status (bypass email verification) and assign family
     await prisma.user.update({
@@ -117,8 +132,10 @@ describe('Accounts API Integration Tests (HTTP)', () => {
       throw new Error(`User2 registration failed: ${JSON.stringify(registerResponse2.body)}`);
     }
 
+    assertCookieAuthResponse(registerResponse2);
     testUserId2 = registerResponse2.body.user.id;
-    user2Token = registerResponse2.body.accessToken;
+    user2Cookies = getCookieHeader(registerResponse2);
+    user2CsrfToken = extractCsrfToken(registerResponse2);
 
     // Update user2: set to ACTIVE status (bypass email verification) and assign family
     await prisma.user.update({
@@ -143,8 +160,10 @@ describe('Accounts API Integration Tests (HTTP)', () => {
       throw new Error(`Admin registration failed: ${JSON.stringify(adminRegisterResponse.body)}`);
     }
 
+    assertCookieAuthResponse(adminRegisterResponse);
     const adminUserId = adminRegisterResponse.body.user.id;
-    adminToken = adminRegisterResponse.body.accessToken;
+    adminCookies = getCookieHeader(adminRegisterResponse);
+    adminCsrfToken = extractCsrfToken(adminRegisterResponse);
 
     // Promote to admin and set ACTIVE status
     await prisma.user.update({
@@ -196,7 +215,8 @@ describe('Accounts API Integration Tests (HTTP)', () => {
 
       const response = await request(app.getHttpServer())
         .post('/accounts')
-        .set('Authorization', `Bearer ${userToken}`)
+        .set('Cookie', userCookies)
+        .set('X-CSRF-Token', userCsrfToken!)
         .send(createDto)
         .expect(201);
 
@@ -221,7 +241,8 @@ describe('Accounts API Integration Tests (HTTP)', () => {
 
       const response = await request(app.getHttpServer())
         .post('/accounts')
-        .set('Authorization', `Bearer ${userToken}`)
+        .set('Cookie', userCookies)
+        .set('X-CSRF-Token', userCsrfToken!)
         .send(invalidDto)
         .expect(400);
 
@@ -243,7 +264,8 @@ describe('Accounts API Integration Tests (HTTP)', () => {
 
       await request(app.getHttpServer())
         .post('/accounts')
-        .set('Authorization', `Bearer ${userToken}`)
+        .set('Cookie', userCookies)
+        .set('X-CSRF-Token', userCsrfToken!)
         .send(invalidDto)
         .expect(400);
     });
@@ -258,7 +280,8 @@ describe('Accounts API Integration Tests (HTTP)', () => {
 
       const response = await request(app.getHttpServer())
         .post('/accounts')
-        .set('Authorization', `Bearer ${userToken}`)
+        .set('Cookie', userCookies)
+        .set('X-CSRF-Token', userCsrfToken!)
         .send(createDto)
         .expect(201);
 
@@ -271,7 +294,8 @@ describe('Accounts API Integration Tests (HTTP)', () => {
       // Create test accounts
       await request(app.getHttpServer())
         .post('/accounts')
-        .set('Authorization', `Bearer ${userToken}`)
+        .set('Cookie', userCookies)
+        .set('X-CSRF-Token', userCsrfToken!)
         .send({
           name: 'Checking Account',
           type: AccountType.CHECKING,
@@ -281,7 +305,8 @@ describe('Accounts API Integration Tests (HTTP)', () => {
 
       await request(app.getHttpServer())
         .post('/accounts')
-        .set('Authorization', `Bearer ${userToken}`)
+        .set('Cookie', userCookies)
+        .set('X-CSRF-Token', userCsrfToken!)
         .send({
           name: 'Savings Account',
           type: AccountType.SAVINGS,
@@ -291,7 +316,8 @@ describe('Accounts API Integration Tests (HTTP)', () => {
 
       await request(app.getHttpServer())
         .post('/accounts')
-        .set('Authorization', `Bearer ${user2Token}`)
+        .set('Cookie', user2Cookies)
+        .set('X-CSRF-Token', user2CsrfToken!)
         .send({
           name: 'Other User Account',
           type: AccountType.CHECKING,
@@ -309,7 +335,8 @@ describe('Accounts API Integration Tests (HTTP)', () => {
     it('should return only user\'s accounts', async () => {
       const response = await request(app.getHttpServer())
         .get('/accounts')
-        .set('Authorization', `Bearer ${userToken}`)
+        .set('Cookie', userCookies)
+        .set('X-CSRF-Token', userCsrfToken!)
         .expect(200);
 
       expect(response.body).toHaveLength(2);
@@ -335,9 +362,10 @@ describe('Accounts API Integration Tests (HTTP)', () => {
         data: { status: 'ACTIVE' },
       });
 
+      const newUserCookies = getCookieHeader(newUserResponse);
       const response = await request(app.getHttpServer())
         .get('/accounts')
-        .set('Authorization', `Bearer ${newUserResponse.body.accessToken}`)
+        .set('Cookie', newUserCookies)
         .expect(200);
 
       expect(response.body).toEqual([]);
@@ -346,7 +374,8 @@ describe('Accounts API Integration Tests (HTTP)', () => {
     it('should allow admin to access all accounts', async () => {
       const response = await request(app.getHttpServer())
         .get('/accounts')
-        .set('Authorization', `Bearer ${adminToken}`)
+        .set('Cookie', adminCookies)
+        .set('X-CSRF-Token', adminCsrfToken!)
         .expect(200);
 
       // Admin should see all accounts (at least the 3 created in beforeEach)
@@ -358,7 +387,8 @@ describe('Accounts API Integration Tests (HTTP)', () => {
     beforeEach(async () => {
       const createResponse = await request(app.getHttpServer())
         .post('/accounts')
-        .set('Authorization', `Bearer ${userToken}`)
+        .set('Cookie', userCookies)
+        .set('X-CSRF-Token', userCsrfToken!)
         .send({
           name: 'Test Account',
           type: AccountType.CHECKING,
@@ -378,7 +408,8 @@ describe('Accounts API Integration Tests (HTTP)', () => {
     it('should return account when user owns it', async () => {
       const response = await request(app.getHttpServer())
         .get(`/accounts/${testAccountId}`)
-        .set('Authorization', `Bearer ${userToken}`)
+        .set('Cookie', userCookies)
+        .set('X-CSRF-Token', userCsrfToken!)
         .expect(200);
 
       expect(response.body).toMatchObject({
@@ -394,7 +425,8 @@ describe('Accounts API Integration Tests (HTTP)', () => {
 
       const response = await request(app.getHttpServer())
         .get(`/accounts/${fakeId}`)
-        .set('Authorization', `Bearer ${userToken}`)
+        .set('Cookie', userCookies)
+        .set('X-CSRF-Token', userCsrfToken!)
         .expect(404);
 
       expect(response.body.message).toContain('not found');
@@ -403,7 +435,8 @@ describe('Accounts API Integration Tests (HTTP)', () => {
     it('should return 403 when user does not own account', async () => {
       const response = await request(app.getHttpServer())
         .get(`/accounts/${testAccountId}`)
-        .set('Authorization', `Bearer ${user2Token}`)
+        .set('Cookie', user2Cookies)
+        .set('X-CSRF-Token', user2CsrfToken!)
         .expect(403);
 
       expect(response.body.message).toContain('Access denied');
@@ -412,7 +445,8 @@ describe('Accounts API Integration Tests (HTTP)', () => {
     it('should allow admin to access any account', async () => {
       const response = await request(app.getHttpServer())
         .get(`/accounts/${testAccountId}`)
-        .set('Authorization', `Bearer ${adminToken}`)
+        .set('Cookie', adminCookies)
+        .set('X-CSRF-Token', adminCsrfToken!)
         .expect(200);
 
       expect(response.body.id).toBe(testAccountId);
@@ -421,7 +455,8 @@ describe('Accounts API Integration Tests (HTTP)', () => {
     it('should return 400 for invalid UUID format', async () => {
       await request(app.getHttpServer())
         .get('/accounts/invalid-uuid')
-        .set('Authorization', `Bearer ${userToken}`)
+        .set('Cookie', userCookies)
+        .set('X-CSRF-Token', userCsrfToken!)
         .expect(400);
     });
   });
@@ -430,7 +465,8 @@ describe('Accounts API Integration Tests (HTTP)', () => {
     beforeEach(async () => {
       const createResponse = await request(app.getHttpServer())
         .post('/accounts')
-        .set('Authorization', `Bearer ${userToken}`)
+        .set('Cookie', userCookies)
+        .set('X-CSRF-Token', userCsrfToken!)
         .send({
           name: 'Original Name',
           type: AccountType.CHECKING,
@@ -456,7 +492,8 @@ describe('Accounts API Integration Tests (HTTP)', () => {
 
       const response = await request(app.getHttpServer())
         .patch(`/accounts/${testAccountId}`)
-        .set('Authorization', `Bearer ${userToken}`)
+        .set('Cookie', userCookies)
+        .set('X-CSRF-Token', userCsrfToken!)
         .send(updateDto)
         .expect(200);
 
@@ -474,7 +511,8 @@ describe('Accounts API Integration Tests (HTTP)', () => {
 
       const response = await request(app.getHttpServer())
         .patch(`/accounts/${testAccountId}`)
-        .set('Authorization', `Bearer ${userToken}`)
+        .set('Cookie', userCookies)
+        .set('X-CSRF-Token', userCsrfToken!)
         .send(updateDto)
         .expect(200);
 
@@ -485,7 +523,8 @@ describe('Accounts API Integration Tests (HTTP)', () => {
     it('should return 403 when user does not own account', async () => {
       await request(app.getHttpServer())
         .patch(`/accounts/${testAccountId}`)
-        .set('Authorization', `Bearer ${user2Token}`)
+        .set('Cookie', user2Cookies)
+        .set('X-CSRF-Token', user2CsrfToken!)
         .send({ name: 'Hacked Name' })
         .expect(403);
 
@@ -499,7 +538,8 @@ describe('Accounts API Integration Tests (HTTP)', () => {
     it('should allow admin to update any account', async () => {
       const response = await request(app.getHttpServer())
         .patch(`/accounts/${testAccountId}`)
-        .set('Authorization', `Bearer ${adminToken}`)
+        .set('Cookie', adminCookies)
+        .set('X-CSRF-Token', adminCsrfToken!)
         .send({ name: 'Admin Updated' })
         .expect(200);
 
@@ -513,7 +553,8 @@ describe('Accounts API Integration Tests (HTTP)', () => {
 
       await request(app.getHttpServer())
         .patch(`/accounts/${testAccountId}`)
-        .set('Authorization', `Bearer ${userToken}`)
+        .set('Cookie', userCookies)
+        .set('X-CSRF-Token', userCsrfToken!)
         .send(invalidDto)
         .expect(400);
     });
@@ -523,7 +564,8 @@ describe('Accounts API Integration Tests (HTTP)', () => {
     beforeEach(async () => {
       const createResponse = await request(app.getHttpServer())
         .post('/accounts')
-        .set('Authorization', `Bearer ${userToken}`)
+        .set('Cookie', userCookies)
+        .set('X-CSRF-Token', userCsrfToken!)
         .send({
           name: 'Account to Delete',
           type: AccountType.CHECKING,
@@ -543,7 +585,8 @@ describe('Accounts API Integration Tests (HTTP)', () => {
     it('should delete account when user owns it', async () => {
       await request(app.getHttpServer())
         .delete(`/accounts/${testAccountId}`)
-        .set('Authorization', `Bearer ${userToken}`)
+        .set('Cookie', userCookies)
+        .set('X-CSRF-Token', userCsrfToken!)
         .expect(204);  // DELETE returns 204 No Content
 
       // Verify deletion
@@ -556,7 +599,8 @@ describe('Accounts API Integration Tests (HTTP)', () => {
     it('should return 403 when user does not own account', async () => {
       await request(app.getHttpServer())
         .delete(`/accounts/${testAccountId}`)
-        .set('Authorization', `Bearer ${user2Token}`)
+        .set('Cookie', user2Cookies)
+        .set('X-CSRF-Token', user2CsrfToken!)
         .expect(403);
 
       // Verify account still exists
@@ -569,7 +613,8 @@ describe('Accounts API Integration Tests (HTTP)', () => {
     it('should allow admin to delete any account', async () => {
       await request(app.getHttpServer())
         .delete(`/accounts/${testAccountId}`)
-        .set('Authorization', `Bearer ${adminToken}`)
+        .set('Cookie', adminCookies)
+        .set('X-CSRF-Token', adminCsrfToken!)
         .expect(204);  // DELETE returns 204 No Content
 
       const account = await prisma.account.findUnique({
@@ -583,7 +628,8 @@ describe('Accounts API Integration Tests (HTTP)', () => {
 
       await request(app.getHttpServer())
         .delete(`/accounts/${fakeId}`)
-        .set('Authorization', `Bearer ${userToken}`)
+        .set('Cookie', userCookies)
+        .set('X-CSRF-Token', userCsrfToken!)
         .expect(404);
     });
   });
@@ -592,7 +638,8 @@ describe('Accounts API Integration Tests (HTTP)', () => {
     beforeEach(async () => {
       const createResponse = await request(app.getHttpServer())
         .post('/accounts')
-        .set('Authorization', `Bearer ${userToken}`)
+        .set('Cookie', userCookies)
+        .set('X-CSRF-Token', userCsrfToken!)
         .send({
           name: 'Balance Test',
           type: AccountType.CHECKING,
@@ -613,7 +660,8 @@ describe('Accounts API Integration Tests (HTTP)', () => {
     it('should return balance when user owns account', async () => {
       const response = await request(app.getHttpServer())
         .get(`/accounts/${testAccountId}/balance`)
-        .set('Authorization', `Bearer ${userToken}`)
+        .set('Cookie', userCookies)
+        .set('X-CSRF-Token', userCsrfToken!)
         .expect(200);
 
       expect(response.body).toMatchObject({
@@ -626,7 +674,8 @@ describe('Accounts API Integration Tests (HTTP)', () => {
     it('should return 403 when user does not own account', async () => {
       await request(app.getHttpServer())
         .get(`/accounts/${testAccountId}/balance`)
-        .set('Authorization', `Bearer ${user2Token}`)
+        .set('Cookie', user2Cookies)
+        .set('X-CSRF-Token', user2CsrfToken!)
         .expect(403);
     });
   });
@@ -635,7 +684,8 @@ describe('Accounts API Integration Tests (HTTP)', () => {
     beforeEach(async () => {
       await request(app.getHttpServer())
         .post('/accounts')
-        .set('Authorization', `Bearer ${userToken}`)
+        .set('Cookie', userCookies)
+        .set('X-CSRF-Token', userCsrfToken!)
         .send({
           name: 'Checking',
           type: AccountType.CHECKING,
@@ -645,7 +695,8 @@ describe('Accounts API Integration Tests (HTTP)', () => {
 
       await request(app.getHttpServer())
         .post('/accounts')
-        .set('Authorization', `Bearer ${userToken}`)
+        .set('Cookie', userCookies)
+        .set('X-CSRF-Token', userCsrfToken!)
         .send({
           name: 'Savings',
           type: AccountType.SAVINGS,
@@ -663,7 +714,8 @@ describe('Accounts API Integration Tests (HTTP)', () => {
     it('should return summary statistics for user accounts', async () => {
       const response = await request(app.getHttpServer())
         .get('/accounts/summary')
-        .set('Authorization', `Bearer ${userToken}`)
+        .set('Cookie', userCookies)
+        .set('X-CSRF-Token', userCsrfToken!)
         .expect(200);
 
       expect(response.body).toMatchObject({
@@ -691,9 +743,10 @@ describe('Accounts API Integration Tests (HTTP)', () => {
         data: { status: 'ACTIVE' },
       });
 
+      const newUserCookies = getCookieHeader(newUserResponse);
       const response = await request(app.getHttpServer())
         .get('/accounts/summary')
-        .set('Authorization', `Bearer ${newUserResponse.body.accessToken}`)
+        .set('Cookie', newUserCookies)
         .expect(200);
 
       expect(response.body).toMatchObject({
@@ -710,7 +763,8 @@ describe('Accounts API Integration Tests (HTTP)', () => {
       // 1. Create account
       const createResponse = await request(app.getHttpServer())
         .post('/accounts')
-        .set('Authorization', `Bearer ${userToken}`)
+        .set('Cookie', userCookies)
+        .set('X-CSRF-Token', userCsrfToken!)
         .send({
           name: 'Lifecycle Test Account',
           type: AccountType.CHECKING,
@@ -725,7 +779,8 @@ describe('Accounts API Integration Tests (HTTP)', () => {
       // 2. Read account
       const readResponse = await request(app.getHttpServer())
         .get(`/accounts/${accountId}`)
-        .set('Authorization', `Bearer ${userToken}`)
+        .set('Cookie', userCookies)
+        .set('X-CSRF-Token', userCsrfToken!)
         .expect(200);
 
       expect(readResponse.body.id).toBe(accountId);
@@ -733,7 +788,8 @@ describe('Accounts API Integration Tests (HTTP)', () => {
       // 3. Update account
       const updateResponse = await request(app.getHttpServer())
         .patch(`/accounts/${accountId}`)
-        .set('Authorization', `Bearer ${userToken}`)
+        .set('Cookie', userCookies)
+        .set('X-CSRF-Token', userCsrfToken!)
         .send({ currentBalance: 1500 })
         .expect(200);
 
@@ -742,7 +798,8 @@ describe('Accounts API Integration Tests (HTTP)', () => {
       // 4. Check balance
       const balanceResponse = await request(app.getHttpServer())
         .get(`/accounts/${accountId}/balance`)
-        .set('Authorization', `Bearer ${userToken}`)
+        .set('Cookie', userCookies)
+        .set('X-CSRF-Token', userCsrfToken!)
         .expect(200);
 
       expect(balanceResponse.body.currentBalance).toBe(1500);
@@ -750,13 +807,15 @@ describe('Accounts API Integration Tests (HTTP)', () => {
       // 5. Delete account
       await request(app.getHttpServer())
         .delete(`/accounts/${accountId}`)
-        .set('Authorization', `Bearer ${userToken}`)
+        .set('Cookie', userCookies)
+        .set('X-CSRF-Token', userCsrfToken!)
         .expect(204);  // DELETE returns 204 No Content
 
       // 6. Verify deletion
       await request(app.getHttpServer())
         .get(`/accounts/${accountId}`)
-        .set('Authorization', `Bearer ${userToken}`)
+        .set('Cookie', userCookies)
+        .set('X-CSRF-Token', userCsrfToken!)
         .expect(404);
     });
   });

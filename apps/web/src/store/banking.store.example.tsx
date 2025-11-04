@@ -17,6 +17,20 @@ import {
   useBankingLoading,
 } from './banking.store';
 
+interface BankAccount {
+  id: string;
+  name: string;
+  balance: number;
+  currency: string;
+  syncStatus: string;
+  lastSynced?: string;
+}
+
+interface AccountCardProps {
+  account: BankAccount;
+  onSync: () => void;
+}
+
 // =============================================================================
 // Example 1: Account List Component
 // =============================================================================
@@ -58,7 +72,7 @@ export function AccountListExample() {
 /**
  * Single account card with sync button
  */
-function AccountCard({ account, onSync }: any) {
+function AccountCard({ account, onSync }: AccountCardProps) {
   const isSyncing = useSyncStatus(account.id);
   const syncError = useSyncError(account.id);
 
@@ -125,7 +139,6 @@ export function BankLinkingFlowExample() {
           .then(() => {
             // Success! Accounts are now linked
             sessionStorage.removeItem('banking_connection_id');
-            console.log('Bank accounts linked successfully');
           })
           .catch((err) => {
             console.error('Failed to complete linking:', err);
@@ -242,10 +255,10 @@ export function SyncAllAccountsExample() {
     setSyncingCount(0);
 
     // Count successes and failures
-    const succeeded = results.filter((r) => r.status === 'fulfilled').length;
-    const failed = results.filter((r) => r.status === 'rejected').length;
+    const _succeeded = results.filter((r) => r.status === 'fulfilled').length;
+    const _failed = results.filter((r) => r.status === 'rejected').length;
 
-    console.log(`Sync complete: ${succeeded} succeeded, ${failed} failed`);
+    // Sync complete - accounts synced
   };
 
   const isSyncing = syncingCount > 0;
@@ -277,7 +290,6 @@ export function RevokeConnectionExample({ connectionId }: { connectionId: string
       clearError();
       await revokeConnection(connectionId);
       setShowConfirm(false);
-      console.log('Connection revoked successfully');
     } catch (err) {
       console.error('Failed to revoke connection:', err);
     }
@@ -385,7 +397,7 @@ export function OptimisticSyncExample({ accountId }: { accountId: string }) {
 // Exports
 // =============================================================================
 
-export default {
+const bankingStoreExamples = {
   AccountListExample,
   BankLinkingFlowExample,
   DashboardSummaryExample,
@@ -394,3 +406,5 @@ export default {
   ErrorHandlingExample,
   OptimisticSyncExample,
 };
+
+export default bankingStoreExamples;

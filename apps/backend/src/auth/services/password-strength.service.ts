@@ -29,6 +29,7 @@ export class PasswordStrengthService {
     const hasLower = /[a-z]/.test(password);
     const hasUpper = /[A-Z]/.test(password);
     const hasNumbers = /\d/.test(password);
+    // eslint-disable-next-line security/detect-non-literal-regexp -- Using predefined escaped constant SPECIAL_CHARACTERS
     const hasSpecial = new RegExp(`[${SPECIAL_CHARACTERS.replace(/[[\]\\]/g, '\\$&')}]`).test(password);
 
     if (hasLower) score += 10;
@@ -118,7 +119,9 @@ export class PasswordStrengthService {
 
   private hasSequentialChars(password: string): boolean {
     const sequences = [
+      // eslint-disable-next-line no-secrets/no-secrets -- Alphabet sequence for detecting weak passwords, not a secret
       'abcdefghijklmnopqrstuvwxyz',
+      // eslint-disable-next-line no-secrets/no-secrets -- Alphabet sequence for detecting weak passwords, not a secret
       'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
       '0123456789',
       'qwertyuiop',
@@ -188,7 +191,9 @@ export class PasswordStrengthService {
     }
 
     if (policy.requireSpecialChars) {
+      // eslint-disable-next-line security/detect-non-literal-regexp -- Using predefined escaped constant SPECIAL_CHARACTERS
       const specialCharRegex = new RegExp(`[${SPECIAL_CHARACTERS.replace(/[[\]\\]/g, '\\$&')}]`);
+      // eslint-disable-next-line security/detect-non-literal-regexp -- Using predefined escaped constant from specialCharRegex
       const specialMatches = password.match(new RegExp(specialCharRegex, 'g'));
       if (!specialMatches || specialMatches.length < policy.minSpecialChars) {
         violations.push(`Password must contain at least ${policy.minSpecialChars} special character(s)`);

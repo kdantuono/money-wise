@@ -73,12 +73,54 @@ export const saltEdgeConfig = registerAs('saltedge', () => {
 });
 
 /**
+ * Validate that a file path is within the allowed config directory
+ * Prevents directory traversal attacks via environment variables
+ *
+ * @param targetPath - Path to validate
+ * @returns Normalized path if valid
+ * @throws Error if path is outside allowed directory
+ */
+function validateConfigPath(targetPath: string): string {
+  // Define allowed base directory (config and secrets)
+  const allowedBases = [
+    path.normalize(path.resolve(process.cwd(), 'apps/backend/config')),
+    path.normalize(path.resolve(process.cwd(), 'apps/backend/.secrets')),
+    path.normalize(path.resolve(process.cwd(), '.secrets')),
+  ];
+
+  // Normalize and resolve the target path
+  const normalizedPath = path.normalize(path.resolve(targetPath));
+
+  // Check if path is within any allowed base directory
+  // Using path.relative() instead of startsWith() to prevent bypass via similar directory names
+  // e.g., "/app/backend/config-evil/" would pass startsWith("/app/backend/config") but fail this check
+  const isAllowed = allowedBases.some(base => {
+    const relative = path.relative(base, normalizedPath);
+    // Path is allowed if:
+    // - relative path exists (not base directory itself)
+    // - doesn't start with '..' (not going up from base)
+    // - is not absolute (shouldn't happen after normalization, but extra safety)
+    return relative && !relative.startsWith('..') && !path.isAbsolute(relative);
+  });
+
+  if (!isAllowed) {
+    throw new Error(
+      `Security: Invalid config path "${targetPath}". ` +
+      `Path must be within allowed directories: ${allowedBases.join(', ')}`,
+    );
+  }
+
+  return normalizedPath;
+}
+
+/**
  * Load RSA private key from file system
  *
  * Security Notes:
  * - Private key should be in PEM format
  * - File should have restricted permissions (chmod 600)
  * - Key is loaded into memory - never logged or exposed
+ * - Path traversal protection: validates path is within allowed directories
  *
  * @param keyPath - Absolute or relative path to private key file
  * @returns Private key content in PEM format, or null if not found/disabled
@@ -99,23 +141,30 @@ function loadPrivateKey(keyPath?: string): string | null {
       ? keyPath
       : path.join(process.cwd(), keyPath);
 
+    // Validate path is within allowed directories (prevent directory traversal)
+    const validatedPath = validateConfigPath(resolvedPath);
+
     // Check file exists
-    if (!fs.existsSync(resolvedPath)) {
-      throw new Error(`Private key file not found at: ${resolvedPath}`);
+    // eslint-disable-next-line security/detect-non-literal-fs-filename -- Path validated by validateConfigPath()
+    if (!fs.existsSync(validatedPath)) {
+      throw new Error(`Private key file not found at: ${validatedPath}`);
     }
 
     // Read file
-    const keyContent = fs.readFileSync(resolvedPath, 'utf8');
+    // eslint-disable-next-line security/detect-non-literal-fs-filename -- Path validated by validateConfigPath()
+    const keyContent = fs.readFileSync(validatedPath, 'utf8');
 
     // Validate PEM format
     if (!keyContent.includes('BEGIN') || !keyContent.includes('END')) {
-      throw new Error(`Invalid private key format at: ${resolvedPath}. Expected PEM format.`);
+      throw new Error(`Invalid private key format at: ${validatedPath}. Expected PEM format.`);
     }
 
-    console.log(`✅ Loaded SaltEdge private key from: ${resolvedPath}`);
+    // eslint-disable-next-line no-console -- Startup configuration logging before logger initialization
+    console.log(`✅ Loaded SaltEdge private key from: ${validatedPath}`);
     return keyContent;
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
+    // eslint-disable-next-line no-console -- Startup configuration logging before logger initialization
     console.error(`❌ Failed to load SaltEdge private key: ${message}`);
     throw error;
   }

@@ -140,16 +140,17 @@ export class AuthSecurityService {
         name: familyName
       });
 
-      // Create user (inactive until email verification)
+      // Create user with ACTIVE status (MVP: email verification bypassed)
       // MIGRATION: userRepository.create() + save() → prismaUserService.createWithHash()
       // Note: Using createWithHash since password is already hashed by PasswordSecurityService
+      // TODO: Re-enable email verification for production by changing status to INACTIVE
       const savedUser = await this.prismaUserService.createWithHash({
         email: email.toLowerCase(),
         firstName,
         lastName,
         passwordHash,
         familyId: family.id, // Link user to newly created family
-        status: UserStatus.INACTIVE, // Require email verification
+        status: UserStatus.ACTIVE, // MVP: Auto-activate for immediate access (bypass email verification)
       });
 
       // Generate email verification token

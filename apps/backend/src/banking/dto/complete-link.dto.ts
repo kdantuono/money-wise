@@ -99,7 +99,7 @@ export class BankingAccountDto {
   /**
    * Additional metadata from provider
    */
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 /**

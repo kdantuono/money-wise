@@ -110,7 +110,7 @@ export class CreateAccountDto {
 
   @ApiProperty({ description: 'Plaid metadata', required: false })
   @IsOptional()
-  plaidMetadata?: any;
+  plaidMetadata?: Record<string, unknown>;
 
   @ApiProperty({ description: 'Enable automatic sync', default: true, required: false })
   @IsOptional()

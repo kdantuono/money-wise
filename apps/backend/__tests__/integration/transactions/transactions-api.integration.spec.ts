@@ -31,6 +31,11 @@ import {
   UserRole,
   PrismaClient
 } from '../../../generated/prisma';
+import {
+  getCookieHeader,
+  extractCsrfToken,
+  assertCookieAuthResponse,
+} from '../../helpers/cookie-auth.helper';
 
 describe('Transactions API Integration Tests (HTTP)', () => {
   let app: INestApplication;
@@ -45,10 +50,13 @@ describe('Transactions API Integration Tests (HTTP)', () => {
   let testAccount2Id: string;
   let testTransactionId: string;
 
-  // Authentication tokens
-  let userToken: string;
-  let user2Token: string;
-  let adminToken: string;
+  // Authentication cookies and CSRF tokens
+  let userCookies: string;
+  let user2Cookies: string;
+  let adminCookies: string;
+  let userCsrfToken: string | null;
+  let user2CsrfToken: string | null;
+  let adminCsrfToken: string | null;
 
   beforeAll(async () => {
     prisma = await setupTestDatabase();
@@ -61,6 +69,11 @@ describe('Transactions API Integration Tests (HTTP)', () => {
       .compile();
 
     app = moduleFixture.createNestApplication();
+
+    // CRITICAL: Initialize cookie-parser middleware (matches main.ts)
+    const sessionSecret = process.env.SESSION_SECRET || 'test-session-secret-min-32-characters-long';
+    const cookieParserMiddleware = (await import('cookie-parser')).default;
+    app.use(cookieParserMiddleware(sessionSecret));
 
     // Apply global pipes (same as main.ts)
     app.useGlobalPipes(
@@ -84,7 +97,7 @@ describe('Transactions API Integration Tests (HTTP)', () => {
     });
     testFamilyId2 = family2.id;
 
-    // Create test users and get JWT tokens
+    // Create test users and get cookies/CSRF tokens
     const registerResponse1 = await request(app.getHttpServer())
       .post('/auth/register')
       .send({
@@ -94,8 +107,10 @@ describe('Transactions API Integration Tests (HTTP)', () => {
         lastName: 'User1',
       });
 
+    assertCookieAuthResponse(registerResponse1);
     testUserId = registerResponse1.body.user.id;
-    userToken = registerResponse1.body.accessToken;
+    userCookies = getCookieHeader(registerResponse1);
+    userCsrfToken = extractCsrfToken(registerResponse1);
 
     await prisma.user.update({
       where: { id: testUserId },
@@ -114,8 +129,10 @@ describe('Transactions API Integration Tests (HTTP)', () => {
         lastName: 'User2',
       });
 
+    assertCookieAuthResponse(registerResponse2);
     testUserId2 = registerResponse2.body.user.id;
-    user2Token = registerResponse2.body.accessToken;
+    user2Cookies = getCookieHeader(registerResponse2);
+    user2CsrfToken = extractCsrfToken(registerResponse2);
 
     await prisma.user.update({
       where: { id: testUserId2 },
@@ -135,8 +152,10 @@ describe('Transactions API Integration Tests (HTTP)', () => {
         lastName: 'Admin',
       });
 
+    assertCookieAuthResponse(adminRegisterResponse);
     const adminUserId = adminRegisterResponse.body.user.id;
-    adminToken = adminRegisterResponse.body.accessToken;
+    adminCookies = getCookieHeader(adminRegisterResponse);
+    adminCsrfToken = extractCsrfToken(adminRegisterResponse);
 
     await prisma.user.update({
       where: { id: adminUserId },
@@ -201,7 +220,8 @@ describe('Transactions API Integration Tests (HTTP)', () => {
     it('should create transaction for authenticated user', async () => {
       const response = await request(app.getHttpServer())
         .post('/transactions')
-        .set('Authorization', `Bearer ${userToken}`)
+        .set('Cookie', userCookies)
+        .set('X-CSRF-Token', userCsrfToken!)
         .send({
           accountId: testAccountId,
           amount: 75.50,
@@ -231,7 +251,8 @@ describe('Transactions API Integration Tests (HTTP)', () => {
     it('should validate required fields', async () => {
       const response = await request(app.getHttpServer())
         .post('/transactions')
-        .set('Authorization', `Bearer ${userToken}`)
+        .set('Cookie', userCookies)
+        .set('X-CSRF-Token', userCsrfToken!)
         .send({
           // Missing required fields
           amount: 100,
@@ -250,7 +271,8 @@ describe('Transactions API Integration Tests (HTTP)', () => {
     it('should reject negative amount', async () => {
       await request(app.getHttpServer())
         .post('/transactions')
-        .set('Authorization', `Bearer ${userToken}`)
+        .set('Cookie', userCookies)
+        .set('X-CSRF-Token', userCsrfToken!)
         .send({
           accountId: testAccountId,
           amount: -50.00,
@@ -265,7 +287,8 @@ describe('Transactions API Integration Tests (HTTP)', () => {
     it('should reject transaction for other user account', async () => {
       await request(app.getHttpServer())
         .post('/transactions')
-        .set('Authorization', `Bearer ${userToken}`)
+        .set('Cookie', userCookies)
+        .set('X-CSRF-Token', userCsrfToken!)
         .send({
           accountId: testAccount2Id, // Other user's account
           amount: 100.00,
@@ -280,7 +303,8 @@ describe('Transactions API Integration Tests (HTTP)', () => {
     it('should create income transaction (CREDIT)', async () => {
       const response = await request(app.getHttpServer())
         .post('/transactions')
-        .set('Authorization', `Bearer ${userToken}`)
+        .set('Cookie', userCookies)
+        .set('X-CSRF-Token', userCsrfToken!)
         .send({
           accountId: testAccountId,
           amount: 2500.00,
@@ -299,7 +323,8 @@ describe('Transactions API Integration Tests (HTTP)', () => {
     it('should set default values', async () => {
       const response = await request(app.getHttpServer())
         .post('/transactions')
-        .set('Authorization', `Bearer ${userToken}`)
+        .set('Cookie', userCookies)
+        .set('X-CSRF-Token', userCsrfToken!)
         .send({
           accountId: testAccountId,
           amount: 25.00,
@@ -368,7 +393,7 @@ describe('Transactions API Integration Tests (HTTP)', () => {
     it('should return only user transactions', async () => {
       const response = await request(app.getHttpServer())
         .get('/transactions')
-        .set('Authorization', `Bearer ${userToken}`)
+        .set('Cookie', userCookies)
         .expect(200);
 
       expect(response.body).toHaveLength(2);
@@ -378,7 +403,7 @@ describe('Transactions API Integration Tests (HTTP)', () => {
     it('should filter by account', async () => {
       const response = await request(app.getHttpServer())
         .get(`/transactions?accountId=${testAccountId}`)
-        .set('Authorization', `Bearer ${userToken}`)
+        .set('Cookie', userCookies)
         .expect(200);
 
       expect(response.body).toHaveLength(2);
@@ -387,7 +412,7 @@ describe('Transactions API Integration Tests (HTTP)', () => {
     it('should filter by type', async () => {
       const response = await request(app.getHttpServer())
         .get(`/transactions?type=${TransactionType.CREDIT}`)
-        .set('Authorization', `Bearer ${userToken}`)
+        .set('Cookie', userCookies)
         .expect(200);
 
       expect(response.body).toHaveLength(1);
@@ -397,7 +422,7 @@ describe('Transactions API Integration Tests (HTTP)', () => {
     it('should filter by date range', async () => {
       const response = await request(app.getHttpServer())
         .get('/transactions?startDate=2024-01-10&endDate=2024-01-20')
-        .set('Authorization', `Bearer ${userToken}`)
+        .set('Cookie', userCookies)
         .expect(200);
 
       expect(response.body).toHaveLength(1);
@@ -407,7 +432,7 @@ describe('Transactions API Integration Tests (HTTP)', () => {
     it('should search by description', async () => {
       const response = await request(app.getHttpServer())
         .get('/transactions?search=salary')
-        .set('Authorization', `Bearer ${userToken}`)
+        .set('Cookie', userCookies)
         .expect(200);
 
       expect(response.body).toHaveLength(1);
@@ -417,7 +442,7 @@ describe('Transactions API Integration Tests (HTTP)', () => {
     it('should allow admin to see all transactions', async () => {
       const response = await request(app.getHttpServer())
         .get('/transactions')
-        .set('Authorization', `Bearer ${adminToken}`)
+        .set('Cookie', adminCookies)
         .expect(200);
 
       expect(response.body.length).toBeGreaterThanOrEqual(3);
@@ -450,7 +475,7 @@ describe('Transactions API Integration Tests (HTTP)', () => {
     it('should return transaction details', async () => {
       const response = await request(app.getHttpServer())
         .get(`/transactions/${testTransactionId}`)
-        .set('Authorization', `Bearer ${userToken}`)
+        .set('Cookie', userCookies)
         .expect(200);
 
       expect(response.body).toMatchObject({
@@ -463,7 +488,7 @@ describe('Transactions API Integration Tests (HTTP)', () => {
     it('should return 404 for non-existent transaction', async () => {
       await request(app.getHttpServer())
         .get('/transactions/00000000-0000-0000-0000-000000000000')
-        .set('Authorization', `Bearer ${userToken}`)
+        .set('Cookie', userCookies)
         .expect(404);
     });
 
@@ -483,14 +508,14 @@ describe('Transactions API Integration Tests (HTTP)', () => {
 
       await request(app.getHttpServer())
         .get(`/transactions/${otherTransaction.id}`)
-        .set('Authorization', `Bearer ${userToken}`)
+        .set('Cookie', userCookies)
         .expect(403);
     });
 
     it('should allow admin to access any transaction', async () => {
       const response = await request(app.getHttpServer())
         .get(`/transactions/${testTransactionId}`)
-        .set('Authorization', `Bearer ${adminToken}`)
+        .set('Cookie', adminCookies)
         .expect(200);
 
       expect(response.body.id).toBe(testTransactionId);
@@ -524,7 +549,8 @@ describe('Transactions API Integration Tests (HTTP)', () => {
     it('should update transaction description', async () => {
       const response = await request(app.getHttpServer())
         .patch(`/transactions/${testTransactionId}`)
-        .set('Authorization', `Bearer ${userToken}`)
+        .set('Cookie', userCookies)
+        .set('X-CSRF-Token', userCsrfToken!)
         .send({ description: 'Updated description' })
         .expect(200);
 
@@ -535,7 +561,8 @@ describe('Transactions API Integration Tests (HTTP)', () => {
     it('should update partial fields', async () => {
       const response = await request(app.getHttpServer())
         .patch(`/transactions/${testTransactionId}`)
-        .set('Authorization', `Bearer ${userToken}`)
+        .set('Cookie', userCookies)
+        .set('X-CSRF-Token', userCsrfToken!)
         .send({
           merchantName: 'Updated Merchant',
           notes: 'Added notes'
@@ -563,7 +590,8 @@ describe('Transactions API Integration Tests (HTTP)', () => {
 
       await request(app.getHttpServer())
         .patch(`/transactions/${otherTransaction.id}`)
-        .set('Authorization', `Bearer ${userToken}`)
+        .set('Cookie', userCookies)
+        .set('X-CSRF-Token', userCsrfToken!)
         .send({ description: 'Hacked' })
         .expect(403);
     });
@@ -571,7 +599,8 @@ describe('Transactions API Integration Tests (HTTP)', () => {
     it('should allow admin to update any transaction', async () => {
       const response = await request(app.getHttpServer())
         .patch(`/transactions/${testTransactionId}`)
-        .set('Authorization', `Bearer ${adminToken}`)
+        .set('Cookie', adminCookies)
+        .set('X-CSRF-Token', adminCsrfToken!)
         .send({ description: 'Admin updated' })
         .expect(200);
 
@@ -605,7 +634,8 @@ describe('Transactions API Integration Tests (HTTP)', () => {
     it('should delete transaction', async () => {
       await request(app.getHttpServer())
         .delete(`/transactions/${testTransactionId}`)
-        .set('Authorization', `Bearer ${userToken}`)
+        .set('Cookie', userCookies)
+        .set('X-CSRF-Token', userCsrfToken!)
         .expect(204);
 
       // Verify deletion
@@ -631,7 +661,8 @@ describe('Transactions API Integration Tests (HTTP)', () => {
 
       await request(app.getHttpServer())
         .delete(`/transactions/${otherTransaction.id}`)
-        .set('Authorization', `Bearer ${userToken}`)
+        .set('Cookie', userCookies)
+        .set('X-CSRF-Token', userCsrfToken!)
         .expect(403);
 
       // Verify still exists
@@ -644,14 +675,16 @@ describe('Transactions API Integration Tests (HTTP)', () => {
     it('should return 404 for non-existent transaction', async () => {
       await request(app.getHttpServer())
         .delete('/transactions/00000000-0000-0000-0000-000000000000')
-        .set('Authorization', `Bearer ${userToken}`)
+        .set('Cookie', userCookies)
+        .set('X-CSRF-Token', userCsrfToken!)
         .expect(404);
     });
 
     it('should allow admin to delete any transaction', async () => {
       await request(app.getHttpServer())
         .delete(`/transactions/${testTransactionId}`)
-        .set('Authorization', `Bearer ${adminToken}`)
+        .set('Cookie', adminCookies)
+        .set('X-CSRF-Token', adminCsrfToken!)
         .expect(204);
 
       const transaction = await prisma.transaction.findUnique({
@@ -666,7 +699,8 @@ describe('Transactions API Integration Tests (HTTP)', () => {
       // 1. Create transaction
       const createResponse = await request(app.getHttpServer())
         .post('/transactions')
-        .set('Authorization', `Bearer ${userToken}`)
+        .set('Cookie', userCookies)
+        .set('X-CSRF-Token', userCsrfToken!)
         .send({
           accountId: testAccountId,
           amount: 150.00,
@@ -680,18 +714,19 @@ describe('Transactions API Integration Tests (HTTP)', () => {
 
       const transactionId = createResponse.body.id;
 
-      // 2. Read transaction
+      // 2. Read transaction (GET - no CSRF token)
       const readResponse = await request(app.getHttpServer())
         .get(`/transactions/${transactionId}`)
-        .set('Authorization', `Bearer ${userToken}`)
+        .set('Cookie', userCookies)
         .expect(200);
 
       expect(readResponse.body.id).toBe(transactionId);
 
-      // 3. Update transaction
+      // 3. Update transaction (PATCH - requires CSRF token)
       const updateResponse = await request(app.getHttpServer())
         .patch(`/transactions/${transactionId}`)
-        .set('Authorization', `Bearer ${userToken}`)
+        .set('Cookie', userCookies)
+        .set('X-CSRF-Token', userCsrfToken!)
         .send({
           description: 'Updated lifecycle',
           notes: 'Added notes during lifecycle test'
@@ -701,16 +736,17 @@ describe('Transactions API Integration Tests (HTTP)', () => {
       expect(updateResponse.body.description).toBe('Updated lifecycle');
       expect(updateResponse.body.notes).toBe('Added notes during lifecycle test');
 
-      // 4. Delete transaction
+      // 4. Delete transaction (DELETE - requires CSRF token)
       await request(app.getHttpServer())
         .delete(`/transactions/${transactionId}`)
-        .set('Authorization', `Bearer ${userToken}`)
+        .set('Cookie', userCookies)
+        .set('X-CSRF-Token', userCsrfToken!)
         .expect(204);
 
-      // 5. Verify deletion
+      // 5. Verify deletion (GET - no CSRF token)
       await request(app.getHttpServer())
         .get(`/transactions/${transactionId}`)
-        .set('Authorization', `Bearer ${userToken}`)
+        .set('Cookie', userCookies)
         .expect(404);
     });
   });

@@ -6,7 +6,7 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor } from '../../utils/test-utils';
-import { ErrorBoundary, useErrorBoundary } from '../../../components/ui/error-boundary';
+import { ErrorBoundary, useErrorBoundary } from '../../../src/components/ui/error-boundary';
 
 // Component that throws an error for testing
 const ThrowError = ({ shouldThrow = true, error = 'Test error' }: { shouldThrow?: boolean; error?: string }) => {

@@ -40,6 +40,72 @@ const nextConfig = {
     // Run ESLint during builds
     ignoreDuringBuilds: false,
   },
+
+  // Security Headers - Defense-in-depth protection for frontend
+  // These headers complement backend security and protect the user's browser
+  async headers() {
+    const isProduction = process.env.NODE_ENV === 'production';
+
+    // Base security headers applied to all routes
+    const securityHeaders = [
+      {
+        // X-DNS-Prefetch-Control - Controls browser DNS prefetching
+        // Allow DNS prefetching for better performance
+        key: 'X-DNS-Prefetch-Control',
+        value: 'on',
+      },
+      {
+        // X-Frame-Options - Prevents clickjacking attacks
+        // DENY: Prevents page from being embedded in any iframe
+        key: 'X-Frame-Options',
+        value: 'DENY',
+      },
+      {
+        // X-Content-Type-Options - Prevents MIME type sniffing
+        // Forces browser to respect declared Content-Type header
+        key: 'X-Content-Type-Options',
+        value: 'nosniff',
+      },
+      {
+        // X-XSS-Protection - Legacy XSS protection for older browsers
+        // Modern browsers use CSP, but this provides defense-in-depth
+        key: 'X-XSS-Protection',
+        value: '1; mode=block',
+      },
+      {
+        // Referrer-Policy - Controls referrer information sent with requests
+        // origin-when-cross-origin: Send full URL for same-origin, origin only for cross-origin
+        key: 'Referrer-Policy',
+        value: 'origin-when-cross-origin',
+      },
+      {
+        // Permissions-Policy - Controls browser features and APIs
+        // Disables unnecessary features to reduce attack surface
+        key: 'Permissions-Policy',
+        value: 'geolocation=(), microphone=(), camera=(), payment=(), usb=(), magnetometer=(), gyroscope=(), speaker=()',
+      },
+    ];
+
+    // Add HSTS only in production (requires HTTPS)
+    if (isProduction) {
+      securityHeaders.push({
+        // HTTP Strict Transport Security - Forces HTTPS connections
+        // max-age=63072000: 2 years (recommended by OWASP)
+        // includeSubDomains: Apply to all subdomains
+        // preload: Allow inclusion in browser HSTS preload lists
+        key: 'Strict-Transport-Security',
+        value: 'max-age=63072000; includeSubDomains; preload',
+      });
+    }
+
+    return [
+      {
+        // Apply security headers to all routes
+        source: '/:path*',
+        headers: securityHeaders,
+      },
+    ];
+  },
 };
 
 // Sentry webpack plugin configuration for source map upload

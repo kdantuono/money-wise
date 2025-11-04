@@ -23,7 +23,7 @@ describe('Authentication API', () => {
       email: 'test@example.com',
       fullName: expect.any(String),
     });
-    expect(data.accessToken).toBe('mock-access-token');
+    // Cookie-based auth: tokens are in HttpOnly cookies, not response body
   });
 
   it('should reject invalid credentials', async () => {
@@ -64,7 +64,7 @@ describe('Authentication API', () => {
       id: expect.any(String),
       email: 'newuser@example.com',
     });
-    expect(data.accessToken).toBe('mock-access-token-new');
+    // Cookie-based auth: tokens are in HttpOnly cookies, not response body
   });
 
   it('should handle server errors', async () => {

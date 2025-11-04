@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { BankingController } from '../../../src/banking/banking.controller';
 import { BankingService } from '../../../src/banking/services/banking.service';
-import { BankingProvider, UserRole } from '../../../generated/prisma';
+import { BankingProvider, UserRole, BankingSyncStatus } from '../../../generated/prisma';
 import { CurrentUserPayload } from '../../../src/auth/types/current-user.types';
 
 /**
@@ -52,9 +52,9 @@ describe('BankingController', () => {
     bankName: 'Intesa Sanpaolo',
     balance: 5000.5,
     currency: 'EUR',
-    syncStatus: 'SYNCED',
-    lastSynced: new Date(),
-    linkedAt: new Date(),
+    syncStatus: BankingSyncStatus.SYNCED,
+    lastSynced: new Date().toISOString(),
+    linkedAt: new Date().toISOString(),
     accountNumber: 'IT60X0542811101000000123456',
     accountType: 'CHECKING',
     bankCountry: 'IT',
@@ -265,7 +265,7 @@ describe('BankingController', () => {
     it('should sync account successfully', async () => {
       const syncResult = {
         syncLogId: 'sync-123',
-        status: 'SYNCED',
+        status: BankingSyncStatus.SYNCED,
         transactionsSynced: 42,
         balanceUpdated: true,
         error: null,
@@ -319,7 +319,7 @@ describe('BankingController', () => {
     it('should handle sync failure with error message', async () => {
       const syncResult = {
         syncLogId: 'sync-123',
-        status: 'ERROR',
+        status: BankingSyncStatus.ERROR,
         transactionsSynced: 0,
         balanceUpdated: false,
         error: 'Connection expired',
@@ -329,7 +329,7 @@ describe('BankingController', () => {
 
       const result = await controller.syncAccount(mockUser, 'account-123');
 
-      expect(result.status).toBe('ERROR');
+      expect(result.status).toBe(BankingSyncStatus.ERROR);
       expect(result.error).toBe('Connection expired');
     });
 

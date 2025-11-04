@@ -1,102 +1,232 @@
 /**
  * Auth Store
  *
- * Zustand store for authentication state.
- * Manages user authentication state and operations.
+ * Zustand store for authentication state with cookie-based authentication.
+ * Manages user authentication state using HttpOnly cookies with CSRF protection.
+ *
+ * Features:
+ * - Login/Register with HttpOnly cookie authentication
+ * - CSRF token management
+ * - Session validation and restoration
+ * - Secure logout with backend notification
+ * - Comprehensive error handling
+ *
+ * Changes from JWT implementation:
+ * - Removed accessToken/refreshToken from localStorage
+ * - Added csrfToken storage and management
+ * - Cookies handled automatically by browser
+ * - Simplified token refresh (backend handles via cookies)
+ *
+ * @module stores/auth-store
  */
 
 import { create } from 'zustand';
+import { authService, type User } from '../../lib/auth';
+import { getCsrfToken, clearCsrfToken } from '@/utils/csrf';
 
-interface User {
-  id: string;
-  email: string;
-  firstName?: string;
-  lastName?: string;
-}
-
+/**
+ * Auth Store Interface
+ */
 interface AuthStore {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
-  setUser: (user: User | null) => void;
-  logout: () => void;
+
+  // Actions
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, firstName: string, lastName: string) => Promise<void>;
+  logout: () => Promise<void>;
+  validateSession: () => Promise<boolean>;
   clearError: () => void;
-  loadUserFromStorage: () => void;
+  loadUserFromStorage: () => Promise<void>;
+  setUser: (user: User | null) => void;
 }
 
-export const useAuthStore = create<AuthStore>((set) => ({
+/**
+ * Helper: Clear all auth data from storage
+ * Note: Cookies are cleared by backend, we only clear localStorage data
+ */
+const clearAuthStorage = (): void => {
+  // Only clear CSRF token - user data should never be in localStorage
+  clearCsrfToken();
+};
+
+/**
+ * Helper: Parse backend error response
+ */
+const parseErrorMessage = (error: unknown): string => {
+  if (error instanceof Response) {
+    // Will be handled by the calling function
+    return 'Request failed';
+  }
+
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  if (typeof error === 'string') {
+    return error;
+  }
+
+  return 'An unexpected error occurred';
+};
+
+/**
+ * Auth Store Implementation
+ */
+export const useAuthStore = create<AuthStore>((set, get) => ({
   user: null,
   isAuthenticated: false,
   isLoading: false,
   error: null,
+
+  /**
+   * Set user and update authentication state
+   */
   setUser: (user) => set({ user, isAuthenticated: !!user }),
-  logout: () => {
-    localStorage.removeItem('user');
-    set({ user: null, isAuthenticated: false });
-  },
+
+  /**
+   * Clear error message
+   */
   clearError: () => set({ error: null }),
-  loadUserFromStorage: () => {
+
+  /**
+   * Initialize auth state on app startup
+   * Fetches user data from backend using HttpOnly cookies if CSRF token exists
+   */
+  loadUserFromStorage: async () => {
     try {
-      const storedUser = localStorage.getItem('user');
-      if (storedUser) {
-        const user = JSON.parse(storedUser);
-        set({ user, isAuthenticated: true });
+      const csrfToken = getCsrfToken();
+
+      if (csrfToken) {
+        // CSRF token exists, try to fetch user from backend
+        // This will succeed if the HttpOnly cookie is still valid
+        await get().validateSession();
       }
     } catch (error) {
-      console.error('Failed to load user from storage:', error);
+      console.error('Failed to initialize auth state:', error);
+      clearAuthStorage();
+      set({ user: null, isAuthenticated: false });
     }
   },
+
+  /**
+   * Login user with email and password
+   * Backend sets HttpOnly cookies and returns CSRF token
+   */
   login: async (email: string, password: string) => {
     set({ isLoading: true, error: null });
+
     try {
-      // TODO: Call API to login
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
+      const { user } = await authService.login({ email, password });
 
-      if (!response.ok) {
-        throw new Error('Login failed');
-      }
-
-      const data = await response.json();
-      localStorage.setItem('user', JSON.stringify(data.user));
-      set({ user: data.user, isAuthenticated: true, isLoading: false });
-    } catch (error) {
+      // User data stored only in memory (cookies and CSRF handled by authService)
       set({
-        error: error instanceof Error ? error.message : 'Login failed',
+        user,
+        isAuthenticated: true,
         isLoading: false,
+        error: null
+      });
+    } catch (error) {
+      const errorMessage = parseErrorMessage(error);
+      set({
+        error: errorMessage,
+        isLoading: false,
+        user: null,
+        isAuthenticated: false,
       });
       throw error;
     }
   },
-  register: async (email: string, password: string, firstName: string, lastName: string) => {
+
+  /**
+   * Register new user
+   * Backend sets HttpOnly cookies and returns CSRF token
+   */
+  register: async (
+    email: string,
+    password: string,
+    firstName: string,
+    lastName: string
+  ) => {
     set({ isLoading: true, error: null });
+
     try {
-      // TODO: Call API to register
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, firstName, lastName }),
+      const { user } = await authService.register({
+        email,
+        password,
+        firstName,
+        lastName
       });
 
-      if (!response.ok) {
-        throw new Error('Registration failed');
-      }
-
-      const data = await response.json();
-      localStorage.setItem('user', JSON.stringify(data.user));
-      set({ user: data.user, isAuthenticated: true, isLoading: false });
-    } catch (error) {
+      // User data stored only in memory (cookies and CSRF handled by authService)
       set({
-        error: error instanceof Error ? error.message : 'Registration failed',
+        user,
+        isAuthenticated: true,
         isLoading: false,
+        error: null
+      });
+    } catch (error) {
+      const errorMessage = parseErrorMessage(error);
+      set({
+        error: errorMessage,
+        isLoading: false,
+        user: null,
+        isAuthenticated: false,
       });
       throw error;
+    }
+  },
+
+  /**
+   * Logout user and clear all auth data
+   * Backend clears HttpOnly cookies
+   */
+  logout: async () => {
+    try {
+      // Notify backend to clear cookies
+      await authService.logout();
+    } catch (error) {
+      // Log error but still clear local state
+      console.error('Logout API call failed:', error);
+    } finally {
+      // Always clear local state regardless of API response
+      clearAuthStorage();
+      set({
+        user: null,
+        isAuthenticated: false,
+        error: null
+      });
+    }
+  },
+
+  /**
+   * Validate current session with backend
+   * Uses HttpOnly cookie for authentication
+   *
+   * @returns true if session is valid, false otherwise
+   */
+  validateSession: async (): Promise<boolean> => {
+    const csrfToken = getCsrfToken();
+
+    if (!csrfToken) {
+      set({ user: null, isAuthenticated: false });
+      return false;
+    }
+
+    try {
+      const user = await authService.getProfile();
+
+      // User data stored only in memory
+      set({ user, isAuthenticated: true });
+
+      return true;
+    } catch (error) {
+      console.error('Session validation failed:', error);
+      clearAuthStorage();
+      set({ user: null, isAuthenticated: false });
+      return false;
     }
   },
 }));

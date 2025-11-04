@@ -38,20 +38,8 @@ import {
   useBankingError,
   useBankingLoading,
 } from '@/store';
+import { BankingAccount } from '@/lib/banking-types';
 import { Building2, RefreshCw, Plus } from 'lucide-react';
-
-interface BankingAccount {
-  id: string;
-  name: string;
-  balance: number;
-  currency: string;
-  bankName: string;
-  iban: string;
-  syncStatus: string;
-  connectionStatus: string;
-  lastSyncedAt?: Date | string;
-  linkedAt: Date | string;
-}
 
 /**
  * BankingPage Component
@@ -161,9 +149,9 @@ export default function BankingPage() {
    * @param {string} accountId - ID of account to revoke
    */
   const handleRevoke = (accountId: string) => {
-    const account = accounts.find((acc) => acc.id === accountId);
+    const account = (accounts as BankingAccount[]).find((acc) => acc.id === accountId);
     if (account) {
-      setAccountToRevoke(account as any);
+      setAccountToRevoke(account);
     }
   };
 
@@ -323,7 +311,7 @@ export default function BankingPage() {
               </h2>
 
               <AccountList
-                accounts={accounts as any}
+                accounts={accounts as BankingAccount[]}
                 isLoading={isLoading}
                 onSync={handleSync}
                 onRevoke={handleRevoke}
