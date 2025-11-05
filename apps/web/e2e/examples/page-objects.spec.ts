@@ -128,7 +128,7 @@ test.describe('Page Objects Example Tests', () => {
 
     // Start on login page
     await pageObjects.login.navigateToLogin();
-    expect(page.url()).toContain('/login');
+    expect(page.url()).toContain('/auth/login');
 
     // Login and verify dashboard URL
     await pageObjects.login.loginWithValidCredentials();

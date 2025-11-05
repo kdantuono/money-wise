@@ -85,7 +85,7 @@ export default defineConfig({
           // In CI, use production builds for faster startup
           {
             command: 'pnpm --filter @money-wise/backend start:prod',
-            url: 'http://localhost:3001/health',
+            url: 'http://localhost:3001/api/health',
             reuseExistingServer: false,
             timeout: 60 * 1000,
             env: {
@@ -119,7 +119,7 @@ export default defineConfig({
           },
           {
             command: 'pnpm --filter @money-wise/backend dev',
-            url: 'http://localhost:3001/health',
+            url: 'http://localhost:3001/api/health',
             reuseExistingServer: true,
             timeout: 120 * 1000,
           },

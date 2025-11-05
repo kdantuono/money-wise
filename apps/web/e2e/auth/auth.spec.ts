@@ -12,7 +12,7 @@ test.describe('Authentication', () => {
     test('should login with valid credentials', async ({ page }) => {
       const ctx = new TestContext(page);
 
-      await page.goto('/login');
+      await page.goto('/auth/login');
 
       // Fill login form
       await ctx.form.fillForm({
@@ -37,7 +37,7 @@ test.describe('Authentication', () => {
     test('should show error for invalid credentials', async ({ page }) => {
       const ctx = new TestContext(page);
 
-      await page.goto('/login');
+      await page.goto('/auth/login');
 
       // Fill login form with invalid credentials
       await ctx.form.fillForm({
@@ -56,13 +56,13 @@ test.describe('Authentication', () => {
       );
 
       // Should stay on login page
-      await ctx.assert.assertUrl('/login');
+      await ctx.assert.assertUrl('/auth/login');
     });
 
     test('should validate required fields', async ({ page }) => {
       const ctx = new TestContext(page);
 
-      await page.goto('/login');
+      await page.goto('/auth/login');
 
       // Try to submit empty form
       await ctx.form.submitForm('login-button');
@@ -85,7 +85,7 @@ test.describe('Authentication', () => {
     test('should validate email format', async ({ page }) => {
       const ctx = new TestContext(page);
 
-      await page.goto('/login');
+      await page.goto('/auth/login');
 
       // Fill invalid email
       await ctx.form.fillForm({
@@ -109,7 +109,7 @@ test.describe('Authentication', () => {
       const ctx = new TestContext(page);
       const newUser = generateTestData.user();
 
-      await page.goto('/signup');
+      await page.goto('/auth/register');
 
       // Fill signup form
       await ctx.auth.signup(newUser);
@@ -127,7 +127,7 @@ test.describe('Authentication', () => {
     test('should show error for existing email', async ({ page }) => {
       const ctx = new TestContext(page);
 
-      await page.goto('/signup');
+      await page.goto('/auth/register');
 
       // Try to signup with existing email
       await ctx.auth.signup(testUsers.validUser);
@@ -143,7 +143,7 @@ test.describe('Authentication', () => {
     test('should validate password strength', async ({ page }) => {
       const ctx = new TestContext(page);
 
-      await page.goto('/signup');
+      await page.goto('/auth/register');
 
       // Fill form with weak password
       await ctx.form.fillForm({
@@ -167,7 +167,7 @@ test.describe('Authentication', () => {
     test('should validate password confirmation', async ({ page }) => {
       const ctx = new TestContext(page);
 
-      await page.goto('/signup');
+      await page.goto('/auth/register');
 
       // Fill form with mismatched passwords
       await ctx.form.fillForm({
@@ -203,11 +203,11 @@ test.describe('Authentication', () => {
       await ctx.auth.logout();
 
       // Should redirect to login page
-      await ctx.assert.assertUrl('/login');
+      await ctx.assert.assertUrl('/auth/login');
 
       // Should not have access to protected routes
       await page.goto('/dashboard');
-      await ctx.assert.assertUrl('/login');
+      await ctx.assert.assertUrl('/auth/login');
     });
   });
 
@@ -217,7 +217,7 @@ test.describe('Authentication', () => {
 
       for (const route of protectedRoutes) {
         await page.goto(route);
-        await expect(page).toHaveURL('/login');
+        await expect(page).toHaveURL('/auth/login');
       }
     });
 
@@ -275,7 +275,7 @@ test.describe('Authentication', () => {
       await page.goto('/accounts');
 
       // Should redirect to login
-      await ctx.assert.assertUrl('/login');
+      await ctx.assert.assertUrl('/auth/login');
       await ctx.assert.assertElementVisible('[data-testid="session-expired-message"]');
     });
   });
