@@ -41,16 +41,16 @@ async function setupTestData(page: any) {
   // For example: creating test users, seeding database, etc.
   console.log('📦 Setting up test data...');
 
-  // Example: Check if health endpoint is working
+  // Example: Check if frontend is responding
   try {
-    const response = await page.request.get('http://localhost:3001/health');
+    const response = await page.request.get((config.projects[0].use?.baseURL || 'http://localhost:3000') + '/');
     if (response.ok()) {
-      console.log('✅ Backend health check passed');
+      console.log('✅ Frontend health check passed');
     } else {
-      console.warn('⚠️ Backend health check failed, tests may fail');
+      console.warn('⚠️ Frontend health check failed, tests may fail');
     }
   } catch (error) {
-    console.warn('⚠️ Could not reach backend:', error.message);
+    console.warn('⚠️ Could not reach frontend:', error.message);
   }
 }
 

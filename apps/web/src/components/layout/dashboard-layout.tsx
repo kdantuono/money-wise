@@ -99,7 +99,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
           {/* User Info */}
           <div className="p-4 border-t border-gray-200">
-            <div className="flex items-center space-x-3 px-4 py-3 rounded-lg bg-gray-50">
+            <div className="flex items-center space-x-3 px-4 py-3 rounded-lg bg-gray-50" data-testid="user-menu">
               <div className="flex-shrink-0">
                 <div className="h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center">
                   <User className="h-6 w-6 text-white" />
@@ -159,6 +159,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 variant="outline"
                 size="sm"
                 className="flex items-center space-x-2"
+                data-testid="logout-button"
               >
                 <LogOut className="h-4 w-4" />
                 <span className="hidden sm:inline">Logout</span>
