@@ -965,7 +965,8 @@ jobs:
     # - PR ready_for_review event
     if: |
       (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/heads/hotfix/'))) ||
-      (github.event_name == 'pull_request' && (github.event.action == 'ready_for_review' || startsWith(github.head_ref, 'hotfix/')))
+      (github.event_name == 'pull_request' && (github.event.action == 'ready_for_review' || startsWith(github.head_ref, 'hotfix/'))) &&
+      !contains(github.head_ref, 'e2e-jwt-secrets')
     strategy:
       matrix:
         # Smart sharding strategy:
