@@ -1063,45 +1063,11 @@ jobs:
           REDIS_URL: redis://localhost:6379
           JWT_ACCESS_SECRET: test-jwt-access-secret-minimum-32-characters-long-for-testing-purposes
           JWT_REFRESH_SECRET: test-jwt-refresh-secret-minimum-32-characters-long-different-from-access
+          CI: true
         run: |
-          # Start backend server on port 3001
-          cd apps/backend
-          PORT=3001 DATABASE_URL=$DATABASE_URL REDIS_URL=$REDIS_URL JWT_ACCESS_SECRET="$JWT_ACCESS_SECRET" JWT_REFRESH_SECRET="$JWT_REFRESH_SECRET" pnpm start:prod > backend.log 2>&1 &
-          BACKEND_PID=$!
-          echo "Backend started with PID: $BACKEND_PID"
-
-          # Wait for backend to be ready with retry logic (max 60s)
-          echo "Waiting for backend to be ready..."
-          RETRY_COUNT=0
-          MAX_RETRIES=30
-          until curl -f -s http://localhost:3001/api/health > /dev/null 2>&1; do
-            RETRY_COUNT=$((RETRY_COUNT + 1))
-            if [ $RETRY_COUNT -ge $MAX_RETRIES ]; then
-              echo "❌ Backend failed to start after ${MAX_RETRIES} attempts (60s)"
-              echo "Backend logs:"
-              cat backend.log
-              exit 1
-            fi
-            echo "Attempt $RETRY_COUNT/$MAX_RETRIES - waiting 2s..."
-            sleep 2
-          done
-          echo "✅ Backend is ready!"
-
-          # Start frontend server
-          cd ../web
-          pnpm start > frontend.log 2>&1 &
-          FRONTEND_PID=$!
-          echo "Frontend started with PID: $FRONTEND_PID"
-
-          # Wait for frontend to be ready (30s timeout)
-          pnpm wait-on http://localhost:3000 -t 30000
-
-          # Run E2E tests with sharding (2 shards for PRs, 4 for main)
+          cd apps/web
           TOTAL_SHARDS=${{ github.event_name == 'pull_request' && '2' || '4' }}
           npx playwright test --shard=${{ matrix.shard }}/$TOTAL_SHARDS
-
-          # Cleanup
-          kill $BACKEND_PID $FRONTEND_PID || true
 
       - name: Upload test results
         if: always()
