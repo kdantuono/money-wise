@@ -959,10 +959,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     needs: [foundation, development, testing]
-    # Only run on PR approval or push to main/develop/hotfix (not every PR push)
+    # Run E2E tests on:
+    # - Push to main/develop/hotfix branches
+    # - Pull requests from hotfix branches (to ensure E2E before merge to main)
+    # - PR ready_for_review event
     if: |
       (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/heads/hotfix/'))) ||
-      (github.event_name == 'pull_request' && github.event.action == 'ready_for_review')
+      (github.event_name == 'pull_request' && (github.event.action == 'ready_for_review' || startsWith(github.head_ref, 'hotfix/')))
     strategy:
       matrix:
         # Smart sharding strategy:
