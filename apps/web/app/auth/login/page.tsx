@@ -86,10 +86,10 @@ export default function LoginPage() {
               </div>
             }
           >
-            <form onSubmit={handleSubmit(onSubmit)}>
+            <form onSubmit={handleSubmit(onSubmit)} data-testid="login-form">
               <CardContent className="space-y-4">
                 {error && (
-                  <div className="bg-destructive/15 text-destructive text-sm p-3 rounded-md">
+                  <div className="bg-destructive/15 text-destructive text-sm p-3 rounded-md" data-testid="error-message" role="alert">
                     {error}
                   </div>
                 )}
@@ -102,6 +102,7 @@ export default function LoginPage() {
                     autoComplete="email"
                     {...register('email')}
                     className={errors.email ? 'border-destructive' : ''}
+                    data-testid="email"
                   />
                   {errors.email && (
                     <p className="text-sm text-destructive">{errors.email.message}</p>
@@ -117,6 +118,7 @@ export default function LoginPage() {
                       autoComplete="current-password"
                       {...register('password')}
                       className={errors.password ? 'border-destructive' : ''}
+                      data-testid="password"
                     />
                     <button
                       type="button"
@@ -143,6 +145,7 @@ export default function LoginPage() {
                   type="submit"
                   className="w-full"
                   disabled={isLoading}
+                  data-testid="login-button"
                 >
                   {isLoading ? 'Signing in...' : 'Sign In'}
                 </Button>

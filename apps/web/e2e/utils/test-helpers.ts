@@ -12,7 +12,7 @@ export class AuthHelpers {
   constructor(private page: Page) {}
 
   async login(email: string = 'test@example.com', password: string = 'password123') {
-    await this.page.goto('/login');
+    await this.page.goto('/auth/login');
     await this.page.fill('[data-testid="email"]', email);
     await this.page.fill('[data-testid="password"]', password);
 
@@ -32,7 +32,7 @@ export class AuthHelpers {
   async logout() {
     await this.page.click('[data-testid="user-menu"]');
     await this.page.click('[data-testid="logout-button"]');
-    await this.page.waitForURL('/login');
+    await this.page.waitForURL('/auth/login');
   }
 
   async signup(userData: {
@@ -41,7 +41,7 @@ export class AuthHelpers {
     email: string;
     password: string;
   }) {
-    await this.page.goto('/signup');
+    await this.page.goto('/auth/register');
     await this.page.fill('[data-testid="first-name"]', userData.firstName);
     await this.page.fill('[data-testid="last-name"]', userData.lastName);
     await this.page.fill('[data-testid="email"]', userData.email);
@@ -51,7 +51,7 @@ export class AuthHelpers {
     // FIX: Wait for API response to avoid race condition
     await Promise.all([
       this.page.waitForResponse(response =>
-        response.url().includes('/api/auth/signup') && response.status() === 201
+        response.url().includes('/api/auth/register') && response.status() === 201
       ),
       this.page.click('[data-testid="signup-button"]')
     ]);

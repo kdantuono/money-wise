@@ -85,21 +85,18 @@ export default defineConfig({
           // In CI, use production builds for faster startup
           {
             command: 'pnpm --filter @money-wise/backend start:prod',
-            url: 'http://localhost:3001/health',
+            url: 'http://localhost:3001/api/health',
             reuseExistingServer: false,
             timeout: 60 * 1000,
             env: {
               NODE_ENV: 'test',
-              DB_HOST: process.env.DB_HOST || 'localhost',
-              DB_PORT: process.env.DB_PORT || '5432',
-              DB_USERNAME: process.env.DB_USERNAME || 'postgres',
-              DB_PASSWORD: process.env.DB_PASSWORD || 'postgres',
-              DB_NAME: process.env.DB_NAME || 'moneywise_test',
+              PORT: '3001',
+              DATABASE_URL: process.env.DATABASE_URL || 'postgresql://test:testpass@localhost:5432/test_db',
               REDIS_URL: process.env.REDIS_URL || 'redis://localhost:6379',
               JWT_ACCESS_SECRET:
-                process.env.JWT_ACCESS_SECRET || 'test-access-secret-for-e2e',
+                process.env.JWT_ACCESS_SECRET || 'test-jwt-access-secret-minimum-32-characters-long-for-testing-purposes',
               JWT_REFRESH_SECRET:
-                process.env.JWT_REFRESH_SECRET || 'test-refresh-secret-for-e2e',
+                process.env.JWT_REFRESH_SECRET || 'test-jwt-refresh-secret-minimum-32-characters-long-different-from-access',
             },
           },
           {
@@ -119,7 +116,7 @@ export default defineConfig({
           },
           {
             command: 'pnpm --filter @money-wise/backend dev',
-            url: 'http://localhost:3001/health',
+            url: 'http://localhost:3001/api/health',
             reuseExistingServer: true,
             timeout: 120 * 1000,
           },

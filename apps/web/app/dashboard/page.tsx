@@ -21,11 +21,11 @@ export default function DashboardPage() {
   return (
     <ProtectedRoute>
       <DashboardLayout>
-        <div className="space-y-6">
+        <div className="space-y-6" data-testid="dashboard">
           {/* Welcome Section */}
           <div>
             <h1 className="text-3xl font-bold text-gray-900">
-              Welcome back, {user?.firstName}!
+              Welcome back, <span data-testid="user-name">{user?.firstName}</span>!
             </h1>
             <p className="text-gray-600 mt-2">
               Here&apos;s an overview of your financial dashboard

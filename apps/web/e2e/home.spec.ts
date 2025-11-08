@@ -37,7 +37,7 @@ test.describe('Home Page', () => {
     await page.click('[data-testid="cta-signup"]');
 
     // Should redirect to signup page
-    await ctx.assert.assertUrl('/signup');
+    await ctx.assert.assertUrl('/auth/register');
     await ctx.assert.assertElementVisible('[data-testid="signup-form"]');
   });
 
@@ -50,7 +50,7 @@ test.describe('Home Page', () => {
     await page.click('[data-testid="cta-login"]');
 
     // Should redirect to login page
-    await ctx.assert.assertUrl('/login');
+    await ctx.assert.assertUrl('/auth/login');
     await ctx.assert.assertElementVisible('[data-testid="login-form"]');
   });
 

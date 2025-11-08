@@ -73,8 +73,14 @@ export interface ErrorResponse {
 
 /**
  * API Client configuration
+ *
+ * IMPORTANT: Frontend always calls BFF routes (same-origin /api),
+ * which then proxy to backend. Never call backend directly from browser.
+ *
+ * BFF Architecture:
+ * - Browser → Next.js BFF (/api/auth/*) → NestJS Backend (NEXT_PUBLIC_API_URL)
  */
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
+const API_BASE_URL = '/api'
 
 /**
  * Make authenticated API request with cookie and CSRF support

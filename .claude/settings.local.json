@@ -105,7 +105,8 @@
       "Bash(gh auth status:*)",
       "mcp__hugging-face__model_search",
       "Bash(getent group:*)",
-      "WebFetch(domain:docs.saltedge.com)"
+      "WebFetch(domain:docs.saltedge.com)",
+      "Bash(command -v:*)"
     ],
     "deny": [],
     "ask": []
