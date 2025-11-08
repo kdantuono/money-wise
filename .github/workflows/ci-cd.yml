@@ -1036,13 +1036,13 @@ jobs:
         if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: |
           cd apps/web
-          npx playwright install --with-deps chromium
+          npx playwright install --with-deps
 
       - name: Install Playwright system deps (cache hit)
         if: steps.playwright-cache.outputs.cache-hit == 'true'
         run: |
           cd apps/web
-          npx playwright install-deps chromium
+          npx playwright install-deps
 
       - name: Build applications
         run: |
