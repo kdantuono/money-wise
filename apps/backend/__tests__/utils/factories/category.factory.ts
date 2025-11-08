@@ -18,7 +18,8 @@ export class CategoryFactory {
    * Build a complete Category entity (as returned from database)
    */
   static build(overrides: Partial<any> = {}): any {
-    const slug = faker.helpers.slugify(faker.commerce.department()).toLowerCase();
+    const department = faker.commerce.department();
+    const slug = department.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '');
 
     return {
       id: faker.string.uuid(),
@@ -27,10 +28,10 @@ export class CategoryFactory {
       type: CategoryType.EXPENSE,
       status: CategoryStatus.ACTIVE,
       icon: faker.helpers.arrayElement(['🛒', '🍔', '🚗', '🏠', '💼', '🎬', '✈️']),
-      color: faker.internet.color(),
+      color: faker.helpers.arrayElement(['red', 'blue', 'green', 'yellow', 'purple', 'orange', 'pink', 'teal']),
       description: faker.lorem.sentence(),
       isSystem: false,
-      parentCategoryId: null,
+      parentId: null,
       familyId: faker.string.uuid(),
       rules: null,
       metadata: null,
@@ -221,7 +222,7 @@ export class CategoryFactory {
    */
   static buildParentCategory(overrides: Partial<any> = {}): any {
     return this.build({
-      parentCategoryId: null,
+      parentId: null,
       ...overrides,
     });
   }
@@ -229,9 +230,9 @@ export class CategoryFactory {
   /**
    * Build child category
    */
-  static buildChildCategory(parentId: string, overrides: Partial<any> = {}): any {
+  static buildChildCategory(parentIdValue: string, overrides: Partial<any> = {}): any {
     return this.build({
-      parentCategoryId: parentId,
+      parentId: parentIdValue,
       ...overrides,
     });
   }
