@@ -1,9 +1,11 @@
 # E2E Test Status Report
 
+**Last Updated**: 2025-11-08
 **Date**: 2025-11-05
 **Branch**: `hotfix/e2e-jwt-secrets`
 **PR**: #156 - Fix JWT secrets for E2E tests
 **Test Run**: Local execution (manual servers + Playwright)
+**CI/CD E2E Status**: Pending - Triggering E2E tests via push event
 
 ---
 
