@@ -1,0 +1,150 @@
+/**
+ * User Factory
+ * Generates realistic user test data using faker
+ */
+
+import { faker } from '@faker-js/faker';
+
+export interface UserData {
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+  phone?: string;
+  dateOfBirth?: string;
+}
+
+/**
+ * Creates a user with realistic data
+ * @param overrides - Partial user data to override defaults
+ * @returns UserData object with sensible defaults
+ */
+export function createUser(overrides: Partial<UserData> = {}): UserData {
+  const firstName = faker.person.firstName();
+  const lastName = faker.person.lastName();
+
+  return {
+    firstName,
+    lastName,
+    email: faker.internet.email({ firstName, lastName }).toLowerCase(),
+    password: generateSecurePassword(),
+    phone: faker.phone.number(),
+    dateOfBirth: faker.date.birthdate({ min: 18, max: 65, mode: 'age' }).toISOString().split('T')[0],
+    ...overrides,
+  };
+}
+
+/**
+ * Creates multiple users
+ * @param count - Number of users to create
+ * @param overrides - Partial user data to override defaults for all users
+ * @returns Array of UserData objects
+ */
+export function createUsers(count: number, overrides: Partial<UserData> = {}): UserData[] {
+  return Array.from({ length: count }, () => createUser(overrides));
+}
+
+/**
+ * Creates a user with specific characteristics
+ */
+export const UserFactory = {
+  /**
+   * Standard valid user
+   */
+  validUser: (overrides: Partial<UserData> = {}): UserData => {
+    return createUser(overrides);
+  },
+
+  /**
+   * Admin user
+   */
+  adminUser: (overrides: Partial<UserData> = {}): UserData => {
+    return createUser({
+      firstName: 'Admin',
+      lastName: 'User',
+      email: `admin.${faker.string.uuid()}@moneywise.com`,
+      ...overrides,
+    });
+  },
+
+  /**
+   * User with invalid email
+   */
+  invalidEmail: (overrides: Partial<UserData> = {}): UserData => {
+    return createUser({
+      email: 'invalid-email-format',
+      ...overrides,
+    });
+  },
+
+  /**
+   * User with weak password
+   */
+  weakPassword: (overrides: Partial<UserData> = {}): UserData => {
+    return createUser({
+      password: '12345',
+      ...overrides,
+    });
+  },
+
+  /**
+   * User with missing required fields (for validation testing)
+   */
+  incompleteUser: (): Partial<UserData> => {
+    return {
+      email: faker.internet.email(),
+      // Missing password, firstName, lastName
+    };
+  },
+
+  /**
+   * User with very long values (edge case testing)
+   */
+  longValues: (overrides: Partial<UserData> = {}): UserData => {
+    return createUser({
+      firstName: faker.string.alpha({ length: 100 }),
+      lastName: faker.string.alpha({ length: 100 }),
+      email: `${faker.string.alpha({ length: 50 })}@${faker.string.alpha({ length: 50 })}.com`,
+      ...overrides,
+    });
+  },
+
+  /**
+   * User with special characters
+   */
+  specialCharacters: (overrides: Partial<UserData> = {}): UserData => {
+    return createUser({
+      firstName: "John-Paul",
+      lastName: "O'Brien",
+      email: `test+special${faker.number.int({ min: 1000, max: 9999 })}@example.com`,
+      ...overrides,
+    });
+  },
+};
+
+/**
+ * Generates a secure password that meets typical requirements
+ * - At least 8 characters
+ * - Contains uppercase, lowercase, number, and special character
+ */
+function generateSecurePassword(): string {
+  const uppercase = faker.string.alpha({ length: 2, casing: 'upper' });
+  const lowercase = faker.string.alpha({ length: 2, casing: 'lower' });
+  const numbers = faker.string.numeric(2);
+  const special = '!@#$%^&*';
+  const specialChar = special[Math.floor(Math.random() * special.length)];
+
+  // Combine and shuffle
+  const parts = [uppercase, lowercase, numbers, specialChar, faker.string.alphanumeric(3)];
+  return parts.sort(() => Math.random() - 0.5).join('');
+}
+
+/**
+ * Default test user credentials for consistent testing
+ */
+export const DEFAULT_TEST_USER = {
+  email: 'test.user@moneywise.com',
+  password: 'TestPassword123!',
+  firstName: 'Test',
+  lastName: 'User',
+};
