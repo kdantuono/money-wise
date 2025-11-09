@@ -23,6 +23,10 @@
     "test:visual:update": "playwright test e2e/visual/ --update-snapshots",
     "test:visual:ui": "playwright test e2e/visual/ --ui",
     "test:e2e:ui": "playwright test --ui",
+    "test:e2e:setup": "playwright test --global-setup",
+    "test:e2e:debug": "PWDEBUG=1 playwright test --headed --max-failures=1",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:report": "playwright show-report",
     "clean": "rm -rf .next out coverage node_modules/.cache",
     "dev:clean": "pnpm clean && next dev",
     "build:clean": "pnpm clean && next build"
