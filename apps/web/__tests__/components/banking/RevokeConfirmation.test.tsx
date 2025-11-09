@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '../../utils/test-utils';
+import { render, screen, waitFor, fireEvent } from '../../utils/test-utils';
 import { RevokeConfirmation } from '../../../src/components/banking/RevokeConfirmation';
 
 const mockAccount = {
@@ -325,8 +325,8 @@ describe('RevokeConfirmation Component', () => {
     });
   });
 
-  it.skip('handles Escape key press', async () => {
-    const { user } = render(
+  it('handles Escape key press', async () => {
+    render(
       <RevokeConfirmation
         account={mockAccount}
         onConfirm={mockOnConfirm}
@@ -334,7 +334,9 @@ describe('RevokeConfirmation Component', () => {
       />
     );
 
-    await user.keyboard('{Escape}');
+    // Fire keyboard event directly on dialog element
+    const dialog = screen.getByRole('dialog');
+    fireEvent.keyDown(dialog, { key: 'Escape' });
 
     expect(mockOnCancel).toHaveBeenCalled();
   });

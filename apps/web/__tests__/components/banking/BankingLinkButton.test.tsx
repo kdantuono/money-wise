@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor } from '../../utils/test-utils';
+import { render, screen, waitFor, act } from '../../utils/test-utils';
 import { BankingLinkButton } from '../../../src/components/banking/BankingLinkButton';
 
 // Mock window.open
@@ -25,7 +25,9 @@ describe('BankingLinkButton Component', () => {
   });
 
   afterEach(() => {
-    vi.runOnlyPendingTimers();
+    // Close popup to stop polling interval before running timers
+    mockPopup.closed = true;
+    vi.runAllTimers();
     vi.useRealTimers();
   });
 
@@ -59,7 +61,7 @@ describe('BankingLinkButton Component', () => {
     expect(button).toBeInTheDocument();
   });
 
-  it.skip('initiates OAuth flow on click', async () => {
+  it('initiates OAuth flow on click', async () => {
     const mockResponse = {
       redirectUrl: 'https://oauth.example.com/auth',
       _connectionId: 'conn-123',
@@ -81,16 +83,41 @@ describe('BankingLinkButton Component', () => {
       body: JSON.stringify({ provider: 'SALTEDGE' }),
     });
 
-    await waitFor(() => {
-      expect(mockWindowOpen).toHaveBeenCalledWith(
-        'https://oauth.example.com/auth',
-        'BankLinkPopup',
-        expect.stringContaining('width=600')
-      );
+    expect(mockWindowOpen).toHaveBeenCalledWith(
+      'https://oauth.example.com/auth',
+      'BankLinkPopup',
+      expect.stringContaining('width=600')
+    );
+  });
+
+  it('displays loading state during OAuth flow', async () => {
+    (global.fetch as any).mockImplementationOnce(() =>
+      new Promise(resolve => {
+        setTimeout(() => {
+          resolve({
+            ok: true,
+            json: async () => ({ redirectUrl: 'https://oauth.example.com/auth', _connectionId: 'conn-123' }),
+          });
+        }, 100);
+      })
+    );
+
+    const { user } = render(<BankingLinkButton />);
+    const button = screen.getByRole('button');
+
+    await user.click(button);
+
+    // Loading state should be immediately visible
+    expect(button).toHaveAttribute('aria-busy', 'true');
+    expect(button).toBeDisabled();
+
+    // Advance timers to resolve fetch
+    await act(async () => {
+      vi.advanceTimersByTime(100);
     });
   });
 
-  it.skip('displays loading state during OAuth flow', async () => {
+  it('focuses popup window after opening', async () => {
     (global.fetch as any).mockResolvedValueOnce({
       ok: true,
       json: async () => ({ redirectUrl: 'https://oauth.example.com/auth', _connectionId: 'conn-123' }),
@@ -101,30 +128,10 @@ describe('BankingLinkButton Component', () => {
 
     await user.click(button);
 
-    await waitFor(() => {
-      expect(button).toHaveAttribute('aria-busy', 'true');
-      expect(button).toBeDisabled();
-      expect(screen.getByText('Link Bank Account')).toBeInTheDocument();
-    });
+    expect(mockPopup.focus).toHaveBeenCalled();
   });
 
-  it.skip('focuses popup window after opening', async () => {
-    (global.fetch as any).mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ redirectUrl: 'https://oauth.example.com/auth', _connectionId: 'conn-123' }),
-    });
-
-    const { user } = render(<BankingLinkButton />);
-    const button = screen.getByRole('button');
-
-    await user.click(button);
-
-    await waitFor(() => {
-      expect(mockPopup.focus).toHaveBeenCalled();
-    });
-  });
-
-  it.skip('calls onSuccess when popup is closed', async () => {
+  it('calls onSuccess when popup is closed', async () => {
     const onSuccess = vi.fn();
 
     (global.fetch as any).mockResolvedValueOnce({
@@ -140,15 +147,15 @@ describe('BankingLinkButton Component', () => {
     // Simulate popup closure
     mockPopup.closed = true;
 
-    // Advance timers to trigger polling
-    vi.advanceTimersByTime(500);
-
-    await waitFor(() => {
-      expect(onSuccess).toHaveBeenCalled();
+    // Advance timers to trigger polling - wrap in act to handle state updates
+    await act(async () => {
+      vi.advanceTimersByTime(500);
     });
+
+    expect(onSuccess).toHaveBeenCalled();
   });
 
-  it.skip('handles API error gracefully', async () => {
+  it('handles API error gracefully', async () => {
     const onError = vi.fn();
 
     (global.fetch as any).mockResolvedValueOnce({
@@ -161,15 +168,13 @@ describe('BankingLinkButton Component', () => {
 
     await user.click(button);
 
-    await waitFor(() => {
-      expect(screen.getByRole('alert')).toBeInTheDocument();
-      expect(screen.getByText('Error linking account')).toBeInTheDocument();
-      expect(screen.getByText('Failed to initiate OAuth')).toBeInTheDocument();
-      expect(onError).toHaveBeenCalledWith('Failed to initiate OAuth');
-    });
+    expect(screen.getByRole('alert')).toBeInTheDocument();
+    expect(screen.getByText('Error linking account')).toBeInTheDocument();
+    expect(screen.getByText('Failed to initiate OAuth')).toBeInTheDocument();
+    expect(onError).toHaveBeenCalledWith('Failed to initiate OAuth');
   });
 
-  it.skip('handles missing redirect URL', async () => {
+  it('handles missing redirect URL', async () => {
     (global.fetch as any).mockResolvedValueOnce({
       ok: true,
       json: async () => ({ _connectionId: 'conn-123' }), // No redirectUrl
@@ -180,12 +185,10 @@ describe('BankingLinkButton Component', () => {
 
     await user.click(button);
 
-    await waitFor(() => {
-      expect(screen.getByText('No redirect URL provided')).toBeInTheDocument();
-    });
+    expect(screen.getByText('No redirect URL provided')).toBeInTheDocument();
   });
 
-  it.skip('handles popup blocking', async () => {
+  it('handles popup blocking', async () => {
     mockWindowOpen.mockReturnValueOnce(null);
 
     (global.fetch as any).mockResolvedValueOnce({
@@ -198,12 +201,10 @@ describe('BankingLinkButton Component', () => {
 
     await user.click(button);
 
-    await waitFor(() => {
-      expect(screen.getByText(/popup blocked/i)).toBeInTheDocument();
-    });
+    expect(screen.getByText(/popup blocked/i)).toBeInTheDocument();
   });
 
-  it.skip('allows dismissing error message', async () => {
+  it('allows dismissing error message', async () => {
     (global.fetch as any).mockResolvedValueOnce({
       ok: false,
       json: async () => ({ message: 'Test error' }),
@@ -214,19 +215,15 @@ describe('BankingLinkButton Component', () => {
 
     await user.click(button);
 
-    await waitFor(() => {
-      expect(screen.getByText('Test error')).toBeInTheDocument();
-    });
+    expect(screen.getByText('Test error')).toBeInTheDocument();
 
     const dismissButton = screen.getByRole('button', { name: /dismiss error/i });
     await user.click(dismissButton);
 
-    await waitFor(() => {
-      expect(screen.queryByText('Test error')).not.toBeInTheDocument();
-    });
+    expect(screen.queryByText('Test error')).not.toBeInTheDocument();
   });
 
-  it.skip('handles network errors', async () => {
+  it('handles network errors', async () => {
     (global.fetch as any).mockRejectedValueOnce(new Error('Network error'));
 
     const { user } = render(<BankingLinkButton />);
@@ -234,12 +231,10 @@ describe('BankingLinkButton Component', () => {
 
     await user.click(button);
 
-    await waitFor(() => {
-      expect(screen.getByText('Network error')).toBeInTheDocument();
-    });
+    expect(screen.getByText('Network error')).toBeInTheDocument();
   });
 
-  it.skip('sends correct provider in request', async () => {
+  it('sends correct provider in request', async () => {
     (global.fetch as any).mockResolvedValueOnce({
       ok: true,
       json: async () => ({ redirectUrl: 'https://oauth.example.com/auth', _connectionId: 'conn-123' }),
@@ -258,20 +253,30 @@ describe('BankingLinkButton Component', () => {
     );
   });
 
-  it.skip('displays spinner during loading', async () => {
-    (global.fetch as any).mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ redirectUrl: 'https://oauth.example.com/auth', _connectionId: 'conn-123' }),
-    });
+  it('displays spinner during loading', async () => {
+    (global.fetch as any).mockImplementationOnce(() =>
+      new Promise(resolve => {
+        setTimeout(() => {
+          resolve({
+            ok: true,
+            json: async () => ({ redirectUrl: 'https://oauth.example.com/auth', _connectionId: 'conn-123' }),
+          });
+        }, 100);
+      })
+    );
 
     const { user } = render(<BankingLinkButton />);
     const button = screen.getByRole('button');
 
     await user.click(button);
 
-    await waitFor(() => {
-      const svg = button.querySelector('svg.animate-spin');
-      expect(svg).toBeInTheDocument();
+    // Spinner should appear immediately while loading
+    const svg = button.querySelector('svg.animate-spin');
+    expect(svg).toBeInTheDocument();
+
+    // Clean up - advance timers to complete fetch
+    await act(async () => {
+      vi.advanceTimersByTime(100);
     });
   });
 
@@ -283,7 +288,7 @@ describe('BankingLinkButton Component', () => {
     expect(button).toHaveAttribute('aria-busy', 'false');
   });
 
-  it.skip('error has correct ARIA attributes', async () => {
+  it('error has correct ARIA attributes', async () => {
     (global.fetch as any).mockResolvedValueOnce({
       ok: false,
       json: async () => ({ message: 'Test error' }),
@@ -294,11 +299,9 @@ describe('BankingLinkButton Component', () => {
 
     await user.click(button);
 
-    await waitFor(() => {
-      const alert = screen.getByRole('alert');
-      expect(alert).toBeInTheDocument();
-      expect(button).toHaveAttribute('aria-describedby', 'banking-link-error');
-      expect(alert).toHaveAttribute('id', 'banking-link-error');
-    });
+    const alert = screen.getByRole('alert');
+    expect(alert).toBeInTheDocument();
+    expect(button).toHaveAttribute('aria-describedby', 'banking-link-error');
+    expect(alert).toHaveAttribute('id', 'banking-link-error');
   });
 });

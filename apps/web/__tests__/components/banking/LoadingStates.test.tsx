@@ -293,9 +293,9 @@ describe('LoadingStates Components', () => {
       expect(screen.getByText('Custom error: Test error')).toBeInTheDocument();
     });
 
-    it.skip('can dismiss error and re-render children', async () => {
+    it('can dismiss error and re-render children', async () => {
       const { user, rerender } = render(
-        <ErrorBoundary>
+        <ErrorBoundary key="error-state">
           <ThrowError shouldThrow={true} />
         </ErrorBoundary>
       );
@@ -305,9 +305,9 @@ describe('LoadingStates Components', () => {
       const dismissButton = screen.getByRole('button', { name: /dismiss/i });
       await user.click(dismissButton);
 
-      // After dismissing, re-render with no error
+      // After dismissing, re-render with a fresh ErrorBoundary (new key) and no error
       rerender(
-        <ErrorBoundary>
+        <ErrorBoundary key="no-error-state">
           <ThrowError shouldThrow={false} />
         </ErrorBoundary>
       );

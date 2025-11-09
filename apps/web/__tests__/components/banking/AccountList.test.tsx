@@ -159,7 +159,10 @@ describe('AccountList Component', () => {
     expect(mockOnRevoke).toHaveBeenCalledWith('acc-1');
   });
 
-  it.skip('disables sync button during sync', async () => {
+  it('disables sync button during sync', async () => {
+    // Mock onSync to return a promise that resolves after a delay
+    mockOnSync.mockImplementation(() => new Promise(resolve => setTimeout(resolve, 100)));
+
     const { user } = render(
       <AccountList
         accounts={mockAccounts}
@@ -244,7 +247,9 @@ describe('AccountList Component', () => {
 
     expect(screen.getByText('Chase Bank')).toBeInTheDocument();
     expect(screen.getByText('****1234')).toBeInTheDocument();
-    expect(screen.getByText('checking', { exact: false })).toBeInTheDocument();
+    // Use getAllByText since "checking" appears in both account name and type
+    const checkingElements = screen.getAllByText('checking', { exact: false });
+    expect(checkingElements.length).toBeGreaterThan(0);
   });
 
   it('displays IBAN correctly', () => {
@@ -268,8 +273,8 @@ describe('AccountList Component', () => {
       />
     );
 
-    // Check that last synced dates are rendered
-    const dates = screen.getAllByText(/1\/15\/2024/i);
+    // Check that last synced dates are rendered (format: 1/15/24, 11:00 AM)
+    const dates = screen.getAllByText(/1\/15\/24/i);
     expect(dates.length).toBeGreaterThan(0);
   });
 
@@ -288,6 +293,9 @@ describe('AccountList Component', () => {
   });
 
   it('shows spinning icon during sync', async () => {
+    // Mock onSync to return a promise that resolves after a delay
+    mockOnSync.mockImplementation(() => new Promise(resolve => setTimeout(resolve, 100)));
+
     const { user } = render(
       <AccountList
         accounts={mockAccounts}
@@ -321,7 +329,10 @@ describe('AccountList Component', () => {
     expect(firstSyncButton).toHaveFocus();
   });
 
-  it.skip('disables revoke button during sync', async () => {
+  it('disables revoke button during sync', async () => {
+    // Mock onSync to return a promise that resolves after a delay
+    mockOnSync.mockImplementation(() => new Promise(resolve => setTimeout(resolve, 100)));
+
     const { user } = render(
       <AccountList
         accounts={mockAccounts}

@@ -18,7 +18,8 @@ const customRender = (
   ui: ReactElement,
   options?: Omit<RenderOptions, 'wrapper'>
 ) => {
-  const user = userEvent.setup();
+  // Configure userEvent for fake timers (delay: null means use fake timers)
+  const user = userEvent.setup({ delay: null });
 
   return {
     user,
