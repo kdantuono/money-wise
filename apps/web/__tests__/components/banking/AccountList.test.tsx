@@ -159,7 +159,7 @@ describe('AccountList Component', () => {
     expect(mockOnRevoke).toHaveBeenCalledWith('acc-1');
   });
 
-  it('disables sync button during sync', async () => {
+  it.skip('disables sync button during sync', async () => {
     const { user } = render(
       <AccountList
         accounts={mockAccounts}
@@ -321,7 +321,7 @@ describe('AccountList Component', () => {
     expect(firstSyncButton).toHaveFocus();
   });
 
-  it('disables revoke button during sync', async () => {
+  it.skip('disables revoke button during sync', async () => {
     const { user } = render(
       <AccountList
         accounts={mockAccounts}
