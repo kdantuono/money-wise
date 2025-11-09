@@ -12,10 +12,13 @@ const FRONTEND_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 // Test user credentials
+// Password must NOT contain firstName, lastName, or email parts
+// Password requirements: 12+ chars, uppercase, lowercase, digits, special chars, score >= 60
 const TEST_USER = {
   email: 'e2e-test@moneywise.app',
-  password: 'Test123!@#',
-  name: 'E2E Test User'
+  password: 'Secure#Finance2025!',  // 19 chars, no user info
+  firstName: 'E2E',
+  lastName: 'Automation'  // Changed from 'TestUser' to avoid confusion
 };
 
 // Test users to create (from test-data.ts fixtures)
@@ -166,7 +169,8 @@ async function createTestUserViaAPI(): Promise<boolean> {
       body: JSON.stringify({
         email: TEST_USER.email,
         password: TEST_USER.password,
-        name: TEST_USER.name
+        firstName: TEST_USER.firstName,
+        lastName: TEST_USER.lastName
       })
     });
 
@@ -201,7 +205,8 @@ async function createTestUserViaBrowser(page: any) {
     // Fill registration form
     await page.fill('input[name="email"]', TEST_USER.email);
     await page.fill('input[name="password"]', TEST_USER.password);
-    await page.fill('input[name="name"]', TEST_USER.name);
+    await page.fill('input[name="firstName"]', TEST_USER.firstName);
+    await page.fill('input[name="lastName"]', TEST_USER.lastName);
 
     // Submit form
     await page.click('button[type="submit"]');
