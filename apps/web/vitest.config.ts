@@ -36,14 +36,27 @@ export default defineConfig({
         '**/layout.tsx',
         '**/page.tsx',
         '**/__tests__/**',
-        '**/__mocks__/**'
+        '**/__mocks__/**',
+        // Example/demo files (not production code)
+        '**/*.example.*',
+        '**/*.examples.*',
+        '**/examples.tsx',
+        // Barrel exports (just re-exports, no logic to test)
+        '**/index.ts',
+        '**/index.tsx',
+        // Infrastructure files (better tested via E2E/integration)
+        'instrumentation*.ts',
+        'app/global-error.tsx',
+        'public/mockServiceWorker.js',
+        // API routes (tested via integration tests, not unit tests)
+        'app/api/**/*.ts'
       ],
       thresholds: {
         global: {
-          branches: 70,
-          functions: 70,
-          lines: 70,
-          statements: 70
+          branches: 80,
+          functions: 80,
+          lines: 80,
+          statements: 80
         }
       }
     }
