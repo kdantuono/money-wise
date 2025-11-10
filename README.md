@@ -3,7 +3,7 @@
 Personal finance management application with cross-platform support
 
 [![CI/CD Pipeline](https://github.com/kdantuono/money-wise/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/kdantuono/money-wise/actions/workflows/ci-cd.yml)
-[![Version](https://img.shields.io/badge/version-0.4.0-blue.svg)](https://github.com/kdantuono/money-wise)
+[![Version](https://img.shields.io/badge/version-0.5.0-blue.svg)](https://github.com/kdantuono/money-wise)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
 [![Package Manager](https://img.shields.io/badge/package%20manager-pnpm%20%3E%3D8.0.0-orange.svg)](https://pnpm.io/)
@@ -12,7 +12,7 @@ Personal finance management application with cross-platform support
 
 MoneyWise is a comprehensive personal finance management application built with modern technologies and cross-platform compatibility. The application helps users track expenses, manage budgets, and gain insights into their financial health.
 
-### **Current Status: MVP Development (v0.4.6)**
+### **Current Status: MVP Development (v0.5.0)**
 - ✅ Project infrastructure and monorepo setup complete
 - ✅ Documentation and planning organization complete
 - 🚧 Core financial features in development
@@ -93,7 +93,7 @@ money-wise/
 ### **Technology Stack**
 - **Frontend**: Next.js 14, React 18, TypeScript, Tailwind CSS
 - **Mobile**: React Native, Expo
-- **Backend**: NestJS, TypeScript, TypeORM
+- **Backend**: NestJS, TypeScript, Prisma ORM
 - **Database**: PostgreSQL, Redis
 - **Testing**: Jest, Playwright, React Testing Library
 - **DevOps**: Docker, Docker Compose, GitHub Actions
@@ -238,15 +238,19 @@ curl -X POST http://localhost:3001/auth/register \
   - ✅ Password security with bcrypt
   - ✅ Token refresh mechanism
 
-- [ ] **Transaction Management**
-  - Manual transaction entry
-  - Transaction categorization
-  - Transaction history and search
+- 🚧 **Transaction Management** (Partially Complete)
+  - ✅ Manual transaction entry (API complete)
+  - ✅ Transaction CRUD operations
+  - ✅ Transaction history and filtering
+  - [ ] Transaction categorization (planned)
+  - [ ] Advanced search features
 
-- [ ] **Account Management**
-  - Multiple account support
-  - Account balance tracking
-  - Account types (checking, savings, credit)
+- 🚧 **Account Management** (Partially Complete)
+  - ✅ Multiple account support (API complete)
+  - ✅ Account CRUD operations
+  - ✅ Account types (checking, savings, credit, investment)
+  - [ ] Account balance tracking automation
+  - [ ] Account synchronization
 
 - [ ] **Budgeting**
   - Budget creation and management
@@ -313,6 +317,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**Version**: 0.4.6 | **Status**: MVP Development | **Last Updated**: 2025-10-04
+**Version**: 0.5.0 | **Status**: MVP Development | **Last Updated**: 2025-11-10
 
 For questions or support, please create an issue or contact the maintainers.

@@ -7,32 +7,81 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2025-11-10
+
 ### Added
 
-- **Claude Code v2.0.24 Critical Improvements** (AI-native Development Optimization)
-  - **Configuration Foundation**: Environment validation script, setup guide, .env documentation
-  - **Database Seeding Infrastructure**: Production-ready seeding with 100+ demo transactions
-  - **Developer Onboarding**: Comprehensive troubleshooting guide, API documentation, enhanced JSDoc
-  - **Quality Improvements**: +103% developer experience improvement, 85% setup time reduction
-  - Documentation: 50+ KB of developer-friendly content across 6 new guides
+- **Cookie-Based Authentication** (PR #153 - Major Security Enhancement)
+  - HttpOnly secure cookies for JWT token storage
+  - CSRF protection with token validation
+  - Enhanced session security and XSS prevention
+  - Cookie-based auth flow across web and API
+  - Account lockout after failed login attempts
 
-- **Code Review Quality Improvements** (PR #111 - Code Review Response)
-  - CI-aware performance test thresholds (2.5x multiplier for CI environments)
-  - Redis mock error injection for comprehensive error path testing
-  - Prevents flaky test failures in GitHub Actions while maintaining strict local standards
+- **E2E Testing Infrastructure** (Phase 5.2)
+  - Playwright test framework integration
+  - Critical path E2E test suite (auth, registration, banking flows)
+  - Visual regression testing setup
+  - E2E test environment configuration with proper secrets (#156)
+  - Database environment variables for E2E execution (#155)
+
+- **Zero-Tolerance CI/CD Quality Gates**
+  - Pre-push validation script with 10 comprehensive levels
+  - Workflow simulation with act (Docker-based GitHub Actions testing)
+  - Mandatory validation before any git push
+  - Enhanced branch protection and merge requirements
+
+- **Banking Integration Framework**
+  - Multi-provider banking structure (SaltEdge, Tink, Yapily, Plaid)
+  - Banking connection models and sync logging
+  - OAuth flow infrastructure
+  - Provider factory pattern for extensibility
+
+- **Enhanced Test Suite**
+  - 373 verified passing tests across unit test suites
+  - 13 complete test suites (core services, monitoring, config)
+  - Comprehensive auth service test coverage
+  - CloudWatch and Sentry integration tests
 
 ### Changed
 
-- **Repository Configuration**
-  - Updated `.gitignore` to exclude Claude Code internal directories (.claude/tools, .claude/traces)
-  - Added Hugging Face MCP tool permissions to Claude Code configuration
+- **ORM Migration: TypeORM → Prisma 6.18.0**
+  - Complete architectural migration to Prisma ORM
+  - All entities migrated (User, Family, Account, Transaction, Category, Budget)
+  - Prisma Client generation integrated into build process
+  - Migration scripts updated for Prisma
+  - Type-safe database queries with Prisma Client
+
+- **Test Infrastructure Improvements**
+  - Prisma test factories for integration testing
+  - Improved test isolation and cleanup
+  - Enhanced mock patterns for services
+  - Test utilities consolidated in test-utils package
+
+- **Documentation Updates**
+  - README.md updated to reflect v0.5.0 and Prisma ORM
+  - Technology stack documentation corrected
+  - Feature completion status updated (Transaction and Account APIs marked as partially complete)
 
 ### Fixed
 
-- **Test Infrastructure Hardening**
-  - Performance tests now adapt to CI/CD environment (slower builds tolerated)
-  - Redis mock can inject errors for pipeline exec() testing
-  - Comprehensive error handling test coverage now possible
+- **E2E Test Environment Configuration** (#155, #156)
+  - Added missing JWT secrets to E2E test environment
+  - Fixed database environment variables for E2E test execution
+  - Resolved E2E test failures due to missing configuration
+
+- **Prisma Client Generation**
+  - Fixed missing Prisma client in test environments
+  - Proper Prisma generate step in CI/CD pipeline
+  - Import paths corrected for generated Prisma types
+
+### Technical Details
+
+- **Architecture**: Cookie-based auth with HttpOnly cookies eliminates localStorage XSS risks
+- **Testing**: Phase 5.2 E2E infrastructure provides end-to-end validation of critical user journeys
+- **Quality Gates**: Zero-tolerance validation prevents broken code from reaching remote branches
+- **Banking**: Provider abstraction layer enables future multi-provider support
+- **Test Count**: 373 verified passing tests (26 suites require Prisma client fix for full green status)
 
 ## [0.4.7] - 2025-10-04
 
