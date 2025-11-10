@@ -136,15 +136,30 @@ export class WaitHelper {
    * Wait for text to appear on page
    */
   async waitForText(text: string | RegExp, timeout?: number): Promise<void> {
-    await expect(this.page.locator(`text=${typeof text === 'string' ? text : text.source}`)).toBeVisible({
+    const locator = typeof text === 'string'
+      ? this.page.getByText(text, { exact: false })
+      : this.page.getByText(text);
+
+    await expect(locator).toBeVisible({
       timeout: timeout || TIMEOUTS.DEFAULT,
     });
   }
 
   /**
-   * Wait for specific time (use sparingly, prefer other wait methods)
+   * @deprecated Use waitForResponse(), waitForLoadState(), or expect() instead of arbitrary delays.
+   * Wait for specific time (use ONLY as last resort for animations with no better alternative)
+   *
+   * This method uses waitForTimeout which is an anti-pattern. Consider:
+   * - waitForResponse() for API calls
+   * - waitForLoadState('networkidle') for page loads
+   * - expect().toBeVisible() for element visibility
+   * - waitForSelector() for specific elements
    */
   async wait(ms: number): Promise<void> {
+    console.warn(
+      `⚠️  waitForTimeout(${ms}ms) is deprecated and can cause flaky tests.\n` +
+      `   Consider using waitForResponse(), waitForLoadState(), or expect() instead.`
+    );
     await this.page.waitForTimeout(ms);
   }
 

@@ -7,7 +7,7 @@ import { test, expect } from '@playwright/test';
 import { TransactionsPage } from './pages';
 import { setupAuthenticatedUser } from './utils/auth-helpers';
 import { WaitHelper } from './utils/wait-helpers';
-import { TransactionFactory, createTransaction } from './factories/transaction.factory';
+import { TransactionFactory } from './factories/transaction.factory';
 import { ROUTES } from './config/routes';
 import { TIMEOUTS } from './config/timeouts';
 

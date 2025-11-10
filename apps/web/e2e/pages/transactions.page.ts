@@ -138,7 +138,15 @@ export class TransactionsPage extends BasePage {
    */
   async search(query: string): Promise<void> {
     await this.fillInput(this.searchInput, query);
-    await this.page.waitForTimeout(TIMEOUTS.DEBOUNCE); // Wait for debounce
+
+    // Wait for debounced search API call to complete
+    await this.page.waitForResponse(
+      res => res.url().includes('/api/transactions') && (res.url().includes('search') || res.url().includes('query')),
+      { timeout: TIMEOUTS.API_CALL }
+    ).catch(() => {
+      // If no API call (e.g., client-side filtering), wait for DOM updates
+      return this.page.waitForLoadState('networkidle');
+    });
   }
 
   /**
@@ -146,7 +154,14 @@ export class TransactionsPage extends BasePage {
    */
   async clearSearch(): Promise<void> {
     await this.clearAndFill(this.searchInput, '');
-    await this.page.waitForTimeout(TIMEOUTS.DEBOUNCE);
+
+    // Wait for results to refresh
+    await this.page.waitForResponse(
+      res => res.url().includes('/api/transactions'),
+      { timeout: TIMEOUTS.API_CALL }
+    ).catch(() => {
+      return this.page.waitForLoadState('networkidle');
+    });
   }
 
   /**
@@ -253,8 +268,11 @@ export class TransactionsPage extends BasePage {
    * Check if empty state is shown
    */
   async hasEmptyState(): Promise<boolean> {
-    const emptyState = this.page.locator('[data-testid="empty-state"], text=No transactions');
-    return await emptyState.isVisible({ timeout: TIMEOUTS.SHORT });
+    // Try data-testid first, fallback to text content
+    const emptyState = this.page.locator('[data-testid="empty-state"]')
+      .or(this.page.getByText('No transactions', { exact: false }));
+
+    return await emptyState.isVisible({ timeout: TIMEOUTS.SHORT }).catch(() => false);
   }
 
   /**

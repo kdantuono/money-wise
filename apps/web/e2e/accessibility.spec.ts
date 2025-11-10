@@ -5,7 +5,7 @@
 
 import { test, expect } from '@playwright/test';
 import { setupAuthenticatedUser } from './utils/auth-helpers';
-import { LoginPage, DashboardPage, TransactionsPage } from './pages';
+import { LoginPage, TransactionsPage } from './pages';
 import { ROUTES } from './config/routes';
 import { TIMEOUTS } from './config/timeouts';
 
@@ -24,8 +24,10 @@ test.describe('Accessibility', () => {
       await page.keyboard.press('Tab'); // Focus submit button
       await page.keyboard.press('Enter');
 
-      // Assert - form should attempt submission
-      await page.waitForTimeout(TIMEOUTS.SHORT);
+      // Assert - wait for form submission to complete or error to appear
+      await page.waitForLoadState('networkidle');
+      // If form is valid, should navigate away or show success
+      // If invalid, should stay on page
       expect(true).toBeTruthy();
     });
 
@@ -53,12 +55,15 @@ test.describe('Accessibility', () => {
       const addButton = page.locator('[data-testid="add-transaction-button"]').first();
       if (await addButton.isVisible({ timeout: TIMEOUTS.SHORT })) {
         await addButton.click();
-        await page.waitForTimeout(TIMEOUTS.ANIMATION);
+
+        // Wait for modal to be visible (animation complete)
+        const modal = page.locator('[role="dialog"], [data-testid="modal"]');
+        await expect(modal).toBeVisible({ timeout: TIMEOUTS.MEDIUM });
+
         await page.keyboard.press('Escape');
 
         // Assert - modal should close
-        await page.waitForTimeout(TIMEOUTS.ANIMATION);
-        const modal = page.locator('[role="dialog"], [data-testid="modal"]');
+        await expect(modal).not.toBeVisible({ timeout: TIMEOUTS.MEDIUM });
         const isVisible = await modal.isVisible().catch(() => false);
         expect(isVisible).toBeFalsy();
       }
@@ -175,7 +180,9 @@ test.describe('Accessibility', () => {
 
       // Act - submit empty form to trigger validation
       await loginPage.clickLogin();
-      await page.waitForTimeout(TIMEOUTS.FORM_VALIDATION);
+
+      // Wait for validation to complete (either client-side or API response)
+      await page.waitForLoadState('networkidle');
 
       // Assert - invalid inputs should have aria-invalid
       const inputs = page.locator('input[aria-invalid="true"]');
@@ -191,8 +198,14 @@ test.describe('Accessibility', () => {
       await loginPage.navigateToLogin();
 
       // Act - trigger error
-      await loginPage.login('invalid@example.com', 'wrongpassword');
-      await page.waitForTimeout(TIMEOUTS.DEFAULT);
+      const loginPromise = loginPage.login('invalid@example.com', 'wrongpassword');
+
+      // Wait for either API error response or client-side validation
+      await Promise.race([
+        page.waitForResponse(res => res.url().includes('/api/auth/login')).catch(() => {}),
+        page.waitForLoadState('networkidle'),
+        loginPromise
+      ]);
 
       // Assert - error should have role="alert" or aria-live
       const errorElement = page.locator('[role="alert"]').first();
@@ -242,7 +255,9 @@ test.describe('Accessibility', () => {
       await loginPage.fillEmail('invalid-email');
       await loginPage.fillPassword('pass');
       await loginPage.clickLogin();
-      await page.waitForTimeout(TIMEOUTS.FORM_VALIDATION);
+
+      // Wait for validation errors to appear
+      await page.waitForLoadState('networkidle');
 
       // Assert - error message should be descriptive (not just "Error")
       const errorMessages = page.locator('[role="alert"], [data-testid*="error"], .error');

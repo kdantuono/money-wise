@@ -120,7 +120,8 @@ test.describe('Session Management', () => {
     test('should persist session in new tab', async ({ context, page }) => {
       // Arrange
       await setupAuthenticatedUser(page);
-      const token = await authHelper.getAuthToken();
+      // Verify token exists before opening new tab
+      await authHelper.getAuthToken();
 
       // Act - open new tab
       const newPage = await context.newPage();
@@ -428,7 +429,8 @@ test.describe('Session Management', () => {
       // Arrange
       const user = createUser();
       await authHelper.registerAndLogin(user);
-      const firstToken = await authHelper.getAuthToken();
+      // Verify token exists before logout
+      await authHelper.getAuthToken();
 
       // Act - logout and login again
       await dashboardPage.navigateToDashboard();
