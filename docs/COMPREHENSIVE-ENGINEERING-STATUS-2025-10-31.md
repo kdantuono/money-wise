@@ -1,8 +1,23 @@
 # MoneyWise - Comprehensive Engineering Status Report
+
+> **⚠️ POINT-IN-TIME SNAPSHOT - HISTORICAL DOCUMENT**
+> **Snapshot Date**: 2025-10-31
+> **Status**: ARCHIVED - For reference only
+> **Current Status**: See [`docs/development/progress.md`](./development/progress.md) for up-to-date information
+
 **Generated**: 2025-10-31
 **Analysis Type**: Multi-Agent Deep Scan + Cross-Reference Verification
 **Analysts**: Backend, Frontend, Testing, Security, Database Specialists + Manual Verification
 **Duration**: 2+ hours comprehensive analysis
+
+**Important Notes**:
+- This document reflects the project state as of **October 31, 2025**
+- Since this snapshot, significant work has been completed:
+  - ✅ v0.5.0 released (Cookie Auth, E2E Testing, Zero-Tolerance CI/CD)
+  - ✅ 373 tests verified passing (November 2025)
+  - ✅ Prisma ORM migration completed
+  - ✅ Frontend auth implementation 70% complete
+- **For current project status**, always refer to: [`docs/development/progress.md`](./development/progress.md)
 
 ---
 
