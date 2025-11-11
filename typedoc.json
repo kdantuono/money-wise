@@ -1,0 +1,54 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "tsconfig": "./tsconfig.typedoc.json",
+  "entryPoints": [
+    "packages/types/src/index.ts",
+    "packages/utils/src/index.ts"
+  ],
+  "out": "docs/api/typedoc",
+  "name": "MoneyWise Shared Packages API",
+  "includeVersion": true,
+  "readme": "none",
+  "entryPointStrategy": "expand",
+  "exclude": [
+    "**/__tests__/**",
+    "**/__mocks__/**",
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/coverage/**",
+    "apps/**",
+    "scripts/**",
+    "test-utils/**",
+    "packages/ui/**"
+  ],
+  "categorizeByGroup": true,
+  "categoryOrder": [
+    "Types",
+    "Utilities",
+    "*"
+  ],
+  "navigation": {
+    "includeCategories": true,
+    "includeGroups": true
+  },
+  "plugin": [],
+  "sort": [
+    "alphabetical"
+  ],
+  "excludePrivate": true,
+  "excludeProtected": false,
+  "excludeExternals": true,
+  "validation": {
+    "notExported": true,
+    "invalidLink": true,
+    "notDocumented": false
+  },
+  "theme": "default",
+  "lightHighlightTheme": "light-plus",
+  "darkHighlightTheme": "dark-plus",
+  "customCss": "",
+  "githubPages": true,
+  "hideGenerator": false,
+  "searchInComments": true,
+  "cleanOutputDir": true
+}

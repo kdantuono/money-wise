@@ -39,6 +39,9 @@ build/
 
 out/
 
+# Generated documentation
+docs/api/typedoc/
+
 
 
 # IDE

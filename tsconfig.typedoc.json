@@ -1,0 +1,22 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "skipLibCheck": true,
+    "noEmit": true
+  },
+  "include": [
+    "packages/types/src/**/*",
+    "packages/utils/src/**/*"
+  ],
+  "exclude": [
+    "**/__tests__/**",
+    "**/__mocks__/**",
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/coverage/**",
+    "apps/**",
+    "scripts/**",
+    "test-utils/**",
+    "packages/ui/**"
+  ]
+}
