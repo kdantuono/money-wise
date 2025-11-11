@@ -9,6 +9,7 @@ import {
   Req,
   Res,
   UnauthorizedException,
+  ConflictException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -561,5 +562,76 @@ export class AuthController {
     @Body() passwordStrengthDto: PasswordStrengthCheckDto,
   ): Promise<PasswordStrengthResponseDto> {
     return this.authSecurityService.checkPasswordStrength(passwordStrengthDto);
+  }
+
+  /**
+   * Create test user (test environment only)
+   *
+   * This endpoint is used by E2E tests to seed test users before tests run.
+   * It's only available when NODE_ENV=test to prevent abuse in production.
+   *
+   * The endpoint is idempotent - if the user already exists, it returns success
+   * without creating a duplicate.
+   *
+   * @param registerDto - User registration data
+   * @param request - Express request object for IP tracking
+   * @returns Success status and user data
+   *
+   * @throws UnauthorizedException (401) - If not in test environment
+   *
+   * @example
+   * POST /api/auth/test/create-user
+   * {
+   *   "email": "test@example.com",
+   *   "password": "Password123!",
+   *   "firstName": "Test",
+   *   "lastName": "User"
+   * }
+   */
+  @Public()
+  @Post('test/create-user')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Create test user (test environment only)' })
+  @ApiResponse({
+    status: 201,
+    description: 'Test user created or already exists',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Not available outside test environment',
+  })
+  async createTestUser(
+    @Body() registerDto: RegisterDto,
+    @Req() request: Request,
+  ): Promise<{ success: boolean; user: { id?: string; email: string; firstName?: string; lastName?: string } }> {
+    // Only allow in test environment
+    if (this.configService.get<string>('NODE_ENV') !== 'test') {
+      throw new UnauthorizedException('This endpoint is only available in test environment');
+    }
+
+    // Create user using existing register method (handles duplicates gracefully)
+    try {
+      const result = await this.authSecurityService.register(registerDto, request);
+
+      return {
+        success: true,
+        user: {
+          id: result.user.id,
+          email: result.user.email,
+          firstName: result.user.firstName,
+          lastName: result.user.lastName,
+        },
+      };
+    } catch (error) {
+      // If user already exists, that's fine for test purposes
+      if (error instanceof ConflictException) {
+        // User already exists - this is OK for idempotent test setup
+        return {
+          success: true,
+          user: { email: registerDto.email },
+        };
+      }
+      throw error;
+    }
   }
 }
