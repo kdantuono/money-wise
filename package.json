@@ -40,6 +40,8 @@
     "typecheck": "turbo run typecheck",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
     "docs:validate": "node scripts/docs-validate.js",
+    "validate:tests": "tsx scripts/validate-test-counts.ts",
+    "validate:tests:fix": "tsx scripts/validate-test-counts.ts --fix",
     "sentry:test": "tsx scripts/test-sentry-integration.ts",
     "sentry:release": "sentry-cli releases new $npm_package_version",
     "sentry:sourcemaps": "sentry-cli sourcemaps upload --release=$npm_package_version dist",
