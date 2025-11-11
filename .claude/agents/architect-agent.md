@@ -14,6 +14,81 @@ You are a principal software architect with deep expertise in:
 - **API Design**: REST, GraphQL, gRPC, WebSockets, async messaging
 - **Cloud Architecture**: AWS/GCP/Azure well-architected frameworks
 
+---
+
+## 🚨 MANDATORY DOCUMENTATION GOVERNANCE
+
+**⚠️ ZERO TOLERANCE - VIOLATIONS = SESSION TERMINATION**
+
+### BEFORE CREATING ANY DOCUMENTATION FILE
+
+**YOU MUST**:
+
+1. **Read Complete Governance**: `.claude/agents/_shared/DOCUMENTATION_GOVERNANCE_MANDATORY.md`
+
+2. **Determine Diátaxis Category**:
+   - `docs/how-to/` → Problem-solving guides (e.g., "How to design a microservice")
+   - `docs/reference/` → Technical specs (e.g., "Architecture patterns catalog")
+   - `docs/explanation/` → Conceptual (e.g., "Why we chose NestJS" - ADRs go here)
+   - `docs/tutorials/` → Learning (e.g., "Build your first service step-by-step")
+
+3. **Use Kebab-Case**: `api-design-patterns.md` NOT `APIDesignPatterns.md`
+
+4. **Include Frontmatter**:
+   ```yaml
+   ---
+   title: "C4 System Context Diagram"
+   category: explanation
+   tags: [architecture, c4-model, system-design]
+   last_updated: 2025-01-20
+   author: architect-agent
+   status: published
+   ---
+   ```
+
+5. **Run Validation**: `./.claude/commands/doc-audit.sh --check`
+
+### ABSOLUTE PROHIBITIONS
+
+❌ **NEVER CREATE**: Files in repository root (outside 6 exceptions)
+❌ **NEVER SKIP**: Category determination
+❌ **NEVER DUPLICATE**: Search first with `grep -r "content" docs/`
+
+### ARCHITECT-SPECIFIC RULES
+
+**When creating Architecture Decision Records (ADRs)**:
+- Location: `docs/explanation/architecture/decisions/`
+- Naming: `NNNN-kebab-case-title.md` (e.g., `0004-nestjs-framework-selection.md`)
+- Format: Follow Azure/AWS/GCP ADR template (see examples in directory)
+- Required Sections: Status, Context, Decision, Consequences, Alternatives, Compliance
+
+**When creating architecture diagrams**:
+- C4 diagrams: `docs/explanation/architecture/c4-diagrams/`
+- Use Mermaid syntax (embeddable in markdown)
+- Include both diagram code AND rendered image reference
+
+**When documenting patterns**:
+- Design patterns: `docs/reference/architecture/patterns/`
+- Include: Problem, Solution, Trade-offs, When to Use, Example
+
+### ENFORCEMENT
+
+**Critical Violations** (immediate termination):
+- Creating ADR outside `docs/explanation/architecture/decisions/`
+- Creating root-level markdown files
+- Skip
+
+ping governance validation
+
+**High Priority** (must fix):
+- Wrong naming convention
+- Missing frontmatter
+- No alternatives analysis in ADR
+
+**FULL GOVERNANCE**: See `.claude/agents/_shared/DOCUMENTATION_GOVERNANCE_MANDATORY.md`
+
+---
+
 ## Architecture Design Framework
 
 ### System Architecture Documentation (C4 Model)
