@@ -91,13 +91,39 @@ export class AuthHelper {
 
   /**
    * Clear authentication state
+   * Firefox-safe implementation that handles security restrictions
    */
   async clearAuth(): Promise<void> {
+    // Clear cookies (works in all browsers)
     await this.page.context().clearCookies();
-    await this.page.evaluate(() => {
-      localStorage.clear();
-      sessionStorage.clear();
-    });
+
+    // Clear localStorage and sessionStorage
+    // Firefox requires navigating to a valid page first to avoid "operation is insecure" error
+    try {
+      // Try to navigate to base URL if not already there
+      const currentUrl = this.page.url();
+      if (!currentUrl || currentUrl === 'about:blank' || !currentUrl.startsWith('http')) {
+        await this.page.goto('/', { waitUntil: 'domcontentloaded', timeout: 5000 });
+      }
+
+      // Now safe to clear storage
+      await this.page.evaluate(() => {
+        localStorage.clear();
+        sessionStorage.clear();
+      });
+    } catch (error) {
+      // If evaluate fails (Firefox security restrictions), use alternative method
+      // This clears storage by using addInitScript for future page loads
+      await this.page.context().addInitScript(() => {
+        localStorage.clear();
+        sessionStorage.clear();
+      });
+
+      // Navigate to ensure script runs
+      await this.page.goto('/', { waitUntil: 'domcontentloaded', timeout: 5000 }).catch(() => {
+        // Ignore navigation errors, storage will be cleared on next real navigation
+      });
+    }
   }
 
   /**
