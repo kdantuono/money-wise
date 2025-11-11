@@ -84,10 +84,10 @@ export default defineConfig({
       ? [
           // In CI, use production builds for faster startup
           {
-            command: 'pnpm --filter @money-wise/backend start:prod',
+            command: 'cd ../backend && PORT=3001 NODE_ENV=test node dist/main',
             url: 'http://localhost:3001/api/health',
             reuseExistingServer: false,
-            timeout: 60 * 1000,
+            timeout: 120 * 1000, // Increased timeout for production build startup
             env: {
               NODE_ENV: 'test',
               PORT: '3001',
@@ -97,6 +97,8 @@ export default defineConfig({
                 process.env.JWT_ACCESS_SECRET || 'test-jwt-access-secret-minimum-32-characters-long-for-testing-purposes',
               JWT_REFRESH_SECRET:
                 process.env.JWT_REFRESH_SECRET || 'test-jwt-refresh-secret-minimum-32-characters-long-different-from-access',
+              CORS_ORIGIN: 'http://localhost:3000',
+              API_PREFIX: 'api',
             },
           },
           {
@@ -104,6 +106,10 @@ export default defineConfig({
             url: 'http://localhost:3000',
             reuseExistingServer: false,
             timeout: 60 * 1000,
+            env: {
+              NEXT_PUBLIC_API_URL: 'http://localhost:3001',
+              PORT: '3000',
+            },
           },
         ]
       : [
