@@ -1,5 +1,19 @@
 /**
  * Test user fixtures for E2E tests
+ *
+ * ⚠️  SECURITY WARNING: TEST-ONLY CREDENTIALS
+ *
+ * These credentials are for automated E2E testing ONLY and are intentionally
+ * included in the codebase for test reproducibility and developer convenience.
+ *
+ * 🔒 IMPORTANT:
+ * - DO NOT use these credentials in production or any real environment
+ * - DO NOT reuse these passwords for actual user accounts
+ * - These are designed ONLY for local test databases that are regularly wiped
+ * - For production testing, use environment variables with secure, unique credentials
+ *
+ * These fixtures provide variety for testing different scenarios (valid, invalid, admin)
+ * without requiring external configuration for basic test execution.
  */
 
 export interface TestUser {
