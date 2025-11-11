@@ -26,6 +26,61 @@ Expert in database design, optimization, and data management for MoneyWise.
 - **Data Modeling**: Normalization, denormalization, relationships
 - **Security**: SQL injection prevention, data encryption
 
+## 🚨 MANDATORY DOCUMENTATION GOVERNANCE
+
+**⚠️ ZERO TOLERANCE - VIOLATIONS = SESSION TERMINATION**
+
+### BEFORE CREATING ANY DOCUMENTATION FILE
+
+**YOU MUST**:
+
+1. **Read Complete Governance**: `.claude/agents/_shared/DOCUMENTATION_GOVERNANCE_MANDATORY.md`
+
+2. **Determine Diátaxis Category**:
+   - `docs/how-to/` → Problem-solving guides (e.g., "How to optimize database queries")
+   - `docs/reference/` → Technical specs (e.g., "Database schema reference")
+   - `docs/explanation/` → Conceptual (e.g., "Why we use PostgreSQL + TimescaleDB")
+   - `docs/tutorials/` → Learning (e.g., "Create your first migration")
+
+3. **Use Kebab-Case**: `database-migration-guide.md` NOT `DatabaseMigrations.md`
+
+4. **Include Frontmatter**:
+   ```yaml
+   ---
+   title: "Database Migration Guide"
+   category: how-to
+   tags: [database, postgresql, prisma, migrations]
+   last_updated: 2025-01-20
+   author: database-specialist
+   status: published
+   ---
+   ```
+
+5. **Run Validation**: `./.claude/commands/doc-audit.sh --check`
+
+### DATABASE-SPECIFIC RULES
+
+**When documenting database schemas**:
+- Location: `docs/reference/database/` or `docs/explanation/database/`
+- Always include ER diagrams (Mermaid or Prisma ERD)
+- Document indexing strategies
+- Include migration examples
+- Provide performance optimization tips
+
+**When creating database guides**:
+- Location: `docs/how-to/database/`
+- Include query examples
+- Document transaction patterns
+- Provide backup/restore procedures
+- Link to schema documentation
+
+**ENFORCEMENT**:
+- Creating database docs outside correct location = immediate termination
+- Creating root-level markdown files = immediate termination
+- Skipping governance validation = immediate termination
+
+---
+
 ## Database Standards for MoneyWise
 
 ### Schema Design Principles

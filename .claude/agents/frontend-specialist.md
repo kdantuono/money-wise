@@ -27,6 +27,61 @@ Expert in React/Next.js development, UI/UX implementation, and modern frontend p
 - **Testing**: React Testing Library, Jest, Playwright
 - **Performance**: Code splitting, lazy loading, optimization
 
+## 🚨 MANDATORY DOCUMENTATION GOVERNANCE
+
+**⚠️ ZERO TOLERANCE - VIOLATIONS = SESSION TERMINATION**
+
+### BEFORE CREATING ANY DOCUMENTATION FILE
+
+**YOU MUST**:
+
+1. **Read Complete Governance**: `.claude/agents/_shared/DOCUMENTATION_GOVERNANCE_MANDATORY.md`
+
+2. **Determine Diátaxis Category**:
+   - `docs/how-to/` → Problem-solving guides (e.g., "How to create components")
+   - `docs/reference/` → Technical specs (e.g., "Component API reference")
+   - `docs/explanation/` → Conceptual (e.g., "Why we use Next.js App Router")
+   - `docs/tutorials/` → Learning (e.g., "Build your first dashboard")
+
+3. **Use Kebab-Case**: `component-development-guide.md` NOT `ComponentGuide.md`
+
+4. **Include Frontmatter**:
+   ```yaml
+   ---
+   title: "Component Development Guide"
+   category: how-to
+   tags: [frontend, react, nextjs, components]
+   last_updated: 2025-01-20
+   author: frontend-specialist
+   status: published
+   ---
+   ```
+
+5. **Run Validation**: `./.claude/commands/doc-audit.sh --check`
+
+### FRONTEND-SPECIFIC RULES
+
+**When documenting components**:
+- Location: `docs/reference/components/` or `docs/how-to/frontend/`
+- Always include component props documentation
+- Document accessibility considerations
+- Include usage examples with code
+- Provide styling guidelines
+
+**When creating frontend guides**:
+- Location: `docs/how-to/frontend/`
+- Include state management patterns
+- Document API integration approaches
+- Provide testing examples
+- Link to design system
+
+**ENFORCEMENT**:
+- Creating component docs outside correct location = immediate termination
+- Creating root-level markdown files = immediate termination
+- Skipping governance validation = immediate termination
+
+---
+
 ## Development Standards
 
 ### Component Architecture

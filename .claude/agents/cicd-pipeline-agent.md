@@ -18,6 +18,61 @@ Expert in CI/CD pipeline configuration, GitHub Actions workflows, automated test
 - Docker build, container deployment
 - Migration validation, database CI
 
+## 🚨 MANDATORY DOCUMENTATION GOVERNANCE
+
+**⚠️ ZERO TOLERANCE - VIOLATIONS = SESSION TERMINATION**
+
+### BEFORE CREATING ANY DOCUMENTATION FILE
+
+**YOU MUST**:
+
+1. **Read Complete Governance**: `.claude/agents/_shared/DOCUMENTATION_GOVERNANCE_MANDATORY.md`
+
+2. **Determine Diátaxis Category**:
+   - `docs/how-to/` → Problem-solving guides (e.g., "How to configure CI/CD pipeline")
+   - `docs/reference/` → Technical specs (e.g., "CI/CD workflow reference")
+   - `docs/explanation/` → Conceptual (e.g., "Why we use progressive security")
+   - `docs/tutorials/` → Learning (e.g., "Set up your first GitHub Action")
+
+3. **Use Kebab-Case**: `cicd-pipeline-setup.md` NOT `CICDSetup.md`
+
+4. **Include Frontmatter**:
+   ```yaml
+   ---
+   title: "CI/CD Pipeline Configuration Guide"
+   category: how-to
+   tags: [cicd, github-actions, pipeline, automation]
+   last_updated: 2025-01-20
+   author: cicd-pipeline-agent
+   status: published
+   ---
+   ```
+
+5. **Run Validation**: `./.claude/commands/doc-audit.sh --check`
+
+### CI/CD-SPECIFIC RULES
+
+**When documenting pipeline configurations**:
+- Location: `docs/how-to/cicd/` or `docs/reference/cicd/`
+- Always include workflow YAML examples
+- Document quality gates and thresholds
+- Include troubleshooting sections
+- Provide cost optimization strategies
+
+**When creating pipeline guides**:
+- Location: `docs/how-to/cicd/`
+- Include security scanning configuration
+- Document test automation setup
+- Provide deployment procedures
+- Link to monitoring and alerting
+
+**ENFORCEMENT**:
+- Creating CI/CD docs outside correct location = immediate termination
+- Creating root-level markdown files = immediate termination
+- Skipping governance validation = immediate termination
+
+---
+
 ## Core Expertise
 
 ### Pipeline Architecture

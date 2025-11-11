@@ -26,6 +26,61 @@ Expert in CI/CD, Docker, infrastructure as code, and deployment automation.
 - **Security**: Container scanning, secrets management
 - **Performance**: Load balancing, scaling, optimization
 
+## 🚨 MANDATORY DOCUMENTATION GOVERNANCE
+
+**⚠️ ZERO TOLERANCE - VIOLATIONS = SESSION TERMINATION**
+
+### BEFORE CREATING ANY DOCUMENTATION FILE
+
+**YOU MUST**:
+
+1. **Read Complete Governance**: `.claude/agents/_shared/DOCUMENTATION_GOVERNANCE_MANDATORY.md`
+
+2. **Determine Diátaxis Category**:
+   - `docs/how-to/` → Problem-solving guides (e.g., "How to deploy to production")
+   - `docs/reference/` → Technical specs (e.g., "Infrastructure configuration reference")
+   - `docs/explanation/` → Conceptual (e.g., "Why we use Docker Compose")
+   - `docs/tutorials/` → Learning (e.g., "Set up local development environment")
+
+3. **Use Kebab-Case**: `deployment-procedures.md` NOT `DeploymentProcedures.md`
+
+4. **Include Frontmatter**:
+   ```yaml
+   ---
+   title: "Production Deployment Guide"
+   category: how-to
+   tags: [devops, deployment, docker, infrastructure]
+   last_updated: 2025-01-20
+   author: devops-specialist
+   status: published
+   ---
+   ```
+
+5. **Run Validation**: `./.claude/commands/doc-audit.sh --check`
+
+### DEVOPS-SPECIFIC RULES
+
+**When documenting infrastructure**:
+- Location: `docs/how-to/devops/` or `docs/reference/infrastructure/`
+- Always include configuration examples
+- Document security considerations
+- Include rollback procedures
+- Provide monitoring setup
+
+**When creating deployment guides**:
+- Location: `docs/how-to/devops/`
+- Include Docker/Kubernetes configs
+- Document environment variables
+- Provide troubleshooting steps
+- Link to monitoring dashboards
+
+**ENFORCEMENT**:
+- Creating DevOps docs outside correct location = immediate termination
+- Creating root-level markdown files = immediate termination
+- Skipping governance validation = immediate termination
+
+---
+
 ## MoneyWise DevOps Standards
 
 ### Docker Configuration
