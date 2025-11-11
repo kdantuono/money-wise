@@ -127,7 +127,7 @@ export default function RegisterPage() {
                       data-testid="first-name"
                     />
                     {errors.firstName && (
-                      <p className="text-sm text-destructive">{errors.firstName.message}</p>
+                      <p className="text-sm text-destructive" data-testid="first-name-error">{errors.firstName.message}</p>
                     )}
                   </div>
 
@@ -142,7 +142,7 @@ export default function RegisterPage() {
                       data-testid="last-name"
                     />
                     {errors.lastName && (
-                      <p className="text-sm text-destructive">{errors.lastName.message}</p>
+                      <p className="text-sm text-destructive" data-testid="last-name-error">{errors.lastName.message}</p>
                     )}
                   </div>
                 </div>
@@ -158,7 +158,7 @@ export default function RegisterPage() {
                     data-testid="email"
                   />
                   {errors.email && (
-                    <p className="text-sm text-destructive">{errors.email.message}</p>
+                    <p className="text-sm text-destructive" data-testid="email-error">{errors.email.message}</p>
                   )}
                 </div>
 
@@ -188,7 +188,7 @@ export default function RegisterPage() {
                     </button>
                   </div>
                   {errors.password && (
-                    <p className="text-sm text-destructive">{errors.password.message}</p>
+                    <p className="text-sm text-destructive" data-testid="password-error">{errors.password.message}</p>
                   )}
                 </div>
 
@@ -218,7 +218,7 @@ export default function RegisterPage() {
                     </button>
                   </div>
                   {errors.confirmPassword && (
-                    <p className="text-sm text-destructive">{errors.confirmPassword.message}</p>
+                    <p className="text-sm text-destructive" data-testid="confirm-password-error">{errors.confirmPassword.message}</p>
                   )}
                 </div>
               </CardContent>
