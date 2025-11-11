@@ -39,7 +39,10 @@
     "prisma:studio": "prisma studio",
     "prisma:reset": "prisma migrate reset",
     "prisma:validate": "prisma validate",
-    "prisma:format": "prisma format"
+    "prisma:format": "prisma format",
+    "docs:generate": "ts-node scripts/generate-openapi.ts",
+    "docs:generate:yaml": "ts-node scripts/generate-openapi.ts --yaml",
+    "docs:validate": "swagger-cli validate ../../docs/api/openapi.json"
   },
   "dependencies": {
     "@aws-sdk/client-cloudwatch": "^3.896.0",
@@ -95,6 +98,9 @@
     "@types/passport-local": "^1.0.38",
     "@types/supertest": "^2.0.16",
     "@types/uuid": "^11.0.0",
+    "@apidevtools/swagger-cli": "^4.0.4",
+    "js-yaml": "^4.1.0",
+    "@types/js-yaml": "^4.0.9",
     "@typescript-eslint/eslint-plugin": "^6.0.0",
     "@typescript-eslint/parser": "^6.0.0",
     "eslint": "^8.42.0",
