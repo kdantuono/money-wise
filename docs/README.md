@@ -132,8 +132,8 @@ This documentation follows **industry best practices**:
 2. **ADRs for Decisions**: All major architectural decisions documented per Azure/AWS/GCP standards
    *See [Architecture Decisions](explanation/architecture/decisions/)*
 
-3. **Diátaxis Framework**: Content organized by purpose (Tutorials, How-to, Reference, Explanation)
-   *Industry standard used by Python, Django, Ubuntu (2024-2025)*
+3. **Diátaxis-Inspired Organization**: Content structure inspired by Diátaxis categories (planned full migration in Phase 6)
+   *Following industry standard used by Python, Django, Ubuntu (2024-2025)*
 
 4. **KISS Principle**: Minimal documentation, maximum clarity
    *"Just enough documentation" approach (2024-2025 standard)*
