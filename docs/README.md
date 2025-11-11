@@ -1,8 +1,8 @@
 # MoneyWise Documentation
 
-> **Documentation Framework**: [Diátaxis](https://diataxis.fr/) - Industry Standard (Python, Django, Ubuntu, 2024-2025)
+> ⚠️ **Status**: Diátaxis-inspired consolidation (KISS approach). True Diátaxis migration planned for Phase 6 (see [REMEDIATION-PLAN-2025-01-20.md](REMEDIATION-PLAN-2025-01-20.md))
 
-Welcome to MoneyWise documentation! This documentation follows the **Diátaxis framework**, organizing content into four distinct categories to help you find exactly what you need.
+Welcome to MoneyWise documentation! This documentation uses a **domain-based organization** inspired by the [Diátaxis framework](https://diataxis.fr/), currently focusing on KISS (Keep It Simple, Stupid) principles with planned migration to full Diátaxis structure.
 
 ---
 
@@ -155,13 +155,16 @@ This documentation follows **industry best practices**:
 
 ## 🔄 Documentation Updates
 
-**Last Major Update**: 2025-11-10
-**Changes**: Implemented Diátaxis framework, added ADRs, established single source of truth
+**Last Major Update**: 2025-01-20
+**Changes**: Honest assessment + remediation plan after agent validation
 
 **Update History**:
-- 2025-11-10: Diátaxis restructuring (282 → 126 files, -55%)
+- 2025-01-20: **Corrected false Diátaxis claim** (was consolidation only, not true framework)
+- 2025-01-20: Created remediation plan for 9-phase completion
+- 2025-01-20: Acknowledged gaps: ADRs (3→10 needed), automation, diagrams
+- 2025-11-10: KISS consolidation (282 → 90 files, -68%)
 - 2025-11-10: Added ADR-0001, ADR-0002, ADR-0003
-- 2025-11-10: Designated progress.md as authoritative source
+- 2025-11-10: Designated progress.md as authoritative source (manual, needs automation)
 
 ---
 
