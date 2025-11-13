@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test'
 import { LoginPage } from '../pages/login.page'
 import { DashboardPage } from '../pages/dashboard.page'
 
-test.describe('Visual Regression Tests', () => {
+test.describe('Visual Regression Tests @critical', () => {
   test.beforeEach(async ({ page }) => {
     // Set viewport for consistent screenshots
     await page.setViewportSize({ width: 1280, height: 720 })

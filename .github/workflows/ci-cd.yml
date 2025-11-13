@@ -1103,7 +1103,17 @@ jobs:
         run: |
           cd apps/web
           TOTAL_SHARDS=${{ github.event_name == 'pull_request' && '4' || '8' }}
-          npx playwright test --shard=${{ matrix.shard }}/$TOTAL_SHARDS
+
+          # Progressive test execution:
+          # - PR: Run @smoke + @critical tests for fast feedback
+          # - Main/Develop: Run ALL tests for comprehensive coverage
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            echo "🏃 Running CRITICAL tier tests (@smoke + @critical)"
+            npx playwright test --shard=${{ matrix.shard }}/$TOTAL_SHARDS --grep "@smoke|@critical"
+          else
+            echo "🏃 Running FULL test suite (all tests)"
+            npx playwright test --shard=${{ matrix.shard }}/$TOTAL_SHARDS
+          fi
 
       - name: Upload test results
         if: always()
