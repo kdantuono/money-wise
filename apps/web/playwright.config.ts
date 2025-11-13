@@ -44,12 +44,22 @@ export default defineConfig({
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
+      // Runs ALL tests
     },
 
-    /* Test against mobile viewports. */
+    /* Test against mobile viewports - OPTIMIZED for critical tests only */
     {
       name: 'Mobile Chrome',
       use: { ...devices['Pixel 5'] },
+      // Only run critical tests on mobile to reduce CI time by ~36%
+      testMatch: [
+        '**/critical-path.spec.ts',
+        '**/auth/registration.e2e.spec.ts',
+        '**/visual/visual-regression.spec.ts',
+        '**/responsive.spec.ts',
+        '**/auth.spec.ts',
+        '**/auth/auth.spec.ts',
+      ],
     },
 
     /* Optional browsers - uncomment when needed for comprehensive testing */
