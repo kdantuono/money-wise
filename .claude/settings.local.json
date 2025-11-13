@@ -106,7 +106,9 @@
       "mcp__hugging-face__model_search",
       "Bash(getent group:*)",
       "WebFetch(domain:docs.saltedge.com)",
-      "Bash(command -v:*)"
+      "Bash(command -v:*)",
+      "Bash(/tmp/run-logs.txt)",
+      "Bash(echo:*)"
     ],
     "deny": [],
     "ask": []
