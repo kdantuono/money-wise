@@ -70,7 +70,7 @@ MoneyWise is a personal finance management system built as a monorepo with micro
 ### Backend (apps/backend)
 - **Framework**: NestJS 10
 - **Language**: TypeScript 5.3
-- **Database ORM**: TypeORM
+- **Database ORM**: Prisma 6.18.0 (migrated 2025-10-14, see docs/explanation/architecture/decisions/ADR-001-prisma-migration.md)
 - **Validation**: class-validator
 - **Authentication**: JWT with Passport
 - **Documentation**: Swagger/OpenAPI

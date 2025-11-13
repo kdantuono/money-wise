@@ -66,6 +66,36 @@ pnpm typecheck || {
   exit 1
 }
 
+# Check documentation if markdown files are staged
+if git diff --cached --name-only | grep -qE '\.md$'; then
+  echo "  📚 Validating markdown links..."
+  STAGED_MD_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep '\.md$')
+
+  # Validate links in staged markdown files
+  for file in $STAGED_MD_FILES; do
+    if [ -f "$file" ]; then
+      if ! pnpm markdown-link-check "$file" --config .markdown-link-check.json --quiet > /dev/null 2>&1; then
+        echo "  ⚠️  Broken links found in: $file"
+        echo "     Run 'pnpm docs:links' for details"
+        # Note: Not blocking commit for broken links (external links may be temporary)
+      fi
+    fi
+  done
+  echo "  ✅ Markdown validation complete"
+fi
+
+# Check test coverage if test files are modified
+if git diff --cached --name-only | grep -qE '\.spec\.ts$|\.test\.ts$'; then
+  echo "  🧪 Validating test coverage thresholds..."
+  if pnpm validate:tests > /dev/null 2>&1; then
+    echo "  ✅ Test coverage thresholds met"
+  else
+    echo "  ⚠️  Some modules below test coverage thresholds"
+    echo "     Run 'pnpm validate:tests' for details"
+    # Note: Not blocking commit, but flagging for awareness
+  fi
+fi
+
 # Run unit tests (fast)
 echo "  🧪 Running unit tests..."
 pnpm test:unit || {

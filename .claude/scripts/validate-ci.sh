@@ -16,7 +16,7 @@ NC='\033[0m'
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 VALIDATION_DIR="$SCRIPT_DIR/ci-validation"
 
-LEVELS=${1:-10}  # Default: run levels 1-10 (MANDATORY comprehensive validation)
+LEVELS=${1:-12}  # Default: run levels 1-12 (MANDATORY comprehensive validation)
 MODE=${2:-pre-push}
 
 # Make all scripts executable
@@ -103,6 +103,44 @@ if [ "$LEVELS" -gt 9 ]; then
     PASSED=$((PASSED + 1))
   else
     echo -e "${YELLOW}⚠️  Level 10 script not found, skipping${NC}"
+    SKIPPED=$((SKIPPED + 1))
+  fi
+  echo ""
+fi
+
+# Level 11: Documentation Quality (TypeDoc, markdown links, OpenAPI)
+if [ "$LEVELS" -gt 10 ]; then
+  echo -e "${YELLOW}🔍 LEVEL 11: Documentation Quality - MANDATORY${NC}"
+  echo ""
+
+  if [ -f "$VALIDATION_DIR/level-11-documentation-quality.sh" ]; then
+    if ! bash "$VALIDATION_DIR/level-11-documentation-quality.sh"; then
+      echo ""
+      echo -e "${RED}❌ Validation failed at LEVEL 11 (MANDATORY)${NC}"
+      exit 1
+    fi
+    PASSED=$((PASSED + 1))
+  else
+    echo -e "${YELLOW}⚠️  Level 11 script not found, skipping${NC}"
+    SKIPPED=$((SKIPPED + 1))
+  fi
+  echo ""
+fi
+
+# Level 12: Test Coverage Thresholds
+if [ "$LEVELS" -gt 11 ]; then
+  echo -e "${YELLOW}🔍 LEVEL 12: Test Coverage Thresholds - MANDATORY${NC}"
+  echo ""
+
+  if [ -f "$VALIDATION_DIR/level-12-test-coverage.sh" ]; then
+    if ! bash "$VALIDATION_DIR/level-12-test-coverage.sh"; then
+      echo ""
+      echo -e "${RED}❌ Validation failed at LEVEL 12 (MANDATORY)${NC}"
+      exit 1
+    fi
+    PASSED=$((PASSED + 1))
+  else
+    echo -e "${YELLOW}⚠️  Level 12 script not found, skipping${NC}"
     SKIPPED=$((SKIPPED + 1))
   fi
   echo ""
