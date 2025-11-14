@@ -951,6 +951,121 @@ jobs:
           retention-days: 7
 
   # ===================================================================
+  # 👥 E2E SETUP: Create test users ONCE before sharded test execution
+  # ===================================================================
+
+  e2e-setup:
+    name: 👥 E2E Setup (Create Test Users)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [foundation, development, testing]
+    # Run E2E setup on same conditions as E2E tests
+    if: |
+      (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/heads/hotfix/'))) ||
+      (github.event_name == 'pull_request' && (github.event.action == 'ready_for_review' || startsWith(github.head_ref, 'hotfix/')))
+    services:
+      postgres:
+        image: timescale/timescaledb:latest-pg15
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: testpass
+          POSTGRES_DB: test_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U test -d test_db"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 📦 Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: '8.15.1'
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: 📥 Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: 🔧 Generate Prisma Client
+        run: |
+          cd apps/backend && pnpm prisma:generate
+
+      - name: 🗄️ Run database migrations
+        run: |
+          cd apps/backend
+          DATABASE_URL=postgresql://test:testpass@localhost:5432/test_db pnpm prisma:migrate:deploy
+
+      - name: 🏗️ Build backend
+        run: pnpm --filter @money-wise/backend build
+
+      - name: 🚀 Start backend server
+        run: |
+          cd apps/backend
+          DATABASE_URL=postgresql://test:testpass@localhost:5432/test_db \
+          REDIS_URL=redis://localhost:6379 \
+          NODE_ENV=test \
+          PORT=3001 \
+          JWT_SECRET=test-secret-key \
+          nohup pnpm start:prod > backend.log 2>&1 &
+          echo $! > backend.pid
+
+      - name: ⏳ Wait for backend health check
+        run: |
+          echo "Waiting for backend to be ready..."
+          for i in {1..30}; do
+            if curl -f http://localhost:3001/api/health > /dev/null 2>&1; then
+              echo "✅ Backend is healthy!"
+              exit 0
+            fi
+            echo "Attempt $i/30: Backend not ready yet..."
+            sleep 2
+          done
+          echo "❌ Backend failed to start"
+          cat backend.log
+          exit 1
+
+      - name: 👥 Create test user pool (8 users for sharding)
+        run: |
+          echo "Creating 8 test users for parallel test execution..."
+          for i in {0..7}; do
+            echo "Creating user $((i+1))/8: e2e-shard-$i@moneywise.test"
+            curl -X POST http://localhost:3001/api/auth/register \
+              -H "Content-Type: application/json" \
+              -d "{\"email\":\"e2e-shard-$i@moneywise.test\",\"password\":\"TestUser#2025!Shard\",\"firstName\":\"E2E\",\"lastName\":\"Shard$i\"}" \
+              -w "\nHTTP Status: %{http_code}\n" \
+              || echo "User might already exist (409) - continuing..."
+          done
+          echo "✅ Test user pool creation completed"
+
+      - name: 🛑 Stop backend server
+        if: always()
+        run: |
+          if [ -f backend.pid ]; then
+            kill $(cat backend.pid) || true
+            rm backend.pid
+          fi
+
+  # ===================================================================
   # 🧪 E2E TESTS: End-to-end testing with smart sharding
   # ===================================================================
 
@@ -958,7 +1073,7 @@ jobs:
     name: 🧪 E2E Tests
     runs-on: ubuntu-latest
     timeout-minutes: 60
-    needs: [foundation, development, testing]
+    needs: [foundation, development, testing, e2e-setup]
     # Run E2E tests on:
     # - Push to main/develop/hotfix branches
     # - Pull requests from hotfix branches (to ensure E2E before merge to main)
