@@ -1291,6 +1291,35 @@ jobs:
         env:
           DATABASE_URL: postgresql://test:testpass@localhost:5432/test_db
 
+      - name: 🚀 Start backend server for E2E tests
+        run: |
+          cd apps/backend
+          DATABASE_URL=postgresql://test:testpass@localhost:5432/test_db \
+          REDIS_URL=redis://localhost:6379 \
+          NODE_ENV=test \
+          PORT=3001 \
+          JWT_ACCESS_SECRET=test-jwt-access-secret-minimum-32-characters-long-for-testing-purposes \
+          JWT_REFRESH_SECRET=test-jwt-refresh-secret-minimum-32-characters-long-different-from-access \
+          nohup pnpm start:prod > backend.log 2>&1 &
+          echo $! > backend.pid
+          echo "✅ Backend server started (PID: $(cat backend.pid))"
+
+      - name: ⏳ Wait for backend health check
+        run: |
+          echo "Waiting for backend to be ready..."
+          for i in {1..30}; do
+            if curl -f http://localhost:3001/api/health > /dev/null 2>&1; then
+              echo "✅ Backend is healthy and ready for E2E tests!"
+              exit 0
+            fi
+            echo "Attempt $i/30: Backend not ready yet..."
+            sleep 2
+          done
+          echo "❌ Backend failed to start within 60 seconds"
+          echo "Backend logs:"
+          cat backend.log
+          exit 1
+
       - name: Run E2E tests (shard ${{ matrix.shard }}/${{ github.event_name == 'pull_request' && '4' || '8' }})
         env:
           DATABASE_URL: postgresql://test:testpass@localhost:5432/test_db
