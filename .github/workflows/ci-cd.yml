@@ -1057,6 +1057,72 @@ jobs:
           done
           echo "✅ Test user pool creation completed"
 
+      - name: 📝 Create test-users.json file
+        run: |
+          mkdir -p apps/web/e2e/.auth
+          cat > apps/web/e2e/.auth/test-users.json << 'EOF'
+          {
+            "users": [
+              {
+                "email": "e2e-shard-0@moneywise.test",
+                "password": "TestUser#2025!Shard",
+                "firstName": "E2E",
+                "lastName": "Shard0"
+              },
+              {
+                "email": "e2e-shard-1@moneywise.test",
+                "password": "TestUser#2025!Shard",
+                "firstName": "E2E",
+                "lastName": "Shard1"
+              },
+              {
+                "email": "e2e-shard-2@moneywise.test",
+                "password": "TestUser#2025!Shard",
+                "firstName": "E2E",
+                "lastName": "Shard2"
+              },
+              {
+                "email": "e2e-shard-3@moneywise.test",
+                "password": "TestUser#2025!Shard",
+                "firstName": "E2E",
+                "lastName": "Shard3"
+              },
+              {
+                "email": "e2e-shard-4@moneywise.test",
+                "password": "TestUser#2025!Shard",
+                "firstName": "E2E",
+                "lastName": "Shard4"
+              },
+              {
+                "email": "e2e-shard-5@moneywise.test",
+                "password": "TestUser#2025!Shard",
+                "firstName": "E2E",
+                "lastName": "Shard5"
+              },
+              {
+                "email": "e2e-shard-6@moneywise.test",
+                "password": "TestUser#2025!Shard",
+                "firstName": "E2E",
+                "lastName": "Shard6"
+              },
+              {
+                "email": "e2e-shard-7@moneywise.test",
+                "password": "TestUser#2025!Shard",
+                "firstName": "E2E",
+                "lastName": "Shard7"
+              }
+            ]
+          }
+          EOF
+          echo "✅ test-users.json file created with 8 user credentials"
+
+      - name: 📤 Upload test user pool as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-test-users
+          path: apps/web/e2e/.auth/test-users.json
+          retention-days: 1
+
       - name: 🛑 Stop backend server
         if: always()
         run: |
@@ -1132,6 +1198,23 @@ jobs:
 
       - name: 📥 Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: 📥 Download test user pool artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: e2e-test-users
+          path: apps/web/e2e/.auth/
+
+      - name: ✅ Verify test-users.json downloaded
+        run: |
+          if [ -f apps/web/e2e/.auth/test-users.json ]; then
+            echo "✅ test-users.json successfully downloaded"
+            cat apps/web/e2e/.auth/test-users.json | jq '.users | length'
+            echo "users available for test execution"
+          else
+            echo "❌ test-users.json not found - E2E tests will fail!"
+            exit 1
+          fi
 
       - name: 🔧 Generate Prisma Client
         run: |
