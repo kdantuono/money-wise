@@ -262,7 +262,9 @@ async function loginViaAPI(page: any) {
 
     // Navigate to dashboard to verify login
     await page.goto(`${FRONTEND_URL}/dashboard`);
-    await page.waitForLoadState('networkidle');
+    // Changed from 'networkidle' to 'domcontentloaded' to avoid timeout issues
+    // with continuous polling/websockets in the dashboard
+    await page.waitForLoadState('domcontentloaded');
 
     // Verify we're logged in
     const currentUrl = page.url();
