@@ -6,6 +6,7 @@
 import { Page, expect } from '@playwright/test';
 import { ROUTES, API_ROUTES } from '../config/routes';
 import { TIMEOUTS } from '../config/timeouts';
+import { TEST_IDS } from '../config/test-ids';
 import { UserData, createUser, DEFAULT_TEST_USER } from '../factories/user.factory';
 import * as path from 'path';
 import * as fs from 'fs';
@@ -163,11 +164,11 @@ export class AuthHelper {
   async register(userData: UserData = createUser()): Promise<UserData> {
     await this.page.goto(ROUTES.AUTH.REGISTER);
 
-    // Fill registration form
-    await this.page.fill('input[name="firstName"]', userData.firstName);
-    await this.page.fill('input[name="lastName"]', userData.lastName);
-    await this.page.fill('input[name="email"]', userData.email);
-    await this.page.fill('input[name="password"]', userData.password);
+    // Fill registration form using TEST_IDS constants
+    await this.page.fill(TEST_IDS.AUTH.FIRST_NAME_INPUT, userData.firstName);
+    await this.page.fill(TEST_IDS.AUTH.LAST_NAME_INPUT, userData.lastName);
+    await this.page.fill(TEST_IDS.AUTH.EMAIL_INPUT, userData.email);
+    await this.page.fill(TEST_IDS.AUTH.PASSWORD_INPUT, userData.password);
 
     // Wait for API response
     const responsePromise = this.page.waitForResponse(
@@ -175,7 +176,7 @@ export class AuthHelper {
       { timeout: TIMEOUTS.API_REQUEST }
     );
 
-    await this.page.click('button:has-text("Sign Up")');
+    await this.page.click(TEST_IDS.AUTH.REGISTER_BUTTON);
     await responsePromise;
 
     // Wait for redirect
@@ -190,9 +191,9 @@ export class AuthHelper {
   async login(email: string = DEFAULT_TEST_USER.email, password: string = DEFAULT_TEST_USER.password): Promise<void> {
     await this.page.goto(ROUTES.AUTH.LOGIN);
 
-    // Fill login form
-    await this.page.fill('input[name="email"]', email);
-    await this.page.fill('input[name="password"]', password);
+    // Fill login form using TEST_IDS constants
+    await this.page.fill(TEST_IDS.AUTH.EMAIL_INPUT, email);
+    await this.page.fill(TEST_IDS.AUTH.PASSWORD_INPUT, password);
 
     // Wait for API response
     const responsePromise = this.page.waitForResponse(
@@ -200,7 +201,7 @@ export class AuthHelper {
       { timeout: TIMEOUTS.API_REQUEST }
     );
 
-    await this.page.click('button:has-text("Sign In")');
+    await this.page.click(TEST_IDS.AUTH.LOGIN_BUTTON);
     const response = await responsePromise;
 
     if (response.status() === 200) {
@@ -343,7 +344,7 @@ export class AuthHelper {
    */
   async expectLoginPage(): Promise<void> {
     await expect(this.page).toHaveURL(ROUTES.AUTH.LOGIN, { timeout: TIMEOUTS.PAGE_TRANSITION });
-    await expect(this.page.locator('input[name="email"]')).toBeVisible({ timeout: TIMEOUTS.ELEMENT_VISIBLE });
+    await expect(this.page.locator(TEST_IDS.AUTH.EMAIL_INPUT)).toBeVisible({ timeout: TIMEOUTS.ELEMENT_VISIBLE });
   }
 
   /**
@@ -357,7 +358,7 @@ export class AuthHelper {
    * Verify error message is shown
    */
   async expectAuthError(message?: string): Promise<void> {
-    const errorAlert = this.page.locator('[role="alert"]').first();
+    const errorAlert = this.page.locator(TEST_IDS.AUTH.ERROR_MESSAGE);
     await expect(errorAlert).toBeVisible({ timeout: TIMEOUTS.ELEMENT_VISIBLE });
 
     if (message) {
