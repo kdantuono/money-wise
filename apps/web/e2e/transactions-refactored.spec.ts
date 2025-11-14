@@ -49,8 +49,8 @@ test.describe('Transactions', () => {
 
     test('should display add transaction button', async ({ page }) => {
       // Assert
-      const addButton = page.locator('[data-testid="add-transaction-button"], button:has-text("Add Transaction")');
-      await expect(addButton.first()).toBeVisible({ timeout: TIMEOUTS.DEFAULT });
+      const addButton = page.locator('[data-testid="add-transaction-button"]');
+      await expect(addButton).toBeVisible({ timeout: TIMEOUTS.DEFAULT });
     });
   });
 
@@ -60,7 +60,7 @@ test.describe('Transactions', () => {
       await transactionsPage.clickAddTransaction();
 
       // Assert
-      const form = page.locator('[data-testid="transaction-form"], form');
+      const form = page.locator('[data-testid="transaction-form"]');
       await expect(form).toBeVisible({ timeout: TIMEOUTS.DEFAULT });
     });
 
@@ -131,7 +131,7 @@ test.describe('Transactions', () => {
 
       // Assert
       await waitHelper.wait(TIMEOUTS.FORM_VALIDATION);
-      const form = page.locator('[data-testid="transaction-form"], form');
+      const form = page.locator('[data-testid="transaction-form"]');
       const isStillVisible = await form.isVisible();
       expect(isStillVisible).toBeTruthy(); // Form should not close
     });
@@ -150,7 +150,7 @@ test.describe('Transactions', () => {
 
       // Assert
       await waitHelper.wait(TIMEOUTS.FORM_VALIDATION);
-      const form = page.locator('[data-testid="transaction-form"], form');
+      const form = page.locator('[data-testid="transaction-form"]');
       const isStillVisible = await form.isVisible();
       expect(isStillVisible).toBeTruthy();
     });
@@ -169,7 +169,7 @@ test.describe('Transactions', () => {
 
       // Assert
       await waitHelper.wait(TIMEOUTS.FORM_VALIDATION);
-      const form = page.locator('[data-testid="transaction-form"], form');
+      const form = page.locator('[data-testid="transaction-form"]');
       const isStillVisible = await form.isVisible();
       expect(isStillVisible).toBeTruthy();
     });
@@ -256,7 +256,7 @@ test.describe('Transactions', () => {
       await transactionsPage.editTransaction(0);
 
       // Assert
-      const form = page.locator('[data-testid="transaction-form"], form');
+      const form = page.locator('[data-testid="transaction-form"]');
       await expect(form).toBeVisible({ timeout: TIMEOUTS.DEFAULT });
     });
 
@@ -354,7 +354,7 @@ test.describe('Transactions', () => {
       await transactionsPage.cancelForm();
 
       // Assert
-      const form = page.locator('[data-testid="transaction-form"], form');
+      const form = page.locator('[data-testid="transaction-form"]');
       await expect(form).not.toBeVisible({ timeout: TIMEOUTS.DEFAULT });
     });
 
@@ -371,7 +371,7 @@ test.describe('Transactions', () => {
       await transactionsPage.clickAddTransaction();
 
       // Assert - form should be empty
-      const form = page.locator('[data-testid="transaction-form"], form');
+      const form = page.locator('[data-testid="transaction-form"]');
       await expect(form).toBeVisible();
       // Fields should be empty/reset
     });
@@ -439,7 +439,7 @@ test.describe('Transactions', () => {
       await transactionsPage.clickAddTransaction();
 
       // Assert
-      const form = page.locator('[data-testid="transaction-form"], form');
+      const form = page.locator('[data-testid="transaction-form"]');
       await expect(form).toBeVisible();
 
       // Check for input fields

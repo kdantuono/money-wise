@@ -104,15 +104,15 @@ test.describe('Visual Regression Tests @critical', () => {
     await page.waitForLoadState('networkidle')
 
     // Focus on email field
-    await page.locator('input[type="email"]').focus()
+    await page.locator('[data-testid="email-input"]').focus()
     await expect(page).toHaveScreenshot('login-email-focused.png')
 
     // Fill email field
-    await page.locator('input[type="email"]').fill('test@example.com')
+    await page.locator('[data-testid="email-input"]').fill('test@example.com')
     await expect(page).toHaveScreenshot('login-email-filled.png')
 
     // Focus on password field
-    await page.locator('input[type="password"]').focus()
+    await page.locator('[data-testid="password-input"]').focus()
     await expect(page).toHaveScreenshot('login-password-focused.png')
   })
 
@@ -121,8 +121,8 @@ test.describe('Visual Regression Tests @critical', () => {
     await page.waitForLoadState('networkidle')
 
     // Fill form
-    await page.locator('input[type="email"]').fill('test@example.com')
-    await page.locator('input[type="password"]').fill('password123')
+    await page.locator('[data-testid="email-input"]').fill('test@example.com')
+    await page.locator('[data-testid="password-input"]').fill('password123')
 
     // Mock slow network to capture loading state
     await page.route('**/api/auth/login', async route => {
@@ -131,7 +131,7 @@ test.describe('Visual Regression Tests @critical', () => {
     })
 
     // Click submit and immediately take screenshot of loading state
-    const submitPromise = page.locator('button[type="submit"]').click()
+    const submitPromise = page.locator('[data-testid="login-button"]').click()
 
     // Wait a bit for loading state to appear
     await page.waitForTimeout(200)

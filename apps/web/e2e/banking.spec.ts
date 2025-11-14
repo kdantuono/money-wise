@@ -8,11 +8,11 @@ test.describe('Banking Integration - Critical User Journey', () => {
   test.beforeEach(async ({ page }) => {
     // Register
     await page.goto('/auth/register');
-    await page.fill('input[name="firstName"]', testUser.firstName);
-    await page.fill('input[name="lastName"]', testUser.lastName);
-    await page.fill('input[name="email"]', testUser.email);
-    await page.fill('input[name="password"]', testUser.password);
-    await page.click('button:has-text("Sign Up")');
+    await page.fill('[data-testid="first-name-input"]', testUser.firstName);
+    await page.fill('[data-testid="last-name-input"]', testUser.lastName);
+    await page.fill('[data-testid="email-input"]', testUser.email);
+    await page.fill('[data-testid="password-input"]', testUser.password);
+    await page.click('[data-testid="register-button"]');
 
     // Wait for successful registration
     await page.waitForURL(/^\/(dashboard|auth\/login)/, { timeout: 10000 });
@@ -27,13 +27,13 @@ test.describe('Banking Integration - Critical User Journey', () => {
       await expect(page).toHaveURL('/banking');
 
       // Should display the "Link Bank" button
-      const linkBankButton = page.locator('button:has-text("Link Bank")').first();
+      const linkBankButton = page.locator('[data-testid="link-bank-button"]');
       await expect(linkBankButton).toBeVisible();
     });
 
     test('should initiate banking link flow when clicking link bank button', async ({ page }) => {
       // Click link bank button
-      const linkBankButton = page.locator('button:has-text("Link Bank")').first();
+      const linkBankButton = page.locator('[data-testid="link-bank-button"]');
       await linkBankButton.click();
 
       // Should show loading or redirect to banking provider
@@ -61,11 +61,9 @@ test.describe('Banking Integration - Critical User Journey', () => {
 
     test('should show empty state when no accounts are linked', async ({ page }) => {
       // On initial banking page with no linked accounts
-      const emptyState = page.locator('text=No accounts linked');
-      const noAccountsMessage = page.locator(':has-text("No bank accounts")');
+      const emptyState = page.locator('[role="status"][aria-label="No accounts linked"]');
 
-      const hasEmptyState =
-        (await emptyState.isVisible()) || (await noAccountsMessage.isVisible());
+      const hasEmptyState = await emptyState.isVisible().catch(() => false);
 
       expect(hasEmptyState || true).toBeTruthy();
     });
@@ -88,7 +86,7 @@ test.describe('Banking Integration - Critical User Journey', () => {
 
     test('should allow syncing account transactions', async ({ page }) => {
       // Look for sync button
-      const syncButton = page.locator('button:has-text("Sync")').first();
+      const syncButton = page.locator('[data-testid="sync-button"]').first();
 
       if (await syncButton.isVisible()) {
         await syncButton.click();
@@ -101,7 +99,7 @@ test.describe('Banking Integration - Critical User Journey', () => {
 
     test('should allow revoking account connection', async ({ page }) => {
       // Look for revoke/disconnect button
-      const revokeButton = page.locator('button:has-text("Disconnect")').first();
+      const revokeButton = page.locator('[data-testid="disconnect-button"]').first();
 
       if (await revokeButton.isVisible()) {
         await revokeButton.click();
@@ -128,7 +126,7 @@ test.describe('Banking Integration - Critical User Journey', () => {
       // 3. Error state (failed to link)
 
       const loadingSpinner = page.locator('[aria-busy="true"]');
-      const successMessage = page.locator('text=Successfully');
+      const successMessage = page.locator('text=/successfully/i');
       const errorAlert = page.locator('[role="alert"]');
 
       const isProcessing = await loadingSpinner.isVisible({ timeout: 1000 }).catch(() => false);
@@ -146,7 +144,7 @@ test.describe('Banking Integration - Critical User Journey', () => {
       // Wait for either redirect or success message
       const redirectOrSuccess = await Promise.race([
         page.waitForURL('/banking', { timeout: 5000 }).then(() => 'redirect'),
-        page.locator('text=Successfully').isVisible({ timeout: 5000 }).then(() => 'success'),
+        page.locator('text=/successfully/i').isVisible({ timeout: 5000 }).then(() => 'success'),
       ]).catch(() => null);
 
       expect(redirectOrSuccess || true).toBeTruthy();
@@ -158,7 +156,7 @@ test.describe('Banking Integration - Critical User Journey', () => {
 
       // Should show error message about invalid/missing connection
       const errorAlert = page.locator('[role="alert"]');
-      const errorMessage = page.locator('text=invalid').first();
+      const errorMessage = page.locator('text=/invalid/i').first();
 
       const hasError = await errorAlert.isVisible({ timeout: 2000 }).catch(() => false);
       const hasErrorMsg = await errorMessage.isVisible({ timeout: 2000 }).catch(() => false);
@@ -208,13 +206,13 @@ test.describe('Banking Integration - Critical User Journey', () => {
   test.describe('Error Handling', () => {
     test('should handle banking provider connection errors gracefully', async ({ page }) => {
       // Try to sync with potential errors
-      const syncButton = page.locator('button:has-text("Sync")').first();
+      const syncButton = page.locator('[data-testid="sync-button"]').first();
 
       if (await syncButton.isVisible()) {
         await syncButton.click();
 
         // Wait for either success or error
-        const successAlert = page.locator('text=Synced').first();
+        const successAlert = page.locator('text=/synced/i').first();
         const errorAlert = page.locator('[role="alert"]').first();
 
         const hasSuccess = await successAlert.isVisible({ timeout: 10000 }).catch(() => false);

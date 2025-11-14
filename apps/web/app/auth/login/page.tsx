@@ -102,7 +102,7 @@ export default function LoginPage() {
                     autoComplete="email"
                     {...register('email')}
                     className={errors.email ? 'border-destructive' : ''}
-                    data-testid="email"
+                    data-testid="email-input"
                   />
                   {errors.email && (
                     <p className="text-sm text-destructive" data-testid="email-error">{errors.email.message}</p>
@@ -118,7 +118,7 @@ export default function LoginPage() {
                       autoComplete="current-password"
                       {...register('password')}
                       className={errors.password ? 'border-destructive' : ''}
-                      data-testid="password"
+                      data-testid="password-input"
                     />
                     <button
                       type="button"

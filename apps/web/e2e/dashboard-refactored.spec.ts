@@ -45,9 +45,7 @@ test.describe('Dashboard', () => {
     test('should display user menu for logged-in user', async ({ page }) => {
       // Assert
       const userMenu = page.locator('[data-testid="user-menu"]');
-      const userMenuVisible =
-        (await userMenu.isVisible({ timeout: TIMEOUTS.SHORT })) ||
-        (await page.locator('button:has-text("Menu")').isVisible({ timeout: TIMEOUTS.SHORT }));
+      const userMenuVisible = await userMenu.isVisible({ timeout: TIMEOUTS.SHORT });
 
       expect(userMenuVisible || true).toBeTruthy();
     });
@@ -67,9 +65,7 @@ test.describe('Dashboard', () => {
       await waitHelper.waitForLoadingComplete();
 
       // Assert
-      const balanceWidget = page.locator('[data-testid="balance-widget"]')
-        .or(page.locator('[data-testid="current-balance"]'))
-        .or(page.getByText(/balance/i));
+      const balanceWidget = page.locator('[data-testid="current-balance"]');
       const hasBalanceWidget = await balanceWidget.isVisible({ timeout: TIMEOUTS.DEFAULT }).catch(() => false);
 
       expect(hasBalanceWidget || true).toBeTruthy();
@@ -94,11 +90,8 @@ test.describe('Dashboard', () => {
       // Act
       await waitHelper.waitForLoadingComplete();
 
-      // Assert
-      const accountsSection = page.locator('[data-testid="accounts-section"]')
-        .or(page.locator('[data-testid="account-card"]'))
-        .or(page.getByText(/accounts/i));
-      const hasAccountsSection = await accountsSection.first().isVisible({ timeout: TIMEOUTS.DEFAULT }).catch(() => false);
+      // Assert - Use permissive text search as accounts section may or may not exist
+      const hasAccountsSection = await page.getByText(/account/i).first().isVisible({ timeout: TIMEOUTS.DEFAULT }).catch(() => false);
 
       expect(hasAccountsSection || true).toBeTruthy();
     });
@@ -108,10 +101,8 @@ test.describe('Dashboard', () => {
       await waitHelper.waitForLoadingComplete();
 
       // Assert
-      const transactionsSection = page.locator('[data-testid="recent-transactions"]')
-        .or(page.locator('[data-testid="transactions-section"]'))
-        .or(page.getByText(/transactions/i));
-      const hasTransactions = await transactionsSection.first().isVisible({ timeout: TIMEOUTS.DEFAULT }).catch(() => false);
+      const transactionsSection = page.locator('[data-testid="recent-transactions"]');
+      const hasTransactions = await transactionsSection.isVisible({ timeout: TIMEOUTS.DEFAULT }).catch(() => false);
 
       expect(hasTransactions || true).toBeTruthy();
     });
@@ -139,9 +130,7 @@ test.describe('Dashboard', () => {
   test.describe('Navigation', () => {
     test('should navigate to banking page when link clicked', async ({ page }) => {
       // Arrange
-      const bankingLink = page
-        .locator('a[href="/banking"], button:has-text("Banking"), [data-testid="nav-banking"]')
-        .first();
+      const bankingLink = page.locator('a[href="/banking"]');
 
       // Act
       if (await bankingLink.isVisible({ timeout: TIMEOUTS.SHORT })) {
@@ -155,9 +144,7 @@ test.describe('Dashboard', () => {
 
     test('should navigate to accounts page when link clicked', async ({ page }) => {
       // Arrange
-      const accountsLink = page
-        .locator('a[href="/accounts"], button:has-text("Accounts"), [data-testid="nav-accounts"]')
-        .first();
+      const accountsLink = page.locator('[data-testid="nav-accounts"]');
 
       // Act
       if (await accountsLink.isVisible({ timeout: TIMEOUTS.SHORT })) {
@@ -171,9 +158,7 @@ test.describe('Dashboard', () => {
 
     test('should navigate to settings page when link clicked', async ({ page }) => {
       // Arrange
-      const settingsLink = page
-        .locator('a[href="/settings"], button:has-text("Settings"), [data-testid="nav-settings"]')
-        .first();
+      const settingsLink = page.locator('[data-testid="nav-settings"]');
 
       // Act
       if (await settingsLink.isVisible({ timeout: TIMEOUTS.SHORT })) {
@@ -316,9 +301,7 @@ test.describe('Dashboard', () => {
 
     test('should open add transaction modal if button available', async ({ page }) => {
       // Arrange
-      const addButton = page.locator(
-        '[data-testid="add-transaction-button"], button:has-text("Add Transaction")'
-      );
+      const addButton = page.locator('[data-testid="add-transaction-button"]');
 
       // Act & Assert
       if (await addButton.isVisible({ timeout: TIMEOUTS.SHORT })) {
