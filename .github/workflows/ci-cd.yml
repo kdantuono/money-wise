@@ -7,9 +7,9 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [main, develop, 'epic/**', 'feature/**', 'story/**', 'refactor/**']
+    branches: [main, develop, 'epic/**', 'feature/**', 'story/**', 'refactor/**', 'hotfix/**']
   pull_request:
-    branches: [main, develop, 'epic/**', 'feature/**', 'story/**', 'refactor/**']
+    branches: [main, develop, 'epic/**', 'feature/**', 'story/**', 'refactor/**', 'hotfix/**']
   workflow_dispatch:
     inputs:
       force_full_pipeline:
