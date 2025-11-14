@@ -50,17 +50,17 @@ class RegistrationPage {
   }
 
   async getEmailErrorMessage() {
-    const errorElement = this.page.locator('#email + .text-destructive');
+    const errorElement = this.page.locator('[data-testid="email-error"]');
     return errorElement.isVisible() ? errorElement.textContent() : null;
   }
 
   async getPasswordErrorMessage() {
-    const errorElement = this.page.locator('#password + div + .text-destructive');
+    const errorElement = this.page.locator('[data-testid="password-error"]');
     return errorElement.isVisible() ? errorElement.textContent() : null;
   }
 
   async getConfirmPasswordErrorMessage() {
-    const errorElement = this.page.locator('#confirmPassword + div + .text-destructive');
+    const errorElement = this.page.locator('[data-testid="confirm-password-error"]');
     return errorElement.isVisible() ? errorElement.textContent() : null;
   }
 

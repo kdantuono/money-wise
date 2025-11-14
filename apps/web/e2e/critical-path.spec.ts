@@ -37,7 +37,9 @@ test.describe('CRITICAL PATH - Complete User Journey (MUST PASS) @smoke @critica
       await page.fill('input[name="password"]', testUser.password);
 
       // Submit registration
-      const submitButton = page.locator('button:has-text("Sign Up")');
+      await page.fill('input[name="confirmPassword"]', testUser.password);
+
+      const submitButton = page.locator('[data-testid="register-button"]');
       await expect(submitButton).toBeVisible();
       await submitButton.click();
 
@@ -56,7 +58,7 @@ test.describe('CRITICAL PATH - Complete User Journey (MUST PASS) @smoke @critica
       if (currentUrl.includes('/auth/login')) {
         await page.fill('input[name="email"]', testUser.email);
         await page.fill('input[name="password"]', testUser.password);
-        await page.click('button:has-text("Sign In")');
+        await page.click('[data-testid="login-button"]');
 
         await page.waitForURL('/dashboard', { timeout: 10000 });
       }
@@ -74,8 +76,8 @@ test.describe('CRITICAL PATH - Complete User Journey (MUST PASS) @smoke @critica
       await expect(page).toHaveURL('/banking');
 
       // Should see banking page content
-      const bankingContainer = page.locator('[data-testid="banking-container"], text=Banking');
-      await expect(bankingContainer.first()).toBeVisible({ timeout: 5000 });
+      const bankingContainer = page.locator('[data-testid="banking-container"]');
+      await expect(bankingContainer).toBeVisible({ timeout: 5000 });
 
       console.log('✓ Navigated to banking page');
     });
