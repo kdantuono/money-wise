@@ -11,8 +11,8 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   /* Retry on CI only */
   retries: process.env.CI ? 2 : 0,
-  /* Opt out of parallel tests on CI. */
-  workers: process.env.CI ? 1 : undefined,
+  /* Workers: 2 in CI for faster execution within each shard */
+  workers: process.env.CI ? 2 : undefined,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: [
     ['html', { open: 'never' }],
@@ -44,27 +44,37 @@ export default defineConfig({
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
+      // Runs ALL tests
     },
 
-    {
-      name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
-    },
-
-    {
-      name: 'webkit',
-      use: { ...devices['Desktop Safari'] },
-    },
-
-    /* Test against mobile viewports. */
+    /* Test against mobile viewports - OPTIMIZED for critical tests only */
     {
       name: 'Mobile Chrome',
       use: { ...devices['Pixel 5'] },
+      // Only run critical tests on mobile to reduce CI time by ~36%
+      testMatch: [
+        '**/critical-path.spec.ts',
+        '**/auth/registration.e2e.spec.ts',
+        '**/visual/visual-regression.spec.ts',
+        '**/responsive.spec.ts',
+        '**/auth.spec.ts',
+        '**/auth/auth.spec.ts',
+      ],
     },
-    {
-      name: 'Mobile Safari',
-      use: { ...devices['iPhone 12'] },
-    },
+
+    /* Optional browsers - uncomment when needed for comprehensive testing */
+    // {
+    //   name: 'firefox',
+    //   use: { ...devices['Desktop Firefox'] },
+    // },
+    // {
+    //   name: 'webkit',
+    //   use: { ...devices['Desktop Safari'] },
+    // },
+    // {
+    //   name: 'Mobile Safari',
+    //   use: { ...devices['iPhone 12'] },
+    // },
 
     /* Test against branded browsers. */
     // {

@@ -12,8 +12,9 @@ import { generateTestData } from './fixtures/test-data';
  * 5. User views dashboard with account data
  *
  * Blocking: This is the must-have flow for MVP launch
+ * Tags: @smoke @critical (runs in all tiers)
  */
-test.describe('CRITICAL PATH - Complete User Journey (MUST PASS)', () => {
+test.describe('CRITICAL PATH - Complete User Journey (MUST PASS) @smoke @critical', () => {
   const testUser = generateTestData.user();
 
   test('should complete full user journey: register → login → banking → dashboard', async ({

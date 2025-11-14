@@ -135,7 +135,7 @@ class ApiMonitor {
   }
 }
 
-test.describe('Registration E2E Tests', () => {
+test.describe('Registration E2E Tests @critical', () => {
   let registrationPage: RegistrationPage;
   let apiMonitor: ApiMonitor;
 

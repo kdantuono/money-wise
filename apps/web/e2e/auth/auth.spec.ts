@@ -7,7 +7,7 @@ import { test, expect } from '@playwright/test';
 import { TestContext } from '../utils/test-helpers';
 import { testUsers, generateTestData } from '../fixtures/test-data';
 
-test.describe('Authentication', () => {
+test.describe('Authentication @critical', () => {
   test.describe('Login', () => {
     test('should login with valid credentials', async ({ page }) => {
       const ctx = new TestContext(page);

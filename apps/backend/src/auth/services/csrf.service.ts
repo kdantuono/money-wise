@@ -15,8 +15,9 @@ import { createHmac, randomBytes } from 'crypto';
  * - Format: `{randomToken}.{timestamp}.{signature}`
  *
  * **Token Lifecycle:**
- * - Generated on demand (stateless - no server-side storage)
- * - Valid for 24 hours from creation
+ * - Generated on demand (stateless generation)
+ * - Valid for 1 hour from creation (reduced from 24h for security)
+ * - Single-use only (replay attacks prevented)
  * - Client must include in X-CSRF-Token header for state-changing requests
  *
  * **Usage:**
@@ -31,7 +32,16 @@ import { createHmac, randomBytes } from 'crypto';
 export class CsrfService {
   private readonly logger = new Logger(CsrfService.name);
   private readonly csrfSecret: string;
-  private readonly tokenExpirationMs: number = 24 * 60 * 60 * 1000; // 24 hours
+  private readonly tokenExpirationMs: number = 60 * 60 * 1000; // 1 hour (reduced from 24h for security)
+
+  // SECURITY: Track used tokens to prevent replay attacks
+  private readonly usedTokens = new Set<string>();
+  private readonly maxUsedTokensCache = 10000; // Prevent memory leak
+
+  // SECURITY: Rate limiting to prevent brute force attacks
+  private readonly validationAttempts = new Map<string, { count: number; resetTime: number }>();
+  private readonly maxValidationAttempts = 10;
+  private readonly rateLimitWindowMs = 60 * 1000; // 1 minute
 
   constructor(private readonly configService: ConfigService) {
     // Get CSRF secret from environment
@@ -76,7 +86,7 @@ export class CsrfService {
       // Combine into final token
       const csrfToken = `${randomToken}.${timestamp}.${signature}`;
 
-      this.logger.debug(`Generated CSRF token (expires in 24h)`);
+      this.logger.debug(`Generated CSRF token (expires in 1h)`);
 
       return csrfToken;
     } catch (error) {
@@ -88,26 +98,45 @@ export class CsrfService {
   /**
    * Validate a CSRF token
    *
-   * Checks:
-   * 1. Token format is correct (3 parts separated by dots)
-   * 2. Signature is valid (prevents tampering)
-   * 3. Token has not expired (24 hour lifetime)
+   * **Security Checks:**
+   * 1. Rate limiting (max 10 attempts per minute per client)
+   * 2. Token format is correct (3 parts separated by dots)
+   * 3. Token has not been used before (single-use enforcement)
+   * 4. Token has not expired (1 hour lifetime)
+   * 5. Signature is valid (prevents tampering)
+   *
+   * **NOTE:** Tokens are marked as used ONLY if all validation passes.
+   * This prevents consuming tokens on failed validation attempts.
    *
    * @param token - The CSRF token to validate
+   * @param clientId - Optional client identifier for rate limiting (defaults to token hash)
    * @returns true if token is valid, false otherwise
    *
    * @example
    * ```typescript
-   * const isValid = await csrfService.validateToken(token);
+   * const isValid = await csrfService.validateToken(token, req.sessionID);
    * if (!isValid) {
    *   throw new ForbiddenException('Invalid CSRF token');
    * }
    * ```
    */
-  async validateToken(token: string): Promise<boolean> {
+  async validateToken(token: string, clientId?: string): Promise<boolean> {
     try {
       if (!token || typeof token !== 'string') {
         this.logger.warn('Invalid token format: token is null or not a string');
+        return false;
+      }
+
+      // SECURITY 1: Rate Limiting
+      const rateLimitId = clientId || this.hashToken(token);
+      if (!this.checkRateLimit(rateLimitId)) {
+        this.logger.warn(`Rate limit exceeded for client: ${rateLimitId.substring(0, 8)}...`);
+        return false;
+      }
+
+      // SECURITY 2: Single-use enforcement (check BEFORE validation)
+      if (this.usedTokens.has(token)) {
+        this.logger.warn('Token reuse attempt detected - token already consumed');
         return false;
       }
 
@@ -128,11 +157,11 @@ export class CsrfService {
         return false;
       }
 
-      // Check expiration (24 hours)
+      // Check expiration (1 hour)
       const tokenAge = Date.now() - timestampNum;
       if (tokenAge > this.tokenExpirationMs) {
         this.logger.warn(
-          `Token expired: age ${Math.round(tokenAge / 1000 / 60)} minutes (max 1440 minutes)`,
+          `Token expired: age ${Math.round(tokenAge / 1000 / 60)} minutes (max 60 minutes)`,
         );
         return false;
       }
@@ -156,7 +185,18 @@ export class CsrfService {
         return false;
       }
 
-      this.logger.debug('CSRF token validated successfully');
+      // SECURITY 3: Mark token as used (single-use enforcement)
+      this.usedTokens.add(token);
+
+      // SECURITY 4: Cleanup to prevent memory leak
+      if (this.usedTokens.size > this.maxUsedTokensCache) {
+        this.logger.warn(
+          `CSRF token cache exceeded ${this.maxUsedTokensCache} entries, clearing oldest entries`,
+        );
+        this.cleanupUsedTokens();
+      }
+
+      this.logger.debug('CSRF token validated successfully and marked as used');
       return true;
     } catch (error) {
       this.logger.error('Error validating CSRF token:', error);
@@ -200,5 +240,72 @@ export class CsrfService {
     }
 
     return result === 0;
+  }
+
+  /**
+   * Check rate limit for token validation attempts
+   *
+   * Prevents brute-force attacks by limiting validation attempts.
+   * Allows max 10 attempts per minute per client.
+   *
+   * @private
+   * @param clientId - Client identifier for rate limiting
+   * @returns true if under rate limit, false if exceeded
+   */
+  private checkRateLimit(clientId: string): boolean {
+    const now = Date.now();
+    const attempts = this.validationAttempts.get(clientId);
+
+    if (!attempts || now > attempts.resetTime) {
+      // First attempt or window expired - create new window
+      this.validationAttempts.set(clientId, {
+        count: 1,
+        resetTime: now + this.rateLimitWindowMs,
+      });
+      return true;
+    }
+
+    if (attempts.count >= this.maxValidationAttempts) {
+      // Rate limit exceeded
+      return false;
+    }
+
+    // Increment counter
+    attempts.count++;
+    return true;
+  }
+
+  /**
+   * Create SHA-256 hash of token for rate limiting identification
+   *
+   * @private
+   * @param token - Token to hash
+   * @returns Hex-encoded SHA-256 hash
+   */
+  private hashToken(token: string): string {
+    const hash = createHmac('sha256', this.csrfSecret);
+    hash.update(token);
+    return hash.digest('hex');
+  }
+
+  /**
+   * Clean up used tokens cache to prevent memory leak
+   *
+   * Removes half of the oldest tokens when cache limit is reached.
+   * Uses Set iteration order (insertion order) to remove oldest entries.
+   *
+   * @private
+   */
+  private cleanupUsedTokens(): void {
+    const tokensToRemove = Math.floor(this.usedTokens.size / 2);
+    let removed = 0;
+
+    for (const token of this.usedTokens) {
+      if (removed >= tokensToRemove) break;
+      this.usedTokens.delete(token);
+      removed++;
+    }
+
+    this.logger.debug(`Cleaned up ${removed} used tokens from cache`);
   }
 }

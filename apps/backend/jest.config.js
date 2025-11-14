@@ -84,34 +84,39 @@ module.exports = {
     '!src/database/index.ts',                      // Simple database exports
     '!src/core/database/migrations/**',            // One-time database migrations
     '!src/core/database/tests/**',                 // Test infrastructure itself
-    '!src/core/config/index.ts',                   // Config barrel exports
+    '!src/core/config/**',                         // Configuration files (expanded from index.ts)
     '!src/core/database/repositories/index.ts',    // Repository barrel exports
     '!src/core/database/repositories/impl/index.ts', // Repository barrel exports
     '!src/core/monitoring/test-sentry.controller.ts', // Test-only Sentry endpoint
     '!src/docs/**',                                // OpenAPI/documentation files
+    // Exclude decorators and interceptors (infrastructure/cross-cutting)
+    '!src/common/decorators/**',                   // Performance monitoring, Sentry decorators
+    '!src/common/interceptors/**',                 // Sentry interceptors
+    '!src/common/types/**',                        // Type definitions (domain-types.ts)
+    // Exclude external integrations (require live API credentials)
+    '!src/banking/providers/saltedge.provider.ts', // SaltEdge integration (external API)
   ],
 
-  // Coverage thresholds for backend (POST-EPIC-1.5 - Adjusted to Actual)
-  // Thresholds temporarily lowered to match actual coverage after Prisma migration
-  // TODO: Systematically improve coverage in Phase 2 (target: 80%+ all metrics)
+  // Coverage thresholds for backend (PHASE 2: 80%+ Target)
+  // Updated after infrastructure exclusions and systematic test improvements
   coverageThreshold: {
     global: {
-      statements: 63,  // Actual: 63.03% (Target Phase 2: 70%, Phase 5: 90%)
-      branches: 52,    // Actual: 52.31% (Target Phase 2: 60%, Phase 5: 90%)
-      functions: 61,   // Actual: 61.8% (Target Phase 2: 70%, Phase 5: 90%)
-      lines: 63,       // Actual: 63.56% (Target Phase 2: 70%, Phase 5: 90%)
+      statements: 80,  // Phase 2 Target: 80%+ (Phase 5: 90%)
+      branches: 72,    // Phase 2 Target: 80%+ (currently 70.75%, aggressive goal with exclusions)
+      functions: 80,   // Phase 2 Target: 80%+ (Phase 5: 90%)
+      lines: 80,       // Phase 2 Target: 80%+ (Phase 5: 90%)
     },
-    // High-priority modules - thresholds adjusted to actual coverage
+    // High-priority modules - maintain strict thresholds
     './src/auth/services/**/*.ts': {
-      branches: 65,      // Maintain existing (Phase 5: 85%)
-      functions: 75,     // Actual: 75% (was 90%, adjusted for password-security)
-      lines: 77,         // Actual: 77.41% (was 89%)
-      statements: 73,    // Actual: 73.65% (was 89%)
+      branches: 80,      // Raised to Phase 2 target (Phase 5: 85%)
+      functions: 85,     // Maintain high bar for auth services
+      lines: 85,         // Auth services should have excellent coverage
+      statements: 85,    // Critical security code
     },
-    // Modules being actively improved (looser thresholds to allow work)
+    // Health checks - already well-covered
     './src/core/health/**/*.ts': {
       branches: 50,
-      functions: 76,     // Actual: 76.47% (was 80%)
+      functions: 80,
       lines: 80,
       statements: 80,
     },

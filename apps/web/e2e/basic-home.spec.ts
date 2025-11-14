@@ -1,11 +1,12 @@
 /**
  * Basic Home Page E2E Tests
  * Simple tests for the current minimal homepage
+ * Tags: @smoke (quick sanity check)
  */
 
 import { test, expect } from '@playwright/test';
 
-test.describe('Basic Home Page', () => {
+test.describe('Basic Home Page @smoke', () => {
   test('should display homepage with MoneyWise heading', async ({ page }) => {
     await page.goto('/');
 

@@ -1,1049 +1,678 @@
-// @ts-nocheck - TypeORM tests skipped pending P.3.8.3 Prisma rewrite
 import { Test, TestingModule } from '@nestjs/testing';
-import { NotFoundException, ForbiddenException } from '@nestjs/common';
+import { BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { AccountsService } from '../../../src/accounts/accounts.service';
-import { AccountType, AccountStatus, AccountSource } from '../../../generated/prisma';
-import { UserRole } from '../../../generated/prisma';
-import { CreateAccountDto } from '../../../src/accounts/dto/create-account.dto';
-import { UpdateAccountDto } from '../../../src/accounts/dto/update-account.dto';
 import { PrismaService } from '../../../src/core/database/prisma/prisma.service';
-import { Account as PrismaAccount } from '../../../generated/prisma';
+import { AccountType, AccountSource, AccountStatus, UserRole, Prisma } from '../../../generated/prisma';
+import { AccountFactory } from '../../utils/factories';
+import { createMockPrismaService, resetPrismaMocks } from '../../utils/mocks';
 
 /**
- * TODO (#128 - P.3.8.3): Rewrite unit tests for Prisma
+ * AccountsService Unit Tests
  *
- * These unit tests use TypeORM entity enums and Repository mock patterns.
- * They need complete rewrite to use Prisma Client patterns.
+ * Test Coverage Strategy:
+ * - Public methods: create, findAll, findOne, update, remove, getBalance, getSummary, syncAccount
+ * - Authorization: XOR constraint (userId OR familyId), role-based access, ownership verification
+ * - Error handling: NotFoundException, ForbiddenException, BadRequestException
+ * - Business logic: Decimal conversions, DTO transformations, sync requirements
  *
- * Current status: SKIPPED (38 integration tests provide complete coverage)
- * Blocked by: Need to update mock patterns from Repository to Prisma Client
- * Estimated effort: 1-2 hours
- * Tracking: https://github.com/kdantuono/money-wise/issues/128
- *
- * See: apps/backend/__tests__/integration/accounts/ for complete test coverage
+ * TDD Pattern: Red-Green-Refactor
+ * AAA Pattern: Arrange - Act - Assert
+ * Assertions: One behavioral assertion per test
  */
-describe.skip('AccountsService', () => {
+describe('AccountsService', () => {
   let service: AccountsService;
-  let prisma: jest.Mocked<PrismaService>;
-
-  // Mock PrismaService
-  const mockPrismaService = {
-    account: {
-      create: jest.fn(),
-      findMany: jest.fn(),
-      findUnique: jest.fn(),
-      update: jest.fn(),
-      delete: jest.fn(),
-    },
-  };
-
-  // Helper to create mock account
-  const createMockAccount = (partial: Partial<PrismaAccount> = {}): PrismaAccount => ({
-    id: 'acc-123',
-    userId: 'user-123',
-    name: 'Test Account',
-    type: AccountType.CHECKING as any,
-    status: AccountStatus.ACTIVE as any,
-    source: AccountSource.MANUAL as any,
-    currentBalance: 1000 as any,
-    availableBalance: 900 as any,
-    creditLimit: null,
-    currency: 'USD',
-    institutionName: null,
-    accountNumber: null,
-    routingNumber: null,
-    plaidAccountId: null,
-    plaidItemId: null,
-    plaidAccessToken: null,
-    plaidMetadata: null,
-    isActive: true,
-    syncEnabled: true,
-    lastSyncAt: null,
-    syncError: null,
-    settings: null,
-    createdAt: new Date('2025-01-01'),
-    updatedAt: new Date('2025-01-01'),
-    ...partial,
-  } as PrismaAccount);
+  let prisma: any;
 
   beforeEach(async () => {
+    // Arrange: Create module with mocked dependencies
+    const mockPrisma = createMockPrismaService();
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AccountsService,
-        {
-          provide: PrismaService,
-          useValue: mockPrismaService,
-        },
+        { provide: PrismaService, useValue: mockPrisma },
       ],
     }).compile();
 
     service = module.get<AccountsService>(AccountsService);
-    prisma = module.get(PrismaService) as jest.Mocked<PrismaService>;
-
-    // Clear all mocks before each test
-    jest.clearAllMocks();
+    prisma = module.get(PrismaService);
   });
 
-  it('should be defined', () => {
-    expect(service).toBeDefined();
-    expect(prisma).toBeDefined();
+  afterEach(() => {
+    // Cleanup: Reset all mocks
+    resetPrismaMocks(prisma);
   });
 
   describe('create', () => {
-    const createDto: CreateAccountDto = {
-      name: 'Test Account',
-      type: AccountType.CHECKING,
-      source: AccountSource.MANUAL,
-      currentBalance: 1000,
-      currency: 'USD',
-      syncEnabled: true,
-    };
-
-    it('should create account with provided DTO', async () => {
-      const mockAccount = createMockAccount();
-      mockPrismaService.create.mockReturnValue(mockAccount);
-      mockPrismaService.save.mockResolvedValue(mockAccount);
-
-      const result = await service.create(createDto, 'user-123', undefined);
-
-      expect(prisma.account.create).toHaveBeenCalledWith({
-        ...createDto,
-        userId: 'user-123',
-        currency: 'USD',
-        syncEnabled: true,
-        isActive: true,
+    /**
+     * TDD Red-Green-Refactor Example #1
+     *
+     * RED: Write test expecting successful personal account creation
+     * GREEN: Service calls prisma.account.create with correct userId
+     * REFACTOR: Extract factory usage, improve readability
+     */
+    it('should create a personal account with userId', async () => {
+      // Arrange
+      const userId = 'user-123';
+      const createDto = AccountFactory.buildCreateDto({ name: 'My Checking' });
+      const expectedAccount = AccountFactory.buildForUser(userId, {
+        name: createDto.name,
+        type: createDto.type,
       });
-      expect(prisma.account.create).toHaveBeenCalledWith(mockAccount);
-      expect(result).toEqual({
-        id: mockAccount.id,
-        userId: mockAccount.userId,
-        name: mockAccount.name,
-        type: mockAccount.type,
-        status: mockAccount.status,
-        source: mockAccount.source,
-        currentBalance: mockAccount.currentBalance,
-        availableBalance: mockAccount.availableBalance,
-        creditLimit: mockAccount.creditLimit,
-        currency: mockAccount.currency,
-        institutionName: mockAccount.institutionName,
-        maskedAccountNumber: mockAccount.maskedAccountNumber,
-        displayName: mockAccount.displayName,
-        isPlaidAccount: mockAccount.isPlaidAccount,
-        isManualAccount: mockAccount.isManualAccount,
-        needsSync: mockAccount.needsSync,
-        isActive: mockAccount.isActive,
-        syncEnabled: mockAccount.syncEnabled,
-        lastSyncAt: mockAccount.lastSyncAt,
-        syncError: mockAccount.syncError,
-        settings: mockAccount.settings,
-        createdAt: mockAccount.createdAt,
-        updatedAt: mockAccount.updatedAt,
-      });
-    });
+      prisma.account.create.mockResolvedValue(expectedAccount as any);
 
-    it('should apply default currency (USD) when not provided', async () => {
-      const dtoWithoutCurrency = { ...createDto, currency: undefined };
-      const mockAccount = createMockAccount({ currency: 'USD' });
-      mockPrismaService.create.mockReturnValue(mockAccount);
-      mockPrismaService.save.mockResolvedValue(mockAccount);
+      // Act
+      const result = await service.create(createDto, userId);
 
-      await service.create(dtoWithoutCurrency, 'user-123', undefined);
-
-      expect(prisma.account.create).toHaveBeenCalledWith({
-        ...dtoWithoutCurrency,
-        userId: 'user-123',
-        currency: 'USD',
-        syncEnabled: true,
-        isActive: true,
-      });
-    });
-
-    it('should apply default syncEnabled (true) when not provided', async () => {
-      const dtoWithoutSyncEnabled = { ...createDto, syncEnabled: undefined };
-      const mockAccount = createMockAccount({ syncEnabled: true });
-      mockPrismaService.create.mockReturnValue(mockAccount);
-      mockPrismaService.save.mockResolvedValue(mockAccount);
-
-      await service.create(dtoWithoutSyncEnabled, 'user-123', undefined);
-
-      expect(prisma.account.create).toHaveBeenCalledWith({
-        ...dtoWithoutSyncEnabled,
-        userId: 'user-123',
-        currency: 'USD',
-        syncEnabled: true,
-        isActive: true,
-      });
-    });
-
-    it('should respect false value for syncEnabled', async () => {
-      const dtoWithSyncDisabled = { ...createDto, syncEnabled: false };
-      const mockAccount = createMockAccount({ syncEnabled: false });
-      mockPrismaService.create.mockReturnValue(mockAccount);
-      mockPrismaService.save.mockResolvedValue(mockAccount);
-
-      await service.create(dtoWithSyncDisabled, 'user-123', undefined);
-
-      expect(prisma.account.create).toHaveBeenCalledWith({
-        ...dtoWithSyncDisabled,
-        userId: 'user-123',
-        currency: 'USD',
-        syncEnabled: false,
-        isActive: true,
-      });
-    });
-
-    it('should set isActive to true', async () => {
-      const mockAccount = createMockAccount({ isActive: true });
-      mockPrismaService.create.mockReturnValue(mockAccount);
-      mockPrismaService.save.mockResolvedValue(mockAccount);
-
-      await service.create(createDto, 'user-123', undefined);
-
-      expect(prisma.account.create).toHaveBeenCalledWith(
-        expect.objectContaining({ isActive: true })
-      );
-    });
-
-    it('should create account with optional fields', async () => {
-      const dtoWithOptionals: CreateAccountDto = {
-        ...createDto,
-        availableBalance: 900,
-        creditLimit: 5000,
-        institutionName: 'Chase Bank',
-        accountNumber: '1234',
-        routingNumber: '5678',
-        settings: {
-          autoSync: true,
-          syncFrequency: 'daily',
-          notifications: true,
-          budgetIncluded: true,
-        },
-      };
-      const mockAccount = createMockAccount(dtoWithOptionals);
-      mockPrismaService.create.mockReturnValue(mockAccount);
-      mockPrismaService.save.mockResolvedValue(mockAccount);
-
-      const result = await service.create(dtoWithOptionals, 'user-123', undefined);
-
-      expect(prisma.account.create).toHaveBeenCalledWith({
-        ...dtoWithOptionals,
-        userId: 'user-123',
-        currency: 'USD',
-        syncEnabled: true,
-        isActive: true,
-      });
-      expect(result.availableBalance).toBe(900);
-      expect(result.settings).toEqual(dtoWithOptionals.settings);
-    });
-
-    it('should return AccountResponseDto', async () => {
-      const mockAccount = createMockAccount();
-      mockPrismaService.create.mockReturnValue(mockAccount);
-      mockPrismaService.save.mockResolvedValue(mockAccount);
-
-      const result = await service.create(createDto, 'user-123', undefined);
-
+      // Assert
       expect(result).toHaveProperty('id');
-      expect(result).toHaveProperty('userId');
-      expect(result).toHaveProperty('name');
-      expect(result).toHaveProperty('type');
-      expect(result).toHaveProperty('status');
-      expect(result).toHaveProperty('source');
-      expect(result).toHaveProperty('currentBalance');
-      expect(result).toHaveProperty('currency');
-      expect(result).toHaveProperty('displayName');
-      expect(result).toHaveProperty('isPlaidAccount');
-      expect(result).toHaveProperty('isManualAccount');
-      expect(result).toHaveProperty('needsSync');
-      expect(result).toHaveProperty('isActive');
-      expect(result).toHaveProperty('syncEnabled');
-      expect(result).toHaveProperty('createdAt');
-      expect(result).toHaveProperty('updatedAt');
-    });
-  });
-
-  describe('findAll', () => {
-    it('should find accounts for user', async () => {
-      const mockAccounts = [
-        createMockAccount({ id: 'acc-1', name: 'Account 1' }),
-        createMockAccount({ id: 'acc-2', name: 'Account 2' }),
-      ];
-      mockPrismaService.find.mockResolvedValue(mockAccounts);
-
-      const result = await service.findAll('user-123', undefined);
-
-      expect(prisma.account.findMany).toHaveBeenCalledWith({
-        where: { userId: 'user-123' },
-        order: { createdAt: 'DESC' },
-      });
-      expect(result).toHaveLength(2);
-      expect(result[0].id).toBe('acc-1');
-      expect(result[1].id).toBe('acc-2');
+      expect(result.userId).toBe(userId);
+      expect(prisma.account.create).toHaveBeenCalledTimes(1);
     });
 
-    it('should order by createdAt DESC', async () => {
-      const oldAccount = createMockAccount({
-        id: 'acc-old',
-        createdAt: new Date('2024-01-01')
+    it('should create a family account with familyId', async () => {
+      // Arrange
+      const familyId = 'family-456';
+      const createDto = AccountFactory.buildCreateDto({ name: 'Family Savings' });
+      const expectedAccount = AccountFactory.buildForFamily(familyId, {
+        name: createDto.name,
       });
-      const newAccount = createMockAccount({
-        id: 'acc-new',
-        createdAt: new Date('2025-01-01')
-      });
-      mockPrismaService.find.mockResolvedValue([newAccount, oldAccount]);
+      prisma.account.create.mockResolvedValue(expectedAccount as any);
 
-      await service.findAll('user-123', undefined);
+      // Act
+      const result = await service.create(createDto, undefined, familyId);
 
-      expect(prisma.account.findMany).toHaveBeenCalledWith({
-        where: { userId: 'user-123' },
-        order: { createdAt: 'DESC' },
-      });
-    });
-
-    it('should return empty array when user has no accounts', async () => {
-      mockPrismaService.find.mockResolvedValue([]);
-
-      const result = await service.findAll('user-123', undefined);
-
-      expect(result).toEqual([]);
-    });
-
-    it('should map to AccountResponseDto[]', async () => {
-      const mockAccounts = [createMockAccount()];
-      mockPrismaService.find.mockResolvedValue(mockAccounts);
-
-      const result = await service.findAll('user-123', undefined);
-
-      expect(result[0]).toHaveProperty('id');
-      expect(result[0]).toHaveProperty('userId');
-      expect(result[0]).toHaveProperty('displayName');
-      expect(result[0]).toHaveProperty('isPlaidAccount');
-      expect(result[0]).toHaveProperty('isManualAccount');
-      expect(result[0]).toHaveProperty('needsSync');
-    });
-  });
-
-  describe('findOne', () => {
-    it('should load account with transactions relation', async () => {
-      const mockAccount = createMockAccount();
-      mockPrismaService.findOne.mockResolvedValue(mockAccount);
-
-      await service.findOne('acc-123', 'user-123', undefined, UserRole.USER);
-
-      expect(prisma.account.findManyOne).toHaveBeenCalledWith({
-        where: { id: 'acc-123' },
-        relations: ['transactions'],
-      });
-    });
-
-    it('should throw NotFoundException when account not found', async () => {
-      mockPrismaService.findOne.mockResolvedValue(null);
-
-      await expect(
-        service.findOne('non-existent', 'user-123', undefined, UserRole.USER)
-      ).rejects.toThrow(NotFoundException);
-      await expect(
-        service.findOne('non-existent', 'user-123', undefined, UserRole.USER)
-      ).rejects.toThrow('Account with ID non-existent not found');
-    });
-
-    describe('authorization checks', () => {
-      it('should allow access when user owns account', async () => {
-        const account = createMockAccount({ userId: 'user-123' });
-        mockPrismaService.findOne.mockResolvedValue(account);
-
-        const result = await service.findOne('acc-123', 'user-123', undefined, UserRole.USER);
-
-        expect(result).toBeDefined();
-        expect(result.id).toBe('acc-123');
-      });
-
-      it('should throw ForbiddenException when user does not own account', async () => {
-        const account = createMockAccount({ userId: 'user-456' });
-        mockPrismaService.findOne.mockResolvedValue(account);
-
-        await expect(
-          service.findOne('acc-123', 'user-123', undefined, UserRole.USER)
-        ).rejects.toThrow(ForbiddenException);
-        await expect(
-          service.findOne('acc-123', 'user-123', undefined, UserRole.USER)
-        ).rejects.toThrow('You can only access your own accounts');
-      });
-
-      it('should allow admin access to any account', async () => {
-        const account = createMockAccount({ userId: 'user-456' });
-        mockPrismaService.findOne.mockResolvedValue(account);
-
-        const result = await service.findOne('acc-123', 'admin-123', undefined, UserRole.ADMIN);
-
-        expect(result).toBeDefined();
-        expect(result.id).toBe('acc-123');
-      });
-    });
-
-    it('should return AccountResponseDto', async () => {
-      const mockAccount = createMockAccount();
-      mockPrismaService.findOne.mockResolvedValue(mockAccount);
-
-      const result = await service.findOne('acc-123', 'user-123', undefined, UserRole.USER);
-
-      expect(result).toHaveProperty('id');
-      expect(result).toHaveProperty('displayName');
-      expect(result).toHaveProperty('isPlaidAccount');
-      expect(result).toHaveProperty('isManualAccount');
-      expect(result).toHaveProperty('needsSync');
-    });
-  });
-
-  describe('update', () => {
-    const updateDto: UpdateAccountDto = {
-      name: 'Updated Account',
-      currentBalance: 2000,
-    };
-
-    it('should throw NotFoundException when account not found', async () => {
-      mockPrismaService.findOne.mockResolvedValue(null);
-
-      await expect(
-        service.update('non-existent', updateDto, 'user-123', undefined, UserRole.USER)
-      ).rejects.toThrow(NotFoundException);
-      await expect(
-        service.update('non-existent', updateDto, 'user-123', undefined, UserRole.USER)
-      ).rejects.toThrow('Account with ID non-existent not found');
-    });
-
-    describe('authorization checks', () => {
-      it('should allow update when user owns account', async () => {
-        const account = createMockAccount({ userId: 'user-123' });
-        const updatedAccount = { ...account, ...updateDto };
-        mockPrismaService.findOne.mockResolvedValue(account);
-        mockPrismaService.save.mockResolvedValue(updatedAccount);
-
-        const result = await service.update('acc-123', updateDto, 'user-123', undefined, UserRole.USER);
-
-        expect(result).toBeDefined();
-        expect(result.name).toBe('Updated Account');
-      });
-
-      it('should throw ForbiddenException when user does not own account', async () => {
-        const account = createMockAccount({ userId: 'user-456' });
-        mockPrismaService.findOne.mockResolvedValue(account);
-
-        await expect(
-          service.update('acc-123', updateDto, 'user-123', undefined, UserRole.USER)
-        ).rejects.toThrow(ForbiddenException);
-        await expect(
-          service.update('acc-123', updateDto, 'user-123', undefined, UserRole.USER)
-        ).rejects.toThrow('You can only update your own accounts');
-      });
-
-      it('should allow admin update of any account', async () => {
-        const account = createMockAccount({ userId: 'user-456' });
-        const updatedAccount = { ...account, ...updateDto };
-        mockPrismaService.findOne.mockResolvedValue(account);
-        mockPrismaService.save.mockResolvedValue(updatedAccount);
-
-        const result = await service.update('acc-123', updateDto, 'admin-123', undefined, UserRole.ADMIN);
-
-        expect(result).toBeDefined();
-        expect(result.name).toBe('Updated Account');
-      });
-    });
-
-    it('should apply updateAccountDto with Object.assign', async () => {
-      const account = createMockAccount({ userId: 'user-123', name: 'Original' });
-      const updatedAccount = { ...account, ...updateDto };
-      mockPrismaService.findOne.mockResolvedValue(account);
-      mockPrismaService.save.mockResolvedValue(updatedAccount);
-
-      await service.update('acc-123', updateDto, 'user-123', undefined, UserRole.USER);
-
+      // Assert
+      // Note: AccountResponseDto does not expose familyId for security
       expect(prisma.account.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          name: 'Updated Account',
-          currentBalance: 2000,
+          data: expect.objectContaining({
+            familyId,
+            userId: null,
+          }),
         })
       );
     });
 
-    it('should return updated AccountResponseDto', async () => {
-      const account = createMockAccount({ userId: 'user-123' });
-      const updatedAccount = { ...account, ...updateDto };
-      mockPrismaService.findOne.mockResolvedValue(account);
-      mockPrismaService.save.mockResolvedValue(updatedAccount);
+    it('should throw BadRequestException when neither userId nor familyId provided', async () => {
+      // Arrange
+      const createDto = AccountFactory.buildCreateDto();
 
-      const result = await service.update('acc-123', updateDto, 'user-123', undefined, UserRole.USER);
-
-      expect(result).toHaveProperty('id');
-      expect(result.name).toBe('Updated Account');
-      expect(result.currentBalance).toBe(2000);
+      // Act & Assert
+      await expect(service.create(createDto)).rejects.toThrow(BadRequestException);
+      await expect(service.create(createDto)).rejects.toThrow('XOR constraint');
     });
 
-    it('should update multiple fields', async () => {
-      const multiFieldUpdate: UpdateAccountDto = {
-        name: 'New Name',
-        status: AccountStatus.INACTIVE,
-        currentBalance: 3000,
-        availableBalance: 2500,
-        syncEnabled: false,
-        settings: { notifications: false },
-      };
-      const account = createMockAccount({ userId: 'user-123' });
-      const updatedAccount = { ...account, ...multiFieldUpdate };
-      mockPrismaService.findOne.mockResolvedValue(account);
-      mockPrismaService.save.mockResolvedValue(updatedAccount);
+    it('should throw BadRequestException when both userId and familyId provided', async () => {
+      // Arrange
+      const createDto = AccountFactory.buildCreateDto();
+      const userId = 'user-123';
+      const familyId = 'family-456';
 
-      const result = await service.update('acc-123', multiFieldUpdate, 'user-123', undefined, UserRole.USER);
+      // Act & Assert
+      await expect(service.create(createDto, userId, familyId)).rejects.toThrow(BadRequestException);
+    });
 
-      expect(result.name).toBe('New Name');
-      expect(result.status).toBe(AccountStatus.INACTIVE);
-      expect(result.currentBalance).toBe(3000);
-      expect(result.availableBalance).toBe(2500);
-      expect(result.syncEnabled).toBe(false);
-      expect(result.settings).toEqual({ notifications: false });
+    it('should set default values correctly', async () => {
+      // Arrange
+      const userId = 'user-123';
+      const createDto = AccountFactory.buildCreateDto({
+        status: undefined,
+        syncEnabled: undefined,
+        currency: undefined,
+      });
+      const expectedAccount = AccountFactory.buildForUser(userId);
+      prisma.account.create.mockResolvedValue(expectedAccount as any);
+
+      // Act
+      await service.create(createDto, userId);
+
+      // Assert
+      expect(prisma.account.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            status: AccountStatus.ACTIVE,
+            syncEnabled: true,
+            currency: 'USD',
+            isActive: true,
+          }),
+        })
+      );
+    });
+
+    it('should pass balance values correctly to Prisma', async () => {
+      // Arrange
+      const userId = 'user-123';
+      const createDto = AccountFactory.buildCreateDto({
+        currentBalance: 1000.50,
+        creditLimit: 5000,
+      });
+      const expectedAccount = AccountFactory.buildForUser(userId);
+      prisma.account.create.mockResolvedValue(expectedAccount as any);
+
+      // Act
+      await service.create(createDto, userId);
+
+      // Assert - Service passes DTO values; Prisma handles Decimal conversion internally
+      const createCall = prisma.account.create.mock.calls[0][0];
+      expect(createCall.data.currentBalance).toBe(1000.50);
+      expect(createCall.data.creditLimit).toBeInstanceOf(Prisma.Decimal);
+      expect(createCall.data.creditLimit).toEqual(new Prisma.Decimal(5000));
+    });
+  });
+
+  describe('findAll', () => {
+    it('should find all personal accounts for a user', async () => {
+      // Arrange
+      const userId = 'user-123';
+      const accounts = AccountFactory.buildMany(3, { userId });
+      prisma.account.findMany.mockResolvedValue(accounts as any);
+
+      // Act
+      const result = await service.findAll(userId);
+
+      // Assert
+      expect(result).toHaveLength(3);
+      expect(prisma.account.findMany).toHaveBeenCalledWith({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+      });
+    });
+
+    it('should find all family accounts for a family', async () => {
+      // Arrange
+      const familyId = 'family-456';
+      const accounts = AccountFactory.buildMany(2, { userId: null, familyId });
+      prisma.account.findMany.mockResolvedValue(accounts as any);
+
+      // Act
+      const result = await service.findAll(undefined, familyId);
+
+      // Assert
+      expect(result).toHaveLength(2);
+      expect(prisma.account.findMany).toHaveBeenCalledWith({
+        where: { familyId },
+        orderBy: { createdAt: 'desc' },
+      });
+    });
+
+    it('should find all accounts for admin users', async () => {
+      // Arrange
+      const accounts = AccountFactory.buildMany(5);
+      prisma.account.findMany.mockResolvedValue(accounts as any);
+
+      // Act
+      const result = await service.findAll(undefined, undefined, UserRole.ADMIN);
+
+      // Assert
+      expect(result).toHaveLength(5);
+      expect(prisma.account.findMany).toHaveBeenCalledWith({
+        orderBy: { createdAt: 'desc' },
+      });
+    });
+
+    it('should throw BadRequestException when neither userId nor familyId provided', async () => {
+      // Arrange & Act & Assert
+      await expect(service.findAll()).rejects.toThrow(BadRequestException);
+      await expect(service.findAll()).rejects.toThrow('XOR constraint');
+    });
+
+    it('should throw BadRequestException when both userId and familyId provided', async () => {
+      // Arrange & Act & Assert
+      await expect(service.findAll('user-123', 'family-456')).rejects.toThrow(BadRequestException);
+    });
+
+    it('should return empty array when no accounts found', async () => {
+      // Arrange
+      const userId = 'user-123';
+      prisma.account.findMany.mockResolvedValue([]);
+
+      // Act
+      const result = await service.findAll(userId);
+
+      // Assert
+      expect(result).toEqual([]);
+    });
+  });
+
+  describe('findOne', () => {
+    it('should find account by ID for owner', async () => {
+      // Arrange
+      const userId = 'user-123';
+      const account = AccountFactory.buildForUser(userId);
+      prisma.account.findUnique.mockResolvedValue(account as any);
+
+      // Act
+      const result = await service.findOne(account.id, userId);
+
+      // Assert
+      expect(result.id).toBe(account.id);
+      expect(result.userId).toBe(userId);
+    });
+
+    it('should find family account for family member', async () => {
+      // Arrange
+      const familyId = 'family-456';
+      const account = AccountFactory.buildForFamily(familyId);
+      prisma.account.findUnique.mockResolvedValue(account as any);
+
+      // Act
+      const result = await service.findOne(account.id, undefined, familyId);
+
+      // Assert
+      expect(result.id).toBe(account.id);
+    });
+
+    it('should allow admin to access any account', async () => {
+      // Arrange
+      const account = AccountFactory.buildForUser('other-user');
+      prisma.account.findUnique.mockResolvedValue(account as any);
+
+      // Act
+      const result = await service.findOne(account.id, undefined, undefined, UserRole.ADMIN);
+
+      // Assert
+      expect(result.id).toBe(account.id);
+    });
+
+    it('should throw NotFoundException when account does not exist', async () => {
+      // Arrange
+      const userId = 'user-123';
+      prisma.account.findUnique.mockResolvedValue(null);
+
+      // Act & Assert
+      await expect(service.findOne('nonexistent-id', userId)).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw ForbiddenException when user does not own the account', async () => {
+      // Arrange
+      const account = AccountFactory.buildForUser('other-user');
+      prisma.account.findUnique.mockResolvedValue(account as any);
+
+      // Act & Assert
+      await expect(service.findOne(account.id, 'user-123')).rejects.toThrow(ForbiddenException);
+      await expect(service.findOne(account.id, 'user-123')).rejects.toThrow('Access denied');
+    });
+
+    it('should throw ForbiddenException when family does not own the account', async () => {
+      // Arrange
+      const account = AccountFactory.buildForFamily('other-family');
+      prisma.account.findUnique.mockResolvedValue(account as any);
+
+      // Act & Assert
+      await expect(service.findOne(account.id, undefined, 'family-456')).rejects.toThrow(ForbiddenException);
+    });
+  });
+
+  describe('update', () => {
+    it('should update account for owner', async () => {
+      // Arrange
+      const userId = 'user-123';
+      const account = AccountFactory.buildForUser(userId);
+      const updateDto = AccountFactory.buildUpdateDto({ name: 'Updated Name' });
+      const updatedAccount = { ...account, ...updateDto };
+
+      prisma.account.findUnique.mockResolvedValue(account as any);
+      prisma.account.update.mockResolvedValue(updatedAccount as any);
+
+      // Act
+      const result = await service.update(account.id, updateDto, userId);
+
+      // Assert
+      expect(result.name).toBe('Updated Name');
+      expect(prisma.account.update).toHaveBeenCalledTimes(1);
+    });
+
+    it('should convert currentBalance to Decimal on update', async () => {
+      // Arrange
+      const userId = 'user-123';
+      const account = AccountFactory.buildForUser(userId);
+      const updateDto = { currentBalance: 2000.75 };
+
+      prisma.account.findUnique.mockResolvedValue(account as any);
+      prisma.account.update.mockResolvedValue({ ...account, currentBalance: new Prisma.Decimal(2000.75) } as any);
+
+      // Act
+      await service.update(account.id, updateDto, userId);
+
+      // Assert
+      const updateCall = prisma.account.update.mock.calls[0][0];
+      expect(updateCall.data.currentBalance).toBeInstanceOf(Prisma.Decimal);
+    });
+
+    it('should convert availableBalance to Decimal on update', async () => {
+      // Arrange
+      const userId = 'user-123';
+      const account = AccountFactory.buildForUser(userId);
+      const updateDto = { availableBalance: 1500.25 };
+
+      prisma.account.findUnique.mockResolvedValue(account as any);
+      prisma.account.update.mockResolvedValue({ ...account, availableBalance: new Prisma.Decimal(1500.25) } as any);
+
+      // Act
+      await service.update(account.id, updateDto, userId);
+
+      // Assert
+      const updateCall = prisma.account.update.mock.calls[0][0];
+      expect(updateCall.data.availableBalance).toBeInstanceOf(Prisma.Decimal);
+    });
+
+    it('should convert creditLimit to Decimal on update', async () => {
+      // Arrange
+      const userId = 'user-123';
+      const account = AccountFactory.buildForUser(userId);
+      const updateDto = { creditLimit: 10000 };
+
+      prisma.account.findUnique.mockResolvedValue(account as any);
+      prisma.account.update.mockResolvedValue({ ...account, creditLimit: new Prisma.Decimal(10000) } as any);
+
+      // Act
+      await service.update(account.id, updateDto, userId);
+
+      // Assert
+      const updateCall = prisma.account.update.mock.calls[0][0];
+      expect(updateCall.data.creditLimit).toBeInstanceOf(Prisma.Decimal);
+    });
+
+    it('should throw NotFoundException when account does not exist', async () => {
+      // Arrange
+      const userId = 'user-123';
+      const updateDto = AccountFactory.buildUpdateDto();
+      prisma.account.findUnique.mockResolvedValue(null);
+
+      // Act & Assert
+      await expect(service.update('nonexistent-id', updateDto, userId)).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw ForbiddenException when user does not own the account', async () => {
+      // Arrange
+      const account = AccountFactory.buildForUser('other-user');
+      const updateDto = AccountFactory.buildUpdateDto();
+      prisma.account.findUnique.mockResolvedValue(account as any);
+
+      // Act & Assert
+      await expect(service.update(account.id, updateDto, 'user-123')).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should allow admin to update any account', async () => {
+      // Arrange
+      const account = AccountFactory.buildForUser('other-user');
+      const updateDto = AccountFactory.buildUpdateDto({ name: 'Admin Updated' });
+      const updatedAccount = { ...account, ...updateDto };
+
+      prisma.account.findUnique.mockResolvedValue(account as any);
+      prisma.account.update.mockResolvedValue(updatedAccount as any);
+
+      // Act
+      const result = await service.update(account.id, updateDto, undefined, undefined, UserRole.ADMIN);
+
+      // Assert
+      expect(result.name).toBe('Admin Updated');
     });
   });
 
   describe('remove', () => {
-    it('should throw NotFoundException when account not found', async () => {
-      mockPrismaService.findOne.mockResolvedValue(null);
+    it('should delete account for owner', async () => {
+      // Arrange
+      const userId = 'user-123';
+      const account = AccountFactory.buildForUser(userId);
+      prisma.account.findUnique.mockResolvedValue(account as any);
+      prisma.account.delete.mockResolvedValue(account as any);
 
-      await expect(
-        service.remove('non-existent', 'user-123', undefined, UserRole.USER)
-      ).rejects.toThrow(NotFoundException);
-      await expect(
-        service.remove('non-existent', 'user-123', undefined, UserRole.USER)
-      ).rejects.toThrow('Account with ID non-existent not found');
-    });
+      // Act
+      await service.remove(account.id, userId);
 
-    describe('authorization checks', () => {
-      it('should allow deletion when user owns account', async () => {
-        const account = createMockAccount({ userId: 'user-123' });
-        mockPrismaService.findOne.mockResolvedValue(account);
-        mockPrismaService.remove.mockResolvedValue(account);
-
-        await service.remove('acc-123', 'user-123', undefined, UserRole.USER);
-
-        expect(prisma.account.delete).toHaveBeenCalledWith(account);
-      });
-
-      it('should throw ForbiddenException when user does not own account', async () => {
-        const account = createMockAccount({ userId: 'user-456' });
-        mockPrismaService.findOne.mockResolvedValue(account);
-
-        await expect(
-          service.remove('acc-123', 'user-123', undefined, UserRole.USER)
-        ).rejects.toThrow(ForbiddenException);
-        await expect(
-          service.remove('acc-123', 'user-123', undefined, UserRole.USER)
-        ).rejects.toThrow('You can only delete your own accounts');
-      });
-
-      it('should allow admin deletion of any account', async () => {
-        const account = createMockAccount({ userId: 'user-456' });
-        mockPrismaService.findOne.mockResolvedValue(account);
-        mockPrismaService.remove.mockResolvedValue(account);
-
-        await service.remove('acc-123', 'admin-123', undefined, UserRole.ADMIN);
-
-        expect(prisma.account.delete).toHaveBeenCalledWith(account);
-      });
-    });
-
-    it('should call repository.remove()', async () => {
-      const account = createMockAccount({ userId: 'user-123' });
-      mockPrismaService.findOne.mockResolvedValue(account);
-      mockPrismaService.remove.mockResolvedValue(account);
-
-      await service.remove('acc-123', 'user-123', undefined, UserRole.USER);
-
-      expect(prisma.account.delete).toHaveBeenCalledWith(account);
+      // Assert
+      expect(prisma.account.delete).toHaveBeenCalledWith({ where: { id: account.id } });
       expect(prisma.account.delete).toHaveBeenCalledTimes(1);
     });
 
-    it('should not return anything (void)', async () => {
-      const account = createMockAccount({ userId: 'user-123' });
-      mockPrismaService.findOne.mockResolvedValue(account);
-      mockPrismaService.remove.mockResolvedValue(account);
+    it('should throw NotFoundException when account does not exist', async () => {
+      // Arrange
+      const userId = 'user-123';
+      prisma.account.findUnique.mockResolvedValue(null);
 
-      const result = await service.remove('acc-123', 'user-123', undefined, UserRole.USER);
+      // Act & Assert
+      await expect(service.remove('nonexistent-id', userId)).rejects.toThrow(NotFoundException);
+    });
 
-      expect(result).toBeUndefined();
+    it('should throw ForbiddenException when user does not own the account', async () => {
+      // Arrange
+      const account = AccountFactory.buildForUser('other-user');
+      prisma.account.findUnique.mockResolvedValue(account as any);
+
+      // Act & Assert
+      await expect(service.remove(account.id, 'user-123')).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should allow admin to delete any account', async () => {
+      // Arrange
+      const account = AccountFactory.buildForUser('other-user');
+      prisma.account.findUnique.mockResolvedValue(account as any);
+      prisma.account.delete.mockResolvedValue(account as any);
+
+      // Act
+      await service.remove(account.id, undefined, undefined, UserRole.ADMIN);
+
+      // Assert
+      expect(prisma.account.delete).toHaveBeenCalledTimes(1);
     });
   });
 
   describe('getBalance', () => {
-    it('should throw NotFoundException when account not found', async () => {
-      mockPrismaService.findOne.mockResolvedValue(null);
-
-      await expect(
-        service.getBalance('non-existent', 'user-123', undefined, UserRole.USER)
-      ).rejects.toThrow(NotFoundException);
-      await expect(
-        service.getBalance('non-existent', 'user-123', undefined, UserRole.USER)
-      ).rejects.toThrow('Account with ID non-existent not found');
-    });
-
-    describe('authorization checks', () => {
-      it('should allow access when user owns account', async () => {
-        const account = createMockAccount({ userId: 'user-123', currentBalance: 1500 });
-        mockPrismaService.findOne.mockResolvedValue(account);
-
-        const result = await service.getBalance('acc-123', 'user-123', undefined, UserRole.USER);
-
-        expect(result).toBeDefined();
-        expect(result.currentBalance).toBe(1500);
+    it('should return account balance for owner', async () => {
+      // Arrange
+      const userId = 'user-123';
+      const account = AccountFactory.buildForUser(userId, {
+        currentBalance: 1500.75,
+        availableBalance: 1200.50,
+        currency: 'USD',
       });
+      prisma.account.findUnique.mockResolvedValueOnce(account as any); // verifyAccountAccess
+      prisma.account.findUnique.mockResolvedValueOnce({
+        currentBalance: new Prisma.Decimal(1500.75),
+        availableBalance: new Prisma.Decimal(1200.50),
+        currency: 'USD',
+      } as any); // getBalance query
 
-      it('should throw ForbiddenException when user does not own account', async () => {
-        const account = createMockAccount({ userId: 'user-456' });
-        mockPrismaService.findOne.mockResolvedValue(account);
+      // Act
+      const result = await service.getBalance(account.id, userId);
 
-        await expect(
-          service.getBalance('acc-123', 'user-123', undefined, UserRole.USER)
-        ).rejects.toThrow(ForbiddenException);
-        await expect(
-          service.getBalance('acc-123', 'user-123', undefined, UserRole.USER)
-        ).rejects.toThrow('You can only access your own account balances');
-      });
-
-      it('should allow admin access to any account', async () => {
-        const account = createMockAccount({ userId: 'user-456', currentBalance: 2500 });
-        mockPrismaService.findOne.mockResolvedValue(account);
-
-        const result = await service.getBalance('acc-123', 'admin-123', undefined, UserRole.ADMIN);
-
-        expect(result).toBeDefined();
-        expect(result.currentBalance).toBe(2500);
-      });
-    });
-
-    it('should return balance object with currentBalance', async () => {
-      const account = createMockAccount({
-        userId: 'user-123',
-        currentBalance: 1000,
-        availableBalance: 900,
-        currency: 'USD'
-      });
-      mockPrismaService.findOne.mockResolvedValue(account);
-
-      const result = await service.getBalance('acc-123', 'user-123', undefined, UserRole.USER);
-
+      // Assert
       expect(result).toEqual({
-        currentBalance: 1000,
-        availableBalance: 900,
+        currentBalance: 1500.75,
+        availableBalance: 1200.50,
         currency: 'USD',
       });
     });
 
-    it('should return availableBalance as null when undefined', async () => {
-      const account = createMockAccount({
-        userId: 'user-123',
-        currentBalance: 1000,
-        availableBalance: undefined,
-        currency: 'EUR'
-      });
-      mockPrismaService.findOne.mockResolvedValue(account);
-
-      const result = await service.getBalance('acc-123', 'user-123', undefined, UserRole.USER);
-
-      expect(result).toEqual({
+    it('should handle null availableBalance', async () => {
+      // Arrange
+      const userId = 'user-123';
+      const account = AccountFactory.buildForUser(userId, {
         currentBalance: 1000,
         availableBalance: null,
-        currency: 'EUR',
       });
+      prisma.account.findUnique.mockResolvedValueOnce(account as any);
+      prisma.account.findUnique.mockResolvedValueOnce({
+        currentBalance: new Prisma.Decimal(1000),
+        availableBalance: null,
+        currency: 'USD',
+      } as any);
+
+      // Act
+      const result = await service.getBalance(account.id, userId);
+
+      // Assert
+      expect(result.availableBalance).toBeNull();
     });
 
-    it('should return availableBalance as null when null', async () => {
-      const account = createMockAccount({
-        userId: 'user-123',
-        currentBalance: 5000,
-        availableBalance: null,
-        currency: 'GBP'
-      });
-      mockPrismaService.findOne.mockResolvedValue(account);
+    it('should throw ForbiddenException for unauthorized access', async () => {
+      // Arrange
+      const account = AccountFactory.buildForUser('other-user');
+      prisma.account.findUnique.mockResolvedValue(account as any);
 
-      const result = await service.getBalance('acc-123', 'user-123', undefined, UserRole.USER);
-
-      expect(result).toEqual({
-        currentBalance: 5000,
-        availableBalance: null,
-        currency: 'GBP',
-      });
+      // Act & Assert
+      await expect(service.getBalance(account.id, 'user-123')).rejects.toThrow(ForbiddenException);
     });
   });
 
   describe('getSummary', () => {
-    it('should find only active accounts for user (isActive: true)', async () => {
-      const activeAccount = createMockAccount({ isActive: true });
-      mockPrismaService.find.mockResolvedValue([activeAccount]);
-
-      await service.getSummary('user-123', undefined);
-
-      expect(prisma.account.findMany).toHaveBeenCalledWith({
-        where: { userId: 'user-123', isActive: true },
-      });
-    });
-
-    it('should calculate totalBalance (sum of currentBalance)', async () => {
+    it('should return account summary for user', async () => {
+      // Arrange
+      const userId = 'user-123';
       const accounts = [
-        createMockAccount({ currentBalance: 1000, isActive: true }),
-        createMockAccount({ currentBalance: 2000, isActive: true }),
-        createMockAccount({ currentBalance: 500, isActive: true }),
-      ];
-      mockPrismaService.find.mockResolvedValue(accounts);
-
-      const result = await service.getSummary('user-123', undefined);
-
-      expect(result.totalBalance).toBe(3500);
-    });
-
-    it('should count activeAccounts (status === active)', async () => {
-      const accounts = [
-        createMockAccount({ status: AccountStatus.ACTIVE, isActive: true }),
-        createMockAccount({ status: AccountStatus.ACTIVE, isActive: true }),
-        createMockAccount({ status: AccountStatus.INACTIVE, isActive: true }),
-        createMockAccount({ status: AccountStatus.CLOSED, isActive: true }),
-      ];
-      mockPrismaService.find.mockResolvedValue(accounts);
-
-      const result = await service.getSummary('user-123', undefined);
-
-      expect(result.activeAccounts).toBe(2);
-    });
-
-    it('should count accountsNeedingSync (needsSync === true)', async () => {
-      const account1 = createMockAccount({ isActive: true });
-      const account2 = createMockAccount({ isActive: true });
-      const account3 = createMockAccount({ isActive: true });
-
-      // Override needsSync getter behavior
-      Object.defineProperty(account1, 'needsSync', { value: true, configurable: true });
-      Object.defineProperty(account2, 'needsSync', { value: false, configurable: true });
-      Object.defineProperty(account3, 'needsSync', { value: true, configurable: true });
-
-      mockPrismaService.find.mockResolvedValue([account1, account2, account3]);
-
-      const result = await service.getSummary('user-123', undefined);
-
-      expect(result.accountsNeedingSync).toBe(2);
-    });
-
-    it('should group by type with count and totalBalance', async () => {
-      const accounts = [
-        createMockAccount({
+        AccountFactory.buildForUser(userId, {
           type: AccountType.CHECKING,
-          currentBalance: 1000,
-          isActive: true
+          currentBalance: new Prisma.Decimal(1000),
+          status: AccountStatus.ACTIVE
         }),
-        createMockAccount({
+        AccountFactory.buildForUser(userId, {
           type: AccountType.SAVINGS,
-          currentBalance: 2000,
-          isActive: true
+          currentBalance: new Prisma.Decimal(5000),
+          status: AccountStatus.ACTIVE
         }),
-        createMockAccount({
+        AccountFactory.buildForUser(userId, {
           type: AccountType.CHECKING,
-          currentBalance: 500,
-          isActive: true
-        }),
-        createMockAccount({
-          type: AccountType.CREDIT_CARD,
-          currentBalance: 300,
-          isActive: true
+          currentBalance: new Prisma.Decimal(2000),
+          status: AccountStatus.ACTIVE
         }),
       ];
-      mockPrismaService.find.mockResolvedValue(accounts);
+      prisma.account.findMany.mockResolvedValue(accounts as any);
 
-      const result = await service.getSummary('user-123', undefined);
+      // Act
+      const result = await service.getSummary(userId);
 
-      expect(result.byType).toEqual({
-        [AccountType.CHECKING]: { count: 2, totalBalance: 1500 },
-        [AccountType.SAVINGS]: { count: 1, totalBalance: 2000 },
-        [AccountType.CREDIT_CARD]: { count: 1, totalBalance: 300 },
-      });
+      // Assert
+      expect(result.totalAccounts).toBe(3);
+      expect(result.totalBalance).toBe(8000);
+      expect(result.activeAccounts).toBe(3);
+      expect(result.byType[AccountType.CHECKING].count).toBe(2);
+      expect(result.byType[AccountType.SAVINGS].count).toBe(1);
     });
 
-    it('should return complete AccountSummaryDto', async () => {
-      const account1 = createMockAccount({
-        type: AccountType.CHECKING,
-        currentBalance: 1000,
-        status: AccountStatus.ACTIVE,
-        isActive: true
-      });
-      const account2 = createMockAccount({
-        type: AccountType.SAVINGS,
-        currentBalance: 2000,
-        status: AccountStatus.ACTIVE,
-        isActive: true
-      });
+    it('should return summary for admin across all accounts', async () => {
+      // Arrange
+      const accounts = AccountFactory.buildMany(10, { isActive: true });
+      prisma.account.findMany.mockResolvedValue(accounts as any);
 
-      Object.defineProperty(account1, 'needsSync', { value: false, configurable: true });
-      Object.defineProperty(account2, 'needsSync', { value: true, configurable: true });
+      // Act
+      const result = await service.getSummary(undefined, undefined, UserRole.ADMIN);
 
-      mockPrismaService.find.mockResolvedValue([account1, account2]);
-
-      const result = await service.getSummary('user-123', undefined);
-
-      expect(result).toEqual({
-        totalAccounts: 2,
-        totalBalance: 3000,
-        activeAccounts: 2,
-        accountsNeedingSync: 1,
-        byType: {
-          [AccountType.CHECKING]: { count: 1, totalBalance: 1000 },
-          [AccountType.SAVINGS]: { count: 1, totalBalance: 2000 },
-        },
-      });
+      // Assert
+      expect(result.totalAccounts).toBe(10);
     });
 
-    it('should return empty summary when user has no active accounts', async () => {
-      mockPrismaService.find.mockResolvedValue([]);
-
-      const result = await service.getSummary('user-123', undefined);
-
-      expect(result).toEqual({
-        totalAccounts: 0,
-        totalBalance: 0,
-        activeAccounts: 0,
-        accountsNeedingSync: 0,
-        byType: {},
-      });
+    it('should throw BadRequestException when neither userId nor familyId provided', async () => {
+      // Act & Assert
+      await expect(service.getSummary()).rejects.toThrow(BadRequestException);
     });
 
-    it('should handle zero balance accounts correctly', async () => {
-      const accounts = [
-        createMockAccount({
-          type: AccountType.CHECKING,
-          currentBalance: 0,
-          status: AccountStatus.ACTIVE,
-          isActive: true
-        }),
-      ];
-      mockPrismaService.find.mockResolvedValue(accounts);
+    it('should filter by isActive status', async () => {
+      // Arrange
+      const userId = 'user-123';
+      const activeAccounts = AccountFactory.buildMany(3, { userId, isActive: true });
+      prisma.account.findMany.mockResolvedValue(activeAccounts as any);
 
-      const result = await service.getSummary('user-123', undefined);
+      // Act
+      await service.getSummary(userId);
 
-      expect(result.totalBalance).toBe(0);
-      expect(result.byType[AccountType.CHECKING]).toEqual({
-        count: 1,
-        totalBalance: 0,
+      // Assert
+      expect(prisma.account.findMany).toHaveBeenCalledWith({
+        where: { userId, isActive: true },
       });
     });
   });
 
   describe('syncAccount', () => {
-    it('should throw NotFoundException when account not found', async () => {
-      mockPrismaService.findOne.mockResolvedValue(null);
+    it('should sync Plaid account successfully', async () => {
+      // Arrange
+      const userId = 'user-123';
+      const account = AccountFactory.buildPlaidAccount({ userId });
+      const syncedAccount = { ...account, lastSyncAt: new Date(), syncError: null };
 
-      await expect(
-        service.syncAccount('non-existent', 'user-123', undefined, UserRole.USER)
-      ).rejects.toThrow(NotFoundException);
-      await expect(
-        service.syncAccount('non-existent', 'user-123', undefined, UserRole.USER)
-      ).rejects.toThrow('Account with ID non-existent not found');
-    });
+      prisma.account.findUnique.mockResolvedValue(account as any);
+      prisma.account.update.mockResolvedValue(syncedAccount as any);
 
-    describe('authorization checks', () => {
-      it('should allow sync when user owns account', async () => {
-        const account = createMockAccount({
-          userId: 'user-123',
-          source: AccountSource.PLAID,
-          isPlaidAccount: true
-        });
-        Object.defineProperty(account, 'isPlaidAccount', { value: true });
-        const syncedAccount = { ...account, lastSyncAt: new Date() };
-        mockPrismaService.findOne.mockResolvedValue(account);
-        mockPrismaService.save.mockResolvedValue(syncedAccount);
+      // Act
+      const result = await service.syncAccount(account.id, userId);
 
-        const result = await service.syncAccount('acc-123', 'user-123', undefined, UserRole.USER);
-
-        expect(result).toBeDefined();
-      });
-
-      it('should throw ForbiddenException when user does not own account', async () => {
-        const account = createMockAccount({
-          userId: 'user-456',
-          source: AccountSource.PLAID,
-          isPlaidAccount: true
-        });
-        Object.defineProperty(account, 'isPlaidAccount', { value: true });
-        mockPrismaService.findOne.mockResolvedValue(account);
-
-        await expect(
-          service.syncAccount('acc-123', 'user-123', undefined, UserRole.USER)
-        ).rejects.toThrow(ForbiddenException);
-        await expect(
-          service.syncAccount('acc-123', 'user-123', undefined, UserRole.USER)
-        ).rejects.toThrow('You can only sync your own accounts');
-      });
-
-      it('should allow admin sync of any account', async () => {
-        const account = createMockAccount({
-          userId: 'user-456',
-          source: AccountSource.PLAID,
-          isPlaidAccount: true
-        });
-        Object.defineProperty(account, 'isPlaidAccount', { value: true });
-        const syncedAccount = { ...account, lastSyncAt: new Date() };
-        mockPrismaService.findOne.mockResolvedValue(account);
-        mockPrismaService.save.mockResolvedValue(syncedAccount);
-
-        const result = await service.syncAccount('acc-123', 'admin-123', undefined, UserRole.ADMIN);
-
-        expect(result).toBeDefined();
+      // Assert
+      expect(result.lastSyncAt).toBeTruthy();
+      expect(prisma.account.update).toHaveBeenCalledWith({
+        where: { id: account.id },
+        data: { lastSyncAt: expect.any(Date), syncError: null },
       });
     });
 
-    it('should throw ForbiddenException when account is not Plaid account', async () => {
-      const account = createMockAccount({
-        userId: 'user-123',
-        source: AccountSource.MANUAL,
-        isPlaidAccount: false
-      });
-      Object.defineProperty(account, 'isPlaidAccount', { value: false });
-      mockPrismaService.findOne.mockResolvedValue(account);
+    it('should throw ForbiddenException when account is not PLAID source', async () => {
+      // Arrange
+      const userId = 'user-123';
+      const account = AccountFactory.buildForUser(userId, { source: AccountSource.MANUAL });
+      prisma.account.findUnique.mockResolvedValue(account as any);
 
-      await expect(
-        service.syncAccount('acc-123', 'user-123', undefined, UserRole.USER)
-      ).rejects.toThrow(ForbiddenException);
-      await expect(
-        service.syncAccount('acc-123', 'user-123', undefined, UserRole.USER)
-      ).rejects.toThrow('Only Plaid accounts can be synced');
+      // Act & Assert
+      await expect(service.syncAccount(account.id, userId)).rejects.toThrow(ForbiddenException);
+      await expect(service.syncAccount(account.id, userId)).rejects.toThrow('requires a PLAID account');
     });
 
-    it('should update lastSyncAt to current date', async () => {
-      const account = createMockAccount({
-        userId: 'user-123',
-        source: AccountSource.PLAID,
-        isPlaidAccount: true,
-        lastSyncAt: null
-      });
-      Object.defineProperty(account, 'isPlaidAccount', { value: true });
-      const beforeSync = new Date();
+    it('should throw ForbiddenException for unauthorized access', async () => {
+      // Arrange
+      const account = AccountFactory.buildPlaidAccount({ userId: 'other-user' });
+      prisma.account.findUnique.mockResolvedValue(account as any);
 
-      mockPrismaService.findOne.mockResolvedValue(account);
-      mockPrismaService.save.mockImplementation(async (acc) => {
-        acc.lastSyncAt = new Date();
-        return acc;
-      });
-
-      await service.syncAccount('acc-123', 'user-123', undefined, UserRole.USER);
-
-      expect(prisma.account.create).toHaveBeenCalled();
-      const savedAccount = prisma.account.create.mock.calls[0][0] as Account;
-      expect(savedAccount.lastSyncAt).toBeInstanceOf(Date);
-      expect((savedAccount.lastSyncAt as Date).getTime()).toBeGreaterThanOrEqual(beforeSync.getTime());
-    });
-
-    it('should clear syncError', async () => {
-      const account = createMockAccount({
-        userId: 'user-123',
-        source: AccountSource.PLAID,
-        isPlaidAccount: true,
-        syncError: 'Previous error'
-      });
-      Object.defineProperty(account, 'isPlaidAccount', { value: true });
-      mockPrismaService.findOne.mockResolvedValue(account);
-      mockPrismaService.save.mockImplementation(async (acc) => {
-        acc.syncError = null;
-        acc.lastSyncAt = new Date();
-        return acc;
-      });
-
-      await service.syncAccount('acc-123', 'user-123', undefined, UserRole.USER);
-
-      const savedAccount = prisma.account.create.mock.calls[0][0];
-      expect(savedAccount.syncError).toBeNull();
-    });
-
-    it('should return updated AccountResponseDto', async () => {
-      const account = createMockAccount({
-        userId: 'user-123',
-        source: AccountSource.PLAID,
-        isPlaidAccount: true
-      });
-      Object.defineProperty(account, 'isPlaidAccount', { value: true });
-      const syncedAccount = {
-        ...account,
-        lastSyncAt: new Date(),
-        syncError: null
-      };
-      mockPrismaService.findOne.mockResolvedValue(account);
-      mockPrismaService.save.mockResolvedValue(syncedAccount);
-
-      const result = await service.syncAccount('acc-123', 'user-123', undefined, UserRole.USER);
-
-      expect(result).toHaveProperty('id');
-      expect(result).toHaveProperty('lastSyncAt');
-      expect(result.syncError).toBeNull();
-      expect(result.lastSyncAt).toBeInstanceOf(Date);
+      // Act & Assert
+      await expect(service.syncAccount(account.id, 'user-123')).rejects.toThrow(ForbiddenException);
     });
   });
 
-  describe('toResponseDto (private method)', () => {
-    it('should map all entity fields to response DTO', () => {
-      const mockAccount = createMockAccount({
-        id: 'test-id',
-        userId: 'test-user',
-        name: 'Test Account',
-        type: AccountType.SAVINGS,
-        status: AccountStatus.ACTIVE,
-        source: AccountSource.PLAID,
-        currentBalance: 5000,
-        availableBalance: 4500,
-        creditLimit: 10000,
-        currency: 'EUR',
-        institutionName: 'Test Bank',
-        maskedAccountNumber: '****1234',
-        displayName: 'Test Bank - Test Account',
-        isPlaidAccount: true,
-        isManualAccount: false,
-        needsSync: true,
-        isActive: true,
-        syncEnabled: true,
-        lastSyncAt: new Date('2025-01-15'),
-        syncError: 'Error message',
-        settings: { autoSync: true },
-        createdAt: new Date('2025-01-01'),
-        updatedAt: new Date('2025-01-02'),
-      });
-
-      mockPrismaService.create.mockReturnValue(mockAccount);
-      mockPrismaService.save.mockResolvedValue(mockAccount);
-
-      // We'll trigger toResponseDto through create method
-      const createDto: CreateAccountDto = {
-        name: 'Test Account',
-        type: AccountType.SAVINGS,
-        source: AccountSource.PLAID,
-        currentBalance: 5000,
+  /**
+   * TDD Red-Green-Refactor Example #2
+   *
+   * Testing DTO transformation helper method
+   */
+  describe('toResponseDto (via create)', () => {
+    it('should convert Decimal fields to numbers', async () => {
+      // Arrange
+      const userId = 'user-123';
+      const createDto = AccountFactory.buildCreateDto({ currentBalance: 1234.56 });
+      const account = {
+        ...AccountFactory.buildForUser(userId),
+        currentBalance: new Prisma.Decimal(1234.56),
+        availableBalance: new Prisma.Decimal(1000),
+        creditLimit: new Prisma.Decimal(5000),
       };
+      prisma.account.create.mockResolvedValue(account as any);
 
-      return service.create(createDto, 'test-user', undefined).then(result => {
-        expect(result.id).toBe(mockAccount.id);
-        expect(result.userId).toBe(mockAccount.userId);
-        expect(result.name).toBe(mockAccount.name);
-        expect(result.type).toBe(mockAccount.type);
-        expect(result.status).toBe(mockAccount.status);
-        expect(result.source).toBe(mockAccount.source);
-        expect(result.currentBalance).toBe(mockAccount.currentBalance);
-        expect(result.availableBalance).toBe(mockAccount.availableBalance);
-        expect(result.creditLimit).toBe(mockAccount.creditLimit);
-        expect(result.currency).toBe(mockAccount.currency);
-        expect(result.institutionName).toBe(mockAccount.institutionName);
-        expect(result.maskedAccountNumber).toBe(mockAccount.maskedAccountNumber);
-        expect(result.displayName).toBe(mockAccount.displayName);
-        expect(result.isPlaidAccount).toBe(mockAccount.isPlaidAccount);
-        expect(result.isManualAccount).toBe(mockAccount.isManualAccount);
-        expect(result.needsSync).toBe(mockAccount.needsSync);
-        expect(result.isActive).toBe(mockAccount.isActive);
-        expect(result.syncEnabled).toBe(mockAccount.syncEnabled);
-        expect(result.lastSyncAt).toBe(mockAccount.lastSyncAt);
-        expect(result.syncError).toBe(mockAccount.syncError);
-        expect(result.settings).toBe(mockAccount.settings);
-        expect(result.createdAt).toBe(mockAccount.createdAt);
-        expect(result.updatedAt).toBe(mockAccount.updatedAt);
-      });
+      // Act
+      const result = await service.create(createDto, userId);
+
+      // Assert
+      expect(typeof result.currentBalance).toBe('number');
+      expect(result.currentBalance).toBe(1234.56);
+    });
+
+    it('should compute derived fields correctly', async () => {
+      // Arrange
+      const userId = 'user-123';
+      const createDto = AccountFactory.buildCreateDto();
+      const account = {
+        ...AccountFactory.buildForUser(userId),
+        source: AccountSource.PLAID,
+        institutionName: 'Chase Bank',
+        name: 'Checking',
+        accountNumber: '12345678',
+      };
+      prisma.account.create.mockResolvedValue(account as any);
+
+      // Act
+      const result = await service.create(createDto, userId);
+
+      // Assert
+      expect(result.isPlaidAccount).toBe(true);
+      expect(result.isManualAccount).toBe(false);
+      expect(result.displayName).toBe('Chase Bank - Checking');
+      expect(result.maskedAccountNumber).toBe('****5678');
     });
   });
 });

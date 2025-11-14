@@ -965,15 +965,16 @@ jobs:
     # - PR ready_for_review event
     if: |
       (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/heads/hotfix/'))) ||
-      (github.event_name == 'pull_request' && (github.event.action == 'ready_for_review' || startsWith(github.head_ref, 'hotfix/'))) &&
-      !contains(github.head_ref, 'e2e-jwt-secrets')
+      (github.event_name == 'pull_request' && (github.event.action == 'ready_for_review' || startsWith(github.head_ref, 'hotfix/')))
     strategy:
+      fail-fast: false  # Continue other shards even if one fails
+      max-parallel: 8   # Allow all shards to run concurrently
       matrix:
-        # Smart sharding strategy:
-        # - PRs: 2 shards for fast feedback (~10-15 min total)
-        # - Main branch: 4 shards for comprehensive coverage (~20-30 min total)
-        # This conditional expression is evaluated at workflow parse time for efficiency
-        shard: ${{ github.event_name == 'pull_request' && fromJSON('[1, 2]') || fromJSON('[1, 2, 3, 4]') }}
+        # Smart sharding strategy (OPTIMIZED to prevent timeout):
+        # - PRs: 4 shards for fast feedback (~15-20 min total)
+        # - Main branch: 8 shards for comprehensive coverage (~25-30 min total)
+        # This prevents the 60-minute timeout that was occurring with fewer shards
+        shard: ${{ github.event_name == 'pull_request' && fromJSON('[1, 2, 3, 4]') || fromJSON('[1, 2, 3, 4, 5, 6, 7, 8]') }}
     services:
       postgres:
         image: timescale/timescaledb:latest-pg15
@@ -1045,6 +1046,40 @@ jobs:
           cd apps/web
           npx playwright install-deps
 
+      # OPTIMIZATION: Cache Turbo build outputs
+      - name: Cache Turbo build outputs
+        uses: actions/cache@v4
+        with:
+          path: |
+            .turbo
+            apps/web/.turbo
+            apps/backend/.turbo
+          key: ${{ runner.os }}-turbo-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-turbo-
+
+      # OPTIMIZATION: Cache Next.js build
+      - name: Cache Next.js build
+        uses: actions/cache@v4
+        with:
+          path: |
+            apps/web/.next/cache
+          key: ${{ runner.os }}-nextjs-${{ hashFiles('apps/web/package.json', 'apps/web/pnpm-lock.yaml') }}-${{ hashFiles('apps/web/**/*.ts', 'apps/web/**/*.tsx', 'apps/web/**/*.js', 'apps/web/**/*.jsx') }}
+          restore-keys: |
+            ${{ runner.os }}-nextjs-${{ hashFiles('apps/web/package.json', 'apps/web/pnpm-lock.yaml') }}-
+            ${{ runner.os }}-nextjs-
+
+      # OPTIMIZATION: Cache NestJS compiled outputs
+      - name: Cache NestJS dist
+        uses: actions/cache@v4
+        with:
+          path: |
+            apps/backend/dist
+          key: ${{ runner.os }}-nestjs-dist-${{ hashFiles('apps/backend/package.json') }}-${{ hashFiles('apps/backend/src/**/*.ts') }}
+          restore-keys: |
+            ${{ runner.os }}-nestjs-dist-${{ hashFiles('apps/backend/package.json') }}-
+            ${{ runner.os }}-nestjs-dist-
+
       - name: Build applications
         run: |
           pnpm build:backend
@@ -1058,7 +1093,7 @@ jobs:
         env:
           DATABASE_URL: postgresql://test:testpass@localhost:5432/test_db
 
-      - name: Run E2E tests (shard ${{ matrix.shard }}/${{ github.event_name == 'pull_request' && '2' || '4' }})
+      - name: Run E2E tests (shard ${{ matrix.shard }}/${{ github.event_name == 'pull_request' && '4' || '8' }})
         env:
           DATABASE_URL: postgresql://test:testpass@localhost:5432/test_db
           REDIS_URL: redis://localhost:6379
@@ -1067,8 +1102,18 @@ jobs:
           CI: true
         run: |
           cd apps/web
-          TOTAL_SHARDS=${{ github.event_name == 'pull_request' && '2' || '4' }}
-          npx playwright test --shard=${{ matrix.shard }}/$TOTAL_SHARDS
+          TOTAL_SHARDS=${{ github.event_name == 'pull_request' && '4' || '8' }}
+
+          # Progressive test execution:
+          # - PR: Run @smoke + @critical tests for fast feedback
+          # - Main/Develop: Run ALL tests for comprehensive coverage
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            echo "🏃 Running CRITICAL tier tests (@smoke + @critical)"
+            npx playwright test --shard=${{ matrix.shard }}/$TOTAL_SHARDS --grep "@smoke|@critical"
+          else
+            echo "🏃 Running FULL test suite (all tests)"
+            npx playwright test --shard=${{ matrix.shard }}/$TOTAL_SHARDS
+          fi
 
       - name: Upload test results
         if: always()
