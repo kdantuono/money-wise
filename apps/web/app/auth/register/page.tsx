@@ -107,10 +107,10 @@ export default function RegisterPage() {
                 </div>
               }
             >
-            <form onSubmit={handleSubmit(onSubmit)} data-testid="signup-form">
+            <form onSubmit={handleSubmit(onSubmit)} data-testid="register-form">
               <CardContent className="space-y-4">
                 {error && (
-                  <div className="bg-destructive/15 text-destructive text-sm p-3 rounded-md" data-testid="error-message" role="alert">
+                  <div className="bg-destructive/15 text-destructive text-sm p-3 rounded-md" data-testid="auth-error" role="alert">
                     {error}
                   </div>
                 )}
@@ -124,7 +124,7 @@ export default function RegisterPage() {
                       autoComplete="given-name"
                       {...register('firstName')}
                       className={errors.firstName ? 'border-destructive' : ''}
-                      data-testid="first-name"
+                      data-testid="first-name-input"
                     />
                     {errors.firstName && (
                       <p className="text-sm text-destructive" data-testid="first-name-error">{errors.firstName.message}</p>
@@ -139,7 +139,7 @@ export default function RegisterPage() {
                       autoComplete="family-name"
                       {...register('lastName')}
                       className={errors.lastName ? 'border-destructive' : ''}
-                      data-testid="last-name"
+                      data-testid="last-name-input"
                     />
                     {errors.lastName && (
                       <p className="text-sm text-destructive" data-testid="last-name-error">{errors.lastName.message}</p>
@@ -155,7 +155,7 @@ export default function RegisterPage() {
                     autoComplete="email"
                     {...register('email')}
                     className={errors.email ? 'border-destructive' : ''}
-                    data-testid="email"
+                    data-testid="email-input"
                   />
                   {errors.email && (
                     <p className="text-sm text-destructive" data-testid="email-error">{errors.email.message}</p>
@@ -171,7 +171,7 @@ export default function RegisterPage() {
                       autoComplete="new-password"
                       {...register('password')}
                       className={errors.password ? 'border-destructive' : ''}
-                      data-testid="password"
+                      data-testid="password-input"
                     />
                     <button
                       type="button"
@@ -201,7 +201,7 @@ export default function RegisterPage() {
                       autoComplete="new-password"
                       {...register('confirmPassword')}
                       className={errors.confirmPassword ? 'border-destructive' : ''}
-                      data-testid="confirm-password"
+                      data-testid="confirm-password-input"
                     />
                     <button
                       type="button"
@@ -228,7 +228,7 @@ export default function RegisterPage() {
                   type="submit"
                   className="w-full"
                   disabled={isLoading}
-                  data-testid="signup-button"
+                  data-testid="register-button"
                 >
                   {isLoading ? 'Creating Account...' : 'Create Account'}
                 </Button>
