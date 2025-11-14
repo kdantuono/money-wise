@@ -8,6 +8,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 
 const AUTH_FILE = path.join(__dirname, '.auth/user.json');
+const TEST_USERS_FILE = path.join(__dirname, '.auth/test-users.json');
 const FRONTEND_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -142,7 +143,11 @@ async function createAuthenticatedSession(config: FullConfig) {
     console.log('🔐 Logging in to capture auth state...');
     await loginViaAPI(page);
 
-    // Step 3: Save auth state
+    // Step 3: Create test user pool for parallel shards
+    console.log('👥 Creating test user pool for parallel execution...');
+    await createTestUserPool(page);
+
+    // Step 4: Save auth state
     console.log('💾 Saving auth state...');
     await context.storageState({ path: AUTH_FILE });
 
@@ -275,6 +280,87 @@ async function loginViaAPI(page: any) {
     console.log('✅ Login successful');
   } catch (error) {
     console.error('❌ Login failed:', error);
+    throw error;
+  }
+}
+
+/**
+ * Create pool of test users for parallel shard execution
+ * This eliminates race conditions from concurrent user registrations
+ */
+async function createTestUserPool(page: any) {
+  const SHARD_COUNT = 8; // Number of parallel test shards
+  const testUsers: Array<{ email: string; password: string }> = [];
+
+  console.log(`Creating ${SHARD_COUNT} test users for parallel execution...`);
+
+  for (let i = 0; i < SHARD_COUNT; i++) {
+    const testEmail = `e2e-shard-${i}@moneywise.test`;
+    const testPassword = 'TestUser#2025!Shard';
+
+    try {
+      // Navigate to frontend to get domain context (needed for CSRF)
+      await page.goto(`${FRONTEND_URL}/register`);
+      await page.waitForLoadState('domcontentloaded');
+
+      // Get CSRF token from page meta tag
+      const csrfToken = await page.evaluate(() => {
+        const meta = document.querySelector('meta[name="csrf-token"]');
+        return meta?.getAttribute('content') || '';
+      });
+
+      if (!csrfToken) {
+        console.warn(`⚠️  No CSRF token found for user ${i}, skipping CSRF`);
+      }
+
+      // Register user via API
+      const registerResponse = await page.request.post(`${BACKEND_URL}/api/auth/register`, {
+        data: {
+          email: testEmail,
+          password: testPassword,
+          firstName: 'E2E',
+          lastName: `Shard${i}`,
+          csrfToken: csrfToken || undefined
+        },
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (registerResponse.ok() || registerResponse.status() === 409) {
+        // Success or user already exists (both are fine)
+        testUsers.push({ email: testEmail, password: testPassword });
+        console.log(`✓ User ${i + 1}/${SHARD_COUNT}: ${testEmail} ${registerResponse.ok() ? 'created' : 'already exists'}`);
+      } else {
+        const errorText = await registerResponse.text().catch(() => 'Unknown error');
+        console.warn(`⚠️  Failed to create user ${i}: ${registerResponse.status()} - ${errorText}`);
+        // Still add to pool in case user exists
+        testUsers.push({ email: testEmail, password: testPassword });
+      }
+    } catch (error) {
+      console.warn(`⚠️  Error creating user ${i}:`, error instanceof Error ? error.message : error);
+      // Add to pool anyway - user might exist
+      testUsers.push({ email: testEmail, password: testPassword });
+    }
+  }
+
+  // Save user pool to JSON file
+  try {
+    const authDir = path.dirname(TEST_USERS_FILE);
+    if (!fs.existsSync(authDir)) {
+      fs.mkdirSync(authDir, { recursive: true });
+    }
+
+    fs.writeFileSync(
+      TEST_USERS_FILE,
+      JSON.stringify({ users: testUsers }, null, 2),
+      'utf-8'
+    );
+
+    console.log(`✅ Test user pool saved to ${TEST_USERS_FILE}`);
+    console.log(`📊 Created ${testUsers.length}/${SHARD_COUNT} users for parallel test execution`);
+  } catch (error) {
+    console.error('❌ Failed to save test user pool:', error);
     throw error;
   }
 }

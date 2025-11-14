@@ -7,12 +7,155 @@ import { Page, expect } from '@playwright/test';
 import { ROUTES, API_ROUTES } from '../config/routes';
 import { TIMEOUTS } from '../config/timeouts';
 import { UserData, createUser, DEFAULT_TEST_USER } from '../factories/user.factory';
+import * as path from 'path';
+import * as fs from 'fs';
+
+// Test user pool for parallel shard execution
+interface TestUserPool {
+  users: Array<{ email: string; password: string }>;
+}
+
+let TEST_USERS_POOL: TestUserPool | null = null;
+let userPoolIndex = 0;
 
 /**
  * Authentication helper class
  */
 export class AuthHelper {
   constructor(private page: Page) {}
+
+  /**
+   * Wait for backend API to be ready
+   * Prevents race conditions when backend is still initializing
+   */
+  private async waitForBackend(): Promise<void> {
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+    const healthUrl = `${backendUrl}/api/health`;
+    const maxAttempts = 5;
+    const retryDelay = 1000; // 1 second
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        const response = await fetch(healthUrl);
+        if (response.ok) {
+          return; // Backend is ready
+        }
+      } catch (error) {
+        // Backend not responding yet
+      }
+
+      if (attempt < maxAttempts) {
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
+      }
+    }
+
+    throw new Error(`Backend not ready after ${maxAttempts} attempts`);
+  }
+
+  /**
+   * Get CSRF token from page with retry logic
+   * Ensures token is fresh and valid
+   */
+  private async getCsrfToken(retries = 3): Promise<string> {
+    for (let attempt = 0; attempt < retries; attempt++) {
+      const token = await this.page.evaluate(() => {
+        const meta = document.querySelector('meta[name="csrf-token"]');
+        return meta?.getAttribute('content') || '';
+      });
+
+      if (token) {
+        return token;
+      }
+
+      // Token not found, reload page to get fresh token
+      if (attempt < retries - 1) {
+        await this.page.reload({ waitUntil: 'domcontentloaded' });
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+    }
+
+    throw new Error(`Failed to retrieve CSRF token after ${retries} attempts`);
+  }
+
+  /**
+   * Load test user pool from JSON file
+   */
+  private loadTestUserPool(): TestUserPool {
+    if (TEST_USERS_POOL) {
+      return TEST_USERS_POOL;
+    }
+
+    const testUsersFile = path.join(__dirname, '../.auth/test-users.json');
+
+    if (!fs.existsSync(testUsersFile)) {
+      throw new Error(
+        `Test user pool not found at ${testUsersFile}. ` +
+        'Run global setup first to create test users.'
+      );
+    }
+
+    const fileContent = fs.readFileSync(testUsersFile, 'utf-8');
+    TEST_USERS_POOL = JSON.parse(fileContent);
+    return TEST_USERS_POOL!;
+  }
+
+  /**
+   * Login with pre-created pooled user (recommended for parallel tests)
+   * Uses round-robin distribution to avoid conflicts between shards
+   */
+  async loginWithPooledUser(): Promise<void> {
+    // Ensure backend is ready
+    await this.waitForBackend();
+
+    // Load test user pool
+    const pool = this.loadTestUserPool();
+
+    if (!pool.users || pool.users.length === 0) {
+      throw new Error('Test user pool is empty');
+    }
+
+    // Get next user from pool (round-robin)
+    const userIndex = (userPoolIndex++) % pool.users.length;
+    const { email, password } = pool.users[userIndex];
+
+    // Navigate to login page
+    await this.page.goto(ROUTES.AUTH.LOGIN);
+    await this.page.waitForLoadState('domcontentloaded');
+
+    // Get fresh CSRF token with retry logic
+    const csrfToken = await this.getCsrfToken();
+
+    // Login via API with proper error handling
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
+    try {
+      const response = await this.page.request.post(`${backendUrl}/api/auth/login`, {
+        data: {
+          email,
+          password,
+          csrfToken
+        },
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok()) {
+        const errorText = await response.text().catch(() => 'Unknown error');
+        throw new Error(`Login failed (${response.status()}): ${errorText}`);
+      }
+
+      // Wait for authentication to complete and navigate to dashboard
+      await this.page.waitForURL('**/dashboard', {
+        timeout: TIMEOUTS.PAGE_LOAD,
+        waitUntil: 'domcontentloaded'
+      });
+    } catch (error) {
+      throw new Error(
+        `Failed to login with pooled user ${email}: ${error instanceof Error ? error.message : error}`
+      );
+    }
+  }
 
   /**
    * Register a new user
