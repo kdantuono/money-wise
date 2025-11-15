@@ -40,7 +40,7 @@ services:
     build:
       context: .
       dockerfile: apps/backend/Dockerfile
-      target: development
+      target: builder
     container_name: moneywise-backend-e2e
     environment:
       NODE_ENV: test
@@ -83,7 +83,7 @@ services:
     build:
       context: .
       dockerfile: apps/web/Dockerfile
-      target: development
+      target: builder
     container_name: moneywise-frontend-e2e
     environment:
       NODE_ENV: test
