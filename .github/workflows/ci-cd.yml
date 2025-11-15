@@ -1320,6 +1320,32 @@ jobs:
           cat backend.log
           exit 1
 
+      - name: 🚀 Start frontend server for E2E tests
+        run: |
+          cd apps/web
+          NEXT_PUBLIC_API_URL=http://localhost:3001 \
+          NODE_ENV=production \
+          PORT=3000 \
+          nohup pnpm start > frontend.log 2>&1 &
+          echo $! > frontend.pid
+          echo "✅ Frontend server started (PID: $(cat frontend.pid))"
+
+      - name: ⏳ Wait for frontend to be ready
+        run: |
+          echo "Waiting for frontend to be ready..."
+          for i in {1..30}; do
+            if curl -f http://localhost:3000 > /dev/null 2>&1; then
+              echo "✅ Frontend is ready for E2E tests!"
+              exit 0
+            fi
+            echo "Attempt $i/30: Frontend not ready yet..."
+            sleep 2
+          done
+          echo "❌ Frontend failed to start within 60 seconds"
+          echo "Frontend logs:"
+          cat frontend.log
+          exit 1
+
       - name: Run E2E tests (shard ${{ matrix.shard }}/${{ github.event_name == 'pull_request' && '4' || '8' }})
         env:
           DATABASE_URL: postgresql://test:testpass@localhost:5432/test_db
