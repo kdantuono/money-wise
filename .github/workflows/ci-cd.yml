@@ -1285,9 +1285,8 @@ jobs:
 
       - name: Run database migrations
         run: |
-          cp apps/backend/.env.test apps/backend/.env
           cd apps/backend
-          pnpm db:migrate
+          pnpm prisma:migrate:deploy
         env:
           DATABASE_URL: postgresql://test:testpass@localhost:5432/test_db
 
@@ -1306,18 +1305,25 @@ jobs:
 
       - name: ⏳ Wait for backend health check
         run: |
-          echo "Waiting for backend to be ready..."
+          echo "🔍 Waiting for backend to be ready..."
           for i in {1..30}; do
-            if curl -f http://localhost:3001/api/health > /dev/null 2>&1; then
-              echo "✅ Backend is healthy and ready for E2E tests!"
+            if curl -f -s http://localhost:3001/api/health > /dev/null 2>&1; then
+              echo "✅ Backend is healthy!"
+              echo "📋 Health check response:"
+              curl -s http://localhost:3001/api/health | jq . 2>/dev/null || curl -s http://localhost:3001/api/health
               exit 0
             fi
             echo "Attempt $i/30: Backend not ready yet..."
+            # Show backend logs at intervals for debugging
+            if [ $i -eq 10 ] || [ $i -eq 20 ]; then
+              echo "📋 Backend logs (last 20 lines):"
+              tail -20 apps/backend/backend.log 2>/dev/null || echo "No logs yet"
+            fi
             sleep 2
           done
           echo "❌ Backend failed to start within 60 seconds"
-          echo "Backend logs:"
-          cat backend.log
+          echo "📋 Complete backend logs:"
+          cat apps/backend/backend.log
           exit 1
 
       - name: 🚀 Start frontend server for E2E tests
@@ -1345,6 +1351,35 @@ jobs:
           echo "Frontend logs:"
           cat frontend.log
           exit 1
+
+      - name: 🔧 Create test user for this shard
+        run: |
+          SHARD_INDEX=${{ matrix.shard }}
+          USER_EMAIL="e2e-shard-${SHARD_INDEX}@moneywise.test"
+
+          echo "🔧 Creating test user: $USER_EMAIL"
+
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST http://localhost:3001/api/auth/register \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"email\": \"${USER_EMAIL}\",
+              \"password\": \"TestUser#2025!Shard\",
+              \"firstName\": \"E2E\",
+              \"lastName\": \"Shard${SHARD_INDEX}\"
+            }")
+
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | head -n -1)
+
+          echo "📋 Response (HTTP $HTTP_CODE):"
+          echo "$BODY"
+
+          if [ "$HTTP_CODE" -eq 201 ] || [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 409 ]; then
+            echo "✅ User ready for testing (shard $SHARD_INDEX)"
+          else
+            echo "❌ User creation failed (HTTP $HTTP_CODE)"
+            exit 1
+          fi
 
       - name: Run E2E tests (shard ${{ matrix.shard }}/${{ github.event_name == 'pull_request' && '4' || '8' }})
         env:
