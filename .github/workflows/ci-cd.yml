@@ -1327,6 +1327,7 @@ jobs:
           JWT_ACCESS_SECRET: test-jwt-access-secret-minimum-32-characters-long-for-testing-purposes
           JWT_REFRESH_SECRET: test-jwt-refresh-secret-minimum-32-characters-long-different-from-access
           CI: true
+          SKIP_WEBSERVER: 'true'  # Use manually-started backend instead of Playwright webServer
         run: |
           cd apps/web
           TOTAL_SHARDS=${{ github.event_name == 'pull_request' && '4' || '8' }}
