@@ -1156,30 +1156,6 @@ jobs:
         # - Main branch: 8 shards for comprehensive coverage (~25-30 min total)
         # This prevents the 60-minute timeout that was occurring with fewer shards
         shard: ${{ github.event_name == 'pull_request' && fromJSON('[1, 2, 3, 4]') || fromJSON('[1, 2, 3, 4, 5, 6, 7, 8]') }}
-    services:
-      postgres:
-        image: timescale/timescaledb:latest-pg15
-        env:
-          POSTGRES_USER: test
-          POSTGRES_PASSWORD: testpass
-          POSTGRES_DB: test_db
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U test -d test_db"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-      redis:
-        image: redis:7-alpine
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
 
     steps:
       - name: 📥 Checkout Repository
@@ -1199,28 +1175,31 @@ jobs:
       - name: 📥 Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: 📥 Download test user pool artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: e2e-test-users
-          path: apps/web/e2e/.auth/
-
-      - name: ✅ Verify test-users.json downloaded
+      - name: 🐳 Start E2E infrastructure with Docker Compose
         run: |
-          if [ -f apps/web/e2e/.auth/test-users.json ]; then
-            echo "✅ test-users.json successfully downloaded"
-            cat apps/web/e2e/.auth/test-users.json | jq '.users | length'
-            echo "users available for test execution"
-          else
-            echo "❌ test-users.json not found - E2E tests will fail!"
-            exit 1
-          fi
+          docker compose -f docker-compose.e2e.yml up -d
+          echo "✅ Docker Compose services starting..."
 
-      - name: 🔧 Generate Prisma Client
+      - name: ⏳ Wait for all services to be healthy
         run: |
-          echo '🔧 Generating Prisma Client for E2E tests...'
-          cd apps/backend && pnpm prisma:generate
-          echo '✅ Prisma Client generated'
+          echo "⏳ Waiting for backend and frontend to be ready..."
+          for i in {1..60}; do
+            BACKEND_HEALTHY=$(docker inspect --format='{{.State.Health.Status}}' moneywise-backend-e2e 2>/dev/null || echo "starting")
+            FRONTEND_HEALTHY=$(docker inspect --format='{{.State.Health.Status}}' moneywise-frontend-e2e 2>/dev/null || echo "starting")
+
+            if [ "$BACKEND_HEALTHY" = "healthy" ] && [ "$FRONTEND_HEALTHY" = "healthy" ]; then
+              echo "✅ All services are healthy!"
+              docker compose -f docker-compose.e2e.yml ps
+              exit 0
+            fi
+
+            echo "Attempt $i/60: Backend=$BACKEND_HEALTHY, Frontend=$FRONTEND_HEALTHY"
+            sleep 2
+          done
+
+          echo "❌ Services failed to become healthy within 120 seconds"
+          docker compose -f docker-compose.e2e.yml logs
+          exit 1
 
       # OPTIMIZATION: Cache Playwright browsers
       - name: Cache Playwright browsers
@@ -1243,114 +1222,6 @@ jobs:
         run: |
           cd apps/web
           npx playwright install-deps
-
-      # OPTIMIZATION: Cache Turbo build outputs
-      - name: Cache Turbo build outputs
-        uses: actions/cache@v4
-        with:
-          path: |
-            .turbo
-            apps/web/.turbo
-            apps/backend/.turbo
-          key: ${{ runner.os }}-turbo-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-turbo-
-
-      # OPTIMIZATION: Cache Next.js build
-      - name: Cache Next.js build
-        uses: actions/cache@v4
-        with:
-          path: |
-            apps/web/.next/cache
-          key: ${{ runner.os }}-nextjs-${{ hashFiles('apps/web/package.json', 'apps/web/pnpm-lock.yaml') }}-${{ hashFiles('apps/web/**/*.ts', 'apps/web/**/*.tsx', 'apps/web/**/*.js', 'apps/web/**/*.jsx') }}
-          restore-keys: |
-            ${{ runner.os }}-nextjs-${{ hashFiles('apps/web/package.json', 'apps/web/pnpm-lock.yaml') }}-
-            ${{ runner.os }}-nextjs-
-
-      # OPTIMIZATION: Cache NestJS compiled outputs
-      - name: Cache NestJS dist
-        uses: actions/cache@v4
-        with:
-          path: |
-            apps/backend/dist
-          key: ${{ runner.os }}-nestjs-dist-${{ hashFiles('apps/backend/package.json') }}-${{ hashFiles('apps/backend/src/**/*.ts') }}
-          restore-keys: |
-            ${{ runner.os }}-nestjs-dist-${{ hashFiles('apps/backend/package.json') }}-
-            ${{ runner.os }}-nestjs-dist-
-
-      - name: Build applications
-        run: |
-          pnpm build:backend
-          pnpm build:web
-
-      - name: Run database migrations
-        run: |
-          cd apps/backend
-          pnpm prisma:migrate:deploy
-        env:
-          DATABASE_URL: postgresql://test:testpass@localhost:5432/test_db
-
-      - name: 🚀 Start backend server for E2E tests
-        run: |
-          cd apps/backend
-          DATABASE_URL=postgresql://test:testpass@localhost:5432/test_db \
-          REDIS_URL=redis://localhost:6379 \
-          NODE_ENV=test \
-          PORT=3001 \
-          JWT_ACCESS_SECRET=test-jwt-access-secret-minimum-32-characters-long-for-testing-purposes \
-          JWT_REFRESH_SECRET=test-jwt-refresh-secret-minimum-32-characters-long-different-from-access \
-          nohup pnpm start:prod > backend.log 2>&1 &
-          echo $! > backend.pid
-          echo "✅ Backend server started (PID: $(cat backend.pid))"
-
-      - name: ⏳ Wait for backend health check
-        run: |
-          echo "🔍 Waiting for backend to be ready..."
-          for i in {1..30}; do
-            if curl -f -s http://localhost:3001/api/health > /dev/null 2>&1; then
-              echo "✅ Backend is healthy!"
-              echo "📋 Health check response:"
-              curl -s http://localhost:3001/api/health | jq . 2>/dev/null || curl -s http://localhost:3001/api/health
-              exit 0
-            fi
-            echo "Attempt $i/30: Backend not ready yet..."
-            # Show backend logs at intervals for debugging
-            if [ $i -eq 10 ] || [ $i -eq 20 ]; then
-              echo "📋 Backend logs (last 20 lines):"
-              tail -20 apps/backend/backend.log 2>/dev/null || echo "No logs yet"
-            fi
-            sleep 2
-          done
-          echo "❌ Backend failed to start within 60 seconds"
-          echo "📋 Complete backend logs:"
-          cat apps/backend/backend.log
-          exit 1
-
-      - name: 🚀 Start frontend server for E2E tests
-        run: |
-          cd apps/web
-          NEXT_PUBLIC_API_URL=http://localhost:3001 \
-          NODE_ENV=production \
-          PORT=3000 \
-          nohup pnpm start > frontend.log 2>&1 &
-          echo $! > frontend.pid
-          echo "✅ Frontend server started (PID: $(cat frontend.pid))"
-
-      - name: ⏳ Wait for frontend to be ready
-        run: |
-          echo "Waiting for frontend to be ready..."
-          for i in {1..30}; do
-            if curl -f http://localhost:3000 > /dev/null 2>&1; then
-              echo "✅ Frontend is ready for E2E tests!"
-              exit 0
-            fi
-            echo "Attempt $i/30: Frontend not ready yet..."
-            sleep 2
-          done
-          echo "❌ Frontend failed to start within 60 seconds"
-          echo "Frontend logs:"
-          cat frontend.log
-          exit 1
 
       - name: 🔧 Create test user for this shard
         run: |
@@ -1410,6 +1281,13 @@ jobs:
         with:
           name: playwright-report-shard-${{ matrix.shard }}
           path: apps/web/playwright-report/
+
+      - name: 🧹 Cleanup Docker Compose
+        if: always()
+        run: |
+          echo "Stopping Docker Compose services..."
+          docker compose -f docker-compose.e2e.yml logs
+          docker compose -f docker-compose.e2e.yml down -v
 
   # ===================================================================
   # 📦 BUNDLE SIZE: Monitor Next.js bundle size (PR-only)
