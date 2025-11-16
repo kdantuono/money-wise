@@ -8,7 +8,7 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 # Copy package files for dependency installation
-COPY package.json pnpm-lock.yaml ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/web/package.json ./apps/web/
 COPY packages/*/package.json ./packages/*/
 
