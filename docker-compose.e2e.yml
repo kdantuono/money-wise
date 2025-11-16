@@ -71,10 +71,14 @@ services:
       - /app/apps/backend/node_modules
     command: >
       sh -c "
-        echo '🔄 Waiting for database connection...' &&
+        echo '🔄 Building backend...' &&
+        pnpm --filter @money-wise/backend build &&
+        echo '✅ Backend built successfully' &&
+        echo '🔄 Running database migrations...' &&
         cd apps/backend &&
         pnpm prisma:migrate:deploy &&
         echo '✅ Migrations applied successfully' &&
+        echo '🔄 Starting backend server...' &&
         pnpm start:prod
       "
 
@@ -107,7 +111,14 @@ services:
       - /app/node_modules
       - /app/apps/web/node_modules
       - /app/apps/web/.next
-    command: pnpm --filter @money-wise/web start
+    command: >
+      sh -c "
+        echo '🔄 Building frontend...' &&
+        pnpm --filter @money-wise/web build &&
+        echo '✅ Frontend built successfully' &&
+        echo '🔄 Starting frontend server...' &&
+        pnpm --filter @money-wise/web start
+      "
 
 networks:
   e2e-network:
