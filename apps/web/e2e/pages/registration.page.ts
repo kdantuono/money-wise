@@ -73,17 +73,44 @@ export class RegistrationPage extends BasePage {
 
   /**
    * Fill confirm password
-   * Uses explicit click + pressSequentially for robust React Hook Form compatibility
-   * This approach types character by character, triggering proper onChange events
+   * Uses JavaScript evaluation to directly set value and trigger React Hook Form events
+   * This bypasses Playwright typing issues and ensures the value is actually set
    */
   async fillConfirmPassword(password: string): Promise<void> {
     const element = await this.waitForElement(this.confirmPasswordInput);
 
-    // Clear any existing value first
-    await element.clear();
+    // Wait a bit for React Hook Form to fully initialize its event handlers
+    await this.page.waitForTimeout(500);
 
-    // Type character by character for better React Hook Form compatibility
-    await element.pressSequentially(password, { delay: 50 });
+    // Use JavaScript to directly set the value and trigger proper React events
+    // This is more reliable than typing because it ensures React state is updated
+    await element.evaluate((input, value) => {
+      const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype,
+        'value'
+      )?.set;
+
+      if (nativeInputValueSetter) {
+        nativeInputValueSetter.call(input, value);
+      } else {
+        (input as HTMLInputElement).value = value;
+      }
+
+      // Trigger input event to notify React of the change
+      const inputEvent = new Event('input', { bubbles: true, cancelable: true });
+      input.dispatchEvent(inputEvent);
+
+      // Trigger change event for React Hook Form
+      const changeEvent = new Event('change', { bubbles: true, cancelable: true });
+      input.dispatchEvent(changeEvent);
+    }, password);
+
+    // Verify the value was actually set
+    const actualValue = await element.inputValue();
+    if (actualValue !== password) {
+      // Fallback: use fill() which should work now that React is initialized
+      await element.fill(password);
+    }
 
     // Trigger blur to ensure validation runs
     await element.blur();
