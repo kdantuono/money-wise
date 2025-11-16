@@ -73,15 +73,25 @@ export class RegistrationPage extends BasePage {
 
   /**
    * Fill confirm password
-   * Uses Playwright's getByLabel() for more robust field selection
-   * This method uses the accessibility tree (label-input association) rather than data-testid
-   * which is more reliable for fields that may have timing/rendering issues
+   * Uses standard fillInput pattern with explicit event dispatching to ensure
+   * React Hook Form registers the value properly
    */
   async fillConfirmPassword(password: string): Promise<void> {
-    // Use getByLabel() which finds input by its associated label
-    // More robust than data-testid for React Hook Form fields
-    const confirmPasswordField = this.page.getByLabel('Confirm Password');
-    await confirmPasswordField.fill(password);
+    const element = await this.waitForElement(this.confirmPasswordInput);
+
+    // Clear any existing value first
+    await element.clear();
+
+    // Fill the field
+    await element.fill(password);
+
+    // Explicitly dispatch events to ensure React Hook Form registers the value
+    // This is necessary because Playwright's fill() may not trigger all React event handlers
+    await element.dispatchEvent('input', { bubbles: true });
+    await element.dispatchEvent('change', { bubbles: true });
+
+    // Small wait to allow React to process the change
+    await this.page.waitForTimeout(50);
   }
 
   /**
