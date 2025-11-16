@@ -73,14 +73,10 @@ export class RegistrationPage extends BasePage {
 
   /**
    * Fill confirm password
-   * Uses fill() followed by blur to ensure React Hook Form validation triggers
+   * Uses standard fillInput() just like the password field
    */
   async fillConfirmPassword(password: string): Promise<void> {
-    const element = await this.waitForElement(this.confirmPasswordInput);
-    // Use fill() which properly clears and sets value with correct events
-    // Then trigger blur to ensure React Hook Form validation runs
-    await element.fill(password);
-    await element.blur();
+    await this.fillInput(this.confirmPasswordInput, password);
   }
 
   /**
