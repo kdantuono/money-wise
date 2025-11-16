@@ -89,15 +89,19 @@ export class RegistrationPage extends BasePage {
    * Fill complete registration form
    */
   async fillRegistrationForm(userData: UserData): Promise<void> {
+    // Wait for the form to be fully rendered (ClientOnly wrapper may delay rendering)
+    // Use PAGE_LOAD timeout since client-side hydration can take time in CI
+    await this.waitForElement(this.form, TIMEOUTS.PAGE_LOAD);
+
     await this.fillFirstName(userData.firstName);
     await this.fillLastName(userData.lastName);
     await this.fillEmail(userData.email);
     await this.fillPassword(userData.password);
 
-    // Fill confirm password if the field exists
-    if (await this.isElementVisible(this.confirmPasswordInput)) {
-      await this.fillConfirmPassword(userData.password);
-    }
+    // Fill confirm password - wait with longer timeout for CI environments
+    // The ClientOnly wrapper may delay this field's availability
+    await this.waitForElement(this.confirmPasswordInput, TIMEOUTS.PAGE_LOAD);
+    await this.fillConfirmPassword(userData.password);
   }
 
   /**
