@@ -73,47 +73,20 @@ export class RegistrationPage extends BasePage {
 
   /**
    * Fill confirm password
-   * Uses JavaScript evaluation to directly set value and trigger React Hook Form events
-   * This bypasses Playwright typing issues and ensures the value is actually set
+   * Uses standard Playwright fill() which works for all other fields
+   * The key is clicking to ensure proper focus and event handler attachment
    */
   async fillConfirmPassword(password: string): Promise<void> {
     const element = await this.waitForElement(this.confirmPasswordInput);
 
-    // Wait a bit for React Hook Form to fully initialize its event handlers
-    await this.page.waitForTimeout(500);
+    // Click to ensure the field is focused and React event handlers are attached
+    await element.click();
 
-    // Use JavaScript to directly set the value and trigger proper React events
-    // This is more reliable than typing because it ensures React state is updated
-    await element.evaluate((input, value) => {
-      const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
-        window.HTMLInputElement.prototype,
-        'value'
-      )?.set;
+    // Small delay for React Hook Form to be ready for this specific field
+    await this.page.waitForTimeout(100);
 
-      if (nativeInputValueSetter) {
-        nativeInputValueSetter.call(input, value);
-      } else {
-        (input as HTMLInputElement).value = value;
-      }
-
-      // Trigger input event to notify React of the change
-      const inputEvent = new Event('input', { bubbles: true, cancelable: true });
-      input.dispatchEvent(inputEvent);
-
-      // Trigger change event for React Hook Form
-      const changeEvent = new Event('change', { bubbles: true, cancelable: true });
-      input.dispatchEvent(changeEvent);
-    }, password);
-
-    // Verify the value was actually set
-    const actualValue = await element.inputValue();
-    if (actualValue !== password) {
-      // Fallback: use fill() which should work now that React is initialized
-      await element.fill(password);
-    }
-
-    // Trigger blur to ensure validation runs
-    await element.blur();
+    // Use standard Playwright fill - same as Password field which works
+    await element.fill(password);
   }
 
   /**
