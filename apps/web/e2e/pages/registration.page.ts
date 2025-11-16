@@ -73,9 +73,15 @@ export class RegistrationPage extends BasePage {
 
   /**
    * Fill confirm password
+   * Uses click + clear + type to ensure React Hook Form registers the value
    */
   async fillConfirmPassword(password: string): Promise<void> {
-    await this.fillInput(this.confirmPasswordInput, password);
+    const element = await this.waitForElement(this.confirmPasswordInput);
+    // Clear any existing value and type the password character by character
+    // This ensures React Hook Form's onChange handlers are triggered properly
+    await element.click();
+    await element.clear();
+    await element.type(password, { delay: 10 });
   }
 
   /**
