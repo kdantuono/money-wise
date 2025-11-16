@@ -73,20 +73,11 @@ export class RegistrationPage extends BasePage {
 
   /**
    * Fill confirm password
-   * Uses standard Playwright fill() which works for all other fields
-   * The key is clicking to ensure proper focus and event handler attachment
+   * Uses the exact same fillInput() method that works for Password field
+   * No special handling needed - consistent approach for all fields
    */
   async fillConfirmPassword(password: string): Promise<void> {
-    const element = await this.waitForElement(this.confirmPasswordInput);
-
-    // Click to ensure the field is focused and React event handlers are attached
-    await element.click();
-
-    // Small delay for React Hook Form to be ready for this specific field
-    await this.page.waitForTimeout(100);
-
-    // Use standard Playwright fill - same as Password field which works
-    await element.fill(password);
+    await this.fillInput(this.confirmPasswordInput, password);
   }
 
   /**
@@ -108,10 +99,6 @@ export class RegistrationPage extends BasePage {
     await this.fillLastName(userData.lastName);
     await this.fillEmail(userData.email);
     await this.fillPassword(userData.password);
-
-    // Fill confirm password - wait with longer timeout for CI environments
-    // The ClientOnly wrapper may delay this field's availability
-    await this.waitForElement(this.confirmPasswordInput, TIMEOUTS.PAGE_LOAD);
     await this.fillConfirmPassword(userData.password);
   }
 
