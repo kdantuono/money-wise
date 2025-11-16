@@ -73,10 +73,20 @@ export class RegistrationPage extends BasePage {
 
   /**
    * Fill confirm password
-   * Uses standard fillInput() just like the password field
+   * Uses explicit click + pressSequentially for robust React Hook Form compatibility
+   * This approach types character by character, triggering proper onChange events
    */
   async fillConfirmPassword(password: string): Promise<void> {
-    await this.fillInput(this.confirmPasswordInput, password);
+    const element = await this.waitForElement(this.confirmPasswordInput);
+
+    // Clear any existing value first
+    await element.clear();
+
+    // Type character by character for better React Hook Form compatibility
+    await element.pressSequentially(password, { delay: 50 });
+
+    // Trigger blur to ensure validation runs
+    await element.blur();
   }
 
   /**
