@@ -108,7 +108,7 @@
     "swagger-jsdoc": "^6.2.8",
     "swagger-parser": "^10.0.3",
     "testcontainers": "^10.4.0",
-    "ts-jest": "^29.4.4",
+    "ts-jest": "^29.4.5",
     "ts-loader": "^9.4.3",
     "ts-node": "^10.9.1",
     "tsconfig-paths": "^4.2.0",
