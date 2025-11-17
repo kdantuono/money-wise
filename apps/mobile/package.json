@@ -36,7 +36,7 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
-    "@babel/core": "^7.20.0",
+    "@babel/core": "^7.28.5",
     "@expo/webpack-config": "^19.0.0",
     "@types/react": "~18.2.14",
     "@typescript-eslint/eslint-plugin": "^6.7.4",
