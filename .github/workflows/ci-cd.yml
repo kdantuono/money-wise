@@ -868,7 +868,7 @@ jobs:
           fail-on-alert: false
 
       - name: 📈 Upload Test Results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         if: always()
         with:
           name: test-results-${{ github.run_id }}
@@ -942,7 +942,7 @@ jobs:
 
       - name: 📤 Upload Build Artifacts
         if: steps.check-app.outputs.exists == 'true' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: build-${{ matrix.app }}-${{ github.run_id }}
           path: |
@@ -1117,7 +1117,7 @@ jobs:
           echo "✅ test-users.json file created with 8 user credentials"
 
       - name: 📤 Upload test user pool as artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: e2e-test-users
           path: apps/web/e2e/.auth/test-users.json
@@ -1315,7 +1315,7 @@ jobs:
 
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: playwright-report-shard-${{ matrix.shard }}
           path: apps/web/playwright-report/
