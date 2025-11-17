@@ -130,7 +130,7 @@
     "@sentry/nestjs": "^10.15.0",
     "@sentry/nextjs": "^10.15.0",
     "@sentry/node": "^10.15.0",
-    "@sentry/profiling-node": "^10.15.0",
+    "@sentry/profiling-node": "^10.25.0",
     "@sentry/react": "^10.15.0",
     "@sentry/react-native": "^7.2.0",
     "@sentry/wizard": "^6.5.0"
