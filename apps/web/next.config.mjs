@@ -12,6 +12,15 @@ const nextConfig = {
   // Enable React strict mode for better development experience
   reactStrictMode: true,
 
+  // Compiler options - preserve data-testid for E2E tests in production
+  // By default, Next.js preserves all data attributes in production builds.
+  // We explicitly DO NOT configure reactRemoveProperties to ensure data-testid
+  // attributes remain in the production build for E2E testing.
+  // NOTE: reactRemoveProperties is opt-in to REMOVE attributes, not preserve them.
+  compiler: {
+    // No reactRemoveProperties configuration = data-testid preserved
+  },
+
   // Experimental features
   experimental: {
     // Client trace metadata for Sentry

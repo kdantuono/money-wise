@@ -108,7 +108,8 @@
       "WebFetch(domain:docs.saltedge.com)",
       "Bash(command -v:*)",
       "Bash(/tmp/run-logs.txt)",
-      "Bash(echo:*)"
+      "Bash(echo:*)",
+      "Bash(/tmp/run-207-full-logs.txt)"
     ],
     "deny": [],
     "ask": []
