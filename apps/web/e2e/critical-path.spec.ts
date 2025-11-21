@@ -36,13 +36,22 @@ test.describe('CRITICAL PATH - Complete User Journey (MUST PASS) @smoke @critica
       await page.fill('input[name="email"]', testUser.email);
       await page.fill('input[name="password"]', testUser.password);
 
-      // Fill confirm password with robust approach for React Hook Form
+      // Fill confirm password using nativeInputValueSetter to bypass React's value setter override
       const confirmPasswordInput = page.locator('input[name="confirmPassword"]');
       await confirmPasswordInput.click();
-      await confirmPasswordInput.clear();
-      await confirmPasswordInput.pressSequentially(testUser.password, { delay: 10 });
+      await confirmPasswordInput.evaluate((el: HTMLInputElement, value: string) => {
+        const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+          window.HTMLInputElement.prototype,
+          'value'
+        )?.set;
+        if (nativeInputValueSetter) {
+          nativeInputValueSetter.call(el, value);
+        }
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+        el.dispatchEvent(new Event('change', { bubbles: true }));
+      }, testUser.password);
       await confirmPasswordInput.blur();
-      await page.waitForTimeout(50);
+      await page.waitForTimeout(100);
 
       const submitButton = page.locator('[data-testid="register-button"]');
       await expect(submitButton).toBeVisible();

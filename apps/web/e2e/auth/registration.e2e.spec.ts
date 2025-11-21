@@ -43,18 +43,26 @@ class RegistrationPage {
     // Click to focus the element
     await element.click();
 
-    // Clear any existing value
-    await element.clear();
-
-    // Use pressSequentially which fires keydown/keypress/keyup events
-    // This is more reliable with React Hook Form than fill()
-    await element.pressSequentially(password, { delay: 10 });
+    // Use nativeInputValueSetter to bypass React's value setter override
+    // React overrides the DOM node's setter, so we get the original and use it directly
+    await element.evaluate((el: HTMLInputElement, value: string) => {
+      const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype,
+        'value'
+      )?.set;
+      if (nativeInputValueSetter) {
+        nativeInputValueSetter.call(el, value);
+      }
+      // Dispatch input and change events to trigger React's event handlers
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+    }, password);
 
     // Trigger blur to ensure React Hook Form validation runs
     await element.blur();
 
     // Small delay to let React Hook Form process the events
-    await this.page.waitForTimeout(50);
+    await this.page.waitForTimeout(100);
   }
 
   async getFirstNameErrorMessage() {
