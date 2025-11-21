@@ -46,7 +46,14 @@ export class AuthHelpers {
     await this.page.fill('[data-testid="last-name"]', userData.lastName);
     await this.page.fill('[data-testid="email"]', userData.email);
     await this.page.fill('[data-testid="password"]', userData.password);
-    await this.page.fill('[data-testid="confirm-password"]', userData.password);
+
+    // Fill confirm password with robust approach for React Hook Form
+    const confirmPasswordInput = this.page.locator('[data-testid="confirm-password"]');
+    await confirmPasswordInput.click();
+    await confirmPasswordInput.clear();
+    await confirmPasswordInput.pressSequentially(userData.password, { delay: 10 });
+    await confirmPasswordInput.blur();
+    await this.page.waitForTimeout(50);
 
     // FIX: Wait for API response to avoid race condition
     await Promise.all([

@@ -73,20 +73,27 @@ export class RegistrationPage extends BasePage {
 
   /**
    * Fill confirm password
-   * Waits for React Hook Form validation to settle, then uses JavaScript to set value directly
+   * Uses robust approach for React Hook Form: click → clear → pressSequentially → blur
+   * This properly triggers keydown/keypress/keyup events that React Hook Form expects
    */
   async fillConfirmPassword(password: string): Promise<void> {
     const element = await this.waitForElement(this.confirmPasswordInput);
 
-    // Wait for any validation messages to render (React Hook Form triggers on blur)
-    await this.page.waitForTimeout(100);
+    // Click to focus the element
+    await element.click();
 
-    // Use JavaScript to set the value directly, bypassing Playwright's input methods
-    await element.evaluate((el: HTMLInputElement, value: string) => {
-      el.value = value;
-      el.dispatchEvent(new Event('input', { bubbles: true }));
-      el.dispatchEvent(new Event('change', { bubbles: true }));
-    }, password);
+    // Clear any existing value
+    await element.clear();
+
+    // Use pressSequentially which fires keydown/keypress/keyup events
+    // This is more reliable with React Hook Form than fill()
+    await element.pressSequentially(password, { delay: 10 });
+
+    // Trigger blur to ensure React Hook Form validation runs
+    await element.blur();
+
+    // Small delay to let React Hook Form process the events
+    await this.page.waitForTimeout(50);
   }
 
   /**

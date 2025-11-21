@@ -38,7 +38,23 @@ class RegistrationPage {
   }
 
   async fillConfirmPassword(password: string) {
-    await this.page.fill('#confirmPassword', password);
+    const element = this.page.locator('#confirmPassword');
+
+    // Click to focus the element
+    await element.click();
+
+    // Clear any existing value
+    await element.clear();
+
+    // Use pressSequentially which fires keydown/keypress/keyup events
+    // This is more reliable with React Hook Form than fill()
+    await element.pressSequentially(password, { delay: 10 });
+
+    // Trigger blur to ensure React Hook Form validation runs
+    await element.blur();
+
+    // Small delay to let React Hook Form process the events
+    await this.page.waitForTimeout(50);
   }
 
   async getFirstNameErrorMessage() {

@@ -36,8 +36,13 @@ test.describe('CRITICAL PATH - Complete User Journey (MUST PASS) @smoke @critica
       await page.fill('input[name="email"]', testUser.email);
       await page.fill('input[name="password"]', testUser.password);
 
-      // Submit registration
-      await page.fill('input[name="confirmPassword"]', testUser.password);
+      // Fill confirm password with robust approach for React Hook Form
+      const confirmPasswordInput = page.locator('input[name="confirmPassword"]');
+      await confirmPasswordInput.click();
+      await confirmPasswordInput.clear();
+      await confirmPasswordInput.pressSequentially(testUser.password, { delay: 10 });
+      await confirmPasswordInput.blur();
+      await page.waitForTimeout(50);
 
       const submitButton = page.locator('[data-testid="register-button"]');
       await expect(submitButton).toBeVisible();
