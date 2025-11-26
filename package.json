@@ -60,7 +60,7 @@
     "@commitlint/config-conventional": "^18.4.3",
     "@playwright/test": "^1.40.0",
     "@types/jest": "^29.5.8",
-    "axios": "^1.12.0",
+    "axios": "^1.13.0",
     "concurrently": "^8.2.2",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-no-secrets": "^2.2.1",
@@ -127,9 +127,9 @@
     ]
   },
   "dependencies": {
-    "@sentry/nestjs": "^10.15.0",
-    "@sentry/nextjs": "^10.15.0",
-    "@sentry/node": "^10.15.0",
+    "@sentry/nestjs": "^10.27.0",
+    "@sentry/nextjs": "^10.27.0",
+    "@sentry/node": "^10.27.0",
     "@sentry/profiling-node": "^10.15.0",
     "@sentry/react": "^10.15.0",
     "@sentry/react-native": "^7.2.0",
