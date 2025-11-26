@@ -5,6 +5,9 @@ import { defineConfig, devices } from '@playwright/test';
  */
 export default defineConfig({
   testDir: './e2e',
+  /* Only match tests in the active directories, exclude old backups */
+  testMatch: ['**/tests/**/*.spec.ts', '**/auth/**/*.spec.ts'],
+  testIgnore: ['**/__old_tests_backup/**', '**/node_modules/**'],
   /* Run tests in files in parallel */
   fullyParallel: true,
   /* Fail the build on CI if you accidentally left test.only in the source code. */
@@ -51,14 +54,11 @@ export default defineConfig({
     {
       name: 'Mobile Chrome',
       use: { ...devices['Pixel 5'] },
-      // Only run critical tests on mobile to reduce CI time by ~36%
+      // Only run critical tests on mobile to reduce CI time
       testMatch: [
-        '**/critical-path.spec.ts',
-        '**/auth/registration.e2e.spec.ts',
-        '**/visual/visual-regression.spec.ts',
-        '**/responsive.spec.ts',
-        '**/auth.spec.ts',
-        '**/auth/auth.spec.ts',
+        '**/tests/critical/**/*.spec.ts',
+        '**/tests/auth/**/*.spec.ts',
+        '**/auth/**/*.spec.ts',
       ],
     },
 

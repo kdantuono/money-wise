@@ -1044,18 +1044,15 @@ jobs:
           cat backend.log
           exit 1
 
-      - name: 👥 Create test user pool (8 users for sharding)
+      - name: 👤 Create test user
         run: |
-          echo "Creating 8 test users for parallel test execution..."
-          for i in {0..7}; do
-            echo "Creating user $((i+1))/8: e2e-shard-$i@moneywise.test"
-            curl -X POST http://localhost:3001/api/auth/register \
-              -H "Content-Type: application/json" \
-              -d "{\"email\":\"e2e-shard-$i@moneywise.test\",\"password\":\"TestUser#2025!Shard\",\"firstName\":\"E2E\",\"lastName\":\"Shard$i\"}" \
-              -w "\nHTTP Status: %{http_code}\n" \
-              || echo "User might already exist (409) - continuing..."
-          done
-          echo "✅ Test user pool creation completed"
+          echo "Creating single test user for E2E execution..."
+          curl -X POST http://localhost:3001/api/auth/register \
+            -H "Content-Type: application/json" \
+            -d '{"email":"e2e-test@moneywise.test","password":"TestUser#2025!E2E","firstName":"E2E","lastName":"TestUser"}' \
+            -w "\nHTTP Status: %{http_code}\n" \
+            || echo "User might already exist (409) - continuing..."
+          echo "✅ Test user creation completed"
 
       - name: 📝 Create test-users.json file
         run: |
@@ -1064,57 +1061,15 @@ jobs:
           {
             "users": [
               {
-                "email": "e2e-shard-0@moneywise.test",
-                "password": "TestUser#2025!Shard",
+                "email": "e2e-test@moneywise.test",
+                "password": "TestUser#2025!E2E",
                 "firstName": "E2E",
-                "lastName": "Shard0"
-              },
-              {
-                "email": "e2e-shard-1@moneywise.test",
-                "password": "TestUser#2025!Shard",
-                "firstName": "E2E",
-                "lastName": "Shard1"
-              },
-              {
-                "email": "e2e-shard-2@moneywise.test",
-                "password": "TestUser#2025!Shard",
-                "firstName": "E2E",
-                "lastName": "Shard2"
-              },
-              {
-                "email": "e2e-shard-3@moneywise.test",
-                "password": "TestUser#2025!Shard",
-                "firstName": "E2E",
-                "lastName": "Shard3"
-              },
-              {
-                "email": "e2e-shard-4@moneywise.test",
-                "password": "TestUser#2025!Shard",
-                "firstName": "E2E",
-                "lastName": "Shard4"
-              },
-              {
-                "email": "e2e-shard-5@moneywise.test",
-                "password": "TestUser#2025!Shard",
-                "firstName": "E2E",
-                "lastName": "Shard5"
-              },
-              {
-                "email": "e2e-shard-6@moneywise.test",
-                "password": "TestUser#2025!Shard",
-                "firstName": "E2E",
-                "lastName": "Shard6"
-              },
-              {
-                "email": "e2e-shard-7@moneywise.test",
-                "password": "TestUser#2025!Shard",
-                "firstName": "E2E",
-                "lastName": "Shard7"
+                "lastName": "TestUser"
               }
             ]
           }
           EOF
-          echo "✅ test-users.json file created with 8 user credentials"
+          echo "✅ test-users.json file created"
 
       - name: 📤 Upload test user pool as artifact
         uses: actions/upload-artifact@v4
@@ -1132,13 +1087,13 @@ jobs:
           fi
 
   # ===================================================================
-  # 🧪 E2E TESTS: End-to-end testing with smart sharding
+  # 🧪 E2E TESTS: End-to-end testing with Docker Compose infrastructure
   # ===================================================================
 
   e2e-tests:
     name: 🧪 E2E Tests
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 30
     needs: [foundation, development, testing, e2e-setup]
     # Run E2E tests on:
     # - Push to main/develop/hotfix branches
@@ -1147,15 +1102,6 @@ jobs:
     if: |
       (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/heads/hotfix/'))) ||
       (github.event_name == 'pull_request' && (github.event.action == 'ready_for_review' || startsWith(github.head_ref, 'hotfix/')))
-    strategy:
-      fail-fast: false  # Continue other shards even if one fails
-      max-parallel: 8   # Allow all shards to run concurrently
-      matrix:
-        # Smart sharding strategy (OPTIMIZED to prevent timeout):
-        # - PRs: 4 shards for fast feedback (~15-20 min total)
-        # - Main branch: 8 shards for comprehensive coverage (~25-30 min total)
-        # This prevents the 60-minute timeout that was occurring with fewer shards
-        shard: ${{ github.event_name == 'pull_request' && fromJSON('[1, 2, 3, 4]') || fromJSON('[1, 2, 3, 4, 5, 6, 7, 8]') }}
 
     steps:
       - name: 📥 Checkout Repository
@@ -1223,21 +1169,13 @@ jobs:
           cd apps/web
           npx playwright install-deps
 
-      - name: 🔧 Create test user for this shard
+      - name: 🔧 Create test user
         run: |
-          SHARD_INDEX=${{ matrix.shard }}
-          USER_EMAIL="e2e-shard-${SHARD_INDEX}@moneywise.test"
-
-          echo "🔧 Creating test user: $USER_EMAIL"
+          echo "🔧 Creating test user: e2e-test@moneywise.test"
 
           RESPONSE=$(curl -s -w "\n%{http_code}" -X POST http://localhost:3001/api/auth/register \
             -H "Content-Type: application/json" \
-            -d "{
-              \"email\": \"${USER_EMAIL}\",
-              \"password\": \"TestUser#2025!Shard\",
-              \"firstName\": \"E2E\",
-              \"lastName\": \"Shard${SHARD_INDEX}\"
-            }")
+            -d '{"email":"e2e-test@moneywise.test","password":"TestUser#2025!E2E","firstName":"E2E","lastName":"TestUser"}')
 
           HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
           BODY=$(echo "$RESPONSE" | head -n -1)
@@ -1246,40 +1184,30 @@ jobs:
           echo "$BODY"
 
           if [ "$HTTP_CODE" -eq 201 ] || [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 409 ]; then
-            echo "✅ User ready for testing (shard $SHARD_INDEX)"
+            echo "✅ Test user ready"
           else
             echo "❌ User creation failed (HTTP $HTTP_CODE)"
             exit 1
           fi
 
-      - name: Run E2E tests (shard ${{ matrix.shard }}/${{ github.event_name == 'pull_request' && '4' || '8' }})
+      - name: 🧪 Run E2E tests
         env:
           DATABASE_URL: postgresql://test:testpass@localhost:5432/test_db
           REDIS_URL: redis://localhost:6379
           JWT_ACCESS_SECRET: test-jwt-access-secret-minimum-32-characters-long-for-testing-purposes
           JWT_REFRESH_SECRET: test-jwt-refresh-secret-minimum-32-characters-long-different-from-access
           CI: true
-          SKIP_WEBSERVER: 'true'  # Use manually-started backend instead of Playwright webServer
+          SKIP_WEBSERVER: 'true'
         run: |
           cd apps/web
-          TOTAL_SHARDS=${{ github.event_name == 'pull_request' && '4' || '8' }}
+          echo "🏃 Running full E2E test suite"
+          npx playwright test
 
-          # Progressive test execution:
-          # - PR: Run @smoke + @critical tests for fast feedback
-          # - Main/Develop: Run ALL tests for comprehensive coverage
-          if [ "${{ github.event_name }}" == "pull_request" ]; then
-            echo "🏃 Running CRITICAL tier tests (@smoke + @critical)"
-            npx playwright test --shard=${{ matrix.shard }}/$TOTAL_SHARDS --grep "@smoke|@critical"
-          else
-            echo "🏃 Running FULL test suite (all tests)"
-            npx playwright test --shard=${{ matrix.shard }}/$TOTAL_SHARDS
-          fi
-
-      - name: Upload test results
+      - name: 📤 Upload test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-report-shard-${{ matrix.shard }}
+          name: playwright-report
           path: apps/web/playwright-report/
 
       - name: 🧹 Cleanup Docker Compose
