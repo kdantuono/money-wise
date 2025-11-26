@@ -76,8 +76,6 @@ test.describe('Smoke Tests', () => {
   });
 
   test('4. Dashboard loads after login', async ({ page }) => {
-    const auth = new AuthHelper(page);
-    
     // Login via UI
     await page.goto(ROUTES.AUTH.LOGIN);
     await page.waitForSelector(TEST_IDS.AUTH.LOGIN_FORM, { state: 'visible' });

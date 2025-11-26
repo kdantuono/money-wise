@@ -107,7 +107,6 @@ test.describe('Authentication @critical', () => {
 
   test.describe('Signup', () => {
     test('should signup with valid information', async ({ page }) => {
-      const auth = new AuthHelper(page);
       const timestamp = Date.now();
       const uniqueId = Math.random().toString(36).substring(7);
       const newUser = {
@@ -259,12 +258,6 @@ test.describe('Authentication @critical', () => {
 
         const url = page.url();
         const redirectedToLogin = url.includes('/auth/login');
-
-        // Check if we can see protected content
-        let canSeeProtectedContent = false;
-        try {
-          canSeeProtectedContent = await page.locator('h1').filter({ hasText: 'Welcome back' }).isVisible({ timeout: 1000 });
-        } catch {}
 
         // KNOWN ISSUE: The app currently renders dashboard content without proper auth guards.
         // The test verifies the CURRENT behavior: either redirect OR show dashboard shell.
