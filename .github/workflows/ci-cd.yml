@@ -1050,7 +1050,7 @@ jobs:
           # Password must NOT contain email, firstName, or lastName parts
           curl -X POST http://localhost:3001/api/auth/register \
             -H "Content-Type: application/json" \
-            -d '{"email":"e2e-test@moneywise.test","password":"SecurePass#2025!Automation","firstName":"Automation","lastName":"Tester"}' \
+            -d '{"email":"e2e-test@moneywise.test","password":"Qwerty#2025!Strong","firstName":"Automation","lastName":"Tester"}' \
             -w "\nHTTP Status: %{http_code}\n" \
             || echo "User might already exist (409) - continuing..."
           echo "✅ Test user creation completed"
@@ -1063,7 +1063,7 @@ jobs:
             "users": [
               {
                 "email": "e2e-test@moneywise.test",
-                "password": "SecurePass#2025!Automation",
+                "password": "Qwerty#2025!Strong",
                 "firstName": "Automation",
                 "lastName": "Tester"
               }
@@ -1177,7 +1177,7 @@ jobs:
 
           RESPONSE=$(curl -s -w "\n%{http_code}" -X POST http://localhost:3001/api/auth/register \
             -H "Content-Type: application/json" \
-            -d '{"email":"e2e-test@moneywise.test","password":"SecurePass#2025!Automation","firstName":"Automation","lastName":"Tester"}')
+            -d '{"email":"e2e-test@moneywise.test","password":"Qwerty#2025!Strong","firstName":"Automation","lastName":"Tester"}')
 
           HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
           BODY=$(echo "$RESPONSE" | head -n -1)
