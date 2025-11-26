@@ -21,7 +21,7 @@ export default function DashboardPage() {
   return (
     <ProtectedRoute>
       <DashboardLayout>
-        <div className="space-y-6" data-testid="dashboard-container">
+        <div className="space-y-6" data-testid="dashboard">
           {/* Welcome Section */}
           <div>
             <h1 className="text-3xl font-bold text-gray-900">

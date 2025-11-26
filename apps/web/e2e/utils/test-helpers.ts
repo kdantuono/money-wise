@@ -6,81 +6,14 @@
 import { Page, Locator, expect } from '@playwright/test';
 
 /**
- * Authentication helpers
+ * Note: Authentication helpers have been moved to e2e/utils/auth-helpers.ts
+ * Use the AuthHelper class from that file instead (cookie-based auth support).
+ *
+ * Example:
+ * import { AuthHelper } from '../utils/auth-helpers';
+ * const auth = new AuthHelper(page);
+ * await auth.login(email, password);
  */
-export class AuthHelpers {
-  constructor(private page: Page) {}
-
-  async login(email: string = 'test@example.com', password: string = 'password123') {
-    await this.page.goto('/auth/login');
-    
-    // Wait for form to be hydrated (ClientOnly component)
-    await this.page.waitForSelector('[data-testid="login-form"]', { state: 'visible', timeout: 15000 });
-    
-    await this.page.fill('[data-testid="email-input"]', email);
-    await this.page.fill('[data-testid="password-input"]', password);
-
-    // FIX: Wait for API response + navigation simultaneously to avoid race condition
-    const [response] = await Promise.all([
-      this.page.waitForResponse(response =>
-        response.url().includes('/api/auth/login') && response.status() === 200
-      ),
-      this.page.click('[data-testid="login-button"]')
-    ]);
-
-    // Wait for redirect to dashboard after API confirms success
-    await this.page.waitForURL('/dashboard', { timeout: 5000 });
-    await expect(this.page.locator('[data-testid="dashboard"]')).toBeVisible({ timeout: 5000 });
-  }
-
-  async logout() {
-    await this.page.click('[data-testid="user-menu"]');
-    await this.page.click('[data-testid="logout-button"]');
-    await this.page.waitForURL('/auth/login');
-  }
-
-  async signup(userData: {
-    firstName: string;
-    lastName: string;
-    email: string;
-    password: string;
-  }) {
-    await this.page.goto('/auth/register');
-    
-    // Wait for form to be hydrated (ClientOnly component)
-    await this.page.waitForSelector('[data-testid="register-form"]', { state: 'visible', timeout: 15000 });
-    
-    await this.page.fill('[data-testid="first-name-input"]', userData.firstName);
-    await this.page.fill('[data-testid="last-name-input"]', userData.lastName);
-    await this.page.fill('[data-testid="email-input"]', userData.email);
-    await this.page.fill('[data-testid="password-input"]', userData.password);
-
-    // Fill confirm password using nativeInputValueSetter to bypass React's value setter override
-    const confirmPasswordInput = this.page.locator('[data-testid="confirm-password-input"]');
-    await confirmPasswordInput.click();
-    await confirmPasswordInput.evaluate((el: HTMLInputElement, value: string) => {
-      const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
-        window.HTMLInputElement.prototype,
-        'value'
-      )?.set;
-      if (nativeInputValueSetter) {
-        nativeInputValueSetter.call(el, value);
-      }
-      el.dispatchEvent(new Event('input', { bubbles: true }));
-      el.dispatchEvent(new Event('change', { bubbles: true }));
-    }, userData.password);
-    await confirmPasswordInput.blur();
-    await this.page.waitForTimeout(100);
-
-    // FIX: Wait for API response to avoid race condition
-    await Promise.all([
-      this.page.waitForResponse(response =>
-        response.url().includes('/api/auth/register') && response.status() === 201
-      ),
-      this.page.click('[data-testid="signup-button"]')
-    ]);
-  }
-}
 
 /**
  * Navigation helpers
@@ -183,11 +116,35 @@ export class FinancialHelpers {
 export class FormHelpers {
   constructor(private page: Page) {}
 
+  // Selector mapping for form fields - maps test field names to actual component data-testid attributes
+  private readonly FIELD_SELECTOR_MAP: Record<string, string> = {
+    // Login form fields
+    'email': 'email-input',
+    'password': 'password-input',
+    // Registration form fields
+    'first-name': 'first-name-input',
+    'firstName': 'first-name-input',
+    'last-name': 'last-name-input',
+    'lastName': 'last-name-input',
+    'confirm-password': 'confirm-password-input',
+    'confirmPassword': 'confirm-password-input',
+  };
+
+  /**
+   * Get the actual data-testid selector for a field name.
+   * If the field is in the mapping, use the mapped value.
+   * Otherwise, assume the field name is already the correct selector.
+   */
+  private getFieldSelector(field: string): string {
+    return this.FIELD_SELECTOR_MAP[field] || field;
+  }
+
   async fillForm(formData: Record<string, string>) {
     for (const [field, value] of Object.entries(formData)) {
+      const selector = this.getFieldSelector(field);
       // Wait for field to be visible before filling (handles ClientOnly hydration)
-      await this.page.waitForSelector(`[data-testid="${field}"]`, { state: 'visible', timeout: 15000 });
-      await this.page.fill(`[data-testid="${field}"]`, value);
+      await this.page.waitForSelector(`[data-testid="${selector}"]`, { state: 'visible', timeout: 15000 });
+      await this.page.fill(`[data-testid="${selector}"]`, value);
     }
   }
 
@@ -268,10 +225,9 @@ export class AssertionHelpers {
 }
 
 /**
- * Test context with all helpers
+ * Test context with all helpers (excluding auth - use AuthHelper from auth-helpers.ts)
  */
 export class TestContext {
-  public auth: AuthHelpers;
   public navigation: NavigationHelpers;
   public financial: FinancialHelpers;
   public form: FormHelpers;
@@ -279,7 +235,6 @@ export class TestContext {
   public assert: AssertionHelpers;
 
   constructor(public page: Page) {
-    this.auth = new AuthHelpers(page);
     this.navigation = new NavigationHelpers(page);
     this.financial = new FinancialHelpers(page);
     this.form = new FormHelpers(page);

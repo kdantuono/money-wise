@@ -289,55 +289,42 @@ export class AuthHelper {
 
   /**
    * Check if user is authenticated
+   * Cookie-based auth: Check for CSRF token (indicates active session)
    */
   async isAuthenticated(): Promise<boolean> {
-    // Check for auth token in localStorage
-    const hasToken = await this.page.evaluate(() => {
-      const authData = localStorage.getItem('auth-store');
-      if (!authData) return false;
-
-      try {
-        const parsed = JSON.parse(authData);
-        return parsed.state?.token || parsed.state?.accessToken || false;
-      } catch {
-        return false;
-      }
+    // Check for CSRF token in localStorage (indicates session exists)
+    const hasCsrfToken = await this.page.evaluate(() => {
+      return !!localStorage.getItem('csrfToken');
     });
 
-    return !!hasToken;
+    if (!hasCsrfToken) {
+      return false;
+    }
+
+    // Verify session is valid by checking cookies
+    const cookies = await this.page.context().cookies();
+    const hasAuthCookies = cookies.some(c => c.name === 'accessToken' || c.name === 'refreshToken');
+
+    return hasAuthCookies;
   }
 
   /**
-   * Get current auth token
+   * Get current CSRF token
+   * Cookie-based auth: Returns CSRF token, not access token (which is HttpOnly)
    */
-  async getAuthToken(): Promise<string | null> {
+  async getCsrfTokenFromStorage(): Promise<string | null> {
     return await this.page.evaluate(() => {
-      const authData = localStorage.getItem('auth-store');
-      if (!authData) return null;
-
-      try {
-        const parsed = JSON.parse(authData);
-        return parsed.state?.token || parsed.state?.accessToken || null;
-      } catch {
-        return null;
-      }
+      return localStorage.getItem('csrfToken');
     });
   }
 
   /**
-   * Set auth token directly (bypass login UI)
+   * Set CSRF token directly (for testing)
+   * Note: This won't fully authenticate - cookies are HttpOnly and can't be set from JS
    */
-  async setAuthToken(token: string): Promise<void> {
-    await this.page.evaluate((authToken) => {
-      const authStore = {
-        state: {
-          token: authToken,
-          accessToken: authToken,
-          isAuthenticated: true,
-        },
-        version: 0,
-      };
-      localStorage.setItem('auth-store', JSON.stringify(authStore));
+  async setCsrfToken(token: string): Promise<void> {
+    await this.page.evaluate((csrfToken) => {
+      localStorage.setItem('csrfToken', csrfToken);
     }, token);
   }
 

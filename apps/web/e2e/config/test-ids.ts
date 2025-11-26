@@ -26,14 +26,15 @@ export const TEST_IDS = {
     REGISTER_BUTTON: '[data-testid="register-button"]',
 
     // Common
-    ERROR_MESSAGE: '[data-testid="auth-error"]',
+    ERROR_MESSAGE: '[data-testid="error-message"]', // Login uses 'error-message', Register uses 'auth-error'
+    ERROR_MESSAGE_REGISTER: '[data-testid="auth-error"]',
     SUCCESS_MESSAGE: '[data-testid="auth-success"]',
     LOADING_SPINNER: '[data-testid="auth-loading"]',
   },
 
   // Dashboard
   DASHBOARD: {
-    CONTAINER: '[data-testid="dashboard-container"]',
+    CONTAINER: '[data-testid="dashboard"]',
     BALANCE_WIDGET: '[data-testid="balance-widget"]',
     CURRENT_BALANCE: '[data-testid="current-balance"]',
     CASH_FLOW_CHART: '[data-testid="cash-flow-chart"]',
