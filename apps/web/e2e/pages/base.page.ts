@@ -19,9 +19,11 @@ export class BasePage {
 
   /**
    * Wait for page to load completely
+   * Using 'domcontentloaded' instead of 'networkidle' to avoid hanging
+   * on pages with long-polling or WebSocket connections
    */
   async waitForPageLoad(): Promise<void> {
-    await this.page.waitForLoadState('networkidle');
+    await this.page.waitForLoadState('domcontentloaded');
   }
 
   /**

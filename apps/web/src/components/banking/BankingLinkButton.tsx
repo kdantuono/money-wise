@@ -156,6 +156,7 @@ export function BankingLinkButton({
         }
         aria-busy={isLoading}
         aria-describedby={error ? 'banking-link-error' : undefined}
+        data-testid="link-bank-button"
         className={`inline-flex items-center justify-center px-4 py-2 rounded-lg font-medium transition-colors duration-200
           ${
             isLoading

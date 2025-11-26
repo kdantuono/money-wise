@@ -73,9 +73,35 @@ export class RegistrationPage extends BasePage {
 
   /**
    * Fill confirm password
+   * Uses nativeInputValueSetter to bypass React's value setter override
+   * This is required because React Hook Form uses controlled inputs
    */
   async fillConfirmPassword(password: string): Promise<void> {
-    await this.fillInput(this.confirmPasswordInput, password);
+    const element = await this.waitForElement(this.confirmPasswordInput);
+
+    // Click to focus the element
+    await element.click();
+
+    // Use nativeInputValueSetter to bypass React's value setter override
+    // React overrides the DOM node's setter, so we get the original and use it directly
+    await element.evaluate((el: HTMLInputElement, value: string) => {
+      const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype,
+        'value'
+      )?.set;
+      if (nativeInputValueSetter) {
+        nativeInputValueSetter.call(el, value);
+      }
+      // Dispatch input and change events to trigger React's event handlers
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+    }, password);
+
+    // Trigger blur to ensure React Hook Form validation runs
+    await element.blur();
+
+    // Small delay to let React Hook Form process the events
+    await this.page.waitForTimeout(100);
   }
 
   /**
@@ -89,15 +115,15 @@ export class RegistrationPage extends BasePage {
    * Fill complete registration form
    */
   async fillRegistrationForm(userData: UserData): Promise<void> {
+    // Wait for the form to be fully rendered (ClientOnly wrapper may delay rendering)
+    // Use PAGE_LOAD timeout since client-side hydration can take time in CI
+    await this.waitForElement(this.form, TIMEOUTS.PAGE_LOAD);
+
     await this.fillFirstName(userData.firstName);
     await this.fillLastName(userData.lastName);
     await this.fillEmail(userData.email);
     await this.fillPassword(userData.password);
-
-    // Fill confirm password if the field exists
-    if (await this.isElementVisible(this.confirmPasswordInput)) {
-      await this.fillConfirmPassword(userData.password);
-    }
+    await this.fillConfirmPassword(userData.password);
   }
 
   /**

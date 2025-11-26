@@ -123,19 +123,19 @@ export const UserFactory = {
 };
 
 /**
- * Generates a secure password that meets typical requirements
- * - At least 8 characters
+ * Generates a secure password that meets backend requirements
+ * - At least 12 characters (backend minimum)
  * - Contains uppercase, lowercase, number, and special character
  */
 function generateSecurePassword(): string {
-  const uppercase = faker.string.alpha({ length: 2, casing: 'upper' });
-  const lowercase = faker.string.alpha({ length: 2, casing: 'lower' });
-  const numbers = faker.string.numeric(2);
+  const uppercase = faker.string.alpha({ length: 3, casing: 'upper' });
+  const lowercase = faker.string.alpha({ length: 3, casing: 'lower' });
+  const numbers = faker.string.numeric(3);
   const special = '!@#$%^&*';
   const specialChar = special[Math.floor(Math.random() * special.length)];
 
-  // Combine and shuffle
-  const parts = [uppercase, lowercase, numbers, specialChar, faker.string.alphanumeric(3)];
+  // Combine and shuffle (total: 3+3+3+1+2 = 12 characters minimum)
+  const parts = [uppercase, lowercase, numbers, specialChar, faker.string.alphanumeric(2)];
   return parts.sort(() => Math.random() - 0.5).join('');
 }
 

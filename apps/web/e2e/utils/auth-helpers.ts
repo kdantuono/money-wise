@@ -6,6 +6,7 @@
 import { Page, expect } from '@playwright/test';
 import { ROUTES, API_ROUTES } from '../config/routes';
 import { TIMEOUTS } from '../config/timeouts';
+import { TEST_IDS } from '../config/test-ids';
 import { UserData, createUser, DEFAULT_TEST_USER } from '../factories/user.factory';
 import * as path from 'path';
 import * as fs from 'fs';
@@ -23,6 +24,21 @@ let userPoolIndex = 0;
  */
 export class AuthHelper {
   constructor(private page: Page) {}
+
+  /**
+   * Wait for form to be hydrated (ClientOnly component)
+   * Auth forms are wrapped in ClientOnly and need client-side hydration
+   */
+  private async waitForFormHydration(formTestId: string): Promise<void> {
+    // Wait for the actual form to appear (not the skeleton loader)
+    await this.page.waitForSelector(`[data-testid="${formTestId}"]`, {
+      state: 'visible',
+      timeout: TIMEOUTS.PAGE_LOAD
+    });
+    
+    // Additional small delay to ensure form is fully interactive
+    await this.page.waitForTimeout(500);
+  }
 
   /**
    * Wait for backend API to be ready
@@ -122,9 +138,6 @@ export class AuthHelper {
     await this.page.goto(ROUTES.AUTH.LOGIN);
     await this.page.waitForLoadState('domcontentloaded');
 
-    // Get fresh CSRF token with retry logic
-    const csrfToken = await this.getCsrfToken();
-
     // Login via API with proper error handling
     const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -132,8 +145,7 @@ export class AuthHelper {
       const response = await this.page.request.post(`${backendUrl}/api/auth/login`, {
         data: {
           email,
-          password,
-          csrfToken
+          password
         },
         headers: {
           'Content-Type': 'application/json'
@@ -145,11 +157,11 @@ export class AuthHelper {
         throw new Error(`Login failed (${response.status()}): ${errorText}`);
       }
 
-      // Wait for authentication to complete and navigate to dashboard
-      await this.page.waitForURL('**/dashboard', {
-        timeout: TIMEOUTS.PAGE_LOAD,
-        waitUntil: 'domcontentloaded'
-      });
+      // API login successful - manually navigate to dashboard
+      await this.page.goto(ROUTES.DASHBOARD, { waitUntil: 'domcontentloaded' });
+      
+      // Wait for dashboard to load
+      await this.page.waitForLoadState('domcontentloaded');
     } catch (error) {
       throw new Error(
         `Failed to login with pooled user ${email}: ${error instanceof Error ? error.message : error}`
@@ -162,12 +174,15 @@ export class AuthHelper {
    */
   async register(userData: UserData = createUser()): Promise<UserData> {
     await this.page.goto(ROUTES.AUTH.REGISTER);
+    
+    // Wait for form to be hydrated (ClientOnly component)
+    await this.waitForFormHydration('register-form');
 
-    // Fill registration form
-    await this.page.fill('input[name="firstName"]', userData.firstName);
-    await this.page.fill('input[name="lastName"]', userData.lastName);
-    await this.page.fill('input[name="email"]', userData.email);
-    await this.page.fill('input[name="password"]', userData.password);
+    // Fill registration form using TEST_IDS constants
+    await this.page.fill(TEST_IDS.AUTH.FIRST_NAME_INPUT, userData.firstName);
+    await this.page.fill(TEST_IDS.AUTH.LAST_NAME_INPUT, userData.lastName);
+    await this.page.fill(TEST_IDS.AUTH.EMAIL_INPUT, userData.email);
+    await this.page.fill(TEST_IDS.AUTH.PASSWORD_INPUT, userData.password);
 
     // Wait for API response
     const responsePromise = this.page.waitForResponse(
@@ -175,7 +190,7 @@ export class AuthHelper {
       { timeout: TIMEOUTS.API_REQUEST }
     );
 
-    await this.page.click('button:has-text("Sign Up")');
+    await this.page.click(TEST_IDS.AUTH.REGISTER_BUTTON);
     await responsePromise;
 
     // Wait for redirect
@@ -189,10 +204,13 @@ export class AuthHelper {
    */
   async login(email: string = DEFAULT_TEST_USER.email, password: string = DEFAULT_TEST_USER.password): Promise<void> {
     await this.page.goto(ROUTES.AUTH.LOGIN);
+    
+    // Wait for form to be hydrated (ClientOnly component)
+    await this.waitForFormHydration('login-form');
 
-    // Fill login form
-    await this.page.fill('input[name="email"]', email);
-    await this.page.fill('input[name="password"]', password);
+    // Fill login form using TEST_IDS constants
+    await this.page.fill(TEST_IDS.AUTH.EMAIL_INPUT, email);
+    await this.page.fill(TEST_IDS.AUTH.PASSWORD_INPUT, password);
 
     // Wait for API response
     const responsePromise = this.page.waitForResponse(
@@ -200,7 +218,7 @@ export class AuthHelper {
       { timeout: TIMEOUTS.API_REQUEST }
     );
 
-    await this.page.click('button:has-text("Sign In")');
+    await this.page.click(TEST_IDS.AUTH.LOGIN_BUTTON);
     const response = await responsePromise;
 
     if (response.status() === 200) {
@@ -271,55 +289,42 @@ export class AuthHelper {
 
   /**
    * Check if user is authenticated
+   * Cookie-based auth: Check for CSRF token (indicates active session)
    */
   async isAuthenticated(): Promise<boolean> {
-    // Check for auth token in localStorage
-    const hasToken = await this.page.evaluate(() => {
-      const authData = localStorage.getItem('auth-store');
-      if (!authData) return false;
-
-      try {
-        const parsed = JSON.parse(authData);
-        return parsed.state?.token || parsed.state?.accessToken || false;
-      } catch {
-        return false;
-      }
+    // Check for CSRF token in localStorage (indicates session exists)
+    const hasCsrfToken = await this.page.evaluate(() => {
+      return !!localStorage.getItem('csrfToken');
     });
 
-    return !!hasToken;
+    if (!hasCsrfToken) {
+      return false;
+    }
+
+    // Verify session is valid by checking cookies
+    const cookies = await this.page.context().cookies();
+    const hasAuthCookies = cookies.some(c => c.name === 'accessToken' || c.name === 'refreshToken');
+
+    return hasAuthCookies;
   }
 
   /**
-   * Get current auth token
+   * Get current CSRF token
+   * Cookie-based auth: Returns CSRF token, not access token (which is HttpOnly)
    */
-  async getAuthToken(): Promise<string | null> {
+  async getCsrfTokenFromStorage(): Promise<string | null> {
     return await this.page.evaluate(() => {
-      const authData = localStorage.getItem('auth-store');
-      if (!authData) return null;
-
-      try {
-        const parsed = JSON.parse(authData);
-        return parsed.state?.token || parsed.state?.accessToken || null;
-      } catch {
-        return null;
-      }
+      return localStorage.getItem('csrfToken');
     });
   }
 
   /**
-   * Set auth token directly (bypass login UI)
+   * Set CSRF token directly (for testing)
+   * Note: This won't fully authenticate - cookies are HttpOnly and can't be set from JS
    */
-  async setAuthToken(token: string): Promise<void> {
-    await this.page.evaluate((authToken) => {
-      const authStore = {
-        state: {
-          token: authToken,
-          accessToken: authToken,
-          isAuthenticated: true,
-        },
-        version: 0,
-      };
-      localStorage.setItem('auth-store', JSON.stringify(authStore));
+  async setCsrfToken(token: string): Promise<void> {
+    await this.page.evaluate((csrfToken) => {
+      localStorage.setItem('csrfToken', csrfToken);
     }, token);
   }
 
@@ -343,7 +348,7 @@ export class AuthHelper {
    */
   async expectLoginPage(): Promise<void> {
     await expect(this.page).toHaveURL(ROUTES.AUTH.LOGIN, { timeout: TIMEOUTS.PAGE_TRANSITION });
-    await expect(this.page.locator('input[name="email"]')).toBeVisible({ timeout: TIMEOUTS.ELEMENT_VISIBLE });
+    await expect(this.page.locator(TEST_IDS.AUTH.EMAIL_INPUT)).toBeVisible({ timeout: TIMEOUTS.ELEMENT_VISIBLE });
   }
 
   /**
@@ -357,7 +362,7 @@ export class AuthHelper {
    * Verify error message is shown
    */
   async expectAuthError(message?: string): Promise<void> {
-    const errorAlert = this.page.locator('[role="alert"]').first();
+    const errorAlert = this.page.locator(TEST_IDS.AUTH.ERROR_MESSAGE);
     await expect(errorAlert).toBeVisible({ timeout: TIMEOUTS.ELEMENT_VISIBLE });
 
     if (message) {
@@ -376,10 +381,25 @@ export function createAuthHelper(page: Page): AuthHelper {
 /**
  * Fixture for authenticated user
  * Use this in test.beforeEach to start with authenticated user
+ * Uses pooled users for better performance and reliability
  */
 export async function setupAuthenticatedUser(page: Page, userData?: UserData): Promise<UserData> {
   const auth = new AuthHelper(page);
-  const user = userData || createUser();
-  await auth.registerAndLogin(user);
-  return user;
+  
+  if (userData) {
+    // If specific user data provided, use traditional register and login
+    await auth.registerAndLogin(userData);
+    return userData;
+  }
+  
+  // Use pooled user for better performance
+  await auth.loginWithPooledUser();
+  
+  // Return a placeholder user data (pooled users don't have full data available)
+  return {
+    email: 'pooled-user@test.com',
+    password: 'SecureTest#2025!',
+    firstName: 'Test',
+    lastName: 'User'
+  };
 }

@@ -7,9 +7,9 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [main, develop, 'epic/**', 'feature/**', 'story/**', 'refactor/**']
+    branches: [main, develop, 'epic/**', 'feature/**', 'story/**', 'refactor/**', 'hotfix/**']
   pull_request:
-    branches: [main, develop, 'epic/**', 'feature/**', 'story/**', 'refactor/**']
+    branches: [main, develop, 'epic/**', 'feature/**', 'story/**', 'refactor/**', 'hotfix/**']
   workflow_dispatch:
     inputs:
       force_full_pipeline:
@@ -1044,18 +1044,16 @@ jobs:
           cat backend.log
           exit 1
 
-      - name: 👥 Create test user pool (8 users for sharding)
+      - name: 👤 Create test user
         run: |
-          echo "Creating 8 test users for parallel test execution..."
-          for i in {0..7}; do
-            echo "Creating user $((i+1))/8: e2e-shard-$i@moneywise.test"
-            curl -X POST http://localhost:3001/api/auth/register \
-              -H "Content-Type: application/json" \
-              -d "{\"email\":\"e2e-shard-$i@moneywise.test\",\"password\":\"TestUser#2025!Shard\",\"firstName\":\"E2E\",\"lastName\":\"Shard$i\"}" \
-              -w "\nHTTP Status: %{http_code}\n" \
-              || echo "User might already exist (409) - continuing..."
-          done
-          echo "✅ Test user pool creation completed"
+          echo "Creating single test user for E2E execution..."
+          # Password must NOT contain email, firstName, or lastName parts
+          curl -X POST http://localhost:3001/api/auth/register \
+            -H "Content-Type: application/json" \
+            -d '{"email":"e2e-test@moneywise.test","password":"Qwerty#2025!Strong","firstName":"Automation","lastName":"Tester"}' \
+            -w "\nHTTP Status: %{http_code}\n" \
+            || echo "User might already exist (409) - continuing..."
+          echo "✅ Test user creation completed"
 
       - name: 📝 Create test-users.json file
         run: |
@@ -1064,57 +1062,15 @@ jobs:
           {
             "users": [
               {
-                "email": "e2e-shard-0@moneywise.test",
-                "password": "TestUser#2025!Shard",
-                "firstName": "E2E",
-                "lastName": "Shard0"
-              },
-              {
-                "email": "e2e-shard-1@moneywise.test",
-                "password": "TestUser#2025!Shard",
-                "firstName": "E2E",
-                "lastName": "Shard1"
-              },
-              {
-                "email": "e2e-shard-2@moneywise.test",
-                "password": "TestUser#2025!Shard",
-                "firstName": "E2E",
-                "lastName": "Shard2"
-              },
-              {
-                "email": "e2e-shard-3@moneywise.test",
-                "password": "TestUser#2025!Shard",
-                "firstName": "E2E",
-                "lastName": "Shard3"
-              },
-              {
-                "email": "e2e-shard-4@moneywise.test",
-                "password": "TestUser#2025!Shard",
-                "firstName": "E2E",
-                "lastName": "Shard4"
-              },
-              {
-                "email": "e2e-shard-5@moneywise.test",
-                "password": "TestUser#2025!Shard",
-                "firstName": "E2E",
-                "lastName": "Shard5"
-              },
-              {
-                "email": "e2e-shard-6@moneywise.test",
-                "password": "TestUser#2025!Shard",
-                "firstName": "E2E",
-                "lastName": "Shard6"
-              },
-              {
-                "email": "e2e-shard-7@moneywise.test",
-                "password": "TestUser#2025!Shard",
-                "firstName": "E2E",
-                "lastName": "Shard7"
+                "email": "e2e-test@moneywise.test",
+                "password": "Qwerty#2025!Strong",
+                "firstName": "Automation",
+                "lastName": "Tester"
               }
             ]
           }
           EOF
-          echo "✅ test-users.json file created with 8 user credentials"
+          echo "✅ test-users.json file created"
 
       - name: 📤 Upload test user pool as artifact
         uses: actions/upload-artifact@v4
@@ -1132,13 +1088,13 @@ jobs:
           fi
 
   # ===================================================================
-  # 🧪 E2E TESTS: End-to-end testing with smart sharding
+  # 🧪 E2E TESTS: End-to-end testing with Docker Compose infrastructure
   # ===================================================================
 
   e2e-tests:
     name: 🧪 E2E Tests
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 30
     needs: [foundation, development, testing, e2e-setup]
     # Run E2E tests on:
     # - Push to main/develop/hotfix branches
@@ -1147,39 +1103,6 @@ jobs:
     if: |
       (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/heads/hotfix/'))) ||
       (github.event_name == 'pull_request' && (github.event.action == 'ready_for_review' || startsWith(github.head_ref, 'hotfix/')))
-    strategy:
-      fail-fast: false  # Continue other shards even if one fails
-      max-parallel: 8   # Allow all shards to run concurrently
-      matrix:
-        # Smart sharding strategy (OPTIMIZED to prevent timeout):
-        # - PRs: 4 shards for fast feedback (~15-20 min total)
-        # - Main branch: 8 shards for comprehensive coverage (~25-30 min total)
-        # This prevents the 60-minute timeout that was occurring with fewer shards
-        shard: ${{ github.event_name == 'pull_request' && fromJSON('[1, 2, 3, 4]') || fromJSON('[1, 2, 3, 4, 5, 6, 7, 8]') }}
-    services:
-      postgres:
-        image: timescale/timescaledb:latest-pg15
-        env:
-          POSTGRES_USER: test
-          POSTGRES_PASSWORD: testpass
-          POSTGRES_DB: test_db
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U test -d test_db"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-      redis:
-        image: redis:7-alpine
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
 
     steps:
       - name: 📥 Checkout Repository
@@ -1199,28 +1122,31 @@ jobs:
       - name: 📥 Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: 📥 Download test user pool artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: e2e-test-users
-          path: apps/web/e2e/.auth/
-
-      - name: ✅ Verify test-users.json downloaded
+      - name: 🐳 Start E2E infrastructure with Docker Compose
         run: |
-          if [ -f apps/web/e2e/.auth/test-users.json ]; then
-            echo "✅ test-users.json successfully downloaded"
-            cat apps/web/e2e/.auth/test-users.json | jq '.users | length'
-            echo "users available for test execution"
-          else
-            echo "❌ test-users.json not found - E2E tests will fail!"
-            exit 1
-          fi
+          docker compose -f docker-compose.e2e.yml up -d
+          echo "✅ Docker Compose services starting..."
 
-      - name: 🔧 Generate Prisma Client
+      - name: ⏳ Wait for all services to be healthy
         run: |
-          echo '🔧 Generating Prisma Client for E2E tests...'
-          cd apps/backend && pnpm prisma:generate
-          echo '✅ Prisma Client generated'
+          echo "⏳ Waiting for backend and frontend to be ready..."
+          for i in {1..60}; do
+            BACKEND_HEALTHY=$(docker inspect --format='{{.State.Health.Status}}' moneywise-backend-e2e 2>/dev/null || echo "starting")
+            FRONTEND_HEALTHY=$(docker inspect --format='{{.State.Health.Status}}' moneywise-frontend-e2e 2>/dev/null || echo "starting")
+
+            if [ "$BACKEND_HEALTHY" = "healthy" ] && [ "$FRONTEND_HEALTHY" = "healthy" ]; then
+              echo "✅ All services are healthy!"
+              docker compose -f docker-compose.e2e.yml ps
+              exit 0
+            fi
+
+            echo "Attempt $i/60: Backend=$BACKEND_HEALTHY, Frontend=$FRONTEND_HEALTHY"
+            sleep 2
+          done
+
+          echo "❌ Services failed to become healthy within 120 seconds"
+          docker compose -f docker-compose.e2e.yml logs
+          exit 1
 
       # OPTIMIZATION: Cache Playwright browsers
       - name: Cache Playwright browsers
@@ -1244,81 +1170,54 @@ jobs:
           cd apps/web
           npx playwright install-deps
 
-      # OPTIMIZATION: Cache Turbo build outputs
-      - name: Cache Turbo build outputs
-        uses: actions/cache@v4
-        with:
-          path: |
-            .turbo
-            apps/web/.turbo
-            apps/backend/.turbo
-          key: ${{ runner.os }}-turbo-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-turbo-
-
-      # OPTIMIZATION: Cache Next.js build
-      - name: Cache Next.js build
-        uses: actions/cache@v4
-        with:
-          path: |
-            apps/web/.next/cache
-          key: ${{ runner.os }}-nextjs-${{ hashFiles('apps/web/package.json', 'apps/web/pnpm-lock.yaml') }}-${{ hashFiles('apps/web/**/*.ts', 'apps/web/**/*.tsx', 'apps/web/**/*.js', 'apps/web/**/*.jsx') }}
-          restore-keys: |
-            ${{ runner.os }}-nextjs-${{ hashFiles('apps/web/package.json', 'apps/web/pnpm-lock.yaml') }}-
-            ${{ runner.os }}-nextjs-
-
-      # OPTIMIZATION: Cache NestJS compiled outputs
-      - name: Cache NestJS dist
-        uses: actions/cache@v4
-        with:
-          path: |
-            apps/backend/dist
-          key: ${{ runner.os }}-nestjs-dist-${{ hashFiles('apps/backend/package.json') }}-${{ hashFiles('apps/backend/src/**/*.ts') }}
-          restore-keys: |
-            ${{ runner.os }}-nestjs-dist-${{ hashFiles('apps/backend/package.json') }}-
-            ${{ runner.os }}-nestjs-dist-
-
-      - name: Build applications
+      - name: 🔧 Create test user
         run: |
-          pnpm build:backend
-          pnpm build:web
+          echo "🔧 Creating test user: e2e-test@moneywise.test"
+          # Password must NOT contain email, firstName, or lastName parts
 
-      - name: Run database migrations
-        run: |
-          cp apps/backend/.env.test apps/backend/.env
-          cd apps/backend
-          pnpm db:migrate
-        env:
-          DATABASE_URL: postgresql://test:testpass@localhost:5432/test_db
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST http://localhost:3001/api/auth/register \
+            -H "Content-Type: application/json" \
+            -d '{"email":"e2e-test@moneywise.test","password":"Qwerty#2025!Strong","firstName":"Automation","lastName":"Tester"}')
 
-      - name: Run E2E tests (shard ${{ matrix.shard }}/${{ github.event_name == 'pull_request' && '4' || '8' }})
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | head -n -1)
+
+          echo "📋 Response (HTTP $HTTP_CODE):"
+          echo "$BODY"
+
+          if [ "$HTTP_CODE" -eq 201 ] || [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 409 ]; then
+            echo "✅ Test user ready"
+          else
+            echo "❌ User creation failed (HTTP $HTTP_CODE)"
+            exit 1
+          fi
+
+      - name: 🧪 Run E2E tests
         env:
           DATABASE_URL: postgresql://test:testpass@localhost:5432/test_db
           REDIS_URL: redis://localhost:6379
           JWT_ACCESS_SECRET: test-jwt-access-secret-minimum-32-characters-long-for-testing-purposes
           JWT_REFRESH_SECRET: test-jwt-refresh-secret-minimum-32-characters-long-different-from-access
           CI: true
+          SKIP_WEBSERVER: 'true'
         run: |
           cd apps/web
-          TOTAL_SHARDS=${{ github.event_name == 'pull_request' && '4' || '8' }}
+          echo "🏃 Running full E2E test suite"
+          npx playwright test
 
-          # Progressive test execution:
-          # - PR: Run @smoke + @critical tests for fast feedback
-          # - Main/Develop: Run ALL tests for comprehensive coverage
-          if [ "${{ github.event_name }}" == "pull_request" ]; then
-            echo "🏃 Running CRITICAL tier tests (@smoke + @critical)"
-            npx playwright test --shard=${{ matrix.shard }}/$TOTAL_SHARDS --grep "@smoke|@critical"
-          else
-            echo "🏃 Running FULL test suite (all tests)"
-            npx playwright test --shard=${{ matrix.shard }}/$TOTAL_SHARDS
-          fi
-
-      - name: Upload test results
+      - name: 📤 Upload test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-report-shard-${{ matrix.shard }}
+          name: playwright-report
           path: apps/web/playwright-report/
+
+      - name: 🧹 Cleanup Docker Compose
+        if: always()
+        run: |
+          echo "Stopping Docker Compose services..."
+          docker compose -f docker-compose.e2e.yml logs
+          docker compose -f docker-compose.e2e.yml down -v
 
   # ===================================================================
   # 📦 BUNDLE SIZE: Monitor Next.js bundle size (PR-only)

@@ -286,6 +286,7 @@ export function AccountList({
                   disabled={isSyncing || account.syncStatus === BankingSyncStatus.SYNCING}
                   aria-label={`Sync ${account.name}`}
                   aria-busy={isSyncing}
+                  data-testid="sync-button"
                   className="flex-1 inline-flex items-center justify-center px-3 py-2 rounded text-sm font-medium
                     transition-colors duration-150
                     ${
@@ -328,6 +329,7 @@ export function AccountList({
                   onClick={() => handleRevoke(account.id)}
                   disabled={isSyncing}
                   aria-label={`Revoke access for ${account.name}`}
+                  data-testid="disconnect-button"
                   className="flex-1 inline-flex items-center justify-center px-3 py-2 rounded text-sm font-medium
                     transition-colors duration-150
                     bg-red-100 text-red-700 hover:bg-red-200 active:bg-red-300

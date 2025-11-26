@@ -42,9 +42,14 @@ export class WaitHelper {
 
   /**
    * Wait for network to be idle
+   * Note: networkidle can hang on pages with WebSockets/long-polling
+   * Consider using waitForPageLoad() or waitForLoadingComplete() instead
    */
   async waitForNetworkIdle(): Promise<void> {
-    await this.page.waitForLoadState('networkidle', { timeout: TIMEOUTS.NETWORK_IDLE });
+    await this.page.waitForLoadState('networkidle', { timeout: TIMEOUTS.NETWORK_IDLE }).catch(() => {
+      // Silently fail - networkidle is unreliable on modern SPAs
+      console.warn('networkidle timeout - this is expected for SPAs with real-time connections');
+    });
   }
 
   /**
@@ -179,9 +184,10 @@ export class WaitHelper {
 
   /**
    * Wait for navigation to complete
+   * Using domcontentloaded instead of networkidle for reliability
    */
   async waitForNavigation(timeout?: number): Promise<void> {
-    await this.page.waitForLoadState('networkidle', { timeout: timeout || TIMEOUTS.NAVIGATION });
+    await this.page.waitForLoadState('domcontentloaded', { timeout: timeout || TIMEOUTS.NAVIGATION });
   }
 
   /**

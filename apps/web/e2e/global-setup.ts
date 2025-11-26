@@ -56,7 +56,10 @@ async function globalSetup(config: FullConfig) {
     // Step 2: Clean up previous auth state
     await cleanupAuthState();
 
-    // Step 3: Create authenticated user session
+    // Step 3: Create test user pool for parallel execution
+    await createTestUserPool();
+
+    // Step 4: Create authenticated user session
     await createAuthenticatedSession(config);
 
     console.log('✅ Global setup completed successfully');
@@ -115,6 +118,93 @@ async function cleanupAuthState() {
     console.log('✅ Removed previous auth state');
   } else {
     console.log('✅ No previous auth state found');
+  }
+}
+
+/**
+ * Create test user pool for parallel test execution
+ * Creates 8 users (one per shard) to avoid race conditions
+ */
+async function createTestUserPool() {
+  console.log('👥 Creating test user pool for parallel execution...');
+
+  // Ensure .auth directory exists
+  const authDir = path.dirname(TEST_USERS_FILE);
+  if (!fs.existsSync(authDir)) {
+    fs.mkdirSync(authDir, { recursive: true });
+  }
+
+  const createdUsers: Array<{ email: string; password: string }> = [];
+  const failedUsers: Array<{ email: string; error: string }> = [];
+
+  // Create 8 users for parallel shards (matching Playwright default workers)
+  for (let i = 0; i < 8; i++) {
+    const user = {
+      email: `e2e-shard-${i}@moneywise.test`,
+      password: 'SecureTest#2025!',
+      firstName: 'E2E',
+      lastName: `Shard${i}`
+    };
+
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(user)
+      });
+
+      if (response.ok || response.status === 409 || response.status === 400) {
+        // Success or user already exists (both are fine)
+        createdUsers.push({ email: user.email, password: user.password });
+        console.log(`  ✅ User ${i + 1}/8: ${user.email}`);
+      } else {
+        const errorText = await response.text().catch(() => 'Unknown error');
+        failedUsers.push({ email: user.email, error: `${response.status}: ${errorText}` });
+        console.warn(`  ⚠️ User ${i + 1}/8 failed: ${user.email} - ${errorText}`);
+      }
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      failedUsers.push({ email: user.email, error: errorMsg });
+      console.warn(`  ⚠️ User ${i + 1}/8 error: ${user.email} - ${errorMsg}`);
+    }
+
+    // Small delay to avoid overwhelming backend
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }
+
+  // Also add the pre-defined test users from TEST_USERS array
+  for (const user of TEST_USERS) {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(user)
+      });
+
+      if (response.ok || response.status === 409 || response.status === 400) {
+        createdUsers.push({ email: user.email, password: user.password });
+        console.log(`  ✅ Predefined user: ${user.email}`);
+      }
+    } catch (error) {
+      console.warn(`  ⚠️ Predefined user failed: ${user.email}`);
+    }
+
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }
+
+  // Save user pool to file
+  const userPool = { users: createdUsers };
+  fs.writeFileSync(TEST_USERS_FILE, JSON.stringify(userPool, null, 2));
+
+  console.log(`✅ Test user pool created: ${createdUsers.length} users available`);
+  console.log(`💾 Saved to: ${TEST_USERS_FILE}`);
+
+  if (failedUsers.length > 0) {
+    console.warn(`⚠️ ${failedUsers.length} users failed to create (tests will use available users)`);
+  }
+
+  if (createdUsers.length === 0) {
+    throw new Error('Failed to create any test users. Please check backend connection and logs.');
   }
 }
 

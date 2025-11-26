@@ -291,7 +291,7 @@ export class TransactionsPage extends BasePage {
    * Verify success message after creating/updating transaction
    */
   async expectSuccessMessage(message?: string): Promise<void> {
-    const successAlert = this.page.locator('[data-testid="success-message"], [role="alert"]').first();
+    const successAlert = this.page.locator('[data-testid="success-message"]').first();
     await expect(successAlert).toBeVisible({ timeout: TIMEOUTS.DEFAULT });
 
     if (message) {

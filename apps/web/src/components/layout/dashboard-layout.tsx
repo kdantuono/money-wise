@@ -90,6 +90,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 key={item.name}
                 href={item.href}
                 className="flex items-center px-4 py-3 text-sm font-medium text-gray-700 rounded-lg hover:bg-blue-50 hover:text-blue-600 transition-colors group"
+                data-testid={`nav-${item.name.toLowerCase()}`}
               >
                 <item.icon className="mr-3 h-5 w-5 text-gray-400 group-hover:text-blue-600" />
                 {item.name}
@@ -141,6 +142,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                   type="text"
                   className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                   placeholder="Search transactions, accounts..."
+                  data-testid="search-input"
                 />
               </div>
             </div>
