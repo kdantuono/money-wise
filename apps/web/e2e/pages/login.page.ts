@@ -16,8 +16,7 @@ export class LoginPage extends BasePage {
     '[data-testid="forgot-password"], a:has-text("Forgot"), a:has-text("Reset")';
   private readonly registerLink =
     '[data-testid="register-link"], a:has-text("Register"), a:has-text("Sign Up")';
-  private readonly errorMessage =
-    '[data-testid="error-message"], .error, .alert-error, [role="alert"]';
+  private readonly errorMessage = '[data-testid="error-message"]';
   private readonly successMessage =
     '[data-testid="success-message"], .success, .alert-success';
   private readonly loadingSpinner =

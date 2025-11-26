@@ -26,6 +26,21 @@ export class AuthHelper {
   constructor(private page: Page) {}
 
   /**
+   * Wait for form to be hydrated (ClientOnly component)
+   * Auth forms are wrapped in ClientOnly and need client-side hydration
+   */
+  private async waitForFormHydration(formTestId: string): Promise<void> {
+    // Wait for the actual form to appear (not the skeleton loader)
+    await this.page.waitForSelector(`[data-testid="${formTestId}"]`, {
+      state: 'visible',
+      timeout: TIMEOUTS.PAGE_LOAD
+    });
+    
+    // Additional small delay to ensure form is fully interactive
+    await this.page.waitForTimeout(500);
+  }
+
+  /**
    * Wait for backend API to be ready
    * Prevents race conditions when backend is still initializing
    */
@@ -123,9 +138,6 @@ export class AuthHelper {
     await this.page.goto(ROUTES.AUTH.LOGIN);
     await this.page.waitForLoadState('domcontentloaded');
 
-    // Get fresh CSRF token with retry logic
-    const csrfToken = await this.getCsrfToken();
-
     // Login via API with proper error handling
     const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -133,8 +145,7 @@ export class AuthHelper {
       const response = await this.page.request.post(`${backendUrl}/api/auth/login`, {
         data: {
           email,
-          password,
-          csrfToken
+          password
         },
         headers: {
           'Content-Type': 'application/json'
@@ -146,11 +157,11 @@ export class AuthHelper {
         throw new Error(`Login failed (${response.status()}): ${errorText}`);
       }
 
-      // Wait for authentication to complete and navigate to dashboard
-      await this.page.waitForURL('**/dashboard', {
-        timeout: TIMEOUTS.PAGE_LOAD,
-        waitUntil: 'domcontentloaded'
-      });
+      // API login successful - manually navigate to dashboard
+      await this.page.goto(ROUTES.DASHBOARD, { waitUntil: 'domcontentloaded' });
+      
+      // Wait for dashboard to load
+      await this.page.waitForLoadState('domcontentloaded');
     } catch (error) {
       throw new Error(
         `Failed to login with pooled user ${email}: ${error instanceof Error ? error.message : error}`
@@ -163,6 +174,9 @@ export class AuthHelper {
    */
   async register(userData: UserData = createUser()): Promise<UserData> {
     await this.page.goto(ROUTES.AUTH.REGISTER);
+    
+    // Wait for form to be hydrated (ClientOnly component)
+    await this.waitForFormHydration('register-form');
 
     // Fill registration form using TEST_IDS constants
     await this.page.fill(TEST_IDS.AUTH.FIRST_NAME_INPUT, userData.firstName);
@@ -190,6 +204,9 @@ export class AuthHelper {
    */
   async login(email: string = DEFAULT_TEST_USER.email, password: string = DEFAULT_TEST_USER.password): Promise<void> {
     await this.page.goto(ROUTES.AUTH.LOGIN);
+    
+    // Wait for form to be hydrated (ClientOnly component)
+    await this.waitForFormHydration('login-form');
 
     // Fill login form using TEST_IDS constants
     await this.page.fill(TEST_IDS.AUTH.EMAIL_INPUT, email);
@@ -377,10 +394,25 @@ export function createAuthHelper(page: Page): AuthHelper {
 /**
  * Fixture for authenticated user
  * Use this in test.beforeEach to start with authenticated user
+ * Uses pooled users for better performance and reliability
  */
 export async function setupAuthenticatedUser(page: Page, userData?: UserData): Promise<UserData> {
   const auth = new AuthHelper(page);
-  const user = userData || createUser();
-  await auth.registerAndLogin(user);
-  return user;
+  
+  if (userData) {
+    // If specific user data provided, use traditional register and login
+    await auth.registerAndLogin(userData);
+    return userData;
+  }
+  
+  // Use pooled user for better performance
+  await auth.loginWithPooledUser();
+  
+  // Return a placeholder user data (pooled users don't have full data available)
+  return {
+    email: 'pooled-user@test.com',
+    password: 'SecureTest#2025!',
+    firstName: 'Test',
+    lastName: 'User'
+  };
 }

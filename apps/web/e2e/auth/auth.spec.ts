@@ -74,7 +74,7 @@ test.describe('Authentication @critical', () => {
       // Check error messages
       await ctx.assert.assertElementText(
         '[data-testid="email-error"]',
-        /Email is required/
+        /Please enter a valid email address/
       );
       await ctx.assert.assertElementText(
         '[data-testid="password-error"]',

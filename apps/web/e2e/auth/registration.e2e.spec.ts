@@ -383,7 +383,7 @@ test.describe('Registration E2E Tests @critical', () => {
       expect(errorMsg).toContain('already exists');
     });
 
-    test('should show error for weak password', async () => {
+    test('should show error for weak password', async ({ page }) => {
       const timestamp = Date.now();
 
       await registrationPage.fillFirstName('Test');
@@ -529,7 +529,7 @@ test.describe('Registration E2E Tests @critical', () => {
     test('should handle server error responses', async ({ page, context }) => {
       // Mock a 500 server error
       await context.route('**/api/auth/register', (route) => {
-        route.abort('servererror');
+        route.abort('failed');
       });
 
       const timestamp = Date.now();

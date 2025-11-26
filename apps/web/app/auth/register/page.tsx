@@ -12,8 +12,6 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { useAuthStore } from '@/stores/auth-store'
-import { ClientOnly } from '@/components/client-only'
-import { ClientOnlyErrorBoundary } from '@/components/client-only-error-boundary'
 
 const registerSchema = z.object({
   firstName: z.string().min(1, 'First name is required'),
@@ -72,42 +70,7 @@ export default function RegisterPage() {
             </CardDescription>
           </CardHeader>
 
-          <ClientOnlyErrorBoundary>
-            <ClientOnly
-              fallback={
-                <div className="animate-pulse" role="status" aria-live="polite" aria-busy="true">
-                  <span className="sr-only">Loading registration form...</span>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <div className="h-4 bg-gray-200 rounded w-16" aria-hidden="true"></div>
-                        <div className="h-10 bg-gray-200 rounded" aria-hidden="true"></div>
-                      </div>
-                      <div className="space-y-2">
-                        <div className="h-4 bg-gray-200 rounded w-16" aria-hidden="true"></div>
-                        <div className="h-10 bg-gray-200 rounded" aria-hidden="true"></div>
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="h-4 bg-gray-200 rounded w-12" aria-hidden="true"></div>
-                      <div className="h-10 bg-gray-200 rounded" aria-hidden="true"></div>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="h-4 bg-gray-200 rounded w-16" aria-hidden="true"></div>
-                      <div className="h-10 bg-gray-200 rounded" aria-hidden="true"></div>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="h-4 bg-gray-200 rounded w-24" aria-hidden="true"></div>
-                      <div className="h-10 bg-gray-200 rounded" aria-hidden="true"></div>
-                    </div>
-                  </CardContent>
-                  <CardFooter>
-                    <div className="h-10 bg-gray-200 rounded w-full" aria-hidden="true"></div>
-                  </CardFooter>
-                </div>
-              }
-            >
-            <form onSubmit={handleSubmit(onSubmit)} data-testid="register-form">
+          <form onSubmit={handleSubmit(onSubmit)} data-testid="register-form">
               <CardContent className="space-y-4">
                 {error && (
                   <div className="bg-destructive/15 text-destructive text-sm p-3 rounded-md" data-testid="auth-error" role="alert">
@@ -244,8 +207,6 @@ export default function RegisterPage() {
                 </p>
               </CardFooter>
             </form>
-            </ClientOnly>
-          </ClientOnlyErrorBoundary>
         </Card>
       </div>
     </div>

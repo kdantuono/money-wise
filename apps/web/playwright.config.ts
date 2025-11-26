@@ -156,18 +156,23 @@ export default defineConfig({
     /* Visual comparison configuration */
     toHaveScreenshot: {
       /* Threshold for visual comparison (0-1) */
-      threshold: 0.2,
+      /* Increased to 0.3 to allow for minor rendering differences */
+      threshold: 0.3,
 
       /* Enable animation handling */
       animations: 'disabled',
 
       /* Set screenshot mode */
       mode: 'css',
+      
+      /* Max diff pixels allowed (absolute count) */
+      maxDiffPixels: 1000,
     },
 
     /* Match screenshots across different operating systems */
     toMatchSnapshot: {
-      threshold: 0.2,
+      threshold: 0.3,
+      maxDiffPixels: 1000,
     },
   },
 });

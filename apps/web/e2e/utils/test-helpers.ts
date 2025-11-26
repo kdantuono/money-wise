@@ -13,8 +13,12 @@ export class AuthHelpers {
 
   async login(email: string = 'test@example.com', password: string = 'password123') {
     await this.page.goto('/auth/login');
-    await this.page.fill('[data-testid="email"]', email);
-    await this.page.fill('[data-testid="password"]', password);
+    
+    // Wait for form to be hydrated (ClientOnly component)
+    await this.page.waitForSelector('[data-testid="login-form"]', { state: 'visible', timeout: 15000 });
+    
+    await this.page.fill('[data-testid="email-input"]', email);
+    await this.page.fill('[data-testid="password-input"]', password);
 
     // FIX: Wait for API response + navigation simultaneously to avoid race condition
     const [response] = await Promise.all([
@@ -42,13 +46,17 @@ export class AuthHelpers {
     password: string;
   }) {
     await this.page.goto('/auth/register');
-    await this.page.fill('[data-testid="first-name"]', userData.firstName);
-    await this.page.fill('[data-testid="last-name"]', userData.lastName);
-    await this.page.fill('[data-testid="email"]', userData.email);
-    await this.page.fill('[data-testid="password"]', userData.password);
+    
+    // Wait for form to be hydrated (ClientOnly component)
+    await this.page.waitForSelector('[data-testid="register-form"]', { state: 'visible', timeout: 15000 });
+    
+    await this.page.fill('[data-testid="first-name-input"]', userData.firstName);
+    await this.page.fill('[data-testid="last-name-input"]', userData.lastName);
+    await this.page.fill('[data-testid="email-input"]', userData.email);
+    await this.page.fill('[data-testid="password-input"]', userData.password);
 
     // Fill confirm password using nativeInputValueSetter to bypass React's value setter override
-    const confirmPasswordInput = this.page.locator('[data-testid="confirm-password"]');
+    const confirmPasswordInput = this.page.locator('[data-testid="confirm-password-input"]');
     await confirmPasswordInput.click();
     await confirmPasswordInput.evaluate((el: HTMLInputElement, value: string) => {
       const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
@@ -177,6 +185,8 @@ export class FormHelpers {
 
   async fillForm(formData: Record<string, string>) {
     for (const [field, value] of Object.entries(formData)) {
+      // Wait for field to be visible before filling (handles ClientOnly hydration)
+      await this.page.waitForSelector(`[data-testid="${field}"]`, { state: 'visible', timeout: 15000 });
       await this.page.fill(`[data-testid="${field}"]`, value);
     }
   }

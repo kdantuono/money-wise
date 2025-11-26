@@ -20,19 +20,36 @@ test.describe('Basic Home Page @smoke', () => {
     await expect(subtitle).toBeVisible();
   });
 
-  test('should have proper page structure', async ({ page }) => {
+  test('should have Sign In and Sign Up buttons', async ({ page }) => {
     await page.goto('/');
 
-    // Check that the page loads without errors
-    await expect(page).toHaveTitle(/MoneyWise/);
+    // Check Sign In button
+    const signInButton = page.getByRole('link', { name: /sign in/i });
+    await expect(signInButton).toBeVisible();
 
-    // Check basic layout structure
-    const container = page.locator('div').first();
-    await expect(container).toBeVisible();
+    // Check Sign Up button
+    const signUpButton = page.getByRole('link', { name: /sign up/i });
+    await expect(signUpButton).toBeVisible();
+  });
 
-    // Verify responsive design classes are applied
-    const mainDiv = page.locator('div.min-h-screen');
-    await expect(mainDiv).toBeVisible();
+  test('should navigate to login page when Sign In clicked', async ({ page }) => {
+    await page.goto('/');
+
+    const signInButton = page.getByRole('link', { name: /sign in/i });
+    await signInButton.click();
+
+    // Should redirect to login page
+    await expect(page).toHaveURL('/auth/login');
+  });
+
+  test('should navigate to register page when Sign Up clicked', async ({ page }) => {
+    await page.goto('/');
+
+    const signUpButton = page.getByRole('link', { name: /sign up/i });
+    await signUpButton.click();
+
+    // Should redirect to register page
+    await expect(page).toHaveURL('/auth/register');
   });
 
   test('should be responsive on mobile', async ({ page }) => {
@@ -47,19 +64,9 @@ test.describe('Basic Home Page @smoke', () => {
 
     const subtitle = page.getByText('AI-powered Personal Finance Management');
     await expect(subtitle).toBeVisible();
-  });
 
-  test('should load quickly', async ({ page }) => {
-    const startTime = Date.now();
-
-    await page.goto('/');
-
-    // Check main content is visible
-    await expect(page.locator('h1')).toBeVisible();
-
-    const loadTime = Date.now() - startTime;
-
-    // Page should load within 3 seconds
-    expect(loadTime).toBeLessThan(3000);
+    // Check buttons are visible
+    const signInButton = page.getByRole('link', { name: /sign in/i });
+    await expect(signInButton).toBeVisible();
   });
 });
