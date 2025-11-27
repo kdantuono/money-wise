@@ -1,4 +1,4 @@
-# ADR-004: Strategic Migration from TypeORM to Prisma
+# ADR-009: Strategic Migration from TypeORM to Prisma
 
 **Status**: Accepted
 **Date**: 2025-10-11

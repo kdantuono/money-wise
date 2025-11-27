@@ -21,71 +21,38 @@ What is the change that we're proposing and/or doing?
 What becomes easier or more difficult to do because of this change?
 ```
 
-## Current ADRs
+## Current ADRs (Detailed Documents)
 
-### ADR-001: Use NestJS for Backend API
-**Status**: Accepted  
-**Date**: 2024-01-15  
-**Decision**: Use NestJS as the backend framework  
-**Rationale**: Enterprise-ready, TypeScript-first, excellent DI system  
+| ADR | Title | Status | File |
+|-----|-------|--------|------|
+| ADR-001 | Monorepo Structure with Turborepo | Accepted | [ADR-001-monorepo-structure.md](./ADR-001-monorepo-structure.md) |
+| ADR-002 | Centralized Configuration Management | Accepted | [ADR-002-configuration-management.md](./ADR-002-configuration-management.md) |
+| ADR-003 | Monitoring and Observability Stack | Accepted | [ADR-003-monitoring-observability.md](./ADR-003-monitoring-observability.md) |
+| ADR-004 | Testing Strategy and Coverage Standards | Accepted | [ADR-004-testing-strategy.md](./ADR-004-testing-strategy.md) |
+| ADR-005 | Error Handling and Logging Strategy | Accepted | [ADR-005-error-handling.md](./ADR-005-error-handling.md) |
+| ADR-006 | Database Architecture and ORM Strategy | Accepted | [ADR-006-database-architecture.md](./ADR-006-database-architecture.md) |
+| ADR-007 | CI/CD Budget Optimization Strategy | Accepted | [ADR-007-ci-cd-budget-optimization.md](./ADR-007-ci-cd-budget-optimization.md) |
+| ADR-008 | Turborepo Telemetry Opt-Out | Accepted | [ADR-008-turborepo-telemetry-opt-out.md](./ADR-008-turborepo-telemetry-opt-out.md) |
+| ADR-009 | Strategic Migration from TypeORM to Prisma | Accepted | [ADR-009-prisma-migration.md](./ADR-009-prisma-migration.md) |
+| ADR-010 | Unified Configuration Management Strategy | Proposed | [ADR-010-unified-configuration-management.md](./ADR-010-unified-configuration-management.md) |
 
-### ADR-002: PostgreSQL as Primary Database
-**Status**: Accepted  
-**Date**: 2024-01-15  
-**Decision**: Use PostgreSQL 15 with TypeORM  
-**Rationale**: Robust, scalable, excellent JSON support, familiar  
+## Quick Reference (Legacy Summaries)
 
-### ADR-003: Monorepo Structure
-**Status**: Accepted  
-**Date**: 2024-01-16  
-**Decision**: Organize code as monorepo with apps/ and packages/  
-**Rationale**: Code sharing, atomic commits, unified tooling  
+These are historical summaries. See the detailed documents above for current decisions.
 
-### ADR-004: JWT Authentication
-**Status**: Accepted  
-**Date**: 2024-01-18  
-**Decision**: Use JWT with httpOnly cookies  
-**Rationale**: Stateless, scalable, secure when properly implemented  
+### Infrastructure Decisions
+- **NestJS Backend**: Enterprise-ready, TypeScript-first, excellent DI system
+- **PostgreSQL + Prisma**: Robust, scalable, type-safe ORM
+- **Redis**: Session management and caching
+- **Monorepo with Turborepo**: Code sharing, atomic commits, unified tooling
 
-### ADR-005: Multi-Agent Orchestration
-**Status**: Accepted  
-**Date**: 2024-01-20  
-**Decision**: Implement parallel agent execution via git worktrees  
-**Rationale**: Maximize development velocity, avoid conflicts  
+### Security Decisions
+- **JWT Authentication**: httpOnly cookies, stateless, scalable
+- **TypeScript Strict Mode**: Catch errors early, safer code
 
-### ADR-006: Progressive Merge Strategy
-**Status**: Accepted  
-**Date**: 2024-01-20  
-**Decision**: Merge task→story→epic→dev→main progressively  
-**Rationale**: Early integration, fast feedback, reduced conflicts  
-
-### ADR-007: TypeScript Strict Mode
-**Status**: Accepted  
-**Date**: 2024-01-17  
-**Decision**: Enable TypeScript strict mode everywhere  
-**Rationale**: Catch errors early, better IDE support, safer code  
-
-### ADR-008: Redis for Caching
-**Status**: Accepted  
-**Date**: 2024-01-18  
-**Decision**: Use Redis for session management and caching  
-**Rationale**: Fast, reliable, supports pub/sub for future features  
-
-## Proposed ADRs
-
-### ADR-009: GraphQL API Layer
-**Status**: Proposed  
-**Date**: 2024-01-22  
-**Decision**: Add GraphQL alongside REST  
-**Rationale**: Better client flexibility, reduced overfetching  
-**Discussion**: Consider complexity vs benefits for MVP  
-
-### ADR-010: Event-Driven Architecture
-**Status**: Proposed  
-**Date**: 2024-01-23  
-**Decision**: Implement event sourcing for transactions  
-**Rationale**: Audit trail, eventual consistency, scalability  
-**Discussion**: May be overkill for MVP phase  
+### Process Decisions
+- **Progressive Merge**: task→story→epic→dev→main
+- **Multi-Agent Orchestration**: Parallel execution via git worktrees  
 
 ## Decision Process
 

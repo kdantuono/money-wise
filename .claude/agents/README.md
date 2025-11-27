@@ -32,8 +32,8 @@ This directory contains definitions for specialized AI agents that work together
 
 ### 2️⃣ Development Agents
 
-#### Senior Backend Developer
-**File**: `senior-backend-dev.md`
+#### Backend Specialist
+**File**: `backend-specialist.md`
 **Triggers**: api, endpoint, service, controller, backend
 **Expertise**: NestJS, TypeScript, REST APIs, business logic, authentication
 **Outputs**: Controllers, services, DTOs, validation, API tests
@@ -76,16 +76,10 @@ This directory contains definitions for specialized AI agents that work together
 **Expertise**: Security review, OWASP compliance, authentication patterns
 **Outputs**: Security audits, vulnerability fixes, auth implementations
 
-#### Code Reviewer
-**File**: `code-reviewer.md`
-**Triggers**: review, quality, standards, refactor
-**Expertise**: Code quality assessment, standards enforcement, refactoring
-**Outputs**: Code review reports, refactoring suggestions, style fixes
-
 ### 4️⃣ Orchestration
 
-#### Project Orchestrator
-**File**: `project-orchestrator.md`
+#### Orchestrator
+**File**: `orchestrator.md`
 **Triggers**: epic, orchestrate, coordinate, workflow
 **Expertise**: Multi-agent coordination, workflow management, GitHub Projects
 **Outputs**: Workflow states, task assignments, progress tracking
@@ -150,14 +144,13 @@ Coordination: project-orchestrator
 | DevOps | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ |
 | CI/CD Pipeline | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Database | ❌ | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ |
-| Backend Dev | ❌ | ❌ | ✅ | ✅ | ❌ | ❌ | ❌ |
+| Backend | ❌ | ❌ | ✅ | ✅ | ❌ | ❌ | ❌ |
 | Frontend | ❌ | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
 | Test Specialist | ✅ | ❌ | ✅ | ✅ | ✅ | ❌ | ❌ |
 | Analytics | ❌ | ✅ | ✅ | ✅ | ❌ | ❌ | ✅ |
 | Documentation | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
 | Quality Evol. | ✅ | ❌ | ❌ | ❌ | ✅ | ❌ | ✅ |
 | Security | ❌ | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ |
-| Code Reviewer | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
 | Orchestrator | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
 | Product Mgr | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
 
@@ -169,9 +162,9 @@ Coordination: project-orchestrator
 1. product-manager: Decompose feature → user stories
 2. architect-agent: Design technical approach (if complex)
 3. database-specialist: Create schema/migrations (if needed)
-4. [backend-dev | frontend-specialist]: Implement feature
+4. [backend-specialist | frontend-specialist]: Implement feature
 5. test-specialist: Add comprehensive tests
-6. code-reviewer: Review implementation
+6. security-specialist: Review implementation (if security-relevant)
 7. documentation-specialist: Update docs
 ```
 
@@ -181,16 +174,16 @@ Coordination: project-orchestrator
 1. [Relevant agent]: Reproduce and diagnose
 2. [Relevant agent]: Implement fix
 3. test-specialist: Add regression test
-4. code-reviewer: Verify fix quality
+4. quality-evolution-specialist: Verify fix quality
 ```
 
 ### Pattern 3: Epic Implementation
 
 ```
-1. project-orchestrator: Decompose epic → stories
+1. orchestrator: Decompose epic → stories
 2. Multiple agents: Work in parallel on stories
-3. project-orchestrator: Coordinate merges
-4. quality-evolution: Post-epic retrospective
+3. orchestrator: Coordinate merges
+4. quality-evolution-specialist: Post-epic retrospective
 ```
 
 ### Pattern 4: Security Audit
@@ -328,6 +321,6 @@ Track agent effectiveness in `../.claude/reports/agent-metrics.md`:
 
 ---
 
-**Agent Count**: 14 specialized agents
-**Last Updated**: 2025-10-14
+**Agent Count**: 13 specialized agents
+**Last Updated**: 2025-11-27
 **Maintained By**: Development Team

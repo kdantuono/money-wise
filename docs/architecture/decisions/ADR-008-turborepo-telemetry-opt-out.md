@@ -1,4 +1,4 @@
-# ADR-002: Turborepo Telemetry Opt-Out
+# ADR-008: Turborepo Telemetry Opt-Out
 
 **Status:** Accepted
 **Date:** 2025-10-10

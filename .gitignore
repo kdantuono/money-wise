@@ -152,4 +152,8 @@ bin/
 
 # Backup files
 *.backup-*
+*.backup
 update-*.sh
+
+# Documentation backups (obsolete snapshots)
+docs-backup-*/

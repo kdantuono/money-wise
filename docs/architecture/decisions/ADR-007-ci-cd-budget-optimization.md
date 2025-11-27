@@ -1,4 +1,4 @@
-# ADR-001: CI/CD Budget Optimization Strategy
+# ADR-007: CI/CD Budget Optimization Strategy
 
 **Status**: ACCEPTED ✅
 **Date**: 2025-10-10
