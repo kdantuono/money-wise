@@ -1,6 +1,6 @@
 'use client';
 
-import { Button } from '@/components/ui/button';
+import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 // Icons as inline SVG
@@ -90,6 +90,12 @@ interface QuickActionButtonProps {
   variant?: 'default' | 'secondary' | 'outline';
 }
 
+const variantStyles = {
+  default: 'bg-primary text-primary-foreground hover:bg-primary/90',
+  secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
+  outline: 'border border-input bg-background hover:bg-accent hover:text-accent-foreground',
+} as const;
+
 function QuickActionButton({
   icon,
   label,
@@ -98,18 +104,16 @@ function QuickActionButton({
   variant = 'default',
 }: QuickActionButtonProps) {
   return (
-    <a href={href} className="block">
-      <Button
-        variant={variant}
-        className="w-full h-auto py-4 px-4 flex items-center gap-3 justify-start"
-      >
-        <div className="flex-shrink-0">{icon}</div>
-        <div className="text-left">
-          <p className="font-medium">{label}</p>
-          <p className="text-xs opacity-80">{description}</p>
-        </div>
-      </Button>
-    </a>
+    <Link
+      href={href}
+      className={`block w-full h-auto py-4 px-4 rounded-md flex items-center gap-3 justify-start transition-colors ${variantStyles[variant]}`}
+    >
+      <div className="flex-shrink-0" aria-hidden="true">{icon}</div>
+      <div className="text-left">
+        <p className="font-medium">{label}</p>
+        <p className="text-xs opacity-80">{description}</p>
+      </div>
+    </Link>
   );
 }
 

@@ -10,9 +10,9 @@ interface SpendingCategory {
   percentage: number;
 }
 
-// Mock spending data
+// Mock spending data (percentages must sum to 100%)
 const mockSpending: SpendingCategory[] = [
-  { id: '1', name: 'Food & Groceries', amount: 425, color: '#22c55e', percentage: 33 },
+  { id: '1', name: 'Food & Groceries', amount: 425, color: '#22c55e', percentage: 34 },
   { id: '2', name: 'Transportation', amount: 180, color: '#3b82f6', percentage: 14 },
   { id: '3', name: 'Entertainment', amount: 145, color: '#a855f7', percentage: 11 },
   { id: '4', name: 'Utilities', amount: 210, color: '#eab308', percentage: 16 },
