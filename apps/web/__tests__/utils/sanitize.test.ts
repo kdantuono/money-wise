@@ -1,10 +1,15 @@
 /**
  * Tests for Input Sanitization Utilities
+ *
+ * Note: These tests verify DOMPurify-based sanitization behavior.
+ * DOMPurify completely removes script tags and their content for security.
  */
 
 import { describe, it, expect } from 'vitest';
 import {
   sanitizeString,
+  sanitizeHtml,
+  encodeHtmlEntities,
   sanitizeEmail,
   sanitizeUuid,
   sanitizeIsoDate,
@@ -16,17 +21,60 @@ import {
 import type { User } from '../../lib/auth';
 
 describe('Input Sanitization Utilities', () => {
+  describe('sanitizeHtml', () => {
+    it('removes script tags and their content completely (XSS protection)', () => {
+      // DOMPurify removes script tags AND their content for security
+      expect(sanitizeHtml('<script>alert("xss")</script>')).toBe('');
+      expect(sanitizeHtml('before<script>malicious</script>after')).toBe('beforeafter');
+    });
+
+    it('removes HTML tags but preserves text content', () => {
+      expect(sanitizeHtml('Hello <b>World</b>')).toBe('Hello World');
+      expect(sanitizeHtml('<p>Text</p>')).toBe('Text');
+      expect(sanitizeHtml('<div><span>Nested</span></div>')).toBe('Nested');
+    });
+
+    it('returns empty string for non-string input', () => {
+      expect(sanitizeHtml(null)).toBe('');
+      expect(sanitizeHtml(undefined)).toBe('');
+      expect(sanitizeHtml(123)).toBe('');
+    });
+
+    it('trims whitespace', () => {
+      expect(sanitizeHtml('  spaces  ')).toBe('spaces');
+    });
+  });
+
+  describe('encodeHtmlEntities', () => {
+    it('encodes HTML special characters', () => {
+      expect(encodeHtmlEntities('<script>')).toBe('&lt;script&gt;');
+      expect(encodeHtmlEntities('Hello "World"')).toBe('Hello &quot;World&quot;');
+      expect(encodeHtmlEntities("Test'apostrophe'")).toBe("Test&#x27;apostrophe&#x27;");
+      expect(encodeHtmlEntities('A & B')).toBe('A &amp; B');
+    });
+
+    it('returns empty string for non-string input', () => {
+      expect(encodeHtmlEntities(null)).toBe('');
+      expect(encodeHtmlEntities(undefined)).toBe('');
+    });
+
+    it('preserves normal text', () => {
+      expect(encodeHtmlEntities('Hello World')).toBe('Hello World');
+    });
+  });
+
   describe('sanitizeString', () => {
-    it('removes HTML tags from string', () => {
-      expect(sanitizeString('<script>alert("xss")</script>')).toBe('alert(xss)');
+    it('removes HTML tags from string (delegates to sanitizeHtml)', () => {
+      // Script tags are completely removed including content
+      expect(sanitizeString('<script>alert("xss")</script>')).toBe('');
       expect(sanitizeString('Hello <b>World</b>')).toBe('Hello World');
       expect(sanitizeString('<p>Text</p>')).toBe('Text');
     });
 
-    it('removes potentially dangerous characters', () => {
-      expect(sanitizeString('Hello<>World')).toBe('HelloWorld');
-      expect(sanitizeString('Test"quote"')).toBe('Testquote');
-      expect(sanitizeString("Test'apostrophe'")).toBe('Testapostrophe');
+    it('handles special characters within text', () => {
+      // DOMPurify preserves text content, quotes and special chars are kept
+      expect(sanitizeString('Hello World')).toBe('Hello World');
+      expect(sanitizeString('Test with "quotes"')).toBe('Test with "quotes"');
     });
 
     it('trims whitespace', () => {
@@ -84,7 +132,10 @@ describe('Input Sanitization Utilities', () => {
     });
 
     it('removes HTML tags before validation', () => {
-      expect(sanitizeEmail('<script>user@example.com</script>')).toBe('user@example.com');
+      // DOMPurify removes script tags AND content, so this email becomes empty and invalid
+      expect(sanitizeEmail('<script>user@example.com</script>')).toBeNull();
+      // But regular tags preserve content
+      expect(sanitizeEmail('<b>user@example.com</b>')).toBe('user@example.com');
     });
 
     it('returns null for empty string', () => {
@@ -403,9 +454,10 @@ describe('Input Sanitization Utilities', () => {
 
       const user = sanitizeUser(userData);
 
-      expect(user.firstName).toBe('Johnalert(xss)');
+      // DOMPurify removes script tags AND their content completely
+      expect(user.firstName).toBe('John');
       expect(user.lastName).toBe('DoeBold');
-      expect(user.fullName).toBe('Johnalert(xss) DoeBold');
+      expect(user.fullName).toBe('John DoeBold');
     });
 
     it('skips invalid optional lastLoginAt', () => {
@@ -525,7 +577,8 @@ describe('Input Sanitization Utilities', () => {
 
       const users = sanitizeUserList(usersWithHtml);
 
-      expect(users[0].firstName).toBe('Johnxss');
+      // DOMPurify removes script content completely
+      expect(users[0].firstName).toBe('John');
       expect(users[1].lastName).toBe('Smithbold');
     });
   });

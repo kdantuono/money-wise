@@ -48,16 +48,18 @@ export class EmailVerificationService {
 
   /**
    * Constant-time string comparison to prevent timing attacks
-   * All comparisons take the same amount of time regardless of where strings differ
+   * Uses Node.js crypto.timingSafeEqual for cryptographically secure comparison
    */
   private constantTimeCompare(a: string, b: string): boolean {
     if (a.length !== b.length) return false;
 
-    let result = 0;
-    for (let i = 0; i < a.length; i++) {
-      result |= a.charCodeAt(i) ^ b.charCodeAt(i);
+    try {
+      // Use native crypto.timingSafeEqual for secure constant-time comparison
+      return crypto.timingSafeEqual(Buffer.from(a, 'utf8'), Buffer.from(b, 'utf8'));
+    } catch {
+      // Fallback should never happen with valid string inputs
+      return false;
     }
-    return result === 0;
   }
 
   /**
