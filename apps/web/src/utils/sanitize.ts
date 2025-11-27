@@ -9,6 +9,82 @@
 
 import type { User } from '../../lib/auth';
 
+// DOMPurify instance - initialized on first use
+// Using isomorphic-dompurify for SSR compatibility
+import DOMPurify from 'isomorphic-dompurify';
+
+/**
+ * Check if we're in a browser environment with proper DOM support
+ */
+function hasDomSupport(): boolean {
+  return typeof window !== 'undefined' && typeof window.document !== 'undefined';
+}
+
+/**
+ * Sanitize HTML content by removing all tags using DOMPurify
+ *
+ * Uses DOMPurify for robust XSS protection. Removes ALL HTML tags,
+ * keeping only text content.
+ *
+ * @param input - String to sanitize
+ * @returns Sanitized string with all HTML removed
+ *
+ * @example
+ * sanitizeHtml('<script>alert("xss")</script>'); // Returns: ''
+ * sanitizeHtml('Hello <b>World</b>'); // Returns: 'Hello World'
+ */
+export function sanitizeHtml(input: unknown): string {
+  if (typeof input !== 'string') {
+    return '';
+  }
+
+  // Use DOMPurify when DOM is available (browser or jsdom in isomorphic-dompurify)
+  if (hasDomSupport() || typeof DOMPurify.sanitize === 'function') {
+    try {
+      // Use DOMPurify with no allowed tags - strips all HTML
+      return DOMPurify.sanitize(input, { ALLOWED_TAGS: [] }).trim();
+    } catch {
+      // Fallback if DOMPurify fails (rare edge case)
+    }
+  }
+
+  // Fallback: basic HTML entity encoding for pure SSR/static generation
+  return input
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;')
+    .trim();
+}
+
+/**
+ * Encode HTML entities to prevent XSS when displaying user input
+ *
+ * Use this when you need to preserve the original text but make it safe
+ * for HTML display. Converts < > " ' & to HTML entities.
+ *
+ * @param input - String to encode
+ * @returns String with HTML entities encoded
+ *
+ * @example
+ * encodeHtmlEntities('<script>'); // Returns: '&lt;script&gt;'
+ * encodeHtmlEntities('Hello "World"'); // Returns: 'Hello &quot;World&quot;'
+ */
+export function encodeHtmlEntities(input: unknown): string {
+  if (typeof input !== 'string') {
+    return '';
+  }
+
+  return input
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;')
+    .trim();
+}
+
 /**
  * Sanitize a string by removing HTML tags and dangerous characters
  *
@@ -20,20 +96,8 @@ import type { User } from '../../lib/auth';
  * sanitizeString('Hello <b>World</b>'); // Returns: 'Hello World'
  */
 export function sanitizeString(input: unknown): string {
-  if (typeof input !== 'string') {
-    return '';
-  }
-
-  // Remove HTML tags
-  let sanitized = input.replace(/<[^>]*>/g, '');
-
-  // Remove potentially dangerous characters
-  sanitized = sanitized.replace(/[<>'"]/g, '');
-
-  // Trim whitespace
-  sanitized = sanitized.trim();
-
-  return sanitized;
+  // Delegate to DOMPurify-based sanitization
+  return sanitizeHtml(input);
 }
 
 /**
