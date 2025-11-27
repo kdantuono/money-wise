@@ -1,4 +1,4 @@
-# ADR 009: Unified Configuration Management Strategy
+# ADR-010: Unified Configuration Management Strategy
 
 **Status**: Proposed
 **Date**: 2025-10-06
