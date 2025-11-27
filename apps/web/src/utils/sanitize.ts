@@ -7,9 +7,18 @@
  * @module utils/sanitize
  */
 
+import type { User } from '../../lib/auth';
+
+// DOMPurify instance - initialized on first use
+// Using isomorphic-dompurify for SSR compatibility
 import DOMPurify from 'isomorphic-dompurify';
 
-import type { User } from '../../lib/auth';
+/**
+ * Check if we're in a browser environment with proper DOM support
+ */
+function hasDomSupport(): boolean {
+  return typeof window !== 'undefined' && typeof window.document !== 'undefined';
+}
 
 /**
  * Sanitize HTML content by removing all tags using DOMPurify
@@ -29,8 +38,24 @@ export function sanitizeHtml(input: unknown): string {
     return '';
   }
 
-  // Use DOMPurify with no allowed tags - strips all HTML
-  return DOMPurify.sanitize(input, { ALLOWED_TAGS: [] }).trim();
+  // Use DOMPurify when DOM is available (browser or jsdom in isomorphic-dompurify)
+  if (hasDomSupport() || typeof DOMPurify.sanitize === 'function') {
+    try {
+      // Use DOMPurify with no allowed tags - strips all HTML
+      return DOMPurify.sanitize(input, { ALLOWED_TAGS: [] }).trim();
+    } catch {
+      // Fallback if DOMPurify fails (rare edge case)
+    }
+  }
+
+  // Fallback: basic HTML entity encoding for pure SSR/static generation
+  return input
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;')
+    .trim();
 }
 
 /**

@@ -21,6 +21,17 @@ const nextConfig = {
     // No reactRemoveProperties configuration = data-testid preserved
   },
 
+  // Webpack configuration - exclude jsdom from server bundle
+  // jsdom is used by isomorphic-dompurify but causes issues during static generation
+  // because it tries to load CSS files that don't exist in the bundled context
+  webpack: (config, { isServer }) => {
+    if (isServer) {
+      // Treat jsdom as external to prevent bundling issues
+      config.externals = [...(config.externals || []), 'jsdom'];
+    }
+    return config;
+  },
+
   // Experimental features
   experimental: {
     // Client trace metadata for Sentry
