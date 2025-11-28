@@ -445,7 +445,7 @@ export const bankingClient = {
   async initiateLink(
     provider?: BankingProvider
   ): Promise<InitiateLinkResponse> {
-    return request<InitiateLinkResponse>('/banking/initiate-link', {
+    return request<InitiateLinkResponse>('/api/banking/initiate-link', {
       method: 'POST',
       body: JSON.stringify(provider ? { provider } : {}),
     });
@@ -481,7 +481,7 @@ export const bankingClient = {
     if (saltEdgeConnectionId) {
       body.saltEdgeConnectionId = saltEdgeConnectionId;
     }
-    return request<CompleteLinkResponse>('/banking/complete-link', {
+    return request<CompleteLinkResponse>('/api/banking/complete-link', {
       method: 'POST',
       body: JSON.stringify(body),
     });
@@ -505,7 +505,7 @@ export const bankingClient = {
    * ```
    */
   async getAccounts(): Promise<GetAccountsResponse> {
-    return request<GetAccountsResponse>('/banking/accounts', {
+    return request<GetAccountsResponse>('/api/banking/accounts', {
       method: 'GET',
     });
   },
@@ -534,7 +534,7 @@ export const bankingClient = {
    * ```
    */
   async syncAccount(accountId: string): Promise<SyncResponse> {
-    return request<SyncResponse>(`/banking/sync/${accountId}`, {
+    return request<SyncResponse>(`/api/banking/sync/${accountId}`, {
       method: 'POST',
       body: JSON.stringify({}),
     });
@@ -560,7 +560,7 @@ export const bankingClient = {
    * ```
    */
   async revokeConnection(connectionId: string): Promise<void> {
-    return request<void>(`/banking/revoke/${connectionId}`, {
+    return request<void>(`/api/banking/revoke/${connectionId}`, {
       method: 'DELETE',
     });
   },
@@ -583,7 +583,7 @@ export const bankingClient = {
    * ```
    */
   async getProviders(): Promise<AvailableProvidersResponse> {
-    return request<AvailableProvidersResponse>('/banking/providers', {
+    return request<AvailableProvidersResponse>('/api/banking/providers', {
       method: 'GET',
     });
   },
