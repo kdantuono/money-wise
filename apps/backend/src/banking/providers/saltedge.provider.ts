@@ -107,9 +107,11 @@ export class SaltEdgeProvider implements IBankingProvider {
       'SALTEDGE_API_URL',
       'https://www.saltedge.com/api/v6',
     );
+    // OAuth redirect URL (user is redirected here after authorization)
+    // This should point to the FRONTEND callback page, not the backend webhook
     this.callbackUrl = this.configService.get<string>(
       'SALTEDGE_CALLBACK_URL',
-      this.configService.get<string>('APP_URL', 'http://localhost:3001') + '/api/banking/webhook',
+      this.configService.get<string>('FRONTEND_URL', 'http://localhost:3000') + '/banking/callback',
     );
 
     // Load private key for RSA signature

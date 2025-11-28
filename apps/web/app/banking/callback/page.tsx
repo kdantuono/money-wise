@@ -81,9 +81,19 @@ function BankingCallbackContent() {
 
     const processCallback = async () => {
       try {
-        // Extract connection ID from URL
+        // Extract our internal connection ID from URL (we set this in initiateBankingLink)
         const connectionId = searchParams.get('connectionId');
+        // Extract SaltEdge's connection_id from URL (they append this after OAuth)
+        const saltEdgeConnectionId = searchParams.get('connection_id');
         const state = searchParams.get('state');
+
+        // Log parameters for debugging
+        console.log('OAuth callback params:', {
+          connectionId,
+          saltEdgeConnectionId,
+          state,
+          allParams: Object.fromEntries(searchParams.entries()),
+        });
 
         // Validate required parameters
         if (!connectionId) {
@@ -110,8 +120,10 @@ function BankingCallbackContent() {
           sessionStorage.removeItem('oauth_state');
         }
 
-        // Complete the linking process
-        await completeLinking(connectionId);
+        // Complete the linking process with both IDs
+        // - connectionId: our internal UUID identifying the pending connection
+        // - saltEdgeConnectionId: SaltEdge's ID for the actual bank connection
+        await completeLinking(connectionId, saltEdgeConnectionId || undefined);
 
         // Success!
         setStatus('success');

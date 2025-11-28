@@ -209,13 +209,14 @@ export class BankingController {
     }
 
     this.logger.log(
-      `Completing banking link for user ${user.id}, connection ${body.connectionId}`,
+      `Completing banking link for user ${user.id}, connection ${body.connectionId}, saltEdge: ${body.saltEdgeConnectionId || 'not provided'}`,
     );
 
     try {
       const accounts = await this.bankingService.completeBankingLink(
         user.id,
         body.connectionId,
+        body.saltEdgeConnectionId,
       );
 
       // Store the accounts

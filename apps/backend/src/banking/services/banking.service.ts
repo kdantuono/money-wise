@@ -190,6 +190,9 @@ export class BankingService {
   /**
    * Initiate banking link for user
    * v6 flow: Create customer -> Create connect session -> Return OAuth URL
+   *
+   * The return_to URL will include our internal connectionId so the frontend
+   * callback can identify which pending connection to complete.
    */
   async initiateBankingLink(
     userId: string,
@@ -209,7 +212,32 @@ export class BankingService {
     // Step 1: Get or create customer
     const customer = await this.getOrCreateBankingCustomer(userId, provider);
 
-    // Step 2: Create connect session
+    // Step 2: Create pending connection record FIRST so we have an ID
+    const connection = await this.prisma.bankingConnection.create({
+      data: {
+        userId,
+        customerId: customer.id,
+        provider,
+        status: BankingConnectionStatus.PENDING,
+        providerCode: options?.providerCode || null,
+        countryCode: options?.countryCode || null,
+        metadata: {
+          initiatedAt: new Date().toISOString(),
+        } as Prisma.InputJsonValue,
+      },
+    });
+
+    this.logger.log(`Banking connection created: ${connection.id}`);
+
+    // Step 3: Build the return_to URL with our internal connectionId
+    // SaltEdge will redirect here after OAuth, appending their connection_id
+    const baseReturnTo = options?.returnTo ||
+      this.configService.get<string>('FRONTEND_URL', 'http://localhost:3000') + '/banking/callback';
+    const returnToUrl = new URL(baseReturnTo);
+    returnToUrl.searchParams.set('connectionId', connection.id);
+    const returnTo = returnToUrl.toString();
+
+    // Step 4: Create connect session with our callback URL
     let connectUrl: string;
     let expiresAt: Date;
 
@@ -218,7 +246,7 @@ export class BankingService {
       const session = await saltEdgeProvider.createConnectSession(
         customer.saltEdgeCustomerId!,
         {
-          returnTo: options?.returnTo,
+          returnTo,
           providerCode: options?.providerCode,
           countryCode: options?.countryCode,
         },
@@ -229,24 +257,16 @@ export class BankingService {
       throw new BadRequestException(`Provider ${provider} not yet supported`);
     }
 
-    // Step 3: Create pending connection record
-    const connection = await this.prisma.bankingConnection.create({
+    // Step 5: Update connection with redirect URL and expiry
+    await this.prisma.bankingConnection.update({
+      where: { id: connection.id },
       data: {
-        userId,
-        customerId: customer.id,
-        provider,
-        status: BankingConnectionStatus.PENDING,
-        providerCode: options?.providerCode || null,
-        countryCode: options?.countryCode || null,
         redirectUrl: connectUrl,
         expiresAt,
-        metadata: {
-          initiatedAt: new Date().toISOString(),
-        } as Prisma.InputJsonValue,
       },
     });
 
-    this.logger.log(`Banking connection initiated: ${connection.id}`);
+    this.logger.log(`Banking connection initiated: ${connection.id}, redirect URL: ${connectUrl}`);
 
     return {
       redirectUrl: connectUrl,
@@ -414,13 +434,22 @@ export class BankingService {
 
   /**
    * Complete banking link after user authorization (manual callback)
-   * Used when webhook is not available or for manual completion
+   * Used when webhook is not available or for manual completion.
+   *
+   * This method now handles both cases:
+   * 1. When saltEdgeConnectionId is already set (via webhook)
+   * 2. When saltEdgeConnectionId is provided as a parameter (via frontend redirect)
+   *
+   * @param userId - The user ID
+   * @param connectionId - Our internal connection UUID
+   * @param saltEdgeConnectionId - Optional: SaltEdge's connection_id from redirect params
    */
   async completeBankingLink(
     userId: string,
     connectionId: string,
+    saltEdgeConnectionId?: string,
   ): Promise<BankingAccountData[]> {
-    this.logger.log(`Completing banking link for user ${userId}, connection ${connectionId}`);
+    this.logger.log(`Completing banking link for user ${userId}, connection ${connectionId}, saltEdge: ${saltEdgeConnectionId || 'not provided'}`);
 
     const connection = await this.prisma.bankingConnection.findUnique({
       where: { id: connectionId },
@@ -434,22 +463,48 @@ export class BankingService {
       throw new BadRequestException('Unauthorized');
     }
 
-    if (!connection.saltEdgeConnectionId) {
-      throw new BadRequestException('Connection not yet completed by user');
+    // Use provided saltEdgeConnectionId or the one already stored
+    const effectiveSaltEdgeId = saltEdgeConnectionId || connection.saltEdgeConnectionId;
+
+    if (!effectiveSaltEdgeId) {
+      throw new BadRequestException(
+        'SaltEdge connection ID not available. The OAuth process may not have completed successfully.',
+      );
     }
 
     try {
       const saltEdgeProvider = this.providerFactory.getSaltEdgeProvider();
-      const accounts = await saltEdgeProvider.completeLinkAndGetAccounts(
-        connection.saltEdgeConnectionId,
-      );
 
-      // Update connection status
+      // Update connection with SaltEdge ID if not already set
+      if (saltEdgeConnectionId && !connection.saltEdgeConnectionId) {
+        await this.prisma.bankingConnection.update({
+          where: { id: connectionId },
+          data: {
+            saltEdgeConnectionId,
+            status: BankingConnectionStatus.IN_PROGRESS,
+          },
+        });
+      }
+
+      // Fetch accounts from SaltEdge
+      const accounts = await saltEdgeProvider.completeLinkAndGetAccounts(effectiveSaltEdgeId);
+
+      // Get connection details for provider info
+      const connectionData = await saltEdgeProvider.getConnection(effectiveSaltEdgeId);
+
+      // Update connection status to authorized
       await this.prisma.bankingConnection.update({
         where: { id: connectionId },
         data: {
           status: BankingConnectionStatus.AUTHORIZED,
+          saltEdgeConnectionId: effectiveSaltEdgeId,
+          providerCode: connectionData.provider_code,
+          providerName: connectionData.provider_name,
+          countryCode: connectionData.country_code,
           authorizedAt: new Date(),
+          lastSuccessAt: connectionData.last_success_at
+            ? new Date(connectionData.last_success_at)
+            : new Date(),
         },
       });
 

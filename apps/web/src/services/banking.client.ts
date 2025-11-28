@@ -457,7 +457,8 @@ export const bankingClient = {
    * Called after user completes OAuth authorization.
    * Fetches the linked accounts and stores them in the database.
    *
-   * @param connectionId Connection ID from initiate-link response
+   * @param connectionId Connection ID from initiate-link response (our internal UUID)
+   * @param saltEdgeConnectionId Optional SaltEdge connection_id from redirect URL
    * @returns Array of linked accounts
    * @throws {AuthenticationError} If not authenticated
    * @throws {ValidationError} If connectionId is invalid
@@ -467,17 +468,22 @@ export const bankingClient = {
    * @example
    * ```typescript
    * // After OAuth redirect back to app
-   * const connectionId = sessionStorage.getItem('banking_connection_id');
+   * const connectionId = searchParams.get('connectionId');
+   * const saltEdgeConnectionId = searchParams.get('connection_id');
    * if (connectionId) {
-   *   const { accounts } = await bankingClient.completeLink(connectionId);
+   *   const { accounts } = await bankingClient.completeLink(connectionId, saltEdgeConnectionId);
    *   console.log(`Linked ${accounts.length} accounts`);
    * }
    * ```
    */
-  async completeLink(connectionId: string): Promise<CompleteLinkResponse> {
+  async completeLink(connectionId: string, saltEdgeConnectionId?: string): Promise<CompleteLinkResponse> {
+    const body: { connectionId: string; saltEdgeConnectionId?: string } = { connectionId };
+    if (saltEdgeConnectionId) {
+      body.saltEdgeConnectionId = saltEdgeConnectionId;
+    }
     return request<CompleteLinkResponse>('/banking/complete-link', {
       method: 'POST',
-      body: JSON.stringify({ connectionId }),
+      body: JSON.stringify(body),
     });
   },
 

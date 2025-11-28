@@ -175,6 +175,7 @@ describe('BankingController', () => {
       expect(service.completeBankingLink).toHaveBeenCalledWith(
         mockUser.id,
         mockBankingConnection.id,
+        undefined, // saltEdgeConnectionId is optional
       );
       expect(service.storeLinkedAccounts).toHaveBeenCalledWith(
         mockUser.id,
