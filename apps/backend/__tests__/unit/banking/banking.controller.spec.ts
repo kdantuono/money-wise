@@ -99,6 +99,11 @@ describe('BankingController', () => {
       expect(service.initiateBankingLink).toHaveBeenCalledWith(
         mockUser.id,
         BankingProvider.SALTEDGE,
+        {
+          countryCode: undefined,
+          providerCode: undefined,
+          returnTo: undefined,
+        },
       );
     });
 
@@ -118,6 +123,11 @@ describe('BankingController', () => {
       expect(service.initiateBankingLink).toHaveBeenCalledWith(
         mockUser.id,
         BankingProvider.TINK,
+        {
+          countryCode: undefined,
+          providerCode: undefined,
+          returnTo: undefined,
+        },
       );
     });
 
@@ -165,6 +175,7 @@ describe('BankingController', () => {
       expect(service.completeBankingLink).toHaveBeenCalledWith(
         mockUser.id,
         mockBankingConnection.id,
+        undefined, // saltEdgeConnectionId is optional
       );
       expect(service.storeLinkedAccounts).toHaveBeenCalledWith(
         mockUser.id,

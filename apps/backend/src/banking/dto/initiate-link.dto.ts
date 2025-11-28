@@ -1,4 +1,4 @@
-import { IsOptional, IsEnum } from 'class-validator';
+import { IsOptional, IsEnum, IsString, MaxLength } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { BankingProvider } from '../../../generated/prisma';
 
@@ -8,9 +8,14 @@ import { BankingProvider } from '../../../generated/prisma';
  * Starts the OAuth flow with the specified banking provider.
  * If no provider is specified, defaults to SALTEDGE.
  *
+ * For testing, use countryCode "XF" to get fake providers.
+ * Test credentials: username="username", password="secret"
+ *
  * @example
  * {
- *   "provider": "SALTEDGE"
+ *   "provider": "SALTEDGE",
+ *   "countryCode": "XF",
+ *   "providerCode": "fakebank_simple_xf"
  * }
  */
 export class InitiateLinkRequestDto {
@@ -22,6 +27,34 @@ export class InitiateLinkRequestDto {
   @IsOptional()
   @IsEnum(BankingProvider)
   provider?: BankingProvider;
+
+  @ApiPropertyOptional({
+    description: 'Country code filter (ISO 3166-1 alpha-2). Use "XF" for fake providers.',
+    example: 'IT',
+    maxLength: 10,
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(10)
+  countryCode?: string;
+
+  @ApiPropertyOptional({
+    description: 'Specific provider/bank code to connect to (e.g., "fakebank_simple_xf")',
+    example: 'fakebank_simple_xf',
+    maxLength: 255,
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  providerCode?: string;
+
+  @ApiPropertyOptional({
+    description: 'URL to redirect user back to after OAuth completion',
+    example: 'http://localhost:3000/banking/callback',
+  })
+  @IsOptional()
+  @IsString()
+  returnTo?: string;
 }
 
 /**

@@ -131,7 +131,7 @@ describe('BankingLinkButton Component', () => {
     expect(mockPopup.focus).toHaveBeenCalled();
   });
 
-  it('calls onSuccess when popup is closed', async () => {
+  it('calls onSuccess when OAuth completion message is received', async () => {
     const onSuccess = vi.fn();
 
     (global.fetch as any).mockResolvedValueOnce({
@@ -144,15 +144,94 @@ describe('BankingLinkButton Component', () => {
 
     await user.click(button);
 
-    // Simulate popup closure
+    // Simulate postMessage from callback page indicating success
+    await act(async () => {
+      window.dispatchEvent(
+        new MessageEvent('message', {
+          data: { type: 'BANKING_OAUTH_COMPLETE', accountCount: 2 },
+          origin: window.location.origin,
+        })
+      );
+    });
+
+    expect(onSuccess).toHaveBeenCalled();
+  });
+
+  it('does not call onSuccess when popup is closed without OAuth completion', async () => {
+    const onSuccess = vi.fn();
+
+    (global.fetch as any).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ redirectUrl: 'https://oauth.example.com/auth', _connectionId: 'conn-123' }),
+    });
+
+    const { user } = render(<BankingLinkButton onSuccess={onSuccess} />);
+    const button = screen.getByRole('button');
+
+    await user.click(button);
+
+    // Simulate popup closure without OAuth completion (user cancelled)
     mockPopup.closed = true;
 
-    // Advance timers to trigger polling - wrap in act to handle state updates
+    // Advance timers to trigger polling
     await act(async () => {
       vi.advanceTimersByTime(500);
     });
 
-    expect(onSuccess).toHaveBeenCalled();
+    // onSuccess should NOT be called when popup closes without completion message
+    expect(onSuccess).not.toHaveBeenCalled();
+  });
+
+  it('calls onError when OAuth error message is received', async () => {
+    const onError = vi.fn();
+
+    (global.fetch as any).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ redirectUrl: 'https://oauth.example.com/auth', _connectionId: 'conn-123' }),
+    });
+
+    const { user } = render(<BankingLinkButton onError={onError} />);
+    const button = screen.getByRole('button');
+
+    await user.click(button);
+
+    // Simulate postMessage from callback page indicating error
+    await act(async () => {
+      window.dispatchEvent(
+        new MessageEvent('message', {
+          data: { type: 'BANKING_OAUTH_ERROR', error: 'Connection failed' },
+          origin: window.location.origin,
+        })
+      );
+    });
+
+    expect(onError).toHaveBeenCalledWith('Connection failed');
+  });
+
+  it('ignores messages from different origins', async () => {
+    const onSuccess = vi.fn();
+
+    (global.fetch as any).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ redirectUrl: 'https://oauth.example.com/auth', _connectionId: 'conn-123' }),
+    });
+
+    const { user } = render(<BankingLinkButton onSuccess={onSuccess} />);
+    const button = screen.getByRole('button');
+
+    await user.click(button);
+
+    // Simulate postMessage from different origin (should be ignored)
+    await act(async () => {
+      window.dispatchEvent(
+        new MessageEvent('message', {
+          data: { type: 'BANKING_OAUTH_COMPLETE', accountCount: 2 },
+          origin: 'https://malicious-site.com',
+        })
+      );
+    });
+
+    expect(onSuccess).not.toHaveBeenCalled();
   });
 
   it('handles API error gracefully', async () => {

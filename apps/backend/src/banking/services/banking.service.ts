@@ -8,17 +8,23 @@ import {
   AccountType,
   AccountStatus,
   AccountSource,
+  TransactionType,
+  TransactionStatus,
+  TransactionSource,
   Account,
   BankingConnection,
-  Prisma
+  BankingCustomer,
+  Prisma,
 } from '../../../generated/prisma';
 import { AccountSettings } from '../../common/types/domain-types';
 import {
   IBankingProvider,
   IBankingProviderFactory,
   BankingAccountData,
+  BankingTransactionData,
 } from '../interfaces/banking-provider.interface';
 import { SaltEdgeProvider } from '../providers/saltedge.provider';
+import * as crypto from 'crypto';
 
 /**
  * Provider Factory Implementation
@@ -62,6 +68,17 @@ export class BankingProviderFactory implements IBankingProviderFactory {
   }
 
   /**
+   * Get SaltEdge provider with v6 specific methods
+   */
+  getSaltEdgeProvider(): SaltEdgeProvider {
+    const provider = this.providers.get(BankingProvider.SALTEDGE);
+    if (!provider) {
+      throw new Error('SaltEdge provider not available');
+    }
+    return provider as SaltEdgeProvider;
+  }
+
+  /**
    * Check if provider is available
    */
   isProviderAvailable(type: BankingProvider): boolean {
@@ -77,8 +94,15 @@ export class BankingProviderFactory implements IBankingProviderFactory {
 }
 
 /**
- * BankingService - Provider-agnostic business logic
+ * BankingService - Provider-agnostic business logic for v6 API
  * Routes requests to appropriate provider based on account/connection configuration
+ *
+ * v6 Flow:
+ * 1. Create/get customer (once per user per provider)
+ * 2. Create connect session with customer ID
+ * 3. User completes OAuth
+ * 4. Webhook receives connection_id
+ * 5. Complete link and store accounts
  */
 @Injectable()
 export class BankingService {
@@ -108,67 +132,332 @@ export class BankingService {
   }
 
   /**
+   * Generate a unique identifier for SaltEdge customer
+   * Uses SHA256 hash of user ID for privacy
+   */
+  private generateCustomerIdentifier(userId: string): string {
+    return crypto.createHash('sha256').update(userId).digest('hex').substring(0, 32);
+  }
+
+  // ============ Customer Management (v6) ============
+
+  /**
+   * Get or create a banking customer for a user
+   * v6 API requires customer to exist before creating connections
+   */
+  async getOrCreateBankingCustomer(
+    userId: string,
+    provider: BankingProvider = BankingProvider.SALTEDGE,
+  ): Promise<BankingCustomer> {
+    // Check if customer already exists
+    let customer = await this.prisma.bankingCustomer.findUnique({
+      where: {
+        uq_banking_customer_user_provider: {
+          userId,
+          provider,
+        },
+      },
+    });
+
+    if (customer) {
+      this.logger.debug(`Found existing customer: ${customer.id}`);
+      return customer;
+    }
+
+    // Create new customer in provider
+    const identifier = this.generateCustomerIdentifier(userId);
+
+    if (provider === BankingProvider.SALTEDGE) {
+      const saltEdgeProvider = this.providerFactory.getSaltEdgeProvider();
+      const saltEdgeCustomer = await saltEdgeProvider.createCustomer(identifier);
+
+      // Store customer in database
+      customer = await this.prisma.bankingCustomer.create({
+        data: {
+          userId,
+          provider,
+          identifier,
+          saltEdgeCustomerId: saltEdgeCustomer.id,
+        },
+      });
+
+      this.logger.log(`Created new customer: ${customer.id} (SaltEdge: ${saltEdgeCustomer.id})`);
+    } else {
+      throw new BadRequestException(`Provider ${provider} not yet supported for customer creation`);
+    }
+
+    return customer;
+  }
+
+  // ============ Connection Flow (v6) ============
+
+  /**
    * Initiate banking link for user
-   * Returns OAuth URL to redirect user to bank selection
+   * v6 flow: Create customer -> Create connect session -> Return OAuth URL
+   *
+   * The return_to URL will include our internal connectionId so the frontend
+   * callback can identify which pending connection to complete.
    */
   async initiateBankingLink(
     userId: string,
     provider: BankingProvider = BankingProvider.SALTEDGE,
+    options?: {
+      providerCode?: string;
+      countryCode?: string;
+      returnTo?: string;
+    },
   ): Promise<{ redirectUrl: string; connectionId: string }> {
     this.logger.log(`Initiating banking link for user ${userId} with provider ${provider}`);
 
-    const bankingProvider = this.getProviderForConnection(provider);
+    if (!this.bankingIntegrationEnabled) {
+      throw new BadRequestException('Banking integration is not enabled');
+    }
 
-    try {
-      // Authenticate with provider first
-      await bankingProvider.authenticate();
+    // Step 1: Get or create customer
+    const customer = await this.getOrCreateBankingCustomer(userId, provider);
 
-      // Initiate the link
-      const result = await bankingProvider.initiateLink(userId);
+    // Step 2: Create pending connection record FIRST so we have an ID
+    const connection = await this.prisma.bankingConnection.create({
+      data: {
+        userId,
+        customerId: customer.id,
+        provider,
+        status: BankingConnectionStatus.PENDING,
+        providerCode: options?.providerCode || null,
+        countryCode: options?.countryCode || null,
+        metadata: {
+          initiatedAt: new Date().toISOString(),
+        } as Prisma.InputJsonValue,
+      },
+    });
 
-      // Store banking connection in database
-      const connection = await this.prisma.bankingConnection.create({
-        data: {
-          userId,
-          provider,
-          status: BankingConnectionStatus.PENDING,
-          // Store provider-specific connection ID based on provider
-          ...(provider === BankingProvider.SALTEDGE && {
-            saltEdgeConnectionId: result.connectionId,
-          }),
-          // Other providers would follow similar pattern
-          redirectUrl: result.redirectUrl,
-          metadata: (result.metadata || {}) as Prisma.InputJsonValue,
+    this.logger.log(`Banking connection created: ${connection.id}`);
+
+    // Step 3: Build the return_to URL with our internal connectionId
+    // SaltEdge will redirect here after OAuth, appending their connection_id
+    const baseReturnTo = options?.returnTo ||
+      this.configService.get<string>('FRONTEND_URL', 'http://localhost:3000') + '/banking/callback';
+    const returnToUrl = new URL(baseReturnTo);
+    returnToUrl.searchParams.set('connectionId', connection.id);
+    const returnTo = returnToUrl.toString();
+
+    // Step 4: Create connect session with our callback URL
+    let connectUrl: string;
+    let expiresAt: Date;
+
+    if (provider === BankingProvider.SALTEDGE) {
+      const saltEdgeProvider = this.providerFactory.getSaltEdgeProvider();
+      const session = await saltEdgeProvider.createConnectSession(
+        customer.saltEdgeCustomerId!,
+        {
+          returnTo,
+          providerCode: options?.providerCode,
+          countryCode: options?.countryCode,
         },
-      });
-
-      this.logger.log(
-        `Banking connection created: ${connection.id} (provider: ${connection.saltEdgeConnectionId})`,
       );
+      connectUrl = session.connectUrl;
+      expiresAt = session.expiresAt;
+    } else {
+      throw new BadRequestException(`Provider ${provider} not yet supported`);
+    }
 
-      return {
-        redirectUrl: result.redirectUrl,
-        connectionId: connection.id, // Return MoneyWise connection ID, not provider's
-      };
-    } catch (error) {
-      this.logger.error('Failed to initiate banking link', error);
-      throw new BadRequestException(`Failed to initiate banking link: ${error.message}`);
+    // Step 5: Update connection with redirect URL and expiry
+    await this.prisma.bankingConnection.update({
+      where: { id: connection.id },
+      data: {
+        redirectUrl: connectUrl,
+        expiresAt,
+      },
+    });
+
+    this.logger.log(`Banking connection initiated: ${connection.id}, redirect URL: ${connectUrl}`);
+
+    return {
+      redirectUrl: connectUrl,
+      connectionId: connection.id,
+    };
+  }
+
+  /**
+   * Handle webhook callback from SaltEdge after OAuth completion
+   * Updates connection with actual SaltEdge connection ID
+   */
+  async handleWebhookCallback(
+    customerId: string,
+    saltEdgeConnectionId: string,
+    stage: 'start' | 'finish' | 'fail',
+    metadata?: Record<string, unknown>,
+  ): Promise<void> {
+    this.logger.log(`Webhook callback: customer=${customerId}, connection=${saltEdgeConnectionId}, stage=${stage}`);
+
+    // Find the customer
+    const customer = await this.prisma.bankingCustomer.findFirst({
+      where: { saltEdgeCustomerId: customerId },
+    });
+
+    if (!customer) {
+      this.logger.warn(`Customer not found for SaltEdge ID: ${customerId}`);
+      return;
+    }
+
+    // Find pending connection for this customer
+    let connection = await this.prisma.bankingConnection.findFirst({
+      where: {
+        customerId: customer.id,
+        status: BankingConnectionStatus.PENDING,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    // Or find existing connection by SaltEdge ID
+    if (!connection) {
+      connection = await this.prisma.bankingConnection.findFirst({
+        where: { saltEdgeConnectionId },
+      });
+    }
+
+    if (!connection) {
+      this.logger.warn(`No connection found for customer: ${customer.id}`);
+      return;
+    }
+
+    // Update connection based on stage
+    switch (stage) {
+      case 'start':
+        await this.prisma.bankingConnection.update({
+          where: { id: connection.id },
+          data: {
+            status: BankingConnectionStatus.IN_PROGRESS,
+            saltEdgeConnectionId,
+          },
+        });
+        break;
+
+      case 'finish': {
+        // Fetch connection details from SaltEdge
+        const saltEdgeProvider = this.providerFactory.getSaltEdgeProvider();
+        const connectionData = await saltEdgeProvider.getConnection(saltEdgeConnectionId);
+
+        await this.prisma.bankingConnection.update({
+          where: { id: connection.id },
+          data: {
+            status: BankingConnectionStatus.AUTHORIZED,
+            saltEdgeConnectionId,
+            providerCode: connectionData.provider_code,
+            providerName: connectionData.provider_name,
+            countryCode: connectionData.country_code,
+            authorizedAt: new Date(),
+            lastSuccessAt: connectionData.last_success_at
+              ? new Date(connectionData.last_success_at)
+              : null,
+            metadata: metadata as Prisma.InputJsonValue || {},
+          },
+        });
+
+        // Auto-fetch and store accounts
+        await this.fetchAndStoreAccounts(connection.userId, connection.id, saltEdgeConnectionId);
+        break;
+      }
+
+      case 'fail':
+        await this.prisma.bankingConnection.update({
+          where: { id: connection.id },
+          data: {
+            status: BankingConnectionStatus.FAILED,
+            saltEdgeConnectionId,
+            metadata: metadata as Prisma.InputJsonValue || {},
+          },
+        });
+        break;
     }
   }
 
   /**
-   * Complete banking link after user authorization
-   * Fetches linked accounts and stores them
+   * Fetch accounts from provider and store in database
+   */
+  private async fetchAndStoreAccounts(
+    userId: string,
+    connectionId: string,
+    saltEdgeConnectionId: string,
+  ): Promise<void> {
+    const saltEdgeProvider = this.providerFactory.getSaltEdgeProvider();
+    const accounts = await saltEdgeProvider.getAccounts(saltEdgeConnectionId);
+    const connectionData = await saltEdgeProvider.getConnection(saltEdgeConnectionId);
+
+    for (const account of accounts) {
+      try {
+        // Check if account already exists
+        const existing = await this.prisma.account.findFirst({
+          where: { saltEdgeAccountId: account.id },
+        });
+
+        if (existing) {
+          // Update existing account
+          await this.prisma.account.update({
+            where: { id: existing.id },
+            data: {
+              currentBalance: account.balance,
+              syncStatus: BankingSyncStatus.SYNCED,
+              lastSyncAt: new Date(),
+            },
+          });
+        } else {
+          // Create new account
+          await this.prisma.account.create({
+            data: {
+              userId,
+              name: account.name,
+              accountNumber: account.iban,
+              bankingProvider: BankingProvider.SALTEDGE,
+              saltEdgeAccountId: account.id,
+              saltEdgeConnectionId,
+              syncStatus: BankingSyncStatus.SYNCED,
+              institutionName: connectionData.provider_name,
+              currentBalance: account.balance,
+              currency: account.currency,
+              source: AccountSource.SALTEDGE,
+              type: this.mapAccountType(account.type),
+              status: AccountStatus.ACTIVE,
+              lastSyncAt: new Date(),
+              settings: {
+                bankCountry: connectionData.country_code,
+                accountHolderName: account.accountHolderName,
+                accountType: account.type,
+                provider: BankingProvider.SALTEDGE,
+              },
+            },
+          });
+        }
+
+        this.logger.log(`Stored/updated account: ${account.id}`);
+      } catch (error) {
+        this.logger.warn(`Failed to store account ${account.id}: ${error.message}`);
+      }
+    }
+  }
+
+  /**
+   * Complete banking link after user authorization (manual callback)
+   * Used when webhook is not available or for manual completion.
+   *
+   * This method now handles both cases:
+   * 1. When saltEdgeConnectionId is already set (via webhook)
+   * 2. When saltEdgeConnectionId is provided as a parameter (via frontend redirect)
+   *
+   * @param userId - The user ID
+   * @param connectionId - Our internal connection UUID
+   * @param saltEdgeConnectionId - Optional: SaltEdge's connection_id from redirect params
    */
   async completeBankingLink(
     userId: string,
     connectionId: string,
+    saltEdgeConnectionId?: string,
   ): Promise<BankingAccountData[]> {
-    this.logger.log(`Completing banking link for user ${userId}, connection ${connectionId}`);
+    this.logger.log(`Completing banking link for user ${userId}, connection ${connectionId}, saltEdge: ${saltEdgeConnectionId || 'not provided'}`);
 
-    // Find the banking connection
     const connection = await this.prisma.bankingConnection.findUnique({
       where: { id: connectionId },
+      include: { customer: true },
     });
 
     if (!connection) {
@@ -179,51 +468,85 @@ export class BankingService {
       throw new BadRequestException('Unauthorized');
     }
 
+    // Use provided saltEdgeConnectionId or the one already stored
+    let effectiveSaltEdgeId = saltEdgeConnectionId || connection.saltEdgeConnectionId;
+
+    // Fallback: Poll SaltEdge for the latest connection if ID not available
+    // This handles local development where webhooks don't work
+    if (!effectiveSaltEdgeId && connection.customer?.saltEdgeCustomerId) {
+      this.logger.log('SaltEdge connection ID not in redirect URL, polling for latest connection...');
+
+      const saltEdgeProvider = this.providerFactory.getSaltEdgeProvider();
+      const latestConnection = await saltEdgeProvider.findLatestActiveConnection(
+        connection.customer.saltEdgeCustomerId,
+      );
+
+      if (latestConnection) {
+        effectiveSaltEdgeId = latestConnection.id;
+        this.logger.log(`Found active connection via polling: ${effectiveSaltEdgeId}`);
+      }
+    }
+
+    if (!effectiveSaltEdgeId) {
+      throw new BadRequestException(
+        'SaltEdge connection ID not available. The OAuth process may not have completed successfully. ' +
+        'For local development without webhooks, ensure the connection was fully authorized in the SaltEdge widget.',
+      );
+    }
+
     try {
-      const bankingProvider = this.getProviderForConnection(connection.provider);
+      const saltEdgeProvider = this.providerFactory.getSaltEdgeProvider();
 
-      // Get provider-specific connection ID
-      const providerConnectionId = this.getProviderConnectionId(connection);
-
-      if (!providerConnectionId) {
-        throw new Error('No provider connection ID found');
+      // Update connection with SaltEdge ID if not already set
+      if (saltEdgeConnectionId && !connection.saltEdgeConnectionId) {
+        await this.prisma.bankingConnection.update({
+          where: { id: connectionId },
+          data: {
+            saltEdgeConnectionId,
+            status: BankingConnectionStatus.IN_PROGRESS,
+          },
+        });
       }
 
-      // Complete the link and get accounts
-      const accounts = await bankingProvider.completeLinkAndGetAccounts(providerConnectionId);
+      // Fetch accounts from SaltEdge
+      const accounts = await saltEdgeProvider.completeLinkAndGetAccounts(effectiveSaltEdgeId);
 
-      // Update connection status
+      // Get connection details for provider info
+      const connectionData = await saltEdgeProvider.getConnection(effectiveSaltEdgeId);
+
+      // Update connection status to authorized
       await this.prisma.bankingConnection.update({
         where: { id: connectionId },
         data: {
           status: BankingConnectionStatus.AUTHORIZED,
+          saltEdgeConnectionId: effectiveSaltEdgeId,
+          providerCode: connectionData.provider_code,
+          providerName: connectionData.provider_name,
+          countryCode: connectionData.country_code,
           authorizedAt: new Date(),
+          lastSuccessAt: connectionData.last_success_at
+            ? new Date(connectionData.last_success_at)
+            : new Date(),
         },
       });
 
-      this.logger.log(
-        `Banking link completed: ${accounts.length} accounts retrieved`,
-      );
+      this.logger.log(`Banking link completed: ${accounts.length} accounts retrieved`);
 
       return accounts;
     } catch (error) {
       this.logger.error('Failed to complete banking link', error);
 
-      // Mark connection as failed
       await this.prisma.bankingConnection.update({
         where: { id: connectionId },
         data: { status: BankingConnectionStatus.FAILED },
       });
 
-      throw new BadRequestException(
-        `Failed to complete banking link: ${error.message}`,
-      );
+      throw new BadRequestException(`Failed to complete banking link: ${error.message}`);
     }
   }
 
   /**
    * Store linked accounts in the database
-   * Called after completing the banking link
    */
   async storeLinkedAccounts(
     userId: string,
@@ -252,19 +575,15 @@ export class BankingService {
             name: account.name,
             accountNumber: account.iban,
             bankingProvider: connection.provider,
-            // Store provider-specific account ID
-            ...(connection.provider === BankingProvider.SALTEDGE && {
-              saltEdgeAccountId: account.id,
-            }),
+            saltEdgeAccountId: account.id,
+            saltEdgeConnectionId: connection.saltEdgeConnectionId,
             syncStatus: BankingSyncStatus.PENDING,
-            // Banking metadata
             institutionName: account.bankName,
             currentBalance: account.balance,
             currency: account.currency,
-            source: AccountSource.SALTEDGE, // Will be dynamic based on provider in future
-            type: AccountType.CHECKING, // Default type, can be refined from account.type
+            source: AccountSource.SALTEDGE,
+            type: this.mapAccountType(account.type),
             status: AccountStatus.ACTIVE,
-            // Store additional banking metadata in settings JSON
             settings: {
               bankCountry: account.bankCountry,
               accountHolderName: account.accountHolderName,
@@ -277,10 +596,7 @@ export class BankingService {
         storedCount++;
         this.logger.log(`Stored account: ${account.id}`);
       } catch (error) {
-        this.logger.warn(
-          `Failed to store account ${account.id}: ${error.message}`,
-        );
-        // Continue with other accounts even if one fails
+        this.logger.warn(`Failed to store account ${account.id}: ${error.message}`);
       }
     }
 
@@ -318,7 +634,7 @@ export class BankingService {
       include: {
         syncLogs: {
           orderBy: { startedAt: 'desc' },
-          take: 1, // Latest sync log
+          take: 1,
         },
       },
     });
@@ -327,13 +643,12 @@ export class BankingService {
       id: account.id,
       name: account.name,
       bankName: account.institutionName,
-      balance: account.currentBalance.toNumber(), // Convert Prisma.Decimal to number
+      balance: account.currentBalance.toNumber(),
       currency: account.currency,
       syncStatus: account.syncStatus,
-      lastSynced: account.syncLogs[0]?.completedAt?.toISOString() ?? null, // Convert Date to ISO string
-      linkedAt: account.createdAt.toISOString(), // Convert Date to ISO string
+      lastSynced: account.syncLogs[0]?.completedAt?.toISOString() ?? null,
+      linkedAt: account.createdAt.toISOString(),
       accountNumber: account.accountNumber,
-      // Extract metadata from settings if available
       ...(account.settings && typeof account.settings === 'object' && {
         bankCountry: (account.settings as AccountSettings)?.banking?.bankCountry,
         accountHolderName: (account.settings as AccountSettings)?.banking?.accountHolderName,
@@ -344,7 +659,6 @@ export class BankingService {
 
   /**
    * Sync an account with its banking provider
-   * Fetches latest transactions and balance
    */
   async syncAccount(userId: string, accountId: string): Promise<{
     syncLogId: string;
@@ -358,7 +672,6 @@ export class BankingService {
     const account = await this.prisma.account.findUnique({
       where: { id: accountId },
       include: {
-        user: true,
         syncLogs: {
           orderBy: { startedAt: 'desc' },
           take: 1,
@@ -374,7 +687,7 @@ export class BankingService {
       throw new BadRequestException('Unauthorized');
     }
 
-    if (!account.bankingProvider) {
+    if (!account.bankingProvider || !account.saltEdgeConnectionId) {
       throw new BadRequestException('Account is not linked to a banking provider');
     }
 
@@ -385,33 +698,24 @@ export class BankingService {
         data: { syncStatus: BankingSyncStatus.SYNCING },
       });
 
-      // Get provider and connection
-      const bankingProvider = this.getProviderForConnection(account.bankingProvider);
-      const connection = await this.prisma.bankingConnection.findFirst({
-        where: {
-          userId,
-          provider: account.bankingProvider,
-        },
-      });
+      const saltEdgeProvider = this.providerFactory.getSaltEdgeProvider();
 
-      if (!connection) {
-        throw new Error('Banking connection not found');
-      }
-
-      const providerConnectionId = this.getProviderConnectionId(connection);
-      const providerAccountId = this.getProviderAccountId(account);
-
-      if (!providerConnectionId || !providerAccountId) {
-        throw new Error('Provider IDs not found');
-      }
-
-      // Perform sync
       const fromDate = account.syncLogs[0]?.completedAt || new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
-      const syncResult = await bankingProvider.syncAccount(
-        providerConnectionId,
-        providerAccountId,
+      const syncResult = await saltEdgeProvider.syncAccount(
+        account.saltEdgeConnectionId,
+        account.saltEdgeAccountId!,
         fromDate,
       );
+
+      // Store transactions
+      let storedTransactionsCount = 0;
+      if (syncResult.transactions && syncResult.transactions.length > 0) {
+        storedTransactionsCount = await this.storeTransactions(
+          accountId,
+          account.userId,
+          syncResult.transactions,
+        );
+      }
 
       // Store sync log
       const syncLog = await this.prisma.bankingSyncLog.create({
@@ -422,35 +726,38 @@ export class BankingService {
           startedAt: syncResult.startedAt,
           completedAt: syncResult.completedAt,
           accountsSynced: syncResult.accountsSynced,
-          transactionsSynced: syncResult.transactionsSynced,
+          transactionsSynced: storedTransactionsCount,
           balanceUpdated: syncResult.balanceUpdated,
           error: syncResult.error,
           errorCode: syncResult.errorCode,
         },
       });
 
-      // Update account sync status
+      // Update account sync status and balance
       await this.prisma.account.update({
         where: { id: accountId },
-        data: { syncStatus: syncResult.status },
+        data: {
+          syncStatus: syncResult.status,
+          lastSyncAt: new Date(),
+          ...(syncResult.balance !== undefined && { currentBalance: syncResult.balance }),
+        },
       });
 
       this.logger.log(
-        `Account sync completed: ${syncResult.transactionsSynced} transactions, status: ${syncResult.status}`,
+        `Account sync completed: ${storedTransactionsCount} transactions stored, status: ${syncResult.status}`,
       );
 
       return {
         syncLogId: syncLog.id,
         status: syncResult.status,
-        transactionsSynced: syncResult.transactionsSynced,
+        transactionsSynced: storedTransactionsCount,
         balanceUpdated: syncResult.balanceUpdated,
         error: syncResult.error,
       };
     } catch (error) {
       this.logger.error('Account sync failed', error);
 
-      // Mark account sync as failed
-      const _syncLog = await this.prisma.bankingSyncLog.create({
+      await this.prisma.bankingSyncLog.create({
         data: {
           accountId,
           provider: account.bankingProvider,
@@ -474,13 +781,100 @@ export class BankingService {
   }
 
   /**
+   * Map account type string to enum
+   */
+  private mapAccountType(type: string): AccountType {
+    const typeMap: Record<string, AccountType> = {
+      checking: AccountType.CHECKING,
+      savings: AccountType.SAVINGS,
+      credit: AccountType.CREDIT_CARD,
+      credit_card: AccountType.CREDIT_CARD,
+      loan: AccountType.LOAN,
+      mortgage: AccountType.MORTGAGE,
+      investment: AccountType.INVESTMENT,
+    };
+    return typeMap[type?.toLowerCase()] || AccountType.OTHER;
+  }
+
+  /**
+   * Store transactions from a sync operation
+   * Uses upsert pattern to handle duplicates
+   */
+  private async storeTransactions(
+    accountId: string,
+    userId: string,
+    transactions: BankingTransactionData[],
+  ): Promise<number> {
+    let storedCount = 0;
+
+    for (const tx of transactions) {
+      try {
+        // Check if transaction already exists
+        const existing = await this.prisma.transaction.findFirst({
+          where: { saltEdgeTransactionId: tx.id },
+        });
+
+        if (existing) {
+          // Update existing transaction
+          await this.prisma.transaction.update({
+            where: { id: existing.id },
+            data: {
+              amount: Math.abs(tx.amount),
+              status: this.mapTransactionStatus(tx.status),
+              description: tx.description,
+              merchantName: tx.merchant,
+              reference: tx.reference,
+              isPending: tx.status === 'pending',
+            },
+          });
+        } else {
+          // Create new transaction
+          await this.prisma.transaction.create({
+            data: {
+              accountId,
+              amount: Math.abs(tx.amount),
+              type: tx.type === 'DEBIT' ? TransactionType.DEBIT : TransactionType.CREDIT,
+              status: this.mapTransactionStatus(tx.status),
+              source: TransactionSource.SALTEDGE,
+              currency: 'EUR', // Default for SaltEdge, should be from account
+              date: new Date(tx.date),
+              description: tx.description,
+              merchantName: tx.merchant,
+              reference: tx.reference,
+              isPending: tx.status === 'pending',
+              saltEdgeTransactionId: tx.id,
+            },
+          });
+          storedCount++;
+        }
+      } catch (error) {
+        this.logger.warn(`Failed to store transaction ${tx.id}: ${error.message}`);
+      }
+    }
+
+    this.logger.log(`Stored ${storedCount} new transactions out of ${transactions.length}`);
+    return storedCount;
+  }
+
+  /**
+   * Map transaction status from provider to Prisma enum
+   */
+  private mapTransactionStatus(status: 'pending' | 'completed' | 'cancelled'): TransactionStatus {
+    const statusMap: Record<string, TransactionStatus> = {
+      pending: TransactionStatus.PENDING,
+      completed: TransactionStatus.POSTED,
+      cancelled: TransactionStatus.CANCELLED,
+    };
+    return statusMap[status] || TransactionStatus.POSTED;
+  }
+
+  /**
    * Get provider-specific connection ID from banking connection
    */
   private getProviderConnectionId(connection: BankingConnection): string | null {
     switch (connection.provider) {
       case BankingProvider.SALTEDGE:
         return connection.saltEdgeConnectionId;
-      // Add other providers as implemented
       default:
         return null;
     }
@@ -493,7 +887,6 @@ export class BankingService {
     switch (account.bankingProvider) {
       case BankingProvider.SALTEDGE:
         return account.saltEdgeAccountId;
-      // Add other providers as implemented
       default:
         return null;
     }
@@ -501,7 +894,6 @@ export class BankingService {
 
   /**
    * Revoke banking connection
-   * Called when user wants to disconnect a bank
    */
   async revokeBankingConnection(userId: string, connectionId: string): Promise<void> {
     this.logger.log(`Revoking banking connection ${connectionId} for user ${userId}`);
@@ -526,7 +918,7 @@ export class BankingService {
         await bankingProvider.revokeConnection(providerConnectionId);
       }
 
-      // Update connection status and linked accounts
+      // Update connection status
       await this.prisma.bankingConnection.update({
         where: { id: connectionId },
         data: { status: BankingConnectionStatus.REVOKED },
@@ -536,7 +928,7 @@ export class BankingService {
       await this.prisma.account.updateMany({
         where: {
           userId,
-          bankingProvider: connection.provider,
+          saltEdgeConnectionId: providerConnectionId,
         },
         data: { syncStatus: BankingSyncStatus.DISCONNECTED },
       });
@@ -544,9 +936,7 @@ export class BankingService {
       this.logger.log(`Banking connection revoked: ${connectionId}`);
     } catch (error) {
       this.logger.error('Failed to revoke banking connection', error);
-      throw new BadRequestException(
-        `Failed to revoke connection: ${error.message}`,
-      );
+      throw new BadRequestException(`Failed to revoke connection: ${error.message}`);
     }
   }
 
@@ -562,5 +952,17 @@ export class BankingService {
    */
   isBankingEnabled(): boolean {
     return this.bankingIntegrationEnabled;
+  }
+
+  /**
+   * Get fake providers for testing (country XF)
+   */
+  async getFakeProviders(): Promise<unknown[]> {
+    if (!this.bankingIntegrationEnabled) {
+      throw new BadRequestException('Banking integration is not enabled');
+    }
+
+    const saltEdgeProvider = this.providerFactory.getSaltEdgeProvider();
+    return saltEdgeProvider.getFakeProviders();
   }
 }

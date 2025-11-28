@@ -4,6 +4,7 @@ import { SaltEdgeProvider } from './providers/saltedge.provider';
 import { MockBankingProvider } from './providers/__mocks__/mock-banking.provider';
 import { BankingService, BankingProviderFactory } from './services/banking.service';
 import { BankingController } from './banking.controller';
+import { WebhookController } from './controllers/webhook.controller';
 
 /**
  * BankingModule - Handles all banking integrations
@@ -49,7 +50,7 @@ import { BankingController } from './banking.controller';
  */
 @Module({
   imports: [ConfigModule],
-  controllers: [BankingController],
+  controllers: [BankingController, WebhookController],
   providers: [
     // Conditional provider injection based on environment
     {

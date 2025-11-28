@@ -135,6 +135,11 @@ export class BankingController {
       const result = await this.bankingService.initiateBankingLink(
         user.id,
         body?.provider || BankingProvider.SALTEDGE,
+        {
+          providerCode: body?.providerCode,
+          countryCode: body?.countryCode,
+          returnTo: body?.returnTo,
+        },
       );
       return result;
     } catch (error) {
@@ -204,13 +209,14 @@ export class BankingController {
     }
 
     this.logger.log(
-      `Completing banking link for user ${user.id}, connection ${body.connectionId}`,
+      `Completing banking link for user ${user.id}, connection ${body.connectionId}, saltEdge: ${body.saltEdgeConnectionId || 'not provided'}`,
     );
 
     try {
       const accounts = await this.bankingService.completeBankingLink(
         user.id,
         body.connectionId,
+        body.saltEdgeConnectionId,
       );
 
       // Store the accounts
@@ -443,6 +449,48 @@ export class BankingController {
       };
     } catch (error) {
       this.logger.error('Failed to fetch available providers', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get fake providers for testing
+   *
+   * Returns a list of fake banking providers (country code XF) for testing.
+   * These providers simulate real banks with test credentials:
+   * - username: "username"
+   * - password: "secret"
+   *
+   * @example
+   * GET /api/banking/fake-providers
+   * Authorization: Bearer {token}
+   *
+   * Response:
+   * [
+   *   { "code": "fakebank_simple_xf", "name": "Fake Bank Simple" },
+   *   { "code": "fakebank_oauth_xf", "name": "Fake Bank OAuth" }
+   * ]
+   */
+  @Get('fake-providers')
+  @ApiOperation({
+    summary: 'Get fake providers for testing',
+    description: 'List fake banking providers (country XF) for development testing',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'List of fake providers',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Banking integration not enabled',
+  })
+  async getFakeProviders(): Promise<unknown[]> {
+    this.logger.log('Fetching fake providers for testing');
+
+    try {
+      return await this.bankingService.getFakeProviders();
+    } catch (error) {
+      this.logger.error('Failed to fetch fake providers', error);
       throw error;
     }
   }

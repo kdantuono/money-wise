@@ -36,7 +36,8 @@ const PUBLIC_ROUTES = [
   '/about',
   '/contact',
   '/privacy',
-  '/terms'
+  '/terms',
+  '/banking/callback'  // OAuth callback needs to be public for cross-origin redirects
 ]
 
 /**
@@ -44,6 +45,16 @@ const PUBLIC_ROUTES = [
  */
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
+
+  // Check if route is explicitly public (takes priority over protected)
+  const isPublicRoute = PUBLIC_ROUTES.some(route =>
+    pathname === route || pathname.startsWith(route + '/')
+  )
+
+  // If explicitly public, allow access
+  if (isPublicRoute) {
+    return NextResponse.next()
+  }
 
   // Check if route requires authentication
   const isProtectedRoute = PROTECTED_ROUTES.some(route =>

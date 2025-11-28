@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 
 /**
  * BankingLinkButton Component
@@ -47,6 +47,52 @@ export function BankingLinkButton({
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   /**
+   * Handle OAuth message from popup callback
+   */
+  const handleOAuthMessage = useCallback(
+    (event: MessageEvent) => {
+      // Security: only accept messages from our own origin
+      if (event.origin !== window.location.origin) {
+        return;
+      }
+
+      const data = event.data;
+      if (!data || typeof data !== 'object') {
+        return;
+      }
+
+      if (data.type === 'BANKING_OAUTH_COMPLETE') {
+        // Clean up
+        if (pollIntervalRef.current) {
+          clearInterval(pollIntervalRef.current);
+        }
+        setIsLoading(false);
+        onSuccess?.();
+      } else if (data.type === 'BANKING_OAUTH_ERROR') {
+        // Clean up
+        if (pollIntervalRef.current) {
+          clearInterval(pollIntervalRef.current);
+        }
+        setIsLoading(false);
+        const errorMessage = data.error || 'OAuth authentication failed';
+        setError(errorMessage);
+        onError?.(errorMessage);
+      }
+    },
+    [onSuccess, onError]
+  );
+
+  /**
+   * Listen for messages from popup
+   */
+  useEffect(() => {
+    window.addEventListener('message', handleOAuthMessage);
+    return () => {
+      window.removeEventListener('message', handleOAuthMessage);
+    };
+  }, [handleOAuthMessage]);
+
+  /**
    * Check if popup is still open and user has returned
    */
   const checkPopupCompletion = useCallback(() => {
@@ -54,19 +100,18 @@ export function BankingLinkButton({
       return;
     }
 
-    // Check if popup was closed by the user
+    // Check if popup was closed by the user (without completing OAuth)
     if (popupRef.current.closed) {
       if (pollIntervalRef.current) {
         clearInterval(pollIntervalRef.current);
       }
       setIsLoading(false);
 
-      // Assuming successful if user completed OAuth flow
-      // In production, validate with backend that connection was completed
-      onSuccess?.();
+      // Don't call onSuccess here - wait for postMessage from callback page
+      // If popup was closed without completing, user cancelled
       return;
     }
-  }, [onSuccess]);
+  }, []);
 
   /**
    * Initiate the OAuth flow

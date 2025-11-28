@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useForm } from 'react-hook-form'
@@ -32,6 +32,11 @@ export default function LoginPage() {
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
   })
+
+  // Clear any existing errors when component mounts
+  useEffect(() => {
+    clearError()
+  }, [clearError])
 
   const onSubmit = async (data: LoginFormData) => {
     try {

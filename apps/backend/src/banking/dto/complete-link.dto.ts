@@ -1,25 +1,38 @@
-import { IsUUID, IsNotEmpty } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { IsUUID, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 /**
  * Request DTO for completing banking link
  *
  * Called after user completes OAuth authorization to fetch and store linked accounts.
  *
+ * The `connectionId` is our internal UUID from the initiate-link response.
+ * The `saltEdgeConnectionId` is optional and provided when SaltEdge returns
+ * their connection_id in the OAuth redirect URL.
+ *
  * @example
  * {
- *   "connectionId": "550e8400-e29b-41d4-a716-446655440000"
+ *   "connectionId": "550e8400-e29b-41d4-a716-446655440000",
+ *   "saltEdgeConnectionId": "1234567890"
  * }
  */
 export class CompleteLinkRequestDto {
   @ApiProperty({
     format: 'uuid',
-    description: 'Connection ID from initiate-link response',
+    description: 'Our internal connection ID from initiate-link response',
     example: '550e8400-e29b-41d4-a716-446655440000',
   })
   @IsNotEmpty()
   @IsUUID()
   connectionId: string;
+
+  @ApiPropertyOptional({
+    description: 'SaltEdge connection_id from OAuth redirect URL (optional, provided if available)',
+    example: '1234567890',
+  })
+  @IsOptional()
+  @IsString()
+  saltEdgeConnectionId?: string;
 }
 
 /**

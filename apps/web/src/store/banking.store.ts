@@ -129,10 +129,11 @@ export interface BankingState {
    *
    * Called after OAuth to fetch and store linked accounts.
    *
-   * @param connectionId - Connection ID from initiate-link
+   * @param connectionId - Our internal connection ID from initiate-link
+   * @param saltEdgeConnectionId - Optional SaltEdge connection_id from redirect URL
    * @throws {BankingApiError} If API call fails
    */
-  completeLinking(connectionId: string): Promise<void>;
+  completeLinking(connectionId: string, saltEdgeConnectionId?: string): Promise<void>;
 
   /**
    * Fetch all linked accounts
@@ -314,14 +315,14 @@ export const useBankingStore = create<BankingState>()(
         }
       },
 
-      completeLinking: async (connectionId) => {
+      completeLinking: async (connectionId, saltEdgeConnectionId) => {
         set((state) => {
           state.isLinking = true;
           state.linkError = null;
         });
 
         try {
-          const response = await bankingClient.completeLink(connectionId);
+          const response = await bankingClient.completeLink(connectionId, saltEdgeConnectionId);
 
           set((state) => {
             state.isLinking = false;

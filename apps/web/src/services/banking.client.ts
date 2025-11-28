@@ -258,7 +258,7 @@ export class ServerError extends BankingApiError {
  */
 function getApiBaseUrl(): string {
   const baseUrl =
-    process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+    process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
   return baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
 }
 
@@ -445,7 +445,7 @@ export const bankingClient = {
   async initiateLink(
     provider?: BankingProvider
   ): Promise<InitiateLinkResponse> {
-    return request<InitiateLinkResponse>('/banking/initiate-link', {
+    return request<InitiateLinkResponse>('/api/banking/initiate-link', {
       method: 'POST',
       body: JSON.stringify(provider ? { provider } : {}),
     });
@@ -457,7 +457,8 @@ export const bankingClient = {
    * Called after user completes OAuth authorization.
    * Fetches the linked accounts and stores them in the database.
    *
-   * @param connectionId Connection ID from initiate-link response
+   * @param connectionId Connection ID from initiate-link response (our internal UUID)
+   * @param saltEdgeConnectionId Optional SaltEdge connection_id from redirect URL
    * @returns Array of linked accounts
    * @throws {AuthenticationError} If not authenticated
    * @throws {ValidationError} If connectionId is invalid
@@ -467,17 +468,22 @@ export const bankingClient = {
    * @example
    * ```typescript
    * // After OAuth redirect back to app
-   * const connectionId = sessionStorage.getItem('banking_connection_id');
+   * const connectionId = searchParams.get('connectionId');
+   * const saltEdgeConnectionId = searchParams.get('connection_id');
    * if (connectionId) {
-   *   const { accounts } = await bankingClient.completeLink(connectionId);
+   *   const { accounts } = await bankingClient.completeLink(connectionId, saltEdgeConnectionId);
    *   console.log(`Linked ${accounts.length} accounts`);
    * }
    * ```
    */
-  async completeLink(connectionId: string): Promise<CompleteLinkResponse> {
-    return request<CompleteLinkResponse>('/banking/complete-link', {
+  async completeLink(connectionId: string, saltEdgeConnectionId?: string): Promise<CompleteLinkResponse> {
+    const body: { connectionId: string; saltEdgeConnectionId?: string } = { connectionId };
+    if (saltEdgeConnectionId) {
+      body.saltEdgeConnectionId = saltEdgeConnectionId;
+    }
+    return request<CompleteLinkResponse>('/api/banking/complete-link', {
       method: 'POST',
-      body: JSON.stringify({ connectionId }),
+      body: JSON.stringify(body),
     });
   },
 
@@ -499,7 +505,7 @@ export const bankingClient = {
    * ```
    */
   async getAccounts(): Promise<GetAccountsResponse> {
-    return request<GetAccountsResponse>('/banking/accounts', {
+    return request<GetAccountsResponse>('/api/banking/accounts', {
       method: 'GET',
     });
   },
@@ -528,7 +534,7 @@ export const bankingClient = {
    * ```
    */
   async syncAccount(accountId: string): Promise<SyncResponse> {
-    return request<SyncResponse>(`/banking/sync/${accountId}`, {
+    return request<SyncResponse>(`/api/banking/sync/${accountId}`, {
       method: 'POST',
       body: JSON.stringify({}),
     });
@@ -554,7 +560,7 @@ export const bankingClient = {
    * ```
    */
   async revokeConnection(connectionId: string): Promise<void> {
-    return request<void>(`/banking/revoke/${connectionId}`, {
+    return request<void>(`/api/banking/revoke/${connectionId}`, {
       method: 'DELETE',
     });
   },
@@ -577,7 +583,7 @@ export const bankingClient = {
    * ```
    */
   async getProviders(): Promise<AvailableProvidersResponse> {
-    return request<AvailableProvidersResponse>('/banking/providers', {
+    return request<AvailableProvidersResponse>('/api/banking/providers', {
       method: 'GET',
     });
   },
