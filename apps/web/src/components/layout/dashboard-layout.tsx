@@ -8,7 +8,7 @@
 'use client';
 
 import { ReactNode, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useAuthStore } from '@/stores/auth-store';
 import {
@@ -42,6 +42,7 @@ const navigation = [
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const { user, logout } = useAuthStore();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -85,17 +86,29 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
           {/* Navigation Links */}
           <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
-            {navigation.map((item) => (
-              <Link
-                key={item.name}
-                href={item.href}
-                className="flex items-center px-4 py-3 text-sm font-medium text-gray-700 rounded-lg hover:bg-blue-50 hover:text-blue-600 transition-colors group"
-                data-testid={`nav-${item.name.toLowerCase()}`}
-              >
-                <item.icon className="mr-3 h-5 w-5 text-gray-400 group-hover:text-blue-600" />
-                {item.name}
-              </Link>
-            ))}
+            {navigation.map((item) => {
+              const isActive = pathname === item.href;
+              return (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className={`flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors group ${
+                    isActive
+                      ? 'bg-blue-100 text-blue-600'
+                      : 'text-gray-700 hover:bg-blue-50 hover:text-blue-600'
+                  }`}
+                  data-testid={`nav-${item.name.toLowerCase()}`}
+                  aria-current={isActive ? 'page' : undefined}
+                >
+                  <item.icon
+                    className={`mr-3 h-5 w-5 ${
+                      isActive ? 'text-blue-600' : 'text-gray-400 group-hover:text-blue-600'
+                    }`}
+                  />
+                  {item.name}
+                </Link>
+              );
+            })}
           </nav>
 
           {/* User Info */}

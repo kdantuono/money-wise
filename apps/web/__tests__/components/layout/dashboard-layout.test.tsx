@@ -17,8 +17,11 @@ const mockRouter = {
   prefetch: vi.fn(),
 };
 
+let mockPathname = '/dashboard';
+
 vi.mock('next/navigation', () => ({
   useRouter: () => mockRouter,
+  usePathname: () => mockPathname,
 }));
 
 // Mock auth store
@@ -41,6 +44,7 @@ describe('DashboardLayout Component', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockPush.mockClear();
+    mockPathname = '/dashboard';
 
     mockUseAuthStore.mockReturnValue({
       user: mockUser,
@@ -94,7 +98,8 @@ describe('DashboardLayout Component', () => {
       expect(screen.getAllByText('Dashboard').length).toBeGreaterThan(0);
       expect(screen.getAllByText('Accounts').length).toBeGreaterThan(0);
       expect(screen.getAllByText('Transactions').length).toBeGreaterThan(0);
-      expect(screen.getAllByText('Analytics').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('Investments').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('Goals').length).toBeGreaterThan(0);
       expect(screen.getAllByText('Settings').length).toBeGreaterThan(0);
     });
 
@@ -109,10 +114,10 @@ describe('DashboardLayout Component', () => {
       expect(dashboardLinks[0]).toHaveAttribute('href', '/dashboard');
 
       const accountsLinks = screen.getAllByRole('link', { name: /accounts/i });
-      expect(accountsLinks[0]).toHaveAttribute('href', '/accounts');
+      expect(accountsLinks[0]).toHaveAttribute('href', '/dashboard/accounts');
 
       const transactionsLinks = screen.getAllByRole('link', { name: /transactions/i });
-      expect(transactionsLinks[0]).toHaveAttribute('href', '/transactions');
+      expect(transactionsLinks[0]).toHaveAttribute('href', '/dashboard/transactions');
     });
 
     it('renders navigation icons', () => {
@@ -433,6 +438,90 @@ describe('DashboardLayout Component', () => {
 
       const buttons = container.querySelectorAll('button[type="button"]');
       expect(buttons.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('Active Navigation State', () => {
+    it('highlights Dashboard nav item when on /dashboard', () => {
+      mockPathname = '/dashboard';
+      render(
+        <DashboardLayout>
+          <div>Content</div>
+        </DashboardLayout>
+      );
+
+      const dashboardLink = screen.getByTestId('nav-dashboard');
+      expect(dashboardLink).toHaveClass('bg-blue-100', 'text-blue-600');
+    });
+
+    it('highlights Accounts nav item when on /dashboard/accounts', () => {
+      mockPathname = '/dashboard/accounts';
+      render(
+        <DashboardLayout>
+          <div>Content</div>
+        </DashboardLayout>
+      );
+
+      const accountsLink = screen.getByTestId('nav-accounts');
+      expect(accountsLink).toHaveClass('bg-blue-100', 'text-blue-600');
+
+      // Dashboard should not be active
+      const dashboardLink = screen.getByTestId('nav-dashboard');
+      expect(dashboardLink).not.toHaveClass('bg-blue-100');
+    });
+
+    it('highlights Transactions nav item when on /dashboard/transactions', () => {
+      mockPathname = '/dashboard/transactions';
+      render(
+        <DashboardLayout>
+          <div>Content</div>
+        </DashboardLayout>
+      );
+
+      const transactionsLink = screen.getByTestId('nav-transactions');
+      expect(transactionsLink).toHaveClass('bg-blue-100', 'text-blue-600');
+    });
+
+    it('active nav item has aria-current="page" attribute', () => {
+      mockPathname = '/dashboard/accounts';
+      render(
+        <DashboardLayout>
+          <div>Content</div>
+        </DashboardLayout>
+      );
+
+      const accountsLink = screen.getByTestId('nav-accounts');
+      expect(accountsLink).toHaveAttribute('aria-current', 'page');
+
+      // Inactive items should not have aria-current
+      const dashboardLink = screen.getByTestId('nav-dashboard');
+      expect(dashboardLink).not.toHaveAttribute('aria-current');
+    });
+
+    it('only one nav item is active at a time', () => {
+      mockPathname = '/dashboard/investments';
+      const { container } = render(
+        <DashboardLayout>
+          <div>Content</div>
+        </DashboardLayout>
+      );
+
+      const activeLinks = container.querySelectorAll('[aria-current="page"]');
+      expect(activeLinks.length).toBe(1);
+      expect(activeLinks[0]).toHaveAttribute('data-testid', 'nav-investments');
+    });
+
+    it('inactive nav items have default styling', () => {
+      mockPathname = '/dashboard';
+      render(
+        <DashboardLayout>
+          <div>Content</div>
+        </DashboardLayout>
+      );
+
+      const accountsLink = screen.getByTestId('nav-accounts');
+      expect(accountsLink).toHaveClass('text-gray-700');
+      expect(accountsLink).not.toHaveClass('bg-blue-100');
     });
   });
 });
