@@ -1,6 +1,7 @@
 'use client';
 
-import { CreditCard } from 'lucide-react';
+import { CreditCard, Plus } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 export default function TransactionsPage() {
   return (
@@ -25,8 +26,12 @@ export default function TransactionsPage() {
         <p className="text-gray-500 mb-6 max-w-sm mx-auto">
           Once you connect your accounts, your transactions will appear here automatically.
         </p>
-        <p className="text-sm text-gray-400">
-          Coming soon...
+        <Button disabled className="gap-2" title="Coming soon">
+          <Plus className="h-4 w-4" />
+          Add Transaction
+        </Button>
+        <p className="text-xs text-gray-400 mt-3">
+          Coming soon
         </p>
       </div>
     </div>

@@ -1,6 +1,7 @@
 'use client';
 
-import { Target } from 'lucide-react';
+import { Target, Plus } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 export default function GoalsPage() {
   return (
@@ -25,8 +26,12 @@ export default function GoalsPage() {
         <p className="text-gray-500 mb-6 max-w-sm mx-auto">
           Create savings goals, debt payoff targets, or investment milestones to stay on track.
         </p>
-        <p className="text-sm text-gray-400">
-          Coming soon...
+        <Button disabled className="gap-2" title="Coming soon">
+          <Plus className="h-4 w-4" />
+          Create Goal
+        </Button>
+        <p className="text-xs text-gray-400 mt-3">
+          Coming soon
         </p>
       </div>
     </div>

@@ -1,6 +1,7 @@
 'use client';
 
-import { TrendingUp } from 'lucide-react';
+import { TrendingUp, Plus } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 export default function InvestmentsPage() {
   return (
@@ -25,8 +26,12 @@ export default function InvestmentsPage() {
         <p className="text-gray-500 mb-6 max-w-sm mx-auto">
           Start tracking your stocks, ETFs, crypto, and other investments in one place.
         </p>
-        <p className="text-sm text-gray-400">
-          Coming soon...
+        <Button disabled className="gap-2" title="Coming soon">
+          <Plus className="h-4 w-4" />
+          Add Investment
+        </Button>
+        <p className="text-xs text-gray-400 mt-3">
+          Coming soon
         </p>
       </div>
     </div>

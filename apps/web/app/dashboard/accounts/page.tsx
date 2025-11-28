@@ -1,6 +1,7 @@
 'use client';
 
-import { Wallet } from 'lucide-react';
+import { Wallet, Plus } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 export default function AccountsPage() {
   return (
@@ -25,8 +26,12 @@ export default function AccountsPage() {
         <p className="text-gray-500 mb-6 max-w-sm mx-auto">
           Connect your bank accounts to automatically track your transactions and balances.
         </p>
-        <p className="text-sm text-gray-400">
-          Coming soon...
+        <Button disabled className="gap-2" title="Coming soon">
+          <Plus className="h-4 w-4" />
+          Connect Account
+        </Button>
+        <p className="text-xs text-gray-400 mt-3">
+          Coming soon
         </p>
       </div>
     </div>
