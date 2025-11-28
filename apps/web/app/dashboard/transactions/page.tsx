@@ -1,9 +1,6 @@
-import { CreditCard } from 'lucide-react';
+'use client';
 
-export const metadata = {
-  title: 'Transactions | MoneyWise',
-  description: 'View and manage your financial transactions',
-};
+import { CreditCard } from 'lucide-react';
 
 export default function TransactionsPage() {
   return (
@@ -15,7 +12,7 @@ export default function TransactionsPage() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Transactions</h1>
           <p className="text-sm text-gray-500">
-            View and manage your financial transactions
+            View and manage your transaction history
           </p>
         </div>
       </div>
@@ -26,7 +23,7 @@ export default function TransactionsPage() {
           No transactions yet
         </h2>
         <p className="text-gray-500 mb-6 max-w-sm mx-auto">
-          Your transactions will appear here once you connect a bank account or add them manually.
+          Once you connect your accounts, your transactions will appear here automatically.
         </p>
         <p className="text-sm text-gray-400">
           Coming soon...

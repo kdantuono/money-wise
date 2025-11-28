@@ -1,9 +1,6 @@
-import { Target } from 'lucide-react';
+'use client';
 
-export const metadata = {
-  title: 'Goals | MoneyWise',
-  description: 'Set and track your financial goals',
-};
+import { Target } from 'lucide-react';
 
 export default function GoalsPage() {
   return (

@@ -1,9 +1,6 @@
-import { Wallet } from 'lucide-react';
+'use client';
 
-export const metadata = {
-  title: 'Accounts | MoneyWise',
-  description: 'Manage your bank accounts and financial connections',
-};
+import { Wallet } from 'lucide-react';
 
 export default function AccountsPage() {
   return (

@@ -1,9 +1,6 @@
-import { Settings } from 'lucide-react';
+'use client';
 
-export const metadata = {
-  title: 'Settings | MoneyWise',
-  description: 'Manage your account settings and preferences',
-};
+import { Settings } from 'lucide-react';
 
 export default function SettingsPage() {
   return (

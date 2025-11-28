@@ -1,9 +1,6 @@
-import { TrendingUp } from 'lucide-react';
+'use client';
 
-export const metadata = {
-  title: 'Investments | MoneyWise',
-  description: 'Track and manage your investment portfolio',
-};
+import { TrendingUp } from 'lucide-react';
 
 export default function InvestmentsPage() {
   return (
