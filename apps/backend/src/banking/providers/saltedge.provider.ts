@@ -54,7 +54,8 @@ interface SaltEdgeTransaction {
 }
 
 interface SaltEdgeCustomer {
-  id: string;
+  id?: string;           // v5 API response field
+  customer_id?: string;  // v6 API response field
   identifier: string;
   secret?: string;
 }
@@ -204,8 +205,10 @@ export class SaltEdgeProvider implements IBankingProvider {
     });
 
     if (response.status >= 400) {
-      const errorMessage = response.data?.error_message || response.data?.error || response.statusText;
-      const errorClass = response.data?.error_class || 'UnknownError';
+      // Handle SaltEdge v6 error format: { error: { class, message } }
+      const errorData = response.data?.error;
+      const errorMessage = errorData?.message || response.data?.error_message || response.statusText;
+      const errorClass = errorData?.class || response.data?.error_class || 'UnknownError';
       this.logger.error(`SaltEdge API error: ${errorClass} - ${errorMessage}`, {
         status: response.status,
         path,
@@ -238,7 +241,7 @@ export class SaltEdgeProvider implements IBankingProvider {
   // ============ Customer Management (v6 Required) ============
 
   /**
-   * Create a customer in SaltEdge
+   * Create a customer in SaltEdge (or get existing one if duplicate)
    * Required before creating connections in v6
    *
    * @param identifier Unique identifier for customer (e.g., hashed user ID)
@@ -246,12 +249,50 @@ export class SaltEdgeProvider implements IBankingProvider {
   async createCustomer(identifier: string): Promise<SaltEdgeCustomer> {
     this.logger.debug(`Creating SaltEdge customer: ${identifier}`);
 
-    const response = await this.request<{ data: SaltEdgeCustomer }>('POST', '/customers', {
-      data: { identifier },
-    });
+    try {
+      const response = await this.request<{ data: SaltEdgeCustomer }>('POST', '/customers', {
+        data: { identifier },
+      });
 
-    this.logger.log(`Customer created: ${response.data.id}`);
-    return response.data;
+      const customerId = response.data.customer_id || response.data.id;
+      this.logger.log(`Customer created: ${customerId}`);
+      // Normalize to use 'id' field for consistency
+      return { ...response.data, id: customerId };
+    } catch (error) {
+      // If customer already exists, look it up
+      if (error.message?.includes('DuplicatedCustomer')) {
+        this.logger.log(`Customer already exists, looking up by identifier: ${identifier}`);
+        const existing = await this.getCustomerByIdentifier(identifier);
+        if (existing) {
+          return existing;
+        }
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Look up customer by identifier
+   * v6 API: GET /customers/{customer_identifier}
+   */
+  async getCustomerByIdentifier(identifier: string): Promise<SaltEdgeCustomer | null> {
+    try {
+      const response = await this.request<{ data: SaltEdgeCustomer }>(
+        'GET',
+        `/customers/${encodeURIComponent(identifier)}`,
+      );
+      this.logger.debug(`Customer lookup response: ${JSON.stringify(response)}`);
+      if (response.data) {
+        const customerId = response.data.customer_id || response.data.id;
+        this.logger.log(`Found existing customer: ${customerId}`);
+        // Normalize to use 'id' field for consistency
+        return { ...response.data, id: customerId };
+      }
+      return null;
+    } catch (error) {
+      this.logger.warn(`Failed to lookup customer by identifier: ${error.message}`);
+      return null;
+    }
   }
 
   /**
@@ -300,14 +341,16 @@ export class SaltEdgeProvider implements IBankingProvider {
   ): Promise<{ connectUrl: string; expiresAt: Date }> {
     this.logger.debug(`Creating connect session for customer: ${customerId}`);
 
+    // v6 API uses /connections/connect instead of /connect_sessions/create
+    // Scopes must be one of: accounts, holder_info, transactions
     const response = await this.request<{ data: { connect_url: string; expires_at: string } }>(
       'POST',
-      '/connect_sessions/create',
+      '/connections/connect',
       {
         data: {
           customer_id: customerId,
           consent: {
-            scopes: ['account_details', 'transactions_details'],
+            scopes: ['accounts', 'transactions'],
             from_date: this.getDateDaysAgo(90), // 90 days history
           },
           attempt: {
