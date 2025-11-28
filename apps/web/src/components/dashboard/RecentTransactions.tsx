@@ -212,7 +212,7 @@ function ArrowRightIcon() {
 
 export function RecentTransactions() {
   return (
-    <Card>
+    <Card data-testid="recent-transactions">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle className="text-lg font-semibold">
           Recent Transactions
