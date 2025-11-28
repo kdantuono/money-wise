@@ -466,6 +466,67 @@ export class SaltEdgeProvider implements IBankingProvider {
   }
 
   /**
+   * List connections for a customer
+   * Used as fallback when webhook doesn't arrive (e.g., local development)
+   */
+  async listConnectionsForCustomer(customerId: string): Promise<SaltEdgeConnection[]> {
+    this.logger.debug(`Listing connections for customer: ${customerId}`);
+
+    const response = await this.request<{ data: SaltEdgeConnection[] }>(
+      'GET',
+      `/connections?customer_id=${customerId}`,
+    );
+
+    const connections = response.data || [];
+    this.logger.log(`Found ${connections.length} connections for customer ${customerId}`);
+
+    // Log connection details for debugging
+    if (connections.length > 0) {
+      this.logger.debug(`Connection details: ${JSON.stringify(
+        connections.map(c => ({ id: c.id, status: c.status, created_at: c.created_at }))
+      )}`);
+    }
+
+    return connections;
+  }
+
+  /**
+   * Find the most recent active connection for a customer
+   * Useful for local development when webhooks aren't available
+   *
+   * Prioritizes recently created connections (within 5 minutes) regardless of status,
+   * since connections may not be immediately "active" after OAuth completion.
+   */
+  async findLatestActiveConnection(customerId: string): Promise<SaltEdgeConnection | null> {
+    const connections = await this.listConnectionsForCustomer(customerId);
+
+    // Sort by created_at descending
+    const sortedConnections = connections
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+    // First try to find a connection created in the last 5 minutes (regardless of status)
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+    const recentConnection = sortedConnections.find(c =>
+      new Date(c.created_at) > fiveMinutesAgo
+    );
+
+    if (recentConnection) {
+      this.logger.log(`Found recent connection (status: ${recentConnection.status}): ${recentConnection.id}`);
+      return recentConnection;
+    }
+
+    // Fallback: find most recent active connection
+    const activeConnection = sortedConnections.find(c => c.status === 'active');
+    if (activeConnection) {
+      this.logger.log(`Found active connection: ${activeConnection.id}`);
+      return activeConnection;
+    }
+
+    this.logger.warn(`No suitable connections found for customer ${customerId}`);
+    return null;
+  }
+
+  /**
    * Refresh connection to get latest data
    */
   async refreshConnection(connectionId: string): Promise<ConnectionStatusData> {
@@ -639,6 +700,8 @@ export class SaltEdgeProvider implements IBankingProvider {
         accountsSynced: 1,
         transactionsSynced: transactions.length,
         balanceUpdated: true,
+        balance,
+        transactions,
         startedAt,
         completedAt: new Date(),
       };

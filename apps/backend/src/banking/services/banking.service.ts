@@ -8,6 +8,9 @@ import {
   AccountType,
   AccountStatus,
   AccountSource,
+  TransactionType,
+  TransactionStatus,
+  TransactionSource,
   Account,
   BankingConnection,
   BankingCustomer,
@@ -18,6 +21,7 @@ import {
   IBankingProvider,
   IBankingProviderFactory,
   BankingAccountData,
+  BankingTransactionData,
 } from '../interfaces/banking-provider.interface';
 import { SaltEdgeProvider } from '../providers/saltedge.provider';
 import * as crypto from 'crypto';
@@ -453,6 +457,7 @@ export class BankingService {
 
     const connection = await this.prisma.bankingConnection.findUnique({
       where: { id: connectionId },
+      include: { customer: true },
     });
 
     if (!connection) {
@@ -464,11 +469,28 @@ export class BankingService {
     }
 
     // Use provided saltEdgeConnectionId or the one already stored
-    const effectiveSaltEdgeId = saltEdgeConnectionId || connection.saltEdgeConnectionId;
+    let effectiveSaltEdgeId = saltEdgeConnectionId || connection.saltEdgeConnectionId;
+
+    // Fallback: Poll SaltEdge for the latest connection if ID not available
+    // This handles local development where webhooks don't work
+    if (!effectiveSaltEdgeId && connection.customer?.saltEdgeCustomerId) {
+      this.logger.log('SaltEdge connection ID not in redirect URL, polling for latest connection...');
+
+      const saltEdgeProvider = this.providerFactory.getSaltEdgeProvider();
+      const latestConnection = await saltEdgeProvider.findLatestActiveConnection(
+        connection.customer.saltEdgeCustomerId,
+      );
+
+      if (latestConnection) {
+        effectiveSaltEdgeId = latestConnection.id;
+        this.logger.log(`Found active connection via polling: ${effectiveSaltEdgeId}`);
+      }
+    }
 
     if (!effectiveSaltEdgeId) {
       throw new BadRequestException(
-        'SaltEdge connection ID not available. The OAuth process may not have completed successfully.',
+        'SaltEdge connection ID not available. The OAuth process may not have completed successfully. ' +
+        'For local development without webhooks, ensure the connection was fully authorized in the SaltEdge widget.',
       );
     }
 
@@ -685,6 +707,16 @@ export class BankingService {
         fromDate,
       );
 
+      // Store transactions
+      let storedTransactionsCount = 0;
+      if (syncResult.transactions && syncResult.transactions.length > 0) {
+        storedTransactionsCount = await this.storeTransactions(
+          accountId,
+          account.userId,
+          syncResult.transactions,
+        );
+      }
+
       // Store sync log
       const syncLog = await this.prisma.bankingSyncLog.create({
         data: {
@@ -694,30 +726,31 @@ export class BankingService {
           startedAt: syncResult.startedAt,
           completedAt: syncResult.completedAt,
           accountsSynced: syncResult.accountsSynced,
-          transactionsSynced: syncResult.transactionsSynced,
+          transactionsSynced: storedTransactionsCount,
           balanceUpdated: syncResult.balanceUpdated,
           error: syncResult.error,
           errorCode: syncResult.errorCode,
         },
       });
 
-      // Update account sync status
+      // Update account sync status and balance
       await this.prisma.account.update({
         where: { id: accountId },
         data: {
           syncStatus: syncResult.status,
           lastSyncAt: new Date(),
+          ...(syncResult.balance !== undefined && { currentBalance: syncResult.balance }),
         },
       });
 
       this.logger.log(
-        `Account sync completed: ${syncResult.transactionsSynced} transactions, status: ${syncResult.status}`,
+        `Account sync completed: ${storedTransactionsCount} transactions stored, status: ${syncResult.status}`,
       );
 
       return {
         syncLogId: syncLog.id,
         status: syncResult.status,
-        transactionsSynced: syncResult.transactionsSynced,
+        transactionsSynced: storedTransactionsCount,
         balanceUpdated: syncResult.balanceUpdated,
         error: syncResult.error,
       };
@@ -761,6 +794,78 @@ export class BankingService {
       investment: AccountType.INVESTMENT,
     };
     return typeMap[type?.toLowerCase()] || AccountType.OTHER;
+  }
+
+  /**
+   * Store transactions from a sync operation
+   * Uses upsert pattern to handle duplicates
+   */
+  private async storeTransactions(
+    accountId: string,
+    userId: string,
+    transactions: BankingTransactionData[],
+  ): Promise<number> {
+    let storedCount = 0;
+
+    for (const tx of transactions) {
+      try {
+        // Check if transaction already exists
+        const existing = await this.prisma.transaction.findFirst({
+          where: { saltEdgeTransactionId: tx.id },
+        });
+
+        if (existing) {
+          // Update existing transaction
+          await this.prisma.transaction.update({
+            where: { id: existing.id },
+            data: {
+              amount: Math.abs(tx.amount),
+              status: this.mapTransactionStatus(tx.status),
+              description: tx.description,
+              merchantName: tx.merchant,
+              reference: tx.reference,
+              isPending: tx.status === 'pending',
+            },
+          });
+        } else {
+          // Create new transaction
+          await this.prisma.transaction.create({
+            data: {
+              accountId,
+              amount: Math.abs(tx.amount),
+              type: tx.type === 'DEBIT' ? TransactionType.DEBIT : TransactionType.CREDIT,
+              status: this.mapTransactionStatus(tx.status),
+              source: TransactionSource.SALTEDGE,
+              currency: 'EUR', // Default for SaltEdge, should be from account
+              date: new Date(tx.date),
+              description: tx.description,
+              merchantName: tx.merchant,
+              reference: tx.reference,
+              isPending: tx.status === 'pending',
+              saltEdgeTransactionId: tx.id,
+            },
+          });
+          storedCount++;
+        }
+      } catch (error) {
+        this.logger.warn(`Failed to store transaction ${tx.id}: ${error.message}`);
+      }
+    }
+
+    this.logger.log(`Stored ${storedCount} new transactions out of ${transactions.length}`);
+    return storedCount;
+  }
+
+  /**
+   * Map transaction status from provider to Prisma enum
+   */
+  private mapTransactionStatus(status: 'pending' | 'completed' | 'cancelled'): TransactionStatus {
+    const statusMap: Record<string, TransactionStatus> = {
+      pending: TransactionStatus.PENDING,
+      completed: TransactionStatus.POSTED,
+      cancelled: TransactionStatus.CANCELLED,
+    };
+    return statusMap[status] || TransactionStatus.POSTED;
   }
 
   /**

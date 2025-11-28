@@ -76,6 +76,10 @@ export interface BankingSyncResult {
   transactionsSynced: number;
   /** Whether balance was updated */
   balanceUpdated: boolean;
+  /** Updated balance value */
+  balance?: number;
+  /** Transactions fetched during sync */
+  transactions?: BankingTransactionData[];
   /** Error message if sync failed */
   error?: string;
   /** Error code for categorization */

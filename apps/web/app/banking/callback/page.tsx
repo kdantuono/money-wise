@@ -2,15 +2,16 @@
  * Banking OAuth Callback Handler
  *
  * Handles the OAuth redirect after user authorizes bank access on the provider's website.
- * Completes the linking process and redirects to the banking page.
+ * Completes the linking process and communicates results back to the opener window.
  *
  * Features:
  * - Extract connectionId and state from URL parameters
  * - Validate OAuth state for security
  * - Complete the linking process via API
  * - Show success/error feedback
- * - Auto-redirect to /banking after completion
- * - Handle error scenarios gracefully
+ * - Detect popup context and communicate with opener window
+ * - Close popup and refresh opener after completion
+ * - Fallback to redirect if not in popup
  *
  * @module app/banking/callback/page
  *
@@ -19,7 +20,8 @@
  * // 1. User clicks "Link Bank" → redirectUrl opens in popup
  * // 2. SaltEdge OAuth → User authorizes → Redirects to this page
  * // 3. Extract connectionId from URL → Call completeLinking()
- * // 4. Show success → Auto-redirect to /banking
+ * // 4. Notify opener window → Close popup
+ * // 5. Opener refreshes account list
  */
 
 'use client';
@@ -34,6 +36,26 @@ import { CheckCircle2, XCircle, Loader2, ArrowLeft } from 'lucide-react';
  * OAuth callback status type
  */
 type CallbackStatus = 'processing' | 'success' | 'error' | 'invalid';
+
+/**
+ * Check if current window is a popup opened by another window
+ */
+function isPopupWindow(): boolean {
+  try {
+    return window.opener !== null && window.opener !== window;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Message types for popup-opener communication
+ */
+interface OAuthMessage {
+  type: 'BANKING_OAUTH_COMPLETE' | 'BANKING_OAUTH_ERROR';
+  accountCount?: number;
+  error?: string;
+}
 
 /**
  * BankingCallbackContent Component
@@ -54,7 +76,34 @@ function BankingCallbackContent() {
   const [status, setStatus] = useState<CallbackStatus>('processing');
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [accountCount, setAccountCount] = useState<number>(0);
-  const [redirectCountdown, setRedirectCountdown] = useState<number>(5);
+  const [redirectCountdown, setRedirectCountdown] = useState<number>(3);
+  const [isPopup, setIsPopup] = useState<boolean>(false);
+
+  /**
+   * Check if running in popup on mount
+   */
+  useEffect(() => {
+    setIsPopup(isPopupWindow());
+  }, []);
+
+  /**
+   * Notify opener window of OAuth result and close popup
+   */
+  const notifyOpenerAndClose = useCallback((message: OAuthMessage) => {
+    try {
+      if (window.opener && !window.opener.closed) {
+        window.opener.postMessage(message, window.location.origin);
+        // Give opener time to receive the message before closing
+        setTimeout(() => {
+          window.close();
+        }, 500);
+      }
+    } catch (err) {
+      console.error('Failed to notify opener:', err);
+      // If we can't notify opener, fall back to redirect
+      router.push('/banking');
+    }
+  }, [router]);
 
   /**
    * Navigate back to banking page
@@ -145,11 +194,21 @@ function BankingCallbackContent() {
   }, [status, searchParams, completeLinking]);
 
   /**
-   * Auto-redirect countdown on success
+   * Handle success: notify opener if popup, or auto-redirect
    */
   useEffect(() => {
     if (status !== 'success') return;
 
+    // If in popup, notify opener and close immediately
+    if (isPopup) {
+      notifyOpenerAndClose({
+        type: 'BANKING_OAUTH_COMPLETE',
+        accountCount,
+      });
+      return;
+    }
+
+    // Otherwise, countdown and redirect
     const interval = setInterval(() => {
       setRedirectCountdown((prev) => {
         if (prev <= 1) {
@@ -162,7 +221,18 @@ function BankingCallbackContent() {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [status, handleBackToBanking]);
+  }, [status, isPopup, accountCount, notifyOpenerAndClose, handleBackToBanking]);
+
+  /**
+   * Handle error: notify opener if popup
+   */
+  useEffect(() => {
+    if (status !== 'error' && status !== 'invalid') return;
+    if (!isPopup) return;
+
+    // In popup with error - notify opener but don't auto-close (let user see error)
+    // User can manually close or click "Back to Banking"
+  }, [status, isPopup]);
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
@@ -234,24 +304,34 @@ function BankingCallbackContent() {
               )}
             </p>
 
-            <div className="bg-blue-50 rounded-lg p-4 mb-6 border border-blue-200">
-              <p className="text-sm text-blue-800">
-                Redirecting to your banking dashboard in{' '}
-                <strong>{redirectCountdown}</strong> second
-                {redirectCountdown !== 1 ? 's' : ''}...
-              </p>
-            </div>
+            {isPopup ? (
+              <div className="bg-green-50 rounded-lg p-4 mb-6 border border-green-200">
+                <p className="text-sm text-green-800">
+                  This window will close automatically...
+                </p>
+              </div>
+            ) : (
+              <>
+                <div className="bg-blue-50 rounded-lg p-4 mb-6 border border-blue-200">
+                  <p className="text-sm text-blue-800">
+                    Redirecting to your banking dashboard in{' '}
+                    <strong>{redirectCountdown}</strong> second
+                    {redirectCountdown !== 1 ? 's' : ''}...
+                  </p>
+                </div>
 
-            <button
-              onClick={handleBackToBanking}
-              className="inline-flex items-center justify-center px-6 py-3 rounded-lg font-medium
-                bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800
-                focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500
-                transition-colors duration-200"
-              aria-label="Go to banking dashboard now"
-            >
-              Go to Banking Dashboard
-            </button>
+                <button
+                  onClick={handleBackToBanking}
+                  className="inline-flex items-center justify-center px-6 py-3 rounded-lg font-medium
+                    bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800
+                    focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500
+                    transition-colors duration-200"
+                  aria-label="Go to banking dashboard now"
+                >
+                  Go to Banking Dashboard
+                </button>
+              </>
+            )}
           </div>
         )}
 

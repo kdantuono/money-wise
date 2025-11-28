@@ -154,6 +154,7 @@ enum TransactionSource {
   PLAID
   MANUAL
   IMPORT
+  SALTEDGE
 
   @@map("transaction_source")
 }
@@ -472,6 +473,9 @@ model Transaction {
   plaidTransactionId String? @map("plaid_transaction_id") @db.VarChar(255)
   plaidAccountId     String? @map("plaid_account_id") @db.VarChar(255)
 
+  // SaltEdge integration fields
+  saltEdgeTransactionId String? @map("saltedge_transaction_id") @db.VarChar(255)
+
   // Complex metadata stored as JSONB
   // ARCHITECTURAL DECISION: Use JSONB for nested/evolving structures
   // Rationale: Plaid API provides rich metadata that changes over time
@@ -523,6 +527,7 @@ model Transaction {
   category   Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
 
   @@unique([plaidTransactionId], name: "uq_transactions_plaid_id")
+  @@unique([saltEdgeTransactionId], name: "uq_transactions_saltedge_id")
   // Indexes for query performance
   // ARCHITECTURAL DECISION: Time-series and filtering indexes
   // Common query patterns:
