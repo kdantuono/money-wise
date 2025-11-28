@@ -135,10 +135,10 @@ export function BudgetProgress() {
   const overBudgetCount = mockBudgets.filter((b) => b.spent > b.limit).length;
 
   return (
-    <Card>
+    <Card data-testid="category-breakdown">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <div>
-          <CardTitle className="text-lg font-semibold">Budget Progress</CardTitle>
+          <CardTitle className="text-lg font-semibold">Budget Overview</CardTitle>
           <p className="text-sm text-muted-foreground mt-1">
             {formatCurrency(totalSpent)} of {formatCurrency(totalBudget)} spent
             {overBudgetCount > 0 && (
