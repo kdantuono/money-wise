@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import axios, { AxiosInstance } from 'axios';
 import * as crypto from 'crypto';
+import * as fs from 'fs';
 import { ConfigService } from '@nestjs/config';
 import { BankingProvider, BankingConnectionStatus, BankingSyncStatus } from '../../../generated/prisma';
 import {
@@ -13,82 +14,127 @@ import {
 } from '../interfaces/banking-provider.interface';
 
 /**
- * SaltEdge API types
- * Based on https://docs.saltedge.com/account_information/v5/
+ * SaltEdge API v6 types
+ * Based on https://docs.saltedge.com/v6/api_reference/
  */
 interface SaltEdgeAccount {
   id: string;
   name: string;
-  iban?: string;
-  currency_code?: string;
-  balance?: string;
-  nature?: string;
-  provider_name?: string;
-  country_code?: string;
-  holder_name?: string;
-  status?: string;
+  nature: string;
+  balance: number;
+  currency_code: string;
+  extra?: {
+    iban?: string;
+    cards?: string[];
+    available_amount?: number;
+    holder_name?: string;
+    [key: string]: unknown;
+  };
   [key: string]: unknown;
 }
 
 interface SaltEdgeTransaction {
   id: string;
-  amount?: string;
-  posted_date?: string;
-  made_on?: string;
-  description?: string;
+  duplicated: boolean;
+  mode: string;
+  status: string;
+  made_on: string;
+  amount: number;
+  currency_code: string;
+  description: string;
   category?: string;
-  reference_number?: unknown;
-  extra?: unknown;
+  extra?: {
+    merchant_name?: string;
+    mcc?: string;
+    original_amount?: number;
+    original_currency_code?: string;
+    [key: string]: unknown;
+  };
   [key: string]: unknown;
 }
 
+interface SaltEdgeCustomer {
+  id: string;
+  identifier: string;
+  secret?: string;
+}
+
+interface SaltEdgeConnection {
+  id: string;
+  secret: string;
+  provider_id: string;
+  provider_code: string;
+  provider_name: string;
+  country_code: string;
+  status: string;
+  categorization?: string;
+  created_at: string;
+  updated_at: string;
+  last_success_at?: string;
+  next_refresh_possible_at?: string;
+  show_consent_confirmation?: boolean;
+  last_consent_id?: string;
+}
+
 /**
- * SaltEdge Provider Implementation
- * Integrates with SaltEdge API for secure open banking integration
+ * SaltEdge Provider Implementation (v6 API)
+ * Integrates with SaltEdge API v6 for secure open banking integration
  *
- * Documentation: https://docs.saltedge.com/general/v5/
- * Account Information API: https://docs.saltedge.com/account_information/v5/
+ * Documentation: https://docs.saltedge.com/v6/
+ * API Reference: https://docs.saltedge.com/v6/api_reference/
+ *
+ * Key v6 changes from v5:
+ * - RSA signature required for all requests
+ * - Customer management required (create customer first)
+ * - Connect sessions instead of direct connections
+ * - Different authentication headers
  */
 @Injectable()
 export class SaltEdgeProvider implements IBankingProvider {
   private readonly logger = new Logger(SaltEdgeProvider.name);
   private readonly httpClient: AxiosInstance;
-  private readonly clientId: string;
-  private readonly secret: string;
-  private readonly apiUrl: string;
   private readonly appId: string;
+  private readonly secret: string;
+  private readonly privateKey: string;
+  private readonly apiUrl: string;
+  private readonly callbackUrl: string;
 
   constructor(private configService: ConfigService) {
-    this.clientId = this.configService.get<string>('SALTEDGE_CLIENT_ID');
-    this.secret = this.configService.get<string>('SALTEDGE_SECRET');
+    this.appId = this.configService.get<string>('SALTEDGE_APP_ID', '');
+    this.secret = this.configService.get<string>('SALTEDGE_SECRET', '');
     this.apiUrl = this.configService.get<string>(
       'SALTEDGE_API_URL',
-      'https://api.saltedge.com/api/v5',
+      'https://www.saltedge.com/api/v6',
     );
-    this.appId = this.configService.get<string>('SALTEDGE_APP_ID');
+    this.callbackUrl = this.configService.get<string>(
+      'SALTEDGE_CALLBACK_URL',
+      this.configService.get<string>('APP_URL', 'http://localhost:3001') + '/api/banking/webhook',
+    );
 
-    if (!this.clientId || !this.secret) {
-      throw new Error('SaltEdge credentials not configured');
+    // Load private key for RSA signature
+    const privateKeyPath = this.configService.get<string>('SALTEDGE_PRIVATE_KEY_PATH');
+    if (privateKeyPath) {
+      try {
+        this.privateKey = fs.readFileSync(privateKeyPath, 'utf8');
+        this.logger.log('✅ Loaded SaltEdge private key for RSA signing');
+      } catch (error) {
+        this.logger.warn(`⚠️ Could not load private key from ${privateKeyPath}: ${error.message}`);
+        this.privateKey = '';
+      }
+    } else {
+      this.privateKey = '';
+      this.logger.warn('⚠️ SALTEDGE_PRIVATE_KEY_PATH not configured');
     }
 
-    // Initialize HTTP client with base configuration
+    if (!this.appId || !this.secret) {
+      throw new Error('SaltEdge credentials not configured (SALTEDGE_APP_ID, SALTEDGE_SECRET required)');
+    }
+
+    // Initialize HTTP client
     this.httpClient = axios.create({
       baseURL: this.apiUrl,
       timeout: 30000,
       validateStatus: () => true, // Don't throw on any status code
-    });
-
-    // Add request interceptor to sign all requests
-    this.httpClient.interceptors.request.use((config) => {
-      // Don't sign GET requests in the traditional sense
-      if (config.method?.toUpperCase() === 'GET') {
-        config.headers['Authorization'] = `Bearer ${this.secret}`;
-      } else {
-        config.data = config.data || {};
-        config.headers['Content-Type'] = 'application/json';
-        config.headers['Authorization'] = `Bearer ${this.secret}`;
-      }
-      return config;
     });
   }
 
@@ -100,149 +146,325 @@ export class SaltEdgeProvider implements IBankingProvider {
   }
 
   /**
+   * Generate RSA signature for v6 API requests
+   *
+   * Signature format: expiresAt|method|url|body
+   * Where:
+   * - expiresAt: Unix timestamp (1 hour from now)
+   * - method: HTTP method in uppercase
+   * - url: Full request URL
+   * - body: Request body as JSON string (empty string for GET)
+   */
+  private generateSignature(method: string, url: string, body: string = ''): {
+    signature: string;
+    expiresAt: number;
+  } {
+    const expiresAt = Math.floor(Date.now() / 1000) + 3600; // 1 hour expiry
+    const signatureData = `${expiresAt}|${method.toUpperCase()}|${url}|${body}`;
+
+    if (!this.privateKey) {
+      throw new Error('Private key not configured for RSA signing');
+    }
+
+    const sign = crypto.createSign('SHA256');
+    sign.update(signatureData);
+    const signature = sign.sign(this.privateKey, 'base64');
+
+    return { signature, expiresAt };
+  }
+
+  /**
+   * Make authenticated request to SaltEdge v6 API
+   */
+  private async request<T>(
+    method: 'GET' | 'POST' | 'PUT' | 'DELETE',
+    path: string,
+    body?: object,
+  ): Promise<T> {
+    const url = `${this.apiUrl}${path}`;
+    const bodyStr = body ? JSON.stringify(body) : '';
+
+    const { signature, expiresAt } = this.generateSignature(method, url, bodyStr);
+
+    const headers: Record<string, string> = {
+      'App-id': this.appId,
+      'Secret': this.secret,
+      'Expires-at': expiresAt.toString(),
+      'Signature': signature,
+      'Content-Type': 'application/json',
+    };
+
+    this.logger.debug(`SaltEdge API: ${method} ${path}`);
+
+    const response = await this.httpClient.request({
+      method,
+      url: path,
+      data: body,
+      headers,
+    });
+
+    if (response.status >= 400) {
+      const errorMessage = response.data?.error_message || response.data?.error || response.statusText;
+      const errorClass = response.data?.error_class || 'UnknownError';
+      this.logger.error(`SaltEdge API error: ${errorClass} - ${errorMessage}`, {
+        status: response.status,
+        path,
+        response: response.data,
+      });
+      throw new Error(`SaltEdge API error (${errorClass}): ${errorMessage}`);
+    }
+
+    return response.data;
+  }
+
+  /**
    * Authenticate with SaltEdge API
-   * Verifies that credentials are valid
+   * Verifies that credentials and signature are valid
    */
   async authenticate(): Promise<void> {
     try {
-      this.logger.debug('Authenticating with SaltEdge...');
+      this.logger.debug('Authenticating with SaltEdge v6...');
 
-      // Test authentication by making a simple API call
-      const response = await this.httpClient.get('/countries');
+      // Test authentication by listing countries (lightweight call)
+      await this.request<{ data: unknown[] }>('GET', '/countries');
 
-      if (response.status !== 200) {
-        throw new Error(`Authentication failed with status ${response.status}`);
-      }
-
-      this.logger.log('SaltEdge authentication successful');
+      this.logger.log('✅ SaltEdge v6 authentication successful');
     } catch (error) {
       this.logger.error('SaltEdge authentication failed', error);
       throw error;
     }
   }
 
+  // ============ Customer Management (v6 Required) ============
+
   /**
-   * Initiate OAuth flow for user to authorize banking access
+   * Create a customer in SaltEdge
+   * Required before creating connections in v6
    *
-   * Creates a connection requisition with SaltEdge and returns OAuth URL
+   * @param identifier Unique identifier for customer (e.g., hashed user ID)
    */
-  async initiateLink(userId: string): Promise<InitiateLinkResponse> {
+  async createCustomer(identifier: string): Promise<SaltEdgeCustomer> {
+    this.logger.debug(`Creating SaltEdge customer: ${identifier}`);
+
+    const response = await this.request<{ data: SaltEdgeCustomer }>('POST', '/customers', {
+      data: { identifier },
+    });
+
+    this.logger.log(`Customer created: ${response.data.id}`);
+    return response.data;
+  }
+
+  /**
+   * Get customer by ID
+   */
+  async getCustomer(customerId: string): Promise<SaltEdgeCustomer | null> {
     try {
-      this.logger.debug(`Initiating link for user ${userId}`);
-
-      const payload = {
-        data: {
-          customer_id: userId,
-          redirect_url: `${this.configService.get<string>('APP_URL')}/banking/callback`,
-          return_connection_id: true,
-        },
-      };
-
-      const response = await this.httpClient.post('/connections', payload);
-
-      if (response.status !== 201) {
-        this.logger.error(
-          `Failed to create connection: ${response.status}`,
-          response.data,
-        );
-        throw new Error(
-          `Failed to create SaltEdge connection: ${response.data?.error_message || response.statusText}`,
-        );
-      }
-
-      const connection = response.data.data;
-
-      this.logger.log(
-        `Connection created: ${connection.id}`,
+      const response = await this.request<{ data: SaltEdgeCustomer }>(
+        'GET',
+        `/customers/${customerId}`,
       );
-
-      return {
-        connectionId: connection.id,
-        redirectUrl: connection.connect_url,
-        metadata: {
-          providerId: connection.id,
-          status: connection.status,
-          createdAt: connection.created_at,
-        },
-      };
+      return response.data;
     } catch (error) {
-      this.logger.error('Failed to initiate link', error);
+      if (error.message?.includes('CustomerNotFound')) {
+        return null;
+      }
       throw error;
     }
+  }
+
+  /**
+   * Delete customer and all associated data
+   */
+  async deleteCustomer(customerId: string): Promise<void> {
+    this.logger.debug(`Deleting SaltEdge customer: ${customerId}`);
+    await this.request('DELETE', `/customers/${customerId}`);
+    this.logger.log(`Customer deleted: ${customerId}`);
+  }
+
+  // ============ Connect Sessions (v6 OAuth Flow) ============
+
+  /**
+   * Create a connect session for OAuth flow
+   * v6 uses connect_sessions instead of direct connection creation
+   *
+   * @param customerId SaltEdge customer ID
+   * @param options Optional provider/country filters
+   */
+  async createConnectSession(
+    customerId: string,
+    options?: {
+      returnTo?: string;
+      providerCode?: string;
+      countryCode?: string;
+    },
+  ): Promise<{ connectUrl: string; expiresAt: Date }> {
+    this.logger.debug(`Creating connect session for customer: ${customerId}`);
+
+    const response = await this.request<{ data: { connect_url: string; expires_at: string } }>(
+      'POST',
+      '/connect_sessions/create',
+      {
+        data: {
+          customer_id: customerId,
+          consent: {
+            scopes: ['account_details', 'transactions_details'],
+            from_date: this.getDateDaysAgo(90), // 90 days history
+          },
+          attempt: {
+            return_to: options?.returnTo || this.callbackUrl,
+            fetch_scopes: ['accounts', 'transactions'],
+          },
+          // For testing with fake providers
+          ...(options?.providerCode && { provider_code: options.providerCode }),
+          ...(options?.countryCode && { country_code: options.countryCode }),
+        },
+      },
+    );
+
+    this.logger.log(`Connect session created: ${response.data.connect_url}`);
+
+    return {
+      connectUrl: response.data.connect_url,
+      expiresAt: new Date(response.data.expires_at),
+    };
+  }
+
+  /**
+   * Create reconnect session for expired connections
+   */
+  async createReconnectSession(
+    connectionId: string,
+    returnTo?: string,
+  ): Promise<{ reconnectUrl: string }> {
+    this.logger.debug(`Creating reconnect session for connection: ${connectionId}`);
+
+    const response = await this.request<{ data: { connect_url: string } }>(
+      'POST',
+      `/connections/${connectionId}/reconnect`,
+      {
+        data: {
+          return_to: returnTo || this.callbackUrl,
+          consent: {
+            scopes: ['account_details', 'transactions_details'],
+            from_date: this.getDateDaysAgo(90),
+          },
+        },
+      },
+    );
+
+    return { reconnectUrl: response.data.connect_url };
+  }
+
+  // ============ Connection Management ============
+
+  /**
+   * Initiate OAuth flow for user to authorize banking access
+   * For v6, this creates a connect session instead of direct connection
+   *
+   * NOTE: In v6, the customer must exist first. The calling service
+   * should ensure the customer is created before calling this.
+   */
+  async initiateLink(userId: string): Promise<InitiateLinkResponse> {
+    // For backward compatibility, we'll use userId as customer identifier
+    // The calling service should manage customer creation
+    this.logger.warn(
+      'initiateLink called directly - v6 requires customer to be created first. ' +
+      'Use createCustomer + createConnectSession for proper v6 flow.',
+    );
+
+    // Create customer if not exists (simplified flow)
+    const customer = await this.createCustomer(userId);
+
+    const { connectUrl, expiresAt } = await this.createConnectSession(customer.id, {
+      returnTo: this.callbackUrl,
+    });
+
+    return {
+      connectionId: customer.id, // Return customer ID, actual connection ID comes from callback
+      redirectUrl: connectUrl,
+      metadata: {
+        customerId: customer.id,
+        expiresAt: expiresAt.toISOString(),
+      },
+    };
   }
 
   /**
    * Complete the OAuth flow after user authorization
-   * Fetches accounts from the completed connection
+   * Called when user returns from SaltEdge with connection_id
    */
   async completeLinkAndGetAccounts(connectionId: string): Promise<BankingAccountData[]> {
-    try {
-      this.logger.debug(`Completing link for connection ${connectionId}`);
+    this.logger.debug(`Completing link for connection ${connectionId}`);
 
-      // First, verify connection is authorized
-      const statusResponse = await this.httpClient.get(`/connections/${connectionId}`);
+    // Verify connection is active
+    const connection = await this.getConnection(connectionId);
 
-      if (statusResponse.status !== 200) {
-        throw new Error(`Failed to get connection status: ${statusResponse.statusText}`);
-      }
-
-      const connection = statusResponse.data.data;
-
-      if (connection.status !== 'active') {
-        throw new Error(
-          `Connection is not active. Status: ${connection.status}. User may have declined authorization.`,
-        );
-      }
-
-      // Now fetch accounts
-      return await this.getAccounts(connectionId);
-    } catch (error) {
-      this.logger.error('Failed to complete link', error);
-      throw error;
+    if (connection.status !== 'active') {
+      throw new Error(
+        `Connection is not active. Status: ${connection.status}. User may have declined authorization.`,
+      );
     }
+
+    // Fetch accounts
+    return await this.getAccounts(connectionId);
   }
 
   /**
-   * Get accounts from an authorized connection
+   * Get connection details
+   */
+  async getConnection(connectionId: string): Promise<SaltEdgeConnection> {
+    const response = await this.request<{ data: SaltEdgeConnection }>(
+      'GET',
+      `/connections/${connectionId}`,
+    );
+    return response.data;
+  }
+
+  /**
+   * Refresh connection to get latest data
+   */
+  async refreshConnection(connectionId: string): Promise<ConnectionStatusData> {
+    this.logger.debug(`Refreshing connection ${connectionId}`);
+
+    await this.request('POST', `/connections/${connectionId}/refresh`);
+
+    // Return updated status
+    return await this.getConnectionStatus(connectionId);
+  }
+
+  /**
+   * Get accounts from a connection
    */
   async getAccounts(connectionId: string): Promise<BankingAccountData[]> {
-    try {
-      this.logger.debug(`Fetching accounts for connection ${connectionId}`);
+    this.logger.debug(`Fetching accounts for connection ${connectionId}`);
 
-      const response = await this.httpClient.get(`/accounts?connection_id=${connectionId}`);
+    const response = await this.request<{ data: SaltEdgeAccount[] }>(
+      'GET',
+      `/accounts?connection_id=${connectionId}`,
+    );
 
-      if (response.status !== 200) {
-        throw new Error(`Failed to fetch accounts: ${response.statusText}`);
-      }
+    const accounts = response.data || [];
+    this.logger.log(`Fetched ${accounts.length} accounts`);
 
-      const accounts = response.data.data || [];
-
-      this.logger.log(`Fetched ${accounts.length} accounts`);
-
-      return accounts.map((account: SaltEdgeAccount) =>
-        this.mapSaltEdgeAccountToMoneyWise(account),
-      );
-    } catch (error) {
-      this.logger.error('Failed to get accounts', error);
-      throw error;
-    }
+    return accounts.map((account) => this.mapSaltEdgeAccountToMoneyWise(account, connectionId));
   }
 
   /**
-   * Get transactions for a specific account
-   * SaltEdge provides 90-day transaction history
+   * Get transactions for an account
    */
   async getTransactions(
-    connectionId: string,
+    _connectionId: string,
     accountId: string,
     fromDate: Date,
     toDate?: Date,
   ): Promise<BankingTransactionData[]> {
-    try {
-      this.logger.debug(
-        `Fetching transactions for account ${accountId} from ${fromDate}`,
-      );
+    this.logger.debug(`Fetching transactions for account ${accountId} from ${fromDate.toISOString()}`);
 
+    const allTransactions: BankingTransactionData[] = [];
+    let nextId: string | undefined;
+
+    // Paginate through all transactions
+    do {
       const params = new URLSearchParams({
         account_id: accountId,
         from_date: this.formatDateForSaltEdge(fromDate),
@@ -252,130 +474,83 @@ export class SaltEdgeProvider implements IBankingProvider {
         params.append('to_date', this.formatDateForSaltEdge(toDate));
       }
 
-      const response = await this.httpClient.get(`/transactions?${params.toString()}`);
-
-      if (response.status !== 200) {
-        throw new Error(`Failed to fetch transactions: ${response.statusText}`);
+      if (nextId) {
+        params.append('from_id', nextId);
       }
 
-      const transactions = response.data.data || [];
+      const response = await this.request<{
+        data: SaltEdgeTransaction[];
+        meta: { next_id?: string };
+      }>('GET', `/transactions?${params}`);
 
-      this.logger.log(`Fetched ${transactions.length} transactions`);
-
-      return transactions.map((tx: SaltEdgeTransaction) =>
-        this.mapSaltEdgeTransactionToMoneyWise(tx),
+      const transactions = response.data || [];
+      allTransactions.push(
+        ...transactions.map((tx) => this.mapSaltEdgeTransactionToMoneyWise(tx)),
       );
-    } catch (error) {
-      this.logger.error('Failed to get transactions', error);
-      throw error;
-    }
+
+      nextId = response.meta?.next_id;
+    } while (nextId);
+
+    this.logger.log(`Fetched ${allTransactions.length} transactions`);
+    return allTransactions;
   }
 
   /**
-   * Get current balance for a specific account
+   * Get balance for an account
    */
   async getBalance(connectionId: string, accountId: string): Promise<number> {
-    try {
-      this.logger.debug(`Fetching balance for account ${accountId}`);
+    this.logger.debug(`Fetching balance for account ${accountId}`);
 
-      const response = await this.httpClient.get(`/accounts/${accountId}`);
+    // Get account which includes balance
+    const response = await this.request<{ data: SaltEdgeAccount }>(
+      'GET',
+      `/accounts/${accountId}`,
+    );
 
-      if (response.status !== 200) {
-        throw new Error(`Failed to fetch balance: ${response.statusText}`);
-      }
-
-      const account = response.data.data;
-
-      this.logger.log(`Current balance: ${account.balance}`);
-
-      return parseFloat(account.balance);
-    } catch (error) {
-      this.logger.error('Failed to get balance', error);
-      throw error;
-    }
+    return response.data.balance;
   }
 
   /**
-   * Get current status of a connection
+   * Get connection status
    */
   async getConnectionStatus(connectionId: string): Promise<ConnectionStatusData> {
-    try {
-      this.logger.debug(`Fetching connection status for ${connectionId}`);
+    this.logger.debug(`Fetching connection status for ${connectionId}`);
 
-      const response = await this.httpClient.get(`/connections/${connectionId}`);
+    const connection = await this.getConnection(connectionId);
+    const accounts = await this.getAccounts(connectionId);
 
-      if (response.status !== 200) {
-        throw new Error(`Failed to get connection status: ${response.statusText}`);
-      }
-
-      const connection = response.data.data;
-
-      // Fetch associated accounts
-      const accounts = await this.getAccounts(connectionId);
-
-      return {
-        status: this.mapSaltEdgeStatusToMoneyWise(connection.status),
-        authorizedAt: connection.last_success_at ? new Date(connection.last_success_at) : undefined,
-        expiresAt: connection.next_refresh_possible_at
-          ? new Date(connection.next_refresh_possible_at)
-          : undefined,
-        accounts,
-        metadata: {
-          saltedgeStatus: connection.status,
-          lastRefresh: connection.last_success_at,
-          failureCount: connection.fail_count,
-          failureMessage: connection.fail_message,
-        },
-      };
-    } catch (error) {
-      this.logger.error('Failed to get connection status', error);
-      throw error;
-    }
+    return {
+      status: this.mapSaltEdgeStatusToMoneyWise(connection.status),
+      authorizedAt: connection.last_success_at
+        ? new Date(connection.last_success_at)
+        : undefined,
+      expiresAt: connection.next_refresh_possible_at
+        ? new Date(connection.next_refresh_possible_at)
+        : undefined,
+      accounts,
+      metadata: {
+        saltedgeStatus: connection.status,
+        providerCode: connection.provider_code,
+        providerName: connection.provider_name,
+        countryCode: connection.country_code,
+        lastRefresh: connection.last_success_at,
+      },
+    };
   }
 
   /**
    * Revoke/disconnect a banking connection
    */
   async revokeConnection(connectionId: string): Promise<void> {
-    try {
-      this.logger.debug(`Revoking connection ${connectionId}`);
+    this.logger.debug(`Revoking connection ${connectionId}`);
 
-      const response = await this.httpClient.delete(`/connections/${connectionId}`);
+    await this.request('DELETE', `/connections/${connectionId}`);
 
-      if (response.status !== 200) {
-        throw new Error(`Failed to revoke connection: ${response.statusText}`);
-      }
-
-      this.logger.log(`Connection ${connectionId} revoked`);
-    } catch (error) {
-      this.logger.error('Failed to revoke connection', error);
-      throw error;
-    }
+    this.logger.log(`Connection ${connectionId} revoked`);
   }
 
   /**
-   * Refresh connection status and verify it's still valid
-   */
-  async refreshConnection(connectionId: string): Promise<ConnectionStatusData> {
-    try {
-      this.logger.debug(`Refreshing connection ${connectionId}`);
-
-      const response = await this.httpClient.put(`/connections/${connectionId}`, {});
-
-      if (response.status !== 200) {
-        throw new Error(`Failed to refresh connection: ${response.statusText}`);
-      }
-
-      // Return updated status
-      return await this.getConnectionStatus(connectionId);
-    } catch (error) {
-      this.logger.error('Failed to refresh connection', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Check if a connection is still authorized and valid
+   * Check if connection is valid
    */
   async isConnectionValid(connectionId: string): Promise<boolean> {
     try {
@@ -388,8 +563,7 @@ export class SaltEdgeProvider implements IBankingProvider {
   }
 
   /**
-   * Perform a full sync for an account
-   * Fetches latest transactions and balance
+   * Sync account - fetch latest transactions and balance
    */
   async syncAccount(
     connectionId: string,
@@ -401,17 +575,18 @@ export class SaltEdgeProvider implements IBankingProvider {
     try {
       this.logger.debug(`Starting sync for account ${accountId}`);
 
-      // Get current account data (including balance)
-      const accountResponse = await this.httpClient.get(`/accounts/${accountId}`);
-      if (accountResponse.status !== 200) {
-        throw new Error(`Failed to fetch account: ${accountResponse.statusText}`);
-      }
+      // Get current account data
+      const balance = await this.getBalance(connectionId, accountId);
 
       // Get transactions
-      const transactions = await this.getTransactions(connectionId, accountId, fromDate);
+      const transactions = await this.getTransactions(
+        connectionId,
+        accountId,
+        fromDate,
+      );
 
       this.logger.log(
-        `Sync completed: ${transactions.length} transactions, balance updated`,
+        `Sync completed: ${transactions.length} transactions, balance: ${balance}`,
       );
 
       return {
@@ -431,123 +606,127 @@ export class SaltEdgeProvider implements IBankingProvider {
         transactionsSynced: 0,
         balanceUpdated: false,
         error: error.message,
-        errorCode: error.code || 'UNKNOWN_ERROR',
+        errorCode: error.code || 'SYNC_ERROR',
         startedAt,
         completedAt: new Date(),
       };
     }
   }
 
+  // ============ Provider/Institution Listing ============
+
   /**
-   * HMAC-SHA256 signature generation for request body
-   * Used for POST/PUT/DELETE requests
+   * Get providers (banks) for a country
    */
-  private generateSignature(requestBody: string): string {
-    return crypto
-      .createHmac('sha256', this.secret)
-      .update(requestBody)
-      .digest('hex');
+  async getProviders(countryCode: string = 'IT'): Promise<unknown[]> {
+    const response = await this.request<{ data: unknown[] }>(
+      'GET',
+      `/providers?country_code=${countryCode}`,
+    );
+    return response.data;
   }
 
   /**
-   * Map SaltEdge account format to MoneyWise format
+   * Get fake providers for testing
+   * Country code 'XF' returns fake test providers
    */
-  private mapSaltEdgeAccountToMoneyWise(account: SaltEdgeAccount): BankingAccountData {
+  async getFakeProviders(): Promise<unknown[]> {
+    return this.getProviders('XF');
+  }
+
+  // ============ Helper Methods ============
+
+  private getDateDaysAgo(days: number): string {
+    const date = new Date();
+    date.setDate(date.getDate() - days);
+    return date.toISOString().split('T')[0];
+  }
+
+  private formatDateForSaltEdge(date: Date): string {
+    return date.toISOString().split('T')[0];
+  }
+
+  private mapSaltEdgeAccountToMoneyWise(
+    account: SaltEdgeAccount,
+    connectionId?: string,
+  ): BankingAccountData {
     return {
       id: account.id,
       name: account.name,
-      iban: account.iban || '',
+      iban: account.extra?.iban || '',
       currency: account.currency_code || 'EUR',
-      balance: parseFloat(account.balance || '0'),
+      balance: account.balance || 0,
       type: this.mapAccountType(account.nature),
-      bankName: account.provider_name || '',
-      bankCountry: account.country_code || '',
-      accountHolderName: account.holder_name,
-      status: account.status === 'active' ? 'active' : 'inactive',
+      bankName: '', // Will be populated from connection data
+      bankCountry: '', // Will be populated from connection data
+      accountHolderName: account.extra?.holder_name,
+      status: 'active',
       metadata: {
         saltedgeId: account.id,
         nature: account.nature,
-        provider: account.provider_name,
+        connectionId,
+        availableAmount: account.extra?.available_amount,
       },
     };
   }
 
-  /**
-   * Map SaltEdge transaction format to MoneyWise format
-   */
-  private mapSaltEdgeTransactionToMoneyWise(transaction: SaltEdgeTransaction): BankingTransactionData {
-    const amountValue = parseFloat(transaction.amount || '0');
-    const amount = Math.abs(amountValue);
-    const type = amountValue >= 0 ? 'CREDIT' : 'DEBIT';
-
-    // Safely extract merchant_name from unknown extra field
-    const merchantName = transaction.extra && typeof transaction.extra === 'object' && 'merchant_name' in transaction.extra
-      ? String(transaction.extra.merchant_name)
-      : undefined;
+  private mapSaltEdgeTransactionToMoneyWise(
+    transaction: SaltEdgeTransaction,
+  ): BankingTransactionData {
+    const amount = Math.abs(transaction.amount);
+    const type = transaction.amount >= 0 ? 'CREDIT' : 'DEBIT';
 
     return {
       id: transaction.id,
-      date: new Date(transaction.posted_date || transaction.made_on || new Date()),
+      date: new Date(transaction.made_on),
       amount,
       type,
       description: transaction.description || '',
-      merchant: merchantName,
-      reference: typeof transaction.reference_number === 'string' ? transaction.reference_number : undefined,
-      status: 'completed', // SaltEdge only returns completed transactions
+      merchant: transaction.extra?.merchant_name,
+      reference: undefined,
+      status: transaction.status === 'posted' ? 'completed' : 'pending',
       metadata: {
         saltedgeId: transaction.id,
-        category: transaction.category || '',
-        extra: transaction.extra,
+        category: transaction.category,
+        mcc: transaction.extra?.mcc,
+        duplicated: transaction.duplicated,
+        mode: transaction.mode,
       },
     };
   }
 
-  /**
-   * Map SaltEdge connection status to MoneyWise enum
-   */
   private mapSaltEdgeStatusToMoneyWise(status: string): BankingConnectionStatus {
     switch (status) {
       case 'pending':
         return BankingConnectionStatus.PENDING;
       case 'active':
         return BankingConnectionStatus.AUTHORIZED;
-      case 'revoked':
+      case 'inactive':
+      case 'disabled':
         return BankingConnectionStatus.REVOKED;
       case 'expired':
         return BankingConnectionStatus.EXPIRED;
-      case 'failure':
+      case 'failed':
         return BankingConnectionStatus.FAILED;
       default:
         return BankingConnectionStatus.PENDING;
     }
   }
 
-  /**
-   * Map generic account type to standard categories
-   */
   private mapAccountType(nature: string): string {
     const typeMap: Record<string, string> = {
+      account: 'checking',
       checking: 'checking',
       savings: 'savings',
-      credit: 'credit',
-      loan: 'loan',
-      investment: 'investment',
       credit_card: 'credit',
-      debit_card: 'checking',
-      current: 'checking',
-      deposit: 'savings',
+      card: 'credit',
+      loan: 'loan',
+      mortgage: 'loan',
+      investment: 'investment',
+      bonus: 'savings',
+      insurance: 'investment',
     };
 
     return typeMap[nature?.toLowerCase()] || nature || 'unknown';
-  }
-
-  /**
-   * Format date for SaltEdge API (YYYY-MM-DD)
-   */
-  private formatDateForSaltEdge(date: Date): string {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
   }
 }

@@ -306,6 +306,7 @@ model User {
   // Users own their personal accounts, but family also has shared accounts
   // This enables both individual and family-level financial management
   accounts           Account[]
+  bankingCustomers   BankingCustomer[]
   bankingConnections BankingConnection[]
   userAchievements   UserAchievement[]
   passwordHistory    PasswordHistory[]
@@ -885,6 +886,41 @@ model AuditLog {
   @@map("audit_logs")
 }
 
+/// BankingCustomer entity - SaltEdge v6 requires customer management
+/// ARCHITECTURAL DECISION: Separate customer record per provider
+/// - Customer is created once per user per provider (SaltEdge v6 requirement)
+/// - Stores provider-specific customer ID for all subsequent API calls
+/// - Each customer can have multiple connections (banks)
+model BankingCustomer {
+  id              String          @id @default(uuid()) @db.Uuid
+  userId          String          @map("user_id") @db.Uuid
+  provider        BankingProvider @default(SALTEDGE)
+
+  // Provider-specific customer identifiers
+  saltEdgeCustomerId    String?   @unique @map("saltedge_customer_id") @db.VarChar(255)
+  tinkCustomerId        String?   @unique @map("tink_customer_id") @db.VarChar(255)
+  yapilyCustomerId      String?   @unique @map("yapily_customer_id") @db.VarChar(255)
+
+  // Customer identifier sent to provider (hashed user email or UUID)
+  identifier      String          @db.VarChar(255)
+
+  // Status
+  isActive        Boolean         @default(true) @map("is_active")
+
+  // Timestamps
+  createdAt       DateTime        @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime        @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relations
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  connections     BankingConnection[]
+
+  // Indexes
+  @@unique([userId, provider], name: "uq_banking_customer_user_provider")
+  @@index([provider, isActive], name: "idx_banking_customer_provider_active")
+  @@map("banking_customers")
+}
+
 /// BankingConnection entity - Tracks OAuth flow and banking provider links
 /// ARCHITECTURAL DECISION: Separate from Account for OAuth state tracking
 /// - Connection tracks the OAuth link (redirect URLs, status, expiration)
@@ -893,6 +929,7 @@ model AuditLog {
 model BankingConnection {
   id                String                    @id @default(uuid()) @db.Uuid
   userId            String                    @map("user_id") @db.Uuid
+  customerId        String?                   @map("customer_id") @db.Uuid
   provider          BankingProvider
   status            BankingConnectionStatus   @default(PENDING)
 
@@ -904,11 +941,20 @@ model BankingConnection {
   // Yapily (Phase 3)
   yalilyConnectionId    String?               @unique @map("yapily_connection_id") @db.VarChar(255)
 
+  // Provider name/code (e.g., "fakebank_simple_xf", "intesa_sanpaolo_it")
+  providerCode      String?                   @map("provider_code") @db.VarChar(255)
+  providerName      String?                   @map("provider_name") @db.VarChar(255)
+  countryCode       String?                   @map("country_code") @db.VarChar(10)
+
   // OAuth flow tracking
   redirectUrl       String?                   @map("redirect_url") @db.Text
   authorizationUrl  String?                   @map("authorization_url") @db.Text
   expiresAt         DateTime?                 @map("expires_at") @db.Timestamptz
   authorizedAt      DateTime?                 @map("authorized_at") @db.Timestamptz
+
+  // Last successful sync tracking
+  lastSuccessAt     DateTime?                 @map("last_success_at") @db.Timestamptz
+  nextRefreshAt     DateTime?                 @map("next_refresh_at") @db.Timestamptz
 
   // Provider metadata
   metadata          Json?                     @db.JsonB  // Provider-specific data
@@ -919,10 +965,12 @@ model BankingConnection {
 
   // Relations
   user              User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  customer          BankingCustomer?          @relation(fields: [customerId], references: [id], onDelete: SetNull)
 
   // Indexes
   @@unique([userId, saltEdgeConnectionId], name: "uq_banking_conn_user_saltedge")
   @@index([userId, status], name: "idx_banking_conn_user_status")
+  @@index([customerId], name: "idx_banking_conn_customer")
   @@index([provider, status], name: "idx_banking_conn_provider_status")
   @@index([expiresAt], name: "idx_banking_conn_expires")
   @@map("banking_connections")
