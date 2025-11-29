@@ -78,10 +78,10 @@ test.describe('Dashboard', () => {
     const quickActionsSection = page.locator('text=Quick Actions').first();
     await quickActionsSection.scrollIntoViewIfNeeded();
     
-    // Verify quick action buttons are present
-    await expect(page.getByRole('button', { name: /add account/i })).toBeVisible();
-    await expect(page.getByRole('button', { name: /add transaction/i })).toBeVisible();
-    await expect(page.getByRole('button', { name: /set budget/i })).toBeVisible();
-    await expect(page.getByRole('button', { name: /schedule payment/i })).toBeVisible();
+    // Verify quick action links are present (these are Link elements, not buttons)
+    await expect(page.getByRole('link', { name: /add account/i })).toBeVisible();
+    await expect(page.getByRole('link', { name: /add transaction/i })).toBeVisible();
+    await expect(page.getByRole('link', { name: /set budget/i })).toBeVisible();
+    await expect(page.getByRole('link', { name: /schedule payment/i })).toBeVisible();
   });
 });
