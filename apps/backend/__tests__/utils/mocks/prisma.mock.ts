@@ -48,6 +48,7 @@ export const createMockPrismaService = () => {
       findUnique: jest.fn(),
       update: jest.fn(),
       delete: jest.fn(),
+      aggregate: jest.fn(),
     },
     category: {
       create: jest.fn(),
@@ -61,6 +62,7 @@ export const createMockPrismaService = () => {
       findMany: jest.fn(),
       findUnique: jest.fn(),
       update: jest.fn(),
+      updateMany: jest.fn(),
       delete: jest.fn(),
     },
     $connect: jest.fn(),
