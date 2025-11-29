@@ -37,15 +37,15 @@ const prisma = new PrismaClient();
 
 // Seed user emails for identification and cleanup
 const SEED_USER_EMAILS = [
-  'john.smith@demo.moneywise.app',
-  'emma.smith@demo.moneywise.app',
+  'test@example.com',
+  'member@example.com',
 ];
 
 // Seed family name for identification
-const SEED_FAMILY_NAME = 'Smith Family';
+const SEED_FAMILY_NAME = 'Test Family';
 
-// Demo password (bcrypt hash for "demo123")
-const DEMO_PASSWORD_HASH = '$2b$10$3W5HzO7DxQmq8j5KzZx/3uyVj5X7r7q6vK9n9m8L7K6j5i4h3g2F1';
+// Demo password (bcrypt hash for "SecurePass123!")
+const DEMO_PASSWORD_HASH = '$2a$10$upBGppPkxrkdZQJgP9waBesoJ1/hyPXYCKI1720xwbPRjtB9Of6qK';
 
 // ============================================================================
 // Helper Functions
@@ -125,7 +125,7 @@ async function main() {
     console.log(`   Budgets: ${budgets.length} budgets`);
     console.log('\n🚀 Ready to test! You can now:');
     console.log('   1. Start the app: pnpm dev');
-    console.log('   2. Log in with: john.smith@demo.moneywise.app / demo123');
+    console.log('   2. Log in with: test@example.com / SecurePass123!');
     console.log('   3. View transactions and reports\n');
   } catch (error) {
     console.error('❌ Seeding failed:', error);
@@ -169,9 +169,9 @@ async function createDemoFamily(): Promise<{ id: string; name: string }> {
 async function createAdminUser(familyId: string): Promise<{ id: string; firstName: string; lastName: string; email: string }> {
   return prisma.user.create({
     data: {
-      email: 'john.smith@demo.moneywise.app',
-      firstName: 'John',
-      lastName: 'Smith',
+      email: 'test@example.com',
+      firstName: 'Tester',
+      lastName: 'User',
       passwordHash: DEMO_PASSWORD_HASH,
       role: 'ADMIN',
       status: 'ACTIVE',
@@ -185,9 +185,9 @@ async function createAdminUser(familyId: string): Promise<{ id: string; firstNam
 async function createMemberUser(familyId: string): Promise<{ id: string; firstName: string; lastName: string; email: string }> {
   return prisma.user.create({
     data: {
-      email: 'emma.smith@demo.moneywise.app',
-      firstName: 'Emma',
-      lastName: 'Smith',
+      email: 'member@example.com',
+      firstName: 'Member',
+      lastName: 'User',
       passwordHash: DEMO_PASSWORD_HASH,
       role: 'MEMBER',
       status: 'ACTIVE',
