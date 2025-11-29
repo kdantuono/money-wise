@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 import { ErrorBoundary } from '@/components/ui/error-boundary';
 import { MSWProvider } from '@/components/providers/msw-provider';
+import { QueryProvider } from '@/components/providers/query-provider';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -19,9 +20,11 @@ export default function RootLayout({
   return (
     <html lang='en'>
       <body className={inter.className}>
-        <MSWProvider>
-          <ErrorBoundary>{children}</ErrorBoundary>
-        </MSWProvider>
+        <QueryProvider>
+          <MSWProvider>
+            <ErrorBoundary>{children}</ErrorBoundary>
+          </MSWProvider>
+        </QueryProvider>
       </body>
     </html>
   );
