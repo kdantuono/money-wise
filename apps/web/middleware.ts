@@ -17,7 +17,6 @@ const PROTECTED_ROUTES = [
   '/dashboard',
   '/accounts',
   '/transactions',
-  '/budgets',
   '/reports',
   '/settings',
   '/profile',

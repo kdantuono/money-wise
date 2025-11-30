@@ -23,7 +23,8 @@ import {
   X,
   User,
   Bell,
-  Search
+  Search,
+  PiggyBank
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -35,6 +36,7 @@ const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Accounts', href: '/dashboard/accounts', icon: Wallet },
   { name: 'Transactions', href: '/dashboard/transactions', icon: CreditCard },
+  { name: 'Budgets', href: '/dashboard/budgets', icon: PiggyBank },
   { name: 'Investments', href: '/dashboard/investments', icon: TrendingUp },
   { name: 'Goals', href: '/dashboard/goals', icon: Target },
   { name: 'Settings', href: '/dashboard/settings', icon: Settings },
