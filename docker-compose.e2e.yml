@@ -87,8 +87,11 @@ services:
     container_name: moneywise-frontend-e2e
     environment:
       NODE_ENV: test
-      NEXT_PUBLIC_API_URL: http://backend-e2e:3001
+      # Use localhost for browser-side API calls (NEXT_PUBLIC_* vars are baked at build time)
+      # The browser runs on the host machine and can't resolve Docker internal hostnames
+      NEXT_PUBLIC_API_URL: http://localhost:3001
       PORT: 3000
+      HOSTNAME: 0.0.0.0
     ports:
       - "3000:3000"
     depends_on:
@@ -104,11 +107,16 @@ services:
       - e2e-network
     command: >
       sh -c "
-        echo '🔄 Building frontend...' &&
-        pnpm --filter @money-wise/web build &&
+        echo '🔄 Building frontend with standalone output...' &&
+        cd apps/web &&
+        pnpm build &&
         echo '✅ Frontend built successfully' &&
-        echo '🔄 Starting frontend server...' &&
-        pnpm --filter @money-wise/web start
+        echo '🔄 Copying static files for standalone...' &&
+        cp -r public .next/standalone/apps/web/public 2>/dev/null || true &&
+        cp -r .next/static .next/standalone/apps/web/.next/static &&
+        echo '🔄 Starting standalone server...' &&
+        cd .next/standalone/apps/web &&
+        node server.js
       "
 
 networks:
