@@ -24,7 +24,9 @@ import {
   User,
   Bell,
   Search,
-  PiggyBank
+  PiggyBank,
+  ChevronDown,
+  ClipboardList
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -36,9 +38,15 @@ const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Accounts', href: '/dashboard/accounts', icon: Wallet },
   { name: 'Transactions', href: '/dashboard/transactions', icon: CreditCard },
-  { name: 'Budgets', href: '/dashboard/budgets', icon: PiggyBank },
   { name: 'Investments', href: '/dashboard/investments', icon: TrendingUp },
+];
+
+const planningItems = [
+  { name: 'Budgets', href: '/dashboard/budgets', icon: PiggyBank },
   { name: 'Goals', href: '/dashboard/goals', icon: Target },
+];
+
+const bottomNavigation = [
   { name: 'Settings', href: '/dashboard/settings', icon: Settings },
 ];
 
@@ -47,6 +55,10 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const pathname = usePathname();
   const { user, logout } = useAuthStore();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Check if any planning route is active to auto-expand the dropdown
+  const isPlanningActive = planningItems.some(item => pathname.startsWith(item.href));
+  const [planningOpen, setPlanningOpen] = useState(isPlanningActive);
 
   const handleLogout = async () => {
     await logout();
@@ -88,6 +100,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
           {/* Navigation Links */}
           <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
+            {/* Main navigation items */}
             {navigation.map((item) => {
               const isActive = pathname === item.href;
               return (
@@ -111,6 +124,90 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 </Link>
               );
             })}
+
+            {/* Planning dropdown section */}
+            <div className="pt-2">
+              <button
+                onClick={() => setPlanningOpen(!planningOpen)}
+                className={`w-full flex items-center justify-between px-4 py-3 text-sm font-medium rounded-lg transition-colors group ${
+                  isPlanningActive
+                    ? 'bg-blue-50 text-blue-600'
+                    : 'text-gray-700 hover:bg-blue-50 hover:text-blue-600'
+                }`}
+                data-testid="nav-planning"
+                aria-expanded={planningOpen}
+              >
+                <div className="flex items-center">
+                  <ClipboardList
+                    className={`mr-3 h-5 w-5 ${
+                      isPlanningActive ? 'text-blue-600' : 'text-gray-400 group-hover:text-blue-600'
+                    }`}
+                  />
+                  Planning
+                </div>
+                <ChevronDown
+                  className={`h-4 w-4 transition-transform duration-200 ${
+                    planningOpen ? 'rotate-180' : ''
+                  } ${isPlanningActive ? 'text-blue-600' : 'text-gray-400'}`}
+                />
+              </button>
+
+              {/* Planning sub-items */}
+              {planningOpen && (
+                <div className="mt-1 ml-4 space-y-1">
+                  {planningItems.map((item) => {
+                    const isActive = pathname === item.href;
+                    return (
+                      <Link
+                        key={item.name}
+                        href={item.href}
+                        className={`flex items-center px-4 py-2.5 text-sm font-medium rounded-lg transition-colors group ${
+                          isActive
+                            ? 'bg-blue-100 text-blue-600'
+                            : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600'
+                        }`}
+                        data-testid={`nav-${item.name.toLowerCase()}`}
+                        aria-current={isActive ? 'page' : undefined}
+                      >
+                        <item.icon
+                          className={`mr-3 h-4 w-4 ${
+                            isActive ? 'text-blue-600' : 'text-gray-400 group-hover:text-blue-600'
+                          }`}
+                        />
+                        {item.name}
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Bottom navigation items (Settings) */}
+            <div className="pt-4 border-t border-gray-100 mt-4">
+              {bottomNavigation.map((item) => {
+                const isActive = pathname === item.href;
+                return (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    className={`flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors group ${
+                      isActive
+                        ? 'bg-blue-100 text-blue-600'
+                        : 'text-gray-700 hover:bg-blue-50 hover:text-blue-600'
+                    }`}
+                    data-testid={`nav-${item.name.toLowerCase()}`}
+                    aria-current={isActive ? 'page' : undefined}
+                  >
+                    <item.icon
+                      className={`mr-3 h-5 w-5 ${
+                        isActive ? 'text-blue-600' : 'text-gray-400 group-hover:text-blue-600'
+                      }`}
+                    />
+                    {item.name}
+                  </Link>
+                );
+              })}
+            </div>
           </nav>
 
           {/* User Info */}
