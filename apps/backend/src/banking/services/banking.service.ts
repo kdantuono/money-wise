@@ -569,7 +569,7 @@ export class BankingService {
 
     for (const account of accounts) {
       try {
-        await this.prisma.account.create({
+        const createdAccount = await this.prisma.account.create({
           data: {
             userId,
             name: account.name,
@@ -595,6 +595,20 @@ export class BankingService {
 
         storedCount++;
         this.logger.log(`Stored account: ${account.id}`);
+
+        // Auto-sync transactions for newly linked account (non-blocking)
+        // This ensures the dashboard shows income/expenses immediately after linking
+        this.syncAccount(userId, createdAccount.id)
+          .then((result) => {
+            this.logger.log(
+              `Initial sync completed for account ${createdAccount.id}: ${result.transactionsSynced} transactions`,
+            );
+          })
+          .catch((syncError) => {
+            this.logger.warn(
+              `Initial sync failed for account ${createdAccount.id}: ${syncError.message}`,
+            );
+          });
       } catch (error) {
         this.logger.warn(`Failed to store account ${account.id}: ${error.message}`);
       }

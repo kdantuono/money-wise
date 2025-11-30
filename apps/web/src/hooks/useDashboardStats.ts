@@ -34,6 +34,7 @@ export function useDashboardStats(period: TimePeriod = 'monthly') {
     () => analyticsClient.getStats(period),
     {
       staleTime: 5 * 60 * 1000, // 5 minutes
+      refetchOnMount: 'always', // Always refetch on navigation back to dashboard
     }
   );
 }
@@ -55,6 +56,7 @@ export function useSpendingByCategory(period: TimePeriod = 'monthly') {
     () => analyticsClient.getSpendingByCategory(period),
     {
       staleTime: 5 * 60 * 1000, // 5 minutes
+      refetchOnMount: 'always', // Always refetch on navigation back to dashboard
     }
   );
 }
@@ -76,6 +78,7 @@ export function useRecentTransactions(limit: number = 10) {
     () => analyticsClient.getRecentTransactions(limit),
     {
       staleTime: 2 * 60 * 1000, // 2 minutes (transactions change more often)
+      refetchOnMount: 'always', // Always refetch on navigation back to dashboard
     }
   );
 }
@@ -97,6 +100,7 @@ export function useTrends(period: TimePeriod = 'monthly') {
     () => analyticsClient.getTrends(period),
     {
       staleTime: 5 * 60 * 1000, // 5 minutes
+      refetchOnMount: 'always', // Always refetch on navigation back to dashboard
     }
   );
 }
