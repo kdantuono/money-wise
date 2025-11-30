@@ -425,16 +425,40 @@ export class BudgetsService {
     const amount = budget.amount.toNumber();
     const remaining = amount - spent;
     const percentage = amount > 0 ? Math.round((spent / amount) * 100) : 0;
-    const isOverBudget = spent >= amount;
 
-    // Check if budget period has expired
-    const now = new Date();
-    const endDate = budget.endDate;
-    const isExpired = endDate < now;
+    /**
+     * Over-budget flag: Only true when spending EXCEEDS budget (>100%)
+     * At exactly 100%, user is at budget limit but not over
+     */
+    const isOverBudget = spent > amount;
 
-    let progressStatus: 'safe' | 'warning' | 'over' = 'safe';
-    if (percentage >= 100) {
+    /**
+     * Budget expiration: Active THROUGH end date (inclusive)
+     * Budget expires at START of day AFTER end date
+     * Example: endDate = Nov 30 → active all of Nov 30, expires Dec 1
+     *
+     * Uses date-level comparison to avoid time-of-day issues
+     */
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const budgetEndDate = new Date(budget.endDate);
+    budgetEndDate.setHours(0, 0, 0, 0);
+
+    const isExpired = today > budgetEndDate;
+
+    /**
+     * Progress status for UI color coding:
+     * - safe: 0-79% (green)
+     * - warning: 80-99% (orange)
+     * - maxed: exactly 100% (yellow) - at budget limit
+     * - over: 100%+ (red) - exceeded budget
+     */
+    let progressStatus: 'safe' | 'warning' | 'maxed' | 'over' = 'safe';
+    if (spent > amount) {
       progressStatus = 'over';
+    } else if (percentage === 100) {
+      progressStatus = 'maxed';
     } else if (percentage >= 80) {
       progressStatus = 'warning';
     }
@@ -477,7 +501,12 @@ export class BudgetsService {
    * @returns Number of budgets marked as completed
    */
   async markExpiredBudgetsAsCompleted(familyId?: string): Promise<number> {
-    const now = new Date();
+    /**
+     * Mark budgets completed AFTER end date (not ON end date)
+     * Uses date-level comparison for consistency with toBudgetResponse
+     */
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
     const whereClause: {
       status: typeof BudgetStatus.ACTIVE;
@@ -485,7 +514,7 @@ export class BudgetsService {
       familyId?: string;
     } = {
       status: BudgetStatus.ACTIVE,
-      endDate: { lt: now },
+      endDate: { lt: today }, // Budgets with endDate BEFORE today
     };
 
     if (familyId) {

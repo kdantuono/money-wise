@@ -28,7 +28,7 @@
  * ```
  */
 
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
 import {
   useBudgetsStore,
   useBudgets as useBudgetsSelector,
@@ -40,6 +40,21 @@ import {
 import type { CreateBudgetData, UpdateBudgetData, Budget } from '../services/budgets.client';
 
 /**
+ * Auto-refresh configuration
+ * Uses hybrid strategy: baseline polling + smart triggers
+ */
+const AUTO_REFRESH_CONFIG = {
+  /** Baseline refresh interval (10 minutes) */
+  BASELINE_INTERVAL: 10 * 60 * 1000,
+  /** Minimum time between refreshes (prevent spam) */
+  MIN_REFRESH_INTERVAL: 30 * 1000, // 30 seconds
+  /** Enable visibility-based refresh (tab focus) */
+  REFRESH_ON_FOCUS: true,
+  /** Enable periodic baseline refresh */
+  ENABLE_BASELINE: true,
+} as const;
+
+/**
  * Options for useBudgets hook
  */
 export interface UseBudgetsOptions {
@@ -48,6 +63,14 @@ export interface UseBudgetsOptions {
    * @default true
    */
   autoFetch?: boolean;
+
+  /**
+   * Enable automatic refresh with hybrid strategy:
+   * - Baseline: every 10 minutes
+   * - On tab focus (if enabled)
+   * @default false
+   */
+  enableAutoRefresh?: boolean;
 
   /**
    * Callback when fetch succeeds
@@ -101,6 +124,7 @@ export interface UseBudgetsOptions {
 export function useBudgets(options: UseBudgetsOptions = {}) {
   const {
     autoFetch = true,
+    enableAutoRefresh = false,
     onFetchSuccess,
     onFetchError,
     onCreateSuccess,
@@ -121,30 +145,83 @@ export function useBudgets(options: UseBudgetsOptions = {}) {
   // Store actions
   const store = useBudgetsStore();
 
-  // Auto-fetch on mount
+  // Track last refresh time to prevent spam
+  const lastRefreshRef = useRef<number>(0);
+
+  // Memoize callbacks to prevent unnecessary re-renders
+  const handleFetchSuccess = useCallback(() => {
+    lastRefreshRef.current = Date.now();
+    onFetchSuccess?.();
+  }, [onFetchSuccess]);
+
+  const handleFetchError = useCallback((err: Error) => {
+    onFetchError?.(err);
+  }, [onFetchError]);
+
+  // Smart refresh function with rate limiting
+  const performRefresh = useCallback(async (_source: 'mount' | 'interval' | 'focus') => {
+    const now = Date.now();
+    const timeSinceLastRefresh = now - lastRefreshRef.current;
+
+    // Rate limiting: prevent refresh if too soon
+    if (timeSinceLastRefresh < AUTO_REFRESH_CONFIG.MIN_REFRESH_INTERVAL) {
+      return;
+    }
+
+    try {
+      await store.fetchBudgets();
+      handleFetchSuccess();
+    } catch (err) {
+      handleFetchError(err as Error);
+    }
+  }, [store, handleFetchSuccess, handleFetchError]);
+
+  // Initial fetch on mount
   useEffect(() => {
     if (autoFetch && budgets.length === 0) {
-      store.fetchBudgets()
-        .then(() => {
-          onFetchSuccess?.();
-        })
-        .catch((err) => {
-          onFetchError?.(err);
-        });
+      performRefresh('mount');
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoFetch]);
+  }, [autoFetch, budgets.length, performRefresh]);
 
-  // Refresh budgets
+  // Baseline polling (every 10 minutes)
+  useEffect(() => {
+    if (!enableAutoRefresh || !AUTO_REFRESH_CONFIG.ENABLE_BASELINE) {
+      return;
+    }
+
+    const intervalId = setInterval(() => {
+      performRefresh('interval');
+    }, AUTO_REFRESH_CONFIG.BASELINE_INTERVAL);
+
+    return () => clearInterval(intervalId);
+  }, [enableAutoRefresh, performRefresh]);
+
+  // Visibility API: refresh on tab focus
+  useEffect(() => {
+    if (!enableAutoRefresh || !AUTO_REFRESH_CONFIG.REFRESH_ON_FOCUS) {
+      return;
+    }
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        performRefresh('focus');
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [enableAutoRefresh, performRefresh]);
+
+  // Refresh budgets (manual trigger)
   const refresh = useCallback(async () => {
     try {
       await store.fetchBudgets();
-      onFetchSuccess?.();
+      handleFetchSuccess();
     } catch (err) {
-      onFetchError?.(err as Error);
+      handleFetchError(err as Error);
       throw err;
     }
-  }, [store, onFetchSuccess, onFetchError]);
+  }, [store, handleFetchSuccess, handleFetchError]);
 
   // Create budget
   const createBudget = useCallback(async (data: CreateBudgetData) => {

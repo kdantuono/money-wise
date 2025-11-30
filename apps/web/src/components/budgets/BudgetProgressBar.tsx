@@ -94,14 +94,16 @@ export function BudgetProgressBar({
   // Color mapping for progress bar
   const colorMap = {
     safe: 'bg-green-500',
-    warning: 'bg-yellow-500',
+    warning: 'bg-orange-500',
+    maxed: 'bg-yellow-500',
     over: 'bg-red-500',
   };
 
   // Background color for the bar container
   const bgColorMap = {
     safe: 'bg-green-100',
-    warning: 'bg-yellow-100',
+    warning: 'bg-orange-100',
+    maxed: 'bg-yellow-100',
     over: 'bg-red-100',
   };
 
@@ -135,7 +137,8 @@ export function BudgetProgressBar({
             className={cn(
               'text-xs font-medium',
               progressStatus === 'over' && 'text-red-600',
-              progressStatus === 'warning' && 'text-yellow-600',
+              progressStatus === 'maxed' && 'text-yellow-600',
+              progressStatus === 'warning' && 'text-orange-600',
               progressStatus === 'safe' && 'text-green-600'
             )}
           >

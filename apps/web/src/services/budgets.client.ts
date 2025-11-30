@@ -44,9 +44,13 @@ export type BudgetPeriod = 'MONTHLY' | 'QUARTERLY' | 'YEARLY' | 'CUSTOM';
 export type BudgetStatus = 'ACTIVE' | 'COMPLETED' | 'DRAFT';
 
 /**
- * Progress status for UI color coding
+ * Progress status for UI color coding:
+ * - safe: 0-79% spent (green)
+ * - warning: 80-99% spent (orange)
+ * - maxed: exactly 100% spent (yellow)
+ * - over: 100%+ spent (red)
  */
-export type ProgressStatus = 'safe' | 'warning' | 'over';
+export type ProgressStatus = 'safe' | 'warning' | 'maxed' | 'over';
 
 /**
  * Category summary in budget response

@@ -80,10 +80,23 @@ describe('BudgetProgressBar', () => {
       expect(progressBar).toBeInTheDocument();
     });
 
-    it('renders yellow progress bar for warning status', () => {
+    it('renders orange progress bar for warning status (80-99%)', () => {
       const budget = createMockBudget({
         percentage: 85,
         progressStatus: 'warning',
+      });
+      const { container } = render(<BudgetProgressBar budget={budget} />);
+
+      const progressBar = container.querySelector('.bg-orange-500');
+      expect(progressBar).toBeInTheDocument();
+    });
+
+    it('renders yellow progress bar for maxed status (exactly 100%)', () => {
+      const budget = createMockBudget({
+        amount: 1000,
+        spent: 1000,
+        percentage: 100,
+        progressStatus: 'maxed',
       });
       const { container } = render(<BudgetProgressBar budget={budget} />);
 

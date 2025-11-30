@@ -141,14 +141,20 @@ export class BudgetResponseDto {
   isOverBudget: boolean;
 
   @ApiProperty({
-    description: 'Progress status for UI color coding',
-    enum: ['safe', 'warning', 'over'],
+    description: 'Progress status for UI color coding: safe (0-79%, green), warning (80-99%, orange), maxed (exactly 100%, yellow), over (100%+, red)',
+    enum: ['safe', 'warning', 'maxed', 'over'],
     example: 'safe',
+    examples: {
+      safe: { value: 'safe', summary: '0-79% spent (green)' },
+      warning: { value: 'warning', summary: '80-99% spent (orange)' },
+      maxed: { value: 'maxed', summary: 'Exactly 100% spent (yellow)' },
+      over: { value: 'over', summary: 'Over 100% spent (red)' },
+    },
   })
-  progressStatus: 'safe' | 'warning' | 'over';
+  progressStatus: 'safe' | 'warning' | 'maxed' | 'over';
 
   @ApiProperty({
-    description: 'Whether the budget period has expired (endDate has passed)',
+    description: 'Whether the budget period has expired. Budget is active THROUGH end date (inclusive). Expires at start of day AFTER end date.',
     example: false,
   })
   isExpired: boolean;
