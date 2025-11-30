@@ -325,6 +325,7 @@ export class BudgetsService {
       );
 
       // Single query for all transactions in this category's date range
+      // Using minimal select to reduce memory footprint
       const transactions = await this.prisma.transaction.findMany({
         where: {
           accountId: { in: accountIds },
@@ -337,12 +338,25 @@ export class BudgetsService {
       });
 
       // Assign transactions to each budget's specific date range
+      // Process in a single pass to minimize iterations
       for (const budget of categoryBudgets) {
-        const spent = transactions
-          .filter((t) => t.date >= budget.startDate && t.date <= budget.endDate)
-          .reduce((sum, t) => sum + (t.amount?.toNumber() || 0), 0);
+        result.set(budget.id, 0);
+      }
 
-        result.set(budget.id, spent);
+      // Single pass through transactions, assigning to relevant budgets
+      for (const transaction of transactions) {
+        for (const budget of categoryBudgets) {
+          if (
+            transaction.date >= budget.startDate &&
+            transaction.date <= budget.endDate
+          ) {
+            const current = result.get(budget.id) || 0;
+            result.set(
+              budget.id,
+              current + (transaction.amount?.toNumber() || 0),
+            );
+          }
+        }
       }
     }
 

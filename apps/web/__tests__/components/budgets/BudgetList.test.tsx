@@ -5,7 +5,7 @@
 
 import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '../../utils/test-utils';
+import { render, screen } from '../../utils/test-utils';
 import { BudgetList } from '../../../src/components/budgets/BudgetList';
 import type { Budget } from '../../../src/services/budgets.client';
 

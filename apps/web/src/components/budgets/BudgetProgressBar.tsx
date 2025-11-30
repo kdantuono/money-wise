@@ -40,6 +40,31 @@ function formatCurrency(amount: number): string {
 }
 
 /**
+ * Map icon names to emoji representations
+ * This provides a simple fallback until a proper icon library is integrated
+ */
+function getIconEmoji(iconName: string): string {
+  const iconMap: Record<string, string> = {
+    'shopping-cart': '🛒',
+    'utensils': '🍴',
+    'car': '🚗',
+    'film': '🎬',
+    'bolt': '⚡',
+    'shopping-bag': '🛍️',
+    'heart': '❤️',
+    'book': '📚',
+    'home': '🏠',
+    'plane': '✈️',
+    'phone': '📱',
+    'coffee': '☕',
+    'gift': '🎁',
+    'music': '🎵',
+  };
+
+  return iconMap[iconName] || '📊';
+}
+
+/**
  * BudgetProgressBar Component
  *
  * @param props - Component props
@@ -93,8 +118,10 @@ export function BudgetProgressBar({
               <span
                 className="text-lg"
                 style={{ color: category.color || undefined }}
+                role="img"
+                aria-label={`${category.name} icon`}
               >
-                {/* Icon placeholder - can be replaced with actual icon component */}
+                {getIconEmoji(category.icon)}
               </span>
             )}
             <span className="font-medium text-sm text-gray-900">
