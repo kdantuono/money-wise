@@ -1,5 +1,9 @@
 version: '3.8'
 
+# E2E Test Docker Configuration
+# Fixes timeout issue by building during image creation, not container startup
+# Expected startup time: < 30 seconds (vs 3+ minutes before)
+
 services:
   # PostgreSQL database for E2E tests
   postgres-e2e:
@@ -36,19 +40,30 @@ services:
       - e2e-network
 
   # Backend service for E2E tests
+  # Uses pre-built runtime stage - starts in seconds, not minutes
   backend-e2e:
     build:
       context: .
       dockerfile: apps/backend/Dockerfile
-      target: builder
+      target: runtime
     container_name: moneywise-backend-e2e
     environment:
       NODE_ENV: test
+      # Database config (both formats for compatibility)
       DATABASE_URL: postgresql://test:testpass@postgres-e2e:5432/test_db
+      DB_HOST: postgres-e2e
+      DB_PORT: 5432
+      DB_USERNAME: test
+      DB_PASSWORD: testpass
+      DB_NAME: test_db
+      # Redis config
       REDIS_HOST: redis-e2e
       REDIS_PORT: 6379
-      JWT_SECRET: test-jwt-secret-for-e2e-testing
-      JWT_REFRESH_SECRET: test-jwt-refresh-secret-for-e2e-testing
+      # JWT config (must be at least 32 characters)
+      JWT_SECRET: test-jwt-secret-for-e2e-testing-minimum-length-32
+      JWT_REFRESH_SECRET: test-jwt-refresh-secret-for-e2e-testing-min
+      JWT_ACCESS_SECRET: test-jwt-access-secret-for-e2e-testing-min32
+      # App config
       PORT: 3001
     ports:
       - "3001:3001"
@@ -62,36 +77,38 @@ services:
       interval: 5s
       timeout: 5s
       retries: 20
-      start_period: 30s
+      start_period: 10s
     networks:
       - e2e-network
-    command: >
-      sh -c "
-        echo '🔄 Building backend...' &&
-        pnpm --filter @money-wise/backend build &&
-        echo '✅ Backend built successfully' &&
+    # Run migrations then start the pre-built server
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
         echo '🔄 Running database migrations...' &&
-        cd apps/backend &&
-        pnpm prisma:migrate:deploy &&
+        cd /app/apps/backend &&
+        npx prisma migrate deploy &&
         echo '✅ Migrations applied successfully' &&
-        echo '🔄 Starting backend server...' &&
-        pnpm start:prod
-      "
+        echo '🚀 Starting backend server...' &&
+        node /app/apps/backend/dist/main.js
 
   # Frontend service for E2E tests
+  # Uses pre-built runtime stage with Next.js standalone output
   frontend-e2e:
     build:
       context: .
       dockerfile: apps/web/Dockerfile
-      target: builder
+      target: runtime
+      args:
+        # API URL for browser-side calls (baked at build time)
+        # Browser runs on host machine, uses localhost
+        NEXT_PUBLIC_API_URL: http://localhost:3001
     container_name: moneywise-frontend-e2e
     environment:
-      NODE_ENV: test
-      # Use localhost for browser-side API calls (NEXT_PUBLIC_* vars are baked at build time)
-      # The browser runs on the host machine and can't resolve Docker internal hostnames
-      NEXT_PUBLIC_API_URL: http://localhost:3001
+      NODE_ENV: production
       PORT: 3000
       HOSTNAME: 0.0.0.0
+      # Server-side API URL for BFF proxy (Docker internal network)
+      API_URL: http://backend-e2e:3001
     ports:
       - "3000:3000"
     depends_on:
@@ -102,22 +119,10 @@ services:
       interval: 5s
       timeout: 5s
       retries: 20
-      start_period: 30s
+      start_period: 5s
     networks:
       - e2e-network
-    command: >
-      sh -c "
-        echo '🔄 Building frontend with standalone output...' &&
-        cd apps/web &&
-        pnpm build &&
-        echo '✅ Frontend built successfully' &&
-        echo '🔄 Copying static files for standalone...' &&
-        cp -r public .next/standalone/apps/web/public 2>/dev/null || true &&
-        cp -r .next/static .next/standalone/apps/web/.next/static &&
-        echo '🔄 Starting standalone server...' &&
-        cd .next/standalone/apps/web &&
-        node server.js
-      "
+    # No command override - uses Dockerfile CMD (node apps/web/server.js)
 
 networks:
   e2e-network:
