@@ -43,10 +43,10 @@ export const ROUTES = {
 
   // Budgets
   BUDGETS: {
-    INDEX: '/budgets',
-    CREATE: '/budgets/create',
-    DETAILS: (id: string) => `/budgets/${id}`,
-    EDIT: (id: string) => `/budgets/${id}/edit`,
+    INDEX: '/dashboard/budgets',
+    CREATE: '/dashboard/budgets/create',
+    DETAILS: (id: string) => `/dashboard/budgets/${id}`,
+    EDIT: (id: string) => `/dashboard/budgets/${id}/edit`,
   },
 
   // Reports
