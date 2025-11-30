@@ -28,6 +28,8 @@ function DonutChart({ data }: { data: CategorySpending[] }) {
       height={size}
       viewBox={`0 0 ${size} ${size}`}
       className="transform -rotate-90"
+      aria-hidden="true"
+      role="img"
     >
       {/* Background circle */}
       <circle
