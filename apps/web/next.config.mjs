@@ -12,6 +12,11 @@ const nextConfig = {
   // Enable React strict mode for better development experience
   reactStrictMode: true,
 
+  // Output standalone build for Docker deployment
+  // This bundles the server with all dependencies for containerized environments
+  // Required for Next.js 15 to properly serve static files in Docker
+  output: 'standalone',
+
   // Compiler options - preserve data-testid for E2E tests in production
   // By default, Next.js preserves all data attributes in production builds.
   // We explicitly DO NOT configure reactRemoveProperties to ensure data-testid

@@ -229,9 +229,9 @@ async function createAuthenticatedSession(config: FullConfig) {
       await createTestUserViaBrowser(page);
     }
 
-    // Step 2: Login to get auth state
-    console.log('🔐 Logging in to capture auth state...');
-    await loginViaAPI(page);
+    // Step 2: Login to get auth state via UI
+    // Using UI-based login for HttpOnly cookie auth (required for BFF pattern)
+    await loginViaUI(page);
 
     // Step 3: Save auth state
     console.log('💾 Saving auth state...');
@@ -330,42 +330,59 @@ async function createTestUserViaBrowser(page: any) {
 }
 
 /**
- * Login via API to get auth cookies
+ * Login via UI to get auth cookies
+ *
+ * IMPORTANT: Must use UI-based login because:
+ * 1. HttpOnly cookies require same-origin requests through the BFF
+ * 2. page.request.post() creates a separate HTTP context that doesn't share cookies
+ * 3. The frontend uses Next.js BFF pattern (/api routes proxy to backend)
  */
-async function loginViaAPI(page: any) {
+async function loginViaUI(page: any) {
+  console.log('🔐 Logging in via UI...');
+
   try {
-    // Navigate to app first to establish domain context
-    await page.goto(FRONTEND_URL);
-    await page.waitForLoadState('networkidle');
-
-    // Perform login via API route
-    const response = await page.request.post(`${BACKEND_URL}/api/auth/login`, {
-      data: {
-        email: TEST_USER.email,
-        password: TEST_USER.password
-      }
-    });
-
-    if (!response.ok()) {
-      const errorText = await response.text();
-      throw new Error(`Login failed (${response.status()}): ${errorText}`);
-    }
-
-    // Navigate to dashboard to verify login
-    await page.goto(`${FRONTEND_URL}/dashboard`);
-    // Changed from 'networkidle' to 'domcontentloaded' to avoid timeout issues
-    // with continuous polling/websockets in the dashboard
+    // Navigate to login page
+    await page.goto(`${FRONTEND_URL}/auth/login`);
     await page.waitForLoadState('domcontentloaded');
 
-    // Verify we're logged in
+    // Wait for login form to be ready
+    await page.waitForSelector('[data-testid="login-form"]', {
+      state: 'visible',
+      timeout: 10000
+    });
+
+    // Fill login form
+    await page.fill('[data-testid="email-input"]', TEST_USER.email);
+    await page.fill('[data-testid="password-input"]', TEST_USER.password);
+
+    // Submit form and wait for response + navigation
+    await Promise.all([
+      page.waitForResponse(
+        (r: any) => r.url().includes('/api/auth/login') && r.status() === 200,
+        { timeout: 15000 }
+      ),
+      page.click('[data-testid="login-button"]')
+    ]);
+
+    // Wait for redirect to dashboard
+    await page.waitForURL(`${FRONTEND_URL}/dashboard`, { timeout: 15000 });
+
+    // Verify we're logged in by checking we're on dashboard
     const currentUrl = page.url();
     if (!currentUrl.includes('/dashboard')) {
-      throw new Error('Login verification failed: not redirected to dashboard');
+      throw new Error(`Login verification failed: expected /dashboard, got ${currentUrl}`);
     }
 
-    console.log('✅ Login successful');
+    console.log('✅ Login successful via UI');
   } catch (error) {
-    console.error('❌ Login failed:', error);
+    console.error('❌ UI Login failed:', error);
+    // Take screenshot for debugging
+    try {
+      await page.screenshot({ path: 'e2e/.auth/login-failure.png' });
+      console.log('📸 Screenshot saved to e2e/.auth/login-failure.png');
+    } catch {
+      // Ignore screenshot errors
+    }
     throw error;
   }
 }

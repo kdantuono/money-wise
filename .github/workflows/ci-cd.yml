@@ -1044,16 +1044,20 @@ jobs:
           cat backend.log
           exit 1
 
-      - name: 👤 Create test user
+      - name: 👤 Create test users (all shards)
         run: |
-          echo "Creating single test user for E2E execution..."
-          # Password must NOT contain email, firstName, or lastName parts
-          curl -X POST http://localhost:3001/api/auth/register \
-            -H "Content-Type: application/json" \
-            -d '{"email":"e2e-test@moneywise.test","password":"Qwerty#2025!Strong","firstName":"Automation","lastName":"Tester"}' \
-            -w "\nHTTP Status: %{http_code}\n" \
-            || echo "User might already exist (409) - continuing..."
-          echo "✅ Test user creation completed"
+          echo "Creating shard test users for parallel E2E execution..."
+          # Create 8 shard users matching globalSetup expectations
+          # Password: SecureTest#2025! (matches apps/web/e2e/global-setup.ts)
+          for i in {0..7}; do
+            echo "Creating e2e-shard-$i@moneywise.test..."
+            curl -s -X POST http://localhost:3001/api/auth/register \
+              -H "Content-Type: application/json" \
+              -d "{\"email\":\"e2e-shard-$i@moneywise.test\",\"password\":\"SecureTest#2025!\",\"firstName\":\"E2E\",\"lastName\":\"Shard$i\"}" \
+              -w " (HTTP: %{http_code})\n" \
+              || echo "User might already exist (409) - continuing..."
+          done
+          echo "✅ All 8 shard test users created"
 
       - name: 📝 Create test-users.json file
         run: |
@@ -1061,16 +1065,18 @@ jobs:
           cat > apps/web/e2e/.auth/test-users.json << 'EOF'
           {
             "users": [
-              {
-                "email": "e2e-test@moneywise.test",
-                "password": "Qwerty#2025!Strong",
-                "firstName": "Automation",
-                "lastName": "Tester"
-              }
+              { "email": "e2e-shard-0@moneywise.test", "password": "SecureTest#2025!", "firstName": "E2E", "lastName": "Shard0" },
+              { "email": "e2e-shard-1@moneywise.test", "password": "SecureTest#2025!", "firstName": "E2E", "lastName": "Shard1" },
+              { "email": "e2e-shard-2@moneywise.test", "password": "SecureTest#2025!", "firstName": "E2E", "lastName": "Shard2" },
+              { "email": "e2e-shard-3@moneywise.test", "password": "SecureTest#2025!", "firstName": "E2E", "lastName": "Shard3" },
+              { "email": "e2e-shard-4@moneywise.test", "password": "SecureTest#2025!", "firstName": "E2E", "lastName": "Shard4" },
+              { "email": "e2e-shard-5@moneywise.test", "password": "SecureTest#2025!", "firstName": "E2E", "lastName": "Shard5" },
+              { "email": "e2e-shard-6@moneywise.test", "password": "SecureTest#2025!", "firstName": "E2E", "lastName": "Shard6" },
+              { "email": "e2e-shard-7@moneywise.test", "password": "SecureTest#2025!", "firstName": "E2E", "lastName": "Shard7" }
             ]
           }
           EOF
-          echo "✅ test-users.json file created"
+          echo "✅ test-users.json file created with 8 shard users"
 
       - name: 📤 Upload test user pool as artifact
         uses: actions/upload-artifact@v4
