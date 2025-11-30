@@ -88,6 +88,12 @@ export interface BankingSyncResult {
   startedAt: Date;
   /** When sync completed */
   completedAt?: Date;
+  /**
+   * True when external resource (account/connection) no longer exists on provider side.
+   * Indicates a permanent 404 - the local reference should be cleaned up.
+   * This is different from temporary errors - the resource is gone forever.
+   */
+  isResourceDeleted?: boolean;
 }
 
 /**

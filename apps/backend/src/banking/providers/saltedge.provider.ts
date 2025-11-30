@@ -14,6 +14,23 @@ import {
 } from '../interfaces/banking-provider.interface';
 
 /**
+ * Custom error for SaltEdge 404 responses (resource permanently deleted)
+ * Used to distinguish permanent deletion (needs cleanup) from temporary errors
+ */
+export class SaltEdgeNotFoundError extends Error {
+  public readonly statusCode = 404;
+  public readonly resourceType: 'account' | 'connection' | 'customer' | 'unknown';
+  public readonly resourceId?: string;
+
+  constructor(message: string, resourceType: 'account' | 'connection' | 'customer' | 'unknown' = 'unknown', resourceId?: string) {
+    super(message);
+    this.name = 'SaltEdgeNotFoundError';
+    this.resourceType = resourceType;
+    this.resourceId = resourceId;
+  }
+}
+
+/**
  * SaltEdge API v6 types
  * Based on https://docs.saltedge.com/v6/api_reference/
  */
@@ -216,6 +233,35 @@ export class SaltEdgeProvider implements IBankingProvider {
         path,
         response: response.data,
       });
+
+      // Detect 404 responses (resource permanently deleted on SaltEdge side)
+      // This requires cleanup of local stale references
+      if (response.status === 404) {
+        // Determine resource type from the path
+        let resourceType: 'account' | 'connection' | 'customer' | 'unknown' = 'unknown';
+        let resourceId: string | undefined;
+
+        if (path.includes('/accounts')) {
+          resourceType = 'account';
+          const match = path.match(/\/accounts\/(\d+)/);
+          resourceId = match?.[1];
+        } else if (path.includes('/connections')) {
+          resourceType = 'connection';
+          const match = path.match(/\/connections\/(\d+)/);
+          resourceId = match?.[1];
+        } else if (path.includes('/customers')) {
+          resourceType = 'customer';
+          const match = path.match(/\/customers\/(\d+)/);
+          resourceId = match?.[1];
+        }
+
+        throw new SaltEdgeNotFoundError(
+          `SaltEdge resource not found (404): ${resourceType} ${resourceId || 'unknown'}`,
+          resourceType,
+          resourceId,
+        );
+      }
+
       throw new Error(`SaltEdge API error (${errorClass}): ${errorMessage}`);
     }
 
@@ -706,6 +752,28 @@ export class SaltEdgeProvider implements IBankingProvider {
         completedAt: new Date(),
       };
     } catch (error) {
+      // Handle 404 errors (resource permanently deleted on SaltEdge side)
+      // This requires cleanup of local stale references
+      if (error instanceof SaltEdgeNotFoundError) {
+        this.logger.warn(
+          `SaltEdge resource deleted (404): ${error.resourceType} ${error.resourceId || accountId}`,
+          { connectionId, accountId, resourceType: error.resourceType },
+        );
+
+        return {
+          status: BankingSyncStatus.ERROR,
+          accountsSynced: 0,
+          transactionsSynced: 0,
+          balanceUpdated: false,
+          error: error.message,
+          errorCode: 'RESOURCE_NOT_FOUND',
+          startedAt,
+          completedAt: new Date(),
+          isResourceDeleted: true, // Signal to clean up stale local references
+        };
+      }
+
+      // Handle other errors generically
       this.logger.error('Sync failed', error);
 
       return {
