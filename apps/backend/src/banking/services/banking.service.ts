@@ -721,6 +721,59 @@ export class BankingService {
         fromDate,
       );
 
+      // Handle deleted external resources (permanent 404 from SaltEdge)
+      // This indicates the account/connection was deleted on SaltEdge's side
+      // and we need to clean up our stale references
+      if (syncResult.isResourceDeleted) {
+        this.logger.warn(
+          `SaltEdge resource deleted for account ${accountId}, cleaning up stale references`,
+          { saltEdgeAccountId: account.saltEdgeAccountId, saltEdgeConnectionId: account.saltEdgeConnectionId },
+        );
+
+        // Clear stale SaltEdge references and set status to ERROR
+        await this.prisma.account.update({
+          where: { id: accountId },
+          data: {
+            saltEdgeAccountId: null,
+            saltEdgeConnectionId: null,
+            syncStatus: BankingSyncStatus.ERROR,
+          },
+        });
+
+        // Also update the associated BankingConnection to REVOKED
+        // (external resource deleted = connection effectively revoked)
+        if (account.saltEdgeConnectionId) {
+          await this.prisma.bankingConnection.updateMany({
+            where: { saltEdgeConnectionId: account.saltEdgeConnectionId },
+            data: { status: BankingConnectionStatus.REVOKED },
+          });
+        }
+
+        // Store sync log with resource deletion info
+        const syncLog = await this.prisma.bankingSyncLog.create({
+          data: {
+            accountId,
+            provider: account.bankingProvider,
+            status: BankingSyncStatus.ERROR,
+            startedAt: syncResult.startedAt,
+            completedAt: syncResult.completedAt,
+            accountsSynced: 0,
+            transactionsSynced: 0,
+            balanceUpdated: false,
+            error: 'External banking connection no longer exists. Please re-link your account.',
+            errorCode: 'RESOURCE_DELETED',
+          },
+        });
+
+        return {
+          syncLogId: syncLog.id,
+          status: BankingSyncStatus.ERROR,
+          transactionsSynced: 0,
+          balanceUpdated: false,
+          error: 'External banking connection no longer exists. Please re-link your account.',
+        };
+      }
+
       // Store transactions
       let storedTransactionsCount = 0;
       if (syncResult.transactions && syncResult.transactions.length > 0) {
