@@ -87,7 +87,9 @@ services:
     container_name: moneywise-frontend-e2e
     environment:
       NODE_ENV: test
-      NEXT_PUBLIC_API_URL: http://backend-e2e:3001
+      # Use localhost for browser-side API calls (NEXT_PUBLIC_* vars are baked at build time)
+      # The browser runs on the host machine and can't resolve Docker internal hostnames
+      NEXT_PUBLIC_API_URL: http://localhost:3001
       PORT: 3000
     ports:
       - "3000:3000"
