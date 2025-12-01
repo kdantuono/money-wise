@@ -9,15 +9,18 @@ When creating a new git worktree, `.env` files are NOT copied because they are i
 **EVERY TIME a worktree is created, you MUST copy environment files from main:**
 
 ```bash
+# Set your main worktree path
+MAIN_WORKTREE="$(git rev-parse --show-toplevel)"
+
 # After creating worktree
 git worktree add /path/to/worktree branch-name
 
 # MANDATORY: Copy environment files
-cp /home/nemesi/dev/money-wise/apps/backend/.env /path/to/worktree/apps/backend/.env
-cp /home/nemesi/dev/money-wise/apps/web/.env.local /path/to/worktree/apps/web/.env.local 2>/dev/null || true
+cp "$MAIN_WORKTREE/apps/backend/.env" /path/to/worktree/apps/backend/.env
+cp "$MAIN_WORKTREE/apps/web/.env.local" /path/to/worktree/apps/web/.env.local 2>/dev/null || true
 
 # Also copy root .env if exists
-cp /home/nemesi/dev/money-wise/.env /path/to/worktree/.env 2>/dev/null || true
+cp "$MAIN_WORKTREE/.env" /path/to/worktree/.env 2>/dev/null || true
 ```
 
 ### Why This Matters
@@ -38,11 +41,11 @@ cp /home/nemesi/dev/money-wise/.env /path/to/worktree/.env 2>/dev/null || true
 ### Verification After Copy
 
 ```bash
-# Verify SaltEdge credentials are present
-grep "SALTEDGE_APP_ID" /path/to/worktree/apps/backend/.env
+# Verify SaltEdge credentials are present (should output a value)
+grep "^SALTEDGE_APP_ID=" /path/to/worktree/apps/backend/.env
 
-# Should output:
-# SALTEDGE_APP_ID=wuQhPpSwSDYfa4WceLhSt0FJ2q1Qd_4tO1DPRROOXNQ
+# Verify private key path is configured
+grep "^SALTEDGE_PRIVATE_KEY_PATH=" /path/to/worktree/apps/backend/.env
 ```
 
 ### Quick Setup Script
@@ -52,16 +55,16 @@ Use the provided script for automated setup:
 ./.claude/scripts/setup-worktree-env.sh /path/to/worktree
 ```
 
-## Current SaltEdge Credentials
+## SaltEdge Credentials
 
-- **Environment**: Sandbox (testing)
-- **APP_ID**: wuQhPpSwSDYfa4WceLhSt0FJ2q1Qd_4tO1DPRROOXNQ
-- **SECRET**: cp19Wvsmex1zBh_3cRDGVJlQh5HjRXbm4ufTRAfgSNI
-- **PRIVATE_KEY_PATH**: /home/nemesi/saltedge_private.pem
+Credentials are stored securely in `apps/backend/.env` (not committed to repo).
 
-These are stored in `/home/nemesi/dev/money-wise/apps/backend/.env` (main worktree).
+Required environment variables:
+- `SALTEDGE_APP_ID` - Your SaltEdge application ID
+- `SALTEDGE_SECRET` - Your SaltEdge secret key
+- `SALTEDGE_PRIVATE_KEY_PATH` - Path to your RSA private key for API signing
 
-**Note**: The RSA private key at `/home/nemesi/saltedge_private.pem` is required for SaltEdge v6 API request signing. This file is NOT in the repo (it's in the user's home directory), so it doesn't need copying - just ensure `SALTEDGE_PRIVATE_KEY_PATH` points to the correct absolute path.
+**Note**: The RSA private key file is NOT in the repo. Ensure `SALTEDGE_PRIVATE_KEY_PATH` points to the correct absolute path on your system.
 
 ---
 

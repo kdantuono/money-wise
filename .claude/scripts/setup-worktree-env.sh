@@ -1,16 +1,23 @@
 #!/bin/bash
 # Setup environment files for a new git worktree
-# Usage: ./setup-worktree-env.sh /path/to/worktree
+# Usage: ./setup-worktree-env.sh /path/to/worktree [main_worktree_path]
 
 set -e
 
-MAIN_WORKTREE="/home/nemesi/dev/money-wise"
+# Dynamically detect main worktree, or use provided path
+MAIN_WORKTREE="${2:-$(git rev-parse --show-toplevel 2>/dev/null || echo "")}"
 TARGET_WORKTREE="${1:-}"
 
 if [ -z "$TARGET_WORKTREE" ]; then
-    echo "Usage: $0 /path/to/worktree"
+    echo "Usage: $0 /path/to/worktree [main_worktree_path]"
     echo ""
-    echo "Example: $0 /home/nemesi/dev/money-wise-dashboard"
+    echo "Example: $0 ~/dev/money-wise-dashboard"
+    echo "         $0 ~/dev/money-wise-dashboard ~/dev/money-wise"
+    exit 1
+fi
+
+if [ -z "$MAIN_WORKTREE" ]; then
+    echo "Error: Could not detect main worktree. Please provide it as second argument."
     exit 1
 fi
 
@@ -48,27 +55,26 @@ else
     echo "ℹ️  Note: root .env not found (optional)"
 fi
 
-# Verify SaltEdge credentials
+# Verify SaltEdge credentials (check existence without exposing values)
 echo ""
-echo "Verifying SaltEdge credentials..."
-if grep -q "SALTEDGE_APP_ID=wuQhPpSwSDYfa4WceLhSt0FJ2q1Qd_4tO1DPRROOXNQ" "$TARGET_WORKTREE/apps/backend/.env" 2>/dev/null; then
-    echo "✅ SaltEdge APP_ID verified"
+echo "Verifying SaltEdge configuration..."
+if grep -q "^SALTEDGE_APP_ID=" "$TARGET_WORKTREE/apps/backend/.env" 2>/dev/null; then
+    echo "✅ SALTEDGE_APP_ID is configured"
 else
-    echo "⚠️  Warning: SaltEdge APP_ID may not be properly configured"
+    echo "⚠️  Warning: SALTEDGE_APP_ID is not set in apps/backend/.env"
 fi
 
-# Verify private key path
-if grep -q "SALTEDGE_PRIVATE_KEY_PATH=/home/nemesi/saltedge_private.pem" "$TARGET_WORKTREE/apps/backend/.env" 2>/dev/null; then
-    echo "✅ SaltEdge private key path verified"
+# Verify private key path is set and file exists
+PRIVATE_KEY_PATH=$(grep "^SALTEDGE_PRIVATE_KEY_PATH=" "$TARGET_WORKTREE/apps/backend/.env" 2>/dev/null | cut -d'=' -f2-)
+if [ -n "$PRIVATE_KEY_PATH" ]; then
+    echo "✅ SALTEDGE_PRIVATE_KEY_PATH is configured"
+    if [ -f "$PRIVATE_KEY_PATH" ]; then
+        echo "✅ RSA private key file exists at configured path"
+    else
+        echo "⚠️  Warning: RSA private key file not found at: $PRIVATE_KEY_PATH"
+    fi
 else
-    echo "⚠️  Warning: SALTEDGE_PRIVATE_KEY_PATH may not be configured"
-fi
-
-# Verify private key file exists
-if [ -f "/home/nemesi/saltedge_private.pem" ]; then
-    echo "✅ RSA private key file exists"
-else
-    echo "⚠️  Warning: RSA private key file not found at /home/nemesi/saltedge_private.pem"
+    echo "⚠️  Warning: SALTEDGE_PRIVATE_KEY_PATH is not set in apps/backend/.env"
 fi
 
 echo ""

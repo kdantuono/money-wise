@@ -180,15 +180,20 @@ for i in {1..30}; do
 done
 
 # Step 4: Create test users (exactly like CI)
+# NOTE: Test password can be overridden via E2E_TEST_PASSWORD env var
+# This is ONLY for local E2E testing - never use in production/staging
 echo ""
 echo -e "${YELLOW}Step 4: Creating E2E test users...${NC}"
+
+# Use env var or default test password
+TEST_PASSWORD="${E2E_TEST_PASSWORD:-SecureTest#2025!}"
 
 # Create shard users (0-7)
 for i in $(seq 0 7); do
   EMAIL="e2e-shard-${i}@moneywise.test"
   RESPONSE=$(curl -sf -X POST http://localhost:3001/api/auth/register \
     -H "Content-Type: application/json" \
-    -d "{\"email\":\"$EMAIL\",\"password\":\"SecureTest#2025!\",\"firstName\":\"E2E\",\"lastName\":\"Shard$i\"}" 2>&1 || echo "exists_or_error")
+    -d "{\"email\":\"$EMAIL\",\"password\":\"$TEST_PASSWORD\",\"firstName\":\"E2E\",\"lastName\":\"Shard$i\"}" 2>&1 || echo "exists_or_error")
 
   if echo "$RESPONSE" | grep -q "already exists"; then
     echo -e "  ${YELLOW}$EMAIL (already exists)${NC}"
