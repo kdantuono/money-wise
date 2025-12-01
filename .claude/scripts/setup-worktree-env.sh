@@ -2,7 +2,7 @@
 # Setup environment files for a new git worktree
 # Usage: ./setup-worktree-env.sh /path/to/worktree [main_worktree_path]
 
-set -e
+set -euo pipefail
 
 # Dynamically detect main worktree, or use provided path
 MAIN_WORKTREE="${2:-$(git rev-parse --show-toplevel 2>/dev/null || echo "")}"
