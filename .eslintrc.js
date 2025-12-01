@@ -41,6 +41,10 @@ module.exports = {
 
     // Security rules
     // Temporarily disabled during ESLint 9 migration (Phase 4.5)
+    // These rules need to be re-enabled after migrating to ESLint 9 flat config
+    // TODO: Track re-enablement in GitHub Issue #230 (create if not exists)
+    // Priority: HIGH - Security rules should be re-enabled ASAP
+    // Timeline: After ESLint 9 compatibility is verified
     'security/detect-object-injection': 'off',
     'security/detect-non-literal-regexp': 'off',
     'security/detect-unsafe-regex': 'off',

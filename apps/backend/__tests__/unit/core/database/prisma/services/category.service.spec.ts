@@ -1,4 +1,8 @@
 // @ts-nocheck
+// NOTE: Type checking disabled because mock Category objects are missing the 'depth' field.
+// The depth field was added to the schema but these mock objects predate that change.
+// TODO: Update all mock objects to include depth: 0 and remove @ts-nocheck
+// Tracked in: Phase 5 cleanup
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '@/core/database/prisma/prisma.service';
 import { CategoryService } from '@/core/database/prisma/services/category.service';

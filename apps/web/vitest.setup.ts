@@ -26,8 +26,8 @@ Object.defineProperty(window, 'open', {
       // simulate user closing the popup
       // consumers may poll .closed
       // set closed to true when close() is called
-       
-      // @ts-ignore - using 'this' on the mocked window object
+
+      // @ts-expect-error - Setting 'this.closed' on the mocked window object for popup simulation
       this.closed = true;
     },
   })),
@@ -94,7 +94,7 @@ vi.mock('next/navigation', () => ({
 vi.mock('next/image', () => ({
   __esModule: true,
   default: (props: any) => {
-     
+
     return React.createElement('img', props);
   },
 }));

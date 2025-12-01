@@ -48,7 +48,7 @@ export const mockDate = (date: string | Date) => {
   const originalDate = Date;
 
   beforeAll(() => {
-    // @ts-ignore
+    // @ts-expect-error - Replacing global Date constructor for testing purposes
     global.Date = jest.fn(() => mockDate);
     global.Date.now = jest.fn(() => mockDate.getTime());
     global.Date.UTC = originalDate.UTC;
@@ -89,9 +89,9 @@ export const mockConsole = () => {
   const originalConsole = { ...console };
 
   beforeEach(() => {
-    jest.spyOn(console, 'log').mockImplementation(() => {});
-    jest.spyOn(console, 'warn').mockImplementation(() => {});
-    jest.spyOn(console, 'error').mockImplementation(() => {});
+    jest.spyOn(console, 'log').mockImplementation(() => { });
+    jest.spyOn(console, 'warn').mockImplementation(() => { });
+    jest.spyOn(console, 'error').mockImplementation(() => { });
   });
 
   afterEach(() => {

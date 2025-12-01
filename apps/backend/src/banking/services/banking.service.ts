@@ -218,7 +218,8 @@ export class BankingService {
       const providerInstance = this.providerFactory.createProvider(provider);
       await providerInstance.authenticate();
     } catch (err: unknown) {
-      this.logger.error('Provider authentication failed', err instanceof Error ? err.message : String(err));
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      this.logger.error('Provider authentication failed', errorMessage);
       throw new BadRequestException('Failed to initiate banking link');
     }
 
@@ -244,15 +245,11 @@ export class BankingService {
 
     // Step 3: Build the return_to URL with our internal connectionId
     // SaltEdge will redirect here after OAuth, appending their connection_id
-    const frontendUrlConfig = this.configService.get('FRONTEND_URL');
+    const frontendUrlConfig = this.configService.get<string>('FRONTEND_URL');
     let frontendBase = 'http://localhost:3000'; // default fallback
 
-    if (frontendUrlConfig) {
-      if (typeof frontendUrlConfig === 'string') {
-        frontendBase = frontendUrlConfig;
-      } else if (typeof (frontendUrlConfig as Record<string, unknown>)?.toString === 'function') {
-        frontendBase = String(frontendUrlConfig);
-      }
+    if (typeof frontendUrlConfig === 'string' && frontendUrlConfig.length > 0) {
+      frontendBase = frontendUrlConfig;
     }
 
     // Ensure frontendBase is an absolute URL
@@ -298,7 +295,8 @@ export class BankingService {
         throw new BadRequestException(`Provider ${provider} not yet supported`);
       }
     } catch (err: unknown) {
-      this.logger.error('Failed to create connect session', err instanceof Error ? err.message : String(err));
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      this.logger.error('Failed to create connect session', errorMessage);
       throw new BadRequestException('Failed to initiate banking link');
     }
 
@@ -649,7 +647,11 @@ export class BankingService {
         this.logger.log(`Stored account: ${account.id}`);
 
         // Auto-sync transactions for newly linked account (non-blocking)
-        // Defer to next tick to avoid test race conditions with spies
+        // NOTE: Using setTimeout(fn, 0) to defer sync to next event loop tick.
+        // This is intentional to avoid race conditions in Jest tests where
+        // spies need to be set up before the sync is triggered.
+        // Alternative: Use a proper async queue system (e.g., BullMQ) for production.
+        // See: https://nodejs.org/en/learn/asynchronous-work/understanding-setimmediate
         setTimeout(() => {
           this.syncAccount(userId, createdAccount.id)
             .then((result) => {
