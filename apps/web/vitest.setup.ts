@@ -33,6 +33,19 @@ Object.defineProperty(window, 'open', {
   })),
 });
 
+// Mock window.location.reload to prevent JSDOM 'Not implemented: navigation' errors
+// JSDOM does not implement navigation; error-boundary.tsx uses window.location.reload()
+const originalLocation = window.location;
+Object.defineProperty(window, 'location', {
+  writable: true,
+  value: {
+    ...originalLocation,
+    reload: vi.fn(),
+    assign: vi.fn(),
+    replace: vi.fn(),
+  },
+});
+
 // Mock Next.js router
 vi.mock('next/router', () => ({
   useRouter() {
@@ -132,12 +145,27 @@ global.ResizeObserver = class ResizeObserver {
 // Mock window.scrollTo
 global.scrollTo = vi.fn();
 
+// Store original console.error for filtering
+const originalConsoleError = console.error;
+
 // Setup console suppression for tests
 global.console = {
   ...console,
   // Suppress console.log in tests
   log: vi.fn(),
-  // Keep error and warn for debugging
-  error: console.error,
+  // Keep error and warn for debugging, but filter out known React 19 act() warnings
+  // that occur with fake timers (these are not actual test failures)
+  error: (...args: unknown[]) => {
+    const message = args[0];
+    if (
+      typeof message === 'string' &&
+      message.includes('not wrapped in act')
+    ) {
+      // Suppress React 19 act() warnings that occur with fake timers
+      // These are false positives when using vi.useFakeTimers() with async state updates
+      return;
+    }
+    originalConsoleError(...args);
+  },
   warn: console.warn,
 };

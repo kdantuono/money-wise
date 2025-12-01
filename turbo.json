@@ -68,15 +68,15 @@
       "dependsOn": [
         "^build"
       ],
-      "outputs": [
-        "coverage/**"
-      ],
+      "outputs": [],
       "inputs": [
         "src/**/*.{ts,tsx,js,jsx}",
         "test/**/*.{ts,tsx,js,jsx}",
         "__tests__/**/*.{ts,tsx,js,jsx}",
         "jest.config.{js,ts,json}",
+        "vitest.config.{ts,js,mts}",
         "jest.setup.{js,ts}",
+        "vitest.setup.{js,ts}",
         "tsconfig.json",
         "package.json"
       ]
