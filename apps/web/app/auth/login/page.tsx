@@ -43,7 +43,7 @@ export default function LoginPage() {
       clearError()
       await login(data.email, data.password)
       router.push('/dashboard')
-    } catch (error) {
+    } catch (_error) {
       // Error is handled by the store
     }
   }

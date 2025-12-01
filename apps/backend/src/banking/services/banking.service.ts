@@ -217,8 +217,8 @@ export class BankingService {
     try {
       const providerInstance = this.providerFactory.createProvider(provider);
       await providerInstance.authenticate();
-    } catch (err: any) {
-      this.logger.error('Provider authentication failed', err);
+    } catch (err: unknown) {
+      this.logger.error('Provider authentication failed', err instanceof Error ? err.message : String(err));
       throw new BadRequestException('Failed to initiate banking link');
     }
 
@@ -250,8 +250,8 @@ export class BankingService {
     if (frontendUrlConfig) {
       if (typeof frontendUrlConfig === 'string') {
         frontendBase = frontendUrlConfig;
-      } else if (typeof (frontendUrlConfig as any)?.toString === 'function') {
-        frontendBase = (frontendUrlConfig as any).toString();
+      } else if (typeof (frontendUrlConfig as Record<string, unknown>)?.toString === 'function') {
+        frontendBase = String(frontendUrlConfig);
       }
     }
 
@@ -297,8 +297,8 @@ export class BankingService {
       } else {
         throw new BadRequestException(`Provider ${provider} not yet supported`);
       }
-    } catch (err: any) {
-      this.logger.error('Failed to create connect session', err);
+    } catch (err: unknown) {
+      this.logger.error('Failed to create connect session', err instanceof Error ? err.message : String(err));
       throw new BadRequestException('Failed to initiate banking link');
     }
 

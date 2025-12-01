@@ -50,7 +50,7 @@ export default function RegisterPage() {
       clearError()
       await registerUser(data.email, data.password, data.firstName, data.lastName)
       router.push('/dashboard')
-    } catch (error) {
+    } catch (_error) {
       // Error is handled by the store
     }
   }

@@ -253,7 +253,9 @@ describe('BankingLinkButton Component', () => {
 
     await user.click(button);
 
-    expect(screen.getByRole('alert')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByRole('alert')).toBeInTheDocument();
+    });
     expect(screen.getByText('Error linking account')).toBeInTheDocument();
     expect(screen.getByText('Failed to initiate OAuth')).toBeInTheDocument();
     expect(onError).toHaveBeenCalledWith('Failed to initiate OAuth');
