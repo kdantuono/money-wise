@@ -30,7 +30,10 @@ export class CategoryFactory {
       icon: faker.helpers.arrayElement(['🛒', '🍔', '🚗', '🏠', '💼', '🎬', '✈️']),
       color: faker.helpers.arrayElement(['red', 'blue', 'green', 'yellow', 'purple', 'orange', 'pink', 'teal']),
       description: faker.lorem.sentence(),
+      isDefault: false,
       isSystem: false,
+      sortOrder: 0,
+      depth: 0, // Managed by PostgreSQL trigger, but included for test data completeness
       parentId: null,
       familyId: faker.string.uuid(),
       rules: null,

@@ -31,6 +31,24 @@ export class MockBankingProvider implements IBankingProvider {
   private connections: Map<string, ConnectionStatusData> = new Map();
   private accounts: Map<string, BankingAccountData[]> = new Map();
   private transactions: Map<string, BankingTransactionData[]> = new Map();
+  // SaltEdge v6 specific mock state
+  private saltedgeConnections: Map<string, {
+    id: string;
+    secret?: string;
+    provider_id?: string;
+    provider_code: string;
+    provider_name: string;
+    country_code: string;
+    status: string;
+    created_at: string;
+    updated_at: string;
+    last_success_at?: string;
+    next_refresh_possible_at?: string;
+    show_consent_confirmation?: boolean;
+    last_consent_id?: string;
+    customer_id?: string;
+  }> = new Map();
+  private customerConnections: Map<string, string[]> = new Map();
 
   /**
    * Get provider type
@@ -44,6 +62,116 @@ export class MockBankingProvider implements IBankingProvider {
    */
   async authenticate(): Promise<void> {
     this.logger.log('🧪 Mock: Authentication successful');
+  }
+
+  // ============ SaltEdge v6 specific helpers (mocked) ============
+  async createCustomer(identifier: string): Promise<{ id: string; identifier: string }> {
+    const id = `mock-customer-${identifier}`;
+    this.logger.log(`🧪 Mock: Created SaltEdge customer ${id}`);
+    return { id, identifier };
+  }
+
+  async createConnectSession(
+    customerId: string,
+    options?: { returnTo?: string; providerCode?: string; countryCode?: string },
+  ): Promise<{ connectUrl: string; expiresAt: Date }> {
+    // Create a mock SaltEdge connection immediately (simplified flow)
+    const seConnectionId = `se-conn-${Date.now()}`;
+    const nowIso = new Date().toISOString();
+    const provider_code = options?.providerCode || 'fake_bank_xf';
+    const country_code = options?.countryCode || 'XF';
+    const provider_name = 'Mock Bank (SaltEdge)';
+
+    this.saltedgeConnections.set(seConnectionId, {
+      id: seConnectionId,
+      provider_code,
+      provider_name,
+      country_code,
+      status: 'active',
+      created_at: nowIso,
+      updated_at: nowIso,
+      last_success_at: nowIso,
+      customer_id: customerId,
+    });
+
+    const list = this.customerConnections.get(customerId) || [];
+    list.push(seConnectionId);
+    this.customerConnections.set(customerId, list);
+
+    const returnTo = options?.returnTo || 'http://localhost:3000/banking/callback';
+    const connectUrl = `https://mock-bank.test/connect?session=${seConnectionId}&connection_id=${seConnectionId}&return_to=${encodeURIComponent(returnTo)}`;
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+
+    this.logger.log(`🧪 Mock: Created connect session for customer ${customerId} -> ${seConnectionId}`);
+    return { connectUrl, expiresAt };
+  }
+
+  async getConnection(connectionId: string): Promise<{
+    id: string;
+    secret?: string;
+    provider_id?: string;
+    provider_code: string;
+    provider_name: string;
+    country_code: string;
+    status: string;
+    created_at: string;
+    updated_at: string;
+    last_success_at?: string;
+    next_refresh_possible_at?: string;
+    show_consent_confirmation?: boolean;
+    last_consent_id?: string;
+  }> {
+    let conn = this.saltedgeConnections.get(connectionId);
+    if (!conn) {
+      const nowIso = new Date().toISOString();
+      conn = {
+        id: connectionId,
+        provider_code: 'fake_bank_xf',
+        provider_name: 'Mock Bank (SaltEdge)',
+        country_code: 'XF',
+        status: 'active',
+        created_at: nowIso,
+        updated_at: nowIso,
+        last_success_at: nowIso,
+      };
+      this.saltedgeConnections.set(connectionId, conn);
+    }
+    return conn;
+  }
+
+  async listConnectionsForCustomer(customerId: string): Promise<Array<{
+    id: string;
+    secret?: string;
+    provider_id?: string;
+    provider_code: string;
+    provider_name: string;
+    country_code: string;
+    status: string;
+    created_at: string;
+    updated_at: string;
+    last_success_at?: string;
+    next_refresh_possible_at?: string;
+  }>> {
+    const ids = this.customerConnections.get(customerId) || [];
+    return ids.map(id => this.saltedgeConnections.get(id)!).filter(Boolean);
+  }
+
+  async findLatestActiveConnection(customerId: string): Promise<{
+    id: string;
+    secret?: string;
+    provider_id?: string;
+    provider_code: string;
+    provider_name: string;
+    country_code: string;
+    status: string;
+    created_at: string;
+    updated_at: string;
+    last_success_at?: string;
+  } | null> {
+    const conns = await this.listConnectionsForCustomer(customerId);
+    if (!conns.length) return null;
+    const sorted = conns.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    return sorted[0] || null;
   }
 
   /**
@@ -84,6 +212,9 @@ export class MockBankingProvider implements IBankingProvider {
       connection.authorizedAt = new Date();
       connection.expiresAt = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000); // 90 days
     }
+
+    // Ensure SaltEdge mock connection exists and is active
+    await this.getConnection(connectionId);
 
     // Generate mock accounts
     const mockAccounts: BankingAccountData[] = [

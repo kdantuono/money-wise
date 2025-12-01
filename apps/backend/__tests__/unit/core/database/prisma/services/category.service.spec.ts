@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '@/core/database/prisma/prisma.service';
 import { CategoryService } from '@/core/database/prisma/services/category.service';

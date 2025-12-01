@@ -573,6 +573,12 @@ model Category {
 
   // Ordering and hierarchy
   sortOrder Int @default(0) @map("sort_order")
+  
+  // Hierarchy depth managed by PostgreSQL trigger (trg_category_depth)
+  // ARCHITECTURAL DECISION: Trigger-managed column to enforce max depth (3 levels)
+  // Rationale: Database-level enforcement prevents invalid hierarchies even from direct SQL
+  // Application can query by depth for UI rendering (e.g., show only top 2 levels)
+  depth     Int @default(0) @db.Integer
 
   // Auto-categorization rules stored as JSONB
   // ARCHITECTURAL DECISION: Use JSONB for ML/rule-based categorization

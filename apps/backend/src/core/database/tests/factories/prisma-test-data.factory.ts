@@ -365,6 +365,7 @@ export class CategoryFactory extends BasePrismaFactory<Category> {
       isDefault: overrides.isDefault ?? false,
       isSystem: overrides.isSystem ?? false,
       sortOrder: overrides.sortOrder || faker.number.int({ min: 0, max: 100 }),
+      depth: overrides.depth ?? 0,
       parentId: overrides.parentId || null,
       rules: (overrides.rules || {
         keywords: [faker.commerce.productName()],
