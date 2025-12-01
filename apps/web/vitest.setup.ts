@@ -26,7 +26,7 @@ Object.defineProperty(window, 'open', {
       // simulate user closing the popup
       // consumers may poll .closed
       // set closed to true when close() is called
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+       
       // @ts-ignore - using 'this' on the mocked window object
       this.closed = true;
     },
@@ -94,7 +94,7 @@ vi.mock('next/navigation', () => ({
 vi.mock('next/image', () => ({
   __esModule: true,
   default: (props: any) => {
-    // eslint-disable-next-line jsx-a11y/alt-text, @next/next/no-img-element
+     
     return React.createElement('img', props);
   },
 }));

@@ -356,51 +356,48 @@ describe('BankingLinkButton Component', () => {
     });
 
     it('displays loading state during OAuth flow', async () => {
+      // Use resolved promise instead of setTimeout to avoid fake timer/async interaction
+      let resolvePromise: ((value: unknown) => void) | undefined;
       (global.fetch as ReturnType<typeof vi.fn>).mockImplementationOnce(() =>
         new Promise(resolve => {
-          setTimeout(() => {
-            resolve({
-              ok: true,
-              json: async () => ({ redirectUrl: 'https://oauth.example.com/auth', _connectionId: 'conn-123' }),
-            });
-          }, 100);
+          resolvePromise = resolve;
         })
       );
 
       render(<BankingLinkButton />);
       const button = screen.getByRole('button');
 
-      // Use fireEvent for fake timers compatibility instead of userEvent
+      // Click button and wait for loading state
       await act(async () => {
         button.click();
       });
 
-      // Loading state should be immediately visible
+      // Loading state should be immediately visible after click
       expect(button).toHaveAttribute('aria-busy', 'true');
       expect(button).toBeDisabled();
 
-      // Advance timers to resolve fetch
+      // Resolve the fetch to clean up
       await act(async () => {
-        vi.advanceTimersByTime(100);
+        resolvePromise?.({
+          ok: true,
+          json: async () => ({ redirectUrl: 'https://oauth.example.com/auth', _connectionId: 'conn-123' }),
+        });
       });
     });
 
     it('displays spinner during loading', async () => {
+      // Use resolved promise instead of setTimeout
+      let resolvePromise: ((value: unknown) => void) | undefined;
       (global.fetch as ReturnType<typeof vi.fn>).mockImplementationOnce(() =>
         new Promise(resolve => {
-          setTimeout(() => {
-            resolve({
-              ok: true,
-              json: async () => ({ redirectUrl: 'https://oauth.example.com/auth', _connectionId: 'conn-123' }),
-            });
-          }, 100);
+          resolvePromise = resolve;
         })
       );
 
       render(<BankingLinkButton />);
       const button = screen.getByRole('button');
 
-      // Use fireEvent for fake timers compatibility
+      // Click button
       await act(async () => {
         button.click();
       });
@@ -409,9 +406,12 @@ describe('BankingLinkButton Component', () => {
       const svg = button.querySelector('svg.animate-spin');
       expect(svg).toBeInTheDocument();
 
-      // Clean up - advance timers to complete fetch
+      // Clean up - resolve fetch
       await act(async () => {
-        vi.advanceTimersByTime(100);
+        resolvePromise?.({
+          ok: true,
+          json: async () => ({ redirectUrl: 'https://oauth.example.com/auth', _connectionId: 'conn-123' }),
+        });
       });
     });
 

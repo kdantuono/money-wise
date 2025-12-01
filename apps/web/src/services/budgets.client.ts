@@ -239,7 +239,7 @@ function isDevelopment(): boolean {
  */
 function logRequest(method: string, url: string, data?: unknown): void {
   if (isDevelopment()) {
-    // eslint-disable-next-line no-console
+     
     console.log(`[Budgets API] ${method} ${url}`, data ? { body: data } : '');
   }
 }
@@ -254,7 +254,7 @@ function logResponse(
   data?: unknown
 ): void {
   if (isDevelopment()) {
-    // eslint-disable-next-line no-console
+     
     console.log(`[Budgets API] ${method} ${url} → ${status}`, data || '');
   }
 }

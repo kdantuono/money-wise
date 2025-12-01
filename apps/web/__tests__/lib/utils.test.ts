@@ -320,6 +320,7 @@ describe('cn utility function', () => {
     });
 
     it('should handle mixed types', () => {
+      const showConditional = true;
       const result = cn(
         'string',
         ['array'],
@@ -327,7 +328,7 @@ describe('cn utility function', () => {
         undefined,
         null,
         false,
-        true && 'conditional'
+        showConditional && 'conditional'
       );
       expect(result).toBe('string array object conditional');
     });

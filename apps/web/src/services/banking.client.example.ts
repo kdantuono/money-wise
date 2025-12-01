@@ -7,7 +7,7 @@
  * @module services/banking.client.example
  */
 
-/* eslint-disable no-console */
+ 
 
 import bankingClient, {
   SyncResponse,
