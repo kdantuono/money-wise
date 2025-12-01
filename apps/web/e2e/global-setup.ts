@@ -290,7 +290,7 @@ async function createTestUserViaBrowser(page: any) {
   console.log('📝 Creating test user via browser...');
 
   try {
-    await page.goto(`${FRONTEND_URL}/register`);
+    await page.goto(`${FRONTEND_URL}/auth/register`);
     await page.waitForLoadState('networkidle');
 
     // Fill registration form

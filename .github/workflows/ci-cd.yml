@@ -1165,16 +1165,10 @@ jobs:
             ${{ runner.os }}-playwright-
 
       - name: Install Playwright browsers
-        if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: |
           cd apps/web
           npx playwright install --with-deps
-
-      - name: Install Playwright system deps (cache hit)
-        if: steps.playwright-cache.outputs.cache-hit == 'true'
-        run: |
-          cd apps/web
-          npx playwright install-deps
+          echo "✅ Playwright browsers installed"
 
       - name: 🔧 Create test user
         run: |
