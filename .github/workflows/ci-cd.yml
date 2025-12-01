@@ -1155,20 +1155,24 @@ jobs:
           exit 1
 
       # OPTIMIZATION: Cache Playwright browsers
+      # Cache key includes lockfile to ensure correct browser version
       - name: Cache Playwright browsers
         id: playwright-cache
         uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright-${{ hashFiles('apps/web/package.json') }}
+          key: ${{ runner.os }}-playwright-${{ hashFiles('pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-playwright-
 
       - name: Install Playwright browsers
         run: |
           cd apps/web
-          npx playwright install --with-deps
+          # Use pnpm exec to ensure we use the project's Playwright version
+          pnpm exec playwright install --with-deps chromium
           echo "✅ Playwright browsers installed"
+          echo "📋 Installed browser versions:"
+          pnpm exec playwright --version
 
       - name: 🔧 Create test user
         run: |
@@ -1203,7 +1207,7 @@ jobs:
         run: |
           cd apps/web
           echo "🏃 Running full E2E test suite"
-          npx playwright test
+          pnpm exec playwright test
 
       - name: 📤 Upload test results
         if: always()
