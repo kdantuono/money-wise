@@ -270,7 +270,9 @@ describe('BankingLinkButton Component', () => {
 
     await user.click(button);
 
-    expect(screen.getByText('No redirect URL provided')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('No redirect URL provided')).toBeInTheDocument();
+    });
   });
 
   it('handles popup blocking', async () => {
