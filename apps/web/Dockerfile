@@ -39,6 +39,7 @@ FROM node:20-alpine AS runtime
 RUN addgroup -g 1001 -S nodejs && adduser -S nextjs -u 1001
 
 # Install wget for healthcheck
+# hadolint ignore=DL3018
 RUN apk add --no-cache wget
 
 # Set working directory
