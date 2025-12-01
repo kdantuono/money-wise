@@ -4,6 +4,10 @@
 # MoneyWise pre-commit hook
 # Runs essential checks before allowing commit
 
+# Load nvm if available (fixes PATH for pnpm in non-interactive shells)
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+
 echo "🔍 Running pre-commit checks..."
 
 # Documentation governance (auto-fix)

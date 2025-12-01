@@ -1,0 +1,102 @@
+# Git Worktree Setup Rules
+
+## MANDATORY: Environment File Propagation
+
+When creating a new git worktree, `.env` files are NOT copied because they are in `.gitignore`.
+
+### Critical Rule
+
+**EVERY TIME a worktree is created, you MUST copy environment files from main:**
+
+```bash
+# Set your main worktree path
+MAIN_WORKTREE="$(git rev-parse --show-toplevel)"
+
+# After creating worktree
+git worktree add /path/to/worktree branch-name
+
+# MANDATORY: Copy environment files
+cp "$MAIN_WORKTREE/apps/backend/.env" /path/to/worktree/apps/backend/.env
+cp "$MAIN_WORKTREE/apps/web/.env.local" /path/to/worktree/apps/web/.env.local 2>/dev/null || true
+
+# Also copy root .env if exists
+cp "$MAIN_WORKTREE/.env" /path/to/worktree/.env 2>/dev/null || true
+```
+
+### Why This Matters
+
+1. `.env` files contain secrets (API keys, credentials)
+2. Git excludes them via `.gitignore` for security
+3. Worktrees only get **tracked** files
+4. Without this step, worktrees use empty/example credentials
+
+### Files That Need Copying
+
+| Source | Destination | Contains |
+|--------|-------------|----------|
+| `apps/backend/.env` | worktree/apps/backend/.env | SaltEdge credentials, DB config, JWT secrets |
+| `apps/web/.env.local` | worktree/apps/web/.env.local | Frontend API URLs, feature flags |
+| `.env` (root) | worktree/.env | Shared config (if any) |
+
+### Verification After Copy
+
+```bash
+# Verify SaltEdge credentials are present (should output a value)
+grep "^SALTEDGE_APP_ID=" /path/to/worktree/apps/backend/.env
+
+# Verify private key path is configured
+grep "^SALTEDGE_PRIVATE_KEY_PATH=" /path/to/worktree/apps/backend/.env
+```
+
+### Quick Setup Script
+
+Use the provided script for automated setup:
+```bash
+./.claude/scripts/setup-worktree-env.sh /path/to/worktree
+```
+
+## SaltEdge Credentials
+
+Credentials are stored securely in `apps/backend/.env` (not committed to repo).
+
+Required environment variables:
+- `SALTEDGE_APP_ID` - Your SaltEdge application ID
+- `SALTEDGE_SECRET` - Your SaltEdge secret key
+- `SALTEDGE_PRIVATE_KEY_PATH` - Path to your RSA private key for API signing
+
+**Note**: The RSA private key file is NOT in the repo. Ensure `SALTEDGE_PRIVATE_KEY_PATH` points to the correct absolute path on your system.
+
+---
+
+## Agent Instructions Strategy
+
+**IMPORTANT**: PR-specific agent instructions should be created IN THE WORKTREE, not in main.
+
+### Convention
+
+```
+<worktree>/.AGENT-INSTRUCTIONS.md    # Dot-prefix = local, not committed
+```
+
+### Why Worktree-Local Instructions?
+
+1. **Auto-cleanup**: Deleted when worktree is removed
+2. **No pollution**: Main worktree stays clean
+3. **Isolation**: Each agent sees only its task
+4. **No commits**: Instructions are local working context
+
+### Orchestrator Access
+
+The orchestrator (in main worktree) can still read instructions:
+```bash
+cat /home/nemesi/dev/money-wise-dashboard/.AGENT-INSTRUCTIONS.md
+cat /home/nemesi/dev/money-wise-budget/.AGENT-INSTRUCTIONS.md
+```
+
+### Active Work Tracking
+
+Use the TODO list (persisted in `~/.claude/todos/`) to track active agents.
+No need for tracking files in `.claude/orchestration/`.
+
+---
+*Rule Version: 1.1.0 | Updated: 2024-11-29 - Added agent instructions strategy*
