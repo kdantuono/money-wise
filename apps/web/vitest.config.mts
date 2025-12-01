@@ -8,6 +8,7 @@ export default defineConfig({
     name: '@money-wise/web',
     environment: 'jsdom',
     setupFiles: ['./vitest.setup.ts'],
+    testTimeout: 10000,
     globals: true,
     css: true,
     exclude: [

@@ -16,14 +16,20 @@ const AllTheProviders = ({ children }: { children: React.ReactNode }) => {
 // Custom render function with providers
 const customRender = (
   ui: ReactElement,
-  options?: Omit<RenderOptions, 'wrapper'>
+  options?: Omit<RenderOptions, 'wrapper'> & { advanceTimers?: typeof vi.advanceTimersByTime }
 ) => {
-  // Configure userEvent for fake timers (delay: null means use fake timers)
-  const user = userEvent.setup({ delay: null });
+  const { advanceTimers, ...renderOptions } = options || {};
+
+  // Configure userEvent
+  // When advanceTimers is provided, use it for fake timer compatibility
+  // Otherwise use delay: null for immediate execution
+  const user = advanceTimers
+    ? userEvent.setup({ advanceTimers })
+    : userEvent.setup({ delay: null });
 
   return {
     user,
-    ...render(ui, { wrapper: AllTheProviders, ...options })
+    ...render(ui, { wrapper: AllTheProviders, ...renderOptions })
   };
 };
 

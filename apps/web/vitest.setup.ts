@@ -7,6 +7,32 @@ import '@testing-library/jest-dom';
 import { vi } from 'vitest';
 import React from 'react';
 
+// React 19 Configuration
+// Tell React Testing Library that we're in a React Act environment
+// This prevents act() warnings in React 19
+globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+
+// Note: Avoid enabling fake timers globally; some libraries rely on real timers
+// Individual tests can opt-in with vi.useFakeTimers() when needed
+
+// Mock window.open for components that open OAuth popups
+// jsdom does not implement real window.open; provide a stub
+Object.defineProperty(window, 'open', {
+  writable: true,
+  value: vi.fn(() => ({
+    closed: false,
+    focus: vi.fn(),
+    close() {
+      // simulate user closing the popup
+      // consumers may poll .closed
+      // set closed to true when close() is called
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore - using 'this' on the mocked window object
+      this.closed = true;
+    },
+  })),
+});
+
 // Mock Next.js router
 vi.mock('next/router', () => ({
   useRouter() {
@@ -77,7 +103,7 @@ Object.defineProperty(window, 'matchMedia', {
 
 // Mock IntersectionObserver
 global.IntersectionObserver = class IntersectionObserver {
-  constructor() {}
+  constructor() { }
   observe() {
     return null;
   }
@@ -91,7 +117,7 @@ global.IntersectionObserver = class IntersectionObserver {
 
 // Mock ResizeObserver
 global.ResizeObserver = class ResizeObserver {
-  constructor() {}
+  constructor() { }
   observe() {
     return null;
   }
