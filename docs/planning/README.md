@@ -1,85 +1,103 @@
 # MoneyWise Project Planning
 
 > **Central hub for all MVP planning, requirements, and implementation roadmaps**
+> **Status: MVP 95% Complete (December 2025)**
 
-## 📋 Planning Documents
+## Current Project State
 
-### Core Project Planning
-- [`app-overview.md`](./app-overview.md) - Multi-generational finance platform vision and positioning
-- [`critical-path.md`](./critical-path.md) - Critical blocking tasks for MVP delivery (8 weeks, 47 tasks)
+MoneyWise has achieved near-MVP completion. Most planning documents in this directory are now **historical reference** rather than active roadmaps.
 
-### MVP Implementation
-- [`mvp/`](./mvp/) - Complete MVP development plan
-  - GitHub Projects ready execution document
-  - 8-week timeline with detailed stories
-  - Team coordination and velocity targets
+### What's Implemented
+- ✅ Authentication (JWT, 2FA, protected routes)
+- ✅ Dashboard with financial insights
+- ✅ Banking integration (SaltEdge v6)
+- ✅ Budget management
+- ✅ Analytics API
+- ✅ Docker E2E infrastructure
 
-### Development Milestones
-- [`milestones/`](./milestones/) - 6 milestone overview and historical planning
-  - ⚠️ **Historical Reference**: Planning templates with obsolete tech stack
-  - **Current Progress**: See [`../development/progress.md`](../development/progress.md)
-  - **Milestone 1**: Foundation (Infrastructure, Git, Docker)
-  - **Milestone 2**: Authentication & Core Models
-  - **Milestone 3**: Banking Integration & Plaid
-  - **Milestone 4**: Transaction Management
-  - **Milestone 5**: Financial Intelligence & Dashboard
-  - **Milestone 6**: Polish & Optimization
+### What's Remaining
+- Transaction management UI (manual entry)
+- Account details pages
+- Investment tracking
+- Goal setting
+- Mobile app (React Native)
 
-### Integration Specifications
-- [`integrations/`](./integrations/) - Third-party integration plans
-  - Plaid integration hyper-granular tasks for AI agents
-  - Banking API implementation specifications
-
-### Open Banking Provider Research
-- [`BANKING-PROVIDER-RESEARCH-PHASE4.md`](./BANKING-PROVIDER-RESEARCH-PHASE4.md) - Comprehensive comparative analysis
-  - Evidence-based study of 5 open banking providers (GoCardless, SaltEdge, Plaid, Tink, TrueLayer)
-  - 6-dimensional scoring matrix with 43 verified sources
-  - 3-year TCO projections and risk assessment
-  - **Recommendation**: GoCardless (Nordigen) for MVP - €15,400-28,700 savings vs. Plaid
-- [`BANKING-PROVIDER-EXECUTIVE-SUMMARY.md`](./BANKING-PROVIDER-EXECUTIVE-SUMMARY.md) - Quick reference guide
-  - One-page decision summary with key metrics
-  - Implementation roadmap (2-4 weeks)
-  - Risk mitigation strategies
-
-## 🎯 Project Vision
-
-**Target**: Multi-generational finance platform (ages 7-70+)
-**Timeline**: 8-week MVP development
-**Methodology**: Milestone-based Agile with AI agent orchestration
-**Tech Stack**: NestJS + Next.js + PostgreSQL + Redis + React Native
-
-## 🔄 Relationship to Development
-
-### Planning → Implementation Flow
-```
-docs/planning/     →     .claude/agents/     →     apps/
-(Requirements)           (AI Orchestration)        (Implementation)
-```
-
-### Key Connections
-- **Planning docs** define WHAT to build
-- **`.claude/` system** defines HOW Claude builds it
-- **`apps/` directories** contain the actual implementation
-
-## 📊 Development Metrics
-
-- **Total Tasks**: ~800 across all milestones
-- **Critical Path**: 47 blocking tasks
-- **Team Velocity Target**: 40 story points/week
-- **Completion Timeline**: 8 weeks to MVP
-
-## 🚀 Getting Started
-
-1. **Understand Vision**: Read [`app-overview.md`](./app-overview.md)
-2. **Review Timeline**: Check [`critical-path.md`](./critical-path.md)
-3. **Study Implementation**: Browse [`mvp/`](./mvp/) and [`milestones/`](./milestones/)
-4. **Begin Development**: Use `.claude/` orchestration system
-
-## 🔗 Related Documentation
-
-- **Technical Setup**: [`../development/setup.md`](../development/setup.md)
-- **Development Progress**: [`../development/progress.md`](../development/progress.md)
-- **AI Orchestration**: [`../../.claude/README.md`](../../.claude/README.md) (when available)
+**See**: [`../development/progress.md`](../development/progress.md) for detailed current state
 
 ---
-*This planning documentation drives all development activities through AI agent orchestration*
+
+## Planning Documents
+
+### Active Reference
+- [`app-overview.md`](./app-overview.md) - Multi-generational finance platform vision
+- [`../development/progress.md`](../development/progress.md) - **Current development state**
+
+### Historical Reference
+The following documents were used during initial planning but contain outdated information:
+
+| Document | Status | Notes |
+|----------|--------|-------|
+| `critical-path.md` | 📜 Historical | MVP timeline from early planning |
+| `mvp/` | 📜 Historical | Original 8-week plan - most items complete |
+| `milestones/` | 📜 Historical | M1-M6 planning - M1-M3 complete |
+| `epics/EPIC-2.1-*.md` | ✅ Complete | Frontend auth implemented |
+| `epics/EPIC-2.2-*.md` | ✅ Complete | Dashboard/analytics implemented |
+| `epics/EPIC-2.3-*.md` | 🔄 Replaced | Plaid → SaltEdge v6 |
+
+### Banking Integration (Active)
+- [`integrations/SALTEDGE-INTEGRATION-GUIDE.md`](./integrations/SALTEDGE-INTEGRATION-GUIDE.md) - Current banking provider
+- [`BANKING-PROVIDER-RESEARCH-PHASE4.md`](./BANKING-PROVIDER-RESEARCH-PHASE4.md) - Provider comparison research
+- [`BANKING-PROVIDER-EXECUTIVE-SUMMARY.md`](./BANKING-PROVIDER-EXECUTIVE-SUMMARY.md) - Decision summary
+
+---
+
+## Project Vision
+
+**Target**: Multi-generational finance platform (ages 7-70+)
+**Tech Stack**: NestJS + Next.js + PostgreSQL + Redis + React Native
+**Banking Provider**: SaltEdge v6 (changed from Plaid)
+
+---
+
+## Relationship to Development
+
+```
+docs/planning/     →     .claude/agents/     →     apps/
+(Historical Plans)       (AI Orchestration)        (Implementation)
+       ↓                        ↓                        ↓
+docs/development/progress.md ← Single source of truth
+```
+
+---
+
+## Key Connections
+
+| Need | Location |
+|------|----------|
+| Current progress | [`../development/progress.md`](../development/progress.md) |
+| Setup guide | [`../development/setup.md`](../development/setup.md) |
+| AI orchestration | [`.claude/README.md`](../../.claude/README.md) |
+| Project vision | [`app-overview.md`](./app-overview.md) |
+
+---
+
+## Archived/Completed Epics
+
+### EPIC-1.5: Technical Debt (October 2025) ✅
+- All 7 stories delivered
+- TypeORM → Prisma migration complete
+- CI/CD infrastructure complete
+
+### EPIC-2.1: Frontend Authentication (November 2025) ✅
+- Login/Register forms: Complete
+- Protected routes: Complete
+- Token management: Complete
+
+### EPIC-2.2: Dashboard & Analytics (November 2025) ✅
+- Dashboard components: Complete
+- Analytics API: Complete
+- Banking integration: Complete
+
+---
+
+*This planning hub updated December 1, 2025 to reflect actual project state*
