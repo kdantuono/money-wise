@@ -80,6 +80,19 @@
     "wait-on": "^9.0.1"
   },
   "pnpm": {
+    "onlyBuiltDependencies": [
+      "@prisma/client",
+      "@prisma/engines",
+      "@sentry/cli",
+      "argon2",
+      "cpu-features",
+      "esbuild",
+      "prisma",
+      "protobufjs",
+      "sharp",
+      "ssh2",
+      "turbo"
+    ],
     "overrides": {
       "ip": "^2.0.1",
       "semver": "^7.6.3",
@@ -91,13 +104,19 @@
       "vite": "^6.0.0",
       "@types/react": "^19.0.0",
       "@types/react-dom": "^19.0.0"
-    }
+    },
+    "ignoredBuiltDependencies": [
+      "@nestjs/core",
+      "@sentry-internal/node-cpu-profiler",
+      "msw",
+      "unrs-resolver"
+    ]
   },
   "engines": {
     "node": ">=18.0.0",
-    "pnpm": ">=8.0.0"
+    "pnpm": ">=10.0.0"
   },
-  "packageManager": "pnpm@8.15.1",
+  "packageManager": "pnpm@10.11.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/kdantuono/money-wise.git"
