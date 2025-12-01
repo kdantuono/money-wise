@@ -1,5 +1,6 @@
 # MoneyWise Backend Dockerfile
-# Multi-stage build following Milestone 1 requirements (TASK-001-021)
+# Multi-stage build for NestJS with Prisma support
+# Fixes E2E timeout issue by building during image creation, not container startup
 
 # Build stage
 FROM node:20-alpine AS builder
@@ -7,65 +8,65 @@ FROM node:20-alpine AS builder
 # Set working directory
 WORKDIR /app
 
-# Copy package files for dependency installation
+# Install pnpm
+RUN npm install -g pnpm@8
+
+# Copy all package files and workspace config
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/backend/package.json ./apps/backend/
-COPY packages/*/package.json ./packages/*/
+COPY packages/types/package.json ./packages/types/
+COPY packages/ui/package.json ./packages/ui/
+COPY packages/utils/package.json ./packages/utils/
 
-# Install pnpm and dependencies
-RUN npm install -g pnpm@8
+# Install dependencies
 RUN pnpm install --frozen-lockfile
 
 # Copy source code
 COPY . .
 
-# Build the application
+# Generate Prisma client and build the application
+RUN pnpm --filter @money-wise/backend exec prisma generate
 RUN pnpm --filter @money-wise/backend build
 
-# Production stage
+# Runtime stage
 FROM node:20-alpine AS runtime
 
+# Install wget for healthcheck
+RUN apk add --no-cache wget
+
 # Create non-root user for security
-RUN addgroup -g 1001 -S nodejs
-RUN adduser -S nestjs -u 1001
+RUN addgroup -g 1001 -S nodejs && adduser -S nestjs -u 1001
 
 # Set working directory
 WORKDIR /app
-
-# Copy package files
-COPY package.json pnpm-lock.yaml ./
-COPY apps/backend/package.json ./apps/backend/
-
-# Install pnpm and production dependencies only
-RUN npm install -g pnpm@8
-RUN pnpm install --frozen-lockfile --prod
 
 # Copy built application from builder stage
 COPY --from=builder --chown=nestjs:nodejs /app/apps/backend/dist ./apps/backend/dist
 COPY --from=builder --chown=nestjs:nodejs /app/apps/backend/package.json ./apps/backend/
 
-# Copy necessary configuration files
-COPY --chown=nestjs:nodejs apps/backend/.env.example ./apps/backend/.env
+# Copy generated Prisma client (required at runtime)
+COPY --from=builder --chown=nestjs:nodejs /app/apps/backend/generated ./apps/backend/generated
 
-# Create directories for logs and uploads
-RUN mkdir -p /app/logs /app/uploads && chown -R nestjs:nodejs /app/logs /app/uploads
+# Copy Prisma files for migrations
+COPY --from=builder --chown=nestjs:nodejs /app/apps/backend/prisma ./apps/backend/prisma
+
+# Copy node_modules with Prisma client
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/apps/backend/node_modules ./apps/backend/node_modules
 
 # Switch to non-root user
 USER nestjs
 
 # Expose port
-EXPOSE 3000
+EXPOSE 3001
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD node -e "const http = require('http'); \
-    const options = { host: 'localhost', port: 3000, path: '/health', timeout: 2000 }; \
-    const req = http.request(options, (res) => { \
-      if (res.statusCode === 200) process.exit(0); \
-      else process.exit(1); \
-    }); \
-    req.on('error', () => process.exit(1)); \
-    req.end();"
+# Environment variables for runtime
+ENV PORT=3001
+ENV NODE_ENV=production
+
+# Health check - fast interval for E2E tests
+HEALTHCHECK --interval=5s --timeout=3s --start-period=5s --retries=10 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:3001/api/health || exit 1
 
 # Start the application
 CMD ["node", "apps/backend/dist/main.js"]

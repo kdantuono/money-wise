@@ -52,7 +52,8 @@ export async function proxyRequest(
   options: ProxyOptions = {}
 ): Promise<NextResponse> {
   const {
-    backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001',
+    // API_URL for server-side (Docker), NEXT_PUBLIC_API_URL for fallback, then localhost
+    backendUrl = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001',
     timeout = 30000,
   } = options;
 
