@@ -157,3 +157,4 @@ update-*.sh
 
 # Documentation backups (obsolete snapshots)
 docs-backup-*/
+apps/web/e2e/.auth/*.png
