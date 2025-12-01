@@ -81,15 +81,16 @@
     "@types/react-dom": "^18.2.15",
     "@typescript-eslint/eslint-plugin": "^6.11.0",
     "@typescript-eslint/parser": "^6.11.0",
-    "@vitest/coverage-v8": "^1.0.4",
-    "@vitest/ui": "^1.0.4",
+    "@vitejs/plugin-react": "^5.1.1",
+    "@vitest/coverage-v8": "^4.0.0",
+    "@vitest/ui": "^4.0.0",
     "baseline-browser-mapping": "^2.8.32",
     "eslint": "^8.54.0",
     "eslint-config-next": "14.2.32",
     "jsdom": "^23.0.1",
     "msw": "^2.12.3",
     "typescript": "^5.9.3",
-    "vitest": "^1.0.4"
+    "vitest": "^4.0.0"
   },
   "msw": {
     "workerDirectory": [
