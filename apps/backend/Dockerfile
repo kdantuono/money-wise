@@ -25,13 +25,14 @@ RUN pnpm install --frozen-lockfile
 COPY . .
 
 # Generate Prisma client and build the application
-RUN pnpm --filter @money-wise/backend exec prisma generate
-RUN pnpm --filter @money-wise/backend build
+RUN pnpm --filter @money-wise/backend exec prisma generate && \
+    pnpm --filter @money-wise/backend build
 
 # Runtime stage
 FROM node:20-alpine AS runtime
 
 # Install wget for healthcheck
+# hadolint ignore=DL3018
 RUN apk add --no-cache wget
 
 # Create non-root user for security
