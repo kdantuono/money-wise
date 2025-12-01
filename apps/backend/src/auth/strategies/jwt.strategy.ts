@@ -59,7 +59,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   async validate(payload: JwtPayload): Promise<User> {
     try {
       return await this.authService.validateUser(payload);
-    } catch (error) {
+    } catch (_error) {
       throw new UnauthorizedException('Invalid token');
     }
   }

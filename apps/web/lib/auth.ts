@@ -24,7 +24,7 @@ export interface User {
   avatar?: string
   timezone?: string
   currency?: string
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- User preferences schema is dynamic
+  
   preferences?: any
   lastLoginAt?: string
   emailVerifiedAt?: string

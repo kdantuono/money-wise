@@ -1,4 +1,4 @@
-/* eslint-disable no-console */
+ 
 /**
  * Jest Global Setup for Database Tests
  * Runs once before all database tests

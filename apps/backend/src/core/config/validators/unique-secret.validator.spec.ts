@@ -1,4 +1,4 @@
-/* eslint-disable no-secrets/no-secrets -- Test file with mock secret examples, not real secrets */
+ 
 /**
  * Unique Secret Validator Tests
  *

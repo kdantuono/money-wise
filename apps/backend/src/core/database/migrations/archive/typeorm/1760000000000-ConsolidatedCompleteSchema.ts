@@ -1,4 +1,4 @@
-/* eslint-disable no-secrets/no-secrets -- TypeORM migration file with auto-generated constraint UUIDs, not secrets */
+ 
 import { MigrationInterface, QueryRunner } from "typeorm";
 
 export class ConsolidatedCompleteSchema1760000000000 implements MigrationInterface {

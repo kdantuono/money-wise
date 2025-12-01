@@ -179,7 +179,7 @@ describe('SaltEdge Config Path Validation', () => {
 
       // Document that startsWith is insufficient
       // (Note: on Unix, "config" vs "config-evil" won't pass startsWith without trailing slash)
-      // eslint-disable-next-line no-console -- Test debugging output documenting the vulnerability
+       
       console.log(`Path validation test:
         Test path: ${testPath}
         Base path: ${base}

@@ -20,6 +20,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - CI-aware performance test thresholds (2.5x multiplier for CI environments)
   - Redis mock error injection for comprehensive error path testing
   - Prevents flaky test failures in GitHub Actions while maintaining strict local standards
+  
+### Planning
+
+- **Phase 4.5+ Consolidation Plan**
+  - Added `docs/planning/phase4.5-major-version-upgrades.md` covering sequential post-Phase 4 migrations:
+    - Phase 4.5: Deprecation cleanup (ESLint 9, supertest, @types)
+    - Phase 4.6: React 19 migration (web only)
+    - Phase 4.7: pnpm 10 upgrade (team-coordinated, lockfile v9)
+    - Phase 4.8: Turborepo 2.x optimization (tasks schema, caching)
+    - Phase 4.9: Node.js validation (v24.11.0 already installed)
+  - Explicit execution rule: perform migrations sequentially, addressing problems one by one (no parallelization)
+
+### Completed (Phase 4)
+
+- **Phase 4.2**: react-query → @tanstack/react-query v5 migration
+- **Phase 4.3**: Vitest config ESM migration (`vitest.config.mts`)
+- **Phase 4.4**: Vitest 4.x + Vite 6.x upgrade; removed `jsxInject` conflict
+- All tests validated post-migration (web: 675, backend: 1551, e2e: 93)
 
 ### Changed
 

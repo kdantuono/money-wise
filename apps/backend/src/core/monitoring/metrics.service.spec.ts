@@ -18,7 +18,7 @@ describe('MetricsService', () => {
   let service: MetricsService;
   let configService: ConfigService;
   let loggerService: LoggerService;
-  let mockChildLogger: LoggerService;
+  let mockChildLogger: Partial<LoggerService>;
 
   beforeEach(async () => {
     // Create mock child logger
@@ -34,7 +34,7 @@ describe('MetricsService', () => {
       performance: jest.fn(),
       http: jest.fn(),
       query: jest.fn(),
-    } as any;
+    } as Partial<LoggerService>;
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -42,7 +42,7 @@ describe('MetricsService', () => {
         {
           provide: ConfigService,
           useValue: {
-            get: jest.fn((key: string, defaultValue?: any) => {
+            get: jest.fn((key: string, defaultValue?: unknown) => {
               if (key === 'METRICS_ENABLED') return true;
               return defaultValue;
             }),

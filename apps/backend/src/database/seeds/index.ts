@@ -1,5 +1,5 @@
-/* eslint-disable no-console */
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
+ 
+ 
 /**
  * MoneyWise Database Seeding Script
  * ================================================================================

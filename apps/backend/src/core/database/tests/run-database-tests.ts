@@ -1,5 +1,5 @@
 #!/usr/bin/env ts-node
-/* eslint-disable no-console */
+ 
 
 /**
  * Database Test Runner

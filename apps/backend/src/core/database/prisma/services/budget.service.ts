@@ -20,7 +20,7 @@ export interface CreateBudgetDto {
   endDate: Date;
   status?: BudgetStatus;
   alertThresholds?: number[];
-  settings?: any;
+  settings?: Prisma.InputJsonValue;
   notes?: string;
 }
 
@@ -78,7 +78,7 @@ export class BudgetService {
    *
    * @param prisma - Prisma ORM client for database operations
    */
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   /**
    * Create a new budget

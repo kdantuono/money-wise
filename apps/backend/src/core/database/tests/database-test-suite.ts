@@ -1,4 +1,4 @@
-/* eslint-disable no-console */
+ 
 /**
  * Database Test Suite Runner
  * Orchestrates all database tests and generates comprehensive reports

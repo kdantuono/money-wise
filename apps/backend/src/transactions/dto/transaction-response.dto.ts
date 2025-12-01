@@ -155,19 +155,19 @@ export class TransactionResponseDto {
     description: 'Plaid metadata',
     example: { categoryId: '13005000' },
   })
-  plaidMetadata?: Record<string, any> | null;
+  plaidMetadata?: Record<string, unknown> | null;
 
   @ApiPropertyOptional({
     description: 'Location metadata',
     example: { address: '123 Main St' },
   })
-  locationMetadata?: Record<string, any> | null;
+  locationMetadata?: Record<string, unknown> | null;
 
   @ApiPropertyOptional({
     description: 'Payment channel metadata',
     example: { channel: 'online' },
   })
-  paymentChannelMetadata?: Record<string, any> | null;
+  paymentChannelMetadata?: Record<string, unknown> | null;
 
   @ApiProperty({
     description: 'Creation timestamp',

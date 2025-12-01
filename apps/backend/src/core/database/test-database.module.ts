@@ -1,4 +1,4 @@
-/* eslint-disable no-console */
+ 
 // Console statements are intentionally used in test infrastructure for debugging
 import { DynamicModule, Global, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';

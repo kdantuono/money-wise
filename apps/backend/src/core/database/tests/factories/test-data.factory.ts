@@ -1,4 +1,4 @@
-/* eslint-disable no-console */
+ 
 /**
  * Test Data Factory
  * Provides consistent test data generation for all entities

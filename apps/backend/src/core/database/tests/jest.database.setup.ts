@@ -1,4 +1,4 @@
-/* eslint-disable no-console */
+ 
 /**
  * Jest Database Test Setup
  * Per-test setup and teardown for database tests

@@ -145,13 +145,13 @@ function loadPrivateKey(keyPath?: string): string | null {
     const validatedPath = validateConfigPath(resolvedPath);
 
     // Check file exists
-    // eslint-disable-next-line security/detect-non-literal-fs-filename -- Path validated by validateConfigPath()
+     
     if (!fs.existsSync(validatedPath)) {
       throw new Error(`Private key file not found at: ${validatedPath}`);
     }
 
     // Read file
-    // eslint-disable-next-line security/detect-non-literal-fs-filename -- Path validated by validateConfigPath()
+     
     const keyContent = fs.readFileSync(validatedPath, 'utf8');
 
     // Validate PEM format
@@ -159,12 +159,12 @@ function loadPrivateKey(keyPath?: string): string | null {
       throw new Error(`Invalid private key format at: ${validatedPath}. Expected PEM format.`);
     }
 
-    // eslint-disable-next-line no-console -- Startup configuration logging before logger initialization
+     
     console.log(`✅ Loaded SaltEdge private key from: ${validatedPath}`);
     return keyContent;
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    // eslint-disable-next-line no-console -- Startup configuration logging before logger initialization
+     
     console.error(`❌ Failed to load SaltEdge private key: ${message}`);
     throw error;
   }

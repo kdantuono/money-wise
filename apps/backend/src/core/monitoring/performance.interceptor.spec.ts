@@ -21,9 +21,9 @@ describe('PerformanceInterceptor', () => {
   let loggerService: LoggerService;
   let mockExecutionContext: ExecutionContext;
   let mockCallHandler: CallHandler;
-  let mockRequest: any;
-  let mockResponse: any;
-  let mockChildLogger: any;
+  let mockRequest: Partial<Request>;
+  let mockResponse: Partial<Response>;
+  let mockChildLogger: Partial<LoggerService>;
 
   beforeEach(async () => {
     // Create mock child logger
@@ -34,7 +34,7 @@ describe('PerformanceInterceptor', () => {
       log: jest.fn(),
       debug: jest.fn(),
       verbose: jest.fn(),
-    };
+    } as Partial<LoggerService>;
 
     // Create mock logger service
     const mockLoggerService = {
@@ -640,7 +640,7 @@ describe('PerformanceInterceptor', () => {
       mockCallHandler.handle = jest.fn().mockReturnValue(of(...values));
 
       const result$ = interceptor.intercept(mockExecutionContext, mockCallHandler);
-      const received: any[] = [];
+      const received: string[] = [];
 
       result$.subscribe({
         next: (value) => {

@@ -460,7 +460,7 @@ export class EmailVerificationService {
                 keysToDelete.push(keys[index]);
                 keysToDelete.push(`email_verification_user:${tokenData.userId}`);
               }
-            } catch (parseError) {
+            } catch (_parseError) {
               this.logger.warn(`Failed to parse token data for key ${keys[index]}`);
               // Delete malformed token
               keysToDelete.push(keys[index]);
@@ -542,7 +542,7 @@ export class EmailVerificationService {
               } else {
                 totalPending++;
               }
-            } catch (parseError) {
+            } catch (_parseError) {
               this.logger.warn('Failed to parse token data for stats');
               expiredTokens++; // Treat malformed tokens as expired
             }

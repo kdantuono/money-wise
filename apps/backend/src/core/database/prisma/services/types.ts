@@ -24,14 +24,14 @@ import { Prisma } from '../../../../../generated/prisma';
  * Note: _count is optional as it's not always included in the query
  * but may be present in mock responses for testing
  */
-const categoryWithRelationsPayload = Prisma.validator<Prisma.CategoryDefaultArgs>()({
+const _categoryWithRelationsPayload = Prisma.validator<Prisma.CategoryDefaultArgs>()({
   include: {
     parent: true,
     children: true,
   },
 });
 
-export type CategoryWithRelations = Prisma.CategoryGetPayload<typeof categoryWithRelationsPayload> & {
+export type CategoryWithRelations = Prisma.CategoryGetPayload<typeof _categoryWithRelationsPayload> & {
   _count?: {
     transactions?: number;
     budgets?: number;
@@ -42,7 +42,7 @@ export type CategoryWithRelations = Prisma.CategoryGetPayload<typeof categoryWit
  * Category with optional relations for flexible queries
  * Used in: CategoryService.findByFamilyId, CategoryService.findChildren
  */
-const categoryWithOptionalRelationsPayload = Prisma.validator<Prisma.CategoryDefaultArgs>()({
+const _categoryWithOptionalRelationsPayload = Prisma.validator<Prisma.CategoryDefaultArgs>()({
   include: {
     parent: true,
     children: true,
@@ -50,7 +50,7 @@ const categoryWithOptionalRelationsPayload = Prisma.validator<Prisma.CategoryDef
 });
 
 export type CategoryWithOptionalRelations = Prisma.CategoryGetPayload<
-  typeof categoryWithOptionalRelationsPayload
+  typeof _categoryWithOptionalRelationsPayload
 >;
 
 // ============================================================================
@@ -61,14 +61,14 @@ export type CategoryWithOptionalRelations = Prisma.CategoryGetPayload<
  * Budget with category and family relations
  * Used in: BudgetService.findOneWithRelations
  */
-const budgetWithRelationsPayload = Prisma.validator<Prisma.BudgetDefaultArgs>()({
+const _budgetWithRelationsPayload = Prisma.validator<Prisma.BudgetDefaultArgs>()({
   include: {
     category: true,
     family: true,
   },
 });
 
-export type BudgetWithRelations = Prisma.BudgetGetPayload<typeof budgetWithRelationsPayload>;
+export type BudgetWithRelations = Prisma.BudgetGetPayload<typeof _budgetWithRelationsPayload>;
 
 /**
  * Budget aggregation result for sum operations
@@ -88,7 +88,7 @@ export type BudgetAggregationResult = Prisma.GetBudgetAggregateType<{
  * Transaction with account and category relations
  * Used in: TransactionService.findOneWithRelations
  */
-const transactionWithRelationsPayload = Prisma.validator<Prisma.TransactionDefaultArgs>()({
+const _transactionWithRelationsPayload = Prisma.validator<Prisma.TransactionDefaultArgs>()({
   include: {
     account: true,
     category: true,
@@ -96,7 +96,7 @@ const transactionWithRelationsPayload = Prisma.validator<Prisma.TransactionDefau
 });
 
 export type TransactionWithRelations = Prisma.TransactionGetPayload<
-  typeof transactionWithRelationsPayload
+  typeof _transactionWithRelationsPayload
 >;
 
 /**

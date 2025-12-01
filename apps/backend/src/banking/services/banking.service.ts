@@ -37,10 +37,10 @@ export class BankingProviderFactory implements IBankingProviderFactory {
 
   constructor(
     private configService: ConfigService,
-    saltEdgeProvider: SaltEdgeProvider,
+    provider: IBankingProvider,
   ) {
     // Register available providers
-    this.registerProvider(BankingProvider.SALTEDGE, saltEdgeProvider);
+    this.registerProvider(BankingProvider.SALTEDGE, provider);
     // TODO: Register other providers as they're implemented
     // this.registerProvider(BankingProvider.TINK, tinkProvider);
     // this.registerProvider(BankingProvider.YAPILY, yapilyProvider);

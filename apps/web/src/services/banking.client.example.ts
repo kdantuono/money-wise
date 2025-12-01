@@ -8,7 +8,6 @@
  */
 
 /* eslint-disable no-console */
-/* eslint-disable security/detect-object-injection */
 
 import bankingClient, {
   SyncResponse,

@@ -193,5 +193,5 @@ export class UpdateTransactionDto {
   })
   @IsObject()
   @IsOptional()
-  plaidMetadata?: Record<string, any>;
+  plaidMetadata?: Record<string, unknown>;
 }

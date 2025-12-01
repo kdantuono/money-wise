@@ -25,7 +25,7 @@ import { CategoryService } from '../core/database/prisma/services/category.servi
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { CategoryResponseDto } from './dto/category-response.dto';
-import { CategoryType, Prisma } from '../../generated/prisma';
+import { CategoryType, CategoryStatus, Prisma } from '../../generated/prisma';
 
 /**
  * Categories Controller
@@ -41,7 +41,7 @@ import { CategoryType, Prisma } from '../../generated/prisma';
 @UseGuards(JwtAuthGuard)
 @Controller('categories')
 export class CategoriesController {
-  constructor(private readonly categoryService: CategoryService) {}
+  constructor(private readonly categoryService: CategoryService) { }
 
   /**
    * Create a new category
@@ -166,7 +166,7 @@ export class CategoriesController {
       description: string;
       color: string;
       icon: string;
-      status: any; // CategoryStatus from Prisma
+      status: CategoryStatus;
       parentId: string;
       rules: Prisma.JsonValue;
       metadata: Prisma.JsonValue;

@@ -1,4 +1,4 @@
-/* eslint-disable no-console */
+ 
 /**
  * Database Test Configuration
  * Provides isolated test database setup with TestContainers

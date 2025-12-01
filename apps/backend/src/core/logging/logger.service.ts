@@ -107,7 +107,7 @@ export class LoggerService implements NestLoggerService {
     if (!this.shouldLog('log')) return;
 
     const formatted = this.formatMessage('log', message, meta);
-    // eslint-disable-next-line no-console
+     
     console.log(formatted);
 
     // Track in Sentry as breadcrumb
@@ -131,7 +131,7 @@ export class LoggerService implements NestLoggerService {
       stack: error.stack,
     });
 
-    // eslint-disable-next-line no-console
+     
     console.error(formatted);
 
     // Send to Sentry with context
@@ -151,7 +151,7 @@ export class LoggerService implements NestLoggerService {
     if (!this.shouldLog('warn')) return;
 
     const formatted = this.formatMessage('warn', message, meta);
-    // eslint-disable-next-line no-console
+     
     console.warn(formatted);
 
     // Track in Sentry as breadcrumb
@@ -170,7 +170,7 @@ export class LoggerService implements NestLoggerService {
     if (!this.shouldLog('debug')) return;
 
     const formatted = this.formatMessage('debug', message, meta);
-    // eslint-disable-next-line no-console
+     
     console.debug(formatted);
   }
 
@@ -181,7 +181,7 @@ export class LoggerService implements NestLoggerService {
     if (!this.shouldLog('verbose')) return;
 
     const formatted = this.formatMessage('verbose', message, meta);
-    // eslint-disable-next-line no-console
+     
     console.log(formatted);
   }
 
@@ -195,7 +195,7 @@ export class LoggerService implements NestLoggerService {
       stack: error.stack,
     });
 
-    // eslint-disable-next-line no-console
+     
     console.error(formatted);
 
     // Send to Sentry with high priority
