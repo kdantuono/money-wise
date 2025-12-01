@@ -1,249 +1,183 @@
 # Development Progress
 
 > **Live tracking of MoneyWise development milestones**
+> **Last Updated: December 1, 2025**
 
-## 🚀 Project Status: M1 Foundation 90% Complete | EPIC-1.5 Active
+## Project Status: MVP 95% Complete
 
-### ✅ Completed
+### Current State Summary
 
-#### Milestone 2: Authentication & Core Models - Backend (Sep 28, 2025)
-**Status**: ✅ **100% BACKEND COMPLETE** | ⏸️ Frontend/Mobile Pending
-
-**What Was Delivered**:
-- ✅ **Database Architecture** (STORY-001, #62): TypeORM entities, migrations, TimescaleDB
-  - User, Account, Transaction, Category entities
-  - Audit logging and password history tracking
-  - 5 database migrations
-  - Repository pattern implementation
-
-- ✅ **JWT Authentication System** (STORY-002, #63): Complete auth backend
-  - Registration, login, logout endpoints
-  - JWT tokens with refresh mechanism
-  - Password security (bcrypt, validation, reset)
-  - 2FA support (two-factor authentication)
-  - Protected route guards and strategies
-  - Rate limiting and security middleware
-
-**Bonus Features Delivered**:
-- Enhanced security with password history
-- Comprehensive audit logging
-- 2FA support (not in original plan)
-- Complete test coverage
-
-**What's Pending**: Frontend (Next.js) and Mobile (React Native) auth UI integration
-**Next Epic**: EPIC-2.1 (Frontend Auth UI) - blocked until EPIC-1.5 complete
+MoneyWise has achieved near-MVP completion with:
+- Full authentication system (frontend + backend)
+- Complete dashboard with financial insights
+- Banking integration via SaltEdge v6
+- Budget management with category tracking
+- Analytics API with spending analysis
+- Robust E2E testing infrastructure
 
 ---
 
-#### EPIC-001: Project Infrastructure (Sep 25-26, 2025)
-- **Monorepo Setup**: Complete pnpm workspace with 8 packages
-- **CI/CD Pipeline**: Progressive CI/CD with quality gates and security scanning
-- **Development Environment**: Automated setup and validation scripts
-- **AI Orchestration**: 12 specialized agents configured for development
-- **Docker Services**: TimescaleDB + Redis running and healthy
-- **Documentation Cleanup**: Removed outdated planning docs, created living documentation
+## Completed Features
 
-#### M1-STORY-001: Repository and Development Environment (Sep 27, 2025)
-- ✅ **TimescaleDB Setup**: PostgreSQL + time-series extensions for financial data
-- ✅ **Testing Infrastructure**: Jest/Supertest (backend), Vitest/RTL (frontend), Playwright (E2E)
-- ✅ **MCP Playwright Integration**: Enhanced browser automation for development
-- ✅ **Database Migrations**: Complete schema with users, accounts, transactions, categories
-- ✅ **Zero-Tolerance Validation**: All 15 packages passing lint/typecheck/build
-- ✅ **Development Scripts**: Health checks, database management, testing workflows
+### Authentication System (100%)
+**PRs**: #153, #157, #161, #204, #208
 
-#### EPIC-1.5: Technical Debt & Infrastructure Consolidation (Oct 2025)
-**Progress**: ✅ **100% COMPLETE** - All 7 stories delivered! 🎉
+- **Backend**: JWT auth with refresh tokens, 2FA support, rate limiting
+- **Frontend**: Login/Register forms, protected routes, auth context
+- **Security**: HttpOnly cookies, CSRF protection, password validation
+- **Testing**: E2E auth flows, unit tests for all guards/strategies
 
-- ✅ **STORY-1.5.1**: Code Quality & Architecture Cleanup (#103) - CLOSED
-- ✅ **STORY-1.5.2**: Monitoring & Observability Integration (#104) - CLOSED
-- ✅ **STORY-1.5.3**: Documentation Consolidation & Architecture (#105) - CLOSED
-- ✅ **STORY-1.5.4**: Configuration Management Consolidation (#106) - CLOSED
-- ✅ **STORY-1.5.5**: .claude/ Directory Cleanup & Organization (#107) - CLOSED
-- ✅ **STORY-1.5.6**: Project Structure Optimization (#108) - CLOSED
-- ✅ **STORY-1.5.7**: Testing Infrastructure Hardening (#109) - CLOSED
+### Dashboard & Analytics (100%)
+**PRs**: #210, #213, #214, #216, #225
 
-#### Infrastructure Components
-- ✅ Package management (pnpm workspaces)
-- ✅ Docker services (postgres-dev with TimescaleDB, redis-dev)
-- ✅ GitHub Actions workflows (progressive-ci-cd, pr-checks, dependency-update)
-- ✅ Development automation (.claude/scripts/)
-- ✅ Git workflow and branch strategy
-- ✅ Board-first development pattern
-- ✅ Complete database schema with proper migrations
-- ✅ Full testing infrastructure across monorepo
-- ✅ Configuration management (centralized, validated)
-- ✅ Documentation architecture (living docs, clear structure)
+- **Stats Cards**: Total balance, income/expenses, savings rate
+- **Recent Transactions**: Live transaction feed with categories
+- **Budget Overview**: Category spending vs budget limits
+- **Quick Actions**: Link account, set budget navigation
+- **Analytics API**: Spending by category, trends, insights
 
-### 🎉 Major Achievement: TypeORM→Prisma Migration Complete
+### Banking Integration - SaltEdge v6 (100%)
+**PRs**: #212, #218, #219
 
-**Timeline**: October 7-14, 2025 (97 commits on `feature/epic-1.5-completion`)
-**Scope**: Complete architectural migration from TypeORM to Prisma ORM
+- **OAuth Flow**: Popup-based bank authorization
+- **Account Linking**: Store and sync connected accounts
+- **Transaction Sync**: Auto-fetch transactions on account link
+- **Error Handling**: Graceful 404/stale reference cleanup
 
-**What Was Accomplished**:
-- ✅ **All 6 entities migrated** (User, Family, Account, Transaction, Category, Budget)
-- ✅ **All 15+ services migrated** with TDD methodology (RED-GREEN-REFACTOR)
-- ✅ **All integration tests migrated** from TypeORM repositories to Prisma
-- ✅ **Prisma test factories created** for integration testing (factories, fixtures, utils)
-- ✅ **Complete migration documentation** (Phase 0 → Phase 3.8 tracking)
-- ✅ **TypeORM completely removed** from codebase (zero dependencies remaining)
+### Budget Management (100%)
+**PRs**: #217, #222, #223
 
-**STORY-1.5.7 Final Deliverables** (Testing Infrastructure Hardening):
-- ✅ **Transaction REST API** implemented with TDD (30 integration tests, 94.78% coverage)
-- ✅ **Account API** enhanced with comprehensive validation tests
-- ✅ **LoggerService + ConfigService** comprehensive test suites added
-- ✅ **Fixed 31 pre-existing test failures** (rate-limit guard tests)
-- ✅ **CI/CD hardening** (budget compliance, TimescaleDB, coverage alignment)
-- ✅ **Project structure reorganized** (docs/, configs, tests all properly organized)
+- **CRUD Operations**: Create, read, update, delete budgets
+- **Category Association**: Link budgets to spending categories
+- **Progress Tracking**: Visual spending vs budget display
+- **Dashboard Integration**: Budget overview on main dashboard
 
-**Test Coverage Achieved**:
-- Transaction module: **94.78%** (exceeds 85% target)
-- Backend overall: **70%+** baseline maintained
-- Integration tests: **30+ passing** (accounts + transactions complete CRUD)
+### Navigation & Pages (100%)
+**PRs**: #211, #222, #223, #225
 
-#### Recent Accomplishments (Last Week)
-- ✅ **TypeORM→Prisma migration** - Complete architectural transformation
-- ✅ **Transaction REST API** - TDD implementation with 30 tests
-- ✅ **Project structure consolidation** - Documentation, configs, tests organized
-- ✅ **Test infrastructure hardening** - Coverage thresholds met across all modules
+- **Dashboard Layout**: Sidebar with all navigation items
+- **Planning Dropdown**: Budgets accessible under Planning section
+- **Placeholder Pages**: Accounts, Transactions, Investments, Goals, Settings
+- **Active State**: Current page highlighting in navigation
 
-### 📋 Upcoming
+### Infrastructure (100%)
+**PRs**: #129, #153, #204, #207, #208, #209, #224
 
-#### EPIC-2.1: Frontend Authentication UI (Next.js)
-**Status**: ⏸️ **BLOCKED** - Waiting for EPIC-1.5 completion
-**Priority**: 🔴 CRITICAL (Next major epic)
-**Estimated**: 13 points, 1-2 weeks
-
-**Planned Stories**:
-1. **STORY-2.1.1**: Registration & Login Forms (3 points)
-   - User registration form with validation
-   - Login form with error handling
-   - Form state management
-
-2. **STORY-2.1.2**: Auth Context & Protected Routes (3 points)
-   - React auth context provider
-   - Protected route components
-   - Redirect logic for unauthenticated users
-
-3. **STORY-2.1.3**: Password Reset UI (2 points)
-   - Request password reset form
-   - Reset password confirmation
-   - Email verification UI
-
-4. **STORY-2.1.4**: Auth State Management (3 points)
-   - JWT token storage (httpOnly cookies)
-   - Token refresh mechanism
-   - Logout functionality
-
-5. **STORY-2.1.5**: Frontend Auth Testing (2 points)
-   - Component tests (Vitest + RTL)
-   - E2E auth flow tests (Playwright)
-   - Integration tests with backend
-
-**Dependencies**: EPIC-1.5 must be complete and validated
+- **Prisma ORM**: Complete migration from TypeORM
+- **Docker E2E**: Multi-stage builds, pre-built runtime stages
+- **CI/CD Pipeline**: GitHub Actions with quality gates
+- **Sentry Monitoring**: Error tracking (backend + frontend)
+- **Test Infrastructure**: Jest + Vitest + Playwright
 
 ---
 
-#### EPIC-2.2: Mobile Authentication Integration (React Native)
-**Status**: ⏸️ **BLOCKED** - Waiting for EPIC-2.1 completion
-**Priority**: 🟡 HIGH
-**Estimated**: 8 points, 1 week
+## Infrastructure Milestones
 
-**Planned Stories**:
-1. Mobile auth screens (registration, login)
-2. Secure token storage (react-native-keychain)
-3. Biometric authentication option
-4. Mobile auth testing
+### EPIC-1.5: Technical Debt (October 2025) - COMPLETE
+- STORY-1.5.1 → 1.5.7: All delivered
+- TypeORM → Prisma migration: Complete
+- Testing infrastructure: 70%+ coverage
+
+### EPIC-2.1: Frontend Auth (November 2025) - COMPLETE
+- Login/Register forms: Done
+- Protected routes: Done
+- Auth context: Done
+- Token management: Done
+
+### EPIC-2.2: Dashboard & Analytics (November 2025) - COMPLETE
+- Dashboard components: Done
+- Analytics API: Done
+- Banking integration: Done
+
+---
+
+## Technical Stack
+
+| Component | Technology |
+|-----------|------------|
+| Backend | NestJS + Prisma + PostgreSQL + Redis |
+| Frontend | Next.js 15 + React + Tailwind CSS |
+| Mobile | React Native (Expo) - Pending |
+| Testing | Jest + Vitest + Playwright |
+| CI/CD | GitHub Actions |
+| Monitoring | Sentry |
+| Banking | SaltEdge v6 API |
 
 ---
 
-#### MVP Phase 2: Core Features (Post-Authentication)
-1. **Account Management**
-   - Account CRUD operations
-   - Account linking (Plaid integration)
-   - Balance tracking
+## Metrics
 
-2. **Transaction Management**
-   - Manual transaction entry
-   - Transaction categorization
-   - Transaction search and filtering
+### Feature Completion
+- **Backend API**: 95%
+- **Frontend Web**: 90%
+- **Mobile App**: 0% (Pending)
+- **E2E Tests**: 100% passing
+- **CI/CD**: 100% operational
 
-3. **Dashboard & Analytics**
-   - Spending overview
-   - Category breakdowns
-   - Trend visualization
-
-## 📊 Metrics
-
-### Overall Project Progress
-- **M1 Foundation**: 90% (Infrastructure Complete, Consolidation Phase)
-- **M2 Backend**: 100% ✅ (Authentication & Database Complete)
-- **M2 Frontend/Mobile**: 0% (Pending EPIC-2.1/2.2)
-
-### Current Epic (EPIC-1.5)
-- **EPIC-1.5 Progress**: ✅ **100% COMPLETE** (7/7 stories delivered)
-- **Stories Complete**: 7/7 (100%) 🎉
-- **Actual Completion**: Oct 14, 2025 ✅
-
-### Infrastructure & Quality
-- **Infrastructure Readiness**: 100%
-- **Database Layer**: 100% (TimescaleDB + Complete Schema + Migrations)
-- **Backend Authentication**: 100% (JWT + 2FA + Security)
-- **Testing Infrastructure**: 100% (Jest + Vitest + Playwright configured)
-- **Configuration Management**: 100% ✅ (Centralized with type-safe schemas)
-- **Monitoring & Observability**: 100% ✅ (Sentry + structured logging + metrics)
-- **Project Structure**: 100% ✅ (Optimized monorepo with documentation)
-- **Development Automation**: 100%
-- **Zero-Tolerance Compliance**: ✅ All 15 packages passing
-- **CI/CD Coverage**: 95% (Fully operational)
-
-## 🎯 Current Focus
-
-**EPIC-1.5 Technical Debt & Infrastructure Consolidation** ✅ **COMPLETE** (Oct 14, 2025) 🎉
-
-**All 7 Stories Delivered**:
-- ✅ **STORY-1.5.1**: Code Quality & Architecture Cleanup
-- ✅ **STORY-1.5.2**: Sentry monitoring (backend + frontend)
-- ✅ **STORY-1.5.3**: Documentation consolidation & architecture
-- ✅ **STORY-1.5.4**: Configuration management (type-safe schemas)
-- ✅ **STORY-1.5.5**: .claude/ directory cleanup & organization
-- ✅ **STORY-1.5.6**: Project structure optimization
-- ✅ **STORY-1.5.7**: Testing infrastructure hardening + Transaction REST API
-
-**Massive Code Changes** (feature/epic-1.5-completion):
-- **100+ commits**: TypeORM→Prisma migration + Testing infrastructure + Structure consolidation
-- **545 files changed**: 127,959 insertions, 3,007 deletions (epic/1.5-infrastructure base)
-- **Comprehensive testing**: 30+ integration tests, 94.78% transaction module coverage
-- **Structured logging**: LoggerService with contextual metadata
-- **Performance monitoring**: MetricsService & PerformanceInterceptor
-- **Type-safe configuration**: Zod validation schemas
-- **Monorepo documentation**: README files for all packages
-- **Import boundaries**: Path aliases configured
-- **Project organization**: docs/ structure, core/config/ consolidation
-
-**Milestone 1 Foundation** ✅ **100% COMPLETE**:
-- ✅ Monorepo structure with TimescaleDB
-- ✅ Complete database schema with **Prisma ORM** (migrated from TypeORM)
-- ✅ Full testing infrastructure (Jest/Vitest/Playwright/MCP)
-- ✅ Development environment automation
-- ✅ Zero-tolerance quality gates
-- ✅ Configuration management (centralized + type-safe)
-- ✅ Monitoring & observability (Sentry + metrics)
-- ✅ Project structure optimization (documentation + boundaries)
-- ✅ Documentation architecture (living docs)
-- ✅ CI/CD pipeline (fully operational)
-- ✅ Test suite hardening (**Transaction + Account REST APIs complete**)
-
-**Next Epic**: EPIC-2.1 (Frontend Authentication UI) - ✅ **READY TO START** (EPIC-1.5 complete!)
-**Note**: M2 Backend (Authentication & Database with Prisma) complete ✅ - only frontend/mobile remains
-
-## 📋 Technical Stack
-
-- **Backend**: NestJS + **Prisma ORM** + PostgreSQL/TimescaleDB + Redis
-- **Frontend**: Next.js + React + Tailwind CSS
-- **Mobile**: React Native (Expo)
-- **Testing**: Jest + Vitest + Playwright + MCP Playwright
-- **Infrastructure**: Docker Compose + GitHub Actions + Sentry
-- **Development**: Turbo (monorepo), pnpm (package manager), Claude Code (AI orchestration)
+### Code Quality
+- **Unit Test Coverage**: 70%+
+- **Lint/TypeCheck**: Zero errors
+- **Security Alerts**: Resolved
 
 ---
-*Last updated: October 14, 2025 - **EPIC-1.5 COMPLETE** ✅ (7/7 stories, 100%)*
+
+## Remaining Work
+
+### High Priority
+1. **Transaction Management UI**: Full CRUD for manual transactions
+2. **Account Details Page**: View linked account details/transactions
+3. **Investment Tracking**: Portfolio management UI
+4. **Goal Setting**: Financial goal creation and tracking
+
+### Medium Priority
+5. **Mobile App**: React Native authentication
+6. **Recurring Transactions**: Auto-categorize repeating expenses
+7. **Export/Reports**: PDF/CSV financial reports
+8. **Settings Page**: User preferences, notification settings
+
+### Low Priority
+9. **Multi-currency**: Support for multiple currencies
+10. **Family Sharing**: Shared household budgets
+11. **Bill Reminders**: Upcoming payment notifications
+
+---
+
+## Recent Activity (November-December 2025)
+
+| Date | PR | Description |
+|------|-----|-------------|
+| Dec 1 | #225 | Goals navigation fix |
+| Dec 1 | #224 | Docker E2E infrastructure |
+| Nov 30 | #223 | Planning dropdown in sidebar |
+| Nov 30 | #222 | Budgets moved to dashboard |
+| Nov 30 | #221 | E2E infrastructure fixes |
+| Nov 30 | #219 | SaltEdge 404 error handling |
+| Nov 30 | #218 | Auto-sync transactions |
+| Nov 30 | #217 | Budget Management Module |
+| Nov 29 | #216 | Dashboard Insights API |
+| Nov 29 | #215 | Banking status documentation |
+| Nov 28 | #214 | E2E QuickActions fix |
+| Nov 28 | #213 | Dashboard data-testid attributes |
+| Nov 28 | #212 | SaltEdge v6 OAuth integration |
+| Nov 27 | #210 | Dashboard MVP components |
+| Nov 27 | #209 | Codebase cleanup |
+| Nov 27 | #208 | Security fixes (CodeQL) |
+| Nov 27 | #207 | Sentry package upgrade |
+
+---
+
+## GitHub Issues Status
+
+### Stale/Resolved (to be closed)
+- #154: Integration Tests - E2E now 100% passing
+- #116: EPIC-2.1 Frontend Auth - Complete
+- #120-127: Prisma migration stories - Complete
+- #102: EPIC-1.5 Technical Debt - Complete
+
+### Active
+- #98: Core Finance Features - In progress (accounts/transactions UI)
+- #146: AccountsService tests - Needs verification
+
+---
+
+*This document reflects the actual state of the codebase as of December 1, 2025*
