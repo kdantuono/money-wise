@@ -6,7 +6,12 @@
 import { chromium, FullConfig } from '@playwright/test';
 import * as path from 'path';
 import * as fs from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
 
+// __dirname is not available in ESM; derive from import.meta.url
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 const AUTH_FILE = path.join(__dirname, '.auth/user.json');
 const TEST_USERS_FILE = path.join(__dirname, '.auth/test-users.json');
 const FRONTEND_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
