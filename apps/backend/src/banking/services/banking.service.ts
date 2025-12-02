@@ -880,19 +880,24 @@ export class BankingService {
     } catch (error) {
       this.logger.error('Account sync failed', error);
 
-      await this.prisma.bankingSyncLog.create({
-        data: {
-          accountId,
-          provider: account.bankingProvider,
-          status: BankingSyncStatus.ERROR,
-          startedAt: new Date(),
-          completedAt: new Date(),
-          error: error.message,
-          errorCode: 'SYNC_ERROR',
-          accountsSynced: 0,
-          transactionsSynced: 0,
-        },
-      });
+      // Only create sync log if account exists (to avoid FK violation)
+      try {
+        await this.prisma.bankingSyncLog.create({
+          data: {
+            accountId,
+            provider: account.bankingProvider,
+            status: BankingSyncStatus.ERROR,
+            startedAt: new Date(),
+            completedAt: new Date(),
+            error: error.message,
+            errorCode: 'SYNC_ERROR',
+            accountsSynced: 0,
+            transactionsSynced: 0,
+          },
+        });
+      } catch (logError) {
+        this.logger.warn(`Failed to create sync log for account ${accountId}:`, logError.message);
+      }
 
       await this.prisma.account.update({
         where: { id: accountId },

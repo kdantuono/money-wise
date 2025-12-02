@@ -1,4 +1,4 @@
- 
+
 /**
  * Database Test Configuration
  * Provides isolated test database setup with TestContainers
@@ -30,7 +30,7 @@ export class DatabaseTestManager {
   private prismaClient: PrismaClient | null = null;
   private config: DatabaseTestConfig | null = null;
 
-  private constructor() {}
+  private constructor() { }
 
   static getInstance(): DatabaseTestManager {
     if (!DatabaseTestManager.instance) {
@@ -119,11 +119,13 @@ export class DatabaseTestManager {
       throw new Error('Database configuration not set');
     }
 
-    // Build DATABASE_URL for test database
-    const databaseUrl = `postgresql://${this.config.username}:${this.config.password}@${this.config.host}:${this.config.port}/${this.config.database}?schema=${this.config.schema}`;
+    // Prioritize DATABASE_URL from environment (CI sets this), fallback to constructed URL
+    const databaseUrl = process.env.DATABASE_URL || `postgresql://${this.config.username}:${this.config.password}@${this.config.host}:${this.config.port}/${this.config.database}?schema=${this.config.schema}`;
 
-    // Set DATABASE_URL for Prisma
-    process.env.DATABASE_URL = databaseUrl;
+    // Set DATABASE_URL for Prisma if not already set
+    if (!process.env.DATABASE_URL) {
+      process.env.DATABASE_URL = databaseUrl;
+    }
 
     try {
       // Initialize Prisma Client
@@ -162,12 +164,21 @@ export class DatabaseTestManager {
         throw error;
       }
 
-      // Enable TimescaleDB extension if available (optional)
+      // Enable TimescaleDB extension (optional for time-series features)
       try {
-        await this.prismaClient.$executeRawUnsafe('CREATE EXTENSION IF NOT EXISTS timescaledb');
+        await this.prismaClient.$executeRawUnsafe('CREATE EXTENSION IF NOT EXISTS timescaledb CASCADE');
         console.log('✅ TimescaleDB extension enabled');
       } catch (error) {
-        console.warn('⚠️ TimescaleDB extension not available:', error.message);
+        // TimescaleDB is optional - tests work without it, but time-series features require it
+        if (process.env.REQUIRE_TIMESCALEDB === 'true') {
+          console.error('❌ TimescaleDB extension required but not available:', error.message);
+          console.error('   Use timescale/timescaledb image instead of postgres');
+          throw error;
+        }
+        // Just log for awareness, don't fail tests
+        if (process.env.NODE_ENV !== 'test') {
+          console.log('ℹ️  TimescaleDB not available (optional) - using standard PostgreSQL');
+        }
       }
     } catch (error) {
       console.error('❌ Failed to initialize Prisma test database:', error);

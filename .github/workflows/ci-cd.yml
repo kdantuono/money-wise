@@ -659,6 +659,26 @@ jobs:
             exit 1
           fi
 
+      - name: ⏳ Wait for Database Readiness
+        env:
+          DATABASE_URL: postgresql://test:testpass@localhost:5432/test_db
+        run: |
+          echo "⏳ Ensuring database is fully ready for tests..."
+          
+          # Test connection with explicit credentials
+          for i in {1..30}; do
+            if PGPASSWORD=testpass psql -h localhost -U test -d test_db -c "SELECT 1" >/dev/null 2>&1; then
+              echo "✅ Database connection verified (attempt $i)"
+              sleep 2  # Brief stabilization period
+              exit 0
+            fi
+            echo "⏳ Waiting for database (attempt $i/30)..."
+            sleep 2
+          done
+          
+          echo "❌ Database failed to become ready"
+          exit 1
+
           if echo "$MIGRATION_STATUS" | grep -q "have not been executed"; then
             echo "❌ FAILED: Unapplied migrations found"
             exit 1
