@@ -261,12 +261,23 @@ export class BankingService {
       throw new BadRequestException(`Provider ${provider} not yet supported`);
     }
 
-    // Step 5: Update connection with redirect URL and expiry
+    // Step 5: Update connection with redirect URL, expiry, and pre-known SaltEdge connection id (mock/dev)
+    // In real v6, the connection_id arrives via webhook after OAuth. For local/dev mocks,
+    // we embed connection_id in the connectUrl to enable end-to-end tests without webhooks.
+    let saltEdgeConnectionIdFromUrl: string | null = null;
+    try {
+      const urlObj = new URL(connectUrl);
+      saltEdgeConnectionIdFromUrl = urlObj.searchParams.get('connection_id');
+    } catch {
+      // ignore URL parse errors
+    }
+
     await this.prisma.bankingConnection.update({
       where: { id: connection.id },
       data: {
         redirectUrl: connectUrl,
         expiresAt,
+        ...(saltEdgeConnectionIdFromUrl && { saltEdgeConnectionId: saltEdgeConnectionIdFromUrl }),
       },
     });
 
