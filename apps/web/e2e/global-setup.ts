@@ -80,19 +80,30 @@ async function globalSetup(config: FullConfig) {
 async function checkBackendHealth() {
   console.log('🏥 Checking backend health...');
 
-  const maxRetries = 3;
+  const maxRetries = 30;
   const retryDelay = 2000;
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       const response = await fetch(`${BACKEND_URL}/api/health`, {
         method: 'GET',
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json' },
+        cache: 'no-store'
       });
 
       if (response.ok) {
-        console.log('✅ Backend health check passed');
-        return;
+        // Some environments return additional fields; prefer status==='ok' if present
+        let healthy = true;
+        try {
+          const data = await response.json();
+          healthy = !data?.status || data.status === 'ok';
+        } catch {
+          // Non-JSON response is fine; treat as healthy
+        }
+        if (healthy) {
+          console.log('✅ Backend health check passed');
+          return;
+        }
       } else {
         console.warn(`⚠️ Backend health check failed (attempt ${attempt}/${maxRetries}): ${response.status} ${response.statusText}`);
       }
