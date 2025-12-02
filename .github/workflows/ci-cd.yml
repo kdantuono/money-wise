@@ -1130,28 +1130,58 @@ jobs:
 
       - name: 🐳 Start E2E infrastructure with Docker Compose
         run: |
-          docker compose -f docker-compose.e2e.yml up -d
-          echo "✅ Docker Compose services starting..."
+          echo "🚀 Starting Docker Compose services..."
+          docker compose -f docker-compose.e2e.yml up -d --build
+          echo "✅ Docker Compose services started"
+          echo "📋 Initial service status:"
+          docker compose -f docker-compose.e2e.yml ps
 
       - name: ⏳ Wait for all services to be healthy
         run: |
-          echo "⏳ Waiting for backend and frontend to be ready..."
-          for i in {1..60}; do
+          echo "⏳ Waiting for backend and frontend to be ready (max 5 minutes)..."
+          
+          for i in {1..150}; do
+            # Check if containers exist first
+            BACKEND_EXISTS=$(docker ps -a --filter name=moneywise-backend-e2e --format '{{.Names}}' | grep -c moneywise-backend-e2e || echo "0")
+            FRONTEND_EXISTS=$(docker ps -a --filter name=moneywise-frontend-e2e --format '{{.Names}}' | grep -c moneywise-frontend-e2e || echo "0")
+            
+            if [ "$BACKEND_EXISTS" = "0" ] || [ "$FRONTEND_EXISTS" = "0" ]; then
+              echo "⚠️ Containers not yet created, waiting..."
+              sleep 2
+              continue
+            fi
+            
+            # Get health status
             BACKEND_HEALTHY=$(docker inspect --format='{{.State.Health.Status}}' moneywise-backend-e2e 2>/dev/null || echo "starting")
             FRONTEND_HEALTHY=$(docker inspect --format='{{.State.Health.Status}}' moneywise-frontend-e2e 2>/dev/null || echo "starting")
 
             if [ "$BACKEND_HEALTHY" = "healthy" ] && [ "$FRONTEND_HEALTHY" = "healthy" ]; then
               echo "✅ All services are healthy!"
               docker compose -f docker-compose.e2e.yml ps
+              echo "📋 Backend logs (last 20 lines):"
+              docker logs moneywise-backend-e2e --tail 20
+              echo "📋 Frontend logs (last 20 lines):"
+              docker logs moneywise-frontend-e2e --tail 20
               exit 0
             fi
 
-            echo "Attempt $i/60: Backend=$BACKEND_HEALTHY, Frontend=$FRONTEND_HEALTHY"
+            # Show progress every 10 attempts
+            if [ $((i % 10)) -eq 0 ]; then
+              echo "Attempt $i/150: Backend=$BACKEND_HEALTHY, Frontend=$FRONTEND_HEALTHY"
+            fi
+            
             sleep 2
           done
 
-          echo "❌ Services failed to become healthy within 120 seconds"
-          docker compose -f docker-compose.e2e.yml logs
+          echo "❌ Services failed to become healthy within 5 minutes"
+          echo "📋 Final service status:"
+          docker compose -f docker-compose.e2e.yml ps
+          echo "📋 Backend logs:"
+          docker logs moneywise-backend-e2e
+          echo "📋 Frontend logs:"
+          docker logs moneywise-frontend-e2e
+          echo "📋 Postgres logs:"
+          docker logs moneywise-postgres-e2e
           exit 1
 
       # OPTIMIZATION: Cache Playwright browsers
