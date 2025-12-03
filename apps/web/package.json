@@ -58,7 +58,7 @@
     "immer": "^10.2.0",
     "isomorphic-dompurify": "^2.33.0",
     "lucide-react": "^0.555.0",
-    "next": "15.4.7",
+    "next": "15.4.8",
     "postcss": "^8.4.32",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
