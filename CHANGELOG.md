@@ -5,6 +5,69 @@ All notable changes to MoneyWise will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2025-12-03
+
+### Added
+
+- **Phase -1 Foundation Upgrades** - Major dependency modernization
+  - **Tailwind CSS v4**: Migrated to CSS-based configuration with `@import "tailwindcss"` and `@theme` directive
+    - Removed legacy `tailwind.config.js` (replaced with CSS-based config in `globals.css`)
+    - Updated PostCSS to use `@tailwindcss/postcss` plugin
+    - Removed redundant `autoprefixer` dependency (now included in Tailwind v4)
+    - Added `@variant dark` for dark mode support
+  - **Jest 30**: Updated test infrastructure
+    - Fixed breaking change: `--testPathPattern` to `--testPathPatterns`
+    - All 1611 backend tests passing
+    - All 691 web tests passing
+  - **NestJS 11**: Core framework upgrade
+    - Updated @nestjs/common, core, platform-express to ^11.1.9
+    - Updated @nestjs/config to ^4.0.2
+    - Updated @nestjs/jwt to ^11.0.1 (JWT expiresIn type change)
+    - Fixed JWT expiresIn type compatibility with `JwtSignOptions` casting
+    - Fixed @ApiProperty Swagger compatibility
+  - **Expo 52**: Mobile app placeholder upgrade
+    - React Native 0.72.6 to 0.76.9
+    - expo-router 2 to 4.0.0
+    - nativewind 2.0.11 to 4.1.0
+    - jest-expo 49 to 52.0.0
+    - Added peer dependency rules for React 18/19 transition
+  - **pnpm 10.24.0**: Package manager upgrade from 10.11.0
+  - **MVP Sprint Planning**: Added comprehensive sprint plan document (`docs/planning/mvp-completion-sprint.md`)
+
+### Changed
+
+- **Technology Stack Versions**
+  | Package | Previous | Current |
+  |---------|----------|---------|
+  | Tailwind CSS | v3.x | v4.1.17 |
+  | Jest | v29.7 | v30.2.0 |
+  | NestJS | v10.x | v11.1.9 |
+  | Expo | v49.x | v52.0.0 |
+  | React Native | 0.72.6 | 0.76.9 |
+  | pnpm | 10.11.0 | 10.24.0 |
+
+- **Web App Configuration**
+  - Removed `tailwind.config.js` - now uses CSS-based `@theme` directive
+  - Updated `postcss.config.cjs` to use `@tailwindcss/postcss` plugin
+  - Removed `autoprefixer` dependency (included in Tailwind v4)
+
+- **Backend Configuration**
+  - Updated JWT type handling for NestJS 11 compatibility
+  - Test scripts updated for Jest 30 `--testPathPatterns` flag
+
+### Technical Details
+
+- **Breaking Changes Handled**:
+  - Tailwind v4: CSS-first configuration migration
+  - Jest 30: CLI flag pluralization
+  - NestJS 11: JWT module type compatibility
+  - All changes are backward-compatible at the application level
+
+- **Test Results**:
+  - Backend: 1611 tests passing
+  - Web: 691 tests passing
+  - All CI/CD pipelines green
+
 ## [0.5.1] - 2025-12-03
 
 ### Fixed

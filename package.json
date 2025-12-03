@@ -1,6 +1,6 @@
 {
   "name": "money-wise",
-  "version": "0.5.1",
+  "version": "0.6.0",
   "description": "Personal finance management application with cross-platform support",
   "private": true,
   "workspaces": [
@@ -93,6 +93,7 @@
     "onlyBuiltDependencies": [
       "@prisma/client",
       "@prisma/engines",
+      "@scarf/scarf",
       "@sentry/cli",
       "argon2",
       "cpu-features",
