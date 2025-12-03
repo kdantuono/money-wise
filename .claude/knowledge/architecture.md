@@ -31,7 +31,7 @@ MoneyWise is a personal finance management system built as a monorepo with micro
 │                         CLIENT LAYER                         │
 ├───────────────────────────┬─────────────────────────────────┤
 │      Web Application      │         Mobile (Future)         │
-│       (Next.js 14)        │         (React Native)          │
+│       (Next.js 15)        │     (React Native 0.76/Expo 52) │
 └───────────────┬───────────┴─────────────────────────────────┘
                 │
 ┌───────────────┴─────────────────────────────────────────────┐
@@ -59,22 +59,22 @@ MoneyWise is a personal finance management system built as a monorepo with micro
 ## Technology Stack
 
 ### Frontend (apps/web)
-- **Framework**: Next.js 14 with App Router
-- **Language**: TypeScript 5.3
-- **Styling**: Tailwind CSS
+- **Framework**: Next.js 15 with App Router
+- **Language**: TypeScript 5.6
+- **Styling**: Tailwind CSS v4 (CSS-based configuration)
 - **UI Library**: Radix UI
 - **State Management**: Zustand
 - **API Client**: Axios
-- **Testing**: Vitest, React Testing Library, Playwright
+- **Testing**: Vitest 4, React Testing Library, Playwright
 
 ### Backend (apps/backend)
-- **Framework**: NestJS 10
-- **Language**: TypeScript 5.3
-- **Database ORM**: TypeORM
+- **Framework**: NestJS 11 + Express 5
+- **Language**: TypeScript 5.6
+- **Database ORM**: Prisma
 - **Validation**: class-validator
 - **Authentication**: JWT with Passport
 - **Documentation**: Swagger/OpenAPI
-- **Testing**: Jest, Supertest
+- **Testing**: Jest 30, Supertest
 
 ### Shared (packages/)
 - **types**: TypeScript type definitions
@@ -86,6 +86,8 @@ MoneyWise is a personal finance management system built as a monorepo with micro
 - **Cache**: Redis 7
 - **Container**: Docker & Docker Compose
 - **CI/CD**: GitHub Actions
+- **Build System**: Turborepo 2.6
+- **Package Manager**: pnpm 10.24
 - **Monitoring**: Winston logging, Sentry
 
 ## Design Patterns

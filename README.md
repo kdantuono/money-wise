@@ -3,16 +3,16 @@
 Personal finance management application with cross-platform support
 
 [![CI/CD Pipeline](https://github.com/kdantuono/money-wise/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/kdantuono/money-wise/actions/workflows/ci-cd.yml)
-[![Version](https://img.shields.io/badge/version-0.4.0-blue.svg)](https://github.com/kdantuono/money-wise)
+[![Version](https://img.shields.io/badge/version-0.6.1-blue.svg)](https://github.com/kdantuono/money-wise)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Node Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
-[![Package Manager](https://img.shields.io/badge/package%20manager-pnpm%20%3E%3D8.0.0-orange.svg)](https://pnpm.io/)
+[![Node Version](https://img.shields.io/badge/node-%3E%3D22.0.0-brightgreen.svg)](https://nodejs.org/)
+[![Package Manager](https://img.shields.io/badge/package%20manager-pnpm%20%3E%3D10.0.0-orange.svg)](https://pnpm.io/)
 
 ## 🎯 Project Overview
 
 MoneyWise is a comprehensive personal finance management application built with modern technologies and cross-platform compatibility. The application helps users track expenses, manage budgets, and gain insights into their financial health.
 
-### **Current Status: MVP Development (v0.4.6)**
+### **Current Status: MVP Development (v0.6.1)**
 - ✅ Project infrastructure and monorepo setup complete
 - ✅ Documentation and planning organization complete
 - 🚧 Core financial features in development
@@ -91,13 +91,13 @@ money-wise/
 📖 **[View Complete Structure Documentation](./docs/development/monorepo-structure.md)**
 
 ### **Technology Stack**
-- **Frontend**: Next.js 14, React 18, TypeScript, Tailwind CSS
-- **Mobile**: React Native, Expo
-- **Backend**: NestJS, TypeScript, TypeORM
+- **Frontend**: Next.js 15, React 19, TypeScript, Tailwind CSS v4
+- **Mobile**: React Native 0.76, Expo 52
+- **Backend**: NestJS 11, Express 5, TypeScript, Prisma
 - **Database**: PostgreSQL, Redis
-- **Testing**: Jest, Playwright, React Testing Library
-- **DevOps**: Docker, Docker Compose, GitHub Actions
-- **Package Management**: pnpm workspaces
+- **Testing**: Jest 30, Vitest 4, Playwright, React Testing Library
+- **DevOps**: Docker, Docker Compose, GitHub Actions, Turborepo 2.6
+- **Package Management**: pnpm 10.24 workspaces
 
 ## 📋 Available Scripts
 
@@ -313,6 +313,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**Version**: 0.4.6 | **Status**: MVP Development | **Last Updated**: 2025-10-04
+**Version**: 0.6.1 | **Status**: MVP Development | **Last Updated**: 2025-12-03
 
 For questions or support, please create an issue or contact the maintainers.

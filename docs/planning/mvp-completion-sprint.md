@@ -1,7 +1,7 @@
 # MVP Completion Sprint - December 2025
 
 > **Comprehensive implementation plan for MoneyWise MVP completion**
-> **Status: Planning Phase**
+> **Status: In Progress - Phase -1 Complete ✅**
 > **Last Updated: December 3, 2025**
 
 ---
@@ -1519,27 +1519,36 @@ See [Appendix A: Complete Prisma Schema](#appendix-a-complete-prisma-schema) for
 
 ---
 
-### Phase -1: Foundation Upgrade (2.5 days) ⚡ WAVE 0
+### Phase -1: Foundation Upgrade (2.5 days) ⚡ WAVE 0 ✅ COMPLETE
 
 **Branch**: `feature/phase-1-foundation-upgrade`
+**PR**: #231 (Merged December 3, 2025)
 
 | Task | Time | Status |
 |------|------|--------|
-| Turbo 1.13 → 2.6 | 1-2 hours | [ ] |
-| Tailwind v3 → v4 | 4-6 hours | [ ] |
-| Jest 29 → 30 | 3-4 hours | [ ] |
-| NestJS 10 → 11 | 4-6 hours | [ ] |
-| Patch updates | 2 hours | [ ] |
-| Verification | 2 hours | [ ] |
+| Turbo 1.13 → 2.6 | 1-2 hours | [x] |
+| Tailwind v3 → v4 | 4-6 hours | [x] |
+| Jest 29 → 30 | 3-4 hours | [x] |
+| NestJS 10 → 11 | 4-6 hours | [x] |
+| Expo 51 → 52 | 1 hour | [x] |
+| pnpm 9.x → 10.24 | 30 min | [x] |
+| Patch updates | 2 hours | [x] |
+| Verification | 2 hours | [x] |
 
 **Verification Checklist:**
-- [ ] `pnpm install` succeeds
-- [ ] `pnpm build` succeeds (both apps)
-- [ ] `pnpm test:unit` passes (both apps)
-- [ ] `pnpm lint` passes
-- [ ] `pnpm typecheck` passes
-- [ ] E2E tests pass
-- [ ] Dev servers start correctly
+- [x] `pnpm install` succeeds
+- [x] `pnpm build` succeeds (both apps)
+- [x] `pnpm test:unit` passes (both apps) - 2302 tests total
+- [x] `pnpm lint` passes
+- [x] `pnpm typecheck` passes
+- [x] E2E tests pass
+- [x] Dev servers start correctly
+
+**Key Migrations Completed:**
+- Tailwind CSS v4: Migrated to CSS-based configuration (@import "tailwindcss")
+- Jest 30: Updated --testPathPattern → --testPathPatterns
+- NestJS 11: Fixed JWT expiresIn type compatibility (StringValue from ms package)
+- Removed unused autoprefixer dependency (integrated in @tailwindcss/postcss)
 
 ---
 
