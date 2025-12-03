@@ -497,12 +497,13 @@ export class BankingService {
    * @param userId - The user ID
    * @param connectionId - Our internal connection UUID
    * @param saltEdgeConnectionId - Optional: SaltEdge's connection_id from redirect params
+   * @returns Object containing accounts and the effective SaltEdge connection ID
    */
   async completeBankingLink(
     userId: string,
     connectionId: string,
     saltEdgeConnectionId?: string,
-  ): Promise<BankingAccountData[]> {
+  ): Promise<{ accounts: BankingAccountData[]; saltEdgeConnectionId: string }> {
     this.logger.log(`Completing banking link for user ${userId}, connection ${connectionId}, saltEdge: ${saltEdgeConnectionId || 'not provided'}`);
 
     const connection = await this.prisma.bankingConnection.findUnique({
@@ -580,9 +581,9 @@ export class BankingService {
         },
       });
 
-      this.logger.log(`Banking link completed: ${accounts.length} accounts retrieved`);
+      this.logger.log(`Banking link completed: ${accounts.length} accounts retrieved, saltEdgeConnectionId: ${effectiveSaltEdgeId}`);
 
-      return accounts;
+      return { accounts, saltEdgeConnectionId: effectiveSaltEdgeId };
     } catch (error) {
       this.logger.error('Failed to complete banking link', error);
 
@@ -597,11 +598,16 @@ export class BankingService {
 
   /**
    * Store linked accounts in the database
+   * @param userId - The user ID
+   * @param connectionId - Our internal connection UUID
+   * @param accounts - The accounts to store
+   * @param saltEdgeConnectionId - The SaltEdge connection ID (passed directly to avoid stale data issues)
    */
   async storeLinkedAccounts(
     userId: string,
     connectionId: string,
     accounts: BankingAccountData[],
+    saltEdgeConnectionId: string,
   ): Promise<number> {
     const connection = await this.prisma.bankingConnection.findUnique({
       where: { id: connectionId },
@@ -619,14 +625,18 @@ export class BankingService {
 
     for (const account of accounts) {
       try {
+        // Ensure IDs are strings - SaltEdge API may return numbers
+        const saltEdgeAcctId = String(account.id);
+        const saltEdgeConnId = String(saltEdgeConnectionId);
+
         const createdAccount = await this.prisma.account.create({
           data: {
             userId,
             name: account.name,
             accountNumber: account.iban,
             bankingProvider: connection.provider,
-            saltEdgeAccountId: account.id,
-            saltEdgeConnectionId: connection.saltEdgeConnectionId,
+            saltEdgeAccountId: saltEdgeAcctId,
+            saltEdgeConnectionId: saltEdgeConnId,
             syncStatus: BankingSyncStatus.PENDING,
             institutionName: account.bankName,
             currentBalance: account.balance,

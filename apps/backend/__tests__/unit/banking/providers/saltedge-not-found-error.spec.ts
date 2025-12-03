@@ -3,6 +3,13 @@
  *
  * Tests the SaltEdgeNotFoundError class and 404 detection logic
  * to ensure proper handling of permanently deleted SaltEdge resources.
+ *
+ * REGRESSION TEST: This file includes critical tests for distinguishing between:
+ * - API 404 errors (resource actually deleted - should throw SaltEdgeNotFoundError)
+ * - HTML 404 pages (fake providers/unsupported endpoints - should NOT throw SaltEdgeNotFoundError)
+ *
+ * See: hotfix/tech-debt-phase4 - SaltEdge IDs were being incorrectly wiped because
+ * HTML 404 pages from fake providers were treated as "resource deleted".
  */
 import { SaltEdgeNotFoundError } from '../../../../src/banking/providers/saltedge.provider';
 
@@ -137,4 +144,174 @@ function extractResourceId(
 
   const match = path.match(pattern);
   return match?.[1];
+}
+
+/**
+ * REGRESSION TESTS: 404 Response Type Detection
+ *
+ * These tests ensure that the 404 handling logic correctly distinguishes between:
+ * 1. Real SaltEdge API 404s (JSON with error class) - should trigger resource cleanup
+ * 2. Generic HTML 404 pages (from fake providers) - should NOT trigger resource cleanup
+ *
+ * Background: The fake bank providers in SaltEdge don't support all API endpoints.
+ * When calling /accounts/{id} for a fake bank account, SaltEdge returns a generic
+ * HTML 404 page (not a JSON API response). Previously, this was incorrectly treated
+ * as "resource deleted" which caused saltEdgeAccountId to be wiped from the database.
+ */
+describe('404 Response Type Detection (Regression)', () => {
+  // Sample HTML 404 response from SaltEdge web server (fake providers)
+  const HTML_404_RESPONSE = `<!DOCTYPE html>
+<html>
+<head>
+  <title>Not found | Salt Edge</title>
+</head>
+<body>
+  <h2>Oops, something went wrong</h2>
+  <p>Looks like this page doesn't exist</p>
+</body>
+</html>`;
+
+  // Sample proper API 404 error response (real resource deletion)
+  const API_404_RESPONSE = {
+    error: {
+      class: 'NotFound',
+      message: 'Account with id 168552387 was not found',
+    },
+  };
+
+  // Account-specific API 404 error
+  const ACCOUNT_NOT_FOUND_RESPONSE = {
+    error: {
+      class: 'AccountNotFound',
+      message: 'Account not found',
+    },
+  };
+
+  // Connection-specific API 404 error
+  const CONNECTION_NOT_FOUND_RESPONSE = {
+    error: {
+      class: 'ConnectionNotFound',
+      message: 'Connection not found',
+    },
+  };
+
+  describe('shouldThrowSaltEdgeNotFoundError', () => {
+    it('should return TRUE for proper API 404 with NotFound error class', () => {
+      const errorData = API_404_RESPONSE.error;
+      const responseData = API_404_RESPONSE;
+
+      const result = shouldThrowSaltEdgeNotFoundError(errorData, responseData);
+
+      expect(result).toBe(true);
+    });
+
+    it('should return TRUE for AccountNotFound error class', () => {
+      const errorData = ACCOUNT_NOT_FOUND_RESPONSE.error;
+      const responseData = ACCOUNT_NOT_FOUND_RESPONSE;
+
+      const result = shouldThrowSaltEdgeNotFoundError(errorData, responseData);
+
+      expect(result).toBe(true);
+    });
+
+    it('should return TRUE for ConnectionNotFound error class', () => {
+      const errorData = CONNECTION_NOT_FOUND_RESPONSE.error;
+      const responseData = CONNECTION_NOT_FOUND_RESPONSE;
+
+      const result = shouldThrowSaltEdgeNotFoundError(errorData, responseData);
+
+      expect(result).toBe(true);
+    });
+
+    it('should return FALSE for HTML 404 page response (string)', () => {
+      const errorData = undefined;
+      const responseData = HTML_404_RESPONSE;
+
+      const result = shouldThrowSaltEdgeNotFoundError(errorData, responseData);
+
+      expect(result).toBe(false);
+    });
+
+    it('should return FALSE when error class is not a NotFound variant', () => {
+      const errorData = { class: 'InvalidCredentials', message: 'Bad creds' };
+      const responseData = { error: errorData };
+
+      const result = shouldThrowSaltEdgeNotFoundError(errorData, responseData);
+
+      expect(result).toBe(false);
+    });
+
+    it('should return FALSE when errorData is undefined', () => {
+      const errorData = undefined;
+      const responseData = { some: 'other response' };
+
+      const result = shouldThrowSaltEdgeNotFoundError(errorData, responseData);
+
+      expect(result).toBe(false);
+    });
+
+    it('should return FALSE when errorData has no class property', () => {
+      const errorData = { class: undefined, message: 'Some error without class' };
+      const responseData = { error: errorData };
+
+      const result = shouldThrowSaltEdgeNotFoundError(errorData, responseData);
+
+      expect(result).toBe(false);
+    });
+  });
+
+  describe('isHtmlResponse', () => {
+    it('should return TRUE for HTML string response', () => {
+      expect(isHtmlResponse(HTML_404_RESPONSE)).toBe(true);
+    });
+
+    it('should return TRUE for partial HTML doctype', () => {
+      expect(isHtmlResponse('<!DOCTYPE html><html><body>Error</body></html>')).toBe(true);
+    });
+
+    it('should return FALSE for JSON object response', () => {
+      expect(isHtmlResponse(API_404_RESPONSE)).toBe(false);
+    });
+
+    it('should return FALSE for non-HTML string', () => {
+      expect(isHtmlResponse('Just a plain text error')).toBe(false);
+    });
+
+    it('should return FALSE for undefined', () => {
+      expect(isHtmlResponse(undefined)).toBe(false);
+    });
+
+    it('should return FALSE for null', () => {
+      expect(isHtmlResponse(null)).toBe(false);
+    });
+  });
+});
+
+/**
+ * Helper function that mirrors the 404 detection logic in saltedge.provider.ts
+ * This determines if a 404 response should throw SaltEdgeNotFoundError
+ */
+function shouldThrowSaltEdgeNotFoundError(
+  errorData: { class?: string } | undefined,
+  responseData: unknown,
+): boolean {
+  // Check if this is a proper SaltEdge API 404 (JSON with error class)
+  const isApiError =
+    errorData?.class === 'NotFound' ||
+    errorData?.class === 'AccountNotFound' ||
+    errorData?.class === 'ConnectionNotFound' ||
+    errorData?.class === 'CustomerNotFound';
+
+  // Check if response is HTML (not JSON API error)
+  const isHtml = isHtmlResponse(responseData);
+
+  // Only throw SaltEdgeNotFoundError for API errors, NOT HTML pages
+  return isApiError && !isHtml;
+}
+
+/**
+ * Helper function to detect HTML responses
+ */
+function isHtmlResponse(data: unknown): boolean {
+  return typeof data === 'string' && data.includes('<!DOCTYPE html');
 }

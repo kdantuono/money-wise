@@ -213,20 +213,21 @@ export class BankingController {
     );
 
     try {
-      const accounts = await this.bankingService.completeBankingLink(
+      const result = await this.bankingService.completeBankingLink(
         user.id,
         body.connectionId,
         body.saltEdgeConnectionId,
       );
 
-      // Store the accounts
+      // Store the accounts with the saltEdgeConnectionId to ensure it's properly saved
       await this.bankingService.storeLinkedAccounts(
         user.id,
         body.connectionId,
-        accounts,
+        result.accounts,
+        result.saltEdgeConnectionId,
       );
 
-      return { accounts };
+      return { accounts: result.accounts };
     } catch (error) {
       this.logger.error('Failed to complete banking link', error);
       throw error;
