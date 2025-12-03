@@ -5,7 +5,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { JwtService } from '@nestjs/jwt';
+import { JwtService, JwtSignOptions } from '@nestjs/jwt';
 import type { User, AuditEventType } from '../../generated/prisma';
 import { UserStatus } from '../../generated/prisma';
 import { RegisterDto } from './dto/register.dto';
@@ -24,12 +24,15 @@ export interface JwtPayload {
   role: string;
 }
 
+// Type for JWT expiresIn compatible with @nestjs/jwt v11+ (uses ms package StringValue)
+type JwtExpiresIn = JwtSignOptions['expiresIn'];
+
 @Injectable()
 export class AuthService {
   private readonly jwtAccessSecret: string;
-  private readonly jwtAccessExpiresIn: string;
+  private readonly jwtAccessExpiresIn: JwtExpiresIn;
   private readonly jwtRefreshSecret: string;
-  private readonly jwtRefreshExpiresIn: string;
+  private readonly jwtRefreshExpiresIn: JwtExpiresIn;
 
   constructor(
     private readonly prismaUserService: PrismaUserService,
@@ -47,9 +50,9 @@ export class AuthService {
     }
 
     this.jwtAccessSecret = authConfig.JWT_ACCESS_SECRET;
-    this.jwtAccessExpiresIn = authConfig.JWT_ACCESS_EXPIRES_IN || '15m';
+    this.jwtAccessExpiresIn = (authConfig.JWT_ACCESS_EXPIRES_IN || '15m') as JwtExpiresIn;
     this.jwtRefreshSecret = authConfig.JWT_REFRESH_SECRET;
-    this.jwtRefreshExpiresIn = authConfig.JWT_REFRESH_EXPIRES_IN || '7d';
+    this.jwtRefreshExpiresIn = (authConfig.JWT_REFRESH_EXPIRES_IN || '7d') as JwtExpiresIn;
   }
 
   async register(
