@@ -17,7 +17,7 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import {
   TransactionList,
@@ -32,6 +32,7 @@ import {
 } from '@/store';
 import { BankingAccount } from '@/lib/banking-types';
 import { CreditCard, RefreshCw, Wallet, ArrowRight } from 'lucide-react';
+import { transactionsClient, type Transaction as ApiTransaction } from '@/services/transactions.client';
 
 /**
  * Transaction type from TransactionList component
@@ -65,34 +66,77 @@ export default function TransactionsPage() {
 
   // Local state
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [isLoadingTransactions] = useState(false);
+  const [isLoadingTransactions, setIsLoadingTransactions] = useState(false);
   const [selectedAccountId, setSelectedAccountId] = useState<string>('all');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
 
   /**
-   * Fetch accounts on component mount
+   * Map API transaction to component transaction format
+   */
+  const mapApiTransactionToComponent = useCallback((tx: ApiTransaction): Transaction => {
+    return {
+      id: tx.id,
+      date: tx.date,
+      description: tx.description,
+      amount: Math.abs(tx.amount),
+      type: tx.type,
+      merchant: tx.merchantName || undefined,
+      reference: tx.reference || undefined,
+      status: tx.isPending ? 'pending' : tx.status === 'CANCELLED' ? 'cancelled' : 'completed',
+      currency: tx.currency,
+    };
+  }, []);
+
+  /**
+   * Fetch transactions from API
+   */
+  const fetchTransactions = useCallback(async (accountId?: string) => {
+    setIsLoadingTransactions(true);
+    try {
+      const apiTransactions = await transactionsClient.getTransactions({
+        accountId: accountId === 'all' ? undefined : accountId,
+      });
+      const mappedTransactions = apiTransactions.map(mapApiTransactionToComponent);
+      setTransactions(mappedTransactions);
+    } catch (err) {
+      console.error('Failed to fetch transactions:', err);
+      setLocalError(err instanceof Error ? err.message : 'Failed to fetch transactions');
+    } finally {
+      setIsLoadingTransactions(false);
+    }
+  }, [mapApiTransactionToComponent]);
+
+  /**
+   * Fetch accounts and transactions on component mount
    */
   useEffect(() => {
-    const loadAccounts = async () => {
+    const loadData = async () => {
       try {
+        // Fetch accounts (for the filter dropdown)
         await fetchAccounts();
       } catch (err) {
         console.error('Failed to fetch accounts:', err);
       }
+
+      // Always fetch transactions on mount
+      await fetchTransactions(selectedAccountId);
     };
 
-    loadAccounts();
-  }, [fetchAccounts]);
+    loadData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run once on mount
 
   /**
-   * Load transactions (placeholder - will be implemented with transaction API)
+   * Refetch transactions when account filter changes
    */
   useEffect(() => {
-    // TODO: Implement transaction fetching when API endpoint is available
-    // For now, transactions will be empty until the API is built
-    setTransactions([]);
-  }, [accounts, selectedAccountId]);
+    // Skip the initial render (handled by mount effect above)
+    if (selectedAccountId !== 'all' || transactions.length > 0) {
+      fetchTransactions(selectedAccountId);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedAccountId]); // Only refetch when filter changes
 
   /**
    * Handle manual refresh
@@ -106,7 +150,8 @@ export default function TransactionsPage() {
       // Refresh accounts first
       await fetchAccounts();
 
-      // TODO: When transaction API is available, refresh transactions here
+      // Refresh transactions
+      await fetchTransactions(selectedAccountId);
 
     } catch (err) {
       const errorMessage =
@@ -217,7 +262,7 @@ export default function TransactionsPage() {
         )}
 
         {/* Transaction Statistics */}
-        {hasAccounts && transactions.length > 0 && (
+        {transactions.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="bg-white rounded-xl border border-gray-200 p-4">
               <p className="text-sm text-gray-600 font-medium">Total Transactions</p>
@@ -251,36 +296,34 @@ export default function TransactionsPage() {
         )}
 
         {/* Transaction List */}
-        {hasAccounts && (
-          <div className="bg-white rounded-xl border border-gray-200">
-            <div className="p-4 border-b border-gray-200">
-              <h2 className="text-lg font-semibold text-gray-900">
-                Recent Transactions
-              </h2>
-            </div>
-            <div className="p-4">
-              <TransactionList
-                accountId={selectedAccountId}
-                transactions={transactions}
-                isLoading={isLoadingTransactions || isLoading}
-              />
-            </div>
-          </div>
-        )}
-
-        {/* Empty State - No Accounts */}
-        {!isLoading && !hasAccounts && (
-          <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
-            <Wallet className="h-12 w-12 text-gray-300 mx-auto mb-4" aria-hidden="true" />
-            <h2 className="text-lg font-medium text-gray-900 mb-2">
-              No accounts connected
+        <div className="bg-white rounded-xl border border-gray-200">
+          <div className="p-4 border-b border-gray-200">
+            <h2 className="text-lg font-semibold text-gray-900">
+              Recent Transactions
             </h2>
-            <p className="text-gray-500 mb-6 max-w-sm mx-auto">
-              Connect your bank accounts to automatically track your transactions.
+          </div>
+          <div className="p-4">
+            <TransactionList
+              accountId={selectedAccountId}
+              transactions={transactions}
+              isLoading={isLoadingTransactions || isLoading}
+            />
+          </div>
+        </div>
+
+        {/* Prompt to connect accounts (shown below transactions if no accounts linked) */}
+        {!isLoading && !hasAccounts && transactions.length === 0 && (
+          <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
+            <Wallet className="h-10 w-10 text-gray-300 mx-auto mb-3" aria-hidden="true" />
+            <h2 className="text-md font-medium text-gray-900 mb-2">
+              Connect Your Bank
+            </h2>
+            <p className="text-gray-500 mb-4 max-w-sm mx-auto text-sm">
+              Link your bank accounts to automatically sync transactions.
             </p>
             <Link
               href="/dashboard/accounts"
-              className="inline-flex items-center justify-center px-6 py-3 rounded-lg font-medium
+              className="inline-flex items-center justify-center px-4 py-2 rounded-lg font-medium text-sm
                 bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800
                 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500
                 transition-colors duration-200"
@@ -288,21 +331,6 @@ export default function TransactionsPage() {
               Connect Accounts
               <ArrowRight className="h-4 w-4 ml-2" aria-hidden="true" />
             </Link>
-          </div>
-        )}
-
-        {/* Coming Soon Notice - Has Accounts but No Transactions */}
-        {hasAccounts && transactions.length === 0 && !isLoading && !isLoadingTransactions && (
-          <div className="bg-blue-50 rounded-xl border border-blue-200 p-6 text-center">
-            <CreditCard className="h-10 w-10 text-blue-400 mx-auto mb-3" aria-hidden="true" />
-            <h3 className="text-md font-medium text-blue-900 mb-2">
-              Transaction Sync Coming Soon
-            </h3>
-            <p className="text-blue-700 text-sm max-w-md mx-auto">
-              You have {accounts.length} account{accounts.length !== 1 ? 's' : ''} connected.
-              Transaction synchronization is being finalized and will display your transaction
-              history once available.
-            </p>
           </div>
         )}
       </div>

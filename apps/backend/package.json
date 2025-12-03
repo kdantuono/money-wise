@@ -1,6 +1,6 @@
 {
   "name": "@money-wise/backend",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "MoneyWise NestJS Backend API",
   "private": true,
   "//": "BUILD PROCESS: 'pnpm build' runs: (1) prisma generate → (2) nest build. Prisma Client MUST be generated before TypeScript compilation to avoid import errors. CI/CD workflows depend on this sequence. Pre-commit hooks verify generated/ exists.",

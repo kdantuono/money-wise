@@ -622,21 +622,26 @@ export class SaltEdgeProvider implements IBankingProvider {
 
   /**
    * Get transactions for an account
+   *
+   * NOTE: SaltEdge v6 API requires connection_id for all transaction queries.
+   * The account_id alone is not sufficient - you must also specify the connection.
    */
   async getTransactions(
-    _connectionId: string,
+    connectionId: string,
     accountId: string,
     fromDate: Date,
     toDate?: Date,
   ): Promise<BankingTransactionData[]> {
-    this.logger.debug(`Fetching transactions for account ${accountId} from ${fromDate.toISOString()}`);
+    this.logger.log(`[v6-FIX] getTransactions using connection_id=${connectionId} for account ${accountId}`);
 
     const allTransactions: BankingTransactionData[] = [];
     let nextId: string | undefined;
 
     // Paginate through all transactions
     do {
+      // v6 API: connection_id is REQUIRED for /transactions endpoint
       const params = new URLSearchParams({
+        connection_id: connectionId,
         account_id: accountId,
         from_date: this.formatDateForSaltEdge(fromDate),
       });
@@ -668,17 +673,33 @@ export class SaltEdgeProvider implements IBankingProvider {
 
   /**
    * Get balance for an account
+   *
+   * NOTE: SaltEdge v6 API does NOT have a dedicated GET /accounts/{id} endpoint.
+   * We must use the list endpoint and filter by account_id.
    */
   async getBalance(connectionId: string, accountId: string): Promise<number> {
-    this.logger.debug(`Fetching balance for account ${accountId}`);
+    this.logger.log(`[v6-FIX] getBalance using list endpoint for account ${accountId} via connection ${connectionId}`);
 
-    // Get account which includes balance
-    const response = await this.request<{ data: SaltEdgeAccount }>(
+    // v6 API: Use list endpoint with connection_id filter
+    // There's no GET /accounts/{id} in v6 - that's a v5-only endpoint
+    const response = await this.request<{ data: SaltEdgeAccount[] }>(
       'GET',
-      `/accounts/${accountId}`,
+      `/accounts?connection_id=${connectionId}`,
     );
 
-    return response.data.balance;
+    const accounts = response.data || [];
+    const account = accounts.find(a => a.id === accountId);
+
+    if (!account) {
+      // Account not found in connection - it may have been deleted on SaltEdge side
+      throw new SaltEdgeNotFoundError(
+        `Account ${accountId} not found in connection ${connectionId}`,
+        'account',
+        accountId,
+      );
+    }
+
+    return account.balance;
   }
 
   /**
