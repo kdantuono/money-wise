@@ -30,7 +30,7 @@ permissions:
 
 env:
   NODE_VERSION: '18'
-  PNPM_VERSION: '8.15.1'
+  PNPM_VERSION: '10.11.0'
   TURBO_TELEMETRY_DISABLED: '1'  # Opt-out of anonymous telemetry
   SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
   SENTRY_PROJECT_BACKEND: ${{ secrets.SENTRY_BACKEND }}

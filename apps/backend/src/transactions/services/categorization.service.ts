@@ -75,7 +75,7 @@ export class CategorizationService {
   private categoryRulesCache: Map<string, { rules: CategoryRule; type: CategoryType }> = new Map();
   private uncategorizedCategoryId: string | null = null;
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   /**
    * Initialize categorization service
@@ -211,6 +211,13 @@ export class CategorizationService {
     if (!merchantName) return;
 
     try {
+      // Validate UUID format before Prisma call
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(categoryId)) {
+        this.logger.warn(`Invalid UUID format for categoryId: ${categoryId}`);
+        return;
+      }
+
       // Get current category rules
       const category = await this.prisma.category.findUnique({
         where: { id: categoryId },
@@ -333,7 +340,7 @@ export class CategorizationService {
     for (const [categoryId, { rules, type: categoryType }] of this.categoryRulesCache.entries()) {
       // Skip if type doesn't match
       if ((type === 'DEBIT' && categoryType !== CategoryType.EXPENSE) ||
-          (type === 'CREDIT' && categoryType !== CategoryType.INCOME)) {
+        (type === 'CREDIT' && categoryType !== CategoryType.INCOME)) {
         continue;
       }
 
@@ -372,7 +379,7 @@ export class CategorizationService {
     for (const [categoryId, { rules, type: categoryType }] of this.categoryRulesCache.entries()) {
       // Skip if type doesn't match
       if ((type === 'DEBIT' && categoryType !== CategoryType.EXPENSE) ||
-          (type === 'CREDIT' && categoryType !== CategoryType.INCOME)) {
+        (type === 'CREDIT' && categoryType !== CategoryType.INCOME)) {
         continue;
       }
 
@@ -411,7 +418,7 @@ export class CategorizationService {
     for (const [categoryId, { rules, type: categoryType }] of this.categoryRulesCache.entries()) {
       // Skip if type doesn't match
       if ((type === 'DEBIT' && categoryType !== CategoryType.EXPENSE) ||
-          (type === 'CREDIT' && categoryType !== CategoryType.INCOME)) {
+        (type === 'CREDIT' && categoryType !== CategoryType.INCOME)) {
         continue;
       }
 

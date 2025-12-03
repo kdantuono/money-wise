@@ -26,7 +26,7 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     return super.canActivate(context);
   }
 
-  handleRequest(err: any, user: any, _info: any, _context: any, _status?: any): any { // eslint-disable-line @typescript-eslint/no-unused-vars, no-unused-vars, @typescript-eslint/no-explicit-any
+  handleRequest(err: any, user: any, _info: any, _context: any, _status?: any): any { // eslint-disable-line @typescript-eslint/no-explicit-any
     if (err || !user) {
       throw err || new UnauthorizedException('Access token required');
     }

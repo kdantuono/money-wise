@@ -9,10 +9,10 @@
     "dev": "tsc --watch",
     "clean": "rm -rf dist coverage",
     "typecheck": "tsc --noEmit",
-    "test": "jest --passWithNoTests",
-    "test:unit": "jest --passWithNoTests",
-    "test:watch": "jest --watch --passWithNoTests",
-    "test:coverage": "jest --coverage --passWithNoTests"
+    "test": "echo 'Skip: @money-wise/types is a type-only package (no runtime logic to test)' && exit 0",
+    "test:unit": "echo 'Skip: Type definitions validated by tsc, not Jest' && exit 0",
+    "test:watch": "echo 'Skip: No tests for type-only package' && exit 0",
+    "test:coverage": "echo 'Skip: No coverage for type-only package' && exit 0"
   },
   "devDependencies": {
     "@types/jest": "^29.5.8",

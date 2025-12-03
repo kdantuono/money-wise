@@ -1,4 +1,4 @@
-/* eslint-disable no-console */
+
 // Console statements are intentionally used for development-time performance debugging
 import * as Sentry from '@sentry/nextjs';
 
@@ -177,23 +177,29 @@ export function initWebVitals() {
     }).observe({ entryTypes: ['largest-contentful-paint'] });
 
     // Cumulative Layout Shift (CLS)
+    interface LayoutShiftEntry extends PerformanceEntry {
+      hadRecentInput: boolean;
+      value: number;
+    }
     let clsValue = 0;
     new PerformanceObserver((list) => {
       for (const entry of list.getEntries()) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- PerformanceEntry types are incomplete in TypeScript
-        if (!(entry as any).hadRecentInput) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any -- PerformanceEntry types are incomplete in TypeScript
-          clsValue += (entry as any).value;
+        const layoutShift = entry as LayoutShiftEntry;
+        if (!layoutShift.hadRecentInput) {
+          clsValue += layoutShift.value;
         }
       }
       console.debug(`Web Vitals CLS: ${clsValue}`);
     }).observe({ entryTypes: ['layout-shift'] });
 
     // First Input Delay (FID)
+    interface FirstInputEntry extends PerformanceEntry {
+      processingStart: number;
+    }
     new PerformanceObserver((list) => {
       for (const entry of list.getEntries()) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- PerformanceEntry types are incomplete in TypeScript
-        console.debug(`Web Vitals FID: ${(entry as any).processingStart - entry.startTime}ms`);
+        const fidEntry = entry as FirstInputEntry;
+        console.debug(`Web Vitals FID: ${fidEntry.processingStart - entry.startTime}ms`);
       }
     }).observe({ entryTypes: ['first-input'] });
   }

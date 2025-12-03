@@ -5,6 +5,7 @@ import { MockBankingProvider } from './providers/__mocks__/mock-banking.provider
 import { BankingService, BankingProviderFactory } from './services/banking.service';
 import { BankingController } from './banking.controller';
 import { WebhookController } from './controllers/webhook.controller';
+import { IBankingProvider } from './interfaces/banking-provider.interface';
 
 /**
  * BankingModule - Handles all banking integrations
@@ -67,7 +68,7 @@ import { WebhookController } from './controllers/webhook.controller';
         // If credentials are missing, it will throw an error
         try {
           return new SaltEdgeProvider(configService);
-        } catch (error) {
+        } catch (_error) {
           // Fallback to mock if SaltEdge credentials not configured
           console.warn('⚠️  SaltEdge credentials not configured, using MockBankingProvider');
           return new MockBankingProvider();
@@ -78,7 +79,7 @@ import { WebhookController } from './controllers/webhook.controller';
     // Factory and service
     {
       provide: BankingProviderFactory,
-      useFactory: (configService: ConfigService, provider: any) => {
+      useFactory: (configService: ConfigService, provider: IBankingProvider) => {
         return new BankingProviderFactory(configService, provider);
       },
       inject: [ConfigService, 'BANKING_PROVIDER']
@@ -87,4 +88,4 @@ import { WebhookController } from './controllers/webhook.controller';
   ],
   exports: [BankingService, BankingProviderFactory],
 })
-export class BankingModule {}
+export class BankingModule { }

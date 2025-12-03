@@ -73,7 +73,7 @@ if (SENTRY_DSN) {
     ],
   });
 
-  // eslint-disable-next-line no-console
+   
   console.log(
     `[Sentry] Initialized for environment: ${SENTRY_ENVIRONMENT} ` +
     `(traces: ${traces * 100}%, profiles: ${profiles * 100}%)`,

@@ -2,7 +2,22 @@
   "$schema": "https://turbo.build/schema.json",
   "globalEnv": [
     "NODE_ENV",
-    "CI"
+    "CI",
+    "DATABASE_URL",
+    "DB_HOST",
+    "DB_PORT",
+    "DB_USERNAME",
+    "DB_PASSWORD",
+    "DB_NAME",
+    "DB_SCHEMA",
+    "DATABASE_HOST",
+    "DATABASE_PORT",
+    "REDIS_HOST",
+    "REDIS_PORT",
+    "REDIS_PASSWORD",
+    "JWT_ACCESS_SECRET",
+    "JWT_REFRESH_SECRET",
+    "USE_TEST_CONTAINERS"
   ],
   "globalDependencies": [
     "**/.env.*local",
@@ -10,30 +25,50 @@
     "tsconfig.json",
     ".eslintrc.monorepo.json"
   ],
-  "pipeline": {
+  "tasks": {
     "build": {
-      "dependsOn": ["^build"],
-      "outputs": ["dist/**", ".next/**", "!.next/cache/**", "build/**", "android/build/**", "ios/build/**"]
+      "dependsOn": [
+        "^build"
+      ],
+      "outputs": [
+        "dist/**",
+        ".next/**",
+        "!.next/cache/**",
+        "build/**",
+        "android/build/**",
+        "ios/build/**"
+      ]
     },
     "dev": {
       "cache": false,
       "persistent": true
     },
     "lint": {
-      "dependsOn": ["^build"],
+      "dependsOn": [
+        "^build"
+      ],
       "outputs": []
     },
     "lint:fix": {
-      "dependsOn": ["^build"],
+      "dependsOn": [
+        "^build"
+      ],
       "outputs": []
     },
     "typecheck": {
-      "dependsOn": ["^build", "build"],
+      "dependsOn": [
+        "^build",
+        "build"
+      ],
       "outputs": []
     },
     "test": {
-      "dependsOn": ["^build"],
-      "outputs": ["coverage/**"],
+      "dependsOn": [
+        "^build"
+      ],
+      "outputs": [
+        "coverage/**"
+      ],
       "inputs": [
         "src/**/*.{ts,tsx,js,jsx}",
         "test/**/*.{ts,tsx,js,jsx}",
@@ -45,21 +80,29 @@
       ]
     },
     "test:unit": {
-      "dependsOn": ["^build"],
-      "outputs": ["coverage/**"],
+      "dependsOn": [
+        "^build"
+      ],
+      "outputs": [],
       "inputs": [
         "src/**/*.{ts,tsx,js,jsx}",
         "test/**/*.{ts,tsx,js,jsx}",
         "__tests__/**/*.{ts,tsx,js,jsx}",
         "jest.config.{js,ts,json}",
+        "vitest.config.{ts,js,mts}",
         "jest.setup.{js,ts}",
+        "vitest.setup.{js,ts}",
         "tsconfig.json",
         "package.json"
       ]
     },
     "test:integration": {
-      "dependsOn": ["^build"],
-      "outputs": ["coverage/**"],
+      "dependsOn": [
+        "^build"
+      ],
+      "outputs": [
+        "coverage/**"
+      ],
       "inputs": [
         "src/**/*.{ts,tsx,js,jsx}",
         "test/**/*.{ts,tsx,js,jsx}",
@@ -71,8 +114,12 @@
       ]
     },
     "test:coverage": {
-      "dependsOn": ["^build"],
-      "outputs": ["coverage/**"],
+      "dependsOn": [
+        "^build"
+      ],
+      "outputs": [
+        "coverage/**"
+      ],
       "inputs": [
         "src/**/*.{ts,tsx,js,jsx}",
         "test/**/*.{ts,tsx,js,jsx}",
@@ -97,8 +144,13 @@
       ]
     },
     "test:e2e": {
-      "dependsOn": ["build"],
-      "outputs": ["test-results/**", "playwright-report/**"],
+      "dependsOn": [
+        "build"
+      ],
+      "outputs": [
+        "test-results/**",
+        "playwright-report/**"
+      ],
       "inputs": [
         "src/**/*.{ts,tsx,js,jsx}",
         "tests/**/*.{ts,js}",
@@ -108,8 +160,12 @@
       ]
     },
     "test:performance": {
-      "dependsOn": ["^build"],
-      "outputs": ["performance-results/**"],
+      "dependsOn": [
+        "^build"
+      ],
+      "outputs": [
+        "performance-results/**"
+      ],
       "inputs": [
         "src/**/*.{ts,tsx,js,jsx}",
         "test/**/*.{ts,tsx,js,jsx}",
@@ -125,13 +181,19 @@
       "outputs": []
     },
     "storybook": {
-      "dependsOn": ["^build"],
+      "dependsOn": [
+        "^build"
+      ],
       "cache": false,
       "persistent": true
     },
     "build-storybook": {
-      "dependsOn": ["^build"],
-      "outputs": ["storybook-static/**"]
+      "dependsOn": [
+        "^build"
+      ],
+      "outputs": [
+        "storybook-static/**"
+      ]
     }
   }
 }

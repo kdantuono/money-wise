@@ -11,7 +11,7 @@ export interface RedisModuleOptions {
 class RedisConnectionManager implements OnModuleDestroy {
   constructor(
     @Inject('default') private readonly redis: Redis,
-  ) {}
+  ) { }
 
   async onModuleDestroy() {
     try {
@@ -23,7 +23,7 @@ class RedisConnectionManager implements OnModuleDestroy {
           this.redis.disconnect();
         }
       }
-    } catch (error) {
+    } catch (_error) {
       // Silently ignore all errors during cleanup
       // This is expected if connection is already closed by app.close()
     }

@@ -19,7 +19,7 @@ on:
         type: boolean
 
 env:
-  NODE_VERSION: '18'
+  NODE_VERSION: '22'
   FORCE_COLORS: '1'
   TURBO_TELEMETRY_DISABLED: '1'  # Opt-out of anonymous telemetry
 
@@ -84,7 +84,7 @@ jobs:
       - name: 📦 Setup pnpm
         uses: pnpm/action-setup@v2
         with:
-          version: '8.15.1'
+          version: '10.11.0'
 
       - name: 📦 Setup Node.js
         uses: actions/setup-node@v4
@@ -211,7 +211,7 @@ jobs:
         if: steps.should-run.outputs.run == 'true'
         uses: pnpm/action-setup@v2
         with:
-          version: '8.15.1'
+          version: '10.11.0'
 
       - name: 📦 Setup Node.js
         if: steps.should-run.outputs.run == 'true'
@@ -313,7 +313,7 @@ jobs:
         if: steps.should-run.outputs.run == 'true'
         uses: pnpm/action-setup@v2
         with:
-          version: '8.15.1'
+          version: '10.11.0'
 
       - name: 📦 Setup Node.js
         if: steps.should-run.outputs.run == 'true'
@@ -476,7 +476,7 @@ jobs:
       - name: 📦 Setup pnpm
         uses: pnpm/action-setup@v2
         with:
-          version: '8.15.1'
+          version: '10.11.0'
 
       - name: 📦 Setup Node.js
         uses: actions/setup-node@v4
@@ -616,7 +616,7 @@ jobs:
       - name: 📦 Setup pnpm
         uses: pnpm/action-setup@v2
         with:
-          version: '8.15.1'
+          version: '10.11.0'
 
       - name: 📦 Setup Node.js
         uses: actions/setup-node@v4
@@ -658,6 +658,26 @@ jobs:
             echo "This indicates migrations failed to apply properly"
             exit 1
           fi
+
+      - name: ⏳ Wait for Database Readiness
+        env:
+          DATABASE_URL: postgresql://test:testpass@localhost:5432/test_db
+        run: |
+          echo "⏳ Ensuring database is fully ready for tests..."
+          
+          # Test connection with explicit credentials
+          for i in {1..30}; do
+            if PGPASSWORD=testpass psql -h localhost -U test -d test_db -c "SELECT 1" >/dev/null 2>&1; then
+              echo "✅ Database connection verified (attempt $i)"
+              sleep 2  # Brief stabilization period
+              exit 0
+            fi
+            echo "⏳ Waiting for database (attempt $i/30)..."
+            sleep 2
+          done
+          
+          echo "❌ Database failed to become ready"
+          exit 1
 
           if echo "$MIGRATION_STATUS" | grep -q "have not been executed"; then
             echo "❌ FAILED: Unapplied migrations found"
@@ -740,7 +760,7 @@ jobs:
           fi
 
       - name: 📊 Test Coverage
-        continue-on-error: true  # TODO: Remove once coverage thresholds are met (pre-existing issue)
+        # Coverage thresholds enforced (70% baseline - see .claude/quality/test-debt.md)
         env:
           DB_HOST: localhost
           DB_PORT: 5432
@@ -757,11 +777,10 @@ jobs:
           JWT_REFRESH_SECRET: test-jwt-refresh-secret-minimum-32-characters-long-different-from-access
           NODE_ENV: test
         run: |
-          # Run unit test coverage only (integration tests have pre-existing failures)
-          # Coverage thresholds not met (pre-existing), but tests pass
-          pnpm --filter @money-wise/backend test:coverage:unit || true
-          pnpm --filter @money-wise/web test:coverage || true
-          echo "✅ Tests completed (coverage thresholds are pre-existing issue)"
+          # Coverage thresholds enforced (Phase 1: 70% baseline)
+          pnpm --filter @money-wise/backend test:coverage:unit
+          pnpm --filter @money-wise/web test:coverage
+          echo "✅ Coverage check completed"
 
       - name: 📤 Upload Coverage to Codecov
         uses: codecov/codecov-action@v4
@@ -915,7 +934,7 @@ jobs:
         if: steps.check-app.outputs.exists == 'true'
         uses: pnpm/action-setup@v2
         with:
-          version: '8.15.1'
+          version: '10.11.0'
 
       - name: 📦 Setup Node.js
         if: steps.check-app.outputs.exists == 'true'
@@ -995,7 +1014,7 @@ jobs:
       - name: 📦 Install pnpm
         uses: pnpm/action-setup@v2
         with:
-          version: '8.15.1'
+          version: '10.11.0'
 
       - name: 📦 Setup Node.js
         uses: actions/setup-node@v4
@@ -1117,7 +1136,7 @@ jobs:
       - name: 📦 Install pnpm (BEFORE setup-node)
         uses: pnpm/action-setup@v2
         with:
-          version: '8.15.1'
+          version: '10.11.0'
 
       - name: 📦 Setup Node.js with pnpm cache
         uses: actions/setup-node@v4
@@ -1130,51 +1149,79 @@ jobs:
 
       - name: 🐳 Start E2E infrastructure with Docker Compose
         run: |
-          docker compose -f docker-compose.e2e.yml up -d
-          echo "✅ Docker Compose services starting..."
+          echo "🚀 Starting Docker Compose services..."
+          docker compose -f docker-compose.e2e.yml up -d --build
+          echo "✅ Docker Compose services started"
+          echo "📋 Initial service status:"
+          docker compose -f docker-compose.e2e.yml ps
 
       - name: ⏳ Wait for all services to be healthy
         run: |
-          echo "⏳ Waiting for backend and frontend to be ready..."
-          for i in {1..60}; do
+          echo "⏳ Waiting for backend and frontend to be ready (max 5 minutes)..."
+          
+          for i in {1..150}; do
+            # Check if containers exist first
+            BACKEND_EXISTS=$(docker ps -a --filter name=moneywise-backend-e2e --format '{{.Names}}' | grep -c moneywise-backend-e2e || echo "0")
+            FRONTEND_EXISTS=$(docker ps -a --filter name=moneywise-frontend-e2e --format '{{.Names}}' | grep -c moneywise-frontend-e2e || echo "0")
+            
+            if [ "$BACKEND_EXISTS" = "0" ] || [ "$FRONTEND_EXISTS" = "0" ]; then
+              echo "⚠️ Containers not yet created, waiting..."
+              sleep 2
+              continue
+            fi
+            
+            # Get health status
             BACKEND_HEALTHY=$(docker inspect --format='{{.State.Health.Status}}' moneywise-backend-e2e 2>/dev/null || echo "starting")
             FRONTEND_HEALTHY=$(docker inspect --format='{{.State.Health.Status}}' moneywise-frontend-e2e 2>/dev/null || echo "starting")
 
             if [ "$BACKEND_HEALTHY" = "healthy" ] && [ "$FRONTEND_HEALTHY" = "healthy" ]; then
               echo "✅ All services are healthy!"
               docker compose -f docker-compose.e2e.yml ps
+              echo "📋 Backend logs (last 20 lines):"
+              docker logs moneywise-backend-e2e --tail 20
+              echo "📋 Frontend logs (last 20 lines):"
+              docker logs moneywise-frontend-e2e --tail 20
               exit 0
             fi
 
-            echo "Attempt $i/60: Backend=$BACKEND_HEALTHY, Frontend=$FRONTEND_HEALTHY"
+            # Show progress every 10 attempts
+            if [ $((i % 10)) -eq 0 ]; then
+              echo "Attempt $i/150: Backend=$BACKEND_HEALTHY, Frontend=$FRONTEND_HEALTHY"
+            fi
+            
             sleep 2
           done
 
-          echo "❌ Services failed to become healthy within 120 seconds"
-          docker compose -f docker-compose.e2e.yml logs
+          echo "❌ Services failed to become healthy within 5 minutes"
+          echo "📋 Final service status:"
+          docker compose -f docker-compose.e2e.yml ps
+          echo "📋 Backend logs:"
+          docker logs moneywise-backend-e2e
+          echo "📋 Frontend logs:"
+          docker logs moneywise-frontend-e2e
+          echo "📋 Postgres logs:"
+          docker logs moneywise-postgres-e2e
           exit 1
 
       # OPTIMIZATION: Cache Playwright browsers
+      # Cache key includes lockfile to ensure correct browser version
       - name: Cache Playwright browsers
         id: playwright-cache
         uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright-${{ hashFiles('apps/web/package.json') }}
+          key: ${{ runner.os }}-playwright-${{ hashFiles('pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-playwright-
 
       - name: Install Playwright browsers
-        if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: |
           cd apps/web
-          npx playwright install --with-deps
-
-      - name: Install Playwright system deps (cache hit)
-        if: steps.playwright-cache.outputs.cache-hit == 'true'
-        run: |
-          cd apps/web
-          npx playwright install-deps
+          # Use pnpm exec to ensure we use the project's Playwright version
+          pnpm exec playwright install --with-deps chromium
+          echo "✅ Playwright browsers installed"
+          echo "📋 Installed browser versions:"
+          pnpm exec playwright --version
 
       - name: 🔧 Create test user
         run: |
@@ -1209,7 +1256,7 @@ jobs:
         run: |
           cd apps/web
           echo "🏃 Running full E2E test suite"
-          npx playwright test
+          pnpm exec playwright test
 
       - name: 📤 Upload test results
         if: always()
@@ -1253,7 +1300,7 @@ jobs:
       - name: 📦 Setup pnpm
         uses: pnpm/action-setup@v2
         with:
-          version: '8'
+          version: '10'
 
       - name: 📥 Install dependencies
         run: pnpm install --frozen-lockfile

@@ -22,10 +22,10 @@ import type {
 } from '@/types/dashboard.types';
 
 // Mock console methods (intentionally accessing console for test mocking)
-/* eslint-disable no-console */
+ 
 const originalConsoleLog = console.log;
 const originalConsoleError = console.error;
-/* eslint-enable no-console */
+ 
 
 // Mock fetch globally
 global.fetch = vi.fn();
@@ -89,17 +89,17 @@ describe('Analytics Client', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // Mock console to avoid cluttering test output
-    // eslint-disable-next-line no-console
+     
     console.log = vi.fn();
-    // eslint-disable-next-line no-console
+     
     console.error = vi.fn();
   });
 
   afterEach(() => {
     // Restore console
-    // eslint-disable-next-line no-console
+     
     console.log = originalConsoleLog;
-    // eslint-disable-next-line no-console
+     
     console.error = originalConsoleError;
   });
 
@@ -567,7 +567,7 @@ describe('Analytics Client', () => {
 
       await analyticsClient.getStats();
 
-      // eslint-disable-next-line no-console
+       
       expect(console.log).toHaveBeenCalled();
 
       vi.unstubAllEnvs();
@@ -588,7 +588,7 @@ describe('Analytics Client', () => {
 
       await expect(analyticsClient.getStats()).rejects.toThrow();
 
-      // eslint-disable-next-line no-console
+       
       expect(console.error).toHaveBeenCalled();
 
       vi.unstubAllEnvs();

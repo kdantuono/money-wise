@@ -60,7 +60,7 @@ export function LoadingSpinner({
     <div
       className={cn(
         'animate-spin rounded-full border-2 border-gray-300 border-t-primary',
-        // eslint-disable-next-line security/detect-object-injection
+        
         sizeClasses[size],
         className
       )}

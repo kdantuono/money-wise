@@ -1,14 +1,14 @@
 /**
  * React Query Provider Component
  *
- * Provides React Query (v3) context for data fetching hooks.
+ * Provides TanStack Query (v5) context for data fetching hooks.
  * Configures default options for caching, refetching, and error handling.
  */
 
 'use client';
 
 import { ReactNode, useState } from 'react';
-import { QueryClient, QueryClientProvider } from 'react-query';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 interface QueryProviderProps {
   children: ReactNode;
@@ -19,7 +19,7 @@ interface QueryProviderProps {
  *
  * Options:
  * - staleTime: 5 minutes - data is considered fresh for 5 minutes
- * - cacheTime: 10 minutes - data is kept in cache for 10 minutes
+ * - gcTime: 10 minutes - data is kept in cache for 10 minutes (renamed from cacheTime in v5)
  * - refetchOnWindowFocus: false - don't refetch on tab focus
  * - retry: 1 - retry failed requests once
  */
@@ -28,7 +28,7 @@ function makeQueryClient(): QueryClient {
     defaultOptions: {
       queries: {
         staleTime: 5 * 60 * 1000, // 5 minutes
-        cacheTime: 10 * 60 * 1000, // 10 minutes
+        gcTime: 10 * 60 * 1000, // 10 minutes (renamed from cacheTime in v5)
         refetchOnWindowFocus: false,
         retry: 1,
       },

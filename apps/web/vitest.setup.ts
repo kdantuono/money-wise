@@ -7,6 +7,45 @@ import '@testing-library/jest-dom';
 import { vi } from 'vitest';
 import React from 'react';
 
+// React 19 Configuration
+// Tell React Testing Library that we're in a React Act environment
+// This prevents act() warnings in React 19
+globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+
+// Note: Avoid enabling fake timers globally; some libraries rely on real timers
+// Individual tests can opt-in with vi.useFakeTimers() when needed
+
+// Mock window.open for components that open OAuth popups
+// jsdom does not implement real window.open; provide a stub
+Object.defineProperty(window, 'open', {
+  writable: true,
+  value: vi.fn(() => ({
+    closed: false,
+    focus: vi.fn(),
+    close() {
+      // simulate user closing the popup
+      // consumers may poll .closed
+      // set closed to true when close() is called
+
+      // @ts-expect-error - Setting 'this.closed' on the mocked window object for popup simulation
+      this.closed = true;
+    },
+  })),
+});
+
+// Mock window.location.reload to prevent JSDOM 'Not implemented: navigation' errors
+// JSDOM does not implement navigation; error-boundary.tsx uses window.location.reload()
+const originalLocation = window.location;
+Object.defineProperty(window, 'location', {
+  writable: true,
+  value: {
+    ...originalLocation,
+    reload: vi.fn(),
+    assign: vi.fn(),
+    replace: vi.fn(),
+  },
+});
+
 // Mock Next.js router
 vi.mock('next/router', () => ({
   useRouter() {
@@ -55,7 +94,7 @@ vi.mock('next/navigation', () => ({
 vi.mock('next/image', () => ({
   __esModule: true,
   default: (props: any) => {
-    // eslint-disable-next-line jsx-a11y/alt-text, @next/next/no-img-element
+
     return React.createElement('img', props);
   },
 }));
@@ -77,7 +116,7 @@ Object.defineProperty(window, 'matchMedia', {
 
 // Mock IntersectionObserver
 global.IntersectionObserver = class IntersectionObserver {
-  constructor() {}
+  constructor() { }
   observe() {
     return null;
   }
@@ -91,7 +130,7 @@ global.IntersectionObserver = class IntersectionObserver {
 
 // Mock ResizeObserver
 global.ResizeObserver = class ResizeObserver {
-  constructor() {}
+  constructor() { }
   observe() {
     return null;
   }
@@ -106,12 +145,27 @@ global.ResizeObserver = class ResizeObserver {
 // Mock window.scrollTo
 global.scrollTo = vi.fn();
 
+// Store original console.error for filtering
+const originalConsoleError = console.error;
+
 // Setup console suppression for tests
 global.console = {
   ...console,
   // Suppress console.log in tests
   log: vi.fn(),
-  // Keep error and warn for debugging
-  error: console.error,
+  // Keep error and warn for debugging, but filter out known React 19 act() warnings
+  // that occur with fake timers (these are not actual test failures)
+  error: (...args: unknown[]) => {
+    const message = args[0];
+    if (
+      typeof message === 'string' &&
+      message.includes('not wrapped in act')
+    ) {
+      // Suppress React 19 act() warnings that occur with fake timers
+      // These are false positives when using vi.useFakeTimers() with async state updates
+      return;
+    }
+    originalConsoleError(...args);
+  },
   warn: console.warn,
 };

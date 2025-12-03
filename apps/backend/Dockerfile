@@ -8,8 +8,8 @@ FROM node:20-alpine AS builder
 # Set working directory
 WORKDIR /app
 
-# Install pnpm
-RUN npm install -g pnpm@8
+# Install pnpm (must match engines.pnpm in package.json)
+RUN npm install -g pnpm@10
 
 # Copy all package files and workspace config
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./

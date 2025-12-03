@@ -1,4 +1,4 @@
-/* eslint-disable no-secrets/no-secrets -- Test file with mock AWS credentials marked as "EXAMPLE", not real secrets */
+ 
 /**
  * Monitoring Configuration Tests
  *

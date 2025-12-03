@@ -236,30 +236,49 @@ export class SaltEdgeProvider implements IBankingProvider {
 
       // Detect 404 responses (resource permanently deleted on SaltEdge side)
       // This requires cleanup of local stale references
+      // IMPORTANT: Only treat as resource deletion if we get a proper API error response
+      // (not a generic HTML 404 page from the web server)
       if (response.status === 404) {
-        // Determine resource type from the path
-        let resourceType: 'account' | 'connection' | 'customer' | 'unknown' = 'unknown';
-        let resourceId: string | undefined;
+        // Check if this is a proper SaltEdge API 404 (JSON with error class)
+        // vs a generic web 404 (HTML page) which fake providers may return
+        const isApiError = errorData?.class === 'NotFound' ||
+                           errorData?.class === 'AccountNotFound' ||
+                           errorData?.class === 'ConnectionNotFound' ||
+                           errorData?.class === 'CustomerNotFound';
 
-        if (path.includes('/accounts')) {
-          resourceType = 'account';
-          const match = path.match(/\/accounts\/(\d+)/);
-          resourceId = match?.[1];
-        } else if (path.includes('/connections')) {
-          resourceType = 'connection';
-          const match = path.match(/\/connections\/(\d+)/);
-          resourceId = match?.[1];
-        } else if (path.includes('/customers')) {
-          resourceType = 'customer';
-          const match = path.match(/\/customers\/(\d+)/);
-          resourceId = match?.[1];
+        // If response is HTML (not JSON API error), treat as temporary error, not resource deletion
+        const isHtmlResponse = typeof response.data === 'string' &&
+                               response.data.includes('<!DOCTYPE html');
+
+        if (isApiError && !isHtmlResponse) {
+          // Determine resource type from the path
+          let resourceType: 'account' | 'connection' | 'customer' | 'unknown' = 'unknown';
+          let resourceId: string | undefined;
+
+          if (path.includes('/accounts')) {
+            resourceType = 'account';
+            const match = path.match(/\/accounts\/(\d+)/);
+            resourceId = match?.[1];
+          } else if (path.includes('/connections')) {
+            resourceType = 'connection';
+            const match = path.match(/\/connections\/(\d+)/);
+            resourceId = match?.[1];
+          } else if (path.includes('/customers')) {
+            resourceType = 'customer';
+            const match = path.match(/\/customers\/(\d+)/);
+            resourceId = match?.[1];
+          }
+
+          throw new SaltEdgeNotFoundError(
+            `SaltEdge resource not found (404): ${resourceType} ${resourceId || 'unknown'}`,
+            resourceType,
+            resourceId,
+          );
         }
 
-        throw new SaltEdgeNotFoundError(
-          `SaltEdge resource not found (404): ${resourceType} ${resourceId || 'unknown'}`,
-          resourceType,
-          resourceId,
-        );
+        // For HTML 404 or non-API errors, log warning and throw generic error
+        // This prevents falsely cleaning up IDs when fake providers don't support certain endpoints
+        this.logger.warn(`SaltEdge returned non-API 404 for ${path} - treating as temporary error, not resource deletion`);
       }
 
       throw new Error(`SaltEdge API error (${errorClass}): ${errorMessage}`);

@@ -281,7 +281,7 @@ function isDevelopment(): boolean {
  */
 function logRequest(method: string, url: string, data?: unknown): void {
   if (isDevelopment()) {
-    // eslint-disable-next-line no-console
+     
     console.log(`[Banking API] ${method} ${url}`, data ? { body: data } : '');
   }
 }
@@ -301,7 +301,7 @@ function logResponse(
   data?: unknown
 ): void {
   if (isDevelopment()) {
-    // eslint-disable-next-line no-console
+     
     console.log(`[Banking API] ${method} ${url} → ${status}`, data || '');
   }
 }
@@ -320,7 +320,7 @@ async function handleErrorResponse(response: Response): Promise<never> {
     if (text) {
       errorData = JSON.parse(text);
     }
-  } catch (parseError) {
+  } catch (_parseError) {
     // Failed to parse error response
   }
 

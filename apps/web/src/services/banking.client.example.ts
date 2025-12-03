@@ -7,8 +7,7 @@
  * @module services/banking.client.example
  */
 
-/* eslint-disable no-console */
-/* eslint-disable security/detect-object-injection */
+ 
 
 import bankingClient, {
   SyncResponse,

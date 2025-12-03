@@ -1,4 +1,4 @@
-/* eslint-disable no-secrets/no-secrets -- Test file with mock test passwords, not real secrets */
+ 
 /**
  * Strong Password Validator Tests
  *

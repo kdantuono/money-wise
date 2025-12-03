@@ -29,6 +29,12 @@ import { PrismaClient } from '../../../../generated/prisma';
 export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(PrismaService.name);
 
+  constructor() {
+    super({
+      log: ['error'],
+    });
+  }
+
   /**
    * OnModuleInit lifecycle hook
    * Connects to database when NestJS module initializes

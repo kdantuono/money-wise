@@ -158,13 +158,14 @@ describe('BankingController', () => {
 
   describe('POST /api/banking/complete-link', () => {
     it('should complete banking link and store accounts', async () => {
+      const mockSaltEdgeConnectionId = 'saltedge-conn-123';
       const expected = {
         accounts: [mockAccount],
       };
 
       jest
         .spyOn(service, 'completeBankingLink')
-        .mockResolvedValue([mockAccount]);
+        .mockResolvedValue({ accounts: [mockAccount], saltEdgeConnectionId: mockSaltEdgeConnectionId });
       jest.spyOn(service, 'storeLinkedAccounts').mockResolvedValue(1);
 
       const result = await controller.completeBankingLink(mockUser, {
@@ -181,6 +182,7 @@ describe('BankingController', () => {
         mockUser.id,
         mockBankingConnection.id,
         [mockAccount],
+        mockSaltEdgeConnectionId,
       );
     });
 

@@ -99,7 +99,7 @@ function isDevelopment(): boolean {
  */
 function logRequest(method: string, url: string): void {
   if (isDevelopment()) {
-    // eslint-disable-next-line no-console
+     
     console.log(`[Analytics API] ${method} ${url}`);
   }
 }
@@ -114,7 +114,7 @@ function logResponse(
   data?: unknown
 ): void {
   if (isDevelopment()) {
-    // eslint-disable-next-line no-console
+     
     console.log(`[Analytics API] ${method} ${url} → ${status}`, data || '');
   }
 }

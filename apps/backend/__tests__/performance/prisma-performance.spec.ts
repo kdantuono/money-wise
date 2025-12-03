@@ -71,8 +71,16 @@ describe('Prisma Performance Benchmarks', () => {
           ignoreEnvFile: true, // Use process.env directly
           cache: false, // Don't cache config in tests
           load: [
-            // Test config factory - groups env vars into nested objects like production
+            // Test config factory - provides BOTH flat and nested access
+            // Flat: JwtModule.registerAsync uses configService.get<string>('JWT_ACCESS_SECRET')
+            // Nested: JwtStrategy uses configService.get<AuthConfig>('auth')?.JWT_ACCESS_SECRET
             () => ({
+              // Flat keys for JwtModule
+              JWT_ACCESS_SECRET: process.env.JWT_ACCESS_SECRET,
+              JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET,
+              JWT_ACCESS_EXPIRES_IN: process.env.JWT_ACCESS_EXPIRES_IN,
+              JWT_REFRESH_EXPIRES_IN: process.env.JWT_REFRESH_EXPIRES_IN,
+              // Nested under 'auth' for JwtStrategy
               auth: {
                 JWT_ACCESS_SECRET: process.env.JWT_ACCESS_SECRET,
                 JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET,
@@ -131,7 +139,19 @@ describe('Prisma Performance Benchmarks', () => {
       })
       .expect(200);
 
-    accessToken = loginResponse.body.accessToken;
+    // Extract access token from Set-Cookie header (tokens are now in HttpOnly cookies)
+    const cookies = loginResponse.headers['set-cookie'];
+    if (Array.isArray(cookies)) {
+      const accessTokenCookie = cookies.find((cookie: string) => cookie.startsWith('accessToken='));
+      if (accessTokenCookie) {
+        // Extract token value from cookie string (e.g., "accessToken=xxx; Path=/; HttpOnly")
+        accessToken = accessTokenCookie.split(';')[0].replace('accessToken=', '');
+      }
+    }
+
+    if (!accessToken) {
+      throw new Error('Failed to extract access token from login response cookies');
+    }
   }, 30000);
 
   afterAll(async () => {

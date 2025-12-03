@@ -80,7 +80,7 @@ export async function proxyRequest(
         const clonedRequest = request.clone();
         const requestBody = await clonedRequest.json();
         body = JSON.stringify(requestBody);
-      } catch (error) {
+      } catch (_error) {
         // If body parsing fails, continue without body
         body = undefined;
       }
@@ -106,7 +106,7 @@ export async function proxyRequest(
     } else if (contentType?.includes('application/json')) {
       try {
         responseData = await backendResponse.json();
-      } catch (error) {
+      } catch (_error) {
         // Fallback for malformed JSON
         responseData = { error: 'Invalid JSON response from backend' };
       }

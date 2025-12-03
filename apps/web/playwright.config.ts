@@ -92,55 +92,55 @@ export default defineConfig({
     ? undefined
     : process.env.CI
       ? [
-          // In CI, use production builds for faster startup
-          {
-            command: 'cd ../backend && PORT=3001 NODE_ENV=test node dist/main',
-            url: 'http://localhost:3001/api/health',
-            reuseExistingServer: false,
-            timeout: 120 * 1000, // Increased timeout for production build startup
-            env: {
-              NODE_ENV: 'test',
-              PORT: '3001',
-              DATABASE_URL: process.env.DATABASE_URL || 'postgresql://test:testpass@localhost:5432/test_db',
-              REDIS_URL: process.env.REDIS_URL || 'redis://localhost:6379',
-              JWT_ACCESS_SECRET:
-                process.env.JWT_ACCESS_SECRET || 'test-jwt-access-secret-minimum-32-characters-long-for-testing-purposes',
-              JWT_REFRESH_SECRET:
-                process.env.JWT_REFRESH_SECRET || 'test-jwt-refresh-secret-minimum-32-characters-long-different-from-access',
-              CORS_ORIGIN: 'http://localhost:3000',
-              API_PREFIX: 'api',
-            },
+        // In CI, use production builds for faster startup
+        {
+          command: 'cd ../backend && PORT=3001 NODE_ENV=test node dist/main',
+          url: 'http://localhost:3001/api/health',
+          reuseExistingServer: false,
+          timeout: 120 * 1000, // Increased timeout for production build startup
+          env: {
+            NODE_ENV: 'test',
+            PORT: '3001',
+            DATABASE_URL: process.env.DATABASE_URL || 'postgresql://test:testpass@localhost:5432/test_db',
+            REDIS_URL: process.env.REDIS_URL || 'redis://localhost:6379',
+            JWT_ACCESS_SECRET:
+              process.env.JWT_ACCESS_SECRET || 'test-jwt-access-secret-minimum-32-characters-long-for-testing-purposes',
+            JWT_REFRESH_SECRET:
+              process.env.JWT_REFRESH_SECRET || 'test-jwt-refresh-secret-minimum-32-characters-long-different-from-access',
+            CORS_ORIGIN: 'http://localhost:3000',
+            API_PREFIX: 'api',
           },
-          {
-            command: 'pnpm start',
-            url: 'http://localhost:3000',
-            reuseExistingServer: false,
-            timeout: 60 * 1000,
-            env: {
-              NEXT_PUBLIC_API_URL: 'http://localhost:3001',
-              PORT: '3000',
-            },
+        },
+        {
+          command: 'pnpm start',
+          url: 'http://localhost:3000',
+          reuseExistingServer: false,
+          timeout: 60 * 1000,
+          env: {
+            NEXT_PUBLIC_API_URL: 'http://localhost:3001',
+            PORT: '3000',
           },
-        ]
+        },
+      ]
       : [
-          // In local dev, use dev servers
-          {
-            command: 'pnpm dev',
-            url: 'http://localhost:3000',
-            reuseExistingServer: true,
-            timeout: 120 * 1000,
-          },
-          {
-            command: 'pnpm --filter @money-wise/backend dev',
-            url: 'http://localhost:3001/api/health',
-            reuseExistingServer: true,
-            timeout: 120 * 1000,
-          },
-        ],
+        // In local dev, use dev servers
+        {
+          command: 'pnpm dev',
+          url: 'http://localhost:3000',
+          reuseExistingServer: true,
+          timeout: 120 * 1000,
+        },
+        {
+          command: 'pnpm --filter @money-wise/backend dev',
+          url: 'http://localhost:3001/api/health',
+          reuseExistingServer: true,
+          timeout: 120 * 1000,
+        },
+      ],
 
   /* Global test setup and teardown */
-  globalSetup: require.resolve('./e2e/global-setup.ts'),
-  globalTeardown: require.resolve('./e2e/global-teardown.ts'),
+  globalSetup: './e2e/global-setup.ts',
+  globalTeardown: './e2e/global-teardown.ts',
 
   /* Output directories */
   outputDir: 'test-results/',
@@ -164,7 +164,7 @@ export default defineConfig({
 
       /* Set screenshot mode */
       mode: 'css',
-      
+
       /* Max diff pixels allowed (absolute count) */
       maxDiffPixels: 1000,
     },

@@ -10,7 +10,7 @@
 import React from 'react';
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from 'react-query';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import {
   useDashboardStats,
@@ -106,7 +106,7 @@ describe('Dashboard Hooks', () => {
       defaultOptions: {
         queries: {
           retry: false,
-          cacheTime: 0,
+          gcTime: 0,
         },
       },
     });
@@ -125,7 +125,7 @@ describe('Dashboard Hooks', () => {
       defaultOptions: {
         queries: {
           retry: false,
-          cacheTime: 0,
+          gcTime: 0,
         },
       },
     });

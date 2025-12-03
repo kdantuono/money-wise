@@ -29,7 +29,7 @@ export class TransactionsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly coreTransactionService: CoreTransactionService,
-  ) {}
+  ) { }
 
   /**
    * Create transaction with authorization check
@@ -317,7 +317,7 @@ export class TransactionsService {
       includeInBudget: transaction.includeInBudget,
       plaidTransactionId: transaction.plaidTransactionId,
       plaidAccountId: transaction.plaidAccountId,
-      plaidMetadata: transaction.plaidMetadata as Record<string, any> | null,
+      plaidMetadata: transaction.plaidMetadata as Record<string, unknown> | null,
       locationMetadata: null, // Not in current schema
       paymentChannelMetadata: null, // Not in current schema
       createdAt: transaction.createdAt,

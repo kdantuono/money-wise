@@ -1,4 +1,4 @@
-/* eslint-disable no-console */
+
 /**
  * Prisma Test Data Factory
  * Provides consistent test data generation for all entities using Prisma Client
@@ -30,6 +30,7 @@ import {
   CategoryStatus,
   BudgetPeriod,
   BudgetStatus,
+  BankingSyncStatus,
   Prisma,
 } from '../../../../../generated/prisma';
 import * as bcrypt from 'bcryptjs';
@@ -56,7 +57,7 @@ export interface Factory<T> {
  * Abstract base factory implementation for Prisma
  */
 export abstract class BasePrismaFactory<T> implements Factory<T> {
-  constructor(protected prisma: PrismaClient) {}
+  constructor(protected prisma: PrismaClient) { }
 
   abstract create(overrides?: Partial<T>): T;
   abstract build(overrides?: Partial<T>): Promise<T>;
@@ -260,7 +261,7 @@ export class AccountFactory extends BasePrismaFactory<Account> {
       tinkAccountId: overrides.tinkAccountId || null,
       yalilyAccountId: overrides.yalilyAccountId || null,
       // Sync tracking
-      syncStatus: overrides.syncStatus || ('PENDING' as any),
+      syncStatus: overrides.syncStatus || BankingSyncStatus.PENDING,
       createdAt: overrides.createdAt || new Date(),
       updatedAt: overrides.updatedAt || new Date(),
     } as Account;
@@ -364,6 +365,7 @@ export class CategoryFactory extends BasePrismaFactory<Category> {
       isDefault: overrides.isDefault ?? false,
       isSystem: overrides.isSystem ?? false,
       sortOrder: overrides.sortOrder || faker.number.int({ min: 0, max: 100 }),
+      depth: overrides.depth ?? 0,
       parentId: overrides.parentId || null,
       rules: (overrides.rules || {
         keywords: [faker.commerce.productName()],

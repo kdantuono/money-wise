@@ -6,7 +6,7 @@ import {
   InternalServerErrorException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
-import { Prisma, TransactionType } from '../../../../../generated/prisma';
+import { Prisma, TransactionType, TransactionStatus, TransactionSource } from '../../../../../generated/prisma';
 import { Decimal } from '@prisma/client/runtime/library';
 import { TransactionCreateDto } from './types';
 
@@ -35,7 +35,7 @@ import { TransactionCreateDto } from './types';
  */
 @Injectable()
 export class TransactionService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   /**
    * Create a new transaction
@@ -71,9 +71,9 @@ export class TransactionService {
     const prismaData: Prisma.TransactionCreateInput = {
       ...rest,
       amount,
-      type: type as any, // Cast from string to enum
-      status: status as any, // Cast from string to enum (if provided)
-      source: (source || 'MANUAL') as any, // Default to MANUAL if not provided, cast to enum
+      type: type as TransactionType, // Cast from string to enum
+      status: status as TransactionStatus, // Cast from string to enum (if provided)
+      source: (source || 'MANUAL') as TransactionSource, // Default to MANUAL if not provided, cast to enum
       account: {
         connect: { id: accountId },
       },

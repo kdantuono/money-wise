@@ -1,4 +1,4 @@
-/* eslint-disable no-secrets/no-secrets -- Configuration file with environment variable names, not secrets */
+ 
 import { IsNumber, IsOptional, Min, Max } from 'class-validator';
 
 /**

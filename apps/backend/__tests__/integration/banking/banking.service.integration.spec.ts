@@ -122,6 +122,9 @@ describe('BankingService (Integration)', () => {
     await prisma.user.deleteMany({
       where: { id: testUserId },
     });
+
+    // Restore all mocks/spies to clean state for next test
+    jest.restoreAllMocks();
   });
 
   afterAll(async () => {
@@ -536,20 +539,33 @@ describe('BankingService (Integration)', () => {
     });
 
     it('should create error sync log on failure', async () => {
-      jest.spyOn(mockProvider, 'syncAccount').mockRejectedValueOnce(
+      // Wait for any pending auto-sync from storeLinkedAccounts to complete
+      // The storeLinkedAccounts method triggers an auto-sync via setTimeout
+      await new Promise(resolve => setTimeout(resolve, 200));
+
+      const syncSpy = jest.spyOn(mockProvider, 'syncAccount').mockRejectedValue(
         new Error('Sync failed'),
       );
 
-      await expect(
-        service.syncAccount(testUserId, accountId),
-      ).rejects.toThrow('Failed to sync account');
+      let syncError: Error | null = null;
+      try {
+        await service.syncAccount(testUserId, accountId);
+      } catch (err) {
+        syncError = err as Error;
+      }
+
+      // Ensure the service threw an error
+      expect(syncError).not.toBeNull();
+      expect(syncError?.message).toContain('Failed to sync account');
 
       // Verify error sync log created
       const syncLog = await prisma.bankingSyncLog.findFirst({
         where: {
           accountId,
           status: BankingSyncStatus.ERROR,
+          error: { contains: 'Sync failed' },
         },
+        orderBy: { startedAt: 'desc' },
       });
 
       expect(syncLog).toBeDefined();
@@ -562,6 +578,9 @@ describe('BankingService (Integration)', () => {
       });
 
       expect(account?.syncStatus).toBe(BankingSyncStatus.ERROR);
+
+      // Restore the spy to avoid affecting other tests
+      syncSpy.mockRestore();
     });
 
     it('should create sync logs with proper timestamps', async () => {
@@ -623,6 +642,9 @@ describe('BankingService (Integration)', () => {
     });
 
     it('should revoke banking connection successfully', async () => {
+      // Wait for any pending auto-sync from storeLinkedAccounts to complete
+      await new Promise(resolve => setTimeout(resolve, 200));
+
       await service.revokeBankingConnection(testUserId, connectionId);
 
       // Verify connection marked as REVOKED

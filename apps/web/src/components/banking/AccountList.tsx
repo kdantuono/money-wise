@@ -106,7 +106,7 @@ export function AccountList({
     try {
       await onSync(accountId);
       onSyncComplete?.(accountId, true);
-    } catch (err) {
+    } catch (_err) {
       onSyncComplete?.(accountId, false);
     } finally {
       setSyncingIds((prev) => {
@@ -188,10 +188,9 @@ export function AccountList({
             key={account.id}
             role="listitem"
             className={`rounded-lg border transition-all duration-200 overflow-hidden
-              ${
-                isSelected
-                  ? 'border-blue-500 shadow-lg ring-2 ring-blue-200'
-                  : 'border-gray-200 hover:border-gray-300 shadow'
+              ${isSelected
+                ? 'border-blue-500 shadow-lg ring-2 ring-blue-200'
+                : 'border-gray-200 hover:border-gray-300 shadow'
               }
               focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500`}
             onFocus={() => setSelectedId(account.id)}

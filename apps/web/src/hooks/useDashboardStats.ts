@@ -7,7 +7,7 @@
  * @module hooks/useDashboardStats
  */
 
-import { useQuery } from 'react-query';
+import { useQuery } from '@tanstack/react-query';
 import { analyticsClient } from '@/services/analytics.client';
 import type {
   DashboardStats,
@@ -29,14 +29,12 @@ import type {
  * ```
  */
 export function useDashboardStats(period: TimePeriod = 'monthly') {
-  return useQuery<DashboardStats, Error>(
-    ['dashboard-stats', period],
-    () => analyticsClient.getStats(period),
-    {
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      refetchOnMount: 'always', // Always refetch on navigation back to dashboard
-    }
-  );
+  return useQuery<DashboardStats, Error>({
+    queryKey: ['dashboard-stats', period],
+    queryFn: () => analyticsClient.getStats(period),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    refetchOnMount: 'always', // Always refetch on navigation back to dashboard
+  });
 }
 
 /**
@@ -51,14 +49,12 @@ export function useDashboardStats(period: TimePeriod = 'monthly') {
  * ```
  */
 export function useSpendingByCategory(period: TimePeriod = 'monthly') {
-  return useQuery<CategorySpending[], Error>(
-    ['spending-by-category', period],
-    () => analyticsClient.getSpendingByCategory(period),
-    {
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      refetchOnMount: 'always', // Always refetch on navigation back to dashboard
-    }
-  );
+  return useQuery<CategorySpending[], Error>({
+    queryKey: ['spending-by-category', period],
+    queryFn: () => analyticsClient.getSpendingByCategory(period),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    refetchOnMount: 'always', // Always refetch on navigation back to dashboard
+  });
 }
 
 /**
@@ -73,14 +69,12 @@ export function useSpendingByCategory(period: TimePeriod = 'monthly') {
  * ```
  */
 export function useRecentTransactions(limit: number = 10) {
-  return useQuery<Transaction[], Error>(
-    ['recent-transactions', limit],
-    () => analyticsClient.getRecentTransactions(limit),
-    {
-      staleTime: 2 * 60 * 1000, // 2 minutes (transactions change more often)
-      refetchOnMount: 'always', // Always refetch on navigation back to dashboard
-    }
-  );
+  return useQuery<Transaction[], Error>({
+    queryKey: ['recent-transactions', limit],
+    queryFn: () => analyticsClient.getRecentTransactions(limit),
+    staleTime: 2 * 60 * 1000, // 2 minutes (transactions change more often)
+    refetchOnMount: 'always', // Always refetch on navigation back to dashboard
+  });
 }
 
 /**
@@ -95,14 +89,12 @@ export function useRecentTransactions(limit: number = 10) {
  * ```
  */
 export function useTrends(period: TimePeriod = 'monthly') {
-  return useQuery<TrendData[], Error>(
-    ['trends', period],
-    () => analyticsClient.getTrends(period),
-    {
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      refetchOnMount: 'always', // Always refetch on navigation back to dashboard
-    }
-  );
+  return useQuery<TrendData[], Error>({
+    queryKey: ['trends', period],
+    queryFn: () => analyticsClient.getTrends(period),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    refetchOnMount: 'always', // Always refetch on navigation back to dashboard
+  });
 }
 
 /**

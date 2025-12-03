@@ -1,4 +1,4 @@
-/* eslint-disable no-console */
+ 
 /**
  * Jest Global Teardown for Database Tests
  * Runs once after all database tests complete
