@@ -760,7 +760,7 @@ jobs:
           fi
 
       - name: 📊 Test Coverage
-        continue-on-error: true  # TODO: Remove once coverage thresholds are met (pre-existing issue)
+        # Coverage thresholds enforced (70% baseline - see .claude/quality/test-debt.md)
         env:
           DB_HOST: localhost
           DB_PORT: 5432
@@ -777,11 +777,10 @@ jobs:
           JWT_REFRESH_SECRET: test-jwt-refresh-secret-minimum-32-characters-long-different-from-access
           NODE_ENV: test
         run: |
-          # Run unit test coverage only (integration tests have pre-existing failures)
-          # Coverage thresholds not met (pre-existing), but tests pass
-          pnpm --filter @money-wise/backend test:coverage:unit || true
-          pnpm --filter @money-wise/web test:coverage || true
-          echo "✅ Tests completed (coverage thresholds are pre-existing issue)"
+          # Coverage thresholds enforced (Phase 1: 70% baseline)
+          pnpm --filter @money-wise/backend test:coverage:unit
+          pnpm --filter @money-wise/web test:coverage
+          echo "✅ Coverage check completed"
 
       - name: 📤 Upload Coverage to Codecov
         uses: codecov/codecov-action@v4

@@ -45,12 +45,13 @@ module.exports = {
   ],
 
   // Coverage thresholds for quality gates
+  // Phase 1: 70% baseline (raise to 75% in 2 weeks, 80% in 4 weeks)
   coverageThreshold: {
     global: {
-      branches: 80,
-      functions: 80,
-      lines: 80,
-      statements: 80
+      branches: 65,
+      functions: 70,
+      lines: 70,
+      statements: 70
     }
   },
 
@@ -118,8 +119,9 @@ module.exports = {
   // Maximum number of workers
   maxWorkers: '50%',
 
-  // Pass with no tests (prevents failure when no tests exist)
-  passWithNoTests: true,
+  // STRICT: Fail if no tests are found (ensures test discovery works)
+  // Packages without tests must use explicit skip scripts (see .claude/quality/test-debt.md)
+  passWithNoTests: false,
 
   // Global setup and teardown
   globalSetup: undefined,
