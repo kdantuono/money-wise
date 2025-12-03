@@ -1,6 +1,6 @@
 {
   "name": "@money-wise/utils",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Shared utility functions for MoneyWise",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -23,7 +23,7 @@
     "@types/lodash": "^4.14.202",
     "jest": "^30.2.0",
     "ts-jest": "^29.1.1",
-    "typescript": "^5.3.3"
+    "typescript": "^5.9.3"
   },
   "files": [
     "dist"
