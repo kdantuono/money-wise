@@ -5,6 +5,44 @@ All notable changes to MoneyWise will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.1] - 2025-12-03
+
+### Fixed
+
+- **SaltEdge v6 API Compliance** (CRITICAL banking integration fix)
+  - Fixed `getBalance()` to use `/accounts?connection_id=X` instead of non-existent `/accounts/{id}` endpoint
+  - Fixed `getTransactions()` to include required `connection_id` parameter
+  - Added proper detection of HTML 404 responses (SaltEdge returns HTML for invalid endpoints)
+  - Transactions now sync correctly after bank account linking
+  - Added comprehensive regression tests for v6 API compliance (18 tests)
+  - Added unit tests for SaltEdge provider with axios mocking (29 tests)
+
+- **Transactions Page Display**
+  - Fixed transactions page not displaying synced transactions
+  - Removed incorrect dependency on banking accounts store for transaction list rendering
+  - Transaction statistics now show whenever transactions exist (not gated on accounts)
+
+- **Dashboard Navigation**
+  - Fixed "View All" link in Recent Transactions widget pointing to wrong route
+  - Changed from `/transactions` to `/dashboard/transactions`
+  - Added regression test to prevent this bug from reoccurring
+
+### Added
+
+- **Transactions Client** (`apps/web/src/services/transactions.client.ts`)
+  - Type-safe HTTP client for transactions API
+  - Proper error handling with typed exceptions
+  - Filter support (accountId, type, date range, search)
+
+- **SaltEdge v6 API Tests** (`apps/backend/__tests__/unit/banking/providers/`)
+  - `saltedge-v6-api.spec.ts`: Endpoint construction validation
+  - `saltedge.provider.spec.ts`: Full provider unit tests with mocking
+
+- **RecentTransactions Tests** (`apps/web/__tests__/components/dashboard/`)
+  - Component rendering tests
+  - Navigation link validation
+  - Empty state and loading state tests
+
 ## [Unreleased]
 
 ### Added

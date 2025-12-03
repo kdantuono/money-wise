@@ -202,7 +202,7 @@ function EmptyState() {
           Recent Transactions
         </CardTitle>
         <a
-          href="/transactions"
+          href="/dashboard/transactions"
           className="text-sm text-primary hover:underline flex items-center gap-1"
         >
           View all
@@ -261,7 +261,7 @@ export function RecentTransactions({ transactions, isLoading }: RecentTransactio
           Recent Transactions
         </CardTitle>
         <a
-          href="/transactions"
+          href="/dashboard/transactions"
           className="text-sm text-primary hover:underline flex items-center gap-1"
         >
           View all

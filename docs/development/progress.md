@@ -1,7 +1,7 @@
 # Development Progress
 
 > **Live tracking of MoneyWise development milestones**
-> **Last Updated: December 1, 2025**
+> **Last Updated: December 3, 2025**
 
 ## Project Status: MVP 95% Complete
 
@@ -37,12 +37,13 @@ MoneyWise has achieved near-MVP completion with:
 - **Analytics API**: Spending by category, trends, insights
 
 ### Banking Integration - SaltEdge v6 (100%)
-**PRs**: #212, #218, #219
+**PRs**: #212, #218, #219, hotfix/tech-debt-phase4
 
 - **OAuth Flow**: Popup-based bank authorization
 - **Account Linking**: Store and sync connected accounts
-- **Transaction Sync**: Auto-fetch transactions on account link
-- **Error Handling**: Graceful 404/stale reference cleanup
+- **Transaction Sync**: Auto-fetch transactions on account link (v6 API compliant)
+- **Error Handling**: Graceful 404/stale reference cleanup, HTML response detection
+- **v6 API Compliance**: Correct endpoint construction with connection_id parameter
 
 ### Budget Management (100%)
 **PRs**: #217, #222, #223
@@ -146,6 +147,7 @@ MoneyWise has achieved near-MVP completion with:
 
 | Date | PR | Description |
 |------|-----|-------------|
+| Dec 3 | hotfix/tech-debt-phase4 | SaltEdge v6 API compliance fix, transactions page display |
 | Dec 1 | #225 | Goals navigation fix |
 | Dec 1 | #224 | Docker E2E infrastructure |
 | Nov 30 | #223 | Planning dropdown in sidebar |

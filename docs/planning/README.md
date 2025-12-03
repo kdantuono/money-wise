@@ -10,7 +10,8 @@ MoneyWise has achieved near-MVP completion. Most planning documents in this dire
 ### What's Implemented
 - ✅ Authentication (JWT, 2FA, protected routes)
 - ✅ Dashboard with financial insights
-- ✅ Banking integration (SaltEdge v6)
+- ✅ Banking integration (SaltEdge v6 - fully compliant)
+- ✅ Transaction sync and display
 - ✅ Budget management
 - ✅ Analytics API
 - ✅ Docker E2E infrastructure

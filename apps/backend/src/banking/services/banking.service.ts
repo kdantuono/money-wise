@@ -629,6 +629,8 @@ export class BankingService {
         const saltEdgeAcctId = String(account.id);
         const saltEdgeConnId = String(saltEdgeConnectionId);
 
+        this.logger.log(`[DEBUG] Creating account with saltEdgeAccountId=${saltEdgeAcctId}, saltEdgeConnectionId=${saltEdgeConnId}`);
+
         const createdAccount = await this.prisma.account.create({
           data: {
             userId,
@@ -654,7 +656,7 @@ export class BankingService {
         });
 
         storedCount++;
-        this.logger.log(`Stored account: ${account.id}`);
+        this.logger.log(`[DEBUG] Stored account: id=${createdAccount.id}, saltEdgeAccountId=${createdAccount.saltEdgeAccountId}, saltEdgeConnectionId=${createdAccount.saltEdgeConnectionId}`);
 
         // Auto-sync transactions for newly linked account (non-blocking)
         // NOTE: Using setTimeout(fn, 0) to defer sync to next event loop tick.
