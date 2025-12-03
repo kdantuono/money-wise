@@ -132,11 +132,12 @@ function generateSecurePassword(): string {
   const lowercase = faker.string.alpha({ length: 3, casing: 'lower' });
   const numbers = faker.string.numeric(3);
   const special = '!@#$%^&*';
-  const specialChar = special[Math.floor(Math.random() * special.length)];
+  // Use faker's random for test data (not security-sensitive)
+  const specialChar = faker.helpers.arrayElement(special.split(''));
 
-  // Combine and shuffle (total: 3+3+3+1+2 = 12 characters minimum)
+  // Combine and shuffle using faker (total: 3+3+3+1+2 = 12 characters minimum)
   const parts = [uppercase, lowercase, numbers, specialChar, faker.string.alphanumeric(2)];
-  return parts.sort(() => Math.random() - 0.5).join('');
+  return faker.helpers.shuffle(parts).join('');
 }
 
 /**
