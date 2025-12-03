@@ -629,8 +629,6 @@ export class BankingService {
         const saltEdgeAcctId = String(account.id);
         const saltEdgeConnId = String(saltEdgeConnectionId);
 
-        this.logger.log(`[DEBUG] Creating account with saltEdgeAccountId=${saltEdgeAcctId}, saltEdgeConnectionId=${saltEdgeConnId}`);
-
         const createdAccount = await this.prisma.account.create({
           data: {
             userId,
