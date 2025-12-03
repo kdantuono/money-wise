@@ -2,7 +2,22 @@
   "$schema": "https://turbo.build/schema.json",
   "globalEnv": [
     "NODE_ENV",
-    "CI"
+    "CI",
+    "DATABASE_URL",
+    "DB_HOST",
+    "DB_PORT",
+    "DB_USERNAME",
+    "DB_PASSWORD",
+    "DB_NAME",
+    "DB_SCHEMA",
+    "DATABASE_HOST",
+    "DATABASE_PORT",
+    "REDIS_HOST",
+    "REDIS_PORT",
+    "REDIS_PASSWORD",
+    "JWT_ACCESS_SECRET",
+    "JWT_REFRESH_SECRET",
+    "USE_TEST_CONTAINERS"
   ],
   "globalDependencies": [
     "**/.env.*local",
