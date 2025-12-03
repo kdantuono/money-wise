@@ -1,6 +1,6 @@
 {
   "name": "money-wise",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "Personal finance management application with cross-platform support",
   "private": true,
   "workspaces": [
@@ -108,7 +108,7 @@
       "axios": "^0.30.2",
       "glob": "^10.5.0",
       "js-yaml": "^4.1.1",
-      "express": "^4.22.0",
+      "express": "^5.0.1",
       "ip": "npm:@webpod/ip@^0.6.1",
       "semver": "^7.6.3",
       "esbuild": ">=0.25.0",

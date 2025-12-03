@@ -1,6 +1,6 @@
 {
   "name": "@money-wise/test-utils",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "Shared test utilities and fixtures for MoneyWise",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

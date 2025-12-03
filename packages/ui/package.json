@@ -1,6 +1,6 @@
 {
   "name": "@money-wise/ui",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "Shared UI components for MoneyWise",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

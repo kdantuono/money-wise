@@ -5,6 +5,27 @@ All notable changes to MoneyWise will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.1] - 2025-12-03
+
+### Changed
+
+- **Express 5 Upgrade** - NestJS 11 compatibility fix
+  - Upgraded Express from 4.22.x to 5.0.1+
+  - Updated `@types/express` from ^4.17.17 to ^5.0.0
+  - Fixed `app.router` deprecation error with NestJS 11.1.9
+  - Added Express 5 as explicit dependency in backend
+  - Updated pnpm override from ^4.22.0 to ^5.0.1
+  - All 1611 backend tests passing
+  - Application starts successfully
+
+### Technical Details
+
+- **Root Cause**: NestJS 11.1.9 with Express 4.22.1 triggers stricter deprecation errors (`app.router` deprecated)
+- **Solution**: Express 5.0.1+ is forward-compatible and eliminates deprecation issues
+- **Reference**: [NestJS GitHub Issue #14601](https://github.com/nestjs/nest/issues/14601)
+
+---
+
 ## [0.6.0] - 2025-12-03
 
 ### Added

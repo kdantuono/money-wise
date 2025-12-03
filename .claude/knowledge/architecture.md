@@ -68,7 +68,7 @@ MoneyWise is a personal finance management system built as a monorepo with micro
 - **Testing**: Vitest 4, React Testing Library, Playwright
 
 ### Backend (apps/backend)
-- **Framework**: NestJS 11
+- **Framework**: NestJS 11 + Express 5
 - **Language**: TypeScript 5.6
 - **Database ORM**: Prisma
 - **Validation**: class-validator

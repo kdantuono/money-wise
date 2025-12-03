@@ -1,6 +1,6 @@
 {
   "name": "@money-wise/types",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "Shared TypeScript type definitions for MoneyWise",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

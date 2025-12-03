@@ -1,6 +1,6 @@
 {
   "name": "@money-wise/mobile",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "MoneyWise React Native Mobile Application",
   "private": true,
   "main": "expo-router/entry",

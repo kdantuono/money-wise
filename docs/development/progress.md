@@ -108,7 +108,7 @@ All 2302 tests passing, zero breaking changes in application code.
 
 | Component | Technology |
 |-----------|------------|
-| Backend | NestJS 11 + Prisma + PostgreSQL + Redis |
+| Backend | NestJS 11 + Express 5 + Prisma + PostgreSQL + Redis |
 | Frontend | Next.js 15 + React 19 + Tailwind CSS v4 |
 | Mobile | React Native 0.76 (Expo 52) - Pending |
 | Testing | Jest 30 + Vitest 4 + Playwright |
@@ -160,6 +160,7 @@ All 2302 tests passing, zero breaking changes in application code.
 
 | Date | PR | Description |
 |------|-----|-------------|
+| Dec 3 | - | v0.6.1 Express 5 upgrade for NestJS 11 compatibility |
 | Dec 3 | #231 | Phase -1 Foundation Upgrades (Tailwind v4, Jest 30, NestJS 11, pnpm 10.24) |
 | Dec 3 | #230 | SaltEdge v6 API compliance fix, transactions page display |
 | Dec 1 | #225 | Goals navigation fix |
