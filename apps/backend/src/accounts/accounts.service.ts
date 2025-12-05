@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../core/database/prisma/prisma.service';
+import { BalanceNormalizerService } from '../core/finance/balance-normalizer.service';
 import {
   Account as PrismaAccount,
   AccountSource,
@@ -9,13 +10,23 @@ import {
 } from '../../generated/prisma';
 import { CreateAccountDto } from './dto/create-account.dto';
 import { UpdateAccountDto } from './dto/update-account.dto';
-import { AccountResponseDto, AccountSummaryDto } from './dto/account-response.dto';
+import {
+  AccountResponseDto,
+  AccountSummaryDto,
+  FinancialSummaryDto,
+  NormalizedAccountBalanceDto,
+} from './dto/account-response.dto';
+import {
+  DeletionEligibilityResponseDto,
+  LinkedTransferDto,
+} from './dto/deletion-eligibility.dto';
 import { AccountSettings } from '../core/database/types/metadata.types';
 
 @Injectable()
 export class AccountsService {
   constructor(
     private readonly prisma: PrismaService,
+    private readonly balanceNormalizer: BalanceNormalizerService,
   ) {}
 
   /**
@@ -105,28 +116,27 @@ export class AccountsService {
   /**
    * Find all accounts for a user or family.
    * Exactly one of userId or familyId must be provided (XOR constraint).
-   * Admin users can access all accounts by passing userRole parameter.
+   *
+   * Note: Admin users follow the same rules as regular users on this endpoint.
+   * Use specific account endpoints (findOne, update, etc.) for admin operations.
    *
    * @param userId - User ID for personal accounts (optional)
    * @param familyId - Family ID for family accounts (optional)
-   * @param userRole - User role (ADMIN can access all accounts)
+   * @param includeHidden - Include HIDDEN accounts in results (default: false)
    * @returns List of accounts
    * @throws BadRequestException if XOR constraint is violated
    */
   async findAll(
     userId?: string,
     familyId?: string,
-    userRole?: UserRole
+    includeHidden: boolean = false
   ): Promise<AccountResponseDto[]> {
-    // Admin users can access all accounts
-    if (userRole === UserRole.ADMIN) {
-      const accounts = await this.prisma.account.findMany({
-        orderBy: { createdAt: 'desc' },
-      });
-      return accounts.map(account => this.toResponseDto(account));
-    }
+    // Filter out HIDDEN accounts by default
+    const statusFilter = includeHidden
+      ? {}
+      : { status: { not: AccountStatus.HIDDEN } };
 
-    // XOR constraint validation for non-admin users
+    // XOR constraint validation (applies to all users, including admins)
     if ((!userId && !familyId) || (userId && familyId)) {
       throw new BadRequestException(
         'Exactly one of userId or familyId must be provided (XOR constraint)'
@@ -134,7 +144,9 @@ export class AccountsService {
     }
 
     const accounts = await this.prisma.account.findMany({
-      where: userId ? { userId } : { familyId },
+      where: userId
+        ? { userId, ...statusFilter }
+        : { familyId, ...statusFilter },
       orderBy: { createdAt: 'desc' },
     });
 
@@ -211,6 +223,7 @@ export class AccountsService {
   /**
    * Delete an account.
    * Checks both personal and family ownership authorization.
+   * Blocks deletion if account has linked transfers to other accounts.
    *
    * @param id - Account ID
    * @param userId - User ID (for personal accounts)
@@ -218,6 +231,7 @@ export class AccountsService {
    * @param userRole - User role (ADMIN can delete any account)
    * @throws NotFoundException if account doesn't exist
    * @throws ForbiddenException if access denied
+   * @throws BadRequestException if account has linked transfers
    */
   async remove(
     id: string,
@@ -226,6 +240,17 @@ export class AccountsService {
     userRole?: UserRole
   ): Promise<void> {
     await this.verifyAccountAccess(id, userId, familyId, userRole);
+
+    // Check for linked transfers before deletion
+    const linkedTransfers = await this.findLinkedTransfers(id);
+    if (linkedTransfers.length > 0) {
+      throw new BadRequestException({
+        message: 'Cannot delete account with linked transfers',
+        error: 'LINKED_TRANSFERS_EXIST',
+        linkedTransferCount: linkedTransfers.length,
+        suggestion: 'Hide the account instead or resolve the transfers first',
+      });
+    }
 
     await this.prisma.account.delete({
       where: { id },
@@ -275,38 +300,31 @@ export class AccountsService {
   /**
    * Get account summary statistics.
    * Exactly one of userId or familyId must be provided (XOR constraint).
-   * Admin users can access summary for all accounts by passing userRole parameter.
+   *
+   * Note: Admin users follow the same rules as regular users on this endpoint.
+   * Use specific account endpoints for admin operations.
    *
    * @param userId - User ID for personal accounts (optional)
    * @param familyId - Family ID for family accounts (optional)
-   * @param userRole - User role (ADMIN can access all accounts)
    * @returns Account summary statistics
    * @throws BadRequestException if XOR constraint is violated
    */
   async getSummary(
     userId?: string,
-    familyId?: string,
-    userRole?: UserRole
+    familyId?: string
   ): Promise<AccountSummaryDto> {
-    let accounts;
-
-    // Admin users can access all accounts
-    if (userRole === UserRole.ADMIN) {
-      accounts = await this.prisma.account.findMany({
-        where: { isActive: true },
-      });
-    } else {
-      // XOR constraint validation for non-admin users
-      if ((!userId && !familyId) || (userId && familyId)) {
-        throw new BadRequestException(
-          'Exactly one of userId or familyId must be provided (XOR constraint)'
-        );
-      }
-
-      accounts = await this.prisma.account.findMany({
-        where: userId ? { userId, isActive: true } : { familyId, isActive: true },
-      });
+    // XOR constraint validation (applies to all users, including admins)
+    if ((!userId && !familyId) || (userId && familyId)) {
+      throw new BadRequestException(
+        'Exactly one of userId or familyId must be provided (XOR constraint)'
+      );
     }
+
+    const accounts = await this.prisma.account.findMany({
+      where: userId
+        ? { userId, isActive: true, status: { not: AccountStatus.HIDDEN } }
+        : { familyId, isActive: true, status: { not: AccountStatus.HIDDEN } },
+    });
 
     const totalBalance = accounts.reduce((sum, acc) => sum + acc.currentBalance.toNumber(), 0);
     const activeAccounts = accounts.filter(acc => acc.status === AccountStatus.ACTIVE).length;
@@ -327,6 +345,85 @@ export class AccountsService {
       activeAccounts,
       accountsNeedingSync,
       byType,
+    };
+  }
+
+  /**
+   * Get financial summary with normalized balances for accurate net worth calculation.
+   *
+   * This method provides a comprehensive financial overview with:
+   * - Total assets (checking + savings + investments, excluding overdrafts)
+   * - Total liabilities (credit cards + loans + mortgages + overdrafts)
+   * - Net worth (assets - liabilities)
+   * - Normalized balances for each account with proper display labels
+   * - Available credit across all credit accounts
+   *
+   * Exactly one of userId or familyId must be provided (XOR constraint).
+   *
+   * Note: Admin users follow the same rules as regular users on this endpoint.
+   * Use specific account endpoints for admin operations.
+   *
+   * @param userId - User ID for personal accounts (optional)
+   * @param familyId - Family ID for family accounts (optional)
+   * @returns Financial summary with normalized balances
+   * @throws BadRequestException if XOR constraint is violated
+   */
+  async getFinancialSummary(
+    userId?: string,
+    familyId?: string
+  ): Promise<FinancialSummaryDto> {
+    // XOR constraint validation (applies to all users, including admins)
+    if ((!userId && !familyId) || (userId && familyId)) {
+      throw new BadRequestException(
+        'Exactly one of userId or familyId must be provided (XOR constraint)'
+      );
+    }
+
+    const accounts = await this.prisma.account.findMany({
+      where: userId
+        ? { userId, isActive: true, status: { not: AccountStatus.HIDDEN } }
+        : { familyId, isActive: true, status: { not: AccountStatus.HIDDEN } },
+    });
+
+    // Calculate totals using BalanceNormalizerService
+    const totals = this.balanceNormalizer.calculateTotals(accounts);
+
+    // Normalize each account balance
+    const normalizedAccounts: NormalizedAccountBalanceDto[] = accounts.map(account => {
+      const normalized = this.balanceNormalizer.normalizeBalance(account);
+      return {
+        accountId: account.id,
+        accountName: account.name,
+        accountType: account.type,
+        accountNature: normalized.accountNature,
+        currentBalance: normalized.currentBalance.toNumber(),
+        displayAmount: normalized.displayAmount.toNumber(),
+        displayLabel: normalized.displayLabel,
+        affectsNetWorth: normalized.affectsNetWorth,
+        currency: account.currency,
+        institutionName: account.institutionName ?? undefined,
+      };
+    });
+
+    // Calculate total available credit across all credit accounts
+    // Returns 0 when no credit accounts exist (for consistent API response)
+    const creditAccounts = accounts.filter(acc => acc.creditLimit !== null);
+    const totalAvailableCredit = creditAccounts.reduce((sum, acc) => {
+      const availableCredit = this.balanceNormalizer.getAvailableCredit(acc);
+      return sum + (availableCredit?.toNumber() ?? 0);
+    }, 0);
+
+    // Determine currency (use first account's currency, or default to USD)
+    const currency = accounts.length > 0 ? accounts[0].currency : 'USD';
+
+    return {
+      totalAssets: totals.totalAssets.toNumber(),
+      totalLiabilities: totals.totalLiabilities.toNumber(),
+      netWorth: totals.netWorth.toNumber(),
+      totalAvailableCredit,
+      accounts: normalizedAccounts,
+      currency,
+      calculatedAt: new Date(),
     };
   }
 
@@ -423,6 +520,9 @@ export class AccountsService {
   private toResponseDto(account: PrismaAccount): AccountResponseDto {
     const isPlaidAccount = account.source === AccountSource.PLAID;
     const isManualAccount = account.source === AccountSource.MANUAL;
+    // Account is syncable if it has a valid banking provider connection
+    // This handles orphaned accounts where source is SALTEDGE but connection was deleted
+    const isSyncable = this.computeIsSyncable(account);
     const needsSync = this.computeNeedsSync(account);
     const displayName = account.institutionName
       ? `${account.institutionName} - ${account.name}`
@@ -447,15 +547,197 @@ export class AccountsService {
       displayName,
       isPlaidAccount,
       isManualAccount,
+      isSyncable,
       needsSync,
       isActive: account.isActive,
       syncEnabled: account.syncEnabled,
       lastSyncAt: account.lastSyncAt,
       syncError: account.syncError,
+      saltEdgeConnectionId: account.saltEdgeConnectionId,
       settings: account.settings as AccountSettings,
       createdAt: account.createdAt,
       updatedAt: account.updatedAt,
     };
+  }
+
+  /**
+   * Check if an account can be deleted or should be hidden.
+   * Returns detailed eligibility information including blocking transfers.
+   *
+   * @param id - Account ID
+   * @param userId - User ID (for personal accounts)
+   * @param familyId - Family ID (for family accounts)
+   * @param userRole - User role (ADMIN can access any account)
+   * @returns Deletion eligibility response with blocker details
+   * @throws NotFoundException if account doesn't exist
+   * @throws ForbiddenException if access denied
+   */
+  async checkDeletionEligibility(
+    id: string,
+    userId?: string,
+    familyId?: string,
+    userRole?: UserRole
+  ): Promise<DeletionEligibilityResponseDto> {
+    const account = await this.verifyAccountAccess(id, userId, familyId, userRole);
+    const linkedTransfers = await this.findLinkedTransfers(id);
+
+    const canDelete = linkedTransfers.length === 0;
+    const canHide = true; // Can always hide, regardless of transfers
+
+    let blockReason: string | undefined;
+    if (!canDelete) {
+      blockReason = `Account has ${linkedTransfers.length} transfer${linkedTransfers.length > 1 ? 's' : ''} linked to other accounts`;
+    }
+
+    return {
+      canDelete,
+      canHide,
+      currentStatus: account.status,
+      blockReason,
+      blockers: linkedTransfers,
+      linkedTransferCount: linkedTransfers.length,
+    };
+  }
+
+  /**
+   * Hide an account (soft delete).
+   * Sets status to HIDDEN, preserving all transactions and history.
+   * Hidden accounts are excluded from active views but can be restored.
+   *
+   * @param id - Account ID
+   * @param userId - User ID (for personal accounts)
+   * @param familyId - Family ID (for family accounts)
+   * @param userRole - User role (ADMIN can hide any account)
+   * @returns Updated account with HIDDEN status
+   * @throws NotFoundException if account doesn't exist
+   * @throws ForbiddenException if access denied
+   * @throws BadRequestException if account is already hidden
+   */
+  async hideAccount(
+    id: string,
+    userId?: string,
+    familyId?: string,
+    userRole?: UserRole
+  ): Promise<AccountResponseDto> {
+    const account = await this.verifyAccountAccess(id, userId, familyId, userRole);
+
+    if (account.status === AccountStatus.HIDDEN) {
+      throw new BadRequestException('Account is already hidden');
+    }
+
+    const updatedAccount = await this.prisma.account.update({
+      where: { id },
+      data: { status: AccountStatus.HIDDEN },
+    });
+
+    return this.toResponseDto(updatedAccount);
+  }
+
+  /**
+   * Restore a hidden account.
+   * Sets status back to ACTIVE, making it visible in account lists again.
+   *
+   * @param id - Account ID
+   * @param userId - User ID (for personal accounts)
+   * @param familyId - Family ID (for family accounts)
+   * @param userRole - User role (ADMIN can restore any account)
+   * @returns Updated account with ACTIVE status
+   * @throws NotFoundException if account doesn't exist
+   * @throws ForbiddenException if access denied
+   * @throws BadRequestException if account is not hidden
+   */
+  async restoreAccount(
+    id: string,
+    userId?: string,
+    familyId?: string,
+    userRole?: UserRole
+  ): Promise<AccountResponseDto> {
+    const account = await this.verifyAccountAccess(id, userId, familyId, userRole);
+
+    if (account.status !== AccountStatus.HIDDEN) {
+      throw new BadRequestException('Only hidden accounts can be restored');
+    }
+
+    const updatedAccount = await this.prisma.account.update({
+      where: { id },
+      data: { status: AccountStatus.ACTIVE },
+    });
+
+    return this.toResponseDto(updatedAccount);
+  }
+
+  /**
+   * Find transfers that link this account to other accounts.
+   * Used to determine if an account can be safely deleted.
+   *
+   * A linked transfer is a transaction with:
+   * - transferGroupId (not null) - indicates it's part of a transfer pair
+   * - A corresponding transaction in another account with same transferGroupId
+   *
+   * @param accountId - Account ID to check
+   * @returns Array of linked transfer details
+   */
+  private async findLinkedTransfers(accountId: string): Promise<LinkedTransferDto[]> {
+    // Find all transactions in this account that are part of transfers
+    const transferTransactions = await this.prisma.transaction.findMany({
+      where: {
+        accountId,
+        transferGroupId: { not: null },
+      },
+      select: {
+        id: true,
+        transferGroupId: true,
+        transferRole: true,
+        amount: true,
+        date: true,
+        description: true,
+      },
+    });
+
+    if (transferTransactions.length === 0) {
+      return [];
+    }
+
+    // Get all transfer group IDs
+    const transferGroupIds = transferTransactions
+      .map(t => t.transferGroupId)
+      .filter((id): id is string => id !== null);
+
+    // Find the linked transactions (other side of each transfer)
+    const linkedTransactions = await this.prisma.transaction.findMany({
+      where: {
+        transferGroupId: { in: transferGroupIds },
+        accountId: { not: accountId }, // Other accounts only
+      },
+      include: {
+        account: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    // Map to LinkedTransferDto
+    return transferTransactions
+      .filter(t => {
+        // Only include if there's a linked transaction in another account
+        return linkedTransactions.some(lt => lt.transferGroupId === t.transferGroupId);
+      })
+      .map(t => {
+        const linked = linkedTransactions.find(lt => lt.transferGroupId === t.transferGroupId);
+        return {
+          transactionId: t.id,
+          transferGroupId: t.transferGroupId!,
+          linkedAccountId: linked?.account.id ?? '',
+          linkedAccountName: linked?.account.name ?? 'Unknown Account',
+          amount: Math.abs(t.amount.toNumber()),
+          date: t.date,
+          description: t.description ?? '',
+          transferRole: (t.transferRole as 'SOURCE' | 'DESTINATION') ?? 'SOURCE',
+        };
+      });
   }
 
   /**
@@ -499,5 +781,45 @@ export class AccountsService {
 
     const hoursSinceSync = (Date.now() - account.lastSyncAt.getTime()) / (1000 * 60 * 60);
     return hoursSinceSync >= 1;
+  }
+
+  /**
+   * Determines if an account can be synced with a banking provider.
+   *
+   * An account is syncable if:
+   * - It has a non-MANUAL source (PLAID, SALTEDGE, TINK, YAPILY)
+   * - It has a valid banking provider connection (e.g., saltEdgeConnectionId)
+   * - Sync is enabled
+   *
+   * This handles "orphaned" accounts where the source is still SALTEDGE
+   * but the connection has been revoked/deleted, preventing UI from
+   * showing Sync buttons for accounts that can't actually sync.
+   *
+   * @param account - Prisma Account model
+   * @returns true if account can be synced, false otherwise
+   */
+  private computeIsSyncable(account: PrismaAccount): boolean {
+    // Manual accounts are never syncable
+    if (account.source === AccountSource.MANUAL) {
+      return false;
+    }
+
+    // Sync must be enabled
+    if (!account.syncEnabled) {
+      return false;
+    }
+
+    // For SaltEdge accounts, must have valid connection ID
+    if (account.source === AccountSource.SALTEDGE) {
+      return !!account.saltEdgeConnectionId && !!account.bankingProvider;
+    }
+
+    // For Plaid accounts, must have valid Plaid credentials
+    if (account.source === AccountSource.PLAID) {
+      return !!account.plaidAccessToken && !!account.plaidAccountId;
+    }
+
+    // For other sources (TINK, YAPILY), check for banking provider
+    return !!account.bankingProvider;
   }
 }

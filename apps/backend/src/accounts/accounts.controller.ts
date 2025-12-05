@@ -6,6 +6,7 @@ import {
   Delete,
   Body,
   Param,
+  Query,
   UseGuards,
   HttpCode,
   HttpStatus,
@@ -17,11 +18,13 @@ import {
   ApiResponse,
   ApiBearerAuth,
   ApiParam,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { AccountsService } from './accounts.service';
 import { CreateAccountDto } from './dto/create-account.dto';
 import { UpdateAccountDto } from './dto/update-account.dto';
-import { AccountResponseDto, AccountSummaryDto } from './dto/account-response.dto';
+import { AccountResponseDto, AccountSummaryDto, FinancialSummaryDto } from './dto/account-response.dto';
+import { DeletionEligibilityResponseDto, DeletionBlockedErrorDto } from './dto/deletion-eligibility.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { CurrentUserPayload } from '../auth/types/current-user.types';
@@ -58,6 +61,12 @@ export class AccountsController {
 
   @Get()
   @ApiOperation({ summary: 'Get all user accounts' })
+  @ApiQuery({
+    name: 'includeHidden',
+    required: false,
+    type: Boolean,
+    description: 'Include hidden accounts in results (default: false)',
+  })
   @ApiResponse({
     status: 200,
     description: 'List of user accounts',
@@ -67,9 +76,14 @@ export class AccountsController {
     status: 401,
     description: 'Unauthorized - invalid or missing token',
   })
-  async findAll(@CurrentUser() user: CurrentUserPayload): Promise<AccountResponseDto[]> {
+  async findAll(
+    @CurrentUser() user: CurrentUserPayload,
+    @Query('includeHidden') includeHidden?: string,
+  ): Promise<AccountResponseDto[]> {
+    // Parse boolean from query string ('true' -> true, anything else -> false)
+    const includeHiddenBool = includeHidden === 'true';
     // TODO: Add familyId support when User entity is migrated to Prisma
-    return this.accountsService.findAll(user.id, undefined, user.role);
+    return this.accountsService.findAll(user.id, undefined, includeHiddenBool);
   }
 
   @Get('summary')
@@ -85,7 +99,29 @@ export class AccountsController {
   })
   async getSummary(@CurrentUser() user: CurrentUserPayload): Promise<AccountSummaryDto> {
     // TODO: Add familyId support when User entity is migrated to Prisma
-    return this.accountsService.getSummary(user.id, undefined, user.role);
+    return this.accountsService.getSummary(user.id, undefined);
+  }
+
+  @Get('financial-summary')
+  @ApiOperation({
+    summary: 'Get financial summary with normalized balances',
+    description:
+      'Returns a comprehensive financial overview with properly normalized balances. ' +
+      'Credit card balances are shown as positive (amount owed), asset accounts show available balance. ' +
+      'Net worth is calculated as total assets minus total liabilities.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Financial summary with normalized balances for all accounts',
+    type: FinancialSummaryDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - invalid or missing token',
+  })
+  async getFinancialSummary(@CurrentUser() user: CurrentUserPayload): Promise<FinancialSummaryDto> {
+    // TODO: Add familyId support when User entity is migrated to Prisma
+    return this.accountsService.getFinancialSummary(user.id, undefined);
   }
 
   @Get(':id')
@@ -174,11 +210,22 @@ export class AccountsController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: 'Delete account' })
+  @ApiOperation({
+    summary: 'Delete account',
+    description:
+      'Permanently deletes an account. Blocked if account has linked transfers to other accounts. ' +
+      'Use /accounts/:id/deletion-eligibility to check before deleting. ' +
+      'Consider using /accounts/:id/hide for soft delete instead.',
+  })
   @ApiParam({ name: 'id', description: 'Account UUID' })
   @ApiResponse({
     status: 204,
     description: 'Account deleted successfully',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Cannot delete - account has linked transfers',
+    type: DeletionBlockedErrorDto,
   })
   @ApiResponse({
     status: 403,
@@ -194,6 +241,102 @@ export class AccountsController {
   ): Promise<void> {
     // TODO: Add familyId support when User entity is migrated to Prisma
     return this.accountsService.remove(id, user.id, undefined, user.role);
+  }
+
+  @Get(':id/deletion-eligibility')
+  @ApiOperation({
+    summary: 'Check if account can be deleted',
+    description:
+      'Returns deletion eligibility information including any linked transfers that would block deletion. ' +
+      'Use this before attempting to delete an account to provide appropriate UI feedback.',
+  })
+  @ApiParam({ name: 'id', description: 'Account UUID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Deletion eligibility check result',
+    type: DeletionEligibilityResponseDto,
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - can only check own accounts',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Account not found',
+  })
+  async checkDeletionEligibility(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: CurrentUserPayload,
+  ): Promise<DeletionEligibilityResponseDto> {
+    // TODO: Add familyId support when User entity is migrated to Prisma
+    return this.accountsService.checkDeletionEligibility(id, user.id, undefined, user.role);
+  }
+
+  @Patch(':id/hide')
+  @ApiOperation({
+    summary: 'Hide account (soft delete)',
+    description:
+      'Sets account status to HIDDEN. Hidden accounts preserve all transactions and history ' +
+      'but are excluded from active views. Can be restored later with /accounts/:id/restore. ' +
+      'Use this instead of delete when account has linked transfers.',
+  })
+  @ApiParam({ name: 'id', description: 'Account UUID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Account hidden successfully',
+    type: AccountResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Account is already hidden',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - can only hide own accounts',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Account not found',
+  })
+  async hideAccount(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: CurrentUserPayload,
+  ): Promise<AccountResponseDto> {
+    // TODO: Add familyId support when User entity is migrated to Prisma
+    return this.accountsService.hideAccount(id, user.id, undefined, user.role);
+  }
+
+  @Patch(':id/restore')
+  @ApiOperation({
+    summary: 'Restore hidden account',
+    description:
+      'Restores a hidden account by setting status back to ACTIVE. ' +
+      'Only works on accounts with HIDDEN status.',
+  })
+  @ApiParam({ name: 'id', description: 'Account UUID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Account restored successfully',
+    type: AccountResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Only hidden accounts can be restored',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - can only restore own accounts',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Account not found',
+  })
+  async restoreAccount(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: CurrentUserPayload,
+  ): Promise<AccountResponseDto> {
+    // TODO: Add familyId support when User entity is migrated to Prisma
+    return this.accountsService.restoreAccount(id, user.id, undefined, user.role);
   }
 
   @Post(':id/sync')
