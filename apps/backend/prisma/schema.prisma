@@ -60,11 +60,13 @@ enum AccountType {
 /// Account operational status
 /// ACTIVE: Normal operation, syncing enabled
 /// INACTIVE: User-disabled, no syncing
+/// HIDDEN: Soft-deleted, preserved for history, excluded from active views, can be restored
 /// CLOSED: Permanently closed account
 /// ERROR: Sync/connection error, needs attention
 enum AccountStatus {
   ACTIVE
   INACTIVE
+  HIDDEN
   CLOSED
   ERROR
 
