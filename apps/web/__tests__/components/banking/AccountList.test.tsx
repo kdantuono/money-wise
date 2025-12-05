@@ -22,6 +22,7 @@ const mockAccounts = [
     accountNumber: '****1234',
     accountType: 'checking',
     country: 'United States',
+    isSyncable: true, // Linked account with valid banking connection
   },
   {
     id: 'acc-2',
@@ -33,6 +34,7 @@ const mockAccounts = [
     syncStatus: BankingSyncStatus.PENDING,
     connectionStatus: BankingConnectionStatus.AUTHORIZED,
     linkedAt: new Date('2024-01-10T12:00:00Z'),
+    isSyncable: true, // Linked account with valid banking connection
   },
   {
     id: 'acc-3',
@@ -45,6 +47,7 @@ const mockAccounts = [
     connectionStatus: BankingConnectionStatus.AUTHORIZED,
     lastSyncedAt: new Date('2024-01-14T09:00:00Z'),
     linkedAt: new Date('2024-01-05T14:00:00Z'),
+    isSyncable: true, // Linked account with valid banking connection
   },
 ];
 
