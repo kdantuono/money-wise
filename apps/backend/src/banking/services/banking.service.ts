@@ -1032,6 +1032,9 @@ export class BankingService {
 
   /**
    * Revoke banking connection
+   *
+   * If the connection no longer exists on the provider side (404),
+   * we still clean up the local records gracefully.
    */
   async revokeBankingConnection(userId: string, connectionId: string): Promise<void> {
     this.logger.log(`Revoking banking connection ${connectionId} for user ${userId}`);
@@ -1053,7 +1056,23 @@ export class BankingService {
       const providerConnectionId = this.getProviderConnectionId(connection);
 
       if (providerConnectionId) {
-        await bankingProvider.revokeConnection(providerConnectionId);
+        try {
+          await bankingProvider.revokeConnection(providerConnectionId);
+        } catch (revokeError) {
+          // If the connection was already deleted on the provider side (404),
+          // continue with local cleanup - this is not an error condition
+          const isNotFoundError = revokeError.name === 'SaltEdgeNotFoundError' ||
+                                  revokeError.statusCode === 404 ||
+                                  revokeError.message?.includes('not found (404)');
+          if (isNotFoundError) {
+            this.logger.warn(
+              `Connection ${providerConnectionId} already deleted on provider side. Proceeding with local cleanup.`,
+            );
+          } else {
+            // Re-throw other errors
+            throw revokeError;
+          }
+        }
       }
 
       // Update connection status
@@ -1062,13 +1081,16 @@ export class BankingService {
         data: { status: BankingConnectionStatus.REVOKED },
       });
 
-      // Mark accounts from this connection as disconnected
+      // Mark accounts from this connection as disconnected and hidden
       const primaryUpdate = await this.prisma.account.updateMany({
         where: {
           userId,
           saltEdgeConnectionId: providerConnectionId ?? undefined,
         },
-        data: { syncStatus: BankingSyncStatus.DISCONNECTED },
+        data: {
+          status: AccountStatus.HIDDEN,
+          syncStatus: BankingSyncStatus.DISCONNECTED,
+        },
       });
 
       // Fallback: if no accounts matched (e.g., provider connection id cleared earlier),
@@ -1080,7 +1102,10 @@ export class BankingService {
             bankingProvider: connection.provider,
             saltEdgeConnectionId: null,
           },
-          data: { syncStatus: BankingSyncStatus.DISCONNECTED },
+          data: {
+            status: AccountStatus.HIDDEN,
+            syncStatus: BankingSyncStatus.DISCONNECTED,
+          },
         });
       }
 
@@ -1089,6 +1114,58 @@ export class BankingService {
       this.logger.error('Failed to revoke banking connection', error);
       throw new BadRequestException(`Failed to revoke connection: ${error.message}`);
     }
+  }
+
+  /**
+   * Revoke banking connection by account ID
+   * Looks up the BankingConnection using the account's saltEdgeConnectionId
+   */
+  async revokeBankingConnectionByAccountId(userId: string, accountId: string): Promise<void> {
+    this.logger.log(`Revoking banking connection for account ${accountId}, user ${userId}`);
+
+    // Find the account
+    const account = await this.prisma.account.findUnique({
+      where: { id: accountId },
+    });
+
+    if (!account) {
+      throw new NotFoundException(`Account not found: ${accountId}`);
+    }
+
+    if (account.userId !== userId) {
+      throw new BadRequestException('Unauthorized');
+    }
+
+    if (!account.saltEdgeConnectionId) {
+      throw new BadRequestException('Account is not linked to a banking connection');
+    }
+
+    // Find the BankingConnection by saltEdgeConnectionId
+    const connection = await this.prisma.bankingConnection.findFirst({
+      where: {
+        saltEdgeConnectionId: account.saltEdgeConnectionId,
+        userId,
+      },
+    });
+
+    if (!connection) {
+      // If no connection found, just mark the account as disconnected and hidden
+      this.logger.warn(`No BankingConnection found for saltEdgeConnectionId: ${account.saltEdgeConnectionId}, marking account as hidden`);
+
+      await this.prisma.account.update({
+        where: { id: accountId },
+        data: {
+          status: AccountStatus.HIDDEN,
+          syncStatus: BankingSyncStatus.DISCONNECTED,
+          saltEdgeConnectionId: null,
+          saltEdgeAccountId: null,
+        },
+      });
+      return;
+    }
+
+    // Use the existing revoke method with the connection ID
+    await this.revokeBankingConnection(userId, connection.id);
   }
 
   /**
