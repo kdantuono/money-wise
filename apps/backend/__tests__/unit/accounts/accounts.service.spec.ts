@@ -752,10 +752,14 @@ describe('AccountsService', () => {
   });
 
   describe('restoreAccount', () => {
-    it('should set account status back to ACTIVE', async () => {
+    it('should set account status back to ACTIVE for manual account', async () => {
       // Arrange
       const userId = 'user-123';
-      const account = AccountFactory.buildForUser(userId, { status: AccountStatus.HIDDEN });
+      const account = AccountFactory.buildForUser(userId, {
+        status: AccountStatus.HIDDEN,
+        source: AccountSource.MANUAL,
+        saltEdgeConnectionId: null,
+      });
       const restoredAccount = { ...account, status: AccountStatus.ACTIVE };
 
       prisma.account.findUnique.mockResolvedValue(account as any);
@@ -770,6 +774,108 @@ describe('AccountsService', () => {
         where: { id: account.id },
         data: { status: AccountStatus.ACTIVE },
       });
+    });
+
+    it('should restore banking account with AUTHORIZED connection', async () => {
+      // Arrange
+      const userId = 'user-123';
+      const saltEdgeConnectionId = 'saltedge_conn_123';
+      const account = AccountFactory.buildSaltEdgeAccount({
+        userId,
+        status: AccountStatus.HIDDEN,
+        saltEdgeConnectionId,
+      });
+      const authorizedConnection = {
+        id: 'conn-uuid-123',
+        saltEdgeConnectionId,
+        status: 'AUTHORIZED',
+        providerName: 'Fake Bank Simple',
+      };
+      const restoredAccount = { ...account, status: AccountStatus.ACTIVE };
+
+      prisma.account.findUnique.mockResolvedValue(account as any);
+      prisma.bankingConnection.findFirst.mockResolvedValue(authorizedConnection as any);
+      prisma.account.findMany.mockResolvedValue([account] as any);
+      prisma.account.update.mockResolvedValue(restoredAccount as any);
+
+      // Act
+      const result = await service.restoreAccount(account.id, userId);
+
+      // Assert
+      expect(result.status).toBe(AccountStatus.ACTIVE);
+    });
+
+    it('should throw ConflictException for banking account with REVOKED connection', async () => {
+      // Arrange
+      const userId = 'user-123';
+      const saltEdgeConnectionId = 'saltedge_conn_123';
+      const account = AccountFactory.buildSaltEdgeAccount({
+        userId,
+        status: AccountStatus.HIDDEN,
+        saltEdgeConnectionId,
+      });
+      const revokedConnection = {
+        id: 'conn-uuid-123',
+        saltEdgeConnectionId,
+        status: 'REVOKED',
+        providerName: 'Fake Bank Simple',
+      };
+
+      prisma.account.findUnique.mockResolvedValue(account as any);
+      prisma.bankingConnection.findFirst.mockResolvedValue(revokedConnection as any);
+      prisma.account.findMany.mockResolvedValue([account] as any);
+
+      // Act & Assert
+      try {
+        await service.restoreAccount(account.id, userId);
+        fail('Expected ConflictException to be thrown');
+      } catch (error) {
+        expect(error.status).toBe(409);
+        expect(error.response).toMatchObject({
+          error: 'RELINK_REQUIRED',
+          message: expect.stringContaining('revoked'),
+        });
+      }
+    });
+
+    it('should include sibling account count in ConflictException response', async () => {
+      // Arrange
+      const userId = 'user-123';
+      const saltEdgeConnectionId = 'saltedge_conn_123';
+      const account1 = AccountFactory.buildSaltEdgeAccount({
+        id: 'account-1',
+        userId,
+        status: AccountStatus.HIDDEN,
+        saltEdgeConnectionId,
+        name: 'Checking',
+      });
+      const account2 = AccountFactory.buildSaltEdgeAccount({
+        id: 'account-2',
+        userId,
+        status: AccountStatus.HIDDEN,
+        saltEdgeConnectionId,
+        name: 'Savings',
+      });
+      const revokedConnection = {
+        id: 'conn-uuid-123',
+        saltEdgeConnectionId,
+        status: 'REVOKED',
+        providerName: 'Fake Bank Simple',
+      };
+
+      prisma.account.findUnique.mockResolvedValue(account1 as any);
+      prisma.bankingConnection.findFirst.mockResolvedValue(revokedConnection as any);
+      prisma.account.findMany.mockResolvedValue([account1, account2] as any);
+
+      // Act & Assert
+      try {
+        await service.restoreAccount(account1.id, userId);
+        fail('Expected ConflictException to be thrown');
+      } catch (error) {
+        expect(error.status).toBe(409);
+        expect(error.response.siblingAccountCount).toBe(2);
+        expect(error.response.suggestion.toLowerCase()).toContain('re-link');
+      }
     });
 
     it('should throw BadRequestException if account is not hidden', async () => {
@@ -800,9 +906,13 @@ describe('AccountsService', () => {
       await expect(service.restoreAccount(account.id, 'user-123')).rejects.toThrow(ForbiddenException);
     });
 
-    it('should allow admin to restore any hidden account', async () => {
+    it('should allow admin to restore any hidden manual account', async () => {
       // Arrange
-      const account = AccountFactory.buildForUser('other-user', { status: AccountStatus.HIDDEN });
+      const account = AccountFactory.buildForUser('other-user', {
+        status: AccountStatus.HIDDEN,
+        source: AccountSource.MANUAL,
+        saltEdgeConnectionId: null,
+      });
       const restoredAccount = { ...account, status: AccountStatus.ACTIVE };
 
       prisma.account.findUnique.mockResolvedValue(account as any);
@@ -1370,6 +1480,190 @@ describe('AccountsService', () => {
       expect(result.isManualAccount).toBe(false);
       expect(result.displayName).toBe('Chase Bank - Checking');
       expect(result.maskedAccountNumber).toBe('****5678');
+    });
+  });
+
+  /**
+   * checkRestoreEligibility Tests
+   *
+   * TDD RED Phase: Tests for checking if a hidden account can be restored
+   * with a simple status change or requires re-linking the banking connection.
+   *
+   * Key scenarios:
+   * 1. Manual account (HIDDEN) → canRestore: true, requiresRelink: false
+   * 2. Banking account with REVOKED connection → canRestore: false, requiresRelink: true
+   * 3. Banking account with AUTHORIZED connection → canRestore: true, requiresRelink: false
+   * 4. Find sibling accounts on same connection
+   */
+  describe('checkRestoreEligibility', () => {
+    it('should return canRestore=true for hidden manual account', async () => {
+      // Arrange
+      const userId = 'user-123';
+      const account = AccountFactory.buildForUser(userId, {
+        status: AccountStatus.HIDDEN,
+        source: AccountSource.MANUAL,
+        saltEdgeConnectionId: null,
+      });
+      prisma.account.findUnique.mockResolvedValue(account as any);
+
+      // Act
+      const result = await service.checkRestoreEligibility(account.id, userId);
+
+      // Assert
+      expect(result.canRestore).toBe(true);
+      expect(result.requiresRelink).toBe(false);
+      expect(result.isBankingAccount).toBe(false);
+      expect(result.currentStatus).toBe(AccountStatus.HIDDEN);
+      expect(result.totalConnectionAccounts).toBe(1);
+    });
+
+    it('should return requiresRelink=true for banking account with REVOKED connection', async () => {
+      // Arrange
+      const userId = 'user-123';
+      const saltEdgeConnectionId = 'saltedge_conn_123';
+      const account = AccountFactory.buildSaltEdgeAccount({
+        userId,
+        status: AccountStatus.HIDDEN,
+        saltEdgeConnectionId,
+      });
+      const revokedConnection = {
+        id: 'conn-uuid-123',
+        saltEdgeConnectionId,
+        status: 'REVOKED',
+        providerName: 'Fake Bank Simple',
+      };
+
+      prisma.account.findUnique.mockResolvedValue(account as any);
+      prisma.bankingConnection.findFirst.mockResolvedValue(revokedConnection as any);
+      prisma.account.findMany.mockResolvedValue([account] as any); // sibling accounts
+
+      // Act
+      const result = await service.checkRestoreEligibility(account.id, userId);
+
+      // Assert
+      expect(result.canRestore).toBe(false);
+      expect(result.requiresRelink).toBe(true);
+      expect(result.isBankingAccount).toBe(true);
+      expect(result.connectionStatus).toBe('REVOKED');
+      expect(result.relinkReason).toContain('revoked');
+      expect(result.providerName).toBe('Fake Bank Simple');
+    });
+
+    it('should return canRestore=true for banking account with AUTHORIZED connection', async () => {
+      // Arrange
+      const userId = 'user-123';
+      const saltEdgeConnectionId = 'saltedge_conn_123';
+      const account = AccountFactory.buildSaltEdgeAccount({
+        userId,
+        status: AccountStatus.HIDDEN,
+        saltEdgeConnectionId,
+      });
+      const authorizedConnection = {
+        id: 'conn-uuid-123',
+        saltEdgeConnectionId,
+        status: 'AUTHORIZED',
+        providerName: 'Fake Bank Simple',
+      };
+
+      prisma.account.findUnique.mockResolvedValue(account as any);
+      prisma.bankingConnection.findFirst.mockResolvedValue(authorizedConnection as any);
+      prisma.account.findMany.mockResolvedValue([account] as any);
+
+      // Act
+      const result = await service.checkRestoreEligibility(account.id, userId);
+
+      // Assert
+      expect(result.canRestore).toBe(true);
+      expect(result.requiresRelink).toBe(false);
+      expect(result.isBankingAccount).toBe(true);
+      expect(result.connectionStatus).toBe('AUTHORIZED');
+    });
+
+    it('should return sibling accounts when connection has multiple accounts', async () => {
+      // Arrange
+      const userId = 'user-123';
+      const saltEdgeConnectionId = 'saltedge_conn_123';
+      const account1 = AccountFactory.buildSaltEdgeAccount({
+        id: 'account-1',
+        userId,
+        status: AccountStatus.HIDDEN,
+        saltEdgeConnectionId,
+        name: 'Checking Account',
+      });
+      const account2 = AccountFactory.buildSaltEdgeAccount({
+        id: 'account-2',
+        userId,
+        status: AccountStatus.HIDDEN,
+        saltEdgeConnectionId,
+        name: 'Savings Account',
+      });
+      const account3 = AccountFactory.buildSaltEdgeAccount({
+        id: 'account-3',
+        userId,
+        status: AccountStatus.HIDDEN,
+        saltEdgeConnectionId,
+        name: 'Credit Card',
+      });
+      const revokedConnection = {
+        id: 'conn-uuid-123',
+        saltEdgeConnectionId,
+        status: 'REVOKED',
+        providerName: 'Fake Bank Simple',
+      };
+
+      prisma.account.findUnique.mockResolvedValue(account1 as any);
+      prisma.bankingConnection.findFirst.mockResolvedValue(revokedConnection as any);
+      prisma.account.findMany.mockResolvedValue([account1, account2, account3] as any);
+
+      // Act
+      const result = await service.checkRestoreEligibility(account1.id, userId);
+
+      // Assert
+      expect(result.totalConnectionAccounts).toBe(3);
+      expect(result.siblingAccounts).toHaveLength(2); // Excludes the account being checked
+      expect(result.siblingAccounts?.map(s => s.name)).toContain('Savings Account');
+      expect(result.siblingAccounts?.map(s => s.name)).toContain('Credit Card');
+    });
+
+    it('should throw NotFoundException when account does not exist', async () => {
+      // Arrange
+      const userId = 'user-123';
+      const accountId = 'nonexistent-id';
+      prisma.account.findUnique.mockResolvedValue(null);
+
+      // Act & Assert
+      await expect(
+        service.checkRestoreEligibility(accountId, userId)
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw ForbiddenException when user does not own the account', async () => {
+      // Arrange
+      const userId = 'user-123';
+      const otherUserId = 'user-456';
+      const account = AccountFactory.buildForUser(otherUserId, {
+        status: AccountStatus.HIDDEN,
+      });
+      prisma.account.findUnique.mockResolvedValue(account as any);
+
+      // Act & Assert
+      await expect(
+        service.checkRestoreEligibility(account.id, userId)
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should throw BadRequestException when account is not hidden', async () => {
+      // Arrange
+      const userId = 'user-123';
+      const account = AccountFactory.buildForUser(userId, {
+        status: AccountStatus.ACTIVE, // Not hidden
+      });
+      prisma.account.findUnique.mockResolvedValue(account as any);
+
+      // Act & Assert
+      await expect(
+        service.checkRestoreEligibility(account.id, userId)
+      ).rejects.toThrow(BadRequestException);
     });
   });
 });

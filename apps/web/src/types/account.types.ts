@@ -340,3 +340,89 @@ export interface DeletionEligibilityResponse {
   /** Total count of linked transfers */
   linkedTransferCount: number;
 }
+
+// ============================================================================
+// RESTORE ELIGIBILITY TYPES
+// ============================================================================
+
+/**
+ * Sibling account that shares the same banking connection
+ */
+export interface SiblingAccount {
+  /** Account ID */
+  id: string;
+
+  /** Account name */
+  name: string;
+
+  /** Current status */
+  status: AccountStatus;
+
+  /** Account type */
+  type: string;
+
+  /** Current balance */
+  currentBalance: number;
+
+  /** Currency code */
+  currency: string;
+}
+
+/**
+ * Response from restore eligibility check
+ * Determines if a hidden account can be restored or requires re-linking
+ */
+export interface RestoreEligibilityResponse {
+  /** Whether the account can be restored with a simple status change */
+  canRestore: boolean;
+
+  /** Whether the account requires re-linking to restore banking access */
+  requiresRelink: boolean;
+
+  /** Current status of the account */
+  currentStatus: AccountStatus;
+
+  /** Account source (MANUAL or SALTEDGE) */
+  source: AccountSource;
+
+  /** Whether this is a banking account (connected to provider) */
+  isBankingAccount: boolean;
+
+  /** Banking connection status (if banking account) */
+  connectionStatus?: string;
+
+  /** Human-readable reason why re-linking is required */
+  relinkReason?: string;
+
+  /** List of sibling accounts on the same banking connection */
+  siblingAccounts?: SiblingAccount[];
+
+  /** Total count of accounts on this connection */
+  totalConnectionAccounts: number;
+
+  /** Banking provider name */
+  providerName?: string;
+}
+
+/**
+ * Error response when restore requires re-linking
+ */
+export interface RelinkRequiredError {
+  /** HTTP status code (409) */
+  statusCode: number;
+
+  /** Error message */
+  message: string;
+
+  /** Error code */
+  error: 'RELINK_REQUIRED';
+
+  /** Number of sibling accounts that will need re-linking */
+  siblingAccountCount: number;
+
+  /** Suggested action */
+  suggestion: string;
+
+  /** Banking provider name */
+  providerName?: string;
+}

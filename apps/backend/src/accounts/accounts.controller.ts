@@ -25,6 +25,7 @@ import { CreateAccountDto } from './dto/create-account.dto';
 import { UpdateAccountDto } from './dto/update-account.dto';
 import { AccountResponseDto, AccountSummaryDto, FinancialSummaryDto } from './dto/account-response.dto';
 import { DeletionEligibilityResponseDto, DeletionBlockedErrorDto } from './dto/deletion-eligibility.dto';
+import { RestoreEligibilityResponseDto, RestoreRequiresRelinkErrorDto } from './dto/restore-eligibility.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { CurrentUserPayload } from '../auth/types/current-user.types';
@@ -306,12 +307,49 @@ export class AccountsController {
     return this.accountsService.hideAccount(id, user.id, undefined, user.role);
   }
 
+  @Get(':id/restore-eligibility')
+  @ApiOperation({
+    summary: 'Check if hidden account can be restored',
+    description:
+      'Returns restore eligibility information for a hidden account. ' +
+      'For manual accounts, simple restore is always possible. ' +
+      'For banking accounts (SaltEdge/Plaid), checks if the connection is still valid. ' +
+      'If the connection is revoked/failed, re-linking is required.',
+  })
+  @ApiParam({ name: 'id', description: 'Account UUID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Restore eligibility check result',
+    type: RestoreEligibilityResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Only hidden accounts can be checked',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - can only check own accounts',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Account not found',
+  })
+  async checkRestoreEligibility(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: CurrentUserPayload,
+  ): Promise<RestoreEligibilityResponseDto> {
+    // TODO: Add familyId support when User entity is migrated to Prisma
+    return this.accountsService.checkRestoreEligibility(id, user.id, undefined, user.role);
+  }
+
   @Patch(':id/restore')
   @ApiOperation({
     summary: 'Restore hidden account',
     description:
       'Restores a hidden account by setting status back to ACTIVE. ' +
-      'Only works on accounts with HIDDEN status.',
+      'For banking accounts, checks if the connection is still valid. ' +
+      'If the banking connection is revoked/failed, returns 409 requiring re-link. ' +
+      'Use /accounts/:id/restore-eligibility first to check before attempting restore.',
   })
   @ApiParam({ name: 'id', description: 'Account UUID' })
   @ApiResponse({
@@ -330,6 +368,11 @@ export class AccountsController {
   @ApiResponse({
     status: 404,
     description: 'Account not found',
+  })
+  @ApiResponse({
+    status: 409,
+    description: 'Banking connection is revoked - re-linking required',
+    type: RestoreRequiresRelinkErrorDto,
   })
   async restoreAccount(
     @Param('id', ParseUUIDPipe) id: string,

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../core/database/prisma/prisma.service';
 import { BalanceNormalizerService } from '../core/finance/balance-normalizer.service';
 import {
@@ -20,6 +20,10 @@ import {
   DeletionEligibilityResponseDto,
   LinkedTransferDto,
 } from './dto/deletion-eligibility.dto';
+import {
+  RestoreEligibilityResponseDto,
+  SiblingAccountDto,
+} from './dto/restore-eligibility.dto';
 import { AccountSettings } from '../core/database/types/metadata.types';
 
 @Injectable()
@@ -637,6 +641,10 @@ export class AccountsService {
    * Restore a hidden account.
    * Sets status back to ACTIVE, making it visible in account lists again.
    *
+   * For banking accounts (SaltEdge/Plaid), this method checks if the connection
+   * is still valid. If the connection is revoked/failed, it throws a ConflictException
+   * requiring the user to re-link their bank account.
+   *
    * @param id - Account ID
    * @param userId - User ID (for personal accounts)
    * @param familyId - Family ID (for family accounts)
@@ -645,6 +653,7 @@ export class AccountsService {
    * @throws NotFoundException if account doesn't exist
    * @throws ForbiddenException if access denied
    * @throws BadRequestException if account is not hidden
+   * @throws ConflictException if banking connection is revoked (re-link required)
    */
   async restoreAccount(
     id: string,
@@ -658,12 +667,137 @@ export class AccountsService {
       throw new BadRequestException('Only hidden accounts can be restored');
     }
 
+    // Check if this is a banking account that requires connection validation
+    const isBankingAccount = !!(
+      account.saltEdgeConnectionId ||
+      account.source === AccountSource.SALTEDGE ||
+      account.source === AccountSource.PLAID
+    );
+
+    if (isBankingAccount && account.saltEdgeConnectionId) {
+      // Check the banking connection status
+      const eligibility = await this.checkRestoreEligibility(id, userId, familyId, userRole);
+
+      if (eligibility.requiresRelink) {
+        throw new ConflictException({
+          message: `Banking connection is ${eligibility.connectionStatus?.toLowerCase()}. Re-linking required to restore accounts.`,
+          error: 'RELINK_REQUIRED',
+          siblingAccountCount: eligibility.totalConnectionAccounts,
+          providerName: eligibility.providerName,
+          suggestion: `Click "Re-link Bank" to reconnect your bank and restore all ${eligibility.totalConnectionAccounts} accounts.`,
+        });
+      }
+    }
+
     const updatedAccount = await this.prisma.account.update({
       where: { id },
       data: { status: AccountStatus.ACTIVE },
     });
 
     return this.toResponseDto(updatedAccount);
+  }
+
+  /**
+   * Check if a hidden account can be restored.
+   *
+   * For manual accounts: Simple restore (status change only)
+   * For banking accounts: Check connection status
+   *   - If AUTHORIZED: Can restore normally
+   *   - If REVOKED/FAILED: Requires re-linking
+   *
+   * Also identifies sibling accounts that share the same banking connection.
+   *
+   * @param id - Account ID
+   * @param userId - User ID (for personal accounts)
+   * @param familyId - Family ID (for family accounts)
+   * @param userRole - User role (ADMIN can check any account)
+   * @returns Restore eligibility details
+   * @throws NotFoundException if account doesn't exist
+   * @throws ForbiddenException if access denied
+   * @throws BadRequestException if account is not hidden
+   */
+  async checkRestoreEligibility(
+    id: string,
+    userId?: string,
+    familyId?: string,
+    userRole?: UserRole
+  ): Promise<RestoreEligibilityResponseDto> {
+    const account = await this.verifyAccountAccess(id, userId, familyId, userRole);
+
+    // Only hidden accounts need restore eligibility check
+    if (account.status !== AccountStatus.HIDDEN) {
+      throw new BadRequestException('Only hidden accounts can be checked for restore eligibility');
+    }
+
+    // Determine if this is a banking account
+    const isBankingAccount = !!(
+      account.saltEdgeConnectionId ||
+      account.source === AccountSource.SALTEDGE ||
+      account.source === AccountSource.PLAID
+    );
+
+    // For manual accounts, simple restore is always possible
+    if (!isBankingAccount || !account.saltEdgeConnectionId) {
+      return {
+        canRestore: true,
+        requiresRelink: false,
+        currentStatus: account.status,
+        source: account.source,
+        isBankingAccount: false,
+        totalConnectionAccounts: 1,
+      };
+    }
+
+    // For banking accounts, check the connection status
+    const connection = await this.prisma.bankingConnection.findFirst({
+      where: {
+        saltEdgeConnectionId: account.saltEdgeConnectionId,
+      },
+    });
+
+    // Find sibling accounts on the same connection
+    const allConnectionAccounts = await this.prisma.account.findMany({
+      where: {
+        saltEdgeConnectionId: account.saltEdgeConnectionId,
+      },
+    });
+
+    // Build sibling accounts list (exclude current account)
+    const siblingAccounts: SiblingAccountDto[] = allConnectionAccounts
+      .filter(acc => acc.id !== id)
+      .map(acc => ({
+        id: acc.id,
+        name: acc.name,
+        status: acc.status,
+        type: acc.type,
+        currentBalance: acc.currentBalance.toNumber(),
+        currency: acc.currency,
+      }));
+
+    const connectionStatus = connection?.status || 'UNKNOWN';
+    const isConnectionActive = connectionStatus === 'AUTHORIZED' || connectionStatus === 'IN_PROGRESS';
+
+    // Determine if re-linking is required
+    const requiresRelink = !isConnectionActive;
+    const canRestore = isConnectionActive;
+
+    let relinkReason: string | undefined;
+    if (requiresRelink) {
+      relinkReason = `The banking connection was ${connectionStatus.toLowerCase()}. You need to re-link your bank to restore these accounts.`;
+    }
+
+    return {
+      canRestore,
+      requiresRelink,
+      currentStatus: account.status,
+      source: account.source,
+      isBankingAccount: true,
+      connectionStatus,
+      relinkReason,
+      siblingAccounts: siblingAccounts.length > 0 ? siblingAccounts : undefined,
+      totalConnectionAccounts: allConnectionAccounts.length,
+      providerName: connection?.providerName ?? account.institutionName ?? undefined,
+    };
   }
 
   /**

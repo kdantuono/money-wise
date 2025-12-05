@@ -26,17 +26,19 @@ import {
   ErrorAlert,
   ErrorBoundary,
 } from '@/components/banking';
+import { OAuthPopupModal } from '@/components/banking/OAuthPopupModal';
 import { AddAccountDropdown, ManualAccountForm, EditAccountForm, DeleteAccountConfirmation } from '@/components/accounts';
 import {
   useBanking,
+  useBankingStore,
   useAccounts,
   useBankingError,
   useBankingLoading,
 } from '@/store';
-import { accountsClient, type Account, type CreateAccountRequest, type UpdateAccountRequest } from '@/services/accounts.client';
+import { accountsClient, RelinkRequiredError, type Account, type CreateAccountRequest, type UpdateAccountRequest } from '@/services/accounts.client';
 import { BankingAccount, BankingSyncStatus, BankingConnectionStatus, BankingProvider } from '@/lib/banking-types';
 import { AccountStatus, type DeletionEligibilityResponse } from '@/types/account.types';
-import { Wallet, RefreshCw, Eye, EyeOff, RotateCcw, Trash2 } from 'lucide-react';
+import { Wallet, RefreshCw, Eye, EyeOff, RotateCcw, Trash2, AlertCircle, LinkIcon } from 'lucide-react';
 
 /**
  * AccountsPage Component
@@ -82,6 +84,25 @@ export default function AccountsPage() {
 
   // Hidden accounts visibility
   const [showHiddenAccounts, setShowHiddenAccounts] = useState(false);
+
+  // Sibling account count for revoke warning
+  const [revokeSiblingCount, setRevokeSiblingCount] = useState(0);
+
+  // Re-link prompt state (for banking accounts with revoked connections)
+  const [relinkPrompt, setRelinkPrompt] = useState<{
+    accountId: string;
+    message: string;
+    siblingAccountCount: number;
+    providerName?: string;
+    suggestion?: string;
+  } | null>(null);
+
+  // OAuth popup modal state
+  const [oauthPopup, setOAuthPopup] = useState<{
+    redirectUrl: string;
+    connectionId: string;
+    title: string;
+  } | null>(null);
 
   /**
    * Fetch ALL accounts from /api/accounts endpoint
@@ -221,6 +242,19 @@ export default function AccountsPage() {
     // Find in allAccounts (source of truth), then convert to BankingAccount format
     const account = allAccounts.find((acc) => acc.id === accountId);
     if (account) {
+      // Calculate sibling account count (other accounts on the same connection)
+      // This is important: revoking one account will revoke ALL accounts on the same connection
+      let siblingCount = 0;
+      if (account.saltEdgeConnectionId) {
+        siblingCount = allAccounts.filter(
+          (acc) =>
+            acc.id !== accountId &&
+            acc.saltEdgeConnectionId === account.saltEdgeConnectionId &&
+            acc.status !== AccountStatus.HIDDEN
+        ).length;
+      }
+      setRevokeSiblingCount(siblingCount);
+
       // Convert to BankingAccount format for RevokeConfirmation component
       // Using type assertion as Account has all properties needed for display
       const bankingAccount = {
@@ -253,6 +287,7 @@ export default function AccountsPage() {
       setLocalError(null);
       await revokeConnection(accountToRevoke.id);
       setAccountToRevoke(null);
+      setRevokeSiblingCount(0);
       await fetchAllAccounts();
       await fetchBankingAccounts();
     } catch (err) {
@@ -262,6 +297,7 @@ export default function AccountsPage() {
           : 'Failed to revoke account access. Please try again.';
       setLocalError(errorMessage);
       setAccountToRevoke(null);
+      setRevokeSiblingCount(0);
     }
   };
 
@@ -270,6 +306,7 @@ export default function AccountsPage() {
    */
   const handleCancelRevoke = () => {
     setAccountToRevoke(null);
+    setRevokeSiblingCount(0);
   };
 
   /**
@@ -421,6 +458,7 @@ export default function AccountsPage() {
 
   /**
    * Handle restore hidden account
+   * For banking accounts with revoked connections, shows a re-link prompt
    */
   const handleRestoreAccount = async (accountId: string) => {
     try {
@@ -429,14 +467,76 @@ export default function AccountsPage() {
       await accountsClient.restoreAccount(accountId);
       await fetchAllAccounts();
     } catch (err) {
-      const errorMessage =
-        err instanceof Error
-          ? err.message
-          : 'Failed to restore account. Please try again.';
-      setLocalError(errorMessage);
+      // Check if this is a re-link required error (banking connection revoked)
+      if (err instanceof RelinkRequiredError) {
+        setRelinkPrompt({
+          accountId,
+          message: err.message,
+          siblingAccountCount: err.siblingAccountCount,
+          providerName: err.providerName,
+          suggestion: err.suggestion,
+        });
+      } else {
+        const errorMessage =
+          err instanceof Error
+            ? err.message
+            : 'Failed to restore account. Please try again.';
+        setLocalError(errorMessage);
+      }
     } finally {
       setIsRestoringAccount(false);
     }
+  };
+
+  /**
+   * Handle re-link bank action from the prompt
+   * Opens the OAuth flow in a popup modal instead of redirecting
+   */
+  const handleRelinkBank = async () => {
+    try {
+      setLocalError(null);
+      // Get the initiateLinking function from the store
+      const { initiateLinking } = useBankingStore.getState();
+
+      // Start the OAuth flow - get the redirect URL
+      const { redirectUrl, connectionId } = await initiateLinking();
+
+      // Close the re-link prompt and show the OAuth popup modal
+      setRelinkPrompt(null);
+      setOAuthPopup({
+        redirectUrl,
+        connectionId,
+        title: 'Re-link Bank Account',
+      });
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error
+          ? err.message
+          : 'Failed to initiate re-linking. Please try again.';
+      setLocalError(errorMessage);
+      setRelinkPrompt(null);
+    }
+  };
+
+  /**
+   * Handle OAuth popup success - refresh accounts
+   */
+  const handleOAuthSuccess = async () => {
+    setOAuthPopup(null);
+    try {
+      await fetchAllAccounts();
+      await fetchBankingAccounts();
+    } catch (err) {
+      console.error('Failed to refresh accounts after OAuth:', err);
+      setLocalError('Accounts linked successfully. Please refresh the page to see them.');
+    }
+  };
+
+  /**
+   * Handle OAuth popup cancel
+   */
+  const handleOAuthCancel = () => {
+    setOAuthPopup(null);
   };
 
   /**
@@ -742,6 +842,7 @@ export default function AccountsPage() {
             account={accountToRevoke}
             onConfirm={handleConfirmRevoke}
             onCancel={handleCancelRevoke}
+            siblingAccountCount={revokeSiblingCount}
           />
         )}
 
@@ -772,6 +873,90 @@ export default function AccountsPage() {
             isCheckingEligibility={isCheckingEligibility}
             onHide={handleHideAccount}
             isHiding={isHidingAccount}
+          />
+        )}
+
+        {/* Re-link Bank Prompt (for banking accounts with revoked connections) */}
+        {relinkPrompt && (
+          <div
+            className="fixed inset-0 z-50 overflow-y-auto"
+            aria-labelledby="relink-modal-title"
+            role="dialog"
+            aria-modal="true"
+          >
+            <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+              {/* Backdrop with blur effect */}
+              <div
+                className="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity"
+                aria-hidden="true"
+                onClick={() => setRelinkPrompt(null)}
+              />
+
+              {/* Modal Content */}
+              <div className="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg">
+                <div className="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
+                  <div className="sm:flex sm:items-start">
+                    <div className="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-amber-100 sm:mx-0 sm:h-10 sm:w-10">
+                      <AlertCircle className="h-6 w-6 text-amber-600" aria-hidden="true" />
+                    </div>
+                    <div className="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
+                      <h3
+                        className="text-base font-semibold leading-6 text-gray-900"
+                        id="relink-modal-title"
+                      >
+                        Re-linking Required
+                      </h3>
+                      <div className="mt-2">
+                        <p className="text-sm text-gray-500">
+                          {relinkPrompt.message}
+                        </p>
+                        {relinkPrompt.siblingAccountCount > 1 && (
+                          <p className="mt-2 text-sm text-gray-500">
+                            This will restore <span className="font-medium">{relinkPrompt.siblingAccountCount} accounts</span>
+                            {relinkPrompt.providerName && (
+                              <> from <span className="font-medium">{relinkPrompt.providerName}</span></>
+                            )}.
+                          </p>
+                        )}
+                        {relinkPrompt.suggestion && (
+                          <p className="mt-3 text-sm text-blue-600 bg-blue-50 p-3 rounded-md">
+                            {relinkPrompt.suggestion}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
+                  <button
+                    type="button"
+                    className="inline-flex w-full justify-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 sm:ml-3 sm:w-auto"
+                    onClick={handleRelinkBank}
+                  >
+                    <LinkIcon className="h-4 w-4 mr-2" aria-hidden="true" />
+                    Re-link Bank
+                  </button>
+                  <button
+                    type="button"
+                    className="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto"
+                    onClick={() => setRelinkPrompt(null)}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* OAuth Popup Modal - for re-linking with blurred background */}
+        {oauthPopup && (
+          <OAuthPopupModal
+            redirectUrl={oauthPopup.redirectUrl}
+            connectionId={oauthPopup.connectionId}
+            title={oauthPopup.title}
+            onSuccess={handleOAuthSuccess}
+            onCancel={handleOAuthCancel}
           />
         )}
       </div>

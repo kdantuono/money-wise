@@ -13,6 +13,7 @@ import {
   AccountSource,
   FinancialSummary,
   DeletionEligibilityResponse,
+  RestoreEligibilityResponse,
 } from '../types/account.types';
 
 // =============================================================================
@@ -171,6 +172,19 @@ export class LinkedTransfersError extends AccountsApiError {
     super(message, 400, 'LINKED_TRANSFERS_EXIST');
     this.name = 'LinkedTransfersError';
     Object.setPrototypeOf(this, LinkedTransfersError.prototype);
+  }
+}
+
+export class RelinkRequiredError extends AccountsApiError {
+  constructor(
+    message: string = 'Banking connection is revoked. Re-linking required.',
+    public siblingAccountCount: number = 0,
+    public providerName?: string,
+    public suggestion?: string
+  ) {
+    super(message, 409, 'RELINK_REQUIRED');
+    this.name = 'RelinkRequiredError';
+    Object.setPrototypeOf(this, RelinkRequiredError.prototype);
   }
 }
 
@@ -346,13 +360,75 @@ export const accountsClient = {
   },
 
   /**
+   * Check if a hidden account can be restored
+   * Returns eligibility status and re-linking requirements for banking accounts
+   */
+  async checkRestoreEligibility(
+    accountId: string
+  ): Promise<RestoreEligibilityResponse> {
+    return request<RestoreEligibilityResponse>(
+      `/api/accounts/${accountId}/restore-eligibility`,
+      { method: 'GET' }
+    );
+  },
+
+  /**
    * Restore a hidden account
    * Sets status back to ACTIVE
+   * @throws RelinkRequiredError if banking connection is revoked
    */
   async restoreAccount(accountId: string): Promise<Account> {
-    return request<Account>(`/api/accounts/${accountId}/restore`, {
+    const baseUrl = getApiBaseUrl();
+    const url = `${baseUrl}/api/accounts/${accountId}/restore`;
+
+    const response = await fetch(url, {
       method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
     });
+
+    if (!response.ok) {
+      // Check for RELINK_REQUIRED error (409)
+      if (response.status === 409) {
+        const errorData = await response.json();
+        if (errorData?.error === 'RELINK_REQUIRED') {
+          throw new RelinkRequiredError(
+            errorData.message,
+            errorData.siblingAccountCount,
+            errorData.providerName,
+            errorData.suggestion
+          );
+        }
+      }
+
+      // Fall through to generic error handling
+      let errorData: ApiErrorResponse | null = null;
+      try {
+        const text = await response.text();
+        if (text) errorData = JSON.parse(text);
+      } catch {
+        // Failed to parse
+      }
+
+      const message = errorData?.message
+        ? Array.isArray(errorData.message)
+          ? errorData.message.join(', ')
+          : errorData.message
+        : response.statusText || 'An error occurred';
+
+      switch (response.status) {
+        case 400:
+          throw new ValidationError(message);
+        case 401:
+          throw new AuthenticationError(message);
+        case 404:
+          throw new NotFoundError(message);
+        default:
+          throw new AccountsApiError(message, response.status, errorData?.error);
+      }
+    }
+
+    return response.json();
   },
 };
 

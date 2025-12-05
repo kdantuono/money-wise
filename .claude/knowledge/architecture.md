@@ -334,6 +334,69 @@ Account Lifecycle:
 
 ---
 
+## Banking Integration (SaltEdge v6)
+
+### OAuth Flow Architecture
+
+MoneyWise uses SaltEdge v6 API with popup-based OAuth for improved UX:
+
+```
+┌────────────────┐     ┌─────────────────┐     ┌──────────────┐
+│  Accounts Page │ ──▶ │ OAuthPopupModal │ ──▶ │ SaltEdge     │
+│ (blurred bg)   │     │ (status display)│     │ Connect      │
+└────────────────┘     └────────┬────────┘     └──────┬───────┘
+                                │                      │
+                                │ postMessage          │ OAuth
+                                ◀──────────────────────┘
+```
+
+**Key Features**:
+- `javascript_callback_type: 'post_message'` enables popup communication
+- Parent page shows modal with blurred backdrop during OAuth
+- SaltEdge sends completion/error via `window.postMessage`
+- Accounts auto-refresh on successful link
+
+### Account Re-link Deduplication
+
+When users re-authorize a revoked banking connection, SaltEdge generates **new account IDs**. The backend handles this with fallback matching:
+
+```typescript
+// 1. Try exact match by saltEdgeAccountId
+existingAccount = await findFirst({ saltEdgeAccountId: newId });
+
+// 2. Fallback: Match HIDDEN accounts by characteristics
+if (!existingAccount) {
+  existingAccount = await findFirst({
+    status: 'HIDDEN',
+    name: account.name,
+    institutionName: account.bankName,
+    type: account.type
+  });
+}
+
+// 3. Update saltEdgeAccountId and restore to ACTIVE
+if (existingAccount) {
+  await update({
+    saltEdgeAccountId: newId,
+    saltEdgeConnectionId: newConnectionId,
+    status: 'ACTIVE'
+  });
+}
+```
+
+### Banking Components
+
+| Component | Purpose |
+|-----------|---------|
+| `OAuthPopupModal` | Popup OAuth with blurred backdrop |
+| `BankingLinkButton` | Initial bank linking button |
+| `RevokeConfirmation` | Disconnect confirmation with sibling warning |
+| `AccountList` | Display linked accounts with sync status |
+
+**Reference**: [Salt Edge Connect Widget Docs](https://docs.saltedge.com/v6/)
+
+---
+
 ## Performance Optimizations
 
 ### Backend
