@@ -566,6 +566,32 @@ export const bankingClient = {
   },
 
   /**
+   * Revoke banking connection by account ID
+   *
+   * Alternative method that accepts an Account ID instead of BankingConnection ID.
+   * The backend looks up the BankingConnection using the account's saltEdgeConnectionId.
+   * This is more convenient when the frontend only has access to the Account ID.
+   *
+   * @param accountId Account ID whose banking connection to revoke
+   * @returns void (204 No Content)
+   * @throws {AuthenticationError} If not authenticated
+   * @throws {ValidationError} If account is not linked to banking
+   * @throws {NotFoundError} If account not found
+   * @throws {ServerError} If server error occurs
+   *
+   * @example
+   * ```typescript
+   * await bankingClient.revokeConnectionByAccountId('acc-123');
+   * console.log('Banking connection revoked successfully');
+   * ```
+   */
+  async revokeConnectionByAccountId(accountId: string): Promise<void> {
+    return request<void>(`/api/banking/revoke-by-account/${accountId}`, {
+      method: 'DELETE',
+    });
+  },
+
+  /**
    * Get available banking providers
    *
    * Retrieves a list of banking providers currently available in the system.
