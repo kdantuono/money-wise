@@ -124,5 +124,9 @@ export class CreateAccountDto {
     syncFrequency?: 'daily' | 'hourly' | 'manual';
     notifications?: boolean;
     budgetIncluded?: boolean;
+    /** Account display icon identifier */
+    icon?: string;
+    /** Account display color identifier */
+    color?: string;
   };
 }
