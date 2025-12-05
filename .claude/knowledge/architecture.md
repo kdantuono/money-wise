@@ -264,6 +264,76 @@ CREATE TABLE categories (
 - XSS protection with CSP headers
 - CORS configuration
 
+## Account Lifecycle Management
+
+### Three-Tier Account Status System
+
+MoneyWise implements a YNAB-inspired account lifecycle to preserve data integrity:
+
+```
+┌─────────┐     ┌─────────┐     ┌─────────┐
+│ ACTIVE  │ ──▶ │ HIDDEN  │ ──▶ │ DELETED │
+└─────────┘     └─────────┘     └─────────┘
+     │               │               │
+   Normal        Soft delete     Hard delete
+   operation     Preserves       Only if no
+                 history         linked transfers
+```
+
+### Account Status Values
+
+| Status | Description | Use Case |
+|--------|-------------|----------|
+| ACTIVE | Normal operating account | Default state |
+| HIDDEN | Soft-deleted, preserved | Account no longer needed but has history |
+| INACTIVE | Temporarily disabled | Paused accounts |
+| CLOSED | Officially closed | Bank-closed accounts |
+| ERROR | Sync/connection issues | Linked account problems |
+
+### Transfer Integrity Validation
+
+**Problem**: Deleting an account with transfer transactions creates orphan entries.
+
+**Solution**: Block hard deletion when linked transfers exist.
+
+```typescript
+// API: GET /accounts/:id/deletion-eligibility
+{
+  canDelete: false,
+  canHide: true,
+  blockReason: "Account has 3 transfers linked to other accounts",
+  blockers: [
+    {
+      transactionId: "uuid",
+      linkedAccountName: "Savings",
+      amount: 500,
+      transferRole: "SOURCE"
+    }
+  ]
+}
+```
+
+### Account API Endpoints
+
+```yaml
+Account Lifecycle:
+  GET    /accounts/:id/deletion-eligibility  # Check before delete
+  PATCH  /accounts/:id/hide                   # Soft delete (HIDDEN)
+  PATCH  /accounts/:id/restore                # Restore to ACTIVE
+  DELETE /accounts/:id                        # Hard delete (blocked if transfers)
+```
+
+### Business Rules
+
+1. **HIDDEN accounts** are excluded from active views by default
+2. **Hard delete** requires zero linked transfers
+3. **Hide** preserves all transactions and transfer pairs
+4. **Restore** sets status back to ACTIVE
+
+**Reference**: [YNAB Account Close vs Delete](https://support.ynab.com/en_us/how-to-close-or-delete-an-account-in-ynab-ry_409Gko)
+
+---
+
 ## Performance Optimizations
 
 ### Backend

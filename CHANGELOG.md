@@ -5,6 +5,36 @@ All notable changes to MoneyWise will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Account Lifecycle Management** - Three-tier account deletion system
+  - Added `HIDDEN` status to AccountStatus enum for soft-deleted accounts
+  - New endpoints: `GET /accounts/:id/deletion-eligibility`, `PATCH /accounts/:id/hide`, `PATCH /accounts/:id/restore`
+  - Transfer integrity validation blocks deletion of accounts with linked transfers
+  - `DeletionEligibilityResponseDto` provides detailed blocker information
+  - `LinkedTransferDto` shows which transfers would cause orphan transactions
+
+### Changed
+
+- **Account Deletion** now validates transfer integrity before deletion
+  - Accounts with linked transfers (transferGroupId) cannot be hard-deleted
+  - Returns 400 with `LINKED_TRANSFERS_EXIST` error code and transfer count
+  - Suggests "Hide the account instead" as alternative
+- **Account Listing** now excludes HIDDEN accounts by default
+  - Added `includeHidden` parameter to `findAll()` method
+  - Admin users still see all accounts with proper authorization
+
+### Technical Details
+
+- **Industry Standard**: Implements YNAB-style "Close vs Delete" pattern
+- **Double-Entry Accounting**: Preserves transfer pairs to prevent orphan transactions
+- **Soft Delete**: HIDDEN status preserves history while removing from active views
+- **Authorization**: All new endpoints follow existing ownership verification patterns
+
+---
+
 ## [0.6.1] - 2025-12-03
 
 ### Changed
