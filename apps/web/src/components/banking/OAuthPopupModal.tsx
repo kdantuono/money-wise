@@ -103,7 +103,20 @@ export function OAuthPopupModal({
     (event: MessageEvent) => {
       // Only accept messages from our own origin or SaltEdge
       const isSameOrigin = event.origin === window.location.origin;
-      const isSaltEdge = event.origin.includes('saltedge.com');
+
+      // Properly validate SaltEdge origin to prevent subdomain spoofing
+      // Valid patterns: https://saltedge.com, https://www.saltedge.com, https://connect.saltedge.com
+      let isSaltEdge = false;
+      try {
+        const originUrl = new URL(event.origin);
+        const hostname = originUrl.hostname;
+        // Must be exactly saltedge.com or end with .saltedge.com (subdomain)
+        isSaltEdge =
+          hostname === 'saltedge.com' || hostname.endsWith('.saltedge.com');
+      } catch {
+        // Invalid URL origin - not from SaltEdge
+        isSaltEdge = false;
+      }
 
       if (!isSameOrigin && !isSaltEdge) {
         return;
