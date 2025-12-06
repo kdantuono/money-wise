@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { QuickAddTransaction } from '@/components/transactions/QuickAddTransaction';
 
 // Icons as inline SVG
 function PlusIcon() {
@@ -63,11 +64,19 @@ function LinkIcon() {
 }
 
 
-interface QuickActionButtonProps {
+interface QuickActionLinkProps {
   icon: React.ReactNode;
   label: string;
   description: string;
   href: string;
+  variant?: 'default' | 'secondary' | 'outline';
+}
+
+interface QuickActionButtonProps {
+  icon: React.ReactNode;
+  label: string;
+  description: string;
+  onClick: () => void;
   variant?: 'default' | 'secondary' | 'outline';
 }
 
@@ -77,13 +86,13 @@ const variantStyles = {
   outline: 'border border-input bg-background hover:bg-accent hover:text-accent-foreground',
 } as const;
 
-function QuickActionButton({
+function QuickActionLink({
   icon,
   label,
   description,
   href,
   variant = 'default',
-}: QuickActionButtonProps) {
+}: QuickActionLinkProps) {
   return (
     <Link
       href={href}
@@ -95,6 +104,28 @@ function QuickActionButton({
         <p className="text-xs opacity-80">{description}</p>
       </div>
     </Link>
+  );
+}
+
+function QuickActionButton({
+  icon,
+  label,
+  description,
+  onClick,
+  variant = 'default',
+}: QuickActionButtonProps) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`w-full h-auto py-4 px-4 rounded-md flex items-center gap-3 justify-start transition-colors ${variantStyles[variant]}`}
+    >
+      <div className="flex-shrink-0" aria-hidden="true">{icon}</div>
+      <div className="text-left">
+        <p className="font-medium">{label}</p>
+        <p className="text-xs opacity-80">{description}</p>
+      </div>
+    </button>
   );
 }
 
@@ -127,27 +158,31 @@ export function QuickActions() {
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <QuickActionButton
+          <QuickActionLink
             icon={<LinkIcon />}
             label="Add Account"
             description="Connect bank account"
             href="/banking"
           />
-          <QuickActionButton
-            icon={<PlusIcon />}
-            label="Add Transaction"
-            description="Record income or expense"
-            href="/transactions?action=new"
-            variant="secondary"
+          <QuickAddTransaction
+            trigger={({ onClick }) => (
+              <QuickActionButton
+                icon={<PlusIcon />}
+                label="Add Transaction"
+                description="Record income or expense"
+                onClick={onClick}
+                variant="secondary"
+              />
+            )}
           />
-          <QuickActionButton
+          <QuickActionLink
             icon={<TargetIcon />}
             label="Set Budget"
             description="Set spending limits"
             href="/budgets?action=new"
             variant="outline"
           />
-          <QuickActionButton
+          <QuickActionLink
             icon={<CalendarIcon />}
             label="Schedule Payment"
             description="Plan future payments"

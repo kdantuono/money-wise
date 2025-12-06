@@ -68,14 +68,14 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Left Column */}
         <div className="space-y-6">
-          <SpendingChart data={spending} isLoading={isLoading} />
+          <BudgetProgress />
           <QuickActions />
         </div>
 
         {/* Right Column */}
         <div className="space-y-6">
           <RecentTransactions transactions={transactions} isLoading={isLoading} />
-          <BudgetProgress />
+          <SpendingChart data={spending} isLoading={isLoading} />
         </div>
       </div>
     </div>
