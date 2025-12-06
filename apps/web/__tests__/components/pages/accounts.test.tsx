@@ -78,6 +78,8 @@ describe('AccountsPage', () => {
     mockAccountsClient.getAccounts.mockResolvedValue([]);
   });
 
+  // Note: DOM cleanup is handled globally in vitest.setup.ts
+
   describe('Header', () => {
     it('renders the page heading', () => {
       render(<AccountsPage />);
@@ -815,7 +817,7 @@ describe('AccountsPage', () => {
       });
 
       // Syncable linked accounts should have Revoke button
-      const revokeButton = screen.getByRole('button', { name: /revoke/i });
+      const revokeButton = screen.getByRole('button', { name: /disconnect/i });
       expect(revokeButton).toBeInTheDocument();
     });
 
@@ -836,7 +838,7 @@ describe('AccountsPage', () => {
         expect(screen.getByText('SaltEdge Bank Account')).toBeInTheDocument();
       });
 
-      const revokeButton = screen.getByRole('button', { name: /revoke/i });
+      const revokeButton = screen.getByRole('button', { name: /disconnect/i });
       await user.click(revokeButton);
 
       // Revoke confirmation dialog should appear

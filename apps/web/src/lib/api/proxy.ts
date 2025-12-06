@@ -57,8 +57,10 @@ export async function proxyRequest(
     timeout = 30000,
   } = options;
 
-  // Build backend URL
-  const targetUrl = `${backendUrl}${path}`;
+  // Build backend URL with query parameters from original request
+  const originalUrl = new URL(request.url);
+  const queryString = originalUrl.search; // includes the '?' if params exist
+  const targetUrl = `${backendUrl}${path}${queryString}`;
 
   try {
     // Create AbortController for timeout
