@@ -455,6 +455,67 @@ export class BankingController {
   }
 
   /**
+   * Revoke banking connection by account ID
+   *
+   * Alternative endpoint that accepts an Account ID instead of BankingConnection ID.
+   * Looks up the BankingConnection via the account's saltEdgeConnectionId and revokes it.
+   * This is useful when the frontend only has access to the Account ID.
+   *
+   * @param user Current authenticated user
+   * @param accountId The account ID whose banking connection to revoke
+   * @returns Success response
+   *
+   * @example
+   * DELETE /api/banking/revoke-by-account/acc-123
+   * Authorization: Bearer {token}
+   *
+   * Response: 204 No Content
+   */
+  @Delete('revoke-by-account/:accountId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({
+    summary: 'Revoke banking connection by account ID',
+    description: 'Disconnect a banking provider using the linked account ID instead of connection ID',
+  })
+  @ApiParam({
+    name: 'accountId',
+    type: 'string',
+    format: 'uuid',
+    description: 'Account ID whose banking connection to revoke',
+  })
+  @ApiResponse({
+    status: 204,
+    description: 'Connection revoked successfully',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Account not linked to banking or revoke operation failed',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Account not found',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - invalid or missing token',
+  })
+  async revokeBankingConnectionByAccountId(
+    @CurrentUser() user: CurrentUserPayload,
+    @Param('accountId', new ParseUUIDPipe()) accountId: string,
+  ): Promise<void> {
+    this.logger.log(
+      `Revoking banking connection for account ${accountId}, user ${user.id}`,
+    );
+
+    try {
+      await this.bankingService.revokeBankingConnectionByAccountId(user.id, accountId);
+    } catch (error) {
+      this.logger.error('Failed to revoke banking connection by account ID', error);
+      throw error;
+    }
+  }
+
+  /**
    * Get fake providers for testing
    *
    * Returns a list of fake banking providers (country code XF) for testing.

@@ -597,7 +597,12 @@ export class BankingService {
   }
 
   /**
-   * Store linked accounts in the database
+   * Store linked accounts in the database with deduplication.
+   * If an account with the same saltEdgeAccountId already exists:
+   * - Updates the existing account with new connection info
+   * - Restores HIDDEN accounts to ACTIVE status
+   * - Does NOT create duplicate accounts
+   *
    * @param userId - The user ID
    * @param connectionId - Our internal connection UUID
    * @param accounts - The accounts to store
@@ -622,6 +627,8 @@ export class BankingService {
     }
 
     let storedCount = 0;
+    let updatedCount = 0;
+    let restoredCount = 0;
 
     for (const account of accounts) {
       try {
@@ -629,60 +636,134 @@ export class BankingService {
         const saltEdgeAcctId = String(account.id);
         const saltEdgeConnId = String(saltEdgeConnectionId);
 
-        const createdAccount = await this.prisma.account.create({
-          data: {
+        // Check for existing account with same saltEdgeAccountId (including HIDDEN)
+        let existingAccount = await this.prisma.account.findFirst({
+          where: {
             userId,
-            name: account.name,
-            accountNumber: account.iban,
-            bankingProvider: connection.provider,
             saltEdgeAccountId: saltEdgeAcctId,
-            saltEdgeConnectionId: saltEdgeConnId,
-            syncStatus: BankingSyncStatus.PENDING,
-            institutionName: account.bankName,
-            currentBalance: account.balance,
-            currency: account.currency,
-            source: AccountSource.SALTEDGE,
-            type: this.mapAccountType(account.type),
-            status: AccountStatus.ACTIVE,
-            settings: {
-              bankCountry: account.bankCountry,
-              accountHolderName: account.accountHolderName,
-              accountType: account.type,
-              provider: connection.provider,
-            },
           },
         });
 
-        storedCount++;
-        this.logger.log(`[DEBUG] Stored account: id=${createdAccount.id}, saltEdgeAccountId=${createdAccount.saltEdgeAccountId}, saltEdgeConnectionId=${createdAccount.saltEdgeConnectionId}`);
+        // Fallback: If not found by saltEdgeAccountId, try to match by account characteristics
+        // This handles re-linking where SaltEdge generates NEW account IDs
+        if (!existingAccount) {
+          existingAccount = await this.prisma.account.findFirst({
+            where: {
+              userId,
+              source: AccountSource.SALTEDGE,
+              status: AccountStatus.HIDDEN, // Only match HIDDEN accounts (from revoked connections)
+              name: account.name,
+              institutionName: account.bankName,
+              type: this.mapAccountType(account.type),
+            },
+          });
 
-        // Auto-sync transactions for newly linked account (non-blocking)
-        // NOTE: Using setTimeout(fn, 0) to defer sync to next event loop tick.
-        // This is intentional to avoid race conditions in Jest tests where
-        // spies need to be set up before the sync is triggered.
-        // Alternative: Use a proper async queue system (e.g., BullMQ) for production.
-        // See: https://nodejs.org/en/learn/asynchronous-work/understanding-setimmediate
-        setTimeout(() => {
-          this.syncAccount(userId, createdAccount.id)
-            .then((result) => {
-              this.logger.log(
-                `Initial sync completed for account ${createdAccount.id}: ${result.transactionsSynced} transactions`,
-              );
-            })
-            .catch((syncError) => {
-              this.logger.warn(
-                `Initial sync failed for account ${createdAccount.id}: ${syncError.message}`,
-              );
-            });
-        }, 0);
+          if (existingAccount) {
+            this.logger.log(`[RELINK] Found hidden account by name/institution match: id=${existingAccount.id}, name=${account.name}`);
+          }
+        }
+
+        if (existingAccount) {
+          // Update existing account with new connection info
+          const wasHidden = existingAccount.status === AccountStatus.HIDDEN;
+
+          const updatedAccount = await this.prisma.account.update({
+            where: { id: existingAccount.id },
+            data: {
+              // Update saltEdgeAccountId to the new ID (important for re-link where IDs change)
+              saltEdgeAccountId: saltEdgeAcctId,
+              saltEdgeConnectionId: saltEdgeConnId,
+              bankingProvider: connection.provider,
+              institutionName: account.bankName,
+              currentBalance: account.balance,
+              currency: account.currency,
+              syncStatus: BankingSyncStatus.PENDING,
+              // Restore hidden accounts to active
+              status: AccountStatus.ACTIVE,
+              settings: {
+                ...(existingAccount.settings as object || {}),
+                bankCountry: account.bankCountry,
+                accountHolderName: account.accountHolderName,
+                accountType: account.type,
+                provider: connection.provider,
+              },
+            },
+          });
+
+          if (wasHidden) {
+            restoredCount++;
+            this.logger.log(`[RELINK] Restored hidden account: id=${updatedAccount.id}, saltEdgeAccountId=${saltEdgeAcctId}`);
+          } else {
+            updatedCount++;
+            this.logger.log(`[RELINK] Updated existing account: id=${updatedAccount.id}, saltEdgeAccountId=${saltEdgeAcctId}`);
+          }
+
+          // Sync the restored/updated account
+          setTimeout(() => {
+            this.syncAccount(userId, updatedAccount.id)
+              .then((result) => {
+                this.logger.log(
+                  `Sync completed for account ${updatedAccount.id}: ${result.transactionsSynced} transactions`,
+                );
+              })
+              .catch((syncError) => {
+                this.logger.warn(
+                  `Sync failed for account ${updatedAccount.id}: ${syncError.message}`,
+                );
+              });
+          }, 0);
+        } else {
+          // Create new account
+          const createdAccount = await this.prisma.account.create({
+            data: {
+              userId,
+              name: account.name,
+              accountNumber: account.iban,
+              bankingProvider: connection.provider,
+              saltEdgeAccountId: saltEdgeAcctId,
+              saltEdgeConnectionId: saltEdgeConnId,
+              syncStatus: BankingSyncStatus.PENDING,
+              institutionName: account.bankName,
+              currentBalance: account.balance,
+              currency: account.currency,
+              source: AccountSource.SALTEDGE,
+              type: this.mapAccountType(account.type),
+              status: AccountStatus.ACTIVE,
+              settings: {
+                bankCountry: account.bankCountry,
+                accountHolderName: account.accountHolderName,
+                accountType: account.type,
+                provider: connection.provider,
+              },
+            },
+          });
+
+          storedCount++;
+          this.logger.log(`[NEW] Created account: id=${createdAccount.id}, saltEdgeAccountId=${createdAccount.saltEdgeAccountId}`);
+
+          // Auto-sync transactions for newly linked account (non-blocking)
+          setTimeout(() => {
+            this.syncAccount(userId, createdAccount.id)
+              .then((result) => {
+                this.logger.log(
+                  `Initial sync completed for account ${createdAccount.id}: ${result.transactionsSynced} transactions`,
+                );
+              })
+              .catch((syncError) => {
+                this.logger.warn(
+                  `Initial sync failed for account ${createdAccount.id}: ${syncError.message}`,
+                );
+              });
+          }, 0);
+        }
       } catch (error) {
-        this.logger.warn(`Failed to store account ${account.id}: ${error.message}`);
+        this.logger.warn(`Failed to process account ${account.id}: ${error.message}`);
       }
     }
 
-    this.logger.log(`Stored ${storedCount} accounts from ${accounts.length} retrieved`);
+    this.logger.log(`Account processing complete: ${storedCount} new, ${updatedCount} updated, ${restoredCount} restored from ${accounts.length} total`);
 
-    return storedCount;
+    return storedCount + updatedCount + restoredCount;
   }
 
   /**
@@ -1032,6 +1113,9 @@ export class BankingService {
 
   /**
    * Revoke banking connection
+   *
+   * If the connection no longer exists on the provider side (404),
+   * we still clean up the local records gracefully.
    */
   async revokeBankingConnection(userId: string, connectionId: string): Promise<void> {
     this.logger.log(`Revoking banking connection ${connectionId} for user ${userId}`);
@@ -1053,7 +1137,23 @@ export class BankingService {
       const providerConnectionId = this.getProviderConnectionId(connection);
 
       if (providerConnectionId) {
-        await bankingProvider.revokeConnection(providerConnectionId);
+        try {
+          await bankingProvider.revokeConnection(providerConnectionId);
+        } catch (revokeError) {
+          // If the connection was already deleted on the provider side (404),
+          // continue with local cleanup - this is not an error condition
+          const isNotFoundError = revokeError.name === 'SaltEdgeNotFoundError' ||
+                                  revokeError.statusCode === 404 ||
+                                  revokeError.message?.includes('not found (404)');
+          if (isNotFoundError) {
+            this.logger.warn(
+              `Connection ${providerConnectionId} already deleted on provider side. Proceeding with local cleanup.`,
+            );
+          } else {
+            // Re-throw other errors
+            throw revokeError;
+          }
+        }
       }
 
       // Update connection status
@@ -1062,13 +1162,16 @@ export class BankingService {
         data: { status: BankingConnectionStatus.REVOKED },
       });
 
-      // Mark accounts from this connection as disconnected
+      // Mark accounts from this connection as disconnected and hidden
       const primaryUpdate = await this.prisma.account.updateMany({
         where: {
           userId,
           saltEdgeConnectionId: providerConnectionId ?? undefined,
         },
-        data: { syncStatus: BankingSyncStatus.DISCONNECTED },
+        data: {
+          status: AccountStatus.HIDDEN,
+          syncStatus: BankingSyncStatus.DISCONNECTED,
+        },
       });
 
       // Fallback: if no accounts matched (e.g., provider connection id cleared earlier),
@@ -1080,7 +1183,10 @@ export class BankingService {
             bankingProvider: connection.provider,
             saltEdgeConnectionId: null,
           },
-          data: { syncStatus: BankingSyncStatus.DISCONNECTED },
+          data: {
+            status: AccountStatus.HIDDEN,
+            syncStatus: BankingSyncStatus.DISCONNECTED,
+          },
         });
       }
 
@@ -1089,6 +1195,58 @@ export class BankingService {
       this.logger.error('Failed to revoke banking connection', error);
       throw new BadRequestException(`Failed to revoke connection: ${error.message}`);
     }
+  }
+
+  /**
+   * Revoke banking connection by account ID
+   * Looks up the BankingConnection using the account's saltEdgeConnectionId
+   */
+  async revokeBankingConnectionByAccountId(userId: string, accountId: string): Promise<void> {
+    this.logger.log(`Revoking banking connection for account ${accountId}, user ${userId}`);
+
+    // Find the account
+    const account = await this.prisma.account.findUnique({
+      where: { id: accountId },
+    });
+
+    if (!account) {
+      throw new NotFoundException(`Account not found: ${accountId}`);
+    }
+
+    if (account.userId !== userId) {
+      throw new BadRequestException('Unauthorized');
+    }
+
+    if (!account.saltEdgeConnectionId) {
+      throw new BadRequestException('Account is not linked to a banking connection');
+    }
+
+    // Find the BankingConnection by saltEdgeConnectionId
+    const connection = await this.prisma.bankingConnection.findFirst({
+      where: {
+        saltEdgeConnectionId: account.saltEdgeConnectionId,
+        userId,
+      },
+    });
+
+    if (!connection) {
+      // If no connection found, just mark the account as disconnected and hidden
+      this.logger.warn(`No BankingConnection found for saltEdgeConnectionId: ${account.saltEdgeConnectionId}, marking account as hidden`);
+
+      await this.prisma.account.update({
+        where: { id: accountId },
+        data: {
+          status: AccountStatus.HIDDEN,
+          syncStatus: BankingSyncStatus.DISCONNECTED,
+          saltEdgeConnectionId: null,
+          saltEdgeAccountId: null,
+        },
+      });
+      return;
+    }
+
+    // Use the existing revoke method with the connection ID
+    await this.revokeBankingConnection(userId, connection.id);
   }
 
   /**

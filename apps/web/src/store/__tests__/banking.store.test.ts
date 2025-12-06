@@ -20,6 +20,7 @@ vi.mock('../../services/banking.client', () => ({
     getAccounts: vi.fn(),
     syncAccount: vi.fn(),
     revokeConnection: vi.fn(),
+    revokeConnectionByAccountId: vi.fn(),
   },
   BankingApiError: class extends Error {
     constructor(message: string, public statusCode: number) {
@@ -570,7 +571,7 @@ describe('Banking Store', () => {
 
     it('should handle revoke connection error', async () => {
       const error = new Error('Revoke failed');
-      vi.mocked(bankingClient.bankingClient.revokeConnection).mockRejectedValue(error);
+      vi.mocked(bankingClient.bankingClient.revokeConnectionByAccountId).mockRejectedValue(error);
 
       const { result } = renderHook(() => useBankingStore());
 
@@ -588,7 +589,7 @@ describe('Banking Store', () => {
 
     it('should handle BankingApiError on revoke', async () => {
       const error = new bankingClient.BankingApiError('Revoke API failed', 500);
-      vi.mocked(bankingClient.bankingClient.revokeConnection).mockRejectedValue(error);
+      vi.mocked(bankingClient.bankingClient.revokeConnectionByAccountId).mockRejectedValue(error);
 
       const { result } = renderHook(() => useBankingStore());
 

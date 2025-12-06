@@ -27,7 +27,7 @@ export function createUser(overrides: Partial<UserData> = {}): UserData {
     firstName,
     lastName,
     email: faker.internet.email({ firstName, lastName }).toLowerCase(),
-    password: generateSecurePassword(),
+    password: generateTestPassword(),
     phone: faker.phone.number(),
     dateOfBirth: faker.date.birthdate({ min: 18, max: 65, mode: 'age' }).toISOString().split('T')[0],
     ...overrides,
@@ -123,21 +123,26 @@ export const UserFactory = {
 };
 
 /**
- * Generates a secure password that meets backend requirements
+ * Counter for generating unique test passwords
+ * Uses a simple incrementing counter instead of random values
+ * to avoid CodeQL insecure-randomness warnings in test code.
+ */
+let passwordCounter = 0;
+
+/**
+ * Generates a test password that meets backend requirements
  * - At least 12 characters (backend minimum)
  * - Contains uppercase, lowercase, number, and special character
+ *
+ * Uses deterministic generation with a counter for uniqueness.
+ * This avoids security scanner false positives about insecure randomness
+ * while still providing unique passwords per test user.
  */
-function generateSecurePassword(): string {
-  const uppercase = faker.string.alpha({ length: 3, casing: 'upper' });
-  const lowercase = faker.string.alpha({ length: 3, casing: 'lower' });
-  const numbers = faker.string.numeric(3);
-  const special = '!@#$%^&*';
-  // Use faker's random for test data (not security-sensitive)
-  const specialChar = faker.helpers.arrayElement(special.split(''));
-
-  // Combine and shuffle using faker (total: 3+3+3+1+2 = 12 characters minimum)
-  const parts = [uppercase, lowercase, numbers, specialChar, faker.string.alphanumeric(2)];
-  return faker.helpers.shuffle(parts).join('');
+function generateTestPassword(): string {
+  const count = ++passwordCounter;
+  // Format: TestPass + counter padded to 4 digits + special char
+  // Example: TestPass0001! (12 characters, meets all requirements)
+  return `TestPass${count.toString().padStart(4, '0')}!`;
 }
 
 /**

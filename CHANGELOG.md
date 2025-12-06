@@ -5,6 +5,59 @@ All notable changes to MoneyWise will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+---
+
+## [0.6.2] - 2025-12-05
+
+### Added
+
+- **Account Lifecycle Management** - Three-tier account deletion system
+  - Added `HIDDEN` status to AccountStatus enum for soft-deleted accounts
+  - New endpoints: `GET /accounts/:id/deletion-eligibility`, `PATCH /accounts/:id/hide`, `PATCH /accounts/:id/restore`
+  - Transfer integrity validation blocks deletion of accounts with linked transfers
+  - `DeletionEligibilityResponseDto` provides detailed blocker information
+  - `LinkedTransferDto` shows which transfers would cause orphan transactions
+
+- **OAuth Popup Modal** - Improved banking re-link UX
+  - New `OAuthPopupModal` component for OAuth flows with blurred backdrop
+  - OAuth opens in centered popup while parent page shows status modal
+  - Listens for `postMessage` callbacks from SaltEdge and callback page
+  - Auto-refreshes accounts on successful re-link
+
+### Changed
+
+- **Account Deletion** now validates transfer integrity before deletion
+  - Accounts with linked transfers (transferGroupId) cannot be hard-deleted
+  - Returns 400 with `LINKED_TRANSFERS_EXIST` error code and transfer count
+  - Suggests "Hide the account instead" as alternative
+- **Account Listing** now excludes HIDDEN accounts by default
+  - Added `includeHidden` parameter to `findAll()` method
+  - Admin users still see all accounts with proper authorization
+
+- **Bank Account Re-linking** - Improved deduplication and UX
+  - SaltEdge API now uses `javascript_callback_type: 'post_message'` for popup mode
+  - Backend deduplication handles SaltEdge's new account IDs on re-authorization
+  - Fallback matching by account name + institution + type for HIDDEN accounts
+  - Updates `saltEdgeAccountId` to new value when restoring accounts
+
+### Fixed
+
+- **Account Duplication on Re-link** - Re-linking revoked bank accounts no longer creates duplicate accounts
+- **React Router setState Error** - Fixed "Cannot update Router while rendering" error in banking callback page
+- **Revoke Sibling Warning** - Now shows count of other accounts affected when revoking a banking connection
+
+### Technical Details
+
+- **Industry Standard**: Implements YNAB-style "Close vs Delete" pattern
+- **Double-Entry Accounting**: Preserves transfer pairs to prevent orphan transactions
+- **Soft Delete**: HIDDEN status preserves history while removing from active views
+- **Authorization**: All new endpoints follow existing ownership verification patterns
+- **SaltEdge v6**: Uses `postMessage` for popup OAuth communication per Salt Edge docs
+
+---
+
 ## [0.6.1] - 2025-12-03
 
 ### Changed
