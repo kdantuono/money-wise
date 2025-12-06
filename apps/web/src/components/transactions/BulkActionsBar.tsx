@@ -1,7 +1,7 @@
 'use client';
 
 import { memo } from 'react';
-import { X, Tag, Trash2, CheckSquare, Square, Loader2 } from 'lucide-react';
+import { X, Tag, Trash2, CheckSquare, Square, Loader2, Download } from 'lucide-react';
 
 // =============================================================================
 // Type Definitions
@@ -20,6 +20,8 @@ export interface BulkActionsBarProps {
   onCategorize: () => void;
   /** Callback to delete selected items */
   onDelete: () => void;
+  /** Callback to export selected items */
+  onExport?: () => void;
   /** Callback to clear selection */
   onClearSelection: () => void;
   /** Callback to select all items */
@@ -44,6 +46,7 @@ export const BulkActionsBar = memo(function BulkActionsBar({
   isProcessing = false,
   onCategorize,
   onDelete,
+  onExport,
   onClearSelection,
   onSelectAll,
 }: BulkActionsBarProps) {
@@ -125,6 +128,24 @@ export const BulkActionsBar = memo(function BulkActionsBar({
               <Tag className="h-4 w-4" />
               Categorize
             </button>
+
+            {/* Export Button */}
+            {onExport && (
+              <button
+                type="button"
+                onClick={onExport}
+                disabled={isProcessing}
+                className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium
+                  text-gray-700 bg-white border border-gray-300 rounded-lg
+                  hover:bg-gray-50 hover:text-gray-900
+                  focus:outline-none focus:ring-2 focus:ring-blue-500
+                  disabled:opacity-50 disabled:cursor-not-allowed
+                  transition-colors duration-150"
+              >
+                <Download className="h-4 w-4" />
+                Export
+              </button>
+            )}
 
             {/* Delete Button */}
             <button

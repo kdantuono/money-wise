@@ -15,7 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **EnhancedTransactionList**: Transaction list with filtering, search, and inline actions
   - **TransactionRow**: Individual transaction display with edit/delete buttons
   - **CategorySelector**: Dropdown component for category selection with icon and color support
-  - **BulkActionsBar**: Multi-select toolbar for bulk categorize and delete operations
+  - **BulkActionsBar**: Multi-select toolbar for bulk categorize, delete, and export operations
   - **RecategorizeDialog**: Category change dialog with bulk operation support
   - **DeleteConfirmDialog**: Confirmation modal for single/bulk delete operations
   - **QuickAddTransaction**: Quick transaction entry component for dashboard
@@ -53,6 +53,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Export transactions to CSV with both ISO and localized date columns
   - Support for category and account name mapping
   - Download and clipboard copy functions
+  - UI integration: "Export CSV" button in transaction list toolbar
+  - Bulk export: Export selected transactions via BulkActionsBar
 
 ### Changed
 

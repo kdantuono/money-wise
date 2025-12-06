@@ -11,7 +11,8 @@ import { accountsClient, Account as ApiAccount } from '@/services/accounts.clien
 import { categoriesClient, CategoryOption } from '@/services/categories.client';
 import type { Transaction, CreateTransactionData, UpdateTransactionData } from '@/services/transactions.client';
 import type { Account } from './TransactionForm';
-import { Loader2, Search, Calendar, Filter } from 'lucide-react';
+import { Loader2, Search, Calendar, Filter, Download } from 'lucide-react';
+import { downloadTransactionsCSV } from '@/utils/csv-export';
 
 // =============================================================================
 // Type Definitions
@@ -270,6 +271,24 @@ export function EnhancedTransactionList({
     setShowRecategorizeDialog(false);
   }, []);
 
+  // ========== Export Handlers ==========
+  const handleExportSelected = useCallback(() => {
+    const selectedTransactions = transactions.filter((tx) => selectedIds.has(tx.id));
+    downloadTransactionsCSV(selectedTransactions, {
+      filename: 'transactions-selected',
+      categoryMap,
+      accountMap,
+    });
+  }, [transactions, selectedIds, categoryMap, accountMap]);
+
+  const handleExportAll = useCallback(() => {
+    downloadTransactionsCSV(filteredTransactions, {
+      filename: 'transactions',
+      categoryMap,
+      accountMap,
+    });
+  }, [filteredTransactions, categoryMap, accountMap]);
+
   // ========== Filter Handlers ==========
   const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setFilters((prev) => ({ ...prev, search: e.target.value }));
@@ -340,6 +359,19 @@ export function EnhancedTransactionList({
               {[filters.dateFrom, filters.dateTo, filters.type !== 'all'].filter(Boolean).length}
             </span>
           )}
+        </button>
+
+        {/* Export All Button */}
+        <button
+          type="button"
+          onClick={handleExportAll}
+          disabled={filteredTransactions.length === 0}
+          className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium
+            text-gray-700 hover:bg-gray-50 transition-colors duration-150
+            disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <Download className="h-4 w-4" />
+          Export CSV
         </button>
       </div>
 
@@ -444,6 +476,7 @@ export function EnhancedTransactionList({
         isProcessing={isAnyDeleting}
         onCategorize={handleBulkCategorize}
         onDelete={handleBulkDelete}
+        onExport={handleExportSelected}
         onClearSelection={handleClearSelection}
         onSelectAll={handleSelectAll}
       />
