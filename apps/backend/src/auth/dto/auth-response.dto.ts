@@ -37,7 +37,6 @@ export class AuthResponseDto {
 
   @ApiProperty({
     description: 'Authenticated user information',
-    type: 'object',
     example: {
       id: 'user-uuid-123',
       email: 'user@example.com',

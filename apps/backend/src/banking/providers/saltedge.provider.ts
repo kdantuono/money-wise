@@ -179,7 +179,9 @@ export class SaltEdgeProvider implements IBankingProvider {
     signature: string;
     expiresAt: number;
   } {
-    const expiresAt = Math.floor(Date.now() / 1000) + 3600; // 1 hour expiry
+    // Use 55 minutes (3300s) instead of 60 minutes to account for potential clock drift
+    // between our server and SaltEdge servers. This provides a 5-minute buffer.
+    const expiresAt = Math.floor(Date.now() / 1000) + 3300;
     const signatureData = `${expiresAt}|${method.toUpperCase()}|${url}|${body}`;
 
     if (!this.privateKey) {
@@ -404,6 +406,8 @@ export class SaltEdgeProvider implements IBankingProvider {
       returnTo?: string;
       providerCode?: string;
       countryCode?: string;
+      /** Enable popup mode with postMessage callbacks */
+      popupMode?: boolean;
     },
   ): Promise<{ connectUrl: string; expiresAt: Date }> {
     this.logger.debug(`Creating connect session for customer: ${customerId}`);
@@ -423,6 +427,9 @@ export class SaltEdgeProvider implements IBankingProvider {
           attempt: {
             return_to: options?.returnTo || this.callbackUrl,
             fetch_scopes: ['accounts', 'transactions'],
+            // Enable postMessage callbacks for popup mode
+            // This allows the popup to communicate with the parent window
+            ...(options?.popupMode && { javascript_callback_type: 'post_message' }),
           },
           // For testing with fake providers
           ...(options?.providerCode && { provider_code: options.providerCode }),
@@ -485,8 +492,11 @@ export class SaltEdgeProvider implements IBankingProvider {
     // Create customer if not exists (simplified flow)
     const customer = await this.createCustomer(userId);
 
+    // Enable popup mode with postMessage for better UX
+    // This allows the OAuth flow to happen in a popup while the parent page stays visible
     const { connectUrl, expiresAt } = await this.createConnectSession(customer.id, {
       returnTo: this.callbackUrl,
+      popupMode: true,
     });
 
     return {

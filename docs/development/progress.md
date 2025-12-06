@@ -90,19 +90,32 @@ MoneyWise has achieved near-MVP completion with:
 - Analytics API: Done
 - Banking integration: Done
 
+### Phase -1: Foundation Upgrades (December 2025) - COMPLETE
+**PR**: #231
+
+Major dependency upgrades completed successfully:
+- **Tailwind CSS v4**: CSS-based configuration, @import syntax
+- **Jest 30**: Updated test patterns and assertions
+- **NestJS 11**: Enhanced decorators, new JWT types
+- **Expo 52**: Latest React Native tooling
+- **pnpm 10.24**: Modern package management
+
+All 2302 tests passing, zero breaking changes in application code.
+
 ---
 
 ## Technical Stack
 
 | Component | Technology |
 |-----------|------------|
-| Backend | NestJS + Prisma + PostgreSQL + Redis |
-| Frontend | Next.js 15 + React + Tailwind CSS |
-| Mobile | React Native (Expo) - Pending |
-| Testing | Jest + Vitest + Playwright |
-| CI/CD | GitHub Actions |
+| Backend | NestJS 11 + Express 5 + Prisma + PostgreSQL + Redis |
+| Frontend | Next.js 15 + React 19 + Tailwind CSS v4 |
+| Mobile | React Native 0.76 (Expo 52) - Pending |
+| Testing | Jest 30 + Vitest 4 + Playwright |
+| CI/CD | GitHub Actions + Turborepo 2.6 |
 | Monitoring | Sentry |
 | Banking | SaltEdge v6 API |
+| Package Manager | pnpm 10.24 |
 
 ---
 
@@ -147,7 +160,9 @@ MoneyWise has achieved near-MVP completion with:
 
 | Date | PR | Description |
 |------|-----|-------------|
-| Dec 3 | hotfix/tech-debt-phase4 | SaltEdge v6 API compliance fix, transactions page display |
+| Dec 3 | - | v0.6.1 Express 5 upgrade for NestJS 11 compatibility |
+| Dec 3 | #231 | Phase -1 Foundation Upgrades (Tailwind v4, Jest 30, NestJS 11, pnpm 10.24) |
+| Dec 3 | #230 | SaltEdge v6 API compliance fix, transactions page display |
 | Dec 1 | #225 | Goals navigation fix |
 | Dec 1 | #224 | Docker E2E infrastructure |
 | Nov 30 | #223 | Planning dropdown in sidebar |
@@ -182,4 +197,4 @@ MoneyWise has achieved near-MVP completion with:
 
 ---
 
-*This document reflects the actual state of the codebase as of December 1, 2025*
+*This document reflects the actual state of the codebase as of December 3, 2025*

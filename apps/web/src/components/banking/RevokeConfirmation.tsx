@@ -44,6 +44,8 @@ interface RevokeConfirmationProps {
   onCancel: () => void;
   /** Optional CSS classes */
   className?: string;
+  /** Number of sibling accounts on the same banking connection (default: 0) */
+  siblingAccountCount?: number;
 }
 
 export function RevokeConfirmation({
@@ -51,6 +53,7 @@ export function RevokeConfirmation({
   onConfirm,
   onCancel,
   className = '',
+  siblingAccountCount = 0,
 }: RevokeConfirmationProps) {
   const [isConfirming, setIsConfirming] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -183,6 +186,16 @@ export function RevokeConfirmation({
                   : 'Historical data will be retained'}
               </span>
             </li>
+            {siblingAccountCount > 0 && (
+              <li className="text-sm text-red-800 flex items-start gap-2 font-semibold">
+                <span aria-hidden="true" className="flex-shrink-0">
+                  •
+                </span>
+                <span>
+                  {siblingAccountCount} other account{siblingAccountCount > 1 ? 's' : ''} from {account.bankName} will also be disconnected
+                </span>
+              </li>
+            )}
           </ul>
 
           {/* Account Summary */}

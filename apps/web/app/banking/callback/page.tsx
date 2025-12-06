@@ -213,7 +213,7 @@ function BankingCallbackContent() {
       setRedirectCountdown((prev) => {
         if (prev <= 1) {
           clearInterval(interval);
-          handleBackToBanking();
+          // Return 0, the redirect will be handled by the separate effect below
           return 0;
         }
         return prev - 1;
@@ -221,7 +221,17 @@ function BankingCallbackContent() {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [status, isPopup, accountCount, notifyOpenerAndClose, handleBackToBanking]);
+  }, [status, isPopup, accountCount, notifyOpenerAndClose]);
+
+  /**
+   * Handle redirect when countdown reaches 0
+   * Separated from countdown effect to avoid calling router.push inside setState
+   */
+  useEffect(() => {
+    if (status === 'success' && !isPopup && redirectCountdown === 0) {
+      router.push('/banking');
+    }
+  }, [status, isPopup, redirectCountdown, router]);
 
   /**
    * Handle error: notify opener if popup

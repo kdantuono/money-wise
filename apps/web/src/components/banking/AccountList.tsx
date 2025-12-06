@@ -1,8 +1,42 @@
 'use client';
 
 import { useState } from 'react';
+import {
+  Wallet,
+  PiggyBank,
+  CreditCard,
+  Building2,
+  TrendingUp,
+  Home,
+  Banknote,
+  Briefcase,
+} from 'lucide-react';
 import { BankingConnectionStatus, BankingSyncStatus } from '../../lib/banking-types';
 import { AccountSkeleton } from './LoadingStates';
+
+// Icon mapping for account display
+const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
+  wallet: Wallet,
+  piggybank: PiggyBank,
+  creditcard: CreditCard,
+  bank: Building2,
+  investment: TrendingUp,
+  home: Home,
+  cash: Banknote,
+  business: Briefcase,
+};
+
+// Color mapping for account display
+const COLOR_MAP: Record<string, { bg: string; text: string; gradient: string }> = {
+  blue: { bg: 'bg-blue-100', text: 'text-blue-600', gradient: 'from-blue-50 to-indigo-50' },
+  green: { bg: 'bg-green-100', text: 'text-green-600', gradient: 'from-green-50 to-emerald-50' },
+  purple: { bg: 'bg-purple-100', text: 'text-purple-600', gradient: 'from-purple-50 to-pink-50' },
+  red: { bg: 'bg-red-100', text: 'text-red-600', gradient: 'from-red-50 to-rose-50' },
+  yellow: { bg: 'bg-yellow-100', text: 'text-yellow-600', gradient: 'from-yellow-50 to-amber-50' },
+  pink: { bg: 'bg-pink-100', text: 'text-pink-600', gradient: 'from-pink-50 to-rose-50' },
+  indigo: { bg: 'bg-indigo-100', text: 'text-indigo-600', gradient: 'from-indigo-50 to-violet-50' },
+  teal: { bg: 'bg-teal-100', text: 'text-teal-600', gradient: 'from-teal-50 to-cyan-50' },
+};
 
 /**
  * AccountList Component
@@ -40,6 +74,14 @@ interface BankingAccount {
   accountNumber?: string;
   accountType?: string;
   country?: string;
+  // Extended properties for unified account list
+  isManualAccount?: boolean;
+  /** Whether account can be synced (has valid banking provider connection) */
+  isSyncable?: boolean;
+  source?: 'MANUAL' | 'PLAID' | 'SALTEDGE';
+  // Display customization
+  icon?: string;
+  color?: string;
 }
 
 interface AccountListProps {
@@ -51,6 +93,10 @@ interface AccountListProps {
   onSync: (accountId: string) => void | Promise<void>;
   /** Called when user confirms account revocation */
   onRevoke: (accountId: string) => void | Promise<void>;
+  /** Called when user clicks Edit button (for manual accounts) */
+  onEdit?: (accountId: string) => void;
+  /** Called when user clicks Delete button (for manual accounts) */
+  onDelete?: (accountId: string) => void;
   /** Optional CSS classes */
   className?: string;
   /** Callback when sync starts (for loading state) */
@@ -93,6 +139,8 @@ export function AccountList({
   isLoading = false,
   onSync,
   onRevoke,
+  onEdit,
+  onDelete,
   className = '',
   onSyncStart,
   onSyncComplete,
@@ -183,6 +231,21 @@ export function AccountList({
         const isSyncing = syncingIds.has(account.id);
         const isSelected = selectedId === account.id;
 
+        // Get custom icon and color, with defaults
+        const AccountIcon = account.icon ? ICON_MAP[account.icon] : Wallet;
+        const colorConfig = account.color ? COLOR_MAP[account.color] : null;
+
+        // Determine gradient based on custom color or default
+        const headerGradient = colorConfig
+          ? `bg-gradient-to-r ${colorConfig.gradient}`
+          : account.isManualAccount
+            ? 'bg-gradient-to-r from-purple-50 to-pink-50'
+            : 'bg-gradient-to-r from-blue-50 to-indigo-50';
+
+        // Icon background and text colors
+        const iconBg = colorConfig ? colorConfig.bg : (account.isManualAccount ? 'bg-purple-100' : 'bg-blue-100');
+        const iconText = colorConfig ? colorConfig.text : (account.isManualAccount ? 'text-purple-600' : 'text-blue-600');
+
         return (
           <div
             key={account.id}
@@ -197,22 +260,45 @@ export function AccountList({
             onBlur={() => setSelectedId(null)}
           >
             {/* Account Header */}
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 border-b border-gray-200">
+            <div className={`p-4 border-b border-gray-200 ${headerGradient}`}>
               <div className="flex items-start justify-between mb-2">
-                <div className="flex-1">
-                  <h3 className="font-semibold text-gray-900 text-lg">
-                    {account.name}
-                  </h3>
-                  <p className="text-sm text-gray-600">{account.bankName}</p>
+                <div className="flex items-center gap-3">
+                  {/* Account Icon */}
+                  {AccountIcon && (
+                    <div className={`p-2 rounded-lg ${iconBg}`}>
+                      <AccountIcon className={`h-5 w-5 ${iconText}`} aria-hidden="true" />
+                    </div>
+                  )}
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-semibold text-gray-900 text-lg">
+                        {account.name}
+                      </h3>
+                      {/* Source Badge */}
+                      <span
+                        className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                          account.isManualAccount
+                            ? 'bg-purple-100 text-purple-700'
+                            : 'bg-blue-100 text-blue-700'
+                        }`}
+                      >
+                        {account.isManualAccount ? 'Manual' : 'Linked'}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-600">{account.bankName}</p>
+                  </div>
                 </div>
-                <div
-                  className={`px-2 py-1 rounded text-xs font-semibold flex items-center gap-1 ${syncStatus.color}`}
-                  role="status"
-                  aria-label={`Sync status: ${syncStatus.label}`}
-                >
-                  <span aria-hidden="true">{syncStatus.icon}</span>
-                  <span>{syncStatus.label}</span>
-                </div>
+                {/* Only show sync status for linked accounts */}
+                {!account.isManualAccount && (
+                  <div
+                    className={`px-2 py-1 rounded text-xs font-semibold flex items-center gap-1 ${syncStatus.color}`}
+                    role="status"
+                    aria-label={`Sync status: ${syncStatus.label}`}
+                  >
+                    <span aria-hidden="true">{syncStatus.icon}</span>
+                    <span>{syncStatus.label}</span>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -278,65 +364,98 @@ export function AccountList({
                 )}
               </div>
 
-              {/* Actions */}
+              {/* Actions - Different based on account type and sync capability */}
               <div className="flex gap-2 pt-3 border-t border-gray-100">
+                {/* Edit button - available for ALL accounts (icon/color customization) */}
                 <button
-                  onClick={() => handleSync(account.id)}
-                  disabled={isSyncing || account.syncStatus === BankingSyncStatus.SYNCING}
-                  aria-label={`Sync ${account.name}`}
-                  aria-busy={isSyncing}
-                  data-testid="sync-button"
-                  className="flex-1 inline-flex items-center justify-center px-3 py-2 rounded text-sm font-medium
+                  onClick={() => onEdit?.(account.id)}
+                  aria-label={`Edit ${account.name}`}
+                  data-testid="edit-button"
+                  className={`inline-flex items-center justify-center px-3 py-2 rounded text-sm font-medium
                     transition-colors duration-150
-                    ${
-                      isSyncing || account.syncStatus === BankingSyncStatus.SYNCING
-                        ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
-                        : 'bg-blue-100 text-blue-700 hover:bg-blue-200 active:bg-blue-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500'
-                    }"
+                    ${account.isManualAccount
+                      ? 'flex-1 bg-purple-100 text-purple-700 hover:bg-purple-200 active:bg-purple-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500'
+                    }`}
                 >
-                  {isSyncing || account.syncStatus === BankingSyncStatus.SYNCING ? (
-                    <>
-                      <svg
-                        className="w-4 h-4 mr-1 animate-spin"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        aria-hidden="true"
-                      >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        />
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        />
-                      </svg>
-                      Syncing
-                    </>
-                  ) : (
-                    'Sync Now'
-                  )}
+                  Edit
                 </button>
 
-                <button
-                  onClick={() => handleRevoke(account.id)}
-                  disabled={isSyncing}
-                  aria-label={`Revoke access for ${account.name}`}
-                  data-testid="disconnect-button"
-                  className="flex-1 inline-flex items-center justify-center px-3 py-2 rounded text-sm font-medium
-                    transition-colors duration-150
-                    bg-red-100 text-red-700 hover:bg-red-200 active:bg-red-300
-                    focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500
-                    disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Revoke
-                </button>
+                {account.isSyncable ? (
+                  /* Syncable Account Actions - Sync and Revoke buttons */
+                  <>
+                    <button
+                      onClick={() => handleSync(account.id)}
+                      disabled={isSyncing || account.syncStatus === BankingSyncStatus.SYNCING}
+                      aria-label={`Sync ${account.name}`}
+                      aria-busy={isSyncing}
+                      data-testid="sync-button"
+                      className={`flex-1 inline-flex items-center justify-center px-3 py-2 rounded text-sm font-medium
+                        transition-colors duration-150
+                        ${
+                          isSyncing || account.syncStatus === BankingSyncStatus.SYNCING
+                            ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
+                            : 'bg-blue-100 text-blue-700 hover:bg-blue-200 active:bg-blue-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500'
+                        }`}
+                    >
+                      {isSyncing || account.syncStatus === BankingSyncStatus.SYNCING ? (
+                        <>
+                          <svg
+                            className="w-4 h-4 mr-1 animate-spin"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            aria-hidden="true"
+                          >
+                            <circle
+                              className="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                            />
+                            <path
+                              className="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                            />
+                          </svg>
+                          Syncing
+                        </>
+                      ) : (
+                        'Sync Now'
+                      )}
+                    </button>
+
+                    <button
+                      onClick={() => handleRevoke(account.id)}
+                      disabled={isSyncing}
+                      aria-label={`Revoke access for ${account.name}`}
+                      data-testid="disconnect-button"
+                      className="flex-1 inline-flex items-center justify-center px-3 py-2 rounded text-sm font-medium
+                        transition-colors duration-150
+                        bg-red-100 text-red-700 hover:bg-red-200 active:bg-red-300
+                        focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500
+                        disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Revoke
+                    </button>
+                  </>
+                ) : (
+                  /* Manual or orphaned linked account - Delete button */
+                  <button
+                    onClick={() => onDelete?.(account.id)}
+                    aria-label={`Delete ${account.name}`}
+                    data-testid="delete-button"
+                    className="flex-1 inline-flex items-center justify-center px-3 py-2 rounded text-sm font-medium
+                      transition-colors duration-150
+                      bg-red-100 text-red-700 hover:bg-red-200 active:bg-red-300
+                      focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+                  >
+                    Delete
+                  </button>
+                )}
               </div>
             </div>
           </div>
