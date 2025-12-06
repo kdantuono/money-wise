@@ -35,7 +35,6 @@ import { Decimal } from '@prisma/client/runtime/library';
 import type { Account, AccountType } from '../../../../generated/prisma';
 import {
   BalanceNormalizerService,
-  NormalizedBalance,
   AccountNature,
 } from '../../../../src/core/finance/balance-normalizer.service';
 

@@ -464,7 +464,7 @@ describe('AccountsService', () => {
       prisma.account.update.mockResolvedValue(updatedAccount as any);
 
       // Act
-      const result = await service.update(account.id, updateDto, userId);
+      await service.update(account.id, updateDto, userId);
 
       // Assert - settings should be passed to prisma as-is (the service stores whatever is provided)
       const updateCall = prisma.account.update.mock.calls[0][0];

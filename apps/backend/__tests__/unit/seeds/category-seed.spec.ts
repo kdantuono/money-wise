@@ -21,7 +21,6 @@ import {
   getTransferCategories,
   getTopLevelCategories,
   getChildCategories,
-  SystemCategoryDefinition,
 } from '../../../src/database/seeds/category-seed';
 
 describe('Category Seed', () => {
