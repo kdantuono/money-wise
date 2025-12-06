@@ -19,6 +19,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   BankingLinkButton,
   AccountList,
@@ -49,6 +50,9 @@ import { Wallet, RefreshCw, Eye, EyeOff, RotateCcw, Trash2, AlertCircle, LinkIco
  * @returns {JSX.Element} Accounts page with account management UI
  */
 export default function AccountsPage() {
+  // Router for navigation
+  const router = useRouter();
+
   // Zustand store hooks (for banking accounts)
   const { fetchAccounts: fetchBankingAccounts, syncAccount, revokeConnection, clearError } = useBanking();
   const _bankingAccounts = useAccounts(); // Reserved for banking sync status
@@ -308,6 +312,14 @@ export default function AccountsPage() {
     setAccountToRevoke(null);
     setRevokeSiblingCount(0);
   };
+
+  /**
+   * Handle view account details
+   * Navigates to the account details page
+   */
+  const handleView = useCallback((accountId: string) => {
+    router.push(`/dashboard/accounts/${accountId}`);
+  }, [router]);
 
   /**
    * Handle edit account click
@@ -714,6 +726,7 @@ export default function AccountsPage() {
                 onRevoke={handleRevoke}
                 onEdit={handleEdit}
                 onDelete={handleDelete}
+                onView={handleView}
               />
             </div>
           </div>

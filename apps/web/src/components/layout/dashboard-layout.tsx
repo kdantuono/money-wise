@@ -39,11 +39,11 @@ const navigation = [
   { name: 'Accounts', href: '/dashboard/accounts', icon: Wallet },
   { name: 'Transactions', href: '/dashboard/transactions', icon: CreditCard },
   { name: 'Investments', href: '/dashboard/investments', icon: TrendingUp },
-  { name: 'Goals', href: '/dashboard/goals', icon: Target },
 ];
 
 const planningItems = [
   { name: 'Budgets', href: '/dashboard/budgets', icon: PiggyBank },
+  { name: 'Goals', href: '/dashboard/goals', icon: Target },
 ];
 
 const bottomNavigation = [

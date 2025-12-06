@@ -100,8 +100,8 @@ describe('AccountList Component', () => {
     );
 
     expect(screen.getByRole('status', { name: /no accounts linked/i })).toBeInTheDocument();
-    expect(screen.getByText('No accounts linked')).toBeInTheDocument();
-    expect(screen.getByText(/link a bank account to start tracking/i)).toBeInTheDocument();
+    expect(screen.getByText('No accounts yet')).toBeInTheDocument();
+    expect(screen.getByText(/add a manual account or link your bank/i)).toBeInTheDocument();
   });
 
   it('displays account balances correctly', () => {
@@ -113,9 +113,10 @@ describe('AccountList Component', () => {
       />
     );
 
-    expect(screen.getByText('$5,000.50')).toBeInTheDocument();
-    expect(screen.getByText('$12,000.00')).toBeInTheDocument();
-    expect(screen.getByText('-$1,500.00')).toBeInTheDocument();
+    // Balances are formatted without decimals (minimumFractionDigits: 0)
+    expect(screen.getByText('$5,001')).toBeInTheDocument(); // Rounded
+    expect(screen.getByText('$12,000')).toBeInTheDocument();
+    expect(screen.getByText('-$1,500')).toBeInTheDocument();
   });
 
   it('displays sync status badges correctly', () => {
@@ -129,7 +130,7 @@ describe('AccountList Component', () => {
 
     expect(screen.getByText('Synced')).toBeInTheDocument();
     expect(screen.getByText('Pending')).toBeInTheDocument();
-    expect(screen.getByText('Sync Error')).toBeInTheDocument();
+    expect(screen.getByText('Error')).toBeInTheDocument();
   });
 
   it('calls onSync when sync button is clicked', async () => {
@@ -147,7 +148,7 @@ describe('AccountList Component', () => {
     expect(mockOnSync).toHaveBeenCalledWith('acc-1');
   });
 
-  it('calls onRevoke when revoke button is clicked', async () => {
+  it('calls onRevoke when disconnect button is clicked', async () => {
     const { user } = render(
       <AccountList
         accounts={mockAccounts}
@@ -156,8 +157,8 @@ describe('AccountList Component', () => {
       />
     );
 
-    const revokeButtons = screen.getAllByRole('button', { name: /revoke/i });
-    await user.click(revokeButtons[0]);
+    const disconnectButtons = screen.getAllByRole('button', { name: /disconnect/i });
+    await user.click(disconnectButtons[0]);
 
     expect(mockOnRevoke).toHaveBeenCalledWith('acc-1');
   });
@@ -179,7 +180,9 @@ describe('AccountList Component', () => {
 
     await waitFor(() => {
       expect(syncButtons[0]).toBeDisabled();
-      expect(screen.getByText('Syncing')).toBeInTheDocument();
+      // Sync button shows spinning icon when syncing
+      const spinners = document.querySelectorAll('.animate-spin');
+      expect(spinners.length).toBeGreaterThan(0);
     });
   });
 
@@ -255,7 +258,7 @@ describe('AccountList Component', () => {
     expect(checkingElements.length).toBeGreaterThan(0);
   });
 
-  it('displays IBAN correctly', () => {
+  it('displays account number correctly', () => {
     render(
       <AccountList
         accounts={mockAccounts}
@@ -264,7 +267,8 @@ describe('AccountList Component', () => {
       />
     );
 
-    expect(screen.getByText('US12345678901234567890')).toBeInTheDocument();
+    // Account number is displayed instead of IBAN
+    expect(screen.getByText('****1234')).toBeInTheDocument();
   });
 
   it('displays last synced timestamp when available', () => {
@@ -276,8 +280,8 @@ describe('AccountList Component', () => {
       />
     );
 
-    // Check that last synced dates are rendered (format: 1/15/24, 11:00 AM)
-    const dates = screen.getAllByText(/1\/15\/24/i);
+    // Check that last synced dates are rendered (format: "Synced Jan 15, 10:00 AM")
+    const dates = screen.getAllByText(/synced jan 15/i);
     expect(dates.length).toBeGreaterThan(0);
   });
 
@@ -332,7 +336,7 @@ describe('AccountList Component', () => {
     expect(firstSyncButton).toHaveFocus();
   });
 
-  it('disables revoke button during sync', async () => {
+  it('disables disconnect button during sync', async () => {
     // Mock onSync to return a promise that resolves after a delay
     mockOnSync.mockImplementation(() => new Promise(resolve => setTimeout(resolve, 100)));
 
@@ -345,12 +349,12 @@ describe('AccountList Component', () => {
     );
 
     const syncButtons = screen.getAllByRole('button', { name: /sync/i });
-    const revokeButtons = screen.getAllByRole('button', { name: /revoke/i });
+    const disconnectButtons = screen.getAllByRole('button', { name: /disconnect/i });
 
     await user.click(syncButtons[0]);
 
     await waitFor(() => {
-      expect(revokeButtons[0]).toBeDisabled();
+      expect(disconnectButtons[0]).toBeDisabled();
     });
   });
 
@@ -376,7 +380,7 @@ describe('AccountList Component', () => {
       />
     );
 
-    const list = screen.getByRole('list', { name: /linked bank accounts/i });
+    const list = screen.getByRole('list', { name: /accounts/i });
     expect(list).toBeInTheDocument();
 
     const items = screen.getAllByRole('listitem');
@@ -426,8 +430,12 @@ describe('AccountList Component', () => {
       />
     );
 
-    expect(screen.getByText('Syncing...')).toBeInTheDocument();
+    // Syncing badge is displayed
+    expect(screen.getByText('Syncing')).toBeInTheDocument();
+    // Sync button is disabled and shows spinning icon
     const syncButton = screen.getByRole('button', { name: /sync/i });
     expect(syncButton).toBeDisabled();
+    const spinner = syncButton.querySelector('.animate-spin');
+    expect(spinner).toBeInTheDocument();
   });
 });

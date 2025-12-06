@@ -7,6 +7,66 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Phase 2: Transaction Management UI** - Complete frontend for transaction CRUD operations
+  - **TransactionForm**: Full-featured form with amount, description, date, type, account, and category fields
+  - **TransactionFormModal**: Modal wrapper for create/edit flows
+  - **EnhancedTransactionList**: Transaction list with filtering, search, and inline actions
+  - **TransactionRow**: Individual transaction display with edit/delete buttons
+  - **CategorySelector**: Dropdown component for category selection with icon and color support
+  - **BulkActionsBar**: Multi-select toolbar for bulk categorize, delete, and export operations
+  - **RecategorizeDialog**: Category change dialog with bulk operation support
+  - **DeleteConfirmDialog**: Confirmation modal for single/bulk delete operations
+  - **QuickAddTransaction**: Quick transaction entry component for dashboard
+
+- **Transactions Store** (`transactions.store.ts`)
+  - Zustand-based state management for transactions
+  - Full CRUD operations with optimistic updates
+  - Loading states per transaction (isUpdating, isDeleting)
+  - Bulk selection and bulk operations support
+  - Filter state management
+
+- **Categories Client** (`categories.client.ts`)
+  - API client for fetching category options
+  - Support for filtering by type (EXPENSE/INCOME)
+  - Type-safe category option interface
+
+- **Account Details Page** (`/dashboard/accounts/[id]`)
+  - Individual account view with balance display
+  - Filtered transaction list for specific account
+  - Back navigation and error handling
+  - 404 handling for invalid account IDs
+
+- **Command Palette** (`CommandPalette.tsx`)
+  - Global Cmd+K / Ctrl+K keyboard shortcut
+  - Quick navigation to all app sections
+  - Quick actions: Add Transaction, Add Budget, Add Account
+  - Search/filter commands with keyboard navigation
+  - Close on Escape or outside click
+
+- **Budget Progress Color Coding** (`budget-progress.ts`)
+  - Visual spending indicators: Green (0-75%), Yellow (75-90%), Orange (90-100%), Red (>100%)
+  - `getProgressColor()` and `getBudgetStatus()` utility functions
+
+- **CSV Export** (`csv-export.ts`)
+  - Export transactions to CSV with both ISO and localized date columns
+  - Support for category and account name mapping
+  - Download and clipboard copy functions
+  - UI integration: "Export CSV" button in transaction list toolbar
+  - Bulk export: Export selected transactions via BulkActionsBar
+
+### Changed
+
+- **Dashboard**: Added Quick Add Transaction button
+- **Transactions Page**: Now uses EnhancedTransactionList with full CRUD support
+- **Test Infrastructure**: Added global cleanup in vitest.setup.ts to prevent test pollution
+
+### Fixed
+
+- **Transaction Update Validation**: Stripped `accountId` from update payload (immutable field per backend validation)
+- **React Testing Library Cleanup**: Added automatic `afterEach(cleanup)` to prevent DOM pollution between tests
+
 ---
 
 ## [0.6.2] - 2025-12-05
