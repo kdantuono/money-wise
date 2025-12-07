@@ -34,3 +34,25 @@ export {
   ValidationError as LiabilitiesValidationError,
   NotFoundError as LiabilitiesNotFoundError,
 } from './liabilities.client';
+
+// Scheduled transactions exports
+export {
+  default as scheduledClient,
+  type TransactionType as ScheduledTransactionType,
+  type FlowType as ScheduledFlowType,
+  type ScheduledTransactionStatus,
+  type RecurrenceFrequency,
+  type RecurrenceRule,
+  type ScheduledTransaction,
+  type UpcomingScheduled,
+  type CalendarEvent,
+  type CreateRecurrenceRuleRequest,
+  type CreateScheduledTransactionRequest,
+  type UpdateScheduledTransactionRequest,
+  type ScheduledFilterOptions,
+  type PaginatedScheduledResponse,
+  ScheduledApiError,
+  AuthenticationError as ScheduledAuthenticationError,
+  ValidationError as ScheduledValidationError,
+  NotFoundError as ScheduledNotFoundError,
+} from './scheduled.client';
