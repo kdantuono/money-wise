@@ -13,6 +13,7 @@ import { BankingModule } from './banking/banking.module';
 import { CategoriesModule } from './categories/categories.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { BudgetsModule } from './budgets/budgets.module';
+import { LiabilitiesModule } from './liabilities/liabilities.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 
 @Module({
@@ -33,6 +34,7 @@ import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
     CategoriesModule,
     AnalyticsModule,
     BudgetsModule,
+    LiabilitiesModule,
   ],
   controllers: [],
   providers: [
