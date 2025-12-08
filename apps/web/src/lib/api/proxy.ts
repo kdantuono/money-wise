@@ -98,12 +98,25 @@ export async function proxyRequest(
 
     clearTimeout(timeoutId);
 
-    // Parse response body (handle 204 No Content and other empty responses)
+    // Handle 204 No Content - must return response with no body per HTTP spec
+    if (backendResponse.status === 204) {
+      const response = new NextResponse(null, { status: 204 });
+      // Still forward any cookies from backend
+      if (typeof backendResponse.headers.getSetCookie === 'function') {
+        const cookies = backendResponse.headers.getSetCookie();
+        cookies.forEach(cookie => {
+          response.headers.append('Set-Cookie', cookie);
+        });
+      }
+      return response;
+    }
+
+    // Parse response body (handle other responses)
     let responseData: unknown;
     const contentType = backendResponse.headers.get('Content-Type');
 
-    // Handle 204 No Content and similar responses without body
-    if (backendResponse.status === 204 || backendResponse.status === 205) {
+    // Handle 205 Reset Content (also has no body)
+    if (backendResponse.status === 205) {
       responseData = null;
     } else if (contentType?.includes('application/json')) {
       try {
