@@ -91,6 +91,61 @@ export interface CategoryOption {
 }
 
 /**
+ * Request data for creating a new category
+ */
+export interface CreateCategoryRequest {
+  name: string;
+  slug: string;
+  type: CategoryType;
+  description?: string;
+  color?: string;
+  icon?: string;
+  parentId?: string;
+  isDefault?: boolean;
+  sortOrder?: number;
+  rules?: CategoryRule;
+  metadata?: CategoryMetadata;
+}
+
+/**
+ * Request data for updating an existing category
+ */
+export interface UpdateCategoryRequest {
+  name?: string;
+  slug?: string;
+  description?: string;
+  color?: string;
+  icon?: string;
+  parentId?: string | null;
+  status?: CategoryStatus;
+  sortOrder?: number;
+  rules?: CategoryRule;
+  metadata?: CategoryMetadata;
+}
+
+/**
+ * Spending data for a single category
+ */
+export interface CategorySpending {
+  categoryId: string;
+  categoryName: string;
+  icon: string | null;
+  color: string | null;
+  totalAmount: number;
+  transactionCount: number;
+}
+
+/**
+ * Spending summary response
+ */
+export interface CategorySpendingSummary {
+  categories: CategorySpending[];
+  totalSpending: number;
+  startDate: string;
+  endDate: string;
+}
+
+/**
  * HTTP error response structure
  */
 export interface ApiErrorResponse {
@@ -185,43 +240,10 @@ export class ServerError extends CategoriesApiError {
 // =============================================================================
 
 /**
- * Get the API base URL from environment variables
+ * API base URL - uses relative path to go through BFF proxy
+ * This ensures cookies are properly included (same-origin requests)
  */
-function getApiBaseUrl(): string {
-  const baseUrl =
-    process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-  return baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
-}
-
-/**
- * Check if code is running in development mode
- */
-function isDevelopment(): boolean {
-  return process.env.NODE_ENV === 'development';
-}
-
-/**
- * Log request details in development mode
- */
-function logRequest(method: string, url: string, data?: unknown): void {
-  if (isDevelopment()) {
-    console.log(`[Categories API] ${method} ${url}`, data ? { body: data } : '');
-  }
-}
-
-/**
- * Log response details in development mode
- */
-function logResponse(
-  method: string,
-  url: string,
-  status: number,
-  data?: unknown
-): void {
-  if (isDevelopment()) {
-    console.log(`[Categories API] ${method} ${url} -> ${status}`, data || '');
-  }
-}
+const API_BASE_URL = '/api/categories';
 
 /**
  * Parse error response and throw appropriate error
@@ -244,11 +266,6 @@ async function handleErrorResponse(response: Response): Promise<never> {
       ? errorData.message.join(', ')
       : errorData.message
     : response.statusText || 'An error occurred';
-
-  // Log error in development
-  if (isDevelopment()) {
-    console.error(`[Categories API] Error ${statusCode}:`, errorData || message);
-  }
 
   // Throw appropriate error type
   switch (statusCode) {
@@ -282,23 +299,16 @@ async function request<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const baseUrl = getApiBaseUrl();
-  const url = `${baseUrl}${endpoint}`;
-
-  // Build headers
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    ...((options.headers as Record<string, string>) || {}),
-  };
-
-  // Log request in development
-  logRequest(options.method || 'GET', url, options.body);
+  const url = `${API_BASE_URL}${endpoint}`;
 
   // Make request with cookies (authentication handled by HttpOnly cookies)
   const response = await fetch(url, {
     ...options,
-    headers,
     credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
   });
 
   // Handle errors
@@ -306,17 +316,13 @@ async function request<T>(
     await handleErrorResponse(response);
   }
 
-  // Handle 204 No Content
-  if (response.status === 204) {
-    logResponse(options.method || 'GET', url, response.status);
-    return undefined as T;
+  // Handle empty responses
+  const text = await response.text();
+  if (!text) {
+    return {} as T;
   }
 
-  // Parse JSON response
-  const data = await response.json();
-  logResponse(options.method || 'GET', url, response.status, data);
-
-  return data as T;
+  return JSON.parse(text);
 }
 
 // =============================================================================
@@ -349,7 +355,7 @@ export const categoriesClient = {
    */
   async getAll(type?: CategoryType): Promise<Category[]> {
     const queryParams = type ? `?type=${type}` : '';
-    return request<Category[]>(`/api/categories${queryParams}`, {
+    return request<Category[]>(queryParams, {
       method: 'GET',
     });
   },
@@ -371,7 +377,7 @@ export const categoriesClient = {
    * ```
    */
   async getOne(id: string): Promise<Category> {
-    return request<Category>(`/api/categories/${id}`, {
+    return request<Category>(`/${id}`, {
       method: 'GET',
     });
   },
@@ -417,6 +423,114 @@ export const categoriesClient = {
         parentId: cat.parentId,
         isSystem: cat.isSystem,
       }));
+  },
+
+  /**
+   * Create a new category
+   *
+   * @param data - Category creation data
+   * @returns Created category
+   * @throws {AuthenticationError} If not authenticated
+   * @throws {ValidationError} If data is invalid
+   * @throws {ServerError} If server error occurs
+   *
+   * @example
+   * ```typescript
+   * const category = await categoriesClient.create({
+   *   name: 'Groceries',
+   *   slug: 'groceries',
+   *   type: 'EXPENSE',
+   *   color: '#22C55E',
+   *   icon: 'ShoppingCart',
+   * });
+   * ```
+   */
+  async create(data: CreateCategoryRequest): Promise<Category> {
+    return request<Category>('', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  /**
+   * Update an existing category
+   *
+   * @param id - Category ID to update
+   * @param data - Category update data
+   * @returns Updated category
+   * @throws {AuthenticationError} If not authenticated
+   * @throws {NotFoundError} If category not found
+   * @throws {AuthorizationError} If category belongs to different family
+   * @throws {ValidationError} If data is invalid
+   * @throws {ServerError} If server error occurs
+   *
+   * @example
+   * ```typescript
+   * const category = await categoriesClient.update('category-id', {
+   *   name: 'Food & Groceries',
+   *   color: '#10B981',
+   * });
+   * ```
+   */
+  async update(id: string, data: UpdateCategoryRequest): Promise<Category> {
+    return request<Category>(`/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
+  /**
+   * Delete a category
+   *
+   * @param id - Category ID to delete
+   * @throws {AuthenticationError} If not authenticated
+   * @throws {NotFoundError} If category not found
+   * @throws {AuthorizationError} If category belongs to different family
+   * @throws {ForbiddenError} If category is a system category
+   * @throws {ServerError} If server error occurs
+   *
+   * @example
+   * ```typescript
+   * await categoriesClient.delete('category-id');
+   * ```
+   */
+  async delete(id: string): Promise<void> {
+    return request<void>(`/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
+  /**
+   * Get spending aggregated by category for a date range
+   *
+   * @param startDate - Start of date range (ISO format)
+   * @param endDate - End of date range (ISO format)
+   * @param parentOnly - Roll up child spending to parents (default: true)
+   * @returns Spending summary with categories and totals
+   * @throws {AuthenticationError} If not authenticated
+   * @throws {ValidationError} If dates are invalid
+   * @throws {ServerError} If server error occurs
+   *
+   * @example
+   * ```typescript
+   * const spending = await categoriesClient.getSpending('2025-01-01', '2025-01-31');
+   * console.log(`Total: $${spending.totalSpending}`);
+   * ```
+   */
+  async getSpending(
+    startDate: string,
+    endDate: string,
+    parentOnly: boolean = true
+  ): Promise<CategorySpendingSummary> {
+    const params = new URLSearchParams({
+      startDate,
+      endDate,
+      parentOnly: String(parentOnly),
+    });
+
+    return request<CategorySpendingSummary>(`/spending?${params}`, {
+      method: 'GET',
+    });
   },
 };
 

@@ -72,6 +72,41 @@ export function clearCsrfToken(): void {
 }
 
 /**
+ * Storage keys for all persisted Zustand stores
+ * Add new store keys here when adding new persisted stores
+ */
+const PERSISTED_STORE_KEYS = [
+  'budgets-storage',
+  'banking-storage',
+  // Add more store keys as needed
+];
+
+/**
+ * Clear all app storage on logout
+ *
+ * Clears CSRF token and all persisted Zustand store data.
+ * This should be called on logout to prevent stale data
+ * from being shown to the next user.
+ *
+ * @example
+ * await logout();
+ * clearAllAppStorage();
+ */
+export function clearAllAppStorage(): void {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  // Clear CSRF token
+  localStorage.removeItem(CSRF_TOKEN_KEY);
+
+  // Clear all persisted Zustand stores
+  PERSISTED_STORE_KEYS.forEach((key) => {
+    localStorage.removeItem(key);
+  });
+}
+
+/**
  * Refresh CSRF token from backend with mutex protection
  *
  * This function uses a promise-based mutex to ensure only one refresh

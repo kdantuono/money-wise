@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { TransactionRow } from './TransactionRow';
 import { BulkActionsBar } from './BulkActionsBar';
 import { DeleteConfirmDialog } from './DeleteConfirmDialog';
@@ -11,8 +11,114 @@ import { accountsClient, Account as ApiAccount } from '@/services/accounts.clien
 import { categoriesClient, CategoryOption } from '@/services/categories.client';
 import type { Transaction, CreateTransactionData, UpdateTransactionData } from '@/services/transactions.client';
 import type { Account } from './TransactionForm';
-import { Loader2, Search, Calendar, Filter, Download } from 'lucide-react';
+import { Loader2, Search, Calendar, Filter, Download, ArrowUpDown } from 'lucide-react';
 import { downloadTransactionsCSV } from '@/utils/csv-export';
+
+// =============================================================================
+// Icon Mapping
+// =============================================================================
+
+const CATEGORY_ICONS: Record<string, string> = {
+  // Food & Dining
+  'shopping-cart': '🛒',
+  'utensils': '🍴',
+  'coffee': '☕',
+  'wine': '🍷',
+  'pizza': '🍕',
+  'apple': '🍎',
+  // Transportation
+  'car': '🚗',
+  'plane': '✈️',
+  'airplane': '✈️',
+  'train': '🚂',
+  'bus': '🚌',
+  'bike': '🚲',
+  'fuel': '⛽',
+  'truck': '🚚',
+  'parking': '🅿️',
+  // Entertainment
+  'film': '🎬',
+  'music': '🎵',
+  'tv': '📺',
+  'gamepad': '🎮',
+  'ticket': '🎫',
+  'play': '▶️',
+  // Shopping
+  'shopping-bag': '🛍️',
+  'shirt': '👕',
+  'gift': '🎁',
+  'tag': '🏷️',
+  'building-storefront': '🏪',
+  'receipt-percent': '🧾',
+  // Home & Utilities
+  'home': '🏠',
+  'bolt': '⚡',
+  'droplet': '💧',
+  'wifi': '📶',
+  'phone': '📱',
+  'wrench': '🔧',
+  'fire': '🔥',
+  'key': '🔑',
+  // Health & Personal
+  'heart': '❤️',
+  'pill': '💊',
+  'activity': '💪',
+  'dumbbell': '🏋️',
+  'scissors': '✂️',
+  'sparkles': '✨',
+  'shield-check': '🛡️',
+  'medical-bag': '🏥',
+  'user': '👤',
+  'child': '👶',
+  'paw': '🐾',
+  // Finance
+  'wallet': '💰',
+  'piggy-bank': '🐷',
+  'credit-card': '💳',
+  'bank': '🏦',
+  'coins': '🪙',
+  'trending-up': '📈',
+  'trending-down': '📉',
+  'banknotes': '💵',
+  'currency-dollar': '💲',
+  'percent': '💯',
+  'chart-bar': '📊',
+  // Education & Work
+  'book': '📚',
+  'graduation-cap': '🎓',
+  'academic-cap': '🎓',
+  'briefcase': '💼',
+  'laptop': '💻',
+  'pen': '✏️',
+  'document-text': '📄',
+  'computer-desktop': '🖥️',
+  'building-office': '🏢',
+  'building-library': '🏛️',
+  // Travel & Leisure
+  'map': '🗺️',
+  'compass': '🧭',
+  'camera': '📷',
+  'umbrella': '☂️',
+  // Transfers
+  'arrow-right-left': '↔️',
+  'arrows-right-left': '↔️',
+  'arrow-uturn-left': '↩️',
+  'repeat': '🔄',
+  'send': '📤',
+  'download': '📥',
+  // Default/Other
+  'circle': '⚪',
+  'folder': '📁',
+  'star': '⭐',
+  'flag': '🚩',
+  'question-mark-circle': '❓',
+  'plus-circle': '➕',
+};
+
+function getCategoryIcon(iconName: string | null): string {
+  if (!iconName) return '';
+  return CATEGORY_ICONS[iconName.toLowerCase()] || '';
+}
 
 // =============================================================================
 // Type Definitions
@@ -36,6 +142,17 @@ interface FilterState {
   dateFrom: string;
   dateTo: string;
   type: 'all' | 'DEBIT' | 'CREDIT';
+  categoryId: string; // 'all', 'uncategorized', or specific category ID
+  amountMin: number | null;
+  amountMax: number | null;
+}
+
+type SortField = 'date' | 'amount' | 'description' | 'category';
+type SortDirection = 'asc' | 'desc';
+
+interface SortState {
+  field: SortField;
+  direction: SortDirection;
 }
 
 // =============================================================================
@@ -65,6 +182,13 @@ export function EnhancedTransactionList({
     dateFrom: '',
     dateTo: '',
     type: 'all',
+    categoryId: 'all',
+    amountMin: null,
+    amountMax: null,
+  });
+  const [sort, setSort] = useState<SortState>({
+    field: 'date',
+    direction: 'desc',
   });
   const [showFilters, setShowFilters] = useState(false);
 
@@ -92,9 +216,17 @@ export function EnhancedTransactionList({
     isDeleting,
   } = useTransactionsStore();
 
-  // ========== Filtered Transactions ==========
+  // ========== Load categories when filters are shown ==========
+  useEffect(() => {
+    if (showFilters && categories.length === 0) {
+      categoriesClient.getOptions().then(setCategories).catch(console.error);
+    }
+  }, [showFilters, categories.length]);
+
+  // ========== Filtered and Sorted Transactions ==========
   const filteredTransactions = useMemo(() => {
-    return transactions.filter((tx) => {
+    // First, filter
+    const filtered = transactions.filter((tx) => {
       // Search filter
       if (filters.search) {
         const searchLower = filters.search.toLowerCase();
@@ -118,9 +250,51 @@ export function EnhancedTransactionList({
       // Type filter
       if (filters.type !== 'all' && tx.type !== filters.type) return false;
 
+      // Category filter
+      if (filters.categoryId !== 'all') {
+        if (filters.categoryId === 'uncategorized') {
+          if (tx.categoryId) return false; // Has category, but we want uncategorized
+        } else {
+          if (tx.categoryId !== filters.categoryId) return false; // Specific category
+        }
+      }
+
+      // Amount range filter
+      const amount = Math.abs(tx.amount);
+      if (filters.amountMin !== null && amount < filters.amountMin) return false;
+      if (filters.amountMax !== null && amount > filters.amountMax) return false;
+
       return true;
     });
-  }, [transactions, filters]);
+
+    // Then, sort
+    return [...filtered].sort((a, b) => {
+      let comparison = 0;
+
+      switch (sort.field) {
+        case 'date':
+          comparison = new Date(a.date).getTime() - new Date(b.date).getTime();
+          break;
+        case 'amount':
+          comparison = Math.abs(a.amount) - Math.abs(b.amount);
+          break;
+        case 'description': {
+          const descA = (a.merchantName || a.description).toLowerCase();
+          const descB = (b.merchantName || b.description).toLowerCase();
+          comparison = descA.localeCompare(descB);
+          break;
+        }
+        case 'category': {
+          const catA = (a.categoryId ? categoryMap.get(a.categoryId) : '') || '';
+          const catB = (b.categoryId ? categoryMap.get(b.categoryId) : '') || '';
+          comparison = catA.toLowerCase().localeCompare(catB.toLowerCase());
+          break;
+        }
+      }
+
+      return sort.direction === 'asc' ? comparison : -comparison;
+    });
+  }, [transactions, filters, sort, categoryMap]);
 
   // ========== Selection Handlers ==========
   const handleSelect = useCallback((id: string) => {
@@ -306,11 +480,38 @@ export function EnhancedTransactionList({
     setFilters((prev) => ({ ...prev, type: e.target.value as FilterState['type'] }));
   }, []);
 
-  const clearFilters = useCallback(() => {
-    setFilters({ search: '', dateFrom: '', dateTo: '', type: 'all' });
+  const handleCategoryChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
+    setFilters((prev) => ({ ...prev, categoryId: e.target.value }));
   }, []);
 
-  const hasActiveFilters = filters.search || filters.dateFrom || filters.dateTo || filters.type !== 'all';
+  const handleAmountMinChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setFilters((prev) => ({
+      ...prev,
+      amountMin: value ? parseFloat(value) : null,
+    }));
+  }, []);
+
+  const handleAmountMaxChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setFilters((prev) => ({
+      ...prev,
+      amountMax: value ? parseFloat(value) : null,
+    }));
+  }, []);
+
+  const handleSortChange = useCallback((field: SortField) => {
+    setSort((prev) => ({
+      field,
+      direction: prev.field === field && prev.direction === 'desc' ? 'asc' : 'desc',
+    }));
+  }, []);
+
+  const clearFilters = useCallback(() => {
+    setFilters({ search: '', dateFrom: '', dateTo: '', type: 'all', categoryId: 'all', amountMin: null, amountMax: null });
+  }, []);
+
+  const hasActiveFilters = filters.search || filters.dateFrom || filters.dateTo || filters.type !== 'all' || filters.categoryId !== 'all' || filters.amountMin !== null || filters.amountMax !== null;
 
   // ========== Check for active operations ==========
   const isAnyDeleting = deletingIds.some((id) => isDeleting[id]);
@@ -356,7 +557,7 @@ export function EnhancedTransactionList({
           Filters
           {hasActiveFilters && (
             <span className="ml-1 px-1.5 py-0.5 bg-blue-600 text-white text-xs rounded-full">
-              {[filters.dateFrom, filters.dateTo, filters.type !== 'all'].filter(Boolean).length}
+              {[filters.dateFrom, filters.dateTo, filters.type !== 'all', filters.categoryId !== 'all', filters.amountMin !== null, filters.amountMax !== null].filter(Boolean).length}
             </span>
           )}
         </button>
@@ -377,51 +578,169 @@ export function EnhancedTransactionList({
 
       {/* Expanded Filters */}
       {showFilters && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">From Date</label>
-            <div className="relative">
-              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <input
-                type="date"
-                value={filters.dateFrom}
-                onChange={handleDateFromChange}
-                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm
+        <div className="p-4 bg-gray-50 rounded-lg border border-gray-200 space-y-4">
+          {/* First Row: Date Range & Type */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">From Date</label>
+              <div className="relative">
+                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <input
+                  type="date"
+                  value={filters.dateFrom}
+                  onChange={handleDateFromChange}
+                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm
+                    focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">To Date</label>
+              <div className="relative">
+                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <input
+                  type="date"
+                  value={filters.dateTo}
+                  onChange={handleDateToChange}
+                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm
+                    focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="filter-type" className="block text-xs font-medium text-gray-600 mb-1">Type</label>
+              <select
+                id="filter-type"
+                value={filters.type}
+                onChange={handleTypeChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm
                   focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="all">All Types</option>
+                <option value="DEBIT">Expenses</option>
+                <option value="CREDIT">Income</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Second Row: Category & Amount Range */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label htmlFor="filter-category" className="block text-xs font-medium text-gray-600 mb-1">Category</label>
+              <select
+                id="filter-category"
+                value={filters.categoryId}
+                onChange={handleCategoryChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm
+                  focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="all">All Categories</option>
+                <option value="uncategorized">Uncategorized</option>
+                {categories.map((cat) => {
+                  const icon = getCategoryIcon(cat.icon);
+                  return (
+                    <option key={cat.id} value={cat.id}>
+                      {icon ? `${icon} ` : ''}{cat.name}
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
+
+            <div>
+              <label htmlFor="filter-min-amount" className="block text-xs font-medium text-gray-600 mb-1">Min Amount</label>
+              <input
+                id="filter-min-amount"
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="$0.00"
+                value={filters.amountMin ?? ''}
+                onChange={handleAmountMinChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm
+                  focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="filter-max-amount" className="block text-xs font-medium text-gray-600 mb-1">Max Amount</label>
+              <input
+                id="filter-max-amount"
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="No limit"
+                value={filters.amountMax ?? ''}
+                onChange={handleAmountMaxChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm
+                  focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400"
               />
             </div>
           </div>
 
+          {/* Third Row: Sort Options */}
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">To Date</label>
-            <div className="relative">
-              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <input
-                type="date"
-                value={filters.dateTo}
-                onChange={handleDateToChange}
-                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm
-                  focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+            <label className="block text-xs font-medium text-gray-600 mb-2">
+              <ArrowUpDown className="inline-block h-3 w-3 mr-1" />
+              Sort By
+            </label>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => handleSortChange('date')}
+                className={`px-3 py-1.5 border rounded-lg text-sm font-medium transition-colors
+                  focus:outline-none focus:ring-2 focus:ring-blue-500
+                  ${sort.field === 'date'
+                    ? 'bg-blue-50 border-blue-300 text-blue-700'
+                    : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                  }`}
+              >
+                Date {sort.field === 'date' && (sort.direction === 'desc' ? '↓' : '↑')}
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSortChange('amount')}
+                className={`px-3 py-1.5 border rounded-lg text-sm font-medium transition-colors
+                  focus:outline-none focus:ring-2 focus:ring-blue-500
+                  ${sort.field === 'amount'
+                    ? 'bg-blue-50 border-blue-300 text-blue-700'
+                    : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                  }`}
+              >
+                Amount {sort.field === 'amount' && (sort.direction === 'desc' ? '↓' : '↑')}
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSortChange('description')}
+                className={`px-3 py-1.5 border rounded-lg text-sm font-medium transition-colors
+                  focus:outline-none focus:ring-2 focus:ring-blue-500
+                  ${sort.field === 'description'
+                    ? 'bg-blue-50 border-blue-300 text-blue-700'
+                    : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                  }`}
+              >
+                A-Z {sort.field === 'description' && (sort.direction === 'desc' ? '↓' : '↑')}
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSortChange('category')}
+                className={`px-3 py-1.5 border rounded-lg text-sm font-medium transition-colors
+                  focus:outline-none focus:ring-2 focus:ring-blue-500
+                  ${sort.field === 'category'
+                    ? 'bg-blue-50 border-blue-300 text-blue-700'
+                    : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                  }`}
+              >
+                Category {sort.field === 'category' && (sort.direction === 'desc' ? '↓' : '↑')}
+              </button>
             </div>
           </div>
 
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Type</label>
-            <select
-              value={filters.type}
-              onChange={handleTypeChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm
-                focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="all">All Types</option>
-              <option value="DEBIT">Expenses</option>
-              <option value="CREDIT">Income</option>
-            </select>
-          </div>
-
+          {/* Clear Filters */}
           {hasActiveFilters && (
-            <div className="sm:col-span-3">
+            <div>
               <button
                 type="button"
                 onClick={clearFilters}

@@ -189,13 +189,14 @@ export class RelinkRequiredError extends AccountsApiError {
 }
 
 // =============================================================================
-// HTTP Client
+// HTTP Client Configuration
 // =============================================================================
 
-function getApiBaseUrl(): string {
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-  return baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
-}
+/**
+ * API base URL - uses relative path to go through BFF proxy
+ * This ensures cookies are properly included (same-origin requests)
+ */
+const API_BASE_URL = '/api/accounts';
 
 async function handleErrorResponse(response: Response): Promise<never> {
   let errorData: ApiErrorResponse | null = null;
@@ -232,18 +233,15 @@ async function request<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const baseUrl = getApiBaseUrl();
-  const url = `${baseUrl}${endpoint}`;
-
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    ...((options.headers as Record<string, string>) || {}),
-  };
+  const url = `${API_BASE_URL}${endpoint}`;
 
   const response = await fetch(url, {
     ...options,
-    headers,
     credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
   });
 
   if (!response.ok) {
@@ -254,7 +252,12 @@ async function request<T>(
     return undefined as T;
   }
 
-  return response.json();
+  const text = await response.text();
+  if (!text) {
+    return {} as T;
+  }
+
+  return JSON.parse(text);
 }
 
 // =============================================================================
@@ -267,29 +270,29 @@ export const accountsClient = {
    * @param includeHidden - Include hidden accounts in results (default: true for accounts page visibility)
    */
   async getAccounts(includeHidden: boolean = true): Promise<Account[]> {
-    const url = includeHidden ? '/api/accounts?includeHidden=true' : '/api/accounts';
-    return request<Account[]>(url, { method: 'GET' });
+    const queryParams = includeHidden ? '?includeHidden=true' : '';
+    return request<Account[]>(queryParams, { method: 'GET' });
   },
 
   /**
    * Get a single account by ID
    */
   async getAccount(accountId: string): Promise<Account> {
-    return request<Account>(`/api/accounts/${accountId}`, { method: 'GET' });
+    return request<Account>(`/${accountId}`, { method: 'GET' });
   },
 
   /**
    * Get account summary statistics
    */
   async getAccountSummary(): Promise<AccountSummary> {
-    return request<AccountSummary>('/api/accounts/summary', { method: 'GET' });
+    return request<AccountSummary>('/summary', { method: 'GET' });
   },
 
   /**
    * Get financial summary with net worth calculation
    */
   async getFinancialSummary(): Promise<FinancialSummary> {
-    return request<FinancialSummary>('/api/accounts/financial-summary', {
+    return request<FinancialSummary>('/financial-summary', {
       method: 'GET',
     });
   },
@@ -298,7 +301,7 @@ export const accountsClient = {
    * Create a new manual account
    */
   async createAccount(data: CreateAccountRequest): Promise<Account> {
-    return request<Account>('/api/accounts', {
+    return request<Account>('', {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -311,7 +314,7 @@ export const accountsClient = {
     accountId: string,
     data: UpdateAccountRequest
   ): Promise<Account> {
-    return request<Account>(`/api/accounts/${accountId}`, {
+    return request<Account>(`/${accountId}`, {
       method: 'PATCH',
       body: JSON.stringify(data),
     });
@@ -321,7 +324,7 @@ export const accountsClient = {
    * Delete an account
    */
   async deleteAccount(accountId: string): Promise<void> {
-    return request<void>(`/api/accounts/${accountId}`, { method: 'DELETE' });
+    return request<void>(`/${accountId}`, { method: 'DELETE' });
   },
 
   /**
@@ -331,7 +334,7 @@ export const accountsClient = {
     accountId: string
   ): Promise<{ currentBalance: number; availableBalance?: number }> {
     return request<{ currentBalance: number; availableBalance?: number }>(
-      `/api/accounts/${accountId}/balance`,
+      `/${accountId}/balance`,
       { method: 'GET' }
     );
   },
@@ -344,7 +347,7 @@ export const accountsClient = {
     accountId: string
   ): Promise<DeletionEligibilityResponse> {
     return request<DeletionEligibilityResponse>(
-      `/api/accounts/${accountId}/deletion-eligibility`,
+      `/${accountId}/deletion-eligibility`,
       { method: 'GET' }
     );
   },
@@ -354,7 +357,7 @@ export const accountsClient = {
    * Preserves all transactions but excludes from active views
    */
   async hideAccount(accountId: string): Promise<Account> {
-    return request<Account>(`/api/accounts/${accountId}/hide`, {
+    return request<Account>(`/${accountId}/hide`, {
       method: 'PATCH',
     });
   },
@@ -367,7 +370,7 @@ export const accountsClient = {
     accountId: string
   ): Promise<RestoreEligibilityResponse> {
     return request<RestoreEligibilityResponse>(
-      `/api/accounts/${accountId}/restore-eligibility`,
+      `/${accountId}/restore-eligibility`,
       { method: 'GET' }
     );
   },
@@ -378,8 +381,7 @@ export const accountsClient = {
    * @throws RelinkRequiredError if banking connection is revoked
    */
   async restoreAccount(accountId: string): Promise<Account> {
-    const baseUrl = getApiBaseUrl();
-    const url = `${baseUrl}/api/accounts/${accountId}/restore`;
+    const url = `${API_BASE_URL}/${accountId}/restore`;
 
     const response = await fetch(url, {
       method: 'PATCH',

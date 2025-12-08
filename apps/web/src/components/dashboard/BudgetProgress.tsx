@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import {
@@ -128,20 +128,22 @@ export function BudgetProgress() {
   const isLoading = useBudgetsLoading();
   const summary = useBudgetsSummary();
   const { fetchBudgets } = useBudgetsStore();
+  const hasFetchedRef = useRef(false);
 
-  // Fetch budgets on mount
+  // Fetch budgets on mount (only once)
   useEffect(() => {
-    if (budgets.length === 0 && !isLoading) {
+    if (!hasFetchedRef.current && !isLoading) {
+      hasFetchedRef.current = true;
       fetchBudgets();
     }
-  }, [budgets.length, isLoading, fetchBudgets]);
+  }, [isLoading, fetchBudgets]);
 
   const totalBudget = summary.totalBudgeted;
   const totalSpent = summary.totalSpent;
   const overBudgetCount = summary.overBudgetCount;
 
   return (
-    <Card data-testid="category-breakdown">
+    <Card className="min-h-[340px] flex flex-col" data-testid="category-breakdown">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <div>
           <CardTitle className="text-lg font-semibold">Budget Overview</CardTitle>
@@ -164,7 +166,7 @@ export function BudgetProgress() {
           <ArrowRightIcon />
         </a>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex-1">
         {isLoading ? (
           <BudgetProgressSkeleton />
         ) : budgets.length === 0 ? (

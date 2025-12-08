@@ -178,7 +178,7 @@ function TransactionSkeleton() {
 
 function RecentTransactionsSkeleton() {
   return (
-    <Card data-testid="recent-transactions-skeleton">
+    <Card className="min-h-[340px] flex flex-col" data-testid="recent-transactions-skeleton">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <div className="h-5 w-40 bg-gray-200 rounded animate-pulse" />
         <div className="h-4 w-16 bg-gray-200 rounded animate-pulse" />
@@ -196,7 +196,7 @@ function RecentTransactionsSkeleton() {
 
 function EmptyState() {
   return (
-    <Card data-testid="recent-transactions">
+    <Card className="min-h-[340px] flex flex-col" data-testid="recent-transactions">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle className="text-lg font-semibold">
           Recent Transactions
@@ -209,8 +209,8 @@ function EmptyState() {
           <ArrowRightIcon />
         </a>
       </CardHeader>
-      <CardContent>
-        <div className="flex flex-col items-center justify-center py-8 text-center">
+      <CardContent className="flex-1 flex flex-col justify-center">
+        <div className="flex flex-col items-center justify-center text-center">
           <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4">
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -255,7 +255,7 @@ export function RecentTransactions({ transactions, isLoading }: RecentTransactio
   }
 
   return (
-    <Card data-testid="recent-transactions">
+    <Card className="min-h-[340px] flex flex-col" data-testid="recent-transactions">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle className="text-lg font-semibold">
           Recent Transactions
@@ -268,7 +268,7 @@ export function RecentTransactions({ transactions, isLoading }: RecentTransactio
           <ArrowRightIcon />
         </a>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex-1">
         <div className="divide-y divide-gray-100">
           {transactions.map((transaction) => (
             <TransactionItem key={transaction.id} transaction={transaction} />

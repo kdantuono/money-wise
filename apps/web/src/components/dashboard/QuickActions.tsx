@@ -152,11 +152,11 @@ function CalendarIcon() {
 
 export function QuickActions() {
   return (
-    <Card>
-      <CardHeader className="pb-3">
+    <Card className="min-h-[340px] flex flex-col">
+      <CardHeader className="pb-2">
         <CardTitle className="text-lg font-semibold">Quick Actions</CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex-1 flex flex-col justify-center">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <QuickActionLink
             icon={<LinkIcon />}

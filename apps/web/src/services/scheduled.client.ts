@@ -250,10 +250,11 @@ export class NotFoundError extends ScheduledApiError {
 // HTTP Client
 // =============================================================================
 
-function getApiBaseUrl(): string {
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-  return baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
-}
+/**
+ * API base URL - uses relative path to go through BFF proxy
+ * This ensures cookies are properly included (same-origin requests)
+ */
+const API_BASE_URL = '/api/scheduled';
 
 async function handleErrorResponse(response: Response): Promise<never> {
   let errorData: ApiErrorResponse | null = null;
@@ -290,18 +291,15 @@ async function request<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const baseUrl = getApiBaseUrl();
-  const url = `${baseUrl}${endpoint}`;
-
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    ...((options.headers as Record<string, string>) || {}),
-  };
+  const url = `${API_BASE_URL}${endpoint}`;
 
   const response = await fetch(url, {
     ...options,
-    headers,
     credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
   });
 
   if (!response.ok) {
@@ -312,7 +310,12 @@ async function request<T>(
     return undefined as T;
   }
 
-  return response.json();
+  const text = await response.text();
+  if (!text) {
+    return {} as T;
+  }
+
+  return JSON.parse(text);
 }
 
 // =============================================================================
@@ -336,9 +339,7 @@ export const scheduledClient = {
     if (options?.take !== undefined) params.append('take', String(options.take));
 
     const queryString = params.toString();
-    const endpoint = queryString
-      ? `/api/scheduled?${queryString}`
-      : '/api/scheduled';
+    const endpoint = queryString ? `?${queryString}` : '';
 
     return request<ScheduledTransaction[] | PaginatedScheduledResponse>(
       endpoint,
@@ -350,7 +351,7 @@ export const scheduledClient = {
    * Get a single scheduled transaction by ID
    */
   async getScheduledTransaction(id: string): Promise<ScheduledTransaction> {
-    return request<ScheduledTransaction>(`/api/scheduled/${id}`, {
+    return request<ScheduledTransaction>(`/${id}`, {
       method: 'GET',
     });
   },
@@ -359,7 +360,7 @@ export const scheduledClient = {
    * Get upcoming scheduled transactions
    */
   async getUpcoming(days: number = 30): Promise<UpcomingScheduled[]> {
-    return request<UpcomingScheduled[]>(`/api/scheduled/upcoming?days=${days}`, {
+    return request<UpcomingScheduled[]>(`/upcoming?days=${days}`, {
       method: 'GET',
     });
   },
@@ -375,7 +376,7 @@ export const scheduledClient = {
       startDate: startDate.toISOString(),
       endDate: endDate.toISOString(),
     });
-    return request<CalendarEvent[]>(`/api/scheduled/calendar?${params}`, {
+    return request<CalendarEvent[]>(`/calendar?${params}`, {
       method: 'GET',
     });
   },
@@ -386,7 +387,7 @@ export const scheduledClient = {
   async createScheduledTransaction(
     data: CreateScheduledTransactionRequest
   ): Promise<ScheduledTransaction> {
-    return request<ScheduledTransaction>('/api/scheduled', {
+    return request<ScheduledTransaction>('', {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -399,7 +400,7 @@ export const scheduledClient = {
     id: string,
     data: UpdateScheduledTransactionRequest
   ): Promise<ScheduledTransaction> {
-    return request<ScheduledTransaction>(`/api/scheduled/${id}`, {
+    return request<ScheduledTransaction>(`/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(data),
     });
@@ -409,7 +410,7 @@ export const scheduledClient = {
    * Delete a scheduled transaction
    */
   async deleteScheduledTransaction(id: string): Promise<void> {
-    return request<void>(`/api/scheduled/${id}`, {
+    return request<void>(`/${id}`, {
       method: 'DELETE',
     });
   },
@@ -418,7 +419,7 @@ export const scheduledClient = {
    * Skip the next occurrence of a recurring transaction
    */
   async skipNextOccurrence(id: string): Promise<ScheduledTransaction> {
-    return request<ScheduledTransaction>(`/api/scheduled/${id}/skip`, {
+    return request<ScheduledTransaction>(`/${id}/skip`, {
       method: 'POST',
     });
   },
@@ -430,7 +431,7 @@ export const scheduledClient = {
     id: string,
     transactionId?: string
   ): Promise<ScheduledTransaction> {
-    return request<ScheduledTransaction>(`/api/scheduled/${id}/complete`, {
+    return request<ScheduledTransaction>(`/${id}/complete`, {
       method: 'POST',
       body: JSON.stringify({ transactionId }),
     });
@@ -441,7 +442,7 @@ export const scheduledClient = {
    */
   async generateFromLiabilities(): Promise<ScheduledTransaction[]> {
     return request<ScheduledTransaction[]>(
-      '/api/scheduled/generate-from-liabilities',
+      '/generate-from-liabilities',
       { method: 'POST' }
     );
   },
