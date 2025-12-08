@@ -244,7 +244,7 @@ jobs:
 
       - name: 🔍 Run Hadolint
         if: steps.find-dockerfiles.outputs.found == 'true'
-        uses: hadolint/hadolint-action@v3.1.0
+        uses: hadolint/hadolint-action@v3.3.0
         with:
           dockerfile: Dockerfile
           failure-threshold: warning
