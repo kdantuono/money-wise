@@ -54,7 +54,7 @@ jobs:
 
     steps:
       - name: 📥 Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -79,7 +79,7 @@ jobs:
 
     steps:
       - name: 📥 Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: 📦 Setup pnpm
         uses: pnpm/action-setup@v2
@@ -144,7 +144,7 @@ jobs:
 
       - name: 📥 Checkout Repository
         if: steps.should-run.outputs.run == 'true'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -203,7 +203,7 @@ jobs:
 
       - name: 📥 Checkout Repository
         if: steps.should-run.outputs.run == 'true'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -305,7 +305,7 @@ jobs:
 
       - name: 📥 Checkout Repository
         if: steps.should-run.outputs.run == 'true'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -469,7 +469,7 @@ jobs:
 
     steps:
       - name: 📥 Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -611,7 +611,7 @@ jobs:
 
     steps:
       - name: 📥 Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: 📦 Setup pnpm
         uses: pnpm/action-setup@v2
@@ -917,7 +917,7 @@ jobs:
 
     steps:
       - name: 📥 Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: 🔍 Check App Exists
         id: check-app
@@ -1009,7 +1009,7 @@ jobs:
 
     steps:
       - name: 📥 Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: 📦 Install pnpm
         uses: pnpm/action-setup@v2
@@ -1131,7 +1131,7 @@ jobs:
 
     steps:
       - name: 📥 Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: 📦 Install pnpm (BEFORE setup-node)
         uses: pnpm/action-setup@v2
@@ -1290,7 +1290,7 @@ jobs:
 
     steps:
       - name: 📥 Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: 📦 Setup Node.js
         uses: actions/setup-node@v4
@@ -1415,7 +1415,7 @@ jobs:
 
     steps:
       - name: 📥 Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Deploy to Preview Environment
         run: |
