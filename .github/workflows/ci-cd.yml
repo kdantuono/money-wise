@@ -412,7 +412,7 @@ jobs:
       - name: 📤 Upload Trivy Results to GitHub Security
         if: steps.should-run.outputs.run == 'true' && always()
         continue-on-error: true
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: 'trivy-results.sarif'
           category: 'trivy-fs'
