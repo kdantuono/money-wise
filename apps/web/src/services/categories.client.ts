@@ -25,8 +25,9 @@
 
 /**
  * Category type for filtering
+ * Note: TRANSFER is handled via FlowType on transactions, not as a category type
  */
-export type CategoryType = 'EXPENSE' | 'INCOME' | 'TRANSFER';
+export type CategoryType = 'EXPENSE' | 'INCOME';
 
 /**
  * Category status
@@ -339,7 +340,7 @@ export const categoriesClient = {
   /**
    * Get all categories for the user's family
    *
-   * @param type - Optional filter by category type (EXPENSE, INCOME, TRANSFER)
+   * @param type - Optional filter by category type (EXPENSE, INCOME)
    * @returns List of categories
    * @throws {AuthenticationError} If not authenticated
    * @throws {ServerError} If server error occurs
@@ -402,9 +403,9 @@ export const categoriesClient = {
     return categories
       .filter(cat => cat.status === 'ACTIVE')
       .sort((a, b) => {
-        // Sort by type first (EXPENSE, INCOME, TRANSFER)
+        // Sort by type first (EXPENSE, INCOME)
         if (a.type !== b.type) {
-          const typeOrder = { EXPENSE: 0, INCOME: 1, TRANSFER: 2 };
+          const typeOrder: Record<CategoryType, number> = { EXPENSE: 0, INCOME: 1 };
           return typeOrder[a.type] - typeOrder[b.type];
         }
         // Then by sortOrder

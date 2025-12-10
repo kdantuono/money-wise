@@ -35,7 +35,6 @@ const TABS: TabConfig[] = [
   { id: 'ALL', label: 'All' },
   { id: 'EXPENSE', label: 'Expenses' },
   { id: 'INCOME', label: 'Income' },
-  { id: 'TRANSFER', label: 'Transfers' },
 ];
 
 // =============================================================================
@@ -147,7 +146,6 @@ export default function CategoriesPage() {
       ALL: categories.length,
       EXPENSE: categories.filter((c) => c.type === 'EXPENSE').length,
       INCOME: categories.filter((c) => c.type === 'INCOME').length,
-      TRANSFER: categories.filter((c) => c.type === 'TRANSFER').length,
     };
   }, [categories]);
 

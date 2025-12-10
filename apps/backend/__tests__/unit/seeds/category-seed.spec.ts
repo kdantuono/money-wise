@@ -18,7 +18,6 @@ import {
   getCategoryBySlug,
   getExpenseCategories,
   getIncomeCategories,
-  getTransferCategories,
   getTopLevelCategories,
   getChildCategories,
 } from '../../../src/database/seeds/category-seed';
@@ -39,11 +38,12 @@ describe('Category Seed', () => {
       expect(incomeCategories.length).toBeGreaterThan(0);
     });
 
-    it('should define transfer categories', () => {
+    // Note: TRANSFER categories removed - transfers use FlowType on transactions
+    it('should NOT have transfer categories (transfers use FlowType)', () => {
       const transferCategories = SYSTEM_CATEGORIES.filter(
-        (c) => c.type === 'TRANSFER'
+        (c) => (c.type as string) === 'TRANSFER'
       );
-      expect(transferCategories.length).toBeGreaterThan(0);
+      expect(transferCategories.length).toBe(0);
     });
 
     it('should have unique slugs across all categories', () => {
@@ -61,18 +61,18 @@ describe('Category Seed', () => {
       expect(uncategorized?.type).toBe('EXPENSE');
     });
 
-    it('should have "Transfer" category for internal transfers', () => {
+    // Note: "Transfer" category removed - transfers don't need categories
+    it('should NOT have "Transfer" category (transfers use FlowType)', () => {
       const transfer = SYSTEM_CATEGORIES.find((c) => c.slug === 'transfer');
-      expect(transfer).toBeDefined();
-      expect(transfer?.isSystem).toBe(true);
-      expect(transfer?.type).toBe('TRANSFER');
+      expect(transfer).toBeUndefined();
     });
 
     it('should have required properties for all categories', () => {
       SYSTEM_CATEGORIES.forEach((category) => {
         expect(category.name).toBeDefined();
         expect(category.slug).toBeDefined();
-        expect(category.type).toMatch(/^(INCOME|EXPENSE|TRANSFER)$/);
+        // Only INCOME and EXPENSE - no TRANSFER
+        expect(category.type).toMatch(/^(INCOME|EXPENSE)$/);
         expect(typeof category.sortOrder).toBe('number');
         expect(typeof category.isDefault).toBe('boolean');
         expect(typeof category.isSystem).toBe('boolean');
@@ -85,8 +85,9 @@ describe('Category Seed', () => {
       expect(SYSTEM_CATEGORY_SLUGS).toContain('uncategorized');
     });
 
-    it('should contain transfer slug', () => {
-      expect(SYSTEM_CATEGORY_SLUGS).toContain('transfer');
+    // Note: transfer slug removed - transfers don't have categories
+    it('should NOT contain transfer slug (transfers use FlowType)', () => {
+      expect(SYSTEM_CATEGORY_SLUGS).not.toContain('transfer');
     });
 
     it('should contain common expense slugs', () => {
@@ -134,15 +135,7 @@ describe('Category Seed', () => {
     });
   });
 
-  describe('getTransferCategories helper', () => {
-    it('should return only transfer categories', () => {
-      const transfers = getTransferCategories();
-      expect(transfers.length).toBeGreaterThan(0);
-      transfers.forEach((c) => {
-        expect(c.type).toBe('TRANSFER');
-      });
-    });
-  });
+  // Note: getTransferCategories helper removed - transfers don't have categories
 
   describe('getTopLevelCategories helper', () => {
     it('should return categories without parentSlug', () => {
@@ -238,9 +231,10 @@ describe('Category Seed', () => {
       expect(uncategorized?.isSystem).toBe(true);
     });
 
-    it('should mark Transfer as system (protected)', () => {
+    // Note: Transfer category removed - transfers don't have categories
+    it('should NOT have Transfer as system category (transfers use FlowType)', () => {
       const transfer = getCategoryBySlug('transfer');
-      expect(transfer?.isSystem).toBe(true);
+      expect(transfer).toBeUndefined();
     });
 
     it('should mark most categories as default (editable)', () => {
@@ -252,8 +246,9 @@ describe('Category Seed', () => {
 
     it('should have few system categories (only essential ones)', () => {
       const systemCategories = SYSTEM_CATEGORIES.filter((c) => c.isSystem);
-      // Only Uncategorized and Transfer should be truly system
-      expect(systemCategories.length).toBeLessThanOrEqual(3);
+      // Only Uncategorized should be truly system (Transfer removed)
+      expect(systemCategories.length).toBe(1);
+      expect(systemCategories[0].slug).toBe('uncategorized');
     });
   });
 });

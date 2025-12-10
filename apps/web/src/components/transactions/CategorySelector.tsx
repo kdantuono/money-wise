@@ -184,18 +184,19 @@ export function CategorySelector({
     return result;
   }, [categories, filterType, searchQuery]);
 
-  // Group categories by type
+  // Group categories by type (EXPENSE and INCOME only - transfers use FlowType)
   const groupedCategories = useMemo(() => {
     if (!showGroups) return null;
 
     const groups: Record<CategoryType, CategoryOption[]> = {
       EXPENSE: [],
       INCOME: [],
-      TRANSFER: [],
     };
 
     filteredCategories.forEach((cat) => {
-      groups[cat.type].push(cat);
+      if (cat.type in groups) {
+        groups[cat.type].push(cat);
+      }
     });
 
     return groups;
@@ -207,7 +208,6 @@ export function CategorySelector({
       return [
         ...groupedCategories.EXPENSE,
         ...groupedCategories.INCOME,
-        ...groupedCategories.TRANSFER,
       ];
     }
     return filteredCategories;
@@ -535,19 +535,6 @@ export function CategorySelector({
                       renderOption(
                         cat,
                         groupedCategories.EXPENSE.length + i
-                      )
-                    )}
-                  </>
-                )}
-                {groupedCategories.TRANSFER.length > 0 && (
-                  <>
-                    {renderGroupHeader('TRANSFER')}
-                    {groupedCategories.TRANSFER.map((cat, i) =>
-                      renderOption(
-                        cat,
-                        groupedCategories.EXPENSE.length +
-                          groupedCategories.INCOME.length +
-                          i
                       )
                     )}
                   </>

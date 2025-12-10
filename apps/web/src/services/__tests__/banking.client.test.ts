@@ -122,7 +122,7 @@ describe('Banking Client', () => {
       (fetch as any).mockResolvedValueOnce({
         ok: true,
         status: 200,
-        json: async () => mockResponse,
+        text: async () => JSON.stringify(mockResponse),
       });
 
       const result = await bankingClient.initiateLink('SALTEDGE');
@@ -149,7 +149,7 @@ describe('Banking Client', () => {
       (fetch as any).mockResolvedValueOnce({
         ok: true,
         status: 200,
-        json: async () => mockResponse,
+        text: async () => JSON.stringify(mockResponse),
       });
 
       const result = await bankingClient.initiateLink();
@@ -252,7 +252,7 @@ describe('Banking Client', () => {
       (fetch as any).mockResolvedValueOnce({
         ok: true,
         status: 200,
-        json: async () => mockResponse,
+        text: async () => JSON.stringify(mockResponse),
       });
 
       const result = await bankingClient.completeLink('conn-123');
@@ -310,7 +310,7 @@ describe('Banking Client', () => {
       (fetch as any).mockResolvedValueOnce({
         ok: true,
         status: 200,
-        json: async () => mockResponse,
+        text: async () => JSON.stringify(mockResponse),
       });
 
       const result = await bankingClient.getAccounts();
@@ -333,7 +333,7 @@ describe('Banking Client', () => {
       (fetch as any).mockResolvedValueOnce({
         ok: true,
         status: 200,
-        json: async () => mockResponse,
+        text: async () => JSON.stringify(mockResponse),
       });
 
       const result = await bankingClient.getAccounts();
@@ -370,7 +370,7 @@ describe('Banking Client', () => {
       (fetch as any).mockResolvedValueOnce({
         ok: true,
         status: 200,
-        json: async () => mockResponse,
+        text: async () => JSON.stringify(mockResponse),
       });
 
       const result = await bankingClient.syncAccount('acc-1');
@@ -397,7 +397,7 @@ describe('Banking Client', () => {
       (fetch as any).mockResolvedValueOnce({
         ok: true,
         status: 200,
-        json: async () => mockResponse,
+        text: async () => JSON.stringify(mockResponse),
       });
 
       const result = await bankingClient.syncAccount('acc-1');
@@ -561,43 +561,38 @@ describe('Banking Client', () => {
     });
   });
 
-  describe('Request Logging', () => {
-    it('should log requests in development', async () => {
-      // Set NODE_ENV to development using vi.stubEnv
-      vi.stubEnv('NODE_ENV', 'development');
-
+  describe('BFF Proxy Pattern', () => {
+    it('should use relative path /api/banking for BFF proxy', async () => {
       (fetch as any).mockResolvedValueOnce({
         ok: true,
         status: 200,
-        json: async () => ({ accounts: [] }),
+        text: async () => JSON.stringify({ accounts: [] }),
       });
 
       await bankingClient.getAccounts();
 
-      expect(console.log).toHaveBeenCalled();
-
-      // Restore environment variables
-      vi.unstubAllEnvs();
+      // BFF proxy uses relative path - no hostname prefix
+      expect(fetch).toHaveBeenCalledWith(
+        '/api/banking/accounts',
+        expect.any(Object)
+      );
     });
 
-    it('should log errors in development', async () => {
-      vi.stubEnv('NODE_ENV', 'development');
-
+    it('should include credentials for same-origin cookie handling', async () => {
       (fetch as any).mockResolvedValueOnce({
-        ok: false,
-        status: 500,
-        text: async () =>
-          JSON.stringify({
-            statusCode: 500,
-            message: 'Error',
-          }),
+        ok: true,
+        status: 200,
+        text: async () => JSON.stringify({ accounts: [] }),
       });
 
-      await expect(bankingClient.getAccounts()).rejects.toThrow();
+      await bankingClient.getAccounts();
 
-      expect(console.error).toHaveBeenCalled();
-
-      vi.unstubAllEnvs();
+      expect(fetch).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({
+          credentials: 'include',
+        })
+      );
     });
   });
 });

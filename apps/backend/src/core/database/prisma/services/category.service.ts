@@ -272,7 +272,7 @@ export class CategoryService {
    * - take: Number of records to return (default: 50)
    *
    * FILTERING:
-   * - where.type: Filter by category type (INCOME, EXPENSE, TRANSFER)
+   * - where.type: Filter by category type (INCOME, EXPENSE)
    * - where.status: Filter by status (ACTIVE, INACTIVE, ARCHIVED)
    * - where.parentId: Filter by parent category (get children)
    *

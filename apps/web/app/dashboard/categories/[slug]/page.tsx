@@ -358,7 +358,6 @@ export default function CategoryDetailPage() {
                     px-2 py-1 text-xs font-medium rounded-full
                     ${category.type === 'EXPENSE' ? 'bg-red-100 text-red-700' : ''}
                     ${category.type === 'INCOME' ? 'bg-green-100 text-green-700' : ''}
-                    ${category.type === 'TRANSFER' ? 'bg-blue-100 text-blue-700' : ''}
                   `}
                 >
                   {formatCategoryType(category.type)}

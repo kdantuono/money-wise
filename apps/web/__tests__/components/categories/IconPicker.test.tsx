@@ -88,15 +88,19 @@ describe('IconPicker', () => {
     it('should highlight selected icon', () => {
       render(<IconPicker {...getProps({ value: 'Wallet' })} />);
 
-      const selectedButton = screen.getByRole('option', { selected: true });
-      expect(selectedButton).toHaveAttribute('title', 'Wallet');
+      // Icons may appear in multiple categories, so use getAllByRole
+      const selectedButtons = screen.getAllByRole('option', { selected: true });
+      expect(selectedButtons.length).toBeGreaterThan(0);
+      expect(selectedButtons[0]).toHaveAttribute('title', 'Wallet');
     });
 
     it('should show checkmark on selected icon', () => {
       render(<IconPicker {...getProps({ value: 'Wallet' })} />);
 
-      const selectedButton = screen.getByRole('option', { selected: true });
-      expect(selectedButton.querySelector('span')).toBeInTheDocument();
+      // Icons may appear in multiple categories, so use getAllByRole
+      const selectedButtons = screen.getAllByRole('option', { selected: true });
+      expect(selectedButtons.length).toBeGreaterThan(0);
+      expect(selectedButtons[0].querySelector('span')).toBeInTheDocument();
     });
 
     it('should not call onChange when disabled', async () => {

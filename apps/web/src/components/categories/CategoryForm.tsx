@@ -372,7 +372,6 @@ export function CategoryForm({
                       >
                         <option value="EXPENSE">Expense</option>
                         <option value="INCOME">Income</option>
-                        <option value="TRANSFER">Transfer</option>
                       </select>
                       {errors.type && (
                         <p className="mt-1 text-sm text-red-600">{errors.type}</p>

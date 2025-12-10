@@ -99,11 +99,11 @@ const mockCategories: Category[] = [
   },
   {
     id: 'cat-5',
-    name: 'Transfer',
-    slug: 'transfer',
-    type: 'TRANSFER',
+    name: 'Uncategorized',
+    slug: 'uncategorized',
+    type: 'EXPENSE',
     status: 'ACTIVE',
-    icon: 'ArrowRightLeft',
+    icon: 'HelpCircle',
     color: '#6B7280',
     parentId: null,
     familyId: 'family-1',
@@ -157,7 +157,7 @@ describe('CategoryTree', () => {
 
       expect(screen.getByText('Food & Dining')).toBeInTheDocument();
       expect(screen.getByText('Transportation')).toBeInTheDocument();
-      expect(screen.getByText('Transfer')).toBeInTheDocument();
+      expect(screen.getByText('Uncategorized')).toBeInTheDocument();
     });
 
     it('should not initially show child categories', () => {
@@ -192,26 +192,34 @@ describe('CategoryTree', () => {
   });
 
   describe('Hierarchy', () => {
-    it('should expand to show children when parent is clicked', async () => {
+    it('should expand to show children when expand button is clicked', async () => {
       const { user } = render(<CategoryTree {...getProps()} />);
 
-      const foodItem = screen.getByText('Food & Dining');
-      await user.click(foodItem);
+      // Find the Food & Dining row and its expand button
+      const foodItem = screen.getByText('Food & Dining').closest('[role="treeitem"]');
+      const expandButton = foodItem?.querySelector('button[aria-label="Expand"]');
+      expect(expandButton).toBeInTheDocument();
+
+      await user.click(expandButton!);
 
       expect(screen.getByText('Groceries')).toBeInTheDocument();
       expect(screen.getByText('Restaurants')).toBeInTheDocument();
     });
 
-    it('should collapse children when expanded parent is clicked again', async () => {
+    it('should collapse children when collapse button is clicked again', async () => {
       const { user } = render(<CategoryTree {...getProps()} />);
 
-      const foodItem = screen.getByText('Food & Dining');
-      await user.click(foodItem);
+      // Find the Food & Dining row and its expand button
+      const foodItem = screen.getByText('Food & Dining').closest('[role="treeitem"]');
+      const expandButton = foodItem?.querySelector('button[aria-label="Expand"]');
+      await user.click(expandButton!);
 
       // Children should be visible
       expect(screen.getByText('Groceries')).toBeInTheDocument();
 
-      await user.click(foodItem);
+      // Now find the collapse button (aria-label changed after expand)
+      const collapseButton = foodItem?.querySelector('button[aria-label="Collapse"]');
+      await user.click(collapseButton!);
 
       // Children should be hidden
       expect(screen.queryByText('Groceries')).not.toBeInTheDocument();
@@ -220,8 +228,10 @@ describe('CategoryTree', () => {
     it('should indent child categories', async () => {
       const { user } = render(<CategoryTree {...getProps()} />);
 
-      const foodItem = screen.getByText('Food & Dining');
-      await user.click(foodItem);
+      // Find the Food & Dining row and its expand button
+      const foodItem = screen.getByText('Food & Dining').closest('[role="treeitem"]');
+      const expandButton = foodItem?.querySelector('button[aria-label="Expand"]');
+      await user.click(expandButton!);
 
       // Child items should have increased padding (indentation)
       const groceriesItem = screen.getByText('Groceries').closest('[role="treeitem"]');
@@ -310,23 +320,23 @@ describe('CategoryTree', () => {
     it('should show lock icon for system categories', () => {
       render(<CategoryTree {...getProps()} />);
 
-      const transferItem = screen.getByText('Transfer').closest('[role="treeitem"]');
+      const uncategorizedItem = screen.getByText('Uncategorized').closest('[role="treeitem"]');
       // System category should have lock icon
-      expect(transferItem?.querySelector('[aria-label*="System"]')).toBeInTheDocument();
+      expect(uncategorizedItem?.querySelector('[aria-label*="System"]')).toBeInTheDocument();
     });
 
     it('should not call onEdit for system categories', async () => {
       const onEdit = vi.fn();
       const { user, container } = render(<CategoryTree {...getProps({ onEdit })} />);
 
-      const transferItem = screen.getByText('Transfer').closest('[role="treeitem"]');
+      const uncategorizedItem = screen.getByText('Uncategorized').closest('[role="treeitem"]');
 
-      if (transferItem) {
-        await user.hover(transferItem);
+      if (uncategorizedItem) {
+        await user.hover(uncategorizedItem);
       }
 
       // Edit button should not exist for system category
-      const editButton = container.querySelector('[aria-label="Edit Transfer"]');
+      const editButton = container.querySelector('[aria-label="Edit Uncategorized"]');
       expect(editButton).not.toBeInTheDocument();
     });
   });
@@ -379,7 +389,9 @@ describe('CategoryTree', () => {
       const foodItem = screen.getByText('Food & Dining').closest('[role="treeitem"]');
       expect(foodItem).toHaveAttribute('aria-expanded', 'false');
 
-      await user.click(screen.getByText('Food & Dining'));
+      // Click the expand button
+      const expandButton = foodItem?.querySelector('button[aria-label="Expand"]');
+      await user.click(expandButton!);
 
       expect(foodItem).toHaveAttribute('aria-expanded', 'true');
     });
@@ -388,8 +400,10 @@ describe('CategoryTree', () => {
       const onSelect = vi.fn();
       const { user } = render(<CategoryTree {...getProps({ onSelect })} />);
 
-      const firstItem = screen.getAllByRole('treeitem')[0];
-      firstItem.focus();
+      // Find the navigable name button (the actual button, not just the text span)
+      const firstNameButton = screen.getByText('Food & Dining').closest('button');
+      expect(firstNameButton).toBeInTheDocument();
+      firstNameButton!.focus();
 
       await user.keyboard('{Enter}');
 

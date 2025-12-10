@@ -250,9 +250,9 @@ describe('PrismaCategoryService', () => {
 
     it('should create a category with isSystem flag', async () => {
       const createDto = {
-        name: 'Transfer',
-        slug: 'transfer',
-        type: CategoryType.TRANSFER,
+        name: 'Uncategorized',
+        slug: 'uncategorized-system',
+        type: CategoryType.EXPENSE,
         familyId: mockFamilyId,
         isSystem: true,
       };
@@ -1163,9 +1163,9 @@ describe('PrismaCategoryService', () => {
     it('should prevent deletion of isSystem categories', async () => {
       const systemCategory = {
         id: mockCategoryId,
-        name: 'Transfer',
-        slug: 'transfer',
-        type: CategoryType.TRANSFER,
+        name: 'Uncategorized',
+        slug: 'uncategorized',
+        type: CategoryType.EXPENSE,
         status: CategoryStatus.ACTIVE,
         isSystem: true,
         description: null,
