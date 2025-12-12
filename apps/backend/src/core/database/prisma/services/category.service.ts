@@ -9,6 +9,18 @@ import { Category, CategoryType, CategoryStatus, Prisma } from '../../../../../g
 import { CategoryWithRelations, CategoryWithOptionalRelations } from './types';
 
 /**
+ * Spending rollup result for a category
+ */
+export interface CategorySpending {
+  categoryId: string;
+  categoryName: string;
+  icon: string | null;
+  color: string | null;
+  totalAmount: number;
+  transactionCount: number;
+}
+
+/**
  * CategoryService - Prisma-based category management
  *
  * Manages hierarchical category trees for financial transaction classification.
@@ -260,7 +272,7 @@ export class CategoryService {
    * - take: Number of records to return (default: 50)
    *
    * FILTERING:
-   * - where.type: Filter by category type (INCOME, EXPENSE, TRANSFER)
+   * - where.type: Filter by category type (INCOME, EXPENSE)
    * - where.status: Filter by status (ACTIVE, INACTIVE, ARCHIVED)
    * - where.parentId: Filter by parent category (get children)
    *
@@ -555,6 +567,118 @@ export class CategoryService {
     });
 
     return count > 0;
+  }
+
+  // ============================================================================
+  // ANALYTICS METHODS
+  // ============================================================================
+
+  /**
+   * Get spending aggregated by category for a date range
+   *
+   * Uses a recursive CTE to roll up spending from child categories to parent categories.
+   * Only includes DEBIT transactions (expenses).
+   *
+   * BEHAVIOR:
+   * - If parentOnly=true: Returns only top-level (parent) categories with aggregated child spending
+   * - If parentOnly=false: Returns all categories with their individual spending
+   *
+   * @param familyId - Family UUID
+   * @param startDate - Start of date range
+   * @param endDate - End of date range
+   * @param options - Optional settings (parentOnly: boolean)
+   * @returns Array of spending by category
+   * @throws BadRequestException - Invalid UUID format
+   */
+  async getSpendingByCategory(
+    familyId: string,
+    startDate: Date,
+    endDate: Date,
+    options?: { parentOnly?: boolean }
+  ): Promise<CategorySpending[]> {
+    this.validateUuid(familyId);
+
+    const { parentOnly = true } = options || {};
+
+    if (parentOnly) {
+      // Use recursive CTE to roll up child spending to parent categories
+      const result = await this.prisma.$queryRaw<CategorySpending[]>`
+        WITH RECURSIVE category_tree AS (
+          -- Base case: all categories with their root ancestor
+          SELECT
+            c.id,
+            c.name,
+            c.parent_id,
+            CASE WHEN c.parent_id IS NULL THEN c.id ELSE NULL END as root_id,
+            0 as depth
+          FROM categories c
+          WHERE c.family_id = ${familyId}::uuid
+            AND c.status = 'ACTIVE'
+            AND c.parent_id IS NULL
+
+          UNION ALL
+
+          -- Recursive case: add children, carrying forward root_id
+          SELECT
+            c.id,
+            c.name,
+            c.parent_id,
+            ct.root_id,
+            ct.depth + 1
+          FROM categories c
+          JOIN category_tree ct ON c.parent_id = ct.id
+          WHERE c.status = 'ACTIVE'
+        ),
+        -- Aggregate spending for all categories in each tree
+        spending_by_tree AS (
+          SELECT
+            ct.root_id as category_id,
+            COALESCE(SUM(ABS(t.amount)), 0) as total_amount,
+            COUNT(t.id) as transaction_count
+          FROM category_tree ct
+          LEFT JOIN transactions t ON t.category_id = ct.id
+            AND t.date >= ${startDate}
+            AND t.date <= ${endDate}
+            AND t.type = 'DEBIT'
+          WHERE ct.root_id IS NOT NULL
+          GROUP BY ct.root_id
+        )
+        SELECT
+          s.category_id as "categoryId",
+          c.name as "categoryName",
+          c.icon,
+          c.color,
+          s.total_amount::float as "totalAmount",
+          s.transaction_count::int as "transactionCount"
+        FROM spending_by_tree s
+        JOIN categories c ON s.category_id = c.id
+        ORDER BY s.total_amount DESC
+      `;
+
+      return result;
+    } else {
+      // Simple aggregation per category without rollup
+      const result = await this.prisma.$queryRaw<CategorySpending[]>`
+        SELECT
+          c.id as "categoryId",
+          c.name as "categoryName",
+          c.icon,
+          c.color,
+          COALESCE(SUM(ABS(t.amount)), 0)::float as "totalAmount",
+          COUNT(t.id)::int as "transactionCount"
+        FROM categories c
+        LEFT JOIN transactions t ON t.category_id = c.id
+          AND t.date >= ${startDate}
+          AND t.date <= ${endDate}
+          AND t.type = 'DEBIT'
+        WHERE c.family_id = ${familyId}::uuid
+          AND c.status = 'ACTIVE'
+        GROUP BY c.id, c.name, c.icon, c.color
+        ORDER BY "totalAmount" DESC
+      `;
+
+      return result;
+    }
   }
 
   // ============================================================================

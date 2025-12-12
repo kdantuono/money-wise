@@ -204,12 +204,17 @@ export class BankingController {
     @CurrentUser() user: CurrentUserPayload,
     @Body() body: CompleteLinkRequestDto,
   ): Promise<CompleteLinkResponseDto> {
+    this.logger.log(`[DEBUG][Controller.completeBankingLink] >>> ENTER`);
+    this.logger.log(`[DEBUG][Controller.completeBankingLink] User ID: ${user.id}`);
+    this.logger.log(`[DEBUG][Controller.completeBankingLink] Body: ${JSON.stringify(body)}`);
+
     if (!body.connectionId) {
+      this.logger.error(`[DEBUG][Controller.completeBankingLink] Missing connectionId!`);
       throw new BadRequestException('connectionId is required');
     }
 
     this.logger.log(
-      `Completing banking link for user ${user.id}, connection ${body.connectionId}, saltEdge: ${body.saltEdgeConnectionId || 'not provided'}`,
+      `[DEBUG][Controller.completeBankingLink] Calling bankingService.completeBankingLink()...`,
     );
 
     try {
@@ -219,16 +224,30 @@ export class BankingController {
         body.saltEdgeConnectionId,
       );
 
+      this.logger.log(`[DEBUG][Controller.completeBankingLink] completeBankingLink returned:`);
+      this.logger.log(`[DEBUG][Controller.completeBankingLink]   - accounts.length: ${result.accounts.length}`);
+      this.logger.log(`[DEBUG][Controller.completeBankingLink]   - saltEdgeConnectionId: ${result.saltEdgeConnectionId}`);
+
+      if (result.accounts.length === 0) {
+        this.logger.warn(`[DEBUG][Controller.completeBankingLink] ⚠️ NO ACCOUNTS RETURNED FROM SALTEDGE!`);
+      } else {
+        this.logger.log(`[DEBUG][Controller.completeBankingLink] Account IDs: ${result.accounts.map(a => a.id).join(', ')}`);
+      }
+
       // Store the accounts with the saltEdgeConnectionId to ensure it's properly saved
-      await this.bankingService.storeLinkedAccounts(
+      this.logger.log(`[DEBUG][Controller.completeBankingLink] Calling bankingService.storeLinkedAccounts()...`);
+      const storedCount = await this.bankingService.storeLinkedAccounts(
         user.id,
         body.connectionId,
         result.accounts,
         result.saltEdgeConnectionId,
       );
+      this.logger.log(`[DEBUG][Controller.completeBankingLink] storeLinkedAccounts returned: ${storedCount} accounts stored`);
 
+      this.logger.log(`[DEBUG][Controller.completeBankingLink] <<< EXIT SUCCESS - returning ${result.accounts.length} accounts`);
       return { accounts: result.accounts };
     } catch (error) {
+      this.logger.error(`[DEBUG][Controller.completeBankingLink] <<< EXIT ERROR: ${error.message}`);
       this.logger.error('Failed to complete banking link', error);
       throw error;
     }

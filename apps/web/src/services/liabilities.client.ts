@@ -238,10 +238,11 @@ export class NotFoundError extends LiabilitiesApiError {
 // HTTP Client
 // =============================================================================
 
-function getApiBaseUrl(): string {
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-  return baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
-}
+/**
+ * API base URL - uses relative path to go through BFF proxy
+ * This ensures cookies are properly included (same-origin requests)
+ */
+const API_BASE_URL = '/api/liabilities';
 
 async function handleErrorResponse(response: Response): Promise<never> {
   let errorData: ApiErrorResponse | null = null;
@@ -278,18 +279,15 @@ async function request<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const baseUrl = getApiBaseUrl();
-  const url = `${baseUrl}${endpoint}`;
-
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    ...((options.headers as Record<string, string>) || {}),
-  };
+  const url = `${API_BASE_URL}${endpoint}`;
 
   const response = await fetch(url, {
     ...options,
-    headers,
     credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
   });
 
   if (!response.ok) {
@@ -300,7 +298,12 @@ async function request<T>(
     return undefined as T;
   }
 
-  return response.json();
+  const text = await response.text();
+  if (!text) {
+    return {} as T;
+  }
+
+  return JSON.parse(text);
 }
 
 // =============================================================================
@@ -312,14 +315,14 @@ export const liabilitiesClient = {
    * Get all liabilities for the current user
    */
   async getLiabilities(): Promise<Liability[]> {
-    return request<Liability[]>('/api/liabilities', { method: 'GET' });
+    return request<Liability[]>('', { method: 'GET' });
   },
 
   /**
    * Get a single liability by ID
    */
   async getLiability(liabilityId: string): Promise<Liability> {
-    return request<Liability>(`/api/liabilities/${liabilityId}`, {
+    return request<Liability>(`/${liabilityId}`, {
       method: 'GET',
     });
   },
@@ -328,7 +331,7 @@ export const liabilitiesClient = {
    * Get liabilities summary statistics
    */
   async getSummary(): Promise<LiabilitiesSummary> {
-    return request<LiabilitiesSummary>('/api/liabilities/summary', {
+    return request<LiabilitiesSummary>('/summary', {
       method: 'GET',
     });
   },
@@ -338,7 +341,7 @@ export const liabilitiesClient = {
    */
   async getUpcomingPayments(days: number = 30): Promise<UpcomingPayment[]> {
     return request<UpcomingPayment[]>(
-      `/api/liabilities/upcoming?days=${days}`,
+      `/upcoming?days=${days}`,
       { method: 'GET' }
     );
   },
@@ -347,7 +350,7 @@ export const liabilitiesClient = {
    * Create a new liability
    */
   async createLiability(data: CreateLiabilityRequest): Promise<Liability> {
-    return request<Liability>('/api/liabilities', {
+    return request<Liability>('', {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -360,7 +363,7 @@ export const liabilitiesClient = {
     liabilityId: string,
     data: UpdateLiabilityRequest
   ): Promise<Liability> {
-    return request<Liability>(`/api/liabilities/${liabilityId}`, {
+    return request<Liability>(`/${liabilityId}`, {
       method: 'PATCH',
       body: JSON.stringify(data),
     });
@@ -370,7 +373,7 @@ export const liabilitiesClient = {
    * Delete a liability
    */
   async deleteLiability(liabilityId: string): Promise<void> {
-    return request<void>(`/api/liabilities/${liabilityId}`, {
+    return request<void>(`/${liabilityId}`, {
       method: 'DELETE',
     });
   },
@@ -382,7 +385,7 @@ export const liabilitiesClient = {
     description: string,
     merchantName?: string
   ): Promise<BNPLDetectionResult | null> {
-    return request<BNPLDetectionResult | null>('/api/liabilities/detect-bnpl', {
+    return request<BNPLDetectionResult | null>('/detect-bnpl', {
       method: 'POST',
       body: JSON.stringify({ description, merchantName }),
     });
@@ -396,7 +399,7 @@ export const liabilitiesClient = {
     data: CreateInstallmentPlanRequest
   ): Promise<InstallmentPlan> {
     return request<InstallmentPlan>(
-      `/api/liabilities/${liabilityId}/installment-plan`,
+      `/${liabilityId}/installment-plan`,
       {
         method: 'POST',
         body: JSON.stringify(data),
@@ -413,7 +416,7 @@ export const liabilitiesClient = {
     transactionId?: string
   ): Promise<Installment> {
     return request<Installment>(
-      `/api/liabilities/${liabilityId}/installments/${installmentId}/pay`,
+      `/${liabilityId}/installments/${installmentId}/pay`,
       {
         method: 'PATCH',
         body: JSON.stringify({ transactionId }),

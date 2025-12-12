@@ -219,7 +219,7 @@ async function createCategories(familyId: string): Promise<Array<{ id: string; s
     { family: { connect: { id: familyId } }, name: 'Gaming', slug: 'gaming', type: 'EXPENSE', status: 'ACTIVE', icon: 'gamepad-2', color: '#A855F7' },
     { family: { connect: { id: familyId } }, name: 'Subscriptions', slug: 'subscriptions', type: 'EXPENSE', status: 'ACTIVE', icon: 'repeat', color: '#A855F7' },
     { family: { connect: { id: familyId } }, name: 'Healthcare', slug: 'healthcare', type: 'EXPENSE', status: 'ACTIVE', icon: 'heart', color: '#EC4899' },
-    { family: { connect: { id: familyId } }, name: 'Account Transfer', slug: 'account-transfer', type: 'TRANSFER', status: 'ACTIVE', icon: 'arrow-right', color: '#8B5CF6' },
+    // Note: Account Transfer category removed - transfers use FlowType on transactions, not categories
   ];
 
   return Promise.all(categoryData.map((data) => prisma.category.create({ data })));

@@ -250,9 +250,9 @@ describe('PrismaCategoryService', () => {
 
     it('should create a category with isSystem flag', async () => {
       const createDto = {
-        name: 'Transfer',
-        slug: 'transfer',
-        type: CategoryType.TRANSFER,
+        name: 'Uncategorized',
+        slug: 'uncategorized-system',
+        type: CategoryType.EXPENSE,
         familyId: mockFamilyId,
         isSystem: true,
       };
@@ -1163,9 +1163,9 @@ describe('PrismaCategoryService', () => {
     it('should prevent deletion of isSystem categories', async () => {
       const systemCategory = {
         id: mockCategoryId,
-        name: 'Transfer',
-        slug: 'transfer',
-        type: CategoryType.TRANSFER,
+        name: 'Uncategorized',
+        slug: 'uncategorized',
+        type: CategoryType.EXPENSE,
         status: CategoryStatus.ACTIVE,
         isSystem: true,
         description: null,
@@ -1334,6 +1334,214 @@ describe('PrismaCategoryService', () => {
       expect(() => service['validateUuid']('123')).toThrow(BadRequestException);
       expect(() => service['validateUuid']('')).toThrow(BadRequestException);
       expect(() => service['validateUuid']('not-a-uuid-at-all')).toThrow(BadRequestException);
+    });
+  });
+
+  describe('getSpendingByCategory', () => {
+    const startDate = new Date('2025-01-01');
+    const endDate = new Date('2025-01-31');
+
+    beforeEach(async () => {
+      // Re-create module with $queryRaw mock for spending tests
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          CategoryService,
+          {
+            provide: PrismaService,
+            useValue: {
+              category: {
+                create: jest.fn(),
+                findUnique: jest.fn(),
+                findMany: jest.fn(),
+                findFirst: jest.fn(),
+                update: jest.fn(),
+                delete: jest.fn(),
+                count: jest.fn(),
+              },
+              $queryRaw: jest.fn(),
+            },
+          },
+        ],
+      }).compile();
+
+      service = module.get<CategoryService>(CategoryService);
+      prisma = module.get<PrismaService>(PrismaService);
+    });
+
+    it('should return spending aggregated by parent category (parentOnly=true)', async () => {
+      const mockSpendingData = [
+        {
+          categoryId: mockCategoryId,
+          categoryName: 'Food & Dining',
+          icon: 'Utensils',
+          color: '#FF5733',
+          totalAmount: 500.0,
+          transactionCount: 25,
+        },
+        {
+          categoryId: mockParentCategoryId,
+          categoryName: 'Transportation',
+          icon: 'Car',
+          color: '#3B82F6',
+          totalAmount: 200.0,
+          transactionCount: 10,
+        },
+      ];
+
+      jest.spyOn(prisma, '$queryRaw').mockResolvedValue(mockSpendingData);
+
+      const result = await service.getSpendingByCategory(
+        mockFamilyId,
+        startDate,
+        endDate,
+        { parentOnly: true }
+      );
+
+      expect(result).toEqual(mockSpendingData);
+      expect(result).toHaveLength(2);
+      expect(result[0].totalAmount).toBe(500.0);
+      expect(result[0].transactionCount).toBe(25);
+      expect(prisma.$queryRaw).toHaveBeenCalled();
+    });
+
+    it('should return spending for all categories (parentOnly=false)', async () => {
+      const mockSpendingData = [
+        {
+          categoryId: mockCategoryId,
+          categoryName: 'Groceries',
+          icon: 'ShoppingCart',
+          color: '#22C55E',
+          totalAmount: 300.0,
+          transactionCount: 15,
+        },
+        {
+          categoryId: '550e8400-e29b-41d4-a716-446655440004',
+          categoryName: 'Restaurants',
+          icon: 'Utensils',
+          color: '#F97316',
+          totalAmount: 200.0,
+          transactionCount: 10,
+        },
+      ];
+
+      jest.spyOn(prisma, '$queryRaw').mockResolvedValue(mockSpendingData);
+
+      const result = await service.getSpendingByCategory(
+        mockFamilyId,
+        startDate,
+        endDate,
+        { parentOnly: false }
+      );
+
+      expect(result).toEqual(mockSpendingData);
+      expect(result).toHaveLength(2);
+      expect(prisma.$queryRaw).toHaveBeenCalled();
+    });
+
+    it('should return empty array when no spending data exists', async () => {
+      jest.spyOn(prisma, '$queryRaw').mockResolvedValue([]);
+
+      const result = await service.getSpendingByCategory(
+        mockFamilyId,
+        startDate,
+        endDate
+      );
+
+      expect(result).toEqual([]);
+      expect(result).toHaveLength(0);
+    });
+
+    it('should handle categories with null icon and color', async () => {
+      const mockSpendingData = [
+        {
+          categoryId: mockCategoryId,
+          categoryName: 'Uncategorized',
+          icon: null,
+          color: null,
+          totalAmount: 100.0,
+          transactionCount: 5,
+        },
+      ];
+
+      jest.spyOn(prisma, '$queryRaw').mockResolvedValue(mockSpendingData);
+
+      const result = await service.getSpendingByCategory(
+        mockFamilyId,
+        startDate,
+        endDate
+      );
+
+      expect(result[0].icon).toBeNull();
+      expect(result[0].color).toBeNull();
+    });
+
+    it('should return categories ordered by total amount descending', async () => {
+      const mockSpendingData = [
+        { categoryId: '1', categoryName: 'High', icon: null, color: null, totalAmount: 1000.0, transactionCount: 50 },
+        { categoryId: '2', categoryName: 'Medium', icon: null, color: null, totalAmount: 500.0, transactionCount: 25 },
+        { categoryId: '3', categoryName: 'Low', icon: null, color: null, totalAmount: 100.0, transactionCount: 5 },
+      ];
+
+      jest.spyOn(prisma, '$queryRaw').mockResolvedValue(mockSpendingData);
+
+      const result = await service.getSpendingByCategory(
+        mockFamilyId,
+        startDate,
+        endDate
+      );
+
+      expect(result[0].totalAmount).toBeGreaterThan(result[1].totalAmount);
+      expect(result[1].totalAmount).toBeGreaterThan(result[2].totalAmount);
+    });
+
+    it('should throw BadRequestException for invalid familyId UUID', async () => {
+      await expect(
+        service.getSpendingByCategory('invalid-uuid', startDate, endDate)
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should default to parentOnly=true when options not provided', async () => {
+      jest.spyOn(prisma, '$queryRaw').mockResolvedValue([]);
+
+      await service.getSpendingByCategory(mockFamilyId, startDate, endDate);
+
+      // Verify query was called (parentOnly=true uses recursive CTE)
+      expect(prisma.$queryRaw).toHaveBeenCalled();
+    });
+
+    it('should handle date range at month boundaries', async () => {
+      const monthStart = new Date('2025-02-01');
+      const monthEnd = new Date('2025-02-28');
+
+      jest.spyOn(prisma, '$queryRaw').mockResolvedValue([]);
+
+      await service.getSpendingByCategory(mockFamilyId, monthStart, monthEnd);
+
+      expect(prisma.$queryRaw).toHaveBeenCalled();
+    });
+
+    it('should handle zero spending for categories', async () => {
+      const mockSpendingData = [
+        {
+          categoryId: mockCategoryId,
+          categoryName: 'Empty Category',
+          icon: 'Folder',
+          color: '#6B7280',
+          totalAmount: 0,
+          transactionCount: 0,
+        },
+      ];
+
+      jest.spyOn(prisma, '$queryRaw').mockResolvedValue(mockSpendingData);
+
+      const result = await service.getSpendingByCategory(
+        mockFamilyId,
+        startDate,
+        endDate
+      );
+
+      expect(result[0].totalAmount).toBe(0);
+      expect(result[0].transactionCount).toBe(0);
     });
   });
 });

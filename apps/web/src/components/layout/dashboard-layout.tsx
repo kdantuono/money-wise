@@ -26,7 +26,8 @@ import {
   Search,
   PiggyBank,
   ChevronDown,
-  ClipboardList
+  ClipboardList,
+  Tags
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -38,6 +39,7 @@ const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Accounts', href: '/dashboard/accounts', icon: Wallet },
   { name: 'Transactions', href: '/dashboard/transactions', icon: CreditCard },
+  { name: 'Categories', href: '/dashboard/categories', icon: Tags },
   { name: 'Investments', href: '/dashboard/investments', icon: TrendingUp },
 ];
 

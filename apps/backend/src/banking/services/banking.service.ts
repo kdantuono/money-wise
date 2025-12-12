@@ -504,28 +504,38 @@ export class BankingService {
     connectionId: string,
     saltEdgeConnectionId?: string,
   ): Promise<{ accounts: BankingAccountData[]; saltEdgeConnectionId: string }> {
-    this.logger.log(`Completing banking link for user ${userId}, connection ${connectionId}, saltEdge: ${saltEdgeConnectionId || 'not provided'}`);
+    this.logger.log(`[DEBUG][Service.completeBankingLink] >>> ENTER`);
+    this.logger.log(`[DEBUG][Service.completeBankingLink] userId: ${userId}, connectionId: ${connectionId}, saltEdgeConnectionId: ${saltEdgeConnectionId || 'not provided'}`);
 
     const connection = await this.prisma.bankingConnection.findUnique({
       where: { id: connectionId },
       include: { customer: true },
     });
 
+    this.logger.log(`[DEBUG][Service.completeBankingLink] DB connection found: ${!!connection}`);
+    if (connection) {
+      this.logger.log(`[DEBUG][Service.completeBankingLink] DB connection status: ${connection.status}, storedSaltEdgeId: ${connection.saltEdgeConnectionId || 'none'}`);
+    }
+
     if (!connection) {
+      this.logger.error(`[DEBUG][Service.completeBankingLink] Connection NOT FOUND in DB!`);
       throw new NotFoundException(`Banking connection not found: ${connectionId}`);
     }
 
     if (connection.userId !== userId) {
+      this.logger.error(`[DEBUG][Service.completeBankingLink] User mismatch! connection.userId=${connection.userId} !== ${userId}`);
       throw new BadRequestException('Unauthorized');
     }
 
     // Use provided saltEdgeConnectionId or the one already stored
     let effectiveSaltEdgeId = saltEdgeConnectionId || connection.saltEdgeConnectionId;
+    this.logger.log(`[DEBUG][Service.completeBankingLink] effectiveSaltEdgeId (initial): ${effectiveSaltEdgeId || 'none'}`);
 
     // Fallback: Poll SaltEdge for the latest connection if ID not available
     // This handles local development where webhooks don't work
     if (!effectiveSaltEdgeId && connection.customer?.saltEdgeCustomerId) {
-      this.logger.log('SaltEdge connection ID not in redirect URL, polling for latest connection...');
+      this.logger.log(`[DEBUG][Service.completeBankingLink] No SaltEdge ID, polling for latest connection...`);
+      this.logger.log(`[DEBUG][Service.completeBankingLink] Customer saltEdgeCustomerId: ${connection.customer.saltEdgeCustomerId}`);
 
       const saltEdgeProvider = this.providerFactory.getSaltEdgeProvider();
       const latestConnection = await saltEdgeProvider.findLatestActiveConnection(
@@ -534,11 +544,14 @@ export class BankingService {
 
       if (latestConnection) {
         effectiveSaltEdgeId = latestConnection.id;
-        this.logger.log(`Found active connection via polling: ${effectiveSaltEdgeId}`);
+        this.logger.log(`[DEBUG][Service.completeBankingLink] Found active connection via polling: ${effectiveSaltEdgeId}`);
+      } else {
+        this.logger.warn(`[DEBUG][Service.completeBankingLink] No active connection found via polling!`);
       }
     }
 
     if (!effectiveSaltEdgeId) {
+      this.logger.error(`[DEBUG][Service.completeBankingLink] No effectiveSaltEdgeId available!`);
       throw new BadRequestException(
         'SaltEdge connection ID not available. The OAuth process may not have completed successfully. ' +
         'For local development without webhooks, ensure the connection was fully authorized in the SaltEdge widget.',
@@ -550,6 +563,7 @@ export class BankingService {
 
       // Update connection with SaltEdge ID if not already set
       if (saltEdgeConnectionId && !connection.saltEdgeConnectionId) {
+        this.logger.log(`[DEBUG][Service.completeBankingLink] Updating DB with new saltEdgeConnectionId: ${saltEdgeConnectionId}`);
         await this.prisma.bankingConnection.update({
           where: { id: connectionId },
           data: {
@@ -560,12 +574,23 @@ export class BankingService {
       }
 
       // Fetch accounts from SaltEdge
+      this.logger.log(`[DEBUG][Service.completeBankingLink] Calling saltEdgeProvider.completeLinkAndGetAccounts(${effectiveSaltEdgeId})...`);
       const accounts = await saltEdgeProvider.completeLinkAndGetAccounts(effectiveSaltEdgeId);
+      this.logger.log(`[DEBUG][Service.completeBankingLink] completeLinkAndGetAccounts returned ${accounts.length} accounts`);
+
+      if (accounts.length === 0) {
+        this.logger.warn(`[DEBUG][Service.completeBankingLink] ⚠️ SaltEdge returned ZERO accounts!`);
+      } else {
+        this.logger.log(`[DEBUG][Service.completeBankingLink] Accounts: ${JSON.stringify(accounts.map(a => ({ id: a.id, name: a.name })))}`);
+      }
 
       // Get connection details for provider info
+      this.logger.log(`[DEBUG][Service.completeBankingLink] Getting connection details from SaltEdge...`);
       const connectionData = await saltEdgeProvider.getConnection(effectiveSaltEdgeId);
+      this.logger.log(`[DEBUG][Service.completeBankingLink] Connection provider: ${connectionData.provider_code}, status: ${connectionData.status}`);
 
       // Update connection status to authorized
+      this.logger.log(`[DEBUG][Service.completeBankingLink] Updating DB connection status to AUTHORIZED...`);
       await this.prisma.bankingConnection.update({
         where: { id: connectionId },
         data: {
@@ -581,10 +606,11 @@ export class BankingService {
         },
       });
 
-      this.logger.log(`Banking link completed: ${accounts.length} accounts retrieved, saltEdgeConnectionId: ${effectiveSaltEdgeId}`);
+      this.logger.log(`[DEBUG][Service.completeBankingLink] <<< EXIT SUCCESS - ${accounts.length} accounts, saltEdgeId: ${effectiveSaltEdgeId}`);
 
       return { accounts, saltEdgeConnectionId: effectiveSaltEdgeId };
     } catch (error) {
+      this.logger.error(`[DEBUG][Service.completeBankingLink] <<< EXIT ERROR: ${error.message}`);
       this.logger.error('Failed to complete banking link', error);
 
       await this.prisma.bankingConnection.update({
@@ -614,15 +640,26 @@ export class BankingService {
     accounts: BankingAccountData[],
     saltEdgeConnectionId: string,
   ): Promise<number> {
+    this.logger.log(`[DEBUG][Service.storeLinkedAccounts] >>> ENTER`);
+    this.logger.log(`[DEBUG][Service.storeLinkedAccounts] userId: ${userId}, connectionId: ${connectionId}, saltEdgeConnectionId: ${saltEdgeConnectionId}`);
+    this.logger.log(`[DEBUG][Service.storeLinkedAccounts] accounts.length: ${accounts.length}`);
+
+    if (accounts.length === 0) {
+      this.logger.warn(`[DEBUG][Service.storeLinkedAccounts] ⚠️ ZERO accounts to store! Exiting early.`);
+      return 0;
+    }
+
     const connection = await this.prisma.bankingConnection.findUnique({
       where: { id: connectionId },
     });
 
     if (!connection) {
+      this.logger.error(`[DEBUG][Service.storeLinkedAccounts] Connection NOT FOUND!`);
       throw new NotFoundException(`Banking connection not found: ${connectionId}`);
     }
 
     if (connection.userId !== userId) {
+      this.logger.error(`[DEBUG][Service.storeLinkedAccounts] User mismatch!`);
       throw new BadRequestException('Unauthorized');
     }
 
@@ -630,11 +667,14 @@ export class BankingService {
     let updatedCount = 0;
     let restoredCount = 0;
 
+    this.logger.log(`[DEBUG][Service.storeLinkedAccounts] Starting to process ${accounts.length} accounts...`);
+
     for (const account of accounts) {
       try {
         // Ensure IDs are strings - SaltEdge API may return numbers
         const saltEdgeAcctId = String(account.id);
         const saltEdgeConnId = String(saltEdgeConnectionId);
+        this.logger.log(`[DEBUG][Service.storeLinkedAccounts] Processing account: ${account.name} (saltEdgeId: ${saltEdgeAcctId})`);
 
         // Check for existing account with same saltEdgeAccountId (including HIDDEN)
         let existingAccount = await this.prisma.account.findFirst({

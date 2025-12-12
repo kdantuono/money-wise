@@ -29,6 +29,7 @@ vi.mock('@/utils/csrf', () => ({
   getCsrfToken: vi.fn(),
   setCsrfToken: vi.fn(),
   clearCsrfToken: vi.fn(),
+  clearAllAppStorage: vi.fn(),
   requiresCsrf: vi.fn(),
   isCsrfError: vi.fn(),
   refreshCsrfToken: vi.fn(),

@@ -5,7 +5,9 @@
  * Categories are hierarchical (max depth 2) and support:
  * - EXPENSE: Track spending (Food & Dining, Bills, Shopping, etc.)
  * - INCOME: Track earnings (Salary, Investments, etc.)
- * - TRANSFER: Internal account transfers
+ *
+ * Note: TRANSFER is a FlowType on transactions, not a category type.
+ * Transfers don't need categories - the fromAccount/toAccount tells the story.
  *
  * System categories (isSystem=true): Cannot be deleted by users
  * Default categories (isDefault=true): Can be edited but not deleted
@@ -15,8 +17,9 @@
 
 /**
  * Category type enum matching Prisma CategoryType
+ * Note: TRANSFER is not a category type - it's a FlowType on transactions
  */
-export type CategoryType = 'INCOME' | 'EXPENSE' | 'TRANSFER';
+export type CategoryType = 'INCOME' | 'EXPENSE';
 
 /**
  * System category definition interface
@@ -544,56 +547,16 @@ const INCOME_CATEGORIES: SystemCategoryDefinition[] = [
 ];
 
 // ============================================================================
-// TRANSFER CATEGORIES
-// ============================================================================
-
-const TRANSFER_CATEGORIES: SystemCategoryDefinition[] = [
-  // Transfer - System category for internal account transfers
-  {
-    name: 'Transfer',
-    slug: 'transfer',
-    type: 'TRANSFER',
-    icon: 'arrows-right-left',
-    color: '#6366F1',
-    sortOrder: 10,
-    isDefault: false,
-    isSystem: true,
-  },
-  // Credit Card Payment
-  {
-    name: 'Credit Card Payment',
-    slug: 'credit-card-payment',
-    type: 'TRANSFER',
-    icon: 'credit-card',
-    color: '#6366F1',
-    sortOrder: 20,
-    isDefault: true,
-    isSystem: false,
-  },
-  // Loan Payment
-  {
-    name: 'Loan Payment',
-    slug: 'loan-payment',
-    type: 'TRANSFER',
-    icon: 'banknotes',
-    color: '#6366F1',
-    sortOrder: 30,
-    isDefault: true,
-    isSystem: false,
-  },
-];
-
-// ============================================================================
 // EXPORTS
 // ============================================================================
 
 /**
  * All system categories combined
+ * Note: No TRANSFER categories - transfers use FlowType on transactions
  */
 export const SYSTEM_CATEGORIES: SystemCategoryDefinition[] = [
   ...EXPENSE_CATEGORIES,
   ...INCOME_CATEGORIES,
-  ...TRANSFER_CATEGORIES,
 ];
 
 /**
@@ -630,12 +593,7 @@ export function getIncomeCategories(): SystemCategoryDefinition[] {
   return SYSTEM_CATEGORIES.filter((c) => c.type === 'INCOME');
 }
 
-/**
- * Get all transfer categories
- */
-export function getTransferCategories(): SystemCategoryDefinition[] {
-  return SYSTEM_CATEGORIES.filter((c) => c.type === 'TRANSFER');
-}
+// Note: getTransferCategories removed - transfers don't have categories
 
 /**
  * Get top-level categories (no parent)
