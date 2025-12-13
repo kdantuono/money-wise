@@ -12,7 +12,7 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import * as request from 'supertest';
 import { AppModule } from '@/app.module';
 import { PrismaService } from '@/core/database/prisma/prisma.service';
-import { CategoryType, CategoryStatus, TransactionType, TransactionSource } from '../../../generated/prisma';
+import { CategoryType, TransactionType, TransactionSource } from '../../../generated/prisma';
 
 describe('Categories API Integration', () => {
   let app: INestApplication;
