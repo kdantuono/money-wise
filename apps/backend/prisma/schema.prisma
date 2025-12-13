@@ -190,11 +190,11 @@ enum TransactionSource {
 /// Category type classification
 /// INCOME: Revenue categories (salary, freelance, etc.)
 /// EXPENSE: Spending categories (food, transportation, etc.)
-/// TRANSFER: Inter-account transfers
+/// Note: TRANSFER is handled via FlowType on Transaction, not as a category type.
+/// Transfers don't need categories - the fromAccount/toAccount tells the story.
 enum CategoryType {
   INCOME
   EXPENSE
-  TRANSFER
 
   @@map("category_type")
 }

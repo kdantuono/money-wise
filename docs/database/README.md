@@ -113,7 +113,7 @@ This creates a detailed report in `docs/database/`.
 - `transaction_source` - PLAID, MANUAL, IMPORT, SALTEDGE
 
 #### Categories & Budgets
-- `category_type` - INCOME, EXPENSE, TRANSFER
+- `category_type` - INCOME, EXPENSE (Note: TRANSFER handled via flow_type)
 - `category_status` - ACTIVE, INACTIVE, ARCHIVED
 - `budget_period` - MONTHLY, QUARTERLY, YEARLY, CUSTOM
 - `budget_status` - ACTIVE, COMPLETED, DRAFT
