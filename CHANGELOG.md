@@ -9,6 +9,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Phase 1: Categories Enhanced Module** - Complete category management system
+  - **Categories Management Page**: `/dashboard/categories` with hierarchical tree view
+  - **CategoryTree Component**: Collapsible hierarchy with drag-and-drop reordering
+  - **CategoryForm Modal**: Create/edit with name, type, parent, icon, and color
+  - **IconPicker Component**: Curated Lucide icon selection (~50 icons)
+  - **ColorPicker Component**: Preset color palette for category customization
+  - **CategorySpendingSummary**: Spending analytics with pie chart and drill-down
+  - **Spending Rollup Queries**: Recursive CTE for hierarchical spending calculation
+  - **Specification Pattern**: Business rule validation for category operations
+  - **Schema Migration**: Removed TRANSFER from CategoryType (handled via FlowType)
+
+- **Phase 5: Scheduled Transactions Module** - Recurring transaction management
+  - **ScheduledModule**: NestJS module with CRUD operations and family-based authorization
+  - **RecurrenceService**: Calculate next occurrences (daily/weekly/monthly/yearly/once)
+  - **Calendar Events Endpoint**: Integration point for Financial Calendar
+  - **Auto-generate from Liabilities**: Create scheduled transactions from liability payments
+  - **Skip and Complete**: Mark scheduled transactions as skipped or completed
+  - **ScheduledTransactionCard/List/Form**: Frontend components for management
+  - **RecurrenceSelector**: User-friendly recurrence pattern builder
+  - **UpcomingScheduled Widget**: Dashboard widget for upcoming transactions
+  - **Scheduled Page**: `/dashboard/scheduled` management interface
+
+- **Phase 4: Liabilities Module** - Complete backend and frontend for liability tracking
+  - **LiabilitiesModule**: NestJS module with service, controller, and DTOs
+  - **Liability CRUD**: Full create, read, update, delete operations with family-based authorization
+  - **BNPL Detection**: Auto-detect 10 providers (PayPal Pay-in-3/4/6/12/24, Klarna, Afterpay, Affirm, Clearpay, Satispay)
+  - **InstallmentPlan Management**: Create and manage payment plans with individual installments
+  - **Cross-field Validation**: Type-specific DTO validation (credit card requires creditLimit, BNPL requires provider)
+  - **Pagination Support**: Backend pagination for large liability lists
+  - **Optimistic Locking**: Prevent double-payment race conditions in markInstallmentPaid
+
+- **Liabilities Frontend Components**
+  - **LiabilityCard**: Card display with type icon, balance, utilization bar for credit cards
+  - **LiabilityList**: Grid view with filtering (type, status), sorting, and search
+  - **LiabilityForm**: Modal form for create/edit with conditional fields by type
+  - **InstallmentTimeline**: Visual timeline showing paid/upcoming installments
+  - **UpcomingPayments**: Dashboard widget showing next 5 due payments with overdue highlighting
+
+- **Liabilities Pages**
+  - `/dashboard/liabilities`: Main list view with add button and filters
+  - `/dashboard/liabilities/[id]`: Detail page with edit/delete, installment plans
+
+- **Liabilities API Client** (`liabilities.client.ts`)
+  - Type-safe HTTP client with error classes (NotFoundError, ValidationError, UnauthorizedError)
+  - Full CRUD operations plus getUpcoming, getSummary, detectBNPL
+  - Installment plan and payment management
+
 - **Phase 2: Transaction Management UI** - Complete frontend for transaction CRUD operations
   - **TransactionForm**: Full-featured form with amount, description, date, type, account, and category fields
   - **TransactionFormModal**: Modal wrapper for create/edit flows
