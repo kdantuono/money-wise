@@ -12,7 +12,7 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import * as request from 'supertest';
 import { AppModule } from '@/app.module';
 import { PrismaService } from '@/core/database/prisma/prisma.service';
-import { CategoryType, CategoryStatus, TransactionType } from '../../../generated/prisma';
+import { CategoryType, CategoryStatus, TransactionType, TransactionSource } from '../../../generated/prisma';
 
 describe('Categories API Integration', () => {
   let app: INestApplication;
@@ -295,8 +295,9 @@ describe('Categories API Integration', () => {
         data: {
           name: 'Test Account',
           type: 'CHECKING',
+          source: 'MANUAL',
           familyId: testFamilyId,
-          balance: 1000,
+          currentBalance: 1000,
           currency: 'USD',
         },
       });
@@ -312,6 +313,7 @@ describe('Categories API Integration', () => {
             description: 'Parent Category Transaction 1',
             amount: -100,
             type: TransactionType.DEBIT,
+            source: TransactionSource.MANUAL,
             date: thisMonth,
             categoryId: spendingCategoryId,
             accountId,
@@ -320,6 +322,7 @@ describe('Categories API Integration', () => {
             description: 'Parent Category Transaction 2',
             amount: -50,
             type: TransactionType.DEBIT,
+            source: TransactionSource.MANUAL,
             date: thisMonth,
             categoryId: spendingCategoryId,
             accountId,
@@ -328,6 +331,7 @@ describe('Categories API Integration', () => {
             description: 'Child Category Transaction',
             amount: -75,
             type: TransactionType.DEBIT,
+            source: TransactionSource.MANUAL,
             date: thisMonth,
             categoryId: childCategoryId,
             accountId,
