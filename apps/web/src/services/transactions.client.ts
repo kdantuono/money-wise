@@ -43,6 +43,16 @@ export type TransactionStatus = 'PENDING' | 'POSTED' | 'CANCELLED';
 export type TransactionSource = 'MANUAL' | 'PLAID' | 'SALTEDGE' | 'IMPORT';
 
 /**
+ * Flow type for transactions
+ */
+export type FlowType = 'INCOME' | 'EXPENSE' | 'TRANSFER' | 'LIABILITY_PAYMENT' | 'REFUND';
+
+/**
+ * Transfer role for linked transactions
+ */
+export type TransferRole = 'SOURCE' | 'DESTINATION';
+
+/**
  * Transaction data from API
  */
 export interface Transaction {
@@ -76,6 +86,10 @@ export interface Transaction {
   isCredit: boolean;
   isPlaidTransaction: boolean;
   isManualTransaction: boolean;
+  // Transfer-related fields
+  flowType?: FlowType | null;
+  transferGroupId?: string | null;
+  transferRole?: TransferRole | null;
 }
 
 /**

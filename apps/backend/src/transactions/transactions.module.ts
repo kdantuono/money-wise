@@ -4,6 +4,7 @@ import { TransactionsService } from './transactions.service';
 import { TransactionService as CoreTransactionService } from '../core/database/prisma/services/transaction.service';
 import { PrismaModule } from '../core/database/prisma/prisma.module';
 import { CategoryValidationService } from './services/category-validation.service';
+import { TransferDetectionService } from './services/transfer-detection.service';
 
 /**
  * Transactions Module
@@ -13,6 +14,7 @@ import { CategoryValidationService } from './services/category-validation.servic
  * - Authorization wrapper (TransactionsService)
  * - Core data access (CoreTransactionService)
  * - Category validation (CategoryValidationService) using Specification Pattern
+ * - Transfer detection (TransferDetectionService) for matching transfer transactions
  *
  * @phase STORY-1.5.7 - TDD Transaction API Implementation (GREEN phase)
  */
@@ -23,7 +25,8 @@ import { CategoryValidationService } from './services/category-validation.servic
     TransactionsService,
     CoreTransactionService,
     CategoryValidationService,
+    TransferDetectionService,
   ],
-  exports: [TransactionsService],
+  exports: [TransactionsService, TransferDetectionService],
 })
 export class TransactionsModule {}

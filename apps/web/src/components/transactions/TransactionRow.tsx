@@ -1,7 +1,7 @@
 'use client';
 
 import { memo, useCallback } from 'react';
-import { Pencil, Trash2, Loader2 } from 'lucide-react';
+import { Pencil, Trash2, Loader2, ArrowLeftRight, CreditCard } from 'lucide-react';
 import type { Transaction } from '@/services/transactions.client';
 
 // =============================================================================
@@ -140,6 +140,20 @@ export const TransactionRow = memo(function TransactionRow({
             {isPending && (
               <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
                 Pending
+              </span>
+            )}
+            {/* FlowType Badge for Transfers */}
+            {transaction.flowType === 'TRANSFER' && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700">
+                <ArrowLeftRight className="h-3 w-3" />
+                Transfer
+              </span>
+            )}
+            {/* FlowType Badge for Liability Payments */}
+            {transaction.flowType === 'LIABILITY_PAYMENT' && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-700">
+                <CreditCard className="h-3 w-3" />
+                Liability
               </span>
             )}
           </div>
