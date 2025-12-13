@@ -16,6 +16,7 @@
     "dev:backend": "turbo run dev --filter=@money-wise/backend",
     "dev:web": "turbo run dev --filter=@money-wise/web",
     "dev:mobile": "turbo run dev --filter=@money-wise/mobile",
+    "dev:ready": "./.claude/scripts/dev-ready.sh",
     "build": "./scripts/build-clean.sh",
     "build:backend": "./scripts/build-clean.sh --filter=@money-wise/backend",
     "build:web": "./scripts/build-clean.sh --filter=@money-wise/web",
