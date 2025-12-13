@@ -9,64 +9,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Phase 6: Financial Calendar** (December 14, 2025)
-  - New calendar page at `/dashboard/calendar`
-  - Month view with scheduled transaction events
-  - Monthly summary (Expected Income, Expected Expenses, Net Cash Flow)
-  - Click-to-view day details with event list
-  - Month navigation (Previous, Next, Today)
-  - Event color coding (green for income, red for expenses)
-  - Overdue transaction indicators
-  - No external dependencies - pure React implementation
+- **Phase 1: Categories Enhanced Module** - Complete category management system
+  - **Categories Management Page**: `/dashboard/categories` with hierarchical tree view
+  - **CategoryTree Component**: Collapsible hierarchy with drag-and-drop reordering
+  - **CategoryForm Modal**: Create/edit with name, type, parent, icon, and color
+  - **IconPicker Component**: Curated Lucide icon selection (~50 icons)
+  - **ColorPicker Component**: Preset color palette for category customization
+  - **CategorySpendingSummary**: Spending analytics with pie chart and drill-down
+  - **Spending Rollup Queries**: Recursive CTE for hierarchical spending calculation
+  - **Specification Pattern**: Business rule validation for category operations
+  - **Schema Migration**: Removed TRANSFER from CategoryType (handled via FlowType)
 
-- **Navigation Improvements** (December 14, 2025)
-  - Added Liabilities to main navigation
-  - Added Scheduled and Calendar to Planning submenu
-  - New icons: Calendar, Clock, Receipt
+- **Phase 5: Scheduled Transactions Module** - Recurring transaction management
+  - **ScheduledModule**: NestJS module with CRUD operations and family-based authorization
+  - **RecurrenceService**: Calculate next occurrences (daily/weekly/monthly/yearly/once)
+  - **Calendar Events Endpoint**: Integration point for Financial Calendar
+  - **Auto-generate from Liabilities**: Create scheduled transactions from liability payments
+  - **Skip and Complete**: Mark scheduled transactions as skipped or completed
+  - **ScheduledTransactionCard/List/Form**: Frontend components for management
+  - **RecurrenceSelector**: User-friendly recurrence pattern builder
+  - **UpcomingScheduled Widget**: Dashboard widget for upcoming transactions
+  - **Scheduled Page**: `/dashboard/scheduled` management interface
 
-- **Phase 7: User Settings Page** (December 14, 2025)
-  - Full Settings page implementation at `/dashboard/settings`
-  - Profile Information: Edit first name, last name, email
-  - Regional Settings: Timezone and currency selection
-  - Appearance: Theme preference (Light/Dark/System) - UI ready, feature pending
-  - Notifications: Email, push, budget, and category alert toggles - UI ready, feature pending
-  - Account Information: Read-only status display (ID, status, member since, verification)
-  - BFF route for user profile updates (`/api/users/[id]`)
-  - Connects to existing backend Users API (`PUT /users/:id`)
+- **Phase 4: Liabilities Module** - Complete backend and frontend for liability tracking
+  - **LiabilitiesModule**: NestJS module with service, controller, and DTOs
+  - **Liability CRUD**: Full create, read, update, delete operations with family-based authorization
+  - **BNPL Detection**: Auto-detect 10 providers (PayPal Pay-in-3/4/6/12/24, Klarna, Afterpay, Affirm, Clearpay, Satispay)
+  - **InstallmentPlan Management**: Create and manage payment plans with individual installments
+  - **Cross-field Validation**: Type-specific DTO validation (credit card requires creditLimit, BNPL requires provider)
+  - **Pagination Support**: Backend pagination for large liability lists
+  - **Optimistic Locking**: Prevent double-payment race conditions in markInstallmentPaid
 
-- **Phase 1 Categories - Quality Assurance Complete** (December 14, 2025)
-  - **Integration Test Suite - 100% Enabled**: Fixed all 15 previously skipped tests
-    - Budget-Transaction tests (8): Changed from Transaction API to Prisma direct calls
-    - Accounts-API Admin test (1): Updated to test current behavior
-    - Banking Duplicate test (1): Adjusted expectation for upsert behavior
-    - Categorization Fallback test (1): Removed strict null assertion
-    - Repository Placeholders (2): Removed non-existent barrel export tests
-    - Auth Email Verification tests (3): Adjusted for current behavior
-  - **Final Results**: 13 suites, 308 tests passing, 0 skipped
+- **Liabilities Frontend Components**
+  - **LiabilityCard**: Card display with type icon, balance, utilization bar for credit cards
+  - **LiabilityList**: Grid view with filtering (type, status), sorting, and search
+  - **LiabilityForm**: Modal form for create/edit with conditional fields by type
+  - **InstallmentTimeline**: Visual timeline showing paid/upcoming installments
+  - **UpcomingPayments**: Dashboard widget showing next 5 due payments with overdue highlighting
 
-- **OpenAPI Spec Consistency** - Amount field descriptions standardized
-  - Scheduled transaction DTOs now document positive value requirement
-  - Transaction type field descriptions clarify DEBIT/CREDIT direction
-  - Consistent with three-layer validation architecture
+- **Liabilities Pages**
+  - `/dashboard/liabilities`: Main list view with add button and filters
+  - `/dashboard/liabilities/[id]`: Detail page with edit/delete, installment plans
 
-- **Strategic Implementation Plan v2** - MVP completion roadmap updated
-  - Added DEC-006: Positive Amount Architecture (Validated)
-  - Phase Completion Matrix updated with checkmarks
-  - Phase 2 testing requirements documented
-  - Recent achievements section added
-
-### Validated
-
-- **Positive Amount Architecture** - Three-layer validation confirmed
-  - DTO Layer: `@Min(0.01)` decorator enforces positive amounts
-  - Service Layer: `amount.lessThan(0)` check throws BadRequestException
-  - Database Layer: `CHECK (amount >= 0)` constraint via Prisma
-  - Benefits: Simplified budget calculations, provider normalization, data integrity
-
-- **E2E Test Infrastructure** - Comprehensive Playwright setup confirmed
-  - ~50+ existing E2E tests across registration, smoke, journeys, categories
-  - Multi-browser support (Chromium, Mobile Chrome)
-  - CI integration with artifacts and mobile viewport testing
+- **Liabilities API Client** (`liabilities.client.ts`)
+  - Type-safe HTTP client with error classes (NotFoundError, ValidationError, UnauthorizedError)
+  - Full CRUD operations plus getUpcoming, getSummary, detectBNPL
+  - Installment plan and payment management
 
 - **Phase 2: Transaction Management UI** - Complete frontend for transaction CRUD operations
   - **TransactionForm**: Full-featured form with amount, description, date, type, account, and category fields
@@ -769,4 +757,4 @@ This project follows [Semantic Versioning](https://semver.org/) (SemVer):
 
 **Changelog Automation**: This file is maintained through the documentation-specialist agent pattern, ensuring consistency and accuracy across all releases.
 
-**Last Updated**: 2025-12-14
+**Last Updated**: 2025-01-26

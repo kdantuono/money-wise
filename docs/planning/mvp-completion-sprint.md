@@ -1,8 +1,8 @@
 # MVP Completion Sprint - December 2025
 
 > **Comprehensive implementation plan for MoneyWise MVP completion**
-> **Status: In Progress - Phase -1 Complete ✅**
-> **Last Updated: December 3, 2025**
+> **Status: In Progress - Phases -1, 0, 1, 2, 3, 4, 5 Complete ✅ (7/11 = 64%)**
+> **Last Updated: December 13, 2025**
 
 ---
 
@@ -1552,78 +1552,120 @@ See [Appendix A: Complete Prisma Schema](#appendix-a-complete-prisma-schema) for
 
 ---
 
-### Phase 0: Schema & Foundation (2 days) ⚡ WAVE 1
+### Phase 0: Schema & Foundation (2 days) ⚡ WAVE 1 ✅ COMPLETE
 
 **Branch**: `feature/phase-0-schema`
+**PR**: #237 (Merged December 5, 2025)
 
-- [ ] Add new Prisma models (Liability, Installment, ScheduledTransaction, etc.)
-- [ ] Add UserPreferences, Notification, PushSubscription models
-- [ ] Add FlowType enum, transferGroupId, transferRole to Transaction
-- [ ] Run migration
-- [ ] Create BalanceNormalizerService
-- [ ] Update SaltEdge sync for new fields
-- [ ] Seed system categories
+- [x] Add new Prisma models (Liability, InstallmentPlan, Installment, ScheduledTransaction, RecurrenceRule)
+- [x] Add UserPreferences, Notification, PushSubscription models
+- [x] Add FlowType enum, transferGroupId, transferRole to Transaction
+- [x] Run migration (20250604_add_financial_models)
+- [x] Create BalanceNormalizerService
+- [x] Account lifecycle management (HIDDEN status, soft delete)
+- [x] Seed system categories (47 categories across 12 top-level groups)
+- [x] OAuth Popup Modal for SaltEdge re-linking
 
----
-
-### Phase 1: Category System (2 days) 🔀 WAVE 2
-
-**Branch**: `feature/phase-1-categories`
-
-- [ ] CategoryTree component
-- [ ] CategoryForm with icon picker (presets only) and color picker
-- [ ] Category management page
-- [ ] Spending rollup queries
-- [ ] Category detail page with transactions
+**Key Deliverables:**
+- Complete financial model schema for liabilities, scheduled transactions, notifications
+- Category seed with icons and colors for all default categories
+- Account deletion eligibility with transfer integrity validation
 
 ---
 
-### Phase 2: Transaction Enhancement (3 days) 🔀 WAVE 2
+### Phase 1: Category System ENHANCED (4 days) 🔀 WAVE 2 ✅ COMPLETE
+
+**Branch**: `feature/phase-1-categories-enhanced`
+**PR**: #275, #278 (Merged December 12-13, 2025)
+**Strategy Doc**: `docs/planning/category-strategy.md`
+
+- [x] Category seeding (47 categories with icons/colors)
+- [x] CategorySelector component (for transaction forms)
+- [x] Categories client API with full CRUD
+- [x] Backend CategoriesController with CRUD operations
+- [x] `/dashboard/categories` management page
+- [x] CategoryTree component (collapsible hierarchy)
+- [x] CategoryForm modal (name, type, parent, icon, color)
+- [x] IconPicker component (curated Lucide preset ~50 icons)
+- [x] ColorPicker component (preset palette)
+- [x] Spending rollup queries (recursive CTE backend)
+- [x] CategorySpendingSummary component with date range filtering
+- [x] Specification Pattern for business rule validation
+- [x] Schema migration: removed TRANSFER from CategoryType
+
+---
+
+### Phase 2: Transaction Enhancement (3 days) 🔀 WAVE 2 ✅ COMPLETE
 
 **Branch**: `feature/phase-2-transactions`
+**PR**: #238 (Merged December 6, 2025)
 
-- [ ] Add flowType to transactions
-- [ ] TransactionForm (create/edit)
-- [ ] TransferLinkModal
-- [ ] TransactionClassifierService
-- [ ] Auto-detection integration (BNPL patterns)
-- [ ] Bulk operations (categorize, delete, mark transfer)
-
----
-
-### Phase 3: Account Details (2 days) 🔀 WAVE 3
-
-**Branch**: `feature/phase-3-accounts`
-**Depends on**: Phase 2 (Transactions)
-
-- [ ] Create /dashboard/accounts/[id] route
-- [ ] AccountHeader, AccountStats, AccountActions
-- [ ] Filtered transaction list
-- [ ] Account-level sync
+- [x] FlowType integration in transaction model
+- [x] TransactionForm (create/edit) with full validation
+- [x] TransactionFormModal wrapper component
+- [x] EnhancedTransactionList with filtering, search, pagination
+- [x] TransactionRow with inline edit/delete actions
+- [x] CategorySelector dropdown with icons/colors
+- [x] BulkActionsBar for multi-select operations
+- [x] RecategorizeDialog for bulk categorization
+- [x] DeleteConfirmDialog for safe deletions
+- [x] QuickAddTransaction for dashboard
+- [x] Zustand transactions.store with optimistic updates
+- [x] CSV export with ISO + localized dates
+- [x] Command Palette (Cmd+K) for quick navigation
 
 ---
 
-### Phase 4: Liability System (3 days) 🔀 WAVE 2
+### Phase 3: Account Details (2 days) 🔀 WAVE 3 ✅ COMPLETE
+
+**Branch**: `feature/phase-2-transactions` (included in Phase 2 PR)
+**PR**: #238 (Merged December 6, 2025)
+
+- [x] Created `/dashboard/accounts/[id]` route
+- [x] Account header with balance display
+- [x] Filtered transaction list for specific account
+- [x] Back navigation and error handling
+- [x] 404 handling for invalid account IDs
+
+---
+
+### Phase 4: Liability System (3 days) 🔀 WAVE 2 ✅ COMPLETE
 
 **Branch**: `feature/phase-4-liabilities`
+**PR**: #239 (Merged December 7, 2025)
 
-- [ ] Liability CRUD
-- [ ] InstallmentPlan management
-- [ ] Auto-create CC cycle liabilities
-- [ ] BNPL detection (PayPal, Klarna, Afterpay, Satispay, Affirm)
-- [ ] Liability dashboard widget
+- [x] LiabilitiesModule with CRUD operations
+- [x] LiabilitiesService with family-based authorization
+- [x] LiabilitiesController with Swagger documentation
+- [x] InstallmentPlan management with auto-generation
+- [x] BNPL detection (10 providers: PayPal Pay-in-3/4/6/12/24, Klarna, Afterpay, Affirm, Clearpay, Satispay)
+- [x] Cross-field DTO validation (credit card requires creditLimit, etc.)
+- [x] Pagination support for findAll
+- [x] Optimistic locking for markInstallmentPaid
+- [x] Frontend: LiabilityCard, LiabilityList, LiabilityForm, InstallmentTimeline
+- [x] Frontend: UpcomingPayments dashboard widget
+- [x] Frontend: Liabilities page and detail page
+- [x] Unit tests: 47 tests (34 service + 13 controller)
 
 ---
 
-### Phase 5: Scheduled Transactions (2 days) 🔀 WAVE 3
+### Phase 5: Scheduled Transactions (2 days) 🔀 WAVE 3 ✅ COMPLETE
 
 **Branch**: `feature/phase-5-scheduled`
-**Depends on**: Phase 4 (Liabilities)
+**PR**: #240 (Merged December 7, 2025)
+**Depends on**: Phase 4 (Liabilities) ✅
 
-- [ ] ScheduledTransaction CRUD
-- [ ] Auto-generate from liabilities
-- [ ] Match to actual transactions
-- [ ] RecurrenceRule support
+- [x] ScheduledModule with CRUD operations and family-based authorization
+- [x] RecurrenceService for calculating next occurrences (daily/weekly/monthly/yearly/once)
+- [x] Calendar events endpoint for Phase 6 integration
+- [x] Auto-generate scheduled transactions from liabilities
+- [x] Skip and complete functionality
+- [x] Frontend: ScheduledTransactionCard, List, Form components
+- [x] Frontend: RecurrenceSelector for user-friendly pattern building
+- [x] Frontend: UpcomingScheduled dashboard widget
+- [x] Scheduled transactions page at `/dashboard/scheduled`
+- [x] Unit tests: 73 tests (recurrence, service, controller)
+- [x] Integration tests: 22 API tests
 
 ---
 
@@ -1695,20 +1737,33 @@ See [Appendix A: Complete Prisma Schema](#appendix-a-complete-prisma-schema) for
 
 ### Summary
 
-| Wave | Phases | Duration | Parallelizable |
-|------|--------|----------|----------------|
-| Wave 0 | Phase -1 (Foundation) | 2.5 days | No |
-| Wave 1 | Phase 0 (Schema) | 2 days | No |
-| Wave 2 | Phases 1, 2, 4, 7 | 3 days* | Yes |
-| Wave 3 | Phases 3, 5, 8 | 3 days* | Yes |
-| Wave 4 | Phases 6, 9 | 2 days* | Partial |
-| Wave 5 | Phase 10 (Testing) | 2 days | No |
-| **Total** | | **~14.5 days*** | |
+| Wave | Phases | Duration | Status |
+|------|--------|----------|--------|
+| Wave 0 | Phase -1 (Foundation) | 2.5 days | ✅ COMPLETE |
+| Wave 1 | Phase 0 (Schema) | 2 days | ✅ COMPLETE |
+| Wave 2 | Phases 1, 2, 4, 7 | 3 days* | 🟡 75% (7 remaining) |
+| Wave 3 | Phases 3, 5, 8 | 3 days* | 🟡 67% (8 remaining) |
+| Wave 4 | Phases 6, 9 | 2 days* | ❌ NOT STARTED |
+| Wave 5 | Phase 10 (Testing) | 2 days | ❌ NOT STARTED |
 
-*Parallel execution reduces effective time
+### Progress Summary (Updated December 13, 2025)
 
-**Sequential execution (no parallelization): ~27.5 days**
-**Optimized execution (with parallelization): ~14.5 days**
+| Metric | Value |
+|--------|-------|
+| **Phases Complete** | 7 of 11 (64%) |
+| **Backend Tests** | 1,936 passing |
+| **Frontend Tests** | 1,372 passing |
+| **PRs Merged to Epic** | #231, #237, #238, #239, #240, #275, #278 |
+| **Next Phase** | Phase 6: Financial Calendar |
+| **Remaining Effort** | ~9 days |
+
+### Remaining Phases (Revised Order)
+
+1. **Phase 6: Financial Calendar** (2 days) - Monthly view with scheduled transactions
+2. **Phase 7: Settings** (2 days) - User preferences
+3. **Phase 8: Notifications** (3 days) - Payment reminders
+4. **Phase 9: Dashboard Integration** (2 days) - Final polish
+5. **Phase 10: Testing & Polish** (2 days) - E2E and QA
 
 ---
 
