@@ -664,7 +664,7 @@ jobs:
           DATABASE_URL: postgresql://test:testpass@localhost:5432/test_db
         run: |
           echo "⏳ Ensuring database is fully ready for tests..."
-          
+
           # Test connection with explicit credentials
           for i in {1..30}; do
             if PGPASSWORD=testpass psql -h localhost -U test -d test_db -c "SELECT 1" >/dev/null 2>&1; then
@@ -675,7 +675,7 @@ jobs:
             echo "⏳ Waiting for database (attempt $i/30)..."
             sleep 2
           done
-          
+
           echo "❌ Database failed to become ready"
           exit 1
 
@@ -1158,18 +1158,18 @@ jobs:
       - name: ⏳ Wait for all services to be healthy
         run: |
           echo "⏳ Waiting for backend and frontend to be ready (max 5 minutes)..."
-          
+
           for i in {1..150}; do
             # Check if containers exist first
             BACKEND_EXISTS=$(docker ps -a --filter name=moneywise-backend-e2e --format '{{.Names}}' | grep -c moneywise-backend-e2e || echo "0")
             FRONTEND_EXISTS=$(docker ps -a --filter name=moneywise-frontend-e2e --format '{{.Names}}' | grep -c moneywise-frontend-e2e || echo "0")
-            
+
             if [ "$BACKEND_EXISTS" = "0" ] || [ "$FRONTEND_EXISTS" = "0" ]; then
               echo "⚠️ Containers not yet created, waiting..."
               sleep 2
               continue
             fi
-            
+
             # Get health status
             BACKEND_HEALTHY=$(docker inspect --format='{{.State.Health.Status}}' moneywise-backend-e2e 2>/dev/null || echo "starting")
             FRONTEND_HEALTHY=$(docker inspect --format='{{.State.Health.Status}}' moneywise-frontend-e2e 2>/dev/null || echo "starting")
@@ -1188,7 +1188,7 @@ jobs:
             if [ $((i % 10)) -eq 0 ]; then
               echo "Attempt $i/150: Backend=$BACKEND_HEALTHY, Frontend=$FRONTEND_HEALTHY"
             fi
-            
+
             sleep 2
           done
 
@@ -1321,8 +1321,8 @@ jobs:
           echo "📦 Bundle Size Report"
           echo "Total bundle size: ${BUNDLE_SIZE_MB} MB"
 
-          # Set threshold: 50MB (Next.js typical max for static + server)
-          MAX_SIZE_MB=50
+          # Set threshold: 100MB (accounts for Sentry instrumentation + source maps on server-side)
+          MAX_SIZE_MB=100
           if (( $(echo "$BUNDLE_SIZE_MB > $MAX_SIZE_MB" | bc -l) )); then
             echo "❌ Bundle size exceeds ${MAX_SIZE_MB} MB limit!"
             echo "::error::Bundle size ${BUNDLE_SIZE_MB} MB exceeds ${MAX_SIZE_MB} MB limit"

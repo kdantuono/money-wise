@@ -19,6 +19,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { AccountsService } from '../../../src/accounts/accounts.service';
 import { PrismaService } from '../../../src/core/database/prisma/prisma.service';
+import { BalanceNormalizerService } from '../../../src/core/finance/balance-normalizer.service';
 import { setupTestDatabase, teardownTestDatabase } from '../../../src/core/database/tests/database-test.config';
 import { AccountType, AccountStatus, AccountSource, UserRole, PrismaClient } from '../../../generated/prisma';
 import { CreateAccountDto } from '../../../src/accounts/dto/create-account.dto';
@@ -41,6 +42,7 @@ describe('AccountsService Integration Tests (Real Database)', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AccountsService,
+        BalanceNormalizerService,
         {
           provide: PrismaService,
           useValue: prisma,

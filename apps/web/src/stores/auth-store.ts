@@ -22,7 +22,7 @@
 
 import { create } from 'zustand';
 import { authService, type User } from '../../lib/auth';
-import { getCsrfToken, clearCsrfToken } from '@/utils/csrf';
+import { getCsrfToken, clearAllAppStorage } from '@/utils/csrf';
 
 /**
  * Auth Store Interface
@@ -44,12 +44,13 @@ interface AuthStore {
 }
 
 /**
- * Helper: Clear all auth data from storage
- * Note: Cookies are cleared by backend, we only clear localStorage data
+ * Helper: Clear all auth and app data from storage
+ * Note: Cookies are cleared by backend, we clear all localStorage data
  */
 const clearAuthStorage = (): void => {
-  // Only clear CSRF token - user data should never be in localStorage
-  clearCsrfToken();
+  // Clear CSRF token and all persisted store data (budgets, banking, etc.)
+  // This prevents stale data from being shown to the next user
+  clearAllAppStorage();
 };
 
 /**

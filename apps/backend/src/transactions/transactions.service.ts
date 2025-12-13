@@ -10,6 +10,7 @@ import { TransactionService as CoreTransactionService } from '../core/database/p
 import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { UpdateTransactionDto } from './dto/update-transaction.dto';
 import { TransactionResponseDto } from './dto/transaction-response.dto';
+import { CategoryValidationService } from './services/category-validation.service';
 
 /**
  * Transactions Service (Authorization Wrapper)
@@ -29,6 +30,7 @@ export class TransactionsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly coreTransactionService: CoreTransactionService,
+    private readonly categoryValidationService: CategoryValidationService,
   ) { }
 
   /**
@@ -39,8 +41,17 @@ export class TransactionsService {
     userId: string,
     userRole?: UserRole,
   ): Promise<TransactionResponseDto> {
-    // Verify user owns the account
-    await this.verifyAccountOwnership(createDto.accountId, userId, userRole);
+    // Verify user owns the account and get account details
+    const account = await this.verifyAccountOwnership(createDto.accountId, userId, userRole);
+
+    // Validate category assignment using Specification Pattern
+    if (createDto.categoryId) {
+      await this.categoryValidationService.validateCategory({
+        categoryId: createDto.categoryId,
+        familyId: account.familyId!,
+        flowType: (createDto as any).flowType || undefined,
+      });
+    }
 
     // Convert DTO to Prisma format
     const { accountId, categoryId, date, authorizedDate, ...rest } = createDto;
@@ -168,8 +179,17 @@ export class TransactionsService {
       throw new NotFoundException(`Transaction with ID ${id} not found`);
     }
 
-    // Verify user owns the account
-    await this.verifyAccountOwnership(existingTransaction.accountId, userId, userRole);
+    // Verify user owns the account and get account details
+    const account = await this.verifyAccountOwnership(existingTransaction.accountId, userId, userRole);
+
+    // Validate category assignment if categoryId is being updated
+    if (updateDto.categoryId !== undefined && updateDto.categoryId !== null) {
+      await this.categoryValidationService.validateCategory({
+        categoryId: updateDto.categoryId,
+        familyId: account.familyId!,
+        flowType: existingTransaction.flowType || undefined,
+      });
+    }
 
     // Convert DTO to Prisma format - build updateData dynamically
     const updateData = this.buildUpdateData(updateDto);
@@ -252,19 +272,15 @@ export class TransactionsService {
   }
 
   /**
-   * Verify user owns the account
+   * Verify user owns the account and return account details
    * @private
+   * @returns Account with userId and familyId
    */
   private async verifyAccountOwnership(
     accountId: string,
     userId: string,
     userRole?: UserRole,
-  ): Promise<void> {
-    // Admin bypasses ownership check
-    if (userRole === UserRole.ADMIN) {
-      return;
-    }
-
+  ): Promise<{ userId: string | null; familyId: string | null }> {
     const account = await this.prisma.account.findUnique({
       where: { id: accountId },
       select: { userId: true, familyId: true },
@@ -274,9 +290,14 @@ export class TransactionsService {
       throw new NotFoundException(`Account with ID ${accountId} not found`);
     }
 
+    // Admin bypasses ownership check but still returns account
+    if (userRole === UserRole.ADMIN) {
+      return account;
+    }
+
     // Check personal account ownership
     if (account.userId === userId) {
-      return;
+      return account;
     }
 
     // TODO: Check family membership when family feature is implemented

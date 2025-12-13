@@ -224,8 +224,8 @@ describe('IsUniqueSecret Validator', () => {
 
     it('should validate API keys', () => {
       const config = {
-        API_KEY_PRIMARY: 'pk_live_abcdef123456',
-        API_KEY_SECONDARY: 'sk_live_ghijkl789012',
+        API_KEY_PRIMARY: 'test_primary_key_abcdef123456',
+        API_KEY_SECONDARY: 'test_secondary_key_ghijkl789012',
       };
 
       mockArgs.property = 'API_KEY_SECONDARY';

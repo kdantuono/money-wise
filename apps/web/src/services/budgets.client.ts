@@ -219,45 +219,10 @@ export class ServerError extends BudgetsApiError {
 // =============================================================================
 
 /**
- * Get the API base URL from environment variables
+ * API base URL - uses relative path to go through BFF proxy
+ * This ensures cookies are properly included (same-origin requests)
  */
-function getApiBaseUrl(): string {
-  const baseUrl =
-    process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-  return baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
-}
-
-/**
- * Check if code is running in development mode
- */
-function isDevelopment(): boolean {
-  return process.env.NODE_ENV === 'development';
-}
-
-/**
- * Log request details in development mode
- */
-function logRequest(method: string, url: string, data?: unknown): void {
-  if (isDevelopment()) {
-     
-    console.log(`[Budgets API] ${method} ${url}`, data ? { body: data } : '');
-  }
-}
-
-/**
- * Log response details in development mode
- */
-function logResponse(
-  method: string,
-  url: string,
-  status: number,
-  data?: unknown
-): void {
-  if (isDevelopment()) {
-     
-    console.log(`[Budgets API] ${method} ${url} → ${status}`, data || '');
-  }
-}
+const API_BASE_URL = '/api/budgets';
 
 /**
  * Parse error response and throw appropriate error
@@ -280,11 +245,6 @@ async function handleErrorResponse(response: Response): Promise<never> {
       ? errorData.message.join(', ')
       : errorData.message
     : response.statusText || 'An error occurred';
-
-  // Log error in development
-  if (isDevelopment()) {
-    console.error(`[Budgets API] Error ${statusCode}:`, errorData || message);
-  }
 
   // Throw appropriate error type
   switch (statusCode) {
@@ -318,41 +278,31 @@ async function request<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const baseUrl = getApiBaseUrl();
-  const url = `${baseUrl}${endpoint}`;
+  const url = `${API_BASE_URL}${endpoint}`;
 
-  // Build headers
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    ...((options.headers as Record<string, string>) || {}),
-  };
-
-  // Log request in development
-  logRequest(options.method || 'GET', url, options.body);
-
-  // Make request with cookies (authentication handled by HttpOnly cookies)
   const response = await fetch(url, {
     ...options,
-    headers,
     credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
   });
 
-  // Handle errors
   if (!response.ok) {
     await handleErrorResponse(response);
   }
 
-  // Handle 204 No Content
   if (response.status === 204) {
-    logResponse(options.method || 'GET', url, response.status);
     return undefined as T;
   }
 
-  // Parse JSON response
-  const data = await response.json();
-  logResponse(options.method || 'GET', url, response.status, data);
+  const text = await response.text();
+  if (!text) {
+    return {} as T;
+  }
 
-  return data as T;
+  return JSON.parse(text);
 }
 
 // =============================================================================
@@ -382,7 +332,7 @@ export const budgetsClient = {
    * ```
    */
   async getAll(): Promise<BudgetListResponse> {
-    return request<BudgetListResponse>('/api/budgets', {
+    return request<BudgetListResponse>('', {
       method: 'GET',
     });
   },
@@ -404,7 +354,7 @@ export const budgetsClient = {
    * ```
    */
   async getOne(id: string): Promise<Budget> {
-    return request<Budget>(`/api/budgets/${id}`, {
+    return request<Budget>(`/${id}`, {
       method: 'GET',
     });
   },
@@ -432,7 +382,7 @@ export const budgetsClient = {
    * ```
    */
   async create(data: CreateBudgetData): Promise<Budget> {
-    return request<Budget>('/api/budgets', {
+    return request<Budget>('', {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -460,7 +410,7 @@ export const budgetsClient = {
    * ```
    */
   async update(id: string, data: UpdateBudgetData): Promise<Budget> {
-    return request<Budget>(`/api/budgets/${id}`, {
+    return request<Budget>(`/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
@@ -482,7 +432,7 @@ export const budgetsClient = {
    * ```
    */
   async delete(id: string): Promise<void> {
-    return request<void>(`/api/budgets/${id}`, {
+    return request<void>(`/${id}`, {
       method: 'DELETE',
     });
   },

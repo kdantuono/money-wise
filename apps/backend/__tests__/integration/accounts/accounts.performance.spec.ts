@@ -10,6 +10,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AccountsService } from '../../../src/accounts/accounts.service';
 import { PrismaService } from '../../../src/core/database/prisma/prisma.service';
+import { BalanceNormalizerService } from '../../../src/core/finance/balance-normalizer.service';
 import { setupTestDatabase, teardownTestDatabase } from '../../../src/core/database/tests/database-test.config';
 import { AccountType, AccountSource, PrismaClient } from '../../../generated/prisma';
 
@@ -25,6 +26,7 @@ describe('AccountsService Performance Benchmarks', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AccountsService,
+        BalanceNormalizerService,
         {
           provide: PrismaService,
           useValue: prisma,

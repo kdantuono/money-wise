@@ -149,6 +149,7 @@ apps/backend/test-sentry*.js
 bin/
 .claude/tools/
 .claude/traces/
+**/.claude/traces/
 
 # Backup files
 *.backup-*

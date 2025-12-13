@@ -114,7 +114,8 @@ export function useTrends(period: TimePeriod = 'monthly') {
 export function useDashboardData(period: TimePeriod = 'monthly') {
   const statsQuery = useDashboardStats(period);
   const spendingQuery = useSpendingByCategory(period);
-  const transactionsQuery = useRecentTransactions(10);
+  // Reduced to 5 transactions so Budget Progress widget fits without scrolling
+  const transactionsQuery = useRecentTransactions(5);
   const trendsQuery = useTrends(period);
 
   const isLoading =

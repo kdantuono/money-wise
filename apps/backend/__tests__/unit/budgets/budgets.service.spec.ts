@@ -15,6 +15,7 @@ describe('BudgetsService', () => {
   const mockBudgetId = '550e8400-e29b-41d4-a716-446655440001';
   const mockCategoryId = '550e8400-e29b-41d4-a716-446655440002';
   const mockAccountId = '550e8400-e29b-41d4-a716-446655440003';
+  const mockUserId = '550e8400-e29b-41d4-a716-446655440004';
 
   const mockCategory = {
     id: mockCategoryId,
@@ -65,6 +66,10 @@ describe('BudgetsService', () => {
 
     service = module.get<BudgetsService>(BudgetsService);
     prisma = module.get(PrismaService);
+
+    // Default mock for user.findMany (needed for budget spent calculation)
+    // This returns a family member whose accounts will be included in budget calculation
+    prisma.user.findMany.mockResolvedValue([{ id: mockUserId }]);
   });
 
   afterEach(() => {
@@ -211,6 +216,71 @@ describe('BudgetsService', () => {
 
       expect(result.budgets[0].spent).toBe(0);
       expect(prisma.transaction.findMany).not.toHaveBeenCalled();
+    });
+
+    it('should include user-owned accounts (userId set, familyId NULL) in budget calculation', async () => {
+      // This test verifies the critical bug fix:
+      // Accounts with userId set but familyId = NULL should be included
+      // through the user → family relationship
+
+      const userOwnedAccountId = '550e8400-e29b-41d4-a716-446655440005';
+
+      prisma.budget.findMany.mockResolvedValue([mockBudget]);
+
+      // user.findMany returns family members - this enables finding their accounts
+      prisma.user.findMany.mockResolvedValue([{ id: mockUserId }]);
+
+      // account.findMany should be called with OR condition
+      // Returns a user-owned account (userId set, NO familyId)
+      prisma.account.findMany.mockResolvedValue([{ id: userOwnedAccountId }]);
+
+      // Transaction exists on the user-owned account
+      prisma.transaction.findMany.mockResolvedValue([
+        { amount: new Decimal(100), date: new Date('2025-01-15') },
+      ]);
+
+      const result = await service.findAll(mockFamilyId);
+
+      // Verify user.findMany was called to get family members
+      expect(prisma.user.findMany).toHaveBeenCalledWith({
+        where: { familyId: mockFamilyId },
+        select: { id: true },
+      });
+
+      // Verify account.findMany was called with OR condition including userId
+      expect(prisma.account.findMany).toHaveBeenCalledWith({
+        where: {
+          OR: [
+            { familyId: mockFamilyId },
+            { userId: { in: [mockUserId] } },
+          ],
+        },
+        select: { id: true },
+      });
+
+      // The transaction amount should be included in spent
+      expect(result.budgets[0].spent).toBe(100);
+      expect(result.budgets[0].percentage).toBe(20); // 100/500 = 20%
+    });
+
+    it('should query accounts with both familyId and userId conditions (OR)', async () => {
+      // This test explicitly validates the query structure
+      prisma.budget.findMany.mockResolvedValue([mockBudget]);
+      prisma.user.findMany.mockResolvedValue([{ id: mockUserId }]);
+      prisma.account.findMany.mockResolvedValue([]);
+
+      await service.findAll(mockFamilyId);
+
+      // The critical assertion: account query MUST include OR condition
+      // to find both family-owned and user-owned accounts
+      const accountQuery = prisma.account.findMany.mock.calls[0][0];
+      expect(accountQuery.where).toHaveProperty('OR');
+      expect(accountQuery.where.OR).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ familyId: mockFamilyId }),
+          expect.objectContaining({ userId: { in: [mockUserId] } }),
+        ]),
+      );
     });
   });
 

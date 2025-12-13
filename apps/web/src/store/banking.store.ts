@@ -154,14 +154,15 @@ export interface BankingState {
   syncAccount(accountId: string): Promise<void>;
 
   /**
-   * Revoke a banking connection
+   * Revoke a banking connection by account ID
    *
-   * Disconnects and removes all accounts from the connection.
+   * Disconnects the banking connection associated with the account
+   * and marks the account as disconnected.
    *
-   * @param connectionId - Connection ID to revoke
+   * @param accountId - Account ID whose connection to revoke
    * @throws {BankingApiError} If revoke fails
    */
-  revokeConnection(connectionId: string): Promise<void>;
+  revokeConnection(accountId: string): Promise<void>;
 
   // ========== Error Management ==========
   /**
@@ -456,22 +457,21 @@ export const useBankingStore = create<BankingState>()(
         }
       },
 
-      revokeConnection: async (connectionId) => {
+      revokeConnection: async (accountId) => {
         set((state) => {
           state.isLoading = true;
           state.error = null;
         });
 
         try {
-          await bankingClient.revokeConnection(connectionId);
+          // Use the new endpoint that accepts account ID
+          await bankingClient.revokeConnectionByAccountId(accountId);
 
           set((state) => {
             state.isLoading = false;
-            // Mark all accounts from this connection as disconnected
-            // Note: We'd need connection tracking to properly do this
-            // For now, remove the account if ID matches connection
+            // Remove the account from state
             state.accounts = state.accounts.filter(
-              (acc) => acc.id !== connectionId
+              (acc) => acc.id !== accountId
             );
             state.linkedConnections = Math.max(
               0,

@@ -252,65 +252,13 @@ export class ServerError extends BankingApiError {
 // =============================================================================
 
 /**
- * Get the API base URL from environment variables
- *
- * @returns Base URL for API requests
+ * API base URL - uses relative path to go through BFF proxy
+ * This ensures cookies are properly included (same-origin requests)
  */
-function getApiBaseUrl(): string {
-  const baseUrl =
-    process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-  return baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
-}
-
-
-/**
- * Check if code is running in development mode
- *
- * @returns True if in development
- */
-function isDevelopment(): boolean {
-  return process.env.NODE_ENV === 'development';
-}
-
-/**
- * Log request details in development mode
- *
- * @param method HTTP method
- * @param url Request URL
- * @param data Request body (optional)
- */
-function logRequest(method: string, url: string, data?: unknown): void {
-  if (isDevelopment()) {
-     
-    console.log(`[Banking API] ${method} ${url}`, data ? { body: data } : '');
-  }
-}
-
-/**
- * Log response details in development mode
- *
- * @param method HTTP method
- * @param url Request URL
- * @param status HTTP status code
- * @param data Response data
- */
-function logResponse(
-  method: string,
-  url: string,
-  status: number,
-  data?: unknown
-): void {
-  if (isDevelopment()) {
-     
-    console.log(`[Banking API] ${method} ${url} → ${status}`, data || '');
-  }
-}
+const API_BASE_URL = '/api/banking';
 
 /**
  * Parse error response and throw appropriate error
- *
- * @param response Fetch Response object
- * @throws {BankingApiError} Typed error based on status code
  */
 async function handleErrorResponse(response: Response): Promise<never> {
   let errorData: ApiErrorResponse | null = null;
@@ -320,7 +268,7 @@ async function handleErrorResponse(response: Response): Promise<never> {
     if (text) {
       errorData = JSON.parse(text);
     }
-  } catch (_parseError) {
+  } catch {
     // Failed to parse error response
   }
 
@@ -330,11 +278,6 @@ async function handleErrorResponse(response: Response): Promise<never> {
       ? errorData.message.join(', ')
       : errorData.message
     : response.statusText || 'An error occurred';
-
-  // Log error in development
-  if (isDevelopment()) {
-    console.error(`[Banking API] Error ${statusCode}:`, errorData || message);
-  }
 
   // Throw appropriate error type
   switch (statusCode) {
@@ -363,51 +306,36 @@ async function handleErrorResponse(response: Response): Promise<never> {
 
 /**
  * Make HTTP request with authentication and error handling
- *
- * @param endpoint API endpoint (without base URL)
- * @param options Fetch options
- * @returns Parsed response data
- * @throws {BankingApiError} On HTTP error
  */
 async function request<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const baseUrl = getApiBaseUrl();
-  const url = `${baseUrl}${endpoint}`;
+  const url = `${API_BASE_URL}${endpoint}`;
 
-  // Build headers
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    ...((options.headers as Record<string, string>) || {}),
-  };
-
-  // Log request in development
-  logRequest(options.method || 'GET', url, options.body);
-
-  // Make request with cookies (authentication handled by HttpOnly cookies)
   const response = await fetch(url, {
     ...options,
-    headers,
-    credentials: 'include', // Enable cookie sending for authentication
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
   });
 
-  // Handle errors
   if (!response.ok) {
     await handleErrorResponse(response);
   }
 
-  // Handle 204 No Content
   if (response.status === 204) {
-    logResponse(options.method || 'GET', url, response.status);
     return undefined as T;
   }
 
-  // Parse JSON response
-  const data = await response.json();
-  logResponse(options.method || 'GET', url, response.status, data);
+  const text = await response.text();
+  if (!text) {
+    return {} as T;
+  }
 
-  return data as T;
+  return JSON.parse(text);
 }
 
 // =============================================================================
@@ -445,7 +373,7 @@ export const bankingClient = {
   async initiateLink(
     provider?: BankingProvider
   ): Promise<InitiateLinkResponse> {
-    return request<InitiateLinkResponse>('/api/banking/initiate-link', {
+    return request<InitiateLinkResponse>('/initiate-link', {
       method: 'POST',
       body: JSON.stringify(provider ? { provider } : {}),
     });
@@ -481,7 +409,7 @@ export const bankingClient = {
     if (saltEdgeConnectionId) {
       body.saltEdgeConnectionId = saltEdgeConnectionId;
     }
-    return request<CompleteLinkResponse>('/api/banking/complete-link', {
+    return request<CompleteLinkResponse>('/complete-link', {
       method: 'POST',
       body: JSON.stringify(body),
     });
@@ -505,7 +433,7 @@ export const bankingClient = {
    * ```
    */
   async getAccounts(): Promise<GetAccountsResponse> {
-    return request<GetAccountsResponse>('/api/banking/accounts', {
+    return request<GetAccountsResponse>('/accounts', {
       method: 'GET',
     });
   },
@@ -534,7 +462,7 @@ export const bankingClient = {
    * ```
    */
   async syncAccount(accountId: string): Promise<SyncResponse> {
-    return request<SyncResponse>(`/api/banking/sync/${accountId}`, {
+    return request<SyncResponse>(`/sync/${accountId}`, {
       method: 'POST',
       body: JSON.stringify({}),
     });
@@ -560,7 +488,33 @@ export const bankingClient = {
    * ```
    */
   async revokeConnection(connectionId: string): Promise<void> {
-    return request<void>(`/api/banking/revoke/${connectionId}`, {
+    return request<void>(`/revoke/${connectionId}`, {
+      method: 'DELETE',
+    });
+  },
+
+  /**
+   * Revoke banking connection by account ID
+   *
+   * Alternative method that accepts an Account ID instead of BankingConnection ID.
+   * The backend looks up the BankingConnection using the account's saltEdgeConnectionId.
+   * This is more convenient when the frontend only has access to the Account ID.
+   *
+   * @param accountId Account ID whose banking connection to revoke
+   * @returns void (204 No Content)
+   * @throws {AuthenticationError} If not authenticated
+   * @throws {ValidationError} If account is not linked to banking
+   * @throws {NotFoundError} If account not found
+   * @throws {ServerError} If server error occurs
+   *
+   * @example
+   * ```typescript
+   * await bankingClient.revokeConnectionByAccountId('acc-123');
+   * console.log('Banking connection revoked successfully');
+   * ```
+   */
+  async revokeConnectionByAccountId(accountId: string): Promise<void> {
+    return request<void>(`/revoke-by-account/${accountId}`, {
       method: 'DELETE',
     });
   },
@@ -583,7 +537,7 @@ export const bankingClient = {
    * ```
    */
   async getProviders(): Promise<AvailableProvidersResponse> {
-    return request<AvailableProvidersResponse>('/api/banking/providers', {
+    return request<AvailableProvidersResponse>('/providers', {
       method: 'GET',
     });
   },

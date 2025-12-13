@@ -39,7 +39,7 @@ export class ResetPasswordDto {
   @MinLength(12)  // Enhanced security: 12 chars minimum for financial apps
   @MaxLength(128)
   @Matches(
-    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&^#()_+-=[\]{}|;:,.<>~`])/,
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&^#()_+\-=[\]{}|;:,.<>~`])/,
     {
       message: 'Password must contain at least one uppercase letter, one lowercase letter, one number and one special character',
     },

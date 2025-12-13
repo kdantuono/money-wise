@@ -240,6 +240,77 @@ describe('proxyRequest - BFF Transparent Proxy Utility', () => {
     });
   });
 
+  describe('204 No Content Handling (HTTP Spec Compliance)', () => {
+    /**
+     * RFC 7231: 204 No Content responses MUST NOT include a message body.
+     * This tests the fix for the 502 Bad Gateway error when backend returns 204.
+     *
+     * Previous bug: NextResponse.json(null, { status: 204 }) creates a body
+     * Fix: new NextResponse(null, { status: 204 }) creates proper bodyless response
+     */
+    it('should return 204 with no body (HTTP spec compliance)', async () => {
+      // Arrange - POST logout returning 204 (avoids DELETE mock issue)
+      const mockRequest = new NextRequest('http://localhost:3000/api/auth/logout', {
+        method: 'POST',
+        body: JSON.stringify({}),
+      });
+
+      global.fetch = vi.fn().mockResolvedValueOnce({
+        ok: true,
+        status: 204,
+        headers: new Headers(),
+        json: async () => null,
+        text: async () => '',
+      });
+
+      // Act
+      const response = await proxyRequest(mockRequest, '/api/auth/logout');
+
+      // Assert
+      expect(response.status).toBe(204);
+      // Verify body is empty (critical for HTTP spec compliance)
+      const bodyText = await response.text();
+      expect(bodyText).toBe('');
+    });
+
+    it('should forward Set-Cookie headers even with 204 No Content', async () => {
+      // Arrange - Logout that clears cookies should still forward Set-Cookie
+      const mockRequest = new NextRequest('http://localhost:3000/api/auth/logout', {
+        method: 'POST',
+        body: JSON.stringify({}),
+      });
+
+      const clearCookies = [
+        'accessToken=; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=0',
+        'refreshToken=; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=0',
+      ];
+
+      const mockHeaders = new Headers();
+      clearCookies.forEach(cookie => mockHeaders.append('Set-Cookie', cookie));
+      mockHeaders.getSetCookie = () => clearCookies;
+
+      global.fetch = vi.fn().mockResolvedValueOnce({
+        ok: true,
+        status: 204,
+        headers: mockHeaders,
+        json: async () => null,
+        text: async () => '',
+      });
+
+      // Act
+      const response = await proxyRequest(mockRequest, '/api/auth/logout');
+
+      // Assert
+      expect(response.status).toBe(204);
+      const setCookieHeaders = response.headers.getSetCookie();
+      expect(setCookieHeaders).toHaveLength(2);
+      expect(setCookieHeaders[0]).toContain('accessToken=');
+      expect(setCookieHeaders[0]).toContain('Max-Age=0');
+      expect(setCookieHeaders[1]).toContain('refreshToken=');
+    });
+
+  });
+
   describe('Header Forwarding', () => {
     it('should forward X-CSRF-Token header for CSRF protection', async () => {
       // Arrange

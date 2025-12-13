@@ -152,7 +152,7 @@ describe('Analytics Client', () => {
       (fetch as any).mockResolvedValueOnce({
         ok: true,
         status: 200,
-        json: async () => mockStats,
+        text: async () => JSON.stringify(mockStats),
       });
 
       const result = await analyticsClient.getStats();
@@ -174,7 +174,7 @@ describe('Analytics Client', () => {
       (fetch as any).mockResolvedValueOnce({
         ok: true,
         status: 200,
-        json: async () => mockStats,
+        text: async () => JSON.stringify(mockStats),
       });
 
       await analyticsClient.getStats('weekly');
@@ -189,7 +189,7 @@ describe('Analytics Client', () => {
       (fetch as any).mockResolvedValueOnce({
         ok: true,
         status: 200,
-        json: async () => mockStats,
+        text: async () => JSON.stringify(mockStats),
       });
 
       await analyticsClient.getStats('yearly');
@@ -236,7 +236,7 @@ describe('Analytics Client', () => {
       (fetch as any).mockResolvedValueOnce({
         ok: true,
         status: 200,
-        json: async () => mockCategorySpending,
+        text: async () => JSON.stringify(mockCategorySpending),
       });
 
       const result = await analyticsClient.getSpendingByCategory();
@@ -255,7 +255,7 @@ describe('Analytics Client', () => {
       (fetch as any).mockResolvedValueOnce({
         ok: true,
         status: 200,
-        json: async () => mockCategorySpending,
+        text: async () => JSON.stringify(mockCategorySpending),
       });
 
       await analyticsClient.getSpendingByCategory('yearly');
@@ -270,7 +270,7 @@ describe('Analytics Client', () => {
       (fetch as any).mockResolvedValueOnce({
         ok: true,
         status: 200,
-        json: async () => [],
+        text: async () => JSON.stringify([]),
       });
 
       const result = await analyticsClient.getSpendingByCategory();
@@ -300,7 +300,7 @@ describe('Analytics Client', () => {
       (fetch as any).mockResolvedValueOnce({
         ok: true,
         status: 200,
-        json: async () => mockTransactions,
+        text: async () => JSON.stringify(mockTransactions),
       });
 
       const result = await analyticsClient.getRecentTransactions();
@@ -319,7 +319,7 @@ describe('Analytics Client', () => {
       (fetch as any).mockResolvedValueOnce({
         ok: true,
         status: 200,
-        json: async () => mockTransactions,
+        text: async () => JSON.stringify(mockTransactions),
       });
 
       await analyticsClient.getRecentTransactions(25);
@@ -334,7 +334,7 @@ describe('Analytics Client', () => {
       (fetch as any).mockResolvedValueOnce({
         ok: true,
         status: 200,
-        json: async () => [],
+        text: async () => JSON.stringify([]),
       });
 
       const result = await analyticsClient.getRecentTransactions();
@@ -364,7 +364,7 @@ describe('Analytics Client', () => {
       (fetch as any).mockResolvedValueOnce({
         ok: true,
         status: 200,
-        json: async () => mockTrends,
+        text: async () => JSON.stringify(mockTrends),
       });
 
       const result = await analyticsClient.getTrends();
@@ -383,7 +383,7 @@ describe('Analytics Client', () => {
       (fetch as any).mockResolvedValueOnce({
         ok: true,
         status: 200,
-        json: async () => mockTrends,
+        text: async () => JSON.stringify(mockTrends),
       });
 
       await analyticsClient.getTrends('weekly');
@@ -398,7 +398,7 @@ describe('Analytics Client', () => {
       (fetch as any).mockResolvedValueOnce({
         ok: true,
         status: 200,
-        json: async () => mockTrends,
+        text: async () => JSON.stringify(mockTrends),
       });
 
       await analyticsClient.getTrends('yearly');
@@ -413,7 +413,7 @@ describe('Analytics Client', () => {
       (fetch as any).mockResolvedValueOnce({
         ok: true,
         status: 200,
-        json: async () => [],
+        text: async () => JSON.stringify([]),
       });
 
       const result = await analyticsClient.getTrends();
@@ -555,84 +555,38 @@ describe('Analytics Client', () => {
     });
   });
 
-  describe('Request Logging', () => {
-    it('should log requests in development', async () => {
-      vi.stubEnv('NODE_ENV', 'development');
-
+  describe('BFF Proxy Pattern', () => {
+    it('should use relative path /api/analytics for BFF proxy', async () => {
       (fetch as any).mockResolvedValueOnce({
         ok: true,
         status: 200,
-        json: async () => mockStats,
+        text: async () => JSON.stringify(mockStats),
       });
 
       await analyticsClient.getStats();
 
-       
-      expect(console.log).toHaveBeenCalled();
-
-      vi.unstubAllEnvs();
+      // BFF proxy uses relative path - no hostname prefix
+      expect(fetch).toHaveBeenCalledWith(
+        '/api/analytics/stats?period=monthly',
+        expect.any(Object)
+      );
     });
 
-    it('should log errors in development', async () => {
-      vi.stubEnv('NODE_ENV', 'development');
-
-      (fetch as any).mockResolvedValueOnce({
-        ok: false,
-        status: 500,
-        text: async () =>
-          JSON.stringify({
-            statusCode: 500,
-            message: 'Error',
-          }),
-      });
-
-      await expect(analyticsClient.getStats()).rejects.toThrow();
-
-       
-      expect(console.error).toHaveBeenCalled();
-
-      vi.unstubAllEnvs();
-    });
-  });
-
-  describe('API Base URL Configuration', () => {
-    it('should use NEXT_PUBLIC_API_URL when set', async () => {
-      vi.stubEnv('NEXT_PUBLIC_API_URL', 'https://api.example.com');
-
+    it('should include credentials for same-origin cookie handling', async () => {
       (fetch as any).mockResolvedValueOnce({
         ok: true,
         status: 200,
-        json: async () => mockStats,
+        text: async () => JSON.stringify(mockStats),
       });
 
       await analyticsClient.getStats();
 
       expect(fetch).toHaveBeenCalledWith(
-        expect.stringContaining('https://api.example.com/api/analytics/stats'),
-        expect.any(Object)
+        expect.any(String),
+        expect.objectContaining({
+          credentials: 'include',
+        })
       );
-
-      vi.unstubAllEnvs();
-    });
-
-    it('should handle trailing slash in API URL', async () => {
-      vi.stubEnv('NEXT_PUBLIC_API_URL', 'https://api.example.com/');
-
-      (fetch as any).mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        json: async () => mockStats,
-      });
-
-      await analyticsClient.getStats();
-
-      // Should not have double slash
-      expect(fetch).toHaveBeenCalledWith(
-        expect.stringMatching(/https:\/\/api\.example\.com\/api\/analytics/),
-        expect.any(Object)
-      );
-
-      vi.unstubAllEnvs();
     });
   });
 });

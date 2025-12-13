@@ -229,7 +229,8 @@ describe('TransactionList Component', () => {
   });
 
   it('increments local pagination when clicking load more', async () => {
-    const manyTransactions = Array.from({ length: 25 }, (_, i) => ({
+    // Create 15 transactions - default page size is 10, so we need 2 clicks to see all
+    const manyTransactions = Array.from({ length: 15 }, (_, i) => ({
       ...mockTransactions[0],
       id: `tx-${i}`,
       date: new Date(2024, 0, Math.max(1, 15 - Math.floor(i / 2)), 10, 0, 0),
@@ -243,15 +244,15 @@ describe('TransactionList Component', () => {
       />
     );
 
-    // Initial render shows 20 items
-    const allCards = document.querySelectorAll('.rounded-lg.border');
-    expect(allCards.length).toBeGreaterThan(15); // At least showing transactions
+    // Initial render shows 10 items (default page size)
+    // Load more button should be visible
+    expect(screen.getByRole('button', { name: /load more/i })).toBeInTheDocument();
 
     // Load more
     const loadMoreButton = screen.getByRole('button', { name: /load more/i });
     await user.click(loadMoreButton);
 
-    // Should show all 25 now
+    // Should show all 15 now - no more button needed
     await waitFor(() => {
       expect(screen.queryByRole('button', { name: /load more/i })).not.toBeInTheDocument();
     });
@@ -425,4 +426,263 @@ describe('TransactionList Component', () => {
     });
   });
 
+  // New filter feature tests
+
+  describe('Transaction Type Filter', () => {
+    it('filters by Income Only', async () => {
+      const { user } = render(
+        <TransactionList
+          accountId="acc-123"
+          transactions={mockTransactions}
+        />
+      );
+
+      const typeSelect = screen.getByLabelText(/filter by transaction type/i);
+      await user.selectOptions(typeSelect, 'CREDIT');
+
+      await waitFor(() => {
+        // Only income transactions should be visible
+        expect(screen.getByText('Acme Corp')).toBeInTheDocument();
+        expect(screen.queryByText('Whole Foods Market')).not.toBeInTheDocument();
+        expect(screen.queryByText('Starbucks')).not.toBeInTheDocument();
+      });
+    });
+
+    it('filters by Expenses Only', async () => {
+      const { user } = render(
+        <TransactionList
+          accountId="acc-123"
+          transactions={mockTransactions}
+        />
+      );
+
+      const typeSelect = screen.getByLabelText(/filter by transaction type/i);
+      await user.selectOptions(typeSelect, 'DEBIT');
+
+      await waitFor(() => {
+        // Only expense transactions should be visible
+        expect(screen.getByText('Whole Foods Market')).toBeInTheDocument();
+        expect(screen.queryByText('Acme Corp')).not.toBeInTheDocument();
+      });
+    });
+  });
+
+  describe('Amount Range Filter', () => {
+    it('filters by minimum amount', async () => {
+      const { user } = render(
+        <TransactionList
+          accountId="acc-123"
+          transactions={mockTransactions}
+        />
+      );
+
+      const minAmountInput = screen.getByLabelText(/minimum transaction amount/i);
+      await user.type(minAmountInput, '100');
+
+      await waitFor(() => {
+        // Only transactions >= 100 should show
+        // Acme Corp ($3500) is the only one >= 100
+        expect(screen.getByText('Acme Corp')).toBeInTheDocument();
+        expect(screen.queryByText('Whole Foods Market')).not.toBeInTheDocument(); // $85.50 < 100
+        expect(screen.queryByText('Starbucks')).not.toBeInTheDocument(); // $5.75 < 100
+        expect(screen.queryByText('Gas Station')).not.toBeInTheDocument(); // $45 < 100
+      });
+    });
+
+    it('filters by maximum amount', async () => {
+      const { user } = render(
+        <TransactionList
+          accountId="acc-123"
+          transactions={mockTransactions}
+        />
+      );
+
+      const maxAmountInput = screen.getByLabelText(/maximum transaction amount/i);
+      // Use clear and type to ensure full value is entered
+      await user.clear(maxAmountInput);
+      await user.type(maxAmountInput, '50');
+
+      await waitFor(() => {
+        // Only transactions <= 50 should show
+        // Shell ($45) and Starbucks ($5.75) are <= 50
+        expect(screen.queryByText('Whole Foods Market')).not.toBeInTheDocument(); // $85.50 > 50
+        expect(screen.queryByText('Acme Corp')).not.toBeInTheDocument(); // $3500 > 50
+      });
+
+      // Check for visible transactions separately
+      // Note: Component renders merchant name, not description
+      expect(screen.getByText('Starbucks')).toBeInTheDocument(); // $5.75 <= 50
+      expect(screen.getByText('Shell')).toBeInTheDocument(); // $45 <= 50 (merchant name for Gas Station tx)
+    });
+  });
+
+  describe('Sorting', () => {
+    it('sorts by date descending by default', () => {
+      const { container } = render(
+        <TransactionList
+          accountId="acc-123"
+          transactions={mockTransactions}
+        />
+      );
+
+      const dateButton = screen.getByRole('button', { name: /sort by date/i });
+      expect(dateButton).toHaveClass('bg-blue-50');
+      expect(dateButton).toHaveTextContent('Date ↓');
+    });
+
+    it('toggles sort direction when clicking sort button', async () => {
+      const { user } = render(
+        <TransactionList
+          accountId="acc-123"
+          transactions={mockTransactions}
+        />
+      );
+
+      const dateButton = screen.getByRole('button', { name: /sort by date/i });
+      await user.click(dateButton);
+
+      await waitFor(() => {
+        expect(dateButton).toHaveTextContent('Date ↑');
+      });
+    });
+
+    it('changes sort field when clicking different sort button', async () => {
+      const { user } = render(
+        <TransactionList
+          accountId="acc-123"
+          transactions={mockTransactions}
+        />
+      );
+
+      const amountButton = screen.getByRole('button', { name: /sort by amount/i });
+      await user.click(amountButton);
+
+      await waitFor(() => {
+        expect(amountButton).toHaveClass('bg-blue-50');
+        expect(amountButton).toHaveTextContent('Amount ↓');
+      });
+    });
+  });
+
+  describe('Page Size Selector', () => {
+    it('renders page size selector with options', () => {
+      render(
+        <TransactionList
+          accountId="acc-123"
+          transactions={mockTransactions}
+        />
+      );
+
+      const pageSizeSelect = screen.getByLabelText(/number of results per page/i);
+      expect(pageSizeSelect).toBeInTheDocument();
+      expect(pageSizeSelect).toContainHTML('5');
+      expect(pageSizeSelect).toContainHTML('10');
+      expect(pageSizeSelect).toContainHTML('20');
+    });
+
+    it('changes page size when selecting different option', async () => {
+      const manyTransactions = Array.from({ length: 15 }, (_, i) => ({
+        ...mockTransactions[0],
+        id: `tx-${i}`,
+      }));
+
+      const { user } = render(
+        <TransactionList
+          accountId="acc-123"
+          transactions={manyTransactions}
+        />
+      );
+
+      const pageSizeSelect = screen.getByLabelText(/number of results per page/i);
+      // Initially should have 10 selected (default)
+      expect(pageSizeSelect).toHaveValue('10');
+
+      await user.selectOptions(pageSizeSelect, '5');
+
+      await waitFor(() => {
+        expect(pageSizeSelect).toHaveValue('5');
+      });
+    });
+  });
+
+  describe('Arrow Indicators', () => {
+    it('displays green arrow for income transactions', () => {
+      const incomeTransactions = [
+        {
+          ...mockTransactions[0],
+          type: 'CREDIT' as const,
+        },
+      ];
+
+      const { container } = render(
+        <TransactionList
+          accountId="acc-123"
+          transactions={incomeTransactions}
+        />
+      );
+
+      // Check for green background on arrow indicator
+      const greenIndicator = container.querySelector('.bg-green-100');
+      expect(greenIndicator).toBeInTheDocument();
+    });
+
+    it('displays red arrow for expense transactions', () => {
+      const expenseTransactions = [
+        {
+          ...mockTransactions[0],
+          type: 'DEBIT' as const,
+        },
+      ];
+
+      const { container } = render(
+        <TransactionList
+          accountId="acc-123"
+          transactions={expenseTransactions}
+        />
+      );
+
+      // Check for red background on arrow indicator
+      const redIndicator = container.querySelector('.bg-red-100');
+      expect(redIndicator).toBeInTheDocument();
+    });
+
+    it('shows red text for expense amounts', () => {
+      const { container } = render(
+        <TransactionList
+          accountId="acc-123"
+          transactions={mockTransactions}
+        />
+      );
+
+      // Expense amounts should have red text
+      const redAmounts = container.querySelectorAll('.text-red-600');
+      expect(redAmounts.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('Multiple Filters Combined', () => {
+    it('applies multiple filters simultaneously', async () => {
+      const { user } = render(
+        <TransactionList
+          accountId="acc-123"
+          transactions={mockTransactions}
+        />
+      );
+
+      // Apply type filter
+      const typeSelect = screen.getByLabelText(/filter by transaction type/i);
+      await user.selectOptions(typeSelect, 'DEBIT');
+
+      // Apply search filter
+      const searchInput = screen.getByLabelText(/search transactions/i);
+      await user.type(searchInput, 'market');
+
+      await waitFor(() => {
+        // Should only show expense transactions matching 'market'
+        expect(screen.getByText('Whole Foods Market')).toBeInTheDocument();
+        expect(screen.queryByText('Starbucks')).not.toBeInTheDocument();
+        expect(screen.queryByText('Acme Corp')).not.toBeInTheDocument();
+      });
+    });
+  });
 });

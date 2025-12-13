@@ -60,11 +60,13 @@ enum AccountType {
 /// Account operational status
 /// ACTIVE: Normal operation, syncing enabled
 /// INACTIVE: User-disabled, no syncing
+/// HIDDEN: Soft-deleted, preserved for history, excluded from active views, can be restored
 /// CLOSED: Permanently closed account
 /// ERROR: Sync/connection error, needs attention
 enum AccountStatus {
   ACTIVE
   INACTIVE
+  HIDDEN
   CLOSED
   ERROR
 
@@ -134,6 +136,32 @@ enum TransactionType {
   @@map("transaction_type")
 }
 
+/// Flow type for semantic transaction classification
+/// EXPENSE: Regular spending (food, utilities, entertainment)
+/// INCOME: Money received (salary, freelance, gifts)
+/// TRANSFER: Internal movement between accounts (not true income/expense)
+/// LIABILITY_PAYMENT: Payment towards debt (credit card, BNPL, loan)
+/// REFUND: Money returned (partial or full reversal of prior transaction)
+enum FlowType {
+  EXPENSE
+  INCOME
+  TRANSFER
+  LIABILITY_PAYMENT
+  REFUND
+
+  @@map("flow_type")
+}
+
+/// Transfer role for linked transfer transactions
+/// SOURCE: The account sending money (debit side of transfer)
+/// DESTINATION: The account receiving money (credit side of transfer)
+enum TransferRole {
+  SOURCE
+  DESTINATION
+
+  @@map("transfer_role")
+}
+
 /// Transaction processing status
 /// PENDING: Not yet cleared/posted
 /// POSTED: Cleared and finalized
@@ -162,11 +190,11 @@ enum TransactionSource {
 /// Category type classification
 /// INCOME: Revenue categories (salary, freelance, etc.)
 /// EXPENSE: Spending categories (food, transportation, etc.)
-/// TRANSFER: Inter-account transfers
+/// Note: TRANSFER is handled via FlowType on Transaction, not as a category type.
+/// Transfers don't need categories - the fromAccount/toAccount tells the story.
 enum CategoryType {
   INCOME
   EXPENSE
-  TRANSFER
 
   @@map("category_type")
 }
@@ -235,6 +263,112 @@ enum AchievementStatus {
   @@map("achievement_status")
 }
 
+/// Liability type classification
+/// CREDIT_CARD: Credit card balance (monthly cycle)
+/// BNPL: Buy Now Pay Later (Klarna, PayPal Pay-in-3, Affirm, etc.)
+/// LOAN: Personal/auto/other installment loans
+/// MORTGAGE: Home mortgage (long-term)
+/// OTHER: Other debt types
+enum LiabilityType {
+  CREDIT_CARD
+  BNPL
+  LOAN
+  MORTGAGE
+  OTHER
+
+  @@map("liability_type")
+}
+
+/// Liability status
+/// ACTIVE: Currently tracking payments
+/// PAID_OFF: Fully paid, kept for history
+/// CLOSED: Manually closed, no longer tracked
+enum LiabilityStatus {
+  ACTIVE
+  PAID_OFF
+  CLOSED
+
+  @@map("liability_status")
+}
+
+/// Notification type classification
+/// BUDGET_ALERT: Budget threshold exceeded
+/// BILL_REMINDER: Upcoming bill due date
+/// TRANSACTION_ALERT: Large or unusual transaction
+/// SYNC_ERROR: Banking connection issue
+/// ACHIEVEMENT: Achievement unlocked
+/// SYSTEM: System announcements
+enum NotificationType {
+  BUDGET_ALERT
+  BILL_REMINDER
+  TRANSACTION_ALERT
+  SYNC_ERROR
+  ACHIEVEMENT
+  SYSTEM
+
+  @@map("notification_type")
+}
+
+/// Notification priority
+/// LOW: Non-urgent, can be batched
+/// MEDIUM: Normal priority, show when convenient
+/// HIGH: Important, show immediately
+/// URGENT: Critical, push immediately with sound
+enum NotificationPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+
+  @@map("notification_priority")
+}
+
+/// Notification status
+/// PENDING: Not yet delivered
+/// SENT: Delivered to device/channel
+/// READ: User has seen/acknowledged
+/// DISMISSED: User dismissed without action
+enum NotificationStatus {
+  PENDING
+  SENT
+  READ
+  DISMISSED
+
+  @@map("notification_status")
+}
+
+/// Recurrence frequency for scheduled transactions
+/// DAILY: Every day
+/// WEEKLY: Every week
+/// BIWEEKLY: Every two weeks
+/// MONTHLY: Every month
+/// QUARTERLY: Every three months
+/// YEARLY: Every year
+enum RecurrenceFrequency {
+  DAILY
+  WEEKLY
+  BIWEEKLY
+  MONTHLY
+  QUARTERLY
+  YEARLY
+
+  @@map("recurrence_frequency")
+}
+
+/// Scheduled transaction status
+/// ACTIVE: Will generate transactions on schedule
+/// PAUSED: Temporarily suspended
+/// COMPLETED: All occurrences generated
+/// CANCELLED: Permanently stopped
+enum ScheduledTransactionStatus {
+  ACTIVE
+  PAUSED
+  COMPLETED
+  CANCELLED
+
+  @@map("scheduled_transaction_status")
+}
+
 /// Audit event types for security and account activity tracking
 /// Covers password management, authentication, and account lifecycle events
 enum AuditEventType {
@@ -267,10 +401,12 @@ model Family {
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
 
   // Relations
-  users      User[]
-  accounts   Account[]
-  categories Category[]
-  budgets    Budget[]
+  users                 User[]
+  accounts              Account[]
+  categories            Category[]
+  budgets               Budget[]
+  liabilities           Liability[]
+  scheduledTransactions ScheduledTransaction[]
 
   @@map("families")
 }
@@ -312,6 +448,7 @@ model User {
   userAchievements   UserAchievement[]
   passwordHistory    PasswordHistory[]
   auditLogs          AuditLog[]
+  userPreferences    UserPreferences?
 
   // Indexes for query performance
   @@index([email], name: "idx_users_email")
@@ -405,6 +542,7 @@ model Account {
   // Relations
   transactions   Transaction[]
   syncLogs       BankingSyncLog[]
+  liabilities    Liability[]
 
   @@unique([plaidAccountId], name: "uq_accounts_plaid_account")
   @@unique([saltEdgeAccountId], name: "uq_accounts_saltedge_account")
@@ -445,6 +583,25 @@ model Transaction {
   status   TransactionStatus @default(POSTED)
   source   TransactionSource
   currency String            @default("USD") @db.VarChar(3)
+
+  // Flow type for semantic classification
+  // ARCHITECTURAL DECISION: flowType is the user-facing classification
+  // While type (DEBIT/CREDIT) is for accounting, flowType adds context:
+  // - EXPENSE: Regular spending (auto-assigned for DEBIT + expense category)
+  // - INCOME: Money received (auto-assigned for CREDIT + income category)
+  // - TRANSFER: Internal movement (linked via transferGroupId)
+  // - LIABILITY_PAYMENT: Debt payments (links to Liability model)
+  // - REFUND: Money returned (maintains history vs editing original)
+  flowType FlowType? @map("flow_type")
+
+  // Transfer linking
+  // ARCHITECTURAL DECISION: Use UUID to group transfer pairs
+  // When user moves $100 from Checking to Savings:
+  // - Transaction 1: Checking, DEBIT, transferGroupId=X, transferRole=SOURCE
+  // - Transaction 2: Savings, CREDIT, transferGroupId=X, transferRole=DESTINATION
+  // Query transfers: WHERE transferGroupId IS NOT NULL
+  transferGroupId String?       @map("transfer_group_id") @db.Uuid
+  transferRole    TransferRole? @map("transfer_role")
 
   // Date tracking
   // ARCHITECTURAL DECISION: date as DATE, authorizedDate as TIMESTAMPTZ
@@ -542,6 +699,9 @@ model Transaction {
   @@index([status, date], name: "idx_transactions_status_date")
   @@index([merchantName, date], name: "idx_transactions_merchant_date")
   @@index([amount, date], name: "idx_transactions_amount_date")
+  // New indexes for Phase 0 schema additions
+  @@index([flowType, date], name: "idx_transactions_flow_type_date")
+  @@index([transferGroupId], name: "idx_transactions_transfer_group")
   @@map("transactions")
 }
 
@@ -1022,6 +1182,325 @@ model BankingSyncLog {
   @@index([provider, status], name: "idx_sync_logs_provider_status")
   @@index([status, startedAt], name: "idx_sync_logs_status_date")
   @@map("banking_sync_logs")
+}
+
+// ============================================================================
+// PHASE 0 - NEW MODELS
+// ============================================================================
+
+/// UserPreferences entity - User-specific settings and customization
+/// ARCHITECTURAL DECISION: Separate from User model for clarity
+/// - User model contains identity data (name, email, auth)
+/// - UserPreferences contains customization (timezone, locale, notification settings)
+/// - One-to-one relationship, created on user signup
+model UserPreferences {
+  id     String @id @default(uuid()) @db.Uuid
+  userId String @unique @map("user_id") @db.Uuid
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Localization settings
+  timezone   String @default("UTC") @db.VarChar(50)
+  currency   String @default("USD") @db.VarChar(3)
+  dateFormat String @default("YYYY-MM-DD") @map("date_format") @db.VarChar(20)
+  locale     String @default("en-US") @db.VarChar(10)
+
+  // Notification preferences
+  emailNotifications Boolean @default(true) @map("email_notifications")
+  pushNotifications  Boolean @default(true) @map("push_notifications")
+  budgetAlerts       Boolean @default(true) @map("budget_alerts")
+  billReminders      Boolean @default(true) @map("bill_reminders")
+  weeklyDigest       Boolean @default(true) @map("weekly_digest")
+
+  // UI preferences stored as JSONB
+  // Expected shape: { theme: 'light'|'dark'|'system', compactView, showBalances, defaultAccountId }
+  uiPreferences Json? @map("ui_preferences") @db.JsonB
+
+  // Financial preferences stored as JSONB
+  // Expected shape: { defaultBudgetPeriod, startOfWeek, fiscalYearStart }
+  financialPreferences Json? @map("financial_preferences") @db.JsonB
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@map("user_preferences")
+}
+
+/// Notification entity - In-app and push notifications
+/// ARCHITECTURAL DECISION: Server-managed notifications
+/// - Notifications created by backend based on events
+/// - Supports multiple delivery channels (in-app, push, email)
+/// - User can dismiss or mark as read
+model Notification {
+  id       String               @id @default(uuid()) @db.Uuid
+  userId   String               @map("user_id") @db.Uuid
+  type     NotificationType
+  priority NotificationPriority @default(MEDIUM)
+  status   NotificationStatus   @default(PENDING)
+
+  // Content
+  title   String  @db.VarChar(255)
+  message String  @db.Text
+  link    String? @db.VarChar(500) // Deep link to relevant content
+
+  // Delivery tracking
+  sentAt      DateTime? @map("sent_at") @db.Timestamptz
+  readAt      DateTime? @map("read_at") @db.Timestamptz
+  dismissedAt DateTime? @map("dismissed_at") @db.Timestamptz
+
+  // Context metadata stored as JSONB
+  // Expected shape varies by type:
+  //   BUDGET_ALERT: { categoryId, budgetId, percentUsed, threshold }
+  //   BILL_REMINDER: { liabilityId, amount, dueDate }
+  //   TRANSACTION_ALERT: { transactionId, amount, reason }
+  metadata Json? @db.JsonB
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Indexes
+  @@index([userId, status], name: "idx_notifications_user_status")
+  @@index([userId, createdAt], name: "idx_notifications_user_created")
+  @@index([type, status], name: "idx_notifications_type_status")
+  @@map("notifications")
+}
+
+/// PushSubscription entity - Web Push API subscriptions
+/// ARCHITECTURAL DECISION: Store push endpoints per device
+/// - Users may have multiple devices (web browser, mobile)
+/// - Each device gets its own subscription endpoint
+/// - Expired/invalid subscriptions cleaned up on push failure
+model PushSubscription {
+  id       String @id @default(uuid()) @db.Uuid
+  userId   String @map("user_id") @db.Uuid
+  endpoint String @unique @db.Text
+
+  // Push subscription keys (from browser Push API)
+  p256dh String @db.VarChar(255)
+  auth   String @db.VarChar(255)
+
+  // Device info for debugging
+  userAgent  String? @map("user_agent") @db.VarChar(500)
+  deviceName String? @map("device_name") @db.VarChar(100)
+
+  // Status tracking
+  isActive       Boolean   @default(true) @map("is_active")
+  lastUsedAt     DateTime? @map("last_used_at") @db.Timestamptz
+  failedAttempts Int       @default(0) @map("failed_attempts")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Indexes
+  @@index([userId, isActive], name: "idx_push_subscriptions_user_active")
+  @@map("push_subscriptions")
+}
+
+/// Liability entity - Credit cards, BNPL, loans, and other debts
+/// ARCHITECTURAL DECISION: Separate from Account for specialized tracking
+/// - Liabilities have different lifecycle (due dates, cycles, installments)
+/// - Can be linked to an Account (credit card account) or standalone (BNPL)
+/// - Supports both revolving (credit card) and installment (BNPL) debts
+model Liability {
+  id       String          @id @default(uuid()) @db.Uuid
+  familyId String          @map("family_id") @db.Uuid
+  family   Family          @relation(fields: [familyId], references: [id], onDelete: Cascade)
+
+  // Classification
+  type   LiabilityType
+  status LiabilityStatus @default(ACTIVE)
+  name   String          @db.VarChar(255)
+
+  // Balance tracking
+  currentBalance  Decimal  @default(0) @map("current_balance") @db.Decimal(15, 2)
+  creditLimit     Decimal? @map("credit_limit") @db.Decimal(15, 2)
+  originalAmount  Decimal? @map("original_amount") @db.Decimal(15, 2) // For loans/BNPL
+  currency        String   @default("USD") @db.VarChar(3)
+
+  // Interest and fees
+  interestRate   Decimal? @map("interest_rate") @db.Decimal(5, 2) // APR as percentage
+  minimumPayment Decimal? @map("minimum_payment") @db.Decimal(15, 2)
+
+  // Billing cycle (for credit cards)
+  billingCycleDay   Int?      @map("billing_cycle_day") // Day of month (1-31)
+  paymentDueDay     Int?      @map("payment_due_day") // Day of month (1-31)
+  statementCloseDay Int?      @map("statement_close_day") // Day of month
+  lastStatementDate DateTime? @map("last_statement_date") @db.Date
+
+  // Optional link to Account
+  // ARCHITECTURAL DECISION: Nullable accountId
+  // Some liabilities (BNPL) don't have corresponding accounts
+  accountId String?  @map("account_id") @db.Uuid
+  account   Account? @relation(fields: [accountId], references: [id], onDelete: SetNull)
+
+  // Provider info (for BNPL)
+  provider     String? @db.VarChar(100) // "Klarna", "PayPal Pay-in-3", "Affirm"
+  externalId   String? @map("external_id") @db.VarChar(255)
+  purchaseDate DateTime? @map("purchase_date") @db.Date
+
+  // Metadata stored as JSONB
+  // Expected shape: { description, notes, autoPayEnabled, lastPaymentDate }
+  metadata Json? @db.JsonB
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relations
+  installmentPlans InstallmentPlan[]
+
+  // Indexes
+  @@index([familyId, status], name: "idx_liabilities_family_status")
+  @@index([familyId, type], name: "idx_liabilities_family_type")
+  @@index([accountId], name: "idx_liabilities_account")
+  @@map("liabilities")
+}
+
+/// InstallmentPlan entity - Fixed payment schedules for BNPL and loans
+/// ARCHITECTURAL DECISION: Separate model for installment tracking
+/// - Each BNPL purchase or loan has a fixed payment schedule
+/// - Tracks individual installments with status
+/// - Enables payment calendar view and reminder scheduling
+model InstallmentPlan {
+  id          String    @id @default(uuid()) @db.Uuid
+  liabilityId String    @map("liability_id") @db.Uuid
+  liability   Liability @relation(fields: [liabilityId], references: [id], onDelete: Cascade)
+
+  // Plan details
+  totalAmount         Decimal @map("total_amount") @db.Decimal(15, 2)
+  installmentAmount   Decimal @map("installment_amount") @db.Decimal(15, 2)
+  numberOfInstallments Int    @map("number_of_installments")
+  remainingInstallments Int   @default(0) @map("remaining_installments")
+  currency            String  @default("USD") @db.VarChar(3)
+
+  // Schedule
+  startDate DateTime @map("start_date") @db.Date
+  endDate   DateTime @map("end_date") @db.Date
+
+  // Status
+  isPaidOff Boolean @default(false) @map("is_paid_off")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relations
+  installments Installment[]
+
+  // Indexes
+  @@index([liabilityId], name: "idx_installment_plans_liability")
+  @@map("installment_plans")
+}
+
+/// Installment entity - Individual payments in an installment plan
+/// ARCHITECTURAL DECISION: Track each payment separately
+/// - Enables precise tracking of paid vs due installments
+/// - Links to actual transaction when paid
+model Installment {
+  id     String          @id @default(uuid()) @db.Uuid
+  planId String          @map("plan_id") @db.Uuid
+  plan   InstallmentPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  // Payment details
+  amount          Decimal  @db.Decimal(15, 2)
+  dueDate         DateTime @map("due_date") @db.Date
+  installmentNumber Int    @map("installment_number") // 1, 2, 3...
+
+  // Status
+  isPaid Boolean   @default(false) @map("is_paid")
+  paidAt DateTime? @map("paid_at") @db.Timestamptz
+
+  // Link to actual payment transaction (when paid)
+  transactionId String? @map("transaction_id") @db.Uuid
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Indexes
+  @@index([planId, dueDate], name: "idx_installments_plan_due")
+  @@index([dueDate, isPaid], name: "idx_installments_due_status")
+  @@map("installments")
+}
+
+/// ScheduledTransaction entity - Recurring bills and scheduled payments
+/// ARCHITECTURAL DECISION: Template-based scheduling
+/// - ScheduledTransaction is the template (what to pay, how much)
+/// - RecurrenceRule defines when (every month, every week, etc.)
+/// - Actual transactions created when due date arrives
+model ScheduledTransaction {
+  id        String                     @id @default(uuid()) @db.Uuid
+  familyId  String                     @map("family_id") @db.Uuid
+  family    Family                     @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  accountId String                     @map("account_id") @db.Uuid
+  status    ScheduledTransactionStatus @default(ACTIVE)
+
+  // Transaction template
+  amount       Decimal         @db.Decimal(15, 2)
+  type         TransactionType
+  flowType     FlowType?       @map("flow_type")
+  currency     String          @default("USD") @db.VarChar(3)
+  description  String          @db.VarChar(500)
+  merchantName String?         @map("merchant_name") @db.VarChar(255)
+  categoryId   String?         @map("category_id") @db.Uuid
+
+  // Scheduling
+  nextDueDate    DateTime  @map("next_due_date") @db.Date
+  lastExecutedAt DateTime? @map("last_executed_at") @db.Timestamptz
+
+  // Auto-create flag
+  // ARCHITECTURAL DECISION: Support both reminder and auto-create modes
+  // autoCreate=true: Transaction created automatically on due date
+  // autoCreate=false: Just send reminder notification
+  autoCreate Boolean @default(false) @map("auto_create")
+
+  // Reminder settings
+  reminderDaysBefore Int @default(3) @map("reminder_days_before")
+
+  // Metadata stored as JSONB
+  // Expected shape: { notes, tags, confirmBeforeCreate }
+  metadata Json? @db.JsonB
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relations
+  recurrenceRule RecurrenceRule?
+
+  // Indexes
+  @@index([familyId, status], name: "idx_scheduled_tx_family_status")
+  @@index([nextDueDate, status], name: "idx_scheduled_tx_due_status")
+  @@index([accountId], name: "idx_scheduled_tx_account")
+  @@map("scheduled_transactions")
+}
+
+/// RecurrenceRule entity - Defines recurrence pattern
+/// ARCHITECTURAL DECISION: Flexible recurrence model
+/// - Supports common patterns (monthly, weekly) and complex (biweekly, quarterly)
+/// - Uses RFC 5545 (iCal) inspired design
+/// - Can have end date or occurrence count, or neither (infinite)
+model RecurrenceRule {
+  id                     String              @id @default(uuid()) @db.Uuid
+  scheduledTransactionId String              @unique @map("scheduled_transaction_id") @db.Uuid
+  scheduledTransaction   ScheduledTransaction @relation(fields: [scheduledTransactionId], references: [id], onDelete: Cascade)
+
+  // Frequency
+  frequency RecurrenceFrequency
+  interval  Int                 @default(1) // Every N periods (e.g., every 2 weeks)
+
+  // Day specification
+  // For WEEKLY: 0-6 (Sunday-Saturday)
+  // For MONTHLY: 1-31 (day of month) or -1 (last day)
+  dayOfWeek  Int? @map("day_of_week")
+  dayOfMonth Int? @map("day_of_month")
+
+  // End conditions (all nullable = infinite)
+  endDate   DateTime? @map("end_date") @db.Date
+  endCount  Int?      @map("end_count") // After N occurrences
+
+  // Tracking
+  occurrenceCount Int @default(0) @map("occurrence_count") // How many have occurred
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@map("recurrence_rules")
 }
 
 // ============================================================================

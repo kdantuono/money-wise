@@ -94,7 +94,7 @@ function LegendItem({ category }: LegendItemProps) {
 
 function SpendingChartSkeleton() {
   return (
-    <Card>
+    <Card className="min-h-[340px] flex flex-col">
       <CardHeader className="pb-2">
         <div className="h-5 w-40 bg-gray-200 rounded animate-pulse" />
         <div className="h-4 w-32 bg-gray-200 rounded animate-pulse mt-1" />
@@ -118,7 +118,7 @@ function SpendingChartSkeleton() {
 
 function EmptyState() {
   return (
-    <Card>
+    <Card className="min-h-[340px] flex flex-col">
       <CardHeader className="pb-2">
         <CardTitle className="text-lg font-semibold">
           Spending by Category
@@ -127,8 +127,8 @@ function EmptyState() {
           This period&apos;s expenses
         </p>
       </CardHeader>
-      <CardContent>
-        <div className="flex flex-col items-center justify-center py-8 text-center">
+      <CardContent className="flex-1 flex flex-col justify-center">
+        <div className="flex flex-col items-center justify-center text-center">
           <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4">
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -174,7 +174,7 @@ export function SpendingChart({ data, isLoading }: SpendingChartProps) {
   const totalSpending = data.reduce((sum, cat) => sum + cat.amount, 0);
 
   return (
-    <Card>
+    <Card className="min-h-[340px] flex flex-col">
       <CardHeader className="pb-2">
         <CardTitle className="text-lg font-semibold">
           Spending by Category
@@ -183,7 +183,7 @@ export function SpendingChart({ data, isLoading }: SpendingChartProps) {
           This period&apos;s expenses
         </p>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex-1">
         <div className="flex flex-col sm:flex-row items-center gap-6">
           {/* Donut Chart */}
           <div className="relative flex-shrink-0">

@@ -4,8 +4,19 @@
  */
 
 import '@testing-library/jest-dom';
-import { vi } from 'vitest';
+import { cleanup } from '@testing-library/react';
+import { afterEach, vi } from 'vitest';
 import React from 'react';
+
+// =============================================================================
+// AUTOMATIC TEST CLEANUP
+// =============================================================================
+// React Testing Library cleanup is run AUTOMATICALLY after each test.
+// This prevents test pollution where DOM elements from one test affect another.
+// Without this, tests with async state updates can leave stale elements.
+afterEach(() => {
+  cleanup();
+});
 
 // React 19 Configuration
 // Tell React Testing Library that we're in a React Act environment

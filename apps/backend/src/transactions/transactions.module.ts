@@ -3,6 +3,7 @@ import { TransactionsController } from './transactions.controller';
 import { TransactionsService } from './transactions.service';
 import { TransactionService as CoreTransactionService } from '../core/database/prisma/services/transaction.service';
 import { PrismaModule } from '../core/database/prisma/prisma.module';
+import { CategoryValidationService } from './services/category-validation.service';
 
 /**
  * Transactions Module
@@ -11,6 +12,7 @@ import { PrismaModule } from '../core/database/prisma/prisma.module';
  * - REST API endpoints (TransactionsController)
  * - Authorization wrapper (TransactionsService)
  * - Core data access (CoreTransactionService)
+ * - Category validation (CategoryValidationService) using Specification Pattern
  *
  * @phase STORY-1.5.7 - TDD Transaction API Implementation (GREEN phase)
  */
@@ -20,6 +22,7 @@ import { PrismaModule } from '../core/database/prisma/prisma.module';
   providers: [
     TransactionsService,
     CoreTransactionService,
+    CategoryValidationService,
   ],
   exports: [TransactionsService],
 })

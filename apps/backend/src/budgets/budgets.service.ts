@@ -124,9 +124,21 @@ export class BudgetsService {
       return { budgets: [], total: 0, overBudgetCount: 0 };
     }
 
-    // Step 2: Get all family accounts (single query)
-    const familyAccounts = await this.prisma.account.findMany({
+    // Step 2: Get all family accounts
+    // Include both accounts directly linked to family AND accounts owned by family members
+    const familyMembers = await this.prisma.user.findMany({
       where: { familyId },
+      select: { id: true },
+    });
+    const familyMemberIds = familyMembers.map((u) => u.id);
+
+    const familyAccounts = await this.prisma.account.findMany({
+      where: {
+        OR: [
+          { familyId },
+          { userId: { in: familyMemberIds } },
+        ],
+      },
       select: { id: true },
     });
     const accountIds = familyAccounts.map((a) => a.id);
@@ -379,9 +391,23 @@ export class BudgetsService {
       return 0;
     }
 
-    // Get all accounts for the family to sum transactions across
-    const familyAccounts = await this.prisma.account.findMany({
+    // Get user IDs of family members
+    const familyMembers = await this.prisma.user.findMany({
       where: { familyId: budget.familyId },
+      select: { id: true },
+    });
+    const familyMemberIds = familyMembers.map((u) => u.id);
+
+    // Get all accounts for the family:
+    // 1. Accounts directly linked to the family (familyId)
+    // 2. Accounts owned by users who are members of the family (userId)
+    const familyAccounts = await this.prisma.account.findMany({
+      where: {
+        OR: [
+          { familyId: budget.familyId },
+          { userId: { in: familyMemberIds } },
+        ],
+      },
       select: { id: true },
     });
 

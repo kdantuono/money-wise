@@ -28,6 +28,19 @@ export async function PUT(
 }
 
 /**
+ * PATCH /api/accounts/:id
+ *
+ * BFF endpoint for partially updating an account.
+ */
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+): Promise<NextResponse> {
+  const { id } = await params;
+  return await proxyRequest(request, `/api/accounts/${id}`);
+}
+
+/**
  * DELETE /api/accounts/:id
  *
  * BFF endpoint for deleting an account.

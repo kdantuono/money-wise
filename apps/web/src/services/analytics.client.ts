@@ -79,45 +79,10 @@ export class ServerError extends AnalyticsApiError {
 // =============================================================================
 
 /**
- * Get the API base URL from environment variables
+ * API base URL - uses relative path to go through BFF proxy
+ * This ensures cookies are properly included (same-origin requests)
  */
-function getApiBaseUrl(): string {
-  const baseUrl =
-    process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-  return baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
-}
-
-/**
- * Check if code is running in development mode
- */
-function isDevelopment(): boolean {
-  return process.env.NODE_ENV === 'development';
-}
-
-/**
- * Log request details in development mode
- */
-function logRequest(method: string, url: string): void {
-  if (isDevelopment()) {
-     
-    console.log(`[Analytics API] ${method} ${url}`);
-  }
-}
-
-/**
- * Log response details in development mode
- */
-function logResponse(
-  method: string,
-  url: string,
-  status: number,
-  data?: unknown
-): void {
-  if (isDevelopment()) {
-     
-    console.log(`[Analytics API] ${method} ${url} → ${status}`, data || '');
-  }
-}
+const API_BASE_URL = '/api/analytics';
 
 /**
  * HTTP error response structure
@@ -150,11 +115,6 @@ async function handleErrorResponse(response: Response): Promise<never> {
       : errorData.message
     : response.statusText || 'An error occurred';
 
-  // Log error in development
-  if (isDevelopment()) {
-    console.error(`[Analytics API] Error ${statusCode}:`, errorData || message);
-  }
-
   // Throw appropriate error type
   switch (statusCode) {
     case 401:
@@ -181,35 +141,27 @@ async function request<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const baseUrl = getApiBaseUrl();
-  const url = `${baseUrl}${endpoint}`;
+  const url = `${API_BASE_URL}${endpoint}`;
 
-  // Build headers
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    ...((options.headers as Record<string, string>) || {}),
-  };
-
-  // Log request in development
-  logRequest(options.method || 'GET', url);
-
-  // Make request with cookies (authentication handled by HttpOnly cookies)
   const response = await fetch(url, {
     ...options,
-    headers,
     credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
   });
 
-  // Handle errors
   if (!response.ok) {
     await handleErrorResponse(response);
   }
 
-  // Parse JSON response
-  const data = await response.json();
-  logResponse(options.method || 'GET', url, response.status, data);
+  const text = await response.text();
+  if (!text) {
+    return {} as T;
+  }
 
-  return data as T;
+  return JSON.parse(text);
 }
 
 // =============================================================================
@@ -233,7 +185,7 @@ export const analyticsClient = {
    * @returns Dashboard statistics
    */
   async getStats(period: TimePeriod = 'monthly'): Promise<DashboardStats> {
-    return request<DashboardStats>(`/api/analytics/stats?period=${period}`, {
+    return request<DashboardStats>(`/stats?period=${period}`, {
       method: 'GET',
     });
   },
@@ -250,7 +202,7 @@ export const analyticsClient = {
     period: TimePeriod = 'monthly'
   ): Promise<CategorySpending[]> {
     return request<CategorySpending[]>(
-      `/api/analytics/spending-by-category?period=${period}`,
+      `/spending-by-category?period=${period}`,
       { method: 'GET' }
     );
   },
@@ -265,7 +217,7 @@ export const analyticsClient = {
    */
   async getRecentTransactions(limit: number = 10): Promise<Transaction[]> {
     return request<Transaction[]>(
-      `/api/analytics/transactions/recent?limit=${limit}`,
+      `/transactions/recent?limit=${limit}`,
       { method: 'GET' }
     );
   },
@@ -279,7 +231,7 @@ export const analyticsClient = {
    * @returns Array of trend data points
    */
   async getTrends(period: TimePeriod = 'monthly'): Promise<TrendData[]> {
-    return request<TrendData[]>(`/api/analytics/trends?period=${period}`, {
+    return request<TrendData[]>(`/trends?period=${period}`, {
       method: 'GET',
     });
   },

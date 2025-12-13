@@ -25,6 +25,7 @@ import { CategoryService } from '../core/database/prisma/services/category.servi
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { CategoryResponseDto } from './dto/category-response.dto';
+import { CategorySpendingSummaryDto } from './dto/category-spending.dto';
 import { CategoryType, CategoryStatus, Prisma } from '../../generated/prisma';
 
 /**
@@ -98,6 +99,82 @@ export class CategoriesController {
     );
 
     return categories.map(cat => CategoryResponseDto.fromEntity(cat));
+  }
+
+  /**
+   * Get spending by category
+   * GET /api/categories/spending?startDate=X&endDate=Y&parentOnly=true
+   *
+   * Returns aggregated spending for each category within a date range.
+   * When parentOnly=true (default), child category spending is rolled up to parents.
+   */
+  @Get('spending')
+  @ApiOperation({ summary: 'Get spending aggregated by category' })
+  @ApiQuery({
+    name: 'startDate',
+    required: true,
+    type: String,
+    description: 'Start date (ISO 8601 format)',
+    example: '2025-01-01',
+  })
+  @ApiQuery({
+    name: 'endDate',
+    required: true,
+    type: String,
+    description: 'End date (ISO 8601 format)',
+    example: '2025-01-31',
+  })
+  @ApiQuery({
+    name: 'parentOnly',
+    required: false,
+    type: Boolean,
+    description: 'Roll up child spending to parent categories (default: true)',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Spending data retrieved successfully',
+    type: CategorySpendingSummaryDto,
+  })
+  @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Invalid date format' })
+  async getSpending(
+    @Request() req,
+    @Query('startDate') startDate: string,
+    @Query('endDate') endDate: string,
+    @Query('parentOnly') parentOnly?: string,
+  ): Promise<CategorySpendingSummaryDto> {
+    const familyId = req.user.familyId;
+
+    // Parse dates
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    // Validate dates
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+      throw new Error('Invalid date format. Use ISO 8601 format (e.g., 2025-01-01)');
+    }
+
+    // Parse parentOnly (default true)
+    const rollUp = parentOnly !== 'false';
+
+    const spendingData = await this.categoryService.getSpendingByCategory(
+      familyId,
+      start,
+      end,
+      { parentOnly: rollUp }
+    );
+
+    // Calculate total spending
+    const totalSpending = spendingData.reduce(
+      (sum, cat) => sum + cat.totalAmount,
+      0
+    );
+
+    return {
+      categories: spendingData,
+      totalSpending,
+      startDate,
+      endDate,
+    };
   }
 
   /**

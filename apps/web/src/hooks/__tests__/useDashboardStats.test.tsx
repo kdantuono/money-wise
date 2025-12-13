@@ -519,8 +519,8 @@ describe('Dashboard Hooks', () => {
       expect(analyticsClient.getStats).toHaveBeenCalledWith('weekly');
       expect(analyticsClient.getSpendingByCategory).toHaveBeenCalledWith('weekly');
       expect(analyticsClient.getTrends).toHaveBeenCalledWith('weekly');
-      // Transactions uses fixed limit, not period
-      expect(analyticsClient.getRecentTransactions).toHaveBeenCalledWith(10);
+      // Transactions uses fixed limit of 5, not period (reduced to fit budget widget)
+      expect(analyticsClient.getRecentTransactions).toHaveBeenCalledWith(5);
     });
 
     it('should handle partial failures gracefully', async () => {
