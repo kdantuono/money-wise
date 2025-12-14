@@ -9,6 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Phase 6: Financial Calendar** (December 14, 2025)
+  - New calendar page at `/dashboard/calendar`
+  - Month view with scheduled transaction events
+  - Monthly summary (Expected Income, Expected Expenses, Net Cash Flow)
+  - Click-to-view day details with event list
+  - Month navigation (Previous, Next, Today)
+  - Event color coding (green for income, red for expenses)
+  - Overdue transaction indicators
+  - No external dependencies - pure React implementation
+
+- **Navigation Improvements** (December 14, 2025)
+  - Added Liabilities to main navigation
+  - Added Scheduled and Calendar to Planning submenu
+  - New icons: Calendar, Clock, Receipt
+
 - **Phase 1 Categories - Quality Assurance Complete** (December 14, 2025)
   - **Integration Test Suite - 100% Enabled**: Fixed all 15 previously skipped tests
     - Budget-Transaction tests (8): Changed from Transaction API to Prisma direct calls

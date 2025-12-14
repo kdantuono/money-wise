@@ -27,7 +27,10 @@ import {
   PiggyBank,
   ChevronDown,
   ClipboardList,
-  Tags
+  Tags,
+  Calendar,
+  Clock,
+  Receipt,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -40,12 +43,15 @@ const navigation = [
   { name: 'Accounts', href: '/dashboard/accounts', icon: Wallet },
   { name: 'Transactions', href: '/dashboard/transactions', icon: CreditCard },
   { name: 'Categories', href: '/dashboard/categories', icon: Tags },
+  { name: 'Liabilities', href: '/dashboard/liabilities', icon: Receipt },
   { name: 'Investments', href: '/dashboard/investments', icon: TrendingUp },
 ];
 
 const planningItems = [
   { name: 'Budgets', href: '/dashboard/budgets', icon: PiggyBank },
   { name: 'Goals', href: '/dashboard/goals', icon: Target },
+  { name: 'Scheduled', href: '/dashboard/scheduled', icon: Clock },
+  { name: 'Calendar', href: '/dashboard/calendar', icon: Calendar },
 ];
 
 const bottomNavigation = [
