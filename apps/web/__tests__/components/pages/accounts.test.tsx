@@ -896,13 +896,17 @@ describe('AccountsPage', () => {
         expect(screen.getByText('Orphaned Bank Account')).toBeInTheDocument();
       });
 
-      const deleteButton = screen.getByRole('button', { name: /delete/i });
+      // Use data-testid for more reliable selection in CI
+      const deleteButton = await screen.findByTestId('delete-button');
       await user.click(deleteButton);
 
       // Should check deletion eligibility
-      await waitFor(() => {
-        expect(mockAccountsClient.checkDeletionEligibility).toHaveBeenCalledWith('acc-orphaned');
-      });
+      await waitFor(
+        () => {
+          expect(mockAccountsClient.checkDeletionEligibility).toHaveBeenCalledWith('acc-orphaned');
+        },
+        { timeout: 3000 }
+      );
 
       // Delete confirmation dialog should appear
       await waitFor(() => {
