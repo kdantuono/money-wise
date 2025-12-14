@@ -21,33 +21,7 @@ import {
   ArrowDownCircle,
 } from 'lucide-react';
 import Link from 'next/link';
-
-// =============================================================================
-// Types
-// =============================================================================
-
-interface CalendarEvent {
-  id: string;
-  scheduledTransactionId: string;
-  date: string;
-  description: string;
-  amount: number;
-  currency: string;
-  type: 'DEBIT' | 'CREDIT';
-  flowType?: string;
-  category?: {
-    id: string;
-    name: string;
-    icon?: string;
-    color?: string;
-  };
-  account?: {
-    id: string;
-    name: string;
-  };
-  isOverdue: boolean;
-  status: string;
-}
+import { scheduledClient, type CalendarEvent } from '@/services/scheduled.client';
 
 // =============================================================================
 // Helper Functions
@@ -127,29 +101,15 @@ export default function CalendarPage() {
       setIsLoading(true);
       setError(null);
 
-      // Get first and last day of month (with buffer for display)
+      // Get first and last day of month
       const startDate = new Date(currentYear, currentMonth, 1);
       const endDate = new Date(currentYear, currentMonth + 1, 0);
 
-      // Format dates as ISO strings
-      const params = new URLSearchParams({
-        startDate: startDate.toISOString().split('T')[0],
-        endDate: endDate.toISOString().split('T')[0],
-      });
-
-      const response = await fetch(`/api/scheduled/calendar?${params}`, {
-        credentials: 'include',
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch calendar events');
-      }
-
-      const data = await response.json();
+      const data = await scheduledClient.getCalendarEvents(startDate, endDate);
       setEvents(data);
     } catch (err) {
       console.error('Failed to fetch calendar events:', err);
-      setError('Failed to load calendar events. Please try again.');
+      setError(err instanceof Error ? err.message : 'Failed to load calendar events. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -182,13 +142,24 @@ export default function CalendarPage() {
   };
 
   /**
+   * Memoized map of events by date string (YYYY-MM-DD) for performance
+   */
+  const eventsByDate = useMemo(() => {
+    const map = new Map<string, CalendarEvent[]>();
+    events.forEach((event) => {
+      const key = event.date.split('T')[0];
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(event);
+    });
+    return map;
+  }, [events]);
+
+  /**
    * Get events for a specific day
    */
   const getEventsForDay = (date: Date): CalendarEvent[] => {
-    return events.filter((event) => {
-      const eventDate = new Date(event.date);
-      return isSameDay(eventDate, date);
-    });
+    const key = date.toISOString().split('T')[0];
+    return eventsByDate.get(key) ?? [];
   };
 
   /**
@@ -196,21 +167,29 @@ export default function CalendarPage() {
    */
   const selectedDayEvents = selectedDate ? getEventsForDay(selectedDate) : [];
 
-  // Calculate monthly totals
+  // Calculate monthly totals (only for current month, not overflow days)
   const monthlyTotals = useMemo(() => {
+    const monthStart = new Date(currentYear, currentMonth, 1);
+    const monthEnd = new Date(currentYear, currentMonth + 1, 0, 23, 59, 59, 999);
+
     let income = 0;
     let expenses = 0;
 
-    events.forEach((event) => {
-      if (event.type === 'CREDIT') {
-        income += event.amount;
-      } else {
-        expenses += event.amount;
-      }
-    });
+    events
+      .filter((event) => {
+        const eventDate = new Date(event.date);
+        return eventDate >= monthStart && eventDate <= monthEnd;
+      })
+      .forEach((event) => {
+        if (event.type === 'CREDIT') {
+          income += event.amount;
+        } else {
+          expenses += event.amount;
+        }
+      });
 
     return { income, expenses, net: income - expenses };
-  }, [events]);
+  }, [events, currentYear, currentMonth]);
 
   return (
     <div className="space-y-6">
