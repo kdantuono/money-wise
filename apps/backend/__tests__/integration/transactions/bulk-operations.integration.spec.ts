@@ -11,19 +11,6 @@
  * - Partial success scenarios
  *
  * @phase STORY-1.5.7 - Phase 2 Transaction Enhancement
- *
- * TODO: These tests are currently skipped due to an integration test infrastructure
- * issue where cookie-based authentication doesn't work when using AppModule directly.
- * The issue is that registration/login endpoints don't return Set-Cookie headers
- * in the test environment when using the full AppModule.
- *
- * Unit tests for the TransferDetectionService are passing (32 test cases).
- * See: __tests__/unit/transactions/transfer-detection.service.spec.ts
- *
- * To fix this, we need to either:
- * 1. Use a minimal module setup like auth-real.integration.spec.ts does
- * 2. Mock the authentication layer for integration tests
- * 3. Investigate why AppModule behaves differently than AuthModule alone
  */
 
 import { Test, TestingModule } from '@nestjs/testing';
@@ -50,11 +37,14 @@ import {
 } from '../../helpers/cookie-auth.helper';
 import { BulkOperation } from '../../../src/transactions/dto/bulk-operation.dto';
 import { CategoryFactory } from '../../utils/factories/category.factory';
+import { createMockRedis } from '../../mocks/redis.mock';
 
-// TODO: Re-enable when cookie authentication issue is fixed
-describe.skip('Bulk Operations API Integration Tests', () => {
+describe('Bulk Operations API Integration Tests', () => {
   let app: INestApplication;
   let prisma: PrismaClient;
+
+  // Mock Redis for session/token storage
+  const mockRedisClient = createMockRedis();
 
   // Test fixtures
   let testUserId: string;
@@ -79,6 +69,8 @@ describe.skip('Bulk Operations API Integration Tests', () => {
     })
       .overrideProvider(PrismaService)
       .useValue(prisma)
+      .overrideProvider('default') // Override Redis provider
+      .useValue(mockRedisClient)
       .compile();
 
     app = moduleFixture.createNestApplication();
