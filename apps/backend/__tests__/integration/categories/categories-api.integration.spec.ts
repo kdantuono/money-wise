@@ -13,10 +13,12 @@ import * as request from 'supertest';
 import { AppModule } from '@/app.module';
 import { PrismaService } from '@/core/database/prisma/prisma.service';
 import { CategoryType, TransactionType, TransactionSource } from '../../../generated/prisma';
+import { createMockRedis } from '../../mocks/redis.mock';
 
 describe('Categories API Integration', () => {
   let app: INestApplication;
   let prisma: PrismaService;
+  const mockRedis = createMockRedis();
   let authToken: string;
   let testFamilyId: string;
   let testUserId: string;
@@ -24,7 +26,10 @@ describe('Categories API Integration', () => {
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
-    }).compile();
+    })
+      .overrideProvider('default')
+      .useValue(mockRedis)
+      .compile();
 
     app = moduleFixture.createNestApplication();
     app.useGlobalPipes(
@@ -311,7 +316,7 @@ describe('Categories API Integration', () => {
         data: [
           {
             description: 'Parent Category Transaction 1',
-            amount: -100,
+            amount: 100,
             type: TransactionType.DEBIT,
             source: TransactionSource.MANUAL,
             date: thisMonth,
@@ -320,7 +325,7 @@ describe('Categories API Integration', () => {
           },
           {
             description: 'Parent Category Transaction 2',
-            amount: -50,
+            amount: 50,
             type: TransactionType.DEBIT,
             source: TransactionSource.MANUAL,
             date: thisMonth,
@@ -329,7 +334,7 @@ describe('Categories API Integration', () => {
           },
           {
             description: 'Child Category Transaction',
-            amount: -75,
+            amount: 75,
             type: TransactionType.DEBIT,
             source: TransactionSource.MANUAL,
             date: thisMonth,

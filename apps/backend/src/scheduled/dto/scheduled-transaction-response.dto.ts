@@ -57,7 +57,7 @@ export class ScheduledTransactionResponseDto {
   })
   status: ScheduledTransactionStatus;
 
-  @ApiProperty({ description: 'Transaction amount' })
+  @ApiProperty({ description: 'Transaction amount (positive value, absolute)' })
   amount: number;
 
   @ApiProperty({
@@ -132,13 +132,13 @@ export class UpcomingScheduledDto {
   @ApiProperty({ description: 'Description' })
   description: string;
 
-  @ApiProperty({ description: 'Amount' })
+  @ApiProperty({ description: 'Amount (positive value, absolute)' })
   amount: number;
 
   @ApiProperty({ description: 'Currency' })
   currency: string;
 
-  @ApiProperty({ description: 'Transaction type', enum: TransactionType })
+  @ApiProperty({ description: 'Transaction type (DEBIT/CREDIT indicates direction)', enum: TransactionType })
   type: TransactionType;
 
   @ApiPropertyOptional({ description: 'Flow type', enum: FlowType })
@@ -173,13 +173,13 @@ export class CalendarEventDto {
   @ApiProperty({ description: 'Description' })
   description: string;
 
-  @ApiProperty({ description: 'Amount' })
+  @ApiProperty({ description: 'Amount (positive value, absolute)' })
   amount: number;
 
   @ApiProperty({ description: 'Currency' })
   currency: string;
 
-  @ApiProperty({ description: 'Transaction type', enum: TransactionType })
+  @ApiProperty({ description: 'Transaction type (DEBIT/CREDIT indicates direction)', enum: TransactionType })
   type: TransactionType;
 
   @ApiPropertyOptional({ description: 'Flow type', enum: FlowType })
