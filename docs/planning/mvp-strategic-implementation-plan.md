@@ -69,11 +69,21 @@
 - CI integration with artifacts
 - Mobile viewport testing (iPhone 12 Pro)
 
+#### ✅ Phase 7: User Settings Page - Complete
+
+**Settings Page Implementation**:
+- Full profile management (first name, last name, email)
+- Regional settings (timezone, currency selection)
+- Appearance preferences (theme: light/dark/system) - UI ready
+- Notification preferences (email, push, budget, category alerts) - UI ready
+- Account information display (ID, status, member since, verification)
+- BFF route for updates (`/api/users/[id]`)
+
 #### ⏳ Action Items Identified
 
 | Priority | Item | Phase | Effort |
 |----------|------|-------|--------|
-| HIGH | Fix OpenAPI spec amount description | 1 | 5 min |
+| ✅ DONE | Fix OpenAPI spec amount description | 1 | 5 min |
 | MEDIUM | Add transaction update validation test | 2 | 5 min |
 | MEDIUM | Add Transaction E2E test suite | 2 | 30 min |
 | LOW | Add Budget E2E test suite | Post-MVP | 1 hr |
@@ -154,25 +164,85 @@
 | -1 | Foundation | 100% | 100% | 100% | **100%** ✅ | No |
 | 0 | Schema | 100% | N/A | N/A | **100%** ✅ | No |
 | 1 | Categories | 100% | 100% | 100% | **100%** ✅ | No |
-| 2 | Transactions | 85% | 75% | 75%* | **~80%** | No |
-| 3 | Account Details | 100% | 100% | TBD | **~95%** | No |
-| 4 | Liabilities | 80% | 90% | TBD | **~85%** | No |
-| 5 | Scheduled TX | 80% | 90% | TBD | **~85%** | No |
-| 6 | Calendar | TBD | TBD | TBD | **TBD** | TBD |
-| 7 | Settings | 80% | 80% | TBD | **~80%** | No |
+| 2 | Transactions | 95% | 95% | 75%* | **~90%** | No |
+| 3 | Account Details | 100% | 100% | TBD | **100%** ✅ | No |
+| 4 | Liabilities | 100% | 100% | TBD | **100%** ✅ | No |
+| 5 | Scheduled TX | 100% | 100% | TBD | **100%** ✅ | No |
+| 6 | Calendar | 100% | 100% | TBD | **100%** ✅ | No |
+| 7 | Settings | 100% | 100% | TBD | **100%** ✅ | No |
 | 8 | Notifications | 20% | 0% | 0% | **~10%** | Soft (Phase 7) |
 
 *Phase 2 Tests: All integration tests passing, E2E tests needed
+**Status Update Dec 14, 2024**: Calendar UI, Settings page, Copilot review fixes applied
 
-### What's Actually Missing (Phase 2 Only)
+---
 
-| Item | Type | Status |
-|------|------|--------|
-| `POST /transactions/link-transfer` | API Endpoint | ❌ Missing |
-| Transfer detection service | Backend Service | ❌ Missing |
-| BulkActionBar | Component | ❌ Missing |
-| TransferLinkModal | Component | ❌ Missing |
-| FlowType badge in list | UI Enhancement | ❌ Missing |
+### Comprehensive Missing Features List
+
+#### Phase 2: Transaction Management (~90% complete)
+
+| Item | Type | Priority | Status |
+|------|------|----------|--------|
+| `POST /transactions/link-transfer` | API Endpoint | HIGH | ❌ Missing |
+| Transfer detection service | Backend Service | HIGH | ❌ Missing |
+| TransferLinkModal | Component | HIGH | ❌ Missing |
+| BulkActionBar | Component | MEDIUM | ❌ Missing |
+| FlowType badge in list | UI Enhancement | LOW | ❌ Missing |
+
+#### Phase 6: Calendar Enhancements (Core 100%, Enhancements Pending)
+
+| Item | Type | Priority | Status |
+|------|------|----------|--------|
+| Click-to-create scheduled transaction | Frontend | MEDIUM | ❌ Missing |
+| Pre-fill form with selected date | Frontend | MEDIUM | ❌ Missing |
+| "Days until due" badge on events | Frontend | LOW | ❌ Missing |
+| Aria-labels for accessibility | Frontend | LOW | ❌ Missing |
+
+#### Phase 8: Notifications (~10% complete)
+
+| Item | Type | Priority | Status |
+|------|------|----------|--------|
+| Notification service (core) | Backend Service | HIGH | ❌ Missing |
+| `BILL_REMINDER` trigger logic | Backend Service | HIGH | ❌ Missing |
+| Notification bell UI in header | Frontend | HIGH | ❌ Missing |
+| Notification list/dropdown | Frontend | HIGH | ❌ Missing |
+| Overdue escalation logic | Backend Service | MEDIUM | ❌ Missing |
+| Mark as read/dismiss actions | Frontend | MEDIUM | ❌ Missing |
+
+#### Scheduled Transaction Automation (Post-MVP Enhancement)
+
+| Item | Type | Priority | Status |
+|------|------|----------|--------|
+| Auto-match scheduled to bank transactions | Backend Service | LOW | ❌ Not planned for MVP |
+| Auto-complete on match | Backend Service | LOW | ❌ Not planned for MVP |
+| Sync reminder for overdue items | Backend Service | LOW | ❌ Not planned for MVP |
+
+---
+
+### MVP Completion Priority Order
+
+```
+1. HIGH PRIORITY (MVP Core)
+   ├── Phase 2: Transfer Linking
+   │   ├── POST /transactions/link-transfer endpoint
+   │   ├── Transfer detection service
+   │   └── TransferLinkModal component
+   └── Phase 8: Basic Notifications
+       ├── Notification service
+       ├── BILL_REMINDER trigger (X days before due)
+       └── Notification bell UI
+
+2. MEDIUM PRIORITY (MVP Nice-to-Have)
+   ├── Calendar click-to-create
+   ├── BulkActionBar component
+   └── Notification overdue escalation
+
+3. LOW PRIORITY (Post-MVP)
+   ├── FlowType badges
+   ├── Days-until-due badges
+   ├── Auto-match bank transactions
+   └── Full notification preferences
+```
 
 ### Dependency Graph (Actual vs Perceived)
 

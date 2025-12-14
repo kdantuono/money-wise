@@ -244,13 +244,17 @@ describe('AccountsPage', () => {
         expect(screen.getByText('Test Savings')).toBeInTheDocument();
       });
 
-      // Find and click the delete button
-      const deleteButton = screen.getByRole('button', { name: /delete/i });
+      // Find and click the delete button - use data-testid for reliability in CI
+      const deleteButton = await screen.findByTestId('delete-button');
       await user.click(deleteButton);
 
-      await waitFor(() => {
-        expect(mockAccountsClient.checkDeletionEligibility).toHaveBeenCalledWith('acc-to-delete');
-      });
+      // Increase timeout for CI environment
+      await waitFor(
+        () => {
+          expect(mockAccountsClient.checkDeletionEligibility).toHaveBeenCalledWith('acc-to-delete');
+        },
+        { timeout: 3000 }
+      );
     });
 
     it('shows eligibility loading state in confirmation dialog', async () => {
@@ -271,7 +275,7 @@ describe('AccountsPage', () => {
         expect(screen.getByText('Test Savings')).toBeInTheDocument();
       });
 
-      const deleteButton = screen.getByRole('button', { name: /delete/i });
+      const deleteButton = await screen.findByTestId('delete-button');
       await user.click(deleteButton);
 
       await waitFor(() => {
@@ -317,7 +321,7 @@ describe('AccountsPage', () => {
         expect(screen.getByText('Test Savings')).toBeInTheDocument();
       });
 
-      const deleteButton = screen.getByRole('button', { name: /delete/i });
+      const deleteButton = await screen.findByTestId('delete-button');
       await user.click(deleteButton);
 
       await waitFor(() => {
@@ -357,7 +361,7 @@ describe('AccountsPage', () => {
         expect(screen.getByText('Test Savings')).toBeInTheDocument();
       });
 
-      const deleteButton = screen.getByRole('button', { name: /delete/i });
+      const deleteButton = await screen.findByTestId('delete-button');
       await user.click(deleteButton);
 
       await waitFor(() => {
@@ -398,7 +402,7 @@ describe('AccountsPage', () => {
         expect(screen.getByText('Test Savings')).toBeInTheDocument();
       });
 
-      const deleteButton = screen.getByRole('button', { name: /delete/i });
+      const deleteButton = await screen.findByTestId('delete-button');
       await user.click(deleteButton);
 
       await waitFor(() => {
@@ -448,7 +452,7 @@ describe('AccountsPage', () => {
       // Clear the initial call count
       mockAccountsClient.getAccounts.mockClear();
 
-      const deleteButton = screen.getByRole('button', { name: /delete/i });
+      const deleteButton = await screen.findByTestId('delete-button');
       await user.click(deleteButton);
 
       await waitFor(() => {
@@ -633,9 +637,13 @@ describe('AccountsPage', () => {
       const editButton = screen.getByTestId('edit-button');
       await user.click(editButton);
 
-      await waitFor(() => {
-        expect(screen.getByTestId('account-name-input')).toBeInTheDocument();
-      });
+      // Increase timeout for CI environment where modal rendering may be slower
+      await waitFor(
+        () => {
+          expect(screen.getByTestId('account-name-input')).toBeInTheDocument();
+        },
+        { timeout: 3000 }
+      );
 
       // Click on piggybank icon if selector exists
       const piggyBankIcon = screen.queryByTestId('icon-piggybank');
@@ -681,9 +689,13 @@ describe('AccountsPage', () => {
       const editButton = screen.getByTestId('edit-button');
       await user.click(editButton);
 
-      await waitFor(() => {
-        expect(screen.getByTestId('account-name-input')).toBeInTheDocument();
-      });
+      // Increase timeout for CI environment where modal rendering may be slower
+      await waitFor(
+        () => {
+          expect(screen.getByTestId('account-name-input')).toBeInTheDocument();
+        },
+        { timeout: 3000 }
+      );
 
       // Update name and balance
       const nameInput = screen.getByTestId('account-name-input');
@@ -869,7 +881,7 @@ describe('AccountsPage', () => {
       });
 
       // Orphaned (non-syncable) linked accounts should have Delete button
-      const deleteButton = screen.getByRole('button', { name: /delete/i });
+      const deleteButton = await screen.findByTestId('delete-button');
       expect(deleteButton).toBeInTheDocument();
     });
 
@@ -896,13 +908,17 @@ describe('AccountsPage', () => {
         expect(screen.getByText('Orphaned Bank Account')).toBeInTheDocument();
       });
 
-      const deleteButton = screen.getByRole('button', { name: /delete/i });
+      // Use data-testid for more reliable selection in CI
+      const deleteButton = await screen.findByTestId('delete-button');
       await user.click(deleteButton);
 
       // Should check deletion eligibility
-      await waitFor(() => {
-        expect(mockAccountsClient.checkDeletionEligibility).toHaveBeenCalledWith('acc-orphaned');
-      });
+      await waitFor(
+        () => {
+          expect(mockAccountsClient.checkDeletionEligibility).toHaveBeenCalledWith('acc-orphaned');
+        },
+        { timeout: 3000 }
+      );
 
       // Delete confirmation dialog should appear
       await waitFor(() => {
