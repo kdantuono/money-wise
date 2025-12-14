@@ -173,17 +173,76 @@
 | 8 | Notifications | 20% | 0% | 0% | **~10%** | Soft (Phase 7) |
 
 *Phase 2 Tests: All integration tests passing, E2E tests needed
-**Status Update Dec 14**: Calendar UI, Settings page added, Liability Detail existed
+**Status Update Dec 14, 2024**: Calendar UI, Settings page, Copilot review fixes applied
 
-### What's Actually Missing (Phase 2 Only)
+---
 
-| Item | Type | Status |
-|------|------|--------|
-| `POST /transactions/link-transfer` | API Endpoint | ❌ Missing |
-| Transfer detection service | Backend Service | ❌ Missing |
-| BulkActionBar | Component | ❌ Missing |
-| TransferLinkModal | Component | ❌ Missing |
-| FlowType badge in list | UI Enhancement | ❌ Missing |
+### Comprehensive Missing Features List
+
+#### Phase 2: Transaction Management (~90% complete)
+
+| Item | Type | Priority | Status |
+|------|------|----------|--------|
+| `POST /transactions/link-transfer` | API Endpoint | HIGH | ❌ Missing |
+| Transfer detection service | Backend Service | HIGH | ❌ Missing |
+| TransferLinkModal | Component | HIGH | ❌ Missing |
+| BulkActionBar | Component | MEDIUM | ❌ Missing |
+| FlowType badge in list | UI Enhancement | LOW | ❌ Missing |
+
+#### Phase 6: Calendar Enhancements (Core 100%, Enhancements Pending)
+
+| Item | Type | Priority | Status |
+|------|------|----------|--------|
+| Click-to-create scheduled transaction | Frontend | MEDIUM | ❌ Missing |
+| Pre-fill form with selected date | Frontend | MEDIUM | ❌ Missing |
+| "Days until due" badge on events | Frontend | LOW | ❌ Missing |
+| Aria-labels for accessibility | Frontend | LOW | ❌ Missing |
+
+#### Phase 8: Notifications (~10% complete)
+
+| Item | Type | Priority | Status |
+|------|------|----------|--------|
+| Notification service (core) | Backend Service | HIGH | ❌ Missing |
+| `BILL_REMINDER` trigger logic | Backend Service | HIGH | ❌ Missing |
+| Notification bell UI in header | Frontend | HIGH | ❌ Missing |
+| Notification list/dropdown | Frontend | HIGH | ❌ Missing |
+| Overdue escalation logic | Backend Service | MEDIUM | ❌ Missing |
+| Mark as read/dismiss actions | Frontend | MEDIUM | ❌ Missing |
+
+#### Scheduled Transaction Automation (Post-MVP Enhancement)
+
+| Item | Type | Priority | Status |
+|------|------|----------|--------|
+| Auto-match scheduled to bank transactions | Backend Service | LOW | ❌ Not planned for MVP |
+| Auto-complete on match | Backend Service | LOW | ❌ Not planned for MVP |
+| Sync reminder for overdue items | Backend Service | LOW | ❌ Not planned for MVP |
+
+---
+
+### MVP Completion Priority Order
+
+```
+1. HIGH PRIORITY (MVP Core)
+   ├── Phase 2: Transfer Linking
+   │   ├── POST /transactions/link-transfer endpoint
+   │   ├── Transfer detection service
+   │   └── TransferLinkModal component
+   └── Phase 8: Basic Notifications
+       ├── Notification service
+       ├── BILL_REMINDER trigger (X days before due)
+       └── Notification bell UI
+
+2. MEDIUM PRIORITY (MVP Nice-to-Have)
+   ├── Calendar click-to-create
+   ├── BulkActionBar component
+   └── Notification overdue escalation
+
+3. LOW PRIORITY (Post-MVP)
+   ├── FlowType badges
+   ├── Days-until-due badges
+   ├── Auto-match bank transactions
+   └── Full notification preferences
+```
 
 ### Dependency Graph (Actual vs Perceived)
 
