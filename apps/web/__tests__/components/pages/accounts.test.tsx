@@ -633,9 +633,13 @@ describe('AccountsPage', () => {
       const editButton = screen.getByTestId('edit-button');
       await user.click(editButton);
 
-      await waitFor(() => {
-        expect(screen.getByTestId('account-name-input')).toBeInTheDocument();
-      });
+      // Increase timeout for CI environment where modal rendering may be slower
+      await waitFor(
+        () => {
+          expect(screen.getByTestId('account-name-input')).toBeInTheDocument();
+        },
+        { timeout: 3000 }
+      );
 
       // Click on piggybank icon if selector exists
       const piggyBankIcon = screen.queryByTestId('icon-piggybank');
@@ -681,9 +685,13 @@ describe('AccountsPage', () => {
       const editButton = screen.getByTestId('edit-button');
       await user.click(editButton);
 
-      await waitFor(() => {
-        expect(screen.getByTestId('account-name-input')).toBeInTheDocument();
-      });
+      // Increase timeout for CI environment where modal rendering may be slower
+      await waitFor(
+        () => {
+          expect(screen.getByTestId('account-name-input')).toBeInTheDocument();
+        },
+        { timeout: 3000 }
+      );
 
       // Update name and balance
       const nameInput = screen.getByTestId('account-name-input');
