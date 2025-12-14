@@ -36,10 +36,12 @@ import {
   extractCsrfToken,
   assertCookieAuthResponse,
 } from '../../helpers/cookie-auth.helper';
+import { createMockRedis } from '../../mocks/redis.mock';
 
 describe('Scheduled Transactions API Integration Tests', () => {
   let app: INestApplication;
   let prisma: PrismaClient;
+  const mockRedis = createMockRedis();
 
   // Test fixtures
   let testUserId: string;
@@ -59,6 +61,8 @@ describe('Scheduled Transactions API Integration Tests', () => {
     })
       .overrideProvider(PrismaService)
       .useValue(prisma)
+      .overrideProvider('default')
+      .useValue(mockRedis)
       .compile();
 
     app = moduleFixture.createNestApplication();

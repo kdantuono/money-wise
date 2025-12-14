@@ -88,11 +88,12 @@ export class CreateScheduledTransactionDto {
   accountId: string;
 
   @ApiProperty({
-    description: 'Transaction amount',
+    description: 'Transaction amount (positive value, absolute). Use type field (DEBIT/CREDIT) to indicate direction.',
     example: 150.0,
+    minimum: 0.01,
   })
   @IsNumber()
-  @Min(0.01)
+  @Min(0.01, { message: 'Amount must be greater than 0' })
   amount: number;
 
   @ApiProperty({
