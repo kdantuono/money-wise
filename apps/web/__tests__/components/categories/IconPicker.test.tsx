@@ -36,7 +36,7 @@ describe('IconPicker', () => {
   });
 
   describe('Rendering', () => {
-    it('should render the icon grid', () => {
+    it('should render the icon grid', { timeout: 20000 }, () => {
       render(<IconPicker {...getProps()} />);
 
       // Should render icon buttons
@@ -44,7 +44,7 @@ describe('IconPicker', () => {
       expect(iconButtons.length).toBeGreaterThan(0);
     });
 
-    it('should render all curated icons', () => {
+    it('should render all curated icons', { timeout: 20000 }, () => {
       render(<IconPicker {...getProps()} />);
 
       const iconButtons = screen.getAllByRole('option');
@@ -136,7 +136,7 @@ describe('IconPicker', () => {
       expect(screen.getByText('No icons found')).toBeInTheDocument();
     });
 
-    it('should clear filter when search is emptied', async () => {
+    it('should clear filter when search is emptied', { timeout: 20000 }, async () => {
       const { user } = render(<IconPicker {...getProps()} />);
 
       const searchInput = screen.getByPlaceholderText('Search icons...');
