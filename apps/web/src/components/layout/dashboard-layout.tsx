@@ -22,7 +22,6 @@ import {
   Menu,
   X,
   User,
-  Bell,
   Search,
   PiggyBank,
   ChevronDown,
@@ -33,6 +32,7 @@ import {
   Receipt,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { NotificationBell } from '@/components/notifications';
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -270,10 +270,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             {/* Right side actions */}
             <div className="flex items-center space-x-4">
               {/* Notifications */}
-              <button className="p-2 text-gray-400 hover:text-gray-500 rounded-full hover:bg-gray-100 relative">
-                <Bell className="h-6 w-6" />
-                <span className="absolute top-1 right-1 block h-2 w-2 rounded-full bg-red-500 ring-2 ring-white" />
-              </button>
+              <NotificationBell />
 
               {/* Logout Button */}
               <Button
