@@ -9,6 +9,7 @@ import { PrismaService } from '../prisma.service';
 import { Prisma, TransactionType, TransactionStatus, TransactionSource } from '../../../../../generated/prisma';
 import { Decimal } from '@prisma/client/runtime/library';
 import { TransactionCreateDto } from './types';
+import { validateUuid } from '../../../../common/validators';
 
 /**
  * Transaction Service - Prisma Implementation
@@ -51,9 +52,9 @@ export class TransactionService {
    */
   async create(data: TransactionCreateDto) {
     // Validate UUIDs
-    this.validateUuid(data.accountId);
+    validateUuid(data.accountId);
     if (data.categoryId) {
-      this.validateUuid(data.categoryId);
+      validateUuid(data.categoryId);
     }
 
     // Convert amount to Decimal if it's a number
@@ -102,7 +103,7 @@ export class TransactionService {
    * @throws BadRequestException - Invalid UUID format
    */
   async findOne(id: string) {
-    this.validateUuid(id);
+    validateUuid(id);
 
     return await this.prisma.transaction.findUnique({
       where: { id },
@@ -117,7 +118,7 @@ export class TransactionService {
    * @throws BadRequestException - Invalid UUID format
    */
   async findOneWithRelations(id: string) {
-    this.validateUuid(id);
+    validateUuid(id);
 
     return await this.prisma.transaction.findUnique({
       where: { id },
@@ -162,7 +163,7 @@ export class TransactionService {
       orderBy?: Prisma.TransactionOrderByWithRelationInput;
     },
   ) {
-    this.validateUuid(accountId);
+    validateUuid(accountId);
 
     const { where = {}, skip = 0, take = 50, orderBy = { date: 'desc' } } = options || {};
 
@@ -193,7 +194,7 @@ export class TransactionService {
       orderBy?: Prisma.TransactionOrderByWithRelationInput;
     },
   ) {
-    this.validateUuid(categoryId);
+    validateUuid(categoryId);
 
     const { skip = 0, take = 50, orderBy = { date: 'desc' } } = options || {};
 
@@ -242,7 +243,7 @@ export class TransactionService {
    * @throws NotFoundException - Transaction not found
    */
   async update(id: string, data: Prisma.TransactionUpdateInput) {
-    this.validateUuid(id);
+    validateUuid(id);
 
     try {
       return await this.prisma.transaction.update({
@@ -263,7 +264,7 @@ export class TransactionService {
    * @throws NotFoundException - Transaction not found
    */
   async delete(id: string) {
-    this.validateUuid(id);
+    validateUuid(id);
 
     try {
       return await this.prisma.transaction.delete({
@@ -290,7 +291,7 @@ export class TransactionService {
    * const totalCredits = await service.getTotalByAccountId(accountId, TransactionType.CREDIT);
    */
   async getTotalByAccountId(accountId: string, type?: TransactionType): Promise<Decimal> {
-    this.validateUuid(accountId);
+    validateUuid(accountId);
 
     const where: Prisma.TransactionWhereInput = { accountId };
     if (type) {
@@ -334,29 +335,13 @@ export class TransactionService {
    * @throws BadRequestException - Invalid UUID format
    */
   async exists(id: string): Promise<boolean> {
-    this.validateUuid(id);
+    validateUuid(id);
 
     const count = await this.prisma.transaction.count({
       where: { id },
     });
 
     return count > 0;
-  }
-
-  /**
-   * Validate UUID format (RFC 4122)
-   *
-   * @param uuid - UUID string to validate
-   * @throws BadRequestException - Invalid UUID format
-   * @private
-   */
-  private validateUuid(uuid: string): void {
-    const uuidRegex =
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-
-    if (!uuidRegex.test(uuid)) {
-      throw new BadRequestException(`Invalid UUID format: ${uuid}`);
-    }
   }
 
   /**

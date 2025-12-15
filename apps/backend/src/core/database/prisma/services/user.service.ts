@@ -10,6 +10,7 @@ import { PrismaService } from '../prisma.service';
 import { CreateUserDto } from '../dto/create-user.dto';
 import { UpdateUserDto } from '../dto/update-user.dto';
 import * as bcrypt from 'bcryptjs';
+import { validateUuid } from '../../../../common/validators';
 
 /**
  * Salt rounds for bcrypt password hashing
@@ -230,7 +231,7 @@ export class PrismaUserService {
    * @throws BadRequestException if UUID format is invalid
    */
   async findOne(id: string): Promise<User | null> {
-    this.validateUuid(id);
+    validateUuid(id);
 
     const user = await this.prisma.user.findUnique({
       where: { id },
@@ -287,7 +288,7 @@ export class PrismaUserService {
     id: string,
     relations: RelationOptions,
   ): Promise<UserWithRelations | null> {
-    this.validateUuid(id);
+    validateUuid(id);
 
     const user = await this.prisma.user.findUnique({
       where: { id },
@@ -365,7 +366,7 @@ export class PrismaUserService {
    * @throws NotFoundException if user doesn't exist (P2025)
    */
   async update(id: string, dto: UpdateUserDto): Promise<User> {
-    this.validateUuid(id);
+    validateUuid(id);
 
     // CRITICAL: Prevent familyId updates (immutable business rule)
     if ('familyId' in dto) {
@@ -428,7 +429,7 @@ export class PrismaUserService {
    * @throws NotFoundException if user doesn't exist (P2025)
    */
   async delete(id: string): Promise<void> {
-    this.validateUuid(id);
+    validateUuid(id);
 
     try {
       await this.prisma.user.delete({
@@ -457,7 +458,7 @@ export class PrismaUserService {
    * @throws BadRequestException if UUID format is invalid
    */
   async exists(id: string): Promise<boolean> {
-    this.validateUuid(id);
+    validateUuid(id);
 
     const user = await this.prisma.user.findUnique({
       where: { id },
@@ -539,7 +540,7 @@ export class PrismaUserService {
   async countByStatus(familyId?: string): Promise<{ total: number; active: number; inactive: number; suspended: number }> {
     // Validate familyId if provided
     if (familyId) {
-      this.validateUuid(familyId);
+      validateUuid(familyId);
     }
 
     // Group by status and count
@@ -777,7 +778,7 @@ export class PrismaUserService {
    * @throws NotFoundException if user doesn't exist
    */
   async verifyPassword(userId: string, password: string): Promise<boolean> {
-    this.validateUuid(userId);
+    validateUuid(userId);
 
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
@@ -816,7 +817,7 @@ export class PrismaUserService {
    * @throws NotFoundException if user doesn't exist
    */
   async updatePassword(userId: string, newPassword: string): Promise<void> {
-    this.validateUuid(userId);
+    validateUuid(userId);
 
     // Validate password length
     if (!newPassword || newPassword.length < 8) {
@@ -873,7 +874,7 @@ export class PrismaUserService {
    * @throws NotFoundException if user doesn't exist
    */
   async updatePasswordHash(userId: string, passwordHash: string): Promise<void> {
-    this.validateUuid(userId);
+    validateUuid(userId);
 
     // Validate passwordHash format (bcrypt or argon2)
     const bcryptRegex = /^\$2[aby]\$\d{2}\$.+$/;
@@ -919,7 +920,7 @@ export class PrismaUserService {
    * @throws BadRequestException if UUID format is invalid
    */
   async updateLastLogin(userId: string): Promise<void> {
-    this.validateUuid(userId);
+    validateUuid(userId);
 
     await this.prisma.user.update({
       where: { id: userId },
@@ -947,7 +948,7 @@ export class PrismaUserService {
    * @throws BadRequestException if UUID format is invalid
    */
   async verifyEmail(userId: string): Promise<void> {
-    this.validateUuid(userId);
+    validateUuid(userId);
 
     await this.prisma.user.update({
       where: { id: userId },
@@ -982,7 +983,7 @@ export class PrismaUserService {
     familyId: string,
     options?: { role?: UserRole; status?: UserStatus },
   ): Promise<User[]> {
-    this.validateUuid(familyId);
+    validateUuid(familyId);
 
     const where: Prisma.UserWhereInput = { familyId };
 
@@ -1021,27 +1022,4 @@ export class PrismaUserService {
     return hash;
   }
 
-  /**
-   * Validate UUID format (RFC 4122)
-   *
-   * RATIONALE:
-   * - Catch invalid UUIDs at service layer (fail fast)
-   * - Prevents unnecessary database queries
-   * - Provides clear error messages to clients
-   *
-   * UUID FORMAT:
-   * - 8-4-4-4-12 hexadecimal digits
-   * - Example: 123e4567-e89b-12d3-a456-426614174000
-   * - Case-insensitive
-   *
-   * @param id - UUID string to validate
-   * @throws BadRequestException if format is invalid
-   */
-  private validateUuid(id: string): void {
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-    if (!uuidRegex.test(id)) {
-      throw new BadRequestException(`Invalid UUID format: ${id}`);
-    }
-  }
 }

@@ -892,20 +892,4 @@ describe('PrismaTransactionService', () => {
       await expect(service.exists('invalid-uuid')).rejects.toThrow(BadRequestException);
     });
   });
-
-  describe('validateUuid', () => {
-    it('should validate correct UUIDs', () => {
-      expect(() => service['validateUuid'](mockTransactionId)).not.toThrow();
-      expect(() =>
-        service['validateUuid']('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11'),
-      ).not.toThrow();
-    });
-
-    it('should throw BadRequestException for invalid UUIDs', () => {
-      expect(() => service['validateUuid']('invalid')).toThrow(BadRequestException);
-      expect(() => service['validateUuid']('123')).toThrow(BadRequestException);
-      expect(() => service['validateUuid']('')).toThrow(BadRequestException);
-      expect(() => service['validateUuid']('not-a-uuid-at-all')).toThrow(BadRequestException);
-    });
-  });
 });

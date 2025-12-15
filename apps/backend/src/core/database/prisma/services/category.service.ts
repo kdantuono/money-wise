@@ -7,6 +7,7 @@ import {
 import { PrismaService } from '../prisma.service';
 import { Category, CategoryType, CategoryStatus, Prisma } from '../../../../../generated/prisma';
 import { CategoryWithRelations, CategoryWithOptionalRelations } from './types';
+import { validateUuid } from '../../../../common/validators';
 
 /**
  * Spending rollup result for a category
@@ -125,9 +126,9 @@ export class CategoryService {
     sortOrder?: number;
   }): Promise<Category> {
     // 1. Validate UUIDs
-    this.validateUuid(createCategoryDto.familyId);
+    validateUuid(createCategoryDto.familyId);
     if (createCategoryDto.parentId) {
-      this.validateUuid(createCategoryDto.parentId);
+      validateUuid(createCategoryDto.parentId);
     }
 
     // 2. Validate slug format
@@ -230,7 +231,7 @@ export class CategoryService {
    * @throws BadRequestException - Invalid UUID format
    */
   async findOne(id: string): Promise<Category | null> {
-    this.validateUuid(id);
+    validateUuid(id);
 
     return await this.prisma.category.findUnique({
       where: { id },
@@ -253,7 +254,7 @@ export class CategoryService {
    * @throws BadRequestException - Invalid UUID format
    */
   async findOneWithRelations(id: string): Promise<CategoryWithRelations | null> {
-    this.validateUuid(id);
+    validateUuid(id);
 
     return await this.prisma.category.findUnique({
       where: { id },
@@ -304,7 +305,7 @@ export class CategoryService {
       };
     }
   ): Promise<Category[] | CategoryWithOptionalRelations[]> {
-    this.validateUuid(familyId);
+    validateUuid(familyId);
 
     const {
       where = {},
@@ -342,7 +343,7 @@ export class CategoryService {
    * @throws BadRequestException - Invalid UUID format
    */
   async findTopLevel(familyId: string, type?: CategoryType): Promise<Category[]> {
-    this.validateUuid(familyId);
+    validateUuid(familyId);
 
     const where: Prisma.CategoryWhereInput = {
       familyId,
@@ -379,7 +380,7 @@ export class CategoryService {
       };
     }
   ): Promise<Category[] | CategoryWithOptionalRelations[]> {
-    this.validateUuid(parentId);
+    validateUuid(parentId);
 
     return await this.prisma.category.findMany({
       where: { parentId },
@@ -431,7 +432,7 @@ export class CategoryService {
       sortOrder: number;
     }>
   ): Promise<Category> {
-    this.validateUuid(id);
+    validateUuid(id);
 
     // Validate slug if provided
     if (updateCategoryDto.slug) {
@@ -451,7 +452,7 @@ export class CategoryService {
       }
 
       // Validate parent UUID
-      this.validateUuid(updateCategoryDto.parentId);
+      validateUuid(updateCategoryDto.parentId);
     }
 
     // Build update data
@@ -500,7 +501,7 @@ export class CategoryService {
    * @throws NotFoundException - Category not found
    */
   async delete(id: string): Promise<Category> {
-    this.validateUuid(id);
+    validateUuid(id);
 
     // Check if category exists and is not system category
     const category = await this.prisma.category.findUnique({
@@ -560,7 +561,7 @@ export class CategoryService {
    * @throws BadRequestException - Invalid UUID format
    */
   async exists(id: string): Promise<boolean> {
-    this.validateUuid(id);
+    validateUuid(id);
 
     const count = await this.prisma.category.count({
       where: { id },
@@ -596,7 +597,7 @@ export class CategoryService {
     endDate: Date,
     options?: { parentOnly?: boolean }
   ): Promise<CategorySpending[]> {
-    this.validateUuid(familyId);
+    validateUuid(familyId);
 
     const { parentOnly = true } = options || {};
 
@@ -767,28 +768,4 @@ export class CategoryService {
     }
   }
 
-  /**
-   * Validate UUID format (RFC 4122)
-   *
-   * FORMAT REQUIREMENTS:
-   * - 8-4-4-4-12 hexadecimal digits
-   * - Case-insensitive
-   * - Example: 550e8400-e29b-41d4-a716-446655440000
-   *
-   * RATIONALE:
-   * - Catch invalid UUIDs at service layer (fail fast)
-   * - Prevents unnecessary database queries
-   * - Provides clear error messages
-   *
-   * @param uuid - UUID string to validate
-   * @throws BadRequestException - Invalid UUID format
-   * @private
-   */
-  private validateUuid(uuid: string): void {
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-    if (!uuidRegex.test(uuid)) {
-      throw new BadRequestException(`Invalid UUID format: ${uuid}`);
-    }
-  }
 }

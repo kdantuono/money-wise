@@ -1321,22 +1321,6 @@ describe('PrismaCategoryService', () => {
     });
   });
 
-  describe('validateUuid', () => {
-    it('should validate correct UUID format', () => {
-      expect(() => service['validateUuid'](mockCategoryId)).not.toThrow();
-      expect(() =>
-        service['validateUuid']('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11'),
-      ).not.toThrow();
-    });
-
-    it('should throw BadRequestException for invalid UUIDs', () => {
-      expect(() => service['validateUuid']('invalid')).toThrow(BadRequestException);
-      expect(() => service['validateUuid']('123')).toThrow(BadRequestException);
-      expect(() => service['validateUuid']('')).toThrow(BadRequestException);
-      expect(() => service['validateUuid']('not-a-uuid-at-all')).toThrow(BadRequestException);
-    });
-  });
-
   describe('getSpendingByCategory', () => {
     const startDate = new Date('2025-01-01');
     const endDate = new Date('2025-01-31');

@@ -2,6 +2,7 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import type { AuditLog, AuditEventType } from '../../../../../generated/prisma';
 import { Prisma } from '../../../../../generated/prisma';
 import { PrismaService } from '../prisma.service';
+import { validateUuid } from '../../../../common/validators';
 
 /**
  * Options for creating audit log record
@@ -101,7 +102,7 @@ export class PrismaAuditLogService {
   async create(dto: CreateAuditLogDto): Promise<AuditLog> {
     // Validate userId UUID format (if provided)
     if (dto.userId) {
-      this.validateUuid(dto.userId);
+      validateUuid(dto.userId);
     }
 
     // Validate description is not empty
@@ -157,7 +158,7 @@ export class PrismaAuditLogService {
    * @throws BadRequestException if UUID format is invalid
    */
   async findByUser(userId: string, limit?: number): Promise<AuditLog[]> {
-    this.validateUuid(userId);
+    validateUuid(userId);
 
     const records = await this.prisma.auditLog.findMany({
       where: { userId },
@@ -370,7 +371,7 @@ export class PrismaAuditLogService {
    * @throws BadRequestException if UUID format is invalid
    */
   async deleteByUser(userId: string): Promise<number> {
-    this.validateUuid(userId);
+    validateUuid(userId);
 
     const result = await this.prisma.auditLog.deleteMany({
       where: { userId },
@@ -379,26 +380,4 @@ export class PrismaAuditLogService {
     return result.count;
   }
 
-  // ============================================================================
-  // HELPER METHODS
-  // ============================================================================
-
-  /**
-   * Validate UUID format (RFC 4122)
-   *
-   * RATIONALE:
-   * - Catch invalid UUIDs at service layer (fail fast)
-   * - Prevents unnecessary database queries
-   * - Provides clear error messages to clients
-   *
-   * @param id - UUID string to validate
-   * @throws BadRequestException if format is invalid
-   */
-  private validateUuid(id: string): void {
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-    if (!uuidRegex.test(id)) {
-      throw new BadRequestException(`Invalid UUID format: ${id}`);
-    }
-  }
 }
