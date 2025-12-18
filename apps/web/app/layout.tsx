@@ -4,6 +4,7 @@ import './globals.css';
 import { ErrorBoundary } from '@/components/ui/error-boundary';
 import { MSWProvider } from '@/components/providers/msw-provider';
 import { QueryProvider } from '@/components/providers/query-provider';
+import { ThemeProvider } from '@/components/providers/theme-provider';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -18,13 +19,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang='en'>
+    <html lang='en' suppressHydrationWarning>
       <body className={inter.className}>
-        <QueryProvider>
-          <MSWProvider>
-            <ErrorBoundary>{children}</ErrorBoundary>
-          </MSWProvider>
-        </QueryProvider>
+        <ThemeProvider>
+          <QueryProvider>
+            <MSWProvider>
+              <ErrorBoundary>{children}</ErrorBoundary>
+            </MSWProvider>
+          </QueryProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

@@ -7,10 +7,11 @@ import React, { ReactElement } from 'react';
 import { render, RenderOptions } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { vi } from 'vitest';
+import { ThemeProvider } from '../../src/components/providers/theme-provider';
 
 // Mock providers setup for testing
 const AllTheProviders = ({ children }: { children: React.ReactNode }) => {
-  return <>{children}</>;
+  return <ThemeProvider>{children}</ThemeProvider>;
 };
 
 // Custom render function with providers

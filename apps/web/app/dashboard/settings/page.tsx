@@ -28,6 +28,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/stores/auth-store';
 import { getCsrfToken } from '@/utils/csrf';
+import { useTheme } from '@/hooks/useTheme';
 
 // =============================================================================
 // Types
@@ -94,6 +95,7 @@ const CURRENCIES = [
 
 export default function SettingsPage() {
   const { user, setUser } = useAuthStore();
+  const { setTheme } = useTheme();
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -161,13 +163,16 @@ export default function SettingsPage() {
         },
       }));
     } else if (name === 'theme') {
+      const themeValue = value as 'light' | 'dark' | 'auto';
       setFormData((prev) => ({
         ...prev,
         preferences: {
           ...prev.preferences,
-          theme: value as 'light' | 'dark' | 'auto',
+          theme: themeValue,
         },
       }));
+      // Apply theme immediately (backend uses 'auto', frontend uses 'system')
+      setTheme(themeValue === 'auto' ? 'system' : themeValue);
     } else {
       setFormData((prev) => ({
         ...prev,
@@ -436,7 +441,7 @@ export default function SettingsPage() {
             ))}
           </div>
           <p className="text-xs text-gray-500 mt-2">
-            Note: Theme preferences are saved but the feature is coming soon.
+            Theme changes apply immediately and are saved to your profile.
           </p>
         </div>
 

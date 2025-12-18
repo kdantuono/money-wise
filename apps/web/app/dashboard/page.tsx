@@ -8,6 +8,9 @@ import {
   SpendingChart,
   QuickActions,
   DashboardFilters,
+  NetWorthWidget,
+  AvailableToSpendCard,
+  FinancialAlertsWidget,
 } from '@/components/dashboard';
 import { useAuthStore } from '@/stores/auth-store';
 import { useDashboardData } from '@/hooks/useDashboardStats';
@@ -64,6 +67,9 @@ export default function DashboardPage() {
       {/* Stats Cards - Full Width */}
       <StatsCards stats={stats} isLoading={isLoading} />
 
+      {/* Net Worth Widget - Full Width */}
+      <NetWorthWidget />
+
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Left Column */}
@@ -77,6 +83,12 @@ export default function DashboardPage() {
           <RecentTransactions transactions={transactions} isLoading={isLoading} />
           <BudgetProgress />
         </div>
+      </div>
+
+      {/* Financial Insights Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <AvailableToSpendCard />
+        <FinancialAlertsWidget />
       </div>
     </div>
   );
