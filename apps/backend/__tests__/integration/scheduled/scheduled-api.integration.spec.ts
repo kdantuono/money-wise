@@ -564,9 +564,11 @@ describe('Scheduled Transactions API Integration Tests', () => {
     it('should return calendar events for date range', async () => {
       const startDate = new Date();
       const endDate = new Date();
-      endDate.setMonth(endDate.getMonth() + 1);
+      endDate.setMonth(endDate.getMonth() + 2); // Extend range to 2 months
 
+      // Use a date in the future (next month's 15th) to avoid flakiness
       const midMonth = new Date(startDate);
+      midMonth.setMonth(midMonth.getMonth() + 1);
       midMonth.setDate(15);
 
       await prisma.scheduledTransaction.create({

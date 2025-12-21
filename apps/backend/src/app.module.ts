@@ -15,6 +15,8 @@ import { AnalyticsModule } from './analytics/analytics.module';
 import { BudgetsModule } from './budgets/budgets.module';
 import { LiabilitiesModule } from './liabilities/liabilities.module';
 import { ScheduledModule } from './scheduled/scheduled.module';
+import { NotificationsModule } from './notifications/notifications.module';
+import { UsersModule } from './users/users.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 
 @Module({
@@ -37,6 +39,8 @@ import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
     BudgetsModule,
     LiabilitiesModule,
     ScheduledModule,
+    NotificationsModule,
+    UsersModule,
   ],
   controllers: [],
   providers: [

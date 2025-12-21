@@ -8,7 +8,6 @@ import { proxyRequest } from '@/lib/api/proxy';
  * Supports query parameters: read, type, page, limit
  */
 export async function GET(request: NextRequest): Promise<NextResponse> {
-  const searchParams = request.nextUrl.searchParams.toString();
-  const path = searchParams ? `/api/notifications?${searchParams}` : '/api/notifications';
-  return await proxyRequest(request, path);
+  // Don't add query params to path - proxyRequest will forward them from the original request
+  return await proxyRequest(request, '/api/notifications');
 }
