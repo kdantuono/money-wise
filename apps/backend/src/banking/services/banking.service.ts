@@ -721,7 +721,7 @@ export class BankingService {
               // Restore hidden accounts to active
               status: AccountStatus.ACTIVE,
               settings: {
-                ...(existingAccount.settings as object || {}),
+                ...((existingAccount.settings ?? {}) as Record<string, unknown>),
                 bankCountry: account.bankCountry,
                 accountHolderName: account.accountHolderName,
                 accountType: account.type,
