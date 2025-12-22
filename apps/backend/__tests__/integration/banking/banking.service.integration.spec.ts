@@ -718,6 +718,79 @@ describe('BankingService (Integration)', () => {
         service.revokeBankingConnection(testUserId, connectionId),
       ).rejects.toThrow('Failed to revoke connection');
     });
+
+    // TDD: Tests for safe error type handling (Bug 1.2 - Copilot review)
+    describe('error type handling in revocation', () => {
+      it('should handle SaltEdgeNotFoundError gracefully and complete revocation', async () => {
+        // Arrange - simulate 404 error from provider (connection already deleted)
+        const saltEdgeNotFoundError = new Error('Connection not found');
+        (saltEdgeNotFoundError as any).name = 'SaltEdgeNotFoundError';
+        jest.spyOn(mockProvider, 'revokeConnection').mockRejectedValueOnce(saltEdgeNotFoundError);
+
+        // Act - should NOT throw, should complete local cleanup
+        await expect(
+          service.revokeBankingConnection(testUserId, connectionId),
+        ).resolves.not.toThrow();
+
+        // Assert - connection should be marked as revoked
+        const connection = await prisma.bankingConnection.findUnique({
+          where: { id: connectionId },
+        });
+        expect(connection?.status).toBe(BankingConnectionStatus.REVOKED);
+      });
+
+      it('should handle error with statusCode 404 gracefully', async () => {
+        // Arrange - simulate HTTP 404 error
+        const error404 = { statusCode: 404, message: 'Not found' };
+        jest.spyOn(mockProvider, 'revokeConnection').mockRejectedValueOnce(error404);
+
+        // Act - should NOT throw
+        await expect(
+          service.revokeBankingConnection(testUserId, connectionId),
+        ).resolves.not.toThrow();
+      });
+
+      it('should handle error with "not found (404)" message gracefully', async () => {
+        // Arrange
+        const errorWithMessage = new Error('Connection not found (404)');
+        jest.spyOn(mockProvider, 'revokeConnection').mockRejectedValueOnce(errorWithMessage);
+
+        // Act - should NOT throw
+        await expect(
+          service.revokeBankingConnection(testUserId, connectionId),
+        ).resolves.not.toThrow();
+      });
+
+      it('should handle string error gracefully without crashing', async () => {
+        // Arrange - throwing a primitive string (edge case)
+        jest.spyOn(mockProvider, 'revokeConnection').mockRejectedValueOnce('Some error string');
+
+        // Act & Assert - should throw wrapped error, not crash on property access
+        await expect(
+          service.revokeBankingConnection(testUserId, connectionId),
+        ).rejects.toThrow();
+      });
+
+      it('should handle null error gracefully without crashing', async () => {
+        // Arrange - throwing null (edge case)
+        jest.spyOn(mockProvider, 'revokeConnection').mockRejectedValueOnce(null);
+
+        // Act & Assert - should throw, not crash on property access
+        await expect(
+          service.revokeBankingConnection(testUserId, connectionId),
+        ).rejects.toThrow();
+      });
+
+      it('should handle undefined error gracefully without crashing', async () => {
+        // Arrange - throwing undefined (edge case)
+        jest.spyOn(mockProvider, 'revokeConnection').mockRejectedValueOnce(undefined);
+
+        // Act & Assert - should throw, not crash on property access
+        await expect(
+          service.revokeBankingConnection(testUserId, connectionId),
+        ).rejects.toThrow();
+      });
+    });
   });
 
   // ======================
