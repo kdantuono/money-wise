@@ -178,6 +178,95 @@ describe('RecurrenceService', () => {
         expect(result).toBeDefined();
         expect(result!.getMonth()).toBe(2); // March
       });
+
+      describe('month-end edge cases without dayOfMonth specified', () => {
+        it('should handle Jan 31 advancing to Feb correctly (leap year)', () => {
+          // Arrange - no dayOfMonth specified, so addMonths is used
+          const rule: RecurrenceRuleParams = {
+            frequency: RecurrenceFrequency.MONTHLY,
+            interval: 1,
+          };
+          const fromDate = new Date('2024-01-31'); // Leap year
+
+          // Act
+          const result = service.calculateNextOccurrence(rule, fromDate);
+
+          // Assert - should be Feb 29, NOT Jan 31 (bug would cause Jan 31)
+          expect(result).toBeDefined();
+          expect(result!.getFullYear()).toBe(2024);
+          expect(result!.getMonth()).toBe(1); // February
+          expect(result!.getDate()).toBe(29); // Feb 29 (leap year)
+        });
+
+        it('should handle Jan 31 advancing to Feb correctly (non-leap year)', () => {
+          // Arrange
+          const rule: RecurrenceRuleParams = {
+            frequency: RecurrenceFrequency.MONTHLY,
+            interval: 1,
+          };
+          const fromDate = new Date('2025-01-31'); // Non-leap year
+
+          // Act
+          const result = service.calculateNextOccurrence(rule, fromDate);
+
+          // Assert - should be Feb 28, NOT Jan 31
+          expect(result).toBeDefined();
+          expect(result!.getFullYear()).toBe(2025);
+          expect(result!.getMonth()).toBe(1); // February
+          expect(result!.getDate()).toBe(28); // Feb 28 (non-leap year)
+        });
+
+        it('should handle Jan 31 advancing 3 months to April', () => {
+          // Arrange - quarterly equivalent without dayOfMonth
+          const rule: RecurrenceRuleParams = {
+            frequency: RecurrenceFrequency.MONTHLY,
+            interval: 3,
+          };
+          const fromDate = new Date('2024-01-31');
+
+          // Act
+          const result = service.calculateNextOccurrence(rule, fromDate);
+
+          // Assert - should be April 30, NOT Jan 31
+          expect(result).toBeDefined();
+          expect(result!.getMonth()).toBe(3); // April
+          expect(result!.getDate()).toBe(30); // April has 30 days
+        });
+
+        it('should handle Mar 31 advancing to April', () => {
+          // Arrange
+          const rule: RecurrenceRuleParams = {
+            frequency: RecurrenceFrequency.MONTHLY,
+            interval: 1,
+          };
+          const fromDate = new Date('2024-03-31');
+
+          // Act
+          const result = service.calculateNextOccurrence(rule, fromDate);
+
+          // Assert - should be April 30, NOT March 31
+          expect(result).toBeDefined();
+          expect(result!.getMonth()).toBe(3); // April
+          expect(result!.getDate()).toBe(30); // April has 30 days
+        });
+
+        it('should handle Aug 31 advancing to September', () => {
+          // Arrange
+          const rule: RecurrenceRuleParams = {
+            frequency: RecurrenceFrequency.MONTHLY,
+            interval: 1,
+          };
+          const fromDate = new Date('2024-08-31');
+
+          // Act
+          const result = service.calculateNextOccurrence(rule, fromDate);
+
+          // Assert - should be Sep 30, NOT Aug 31
+          expect(result).toBeDefined();
+          expect(result!.getMonth()).toBe(8); // September
+          expect(result!.getDate()).toBe(30); // September has 30 days
+        });
+      });
     });
 
     describe('QUARTERLY frequency', () => {
