@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma.service';
 import { Budget, Prisma, BudgetStatus, BudgetPeriod } from '../../../../../generated/prisma';
 import { Decimal } from '@prisma/client/runtime/library';
 import { BudgetWithRelations } from './types';
+import { validateUuid } from '../../../../common/validators';
 
 /**
  * Data Transfer Object for creating a new Budget
@@ -126,8 +127,8 @@ export class BudgetService {
    */
   async create(data: CreateBudgetDto): Promise<Budget> {
     // Validation pipeline
-    this.validateUuid(data.familyId);
-    this.validateUuid(data.categoryId);
+    validateUuid(data.familyId);
+    validateUuid(data.categoryId);
     this.validateAmount(data.amount);
     this.validateDateRange(data.startDate, data.endDate);
 
@@ -190,7 +191,7 @@ export class BudgetService {
    * ```
    */
   async findOne(id: string): Promise<Budget | null> {
-    this.validateUuid(id);
+    validateUuid(id);
 
     return this.prisma.budget.findUnique({
       where: { id }
@@ -228,7 +229,7 @@ export class BudgetService {
    * ```
    */
   async findOneWithRelations(id: string): Promise<BudgetWithRelations | null> {
-    this.validateUuid(id);
+    validateUuid(id);
 
     return this.prisma.budget.findUnique({
       where: { id },
@@ -286,7 +287,7 @@ export class BudgetService {
    * ```
    */
   async findByFamilyId(familyId: string, options?: QueryOptions): Promise<Budget[]> {
-    this.validateUuid(familyId);
+    validateUuid(familyId);
 
     // Default query options
     const skip = options?.skip ?? 0;
@@ -346,7 +347,7 @@ export class BudgetService {
    * ```
    */
   async findByCategoryId(categoryId: string, options?: QueryOptions): Promise<Budget[]> {
-    this.validateUuid(categoryId);
+    validateUuid(categoryId);
 
     // Default query options (only orderBy is required)
     const orderBy = options?.orderBy ?? { startDate: 'desc' as const };
@@ -410,7 +411,7 @@ export class BudgetService {
    */
   async findActive(familyId?: string): Promise<Budget[]> {
     if (familyId) {
-      this.validateUuid(familyId);
+      validateUuid(familyId);
     }
 
     const where: Prisma.BudgetWhereInput = { status: BudgetStatus.ACTIVE };
@@ -486,7 +487,7 @@ export class BudgetService {
   async findByDateRange(startDate: Date, endDate: Date, familyId?: string): Promise<Budget[]> {
     this.validateDateRange(startDate, endDate);
     if (familyId) {
-      this.validateUuid(familyId);
+      validateUuid(familyId);
     }
 
     const where: Prisma.BudgetWhereInput = {
@@ -568,7 +569,7 @@ export class BudgetService {
    * ```
    */
   async update(id: string, data: Prisma.BudgetUpdateInput): Promise<Budget> {
-    this.validateUuid(id);
+    validateUuid(id);
 
     // Conditional validation for date range updates
     // Complex logic: must validate both dates if both are present
@@ -646,7 +647,7 @@ export class BudgetService {
    * ```
    */
   async delete(id: string): Promise<Budget> {
-    this.validateUuid(id);
+    validateUuid(id);
 
     try {
       return await this.prisma.budget.delete({
@@ -748,7 +749,7 @@ export class BudgetService {
    * ```
    */
   async exists(id: string): Promise<boolean> {
-    this.validateUuid(id);
+    validateUuid(id);
 
     const budget = await this.prisma.budget.findUnique({
       where: { id },
@@ -759,50 +760,6 @@ export class BudgetService {
   }
 
   // ==================== PRIVATE VALIDATION METHODS ====================
-
-  /**
-   * Validate UUID format
-   *
-   * RFC 4122 compliant UUID validation with support for all UUID versions (1-5).
-   *
-   * Validation Rules:
-   * - 8-4-4-4-12 hexadecimal character format
-   * - Version field (13th char): 1-5
-   * - Variant field (17th char): 8, 9, a, b
-   * - Case insensitive (accepts both lowercase and uppercase)
-   *
-   * Regex Breakdown:
-   * - ^[0-9a-f]{8}: 8 hex chars (time_low)
-   * - -[0-9a-f]{4}: 4 hex chars (time_mid)
-   * - -[1-5][0-9a-f]{3}: Version (1-5) + 3 hex chars (time_hi_and_version)
-   * - -[89ab][0-9a-f]{3}: Variant (10xx) + 3 hex chars (clock_seq_and_reserved)
-   * - -[0-9a-f]{12}$: 12 hex chars (node)
-   *
-   * Architectural Decision:
-   * Client-side UUID generation (apps) + server-side validation (this method):
-   * - Prevents round-trip for ID generation
-   * - Enables offline-first operations
-   * - Requires strict validation to prevent injection attacks
-   *
-   * Security Consideration:
-   * UUID validation prevents:
-   * - SQL injection (non-UUID strings blocked)
-   * - NoSQL injection (malformed UUIDs rejected)
-   * - Path traversal (../../ patterns rejected)
-   *
-   * @param uuid - UUID string to validate
-   * @throws BadRequestException - Invalid UUID format with descriptive message
-   *
-   * @example
-   * Valid: "550e8400-e29b-41d4-a716-446655440000"
-   * Invalid: "not-a-uuid", "123", "", null, undefined
-   */
-  private validateUuid(uuid: string): void {
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-    if (!uuidRegex.test(uuid)) {
-      throw new BadRequestException(`Invalid UUID format: ${uuid}`);
-    }
-  }
 
   /**
    * Validate date range logical consistency

@@ -22,13 +22,17 @@ import {
   Menu,
   X,
   User,
-  Bell,
   Search,
   PiggyBank,
   ChevronDown,
-  ClipboardList
+  ClipboardList,
+  Tags,
+  Calendar,
+  Clock,
+  Receipt,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { NotificationBell } from '@/components/notifications';
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -38,12 +42,16 @@ const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Accounts', href: '/dashboard/accounts', icon: Wallet },
   { name: 'Transactions', href: '/dashboard/transactions', icon: CreditCard },
+  { name: 'Categories', href: '/dashboard/categories', icon: Tags },
+  { name: 'Liabilities', href: '/dashboard/liabilities', icon: Receipt },
   { name: 'Investments', href: '/dashboard/investments', icon: TrendingUp },
-  { name: 'Goals', href: '/dashboard/goals', icon: Target },
 ];
 
 const planningItems = [
   { name: 'Budgets', href: '/dashboard/budgets', icon: PiggyBank },
+  { name: 'Goals', href: '/dashboard/goals', icon: Target },
+  { name: 'Scheduled', href: '/dashboard/scheduled', icon: Clock },
+  { name: 'Calendar', href: '/dashboard/calendar', icon: Calendar },
 ];
 
 const bottomNavigation = [
@@ -262,10 +270,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             {/* Right side actions */}
             <div className="flex items-center space-x-4">
               {/* Notifications */}
-              <button className="p-2 text-gray-400 hover:text-gray-500 rounded-full hover:bg-gray-100 relative">
-                <Bell className="h-6 w-6" />
-                <span className="absolute top-1 right-1 block h-2 w-2 rounded-full bg-red-500 ring-2 ring-white" />
-              </button>
+              <NotificationBell />
 
               {/* Logout Button */}
               <Button

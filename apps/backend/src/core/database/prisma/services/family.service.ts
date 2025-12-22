@@ -4,6 +4,7 @@ import { Prisma } from '../../../../../generated/prisma';
 import { PrismaService } from '../prisma.service';
 import { CreateFamilyDto } from '../dto/create-family.dto';
 import { UpdateFamilyDto } from '../dto/update-family.dto';
+import { validateUuid } from '../../../../common/validators';
 
 /**
  * Options for loading relations with Family entity
@@ -139,7 +140,7 @@ export class PrismaFamilyService {
    * @throws BadRequestException if UUID format is invalid
    */
   async findOne(id: string): Promise<Family | null> {
-    this.validateUuid(id);
+    validateUuid(id);
 
     const family = await this.prisma.family.findUnique({
       where: { id },
@@ -171,7 +172,7 @@ export class PrismaFamilyService {
     id: string,
     relations?: RelationOptions,
   ): Promise<FamilyWithRelations | null> {
-    this.validateUuid(id);
+    validateUuid(id);
 
     const family = await this.prisma.family.findUnique({
       where: { id },
@@ -237,7 +238,7 @@ export class PrismaFamilyService {
    * @throws NotFoundException if family doesn't exist (P2025)
    */
   async update(id: string, dto: UpdateFamilyDto): Promise<Family> {
-    this.validateUuid(id);
+    validateUuid(id);
 
     // Validate name if provided
     if (dto.name !== undefined) {
@@ -293,7 +294,7 @@ export class PrismaFamilyService {
    * @throws NotFoundException if family doesn't exist (P2025)
    */
   async delete(id: string): Promise<void> {
-    this.validateUuid(id);
+    validateUuid(id);
 
     try {
       await this.prisma.family.delete({
@@ -321,7 +322,7 @@ export class PrismaFamilyService {
    * @throws BadRequestException if UUID format is invalid
    */
   async exists(id: string): Promise<boolean> {
-    this.validateUuid(id);
+    validateUuid(id);
 
     const family = await this.prisma.family.findUnique({
       where: { id },
@@ -331,27 +332,4 @@ export class PrismaFamilyService {
     return family !== null;
   }
 
-  /**
-   * Validate UUID format (RFC 4122)
-   *
-   * RATIONALE:
-   * - Catch invalid UUIDs at service layer (fail fast)
-   * - Prevents unnecessary database queries
-   * - Provides clear error messages to clients
-   *
-   * UUID FORMAT:
-   * - 8-4-4-4-12 hexadecimal digits
-   * - Example: f1234567-89ab-cdef-0123-456789abcdef
-   * - Case-insensitive
-   *
-   * @param id - UUID string to validate
-   * @throws BadRequestException if format is invalid
-   */
-  private validateUuid(id: string): void {
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-    if (!uuidRegex.test(id)) {
-      throw new BadRequestException(`Invalid UUID format: ${id}`);
-    }
-  }
 }

@@ -3,16 +3,21 @@
 /**
  * BudgetProgressBar Component
  *
- * Displays a progress bar showing budget usage with color coding.
- * - Green: < 80% used (safe)
- * - Yellow: 80-99% used (warning)
- * - Red: >= 100% used (over budget)
+ * Displays a progress bar showing budget usage with dynamic color coding and time awareness.
+ * - Green: < 60% used (safe)
+ * - Yellow: 60-79% used (moderate)
+ * - Orange: 80-94% used (warning)
+ * - Red: 95-100% used (critical)
+ * - Dark Red: > 100% used (over budget, with pulse animation)
+ *
+ * Time-aware escalation: Status may be escalated if spending is significantly ahead of schedule.
  *
  * @module components/budgets/BudgetProgressBar
  */
 
 import { cn } from '@/lib/utils';
 import type { Budget } from '@/services/budgets.client';
+import { getBudgetProgressStatus } from '@/utils/budget-progress';
 
 export interface BudgetProgressBarProps {
   /** Budget data */
@@ -86,26 +91,18 @@ export function BudgetProgressBar({
   showAmount = true,
   'data-testid': testId,
 }: BudgetProgressBarProps) {
-  const { name, amount, spent, percentage, progressStatus, category } = budget;
+  const { name, amount, spent, percentage, category } = budget;
 
-  // Cap percentage at 100% for display, but allow overflow indication
-  const displayPercentage = Math.min(percentage, 100);
+  // Ensure percentage is a valid number, defaulting to 0
+  const safePercentage = typeof percentage === 'number' && !isNaN(percentage) ? percentage : 0;
+  const displayPercentage = Math.min(Math.max(safePercentage, 0), 100);
 
-  // Color mapping for progress bar
-  const colorMap = {
-    safe: 'bg-green-500',
-    warning: 'bg-orange-500',
-    maxed: 'bg-yellow-500',
-    over: 'bg-red-500',
-  };
-
-  // Background color for the bar container
-  const bgColorMap = {
-    safe: 'bg-green-100',
-    warning: 'bg-orange-100',
-    maxed: 'bg-yellow-100',
-    over: 'bg-red-100',
-  };
+  // Get progress status with dynamic colors using the new utility
+  const progressStatus = getBudgetProgressStatus({
+    percentage: safePercentage,
+    startDate: budget.startDate ? new Date(budget.startDate) : undefined,
+    endDate: budget.endDate ? new Date(budget.endDate) : undefined,
+  });
 
   return (
     <div
@@ -134,37 +131,33 @@ export function BudgetProgressBar({
             </span>
           </div>
           <span
-            className={cn(
-              'text-xs font-medium',
-              progressStatus === 'over' && 'text-red-600',
-              progressStatus === 'maxed' && 'text-yellow-600',
-              progressStatus === 'warning' && 'text-orange-600',
-              progressStatus === 'safe' && 'text-green-600'
-            )}
+            className="text-xs font-medium"
+            style={{ color: progressStatus.textColor }}
           >
-            {percentage}%
+            {safePercentage}%
           </span>
         </div>
       )}
 
       {/* Progress bar */}
       <div
-        className={cn(
-          'h-2.5 rounded-full overflow-hidden',
-          bgColorMap[progressStatus]
-        )}
+        className="h-2.5 rounded-full overflow-hidden"
+        style={{ backgroundColor: progressStatus.backgroundColor }}
       >
         <div
           className={cn(
             'h-full transition-all duration-300 ease-out rounded-full',
-            colorMap[progressStatus]
+            progressStatus.shouldPulse && 'animate-budget-pulse'
           )}
-          style={{ width: `${displayPercentage}%` }}
+          style={{
+            width: `${displayPercentage}%`,
+            backgroundColor: progressStatus.color
+          }}
           role="progressbar"
-          aria-valuenow={percentage}
+          aria-valuenow={safePercentage}
           aria-valuemin={0}
           aria-valuemax={100}
-          aria-label={`${name} budget: ${percentage}% used`}
+          aria-label={`${name} budget: ${safePercentage}% used`}
         />
       </div>
 

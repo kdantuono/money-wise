@@ -1,9 +1,10 @@
 import {
   Injectable,
   NotFoundException,
-  BadRequestException,
   ConflictException,
+  BadRequestException,
 } from '@nestjs/common';
+import { validateUuid } from '../../../../common/validators';
 import type { Account, User, Family, Transaction } from '../../../../../generated/prisma';
 import { Prisma, AccountType, AccountStatus, AccountSource } from '../../../../../generated/prisma';
 import { PrismaService } from '../prisma.service';
@@ -212,11 +213,11 @@ export class PrismaAccountService {
 
     // Validate UUIDs if provided
     if (dto.userId) {
-      this.validateUuid(dto.userId);
+      validateUuid(dto.userId);
     }
 
     if (dto.familyId) {
-      this.validateUuid(dto.familyId);
+      validateUuid(dto.familyId);
     }
 
     // Validate enum values
@@ -287,7 +288,7 @@ export class PrismaAccountService {
    * @throws BadRequestException if UUID format is invalid
    */
   async findOne(id: string): Promise<Account | null> {
-    this.validateUuid(id);
+    validateUuid(id);
 
     const account = await this.prisma.account.findUnique({
       where: { id },
@@ -318,7 +319,7 @@ export class PrismaAccountService {
     userId: string,
     options?: { status?: AccountStatus },
   ): Promise<Account[]> {
-    this.validateUuid(userId);
+    validateUuid(userId);
 
     const where: Prisma.AccountWhereInput = { userId };
 
@@ -355,7 +356,7 @@ export class PrismaAccountService {
     familyId: string,
     options?: { status?: AccountStatus },
   ): Promise<Account[]> {
-    this.validateUuid(familyId);
+    validateUuid(familyId);
 
     const where: Prisma.AccountWhereInput = { familyId };
 
@@ -392,7 +393,7 @@ export class PrismaAccountService {
     id: string,
     relations: RelationOptions,
   ): Promise<AccountWithRelations | null> {
-    this.validateUuid(id);
+    validateUuid(id);
 
     const account = await this.prisma.account.findUnique({
       where: { id },
@@ -470,7 +471,7 @@ export class PrismaAccountService {
    * @throws NotFoundException if account doesn't exist (P2025)
    */
   async update(id: string, dto: UpdateAccountDto): Promise<Account> {
-    this.validateUuid(id);
+    validateUuid(id);
 
     // CRITICAL: Prevent userId/familyId updates (immutable ownership)
     if ('userId' in dto || 'familyId' in dto) {
@@ -530,7 +531,7 @@ export class PrismaAccountService {
     currentBalance?: number,
     availableBalance?: number,
   ): Promise<void> {
-    this.validateUuid(id);
+    validateUuid(id);
 
     const data: Prisma.AccountUpdateInput = {};
 
@@ -582,7 +583,7 @@ export class PrismaAccountService {
     lastSyncAt: Date,
     syncError?: string | null,
   ): Promise<void> {
-    this.validateUuid(id);
+    validateUuid(id);
 
     await this.prisma.account.update({
       where: { id },
@@ -610,7 +611,7 @@ export class PrismaAccountService {
    * @throws NotFoundException if account doesn't exist (P2025)
    */
   async delete(id: string): Promise<void> {
-    this.validateUuid(id);
+    validateUuid(id);
 
     try {
       await this.prisma.account.delete({
@@ -639,7 +640,7 @@ export class PrismaAccountService {
    * @throws BadRequestException if UUID format is invalid
    */
   async exists(id: string): Promise<boolean> {
-    this.validateUuid(id);
+    validateUuid(id);
 
     const account = await this.prisma.account.findUnique({
       where: { id },
@@ -670,7 +671,7 @@ export class PrismaAccountService {
    * @throws BadRequestException if UUID format is invalid
    */
   async countTransactions(accountId: string): Promise<number> {
-    this.validateUuid(accountId);
+    validateUuid(accountId);
 
     const count = await this.prisma.transaction.count({
       where: { accountId },
@@ -679,33 +680,4 @@ export class PrismaAccountService {
     return count;
   }
 
-  // ============================================================================
-  // HELPER METHODS
-  // ============================================================================
-
-  /**
-   * Validate UUID format (RFC 4122)
-   *
-   * RATIONALE:
-   * - Catch invalid UUIDs at service layer (fail fast)
-   * - Prevents unnecessary database queries
-   * - Provides clear error messages to clients
-   *
-   * UUID FORMAT:
-   * - 8-4-4-4-12 hexadecimal digits (0-9, a-f)
-   * - Example: 123e4567-e89b-12d3-a456-426614174000
-   * - Case-insensitive
-   * - Note: Also accepts alphanumeric for test compatibility (a-z, 0-9)
-   *
-   * @param id - UUID string to validate
-   * @throws BadRequestException if format is invalid
-   */
-  private validateUuid(id: string): void {
-    // Accept both strict RFC 4122 (hex only) and test-friendly (alphanumeric) formats
-    const uuidRegex = /^[0-9a-z]{8}-[0-9a-z]{4}-[0-9a-z]{4}-[0-9a-z]{4}-[0-9a-z]{12}$/i;
-
-    if (!uuidRegex.test(id)) {
-      throw new BadRequestException(`Invalid UUID format: ${id}`);
-    }
-  }
 }

@@ -90,6 +90,58 @@ export interface TransactionFilters {
 }
 
 /**
+ * Create transaction request data
+ * Required fields: accountId, amount, type, source, date, description
+ */
+export interface CreateTransactionData {
+  accountId: string;
+  categoryId?: string;
+  amount: number;
+  type: TransactionType;
+  status?: TransactionStatus;
+  source: TransactionSource;
+  date: string;
+  authorizedDate?: string;
+  description: string;
+  merchantName?: string;
+  originalDescription?: string;
+  currency?: string;
+  reference?: string;
+  checkNumber?: string;
+  notes?: string;
+  isPending?: boolean;
+  isRecurring?: boolean;
+  isHidden?: boolean;
+  includeInBudget?: boolean;
+}
+
+/**
+ * Update transaction request data
+ * All fields are optional (PATCH semantics)
+ * Note: accountId and plaidTransactionId cannot be changed
+ */
+export interface UpdateTransactionData {
+  categoryId?: string;
+  amount?: number;
+  type?: TransactionType;
+  status?: TransactionStatus;
+  source?: TransactionSource;
+  date?: string;
+  authorizedDate?: string;
+  description?: string;
+  merchantName?: string;
+  originalDescription?: string;
+  currency?: string;
+  reference?: string;
+  checkNumber?: string;
+  notes?: string;
+  isPending?: boolean;
+  isRecurring?: boolean;
+  isHidden?: boolean;
+  includeInBudget?: boolean;
+}
+
+/**
  * HTTP error response structure
  */
 interface ApiErrorResponse {
@@ -142,6 +194,30 @@ export class NotFoundError extends TransactionsApiError {
   }
 }
 
+/**
+ * Authorization error (403)
+ */
+export class AuthorizationError extends TransactionsApiError {
+  constructor(
+    message: string = 'You do not have permission to perform this action.'
+  ) {
+    super(message, 403, 'AuthorizationError');
+    this.name = 'AuthorizationError';
+    Object.setPrototypeOf(this, AuthorizationError.prototype);
+  }
+}
+
+/**
+ * Validation error (400)
+ */
+export class ValidationError extends TransactionsApiError {
+  constructor(message: string = 'Invalid request data.', details?: unknown) {
+    super(message, 400, 'ValidationError', details);
+    this.name = 'ValidationError';
+    Object.setPrototypeOf(this, ValidationError.prototype);
+  }
+}
+
 // =============================================================================
 // HTTP Client Configuration
 // =============================================================================
@@ -167,8 +243,12 @@ async function handleErrorResponse(response: Response): Promise<never> {
       : errorData?.message || `Request failed with status ${response.status}`;
 
   switch (response.status) {
+    case 400:
+      throw new ValidationError(message, errorData);
     case 401:
       throw new AuthenticationError(message);
+    case 403:
+      throw new AuthorizationError(message);
     case 404:
       throw new NotFoundError(message);
     default:
@@ -273,6 +353,81 @@ export const transactionsClient = {
    */
   async getTransaction(id: string): Promise<Transaction> {
     return request<Transaction>(`/${id}`);
+  },
+
+  /**
+   * Create a new transaction
+   *
+   * @param data - Transaction data
+   * @returns Created transaction
+   * @throws AuthenticationError if not authenticated
+   * @throws ValidationError if data is invalid
+   *
+   * @example
+   * ```typescript
+   * const transaction = await transactionsClient.createTransaction({
+   *   accountId: 'account-uuid',
+   *   amount: 125.50,
+   *   type: 'DEBIT',
+   *   source: 'MANUAL',
+   *   date: '2024-01-15',
+   *   description: 'Groceries at Whole Foods',
+   * });
+   * ```
+   */
+  async createTransaction(data: CreateTransactionData): Promise<Transaction> {
+    return request<Transaction>('', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  /**
+   * Update an existing transaction
+   *
+   * @param id - Transaction ID (UUID)
+   * @param data - Partial transaction data to update
+   * @returns Updated transaction
+   * @throws AuthenticationError if not authenticated
+   * @throws AuthorizationError if transaction belongs to different family
+   * @throws NotFoundError if transaction doesn't exist
+   * @throws ValidationError if data is invalid
+   *
+   * @example
+   * ```typescript
+   * const updated = await transactionsClient.updateTransaction('tx-uuid', {
+   *   categoryId: 'new-category-uuid',
+   *   notes: 'Updated notes',
+   * });
+   * ```
+   */
+  async updateTransaction(
+    id: string,
+    data: UpdateTransactionData
+  ): Promise<Transaction> {
+    return request<Transaction>(`/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  },
+
+  /**
+   * Delete a transaction
+   *
+   * @param id - Transaction ID (UUID)
+   * @throws AuthenticationError if not authenticated
+   * @throws AuthorizationError if transaction belongs to different family
+   * @throws NotFoundError if transaction doesn't exist
+   *
+   * @example
+   * ```typescript
+   * await transactionsClient.deleteTransaction('tx-uuid');
+   * ```
+   */
+  async deleteTransaction(id: string): Promise<void> {
+    await request<void>(`/${id}`, {
+      method: 'DELETE',
+    });
   },
 };
 

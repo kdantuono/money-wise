@@ -17,9 +17,22 @@ export async function GET(
 /**
  * PUT /api/transactions/:id
  *
- * BFF endpoint for updating a transaction.
+ * BFF endpoint for updating a transaction (full replacement).
  */
 export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+): Promise<NextResponse> {
+  const { id } = await params;
+  return await proxyRequest(request, `/api/transactions/${id}`);
+}
+
+/**
+ * PATCH /api/transactions/:id
+ *
+ * BFF endpoint for partially updating a transaction.
+ */
+export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ): Promise<NextResponse> {

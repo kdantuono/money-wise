@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '../utils/test-utils';
 
 // Import placeholder dashboard page components
@@ -13,10 +13,49 @@ import { render, screen } from '../utils/test-utils';
 import InvestmentsPage from '../../app/dashboard/investments/page';
 import GoalsPage from '../../app/dashboard/goals/page';
 import SettingsPage from '../../app/dashboard/settings/page';
+import { useAuthStore } from '../../src/stores/auth-store';
+
+// Mock auth store for SettingsPage (now a full implementation)
+vi.mock('../../src/stores/auth-store', () => ({
+  useAuthStore: vi.fn(),
+}));
+
+const mockUseAuthStore = useAuthStore as unknown as ReturnType<typeof vi.fn>;
+
+// Mock user for SettingsPage tests
+const mockUser = {
+  id: 'test-user-id',
+  email: 'test@example.com',
+  firstName: 'Test',
+  lastName: 'User',
+  status: 'ACTIVE',
+  timezone: 'America/New_York',
+  currency: 'USD',
+  preferences: {
+    theme: 'auto',
+    language: 'en',
+    notifications: {
+      email: true,
+      push: true,
+      categories: true,
+      budgets: true,
+    },
+  },
+  createdAt: '2024-01-01T00:00:00.000Z',
+  isEmailVerified: true,
+};
 
 describe('Dashboard Placeholder Pages', () => {
   // Note: AccountsPage and TransactionsPage tests have been moved to dedicated test files
   // since they are now full implementations rather than placeholder pages
+
+  beforeEach(() => {
+    // Reset auth store mock before each test
+    mockUseAuthStore.mockReturnValue({
+      user: null,
+      setUser: vi.fn(),
+    });
+  });
 
   describe('InvestmentsPage', () => {
     it('renders the investments page with correct heading', () => {
@@ -71,6 +110,14 @@ describe('Dashboard Placeholder Pages', () => {
   });
 
   describe('SettingsPage', () => {
+    beforeEach(() => {
+      // SettingsPage requires authenticated user
+      mockUseAuthStore.mockReturnValue({
+        user: mockUser,
+        setUser: vi.fn(),
+      });
+    });
+
     it('renders the settings page with correct heading', () => {
       render(<SettingsPage />);
 
@@ -80,17 +127,80 @@ describe('Dashboard Placeholder Pages', () => {
     it('renders settings description', () => {
       render(<SettingsPage />);
 
-      expect(screen.getByText(/manage your account settings/i)).toBeInTheDocument();
+      expect(screen.getByText(/manage your account settings and preferences/i)).toBeInTheDocument();
     });
 
-    it('renders coming soon message', () => {
+    it('renders profile information section', () => {
       render(<SettingsPage />);
 
-      expect(screen.getByText(/coming soon/i)).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /profile information/i })).toBeInTheDocument();
+    });
+
+    it('renders regional settings section', () => {
+      render(<SettingsPage />);
+
+      expect(screen.getByRole('heading', { name: /regional settings/i })).toBeInTheDocument();
+    });
+
+    it('renders appearance section', () => {
+      render(<SettingsPage />);
+
+      expect(screen.getByRole('heading', { name: /appearance/i })).toBeInTheDocument();
+    });
+
+    it('renders notifications section', () => {
+      render(<SettingsPage />);
+
+      expect(screen.getByRole('heading', { name: /notifications/i })).toBeInTheDocument();
+    });
+
+    it('renders account information section', () => {
+      render(<SettingsPage />);
+
+      expect(screen.getByRole('heading', { name: /account information/i })).toBeInTheDocument();
+    });
+
+    it('shows loading state when user is not loaded', () => {
+      mockUseAuthStore.mockReturnValue({
+        user: null,
+        setUser: vi.fn(),
+      });
+
+      const { container } = render(<SettingsPage />);
+
+      // Should show loading spinner
+      const spinner = container.querySelector('.animate-spin');
+      expect(spinner).toBeInTheDocument();
+    });
+
+    it('pre-fills form with user data', () => {
+      render(<SettingsPage />);
+
+      const firstNameInput = screen.getByLabelText(/first name/i) as HTMLInputElement;
+      const lastNameInput = screen.getByLabelText(/last name/i) as HTMLInputElement;
+      const emailInput = screen.getByLabelText(/email address/i) as HTMLInputElement;
+
+      expect(firstNameInput.value).toBe('Test');
+      expect(lastNameInput.value).toBe('User');
+      expect(emailInput.value).toBe('test@example.com');
+    });
+
+    it('renders save button', () => {
+      render(<SettingsPage />);
+
+      expect(screen.getByRole('button', { name: /save changes/i })).toBeInTheDocument();
     });
   });
 
   describe('Common Layout Elements', () => {
+    beforeEach(() => {
+      // Settings page needs auth
+      mockUseAuthStore.mockReturnValue({
+        user: mockUser,
+        setUser: vi.fn(),
+      });
+    });
+
     // Only placeholder pages - full implementations (Accounts, Transactions) have dedicated tests
     const pages = [
       { name: 'InvestmentsPage', Component: InvestmentsPage },
@@ -106,26 +216,18 @@ describe('Dashboard Placeholder Pages', () => {
         const headerContainer = container.querySelector('.flex.items-center.gap-3');
         expect(headerContainer).toBeInTheDocument();
       });
-
-      it(`${name} has white card container`, () => {
-        const { container } = render(<Component />);
-
-        // Should have the white rounded card
-        const card = container.querySelector('.bg-white.rounded-xl.border');
-        expect(card).toBeInTheDocument();
-      });
-
-      it(`${name} has centered content in empty state`, () => {
-        const { container } = render(<Component />);
-
-        // Should have text-center class for empty state
-        const centeredContent = container.querySelector('.text-center');
-        expect(centeredContent).toBeInTheDocument();
-      });
     });
   });
 
   describe('Accessibility', () => {
+    beforeEach(() => {
+      // Settings page needs auth
+      mockUseAuthStore.mockReturnValue({
+        user: mockUser,
+        setUser: vi.fn(),
+      });
+    });
+
     // Only placeholder pages - full implementations (Accounts, Transactions) have dedicated tests
     const pages = [
       { name: 'Investments', Component: InvestmentsPage },

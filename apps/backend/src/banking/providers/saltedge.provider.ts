@@ -179,7 +179,9 @@ export class SaltEdgeProvider implements IBankingProvider {
     signature: string;
     expiresAt: number;
   } {
-    const expiresAt = Math.floor(Date.now() / 1000) + 3600; // 1 hour expiry
+    // Use 55 minutes (3300s) instead of 60 minutes to account for potential clock drift
+    // between our server and SaltEdge servers. This provides a 5-minute buffer.
+    const expiresAt = Math.floor(Date.now() / 1000) + 3300;
     const signatureData = `${expiresAt}|${method.toUpperCase()}|${url}|${body}`;
 
     if (!this.privateKey) {
@@ -214,7 +216,10 @@ export class SaltEdgeProvider implements IBankingProvider {
       'Content-Type': 'application/json',
     };
 
-    this.logger.debug(`SaltEdge API: ${method} ${path}`);
+    this.logger.log(`[DEBUG][SaltEdge.request] >>> ${method} ${path}`);
+    if (body) {
+      this.logger.log(`[DEBUG][SaltEdge.request] Request body: ${JSON.stringify(body)}`);
+    }
 
     const response = await this.httpClient.request({
       method,
@@ -222,6 +227,16 @@ export class SaltEdgeProvider implements IBankingProvider {
       data: body,
       headers,
     });
+
+    this.logger.log(`[DEBUG][SaltEdge.request] Response status: ${response.status}`);
+    if (response.data) {
+      // Log response data summary (avoid huge payloads)
+      const dataKeys = Object.keys(response.data);
+      this.logger.log(`[DEBUG][SaltEdge.request] Response data keys: ${dataKeys.join(', ')}`);
+      if (response.data.data && Array.isArray(response.data.data)) {
+        this.logger.log(`[DEBUG][SaltEdge.request] Response data array length: ${response.data.data.length}`);
+      }
+    }
 
     if (response.status >= 400) {
       // Handle SaltEdge v6 error format: { error: { class, message } }
@@ -404,6 +419,8 @@ export class SaltEdgeProvider implements IBankingProvider {
       returnTo?: string;
       providerCode?: string;
       countryCode?: string;
+      /** Enable popup mode with postMessage callbacks */
+      popupMode?: boolean;
     },
   ): Promise<{ connectUrl: string; expiresAt: Date }> {
     this.logger.debug(`Creating connect session for customer: ${customerId}`);
@@ -423,6 +440,9 @@ export class SaltEdgeProvider implements IBankingProvider {
           attempt: {
             return_to: options?.returnTo || this.callbackUrl,
             fetch_scopes: ['accounts', 'transactions'],
+            // Enable postMessage callbacks for popup mode
+            // This allows the popup to communicate with the parent window
+            ...(options?.popupMode && { javascript_callback_type: 'post_message' }),
           },
           // For testing with fake providers
           ...(options?.providerCode && { provider_code: options.providerCode }),
@@ -485,8 +505,11 @@ export class SaltEdgeProvider implements IBankingProvider {
     // Create customer if not exists (simplified flow)
     const customer = await this.createCustomer(userId);
 
+    // Enable popup mode with postMessage for better UX
+    // This allows the OAuth flow to happen in a popup while the parent page stays visible
     const { connectUrl, expiresAt } = await this.createConnectSession(customer.id, {
       returnTo: this.callbackUrl,
+      popupMode: true,
     });
 
     return {
@@ -502,21 +525,72 @@ export class SaltEdgeProvider implements IBankingProvider {
   /**
    * Complete the OAuth flow after user authorization
    * Called when user returns from SaltEdge with connection_id
+   *
+   * Note: Some SaltEdge providers (especially fake/sandbox ones) may not
+   * return accounts immediately after OAuth. This method includes retry
+   * logic with delays to handle delayed account provisioning.
    */
   async completeLinkAndGetAccounts(connectionId: string): Promise<BankingAccountData[]> {
-    this.logger.debug(`Completing link for connection ${connectionId}`);
+    this.logger.log(`[DEBUG][completeLinkAndGetAccounts] >>> ENTER - connectionId: ${connectionId}`);
 
     // Verify connection is active
+    this.logger.log(`[DEBUG][completeLinkAndGetAccounts] Calling getConnection(${connectionId})...`);
     const connection = await this.getConnection(connectionId);
+    this.logger.log(`[DEBUG][completeLinkAndGetAccounts] Connection fetched - status: ${connection.status}, provider: ${connection.provider_code}`);
 
     if (connection.status !== 'active') {
+      this.logger.error(`[DEBUG][completeLinkAndGetAccounts] Connection NOT active! Status: ${connection.status}`);
       throw new Error(
         `Connection is not active. Status: ${connection.status}. User may have declined authorization.`,
       );
     }
 
-    // Fetch accounts
-    return await this.getAccounts(connectionId);
+    // Fetch accounts with retry logic for delayed account provisioning
+    const maxRetries = 3;
+    const retryDelayMs = 2000; // 2 seconds between retries
+
+    this.logger.log(`[DEBUG][completeLinkAndGetAccounts] Starting account fetch with ${maxRetries} max retries...`);
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      this.logger.log(`[DEBUG][completeLinkAndGetAccounts] Attempt ${attempt}/${maxRetries} - calling getAccounts(${connectionId})...`);
+      const accounts = await this.getAccounts(connectionId);
+      this.logger.log(`[DEBUG][completeLinkAndGetAccounts] Attempt ${attempt} - getAccounts returned ${accounts.length} accounts`);
+
+      if (accounts.length > 0) {
+        this.logger.log(`[DEBUG][completeLinkAndGetAccounts] <<< EXIT SUCCESS - Got ${accounts.length} accounts on attempt ${attempt}`);
+        this.logger.log(`[DEBUG][completeLinkAndGetAccounts] Account IDs: ${accounts.map(a => a.id).join(', ')}`);
+        return accounts;
+      }
+
+      if (attempt < maxRetries) {
+        this.logger.log(
+          `[DEBUG][completeLinkAndGetAccounts] No accounts returned on attempt ${attempt}/${maxRetries}, ` +
+            `retrying after ${retryDelayMs}ms delay (provider may need time to provision accounts)`,
+        );
+
+        // Try refreshing the connection to trigger account fetch
+        try {
+          this.logger.log(`[DEBUG][completeLinkAndGetAccounts] Calling refreshConnection(${connectionId})...`);
+          await this.refreshConnection(connectionId);
+          this.logger.log(`[DEBUG][completeLinkAndGetAccounts] refreshConnection completed`);
+        } catch (refreshError: unknown) {
+          const errorMessage =
+            refreshError instanceof Error ? refreshError.message : 'Unknown error';
+          this.logger.warn(`[DEBUG][completeLinkAndGetAccounts] Refresh attempt failed (non-fatal): ${errorMessage}`);
+        }
+
+        // Wait before retry
+        this.logger.log(`[DEBUG][completeLinkAndGetAccounts] Waiting ${retryDelayMs}ms before retry...`);
+        await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
+      }
+    }
+
+    // Return empty array if all retries exhausted
+    this.logger.warn(
+      `[DEBUG][completeLinkAndGetAccounts] <<< EXIT EMPTY - No accounts returned after ${maxRetries} attempts for connection ${connectionId}. ` +
+        `The provider may not support immediate account fetching or the user has no accounts.`,
+    );
+    return [];
   }
 
   /**
@@ -607,7 +681,7 @@ export class SaltEdgeProvider implements IBankingProvider {
    * Get accounts from a connection
    */
   async getAccounts(connectionId: string): Promise<BankingAccountData[]> {
-    this.logger.debug(`Fetching accounts for connection ${connectionId}`);
+    this.logger.log(`[DEBUG][getAccounts] >>> ENTER - connectionId: ${connectionId}`);
 
     const response = await this.request<{ data: SaltEdgeAccount[] }>(
       'GET',
@@ -615,9 +689,18 @@ export class SaltEdgeProvider implements IBankingProvider {
     );
 
     const accounts = response.data || [];
-    this.logger.log(`Fetched ${accounts.length} accounts`);
+    this.logger.log(`[DEBUG][getAccounts] SaltEdge API returned ${accounts.length} raw accounts`);
 
-    return accounts.map((account) => this.mapSaltEdgeAccountToMoneyWise(account, connectionId));
+    if (accounts.length > 0) {
+      this.logger.log(`[DEBUG][getAccounts] Raw account data: ${JSON.stringify(accounts.map(a => ({ id: a.id, name: a.name, balance: a.balance })))}`);
+    } else {
+      this.logger.warn(`[DEBUG][getAccounts] SaltEdge returned EMPTY accounts array for connection ${connectionId}`);
+    }
+
+    const mappedAccounts = accounts.map((account) => this.mapSaltEdgeAccountToMoneyWise(account, connectionId));
+    this.logger.log(`[DEBUG][getAccounts] <<< EXIT - returning ${mappedAccounts.length} mapped accounts`);
+
+    return mappedAccounts;
   }
 
   /**

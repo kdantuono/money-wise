@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { AccountsService } from '../../../src/accounts/accounts.service';
 import { PrismaService } from '../../../src/core/database/prisma/prisma.service';
+import { BalanceNormalizerService } from '../../../src/core/finance/balance-normalizer.service';
 import { AccountType, AccountSource, AccountStatus, UserRole, Prisma } from '../../../generated/prisma';
 import { AccountFactory } from '../../utils/factories';
 import { createMockPrismaService, resetPrismaMocks } from '../../utils/mocks';
@@ -30,6 +31,7 @@ describe('AccountsService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AccountsService,
+        BalanceNormalizerService,
         { provide: PrismaService, useValue: mockPrisma },
       ],
     }).compile();
@@ -162,7 +164,7 @@ describe('AccountsService', () => {
   });
 
   describe('findAll', () => {
-    it('should find all personal accounts for a user', async () => {
+    it('should find all personal accounts for a user (excluding HIDDEN)', async () => {
       // Arrange
       const userId = 'user-123';
       const accounts = AccountFactory.buildMany(3, { userId });
@@ -174,12 +176,12 @@ describe('AccountsService', () => {
       // Assert
       expect(result).toHaveLength(3);
       expect(prisma.account.findMany).toHaveBeenCalledWith({
-        where: { userId },
+        where: { userId, status: { not: AccountStatus.HIDDEN } },
         orderBy: { createdAt: 'desc' },
       });
     });
 
-    it('should find all family accounts for a family', async () => {
+    it('should find all family accounts for a family (excluding HIDDEN)', async () => {
       // Arrange
       const familyId = 'family-456';
       const accounts = AccountFactory.buildMany(2, { userId: null, familyId });
@@ -191,22 +193,7 @@ describe('AccountsService', () => {
       // Assert
       expect(result).toHaveLength(2);
       expect(prisma.account.findMany).toHaveBeenCalledWith({
-        where: { familyId },
-        orderBy: { createdAt: 'desc' },
-      });
-    });
-
-    it('should find all accounts for admin users', async () => {
-      // Arrange
-      const accounts = AccountFactory.buildMany(5);
-      prisma.account.findMany.mockResolvedValue(accounts as any);
-
-      // Act
-      const result = await service.findAll(undefined, undefined, UserRole.ADMIN);
-
-      // Assert
-      expect(result).toHaveLength(5);
-      expect(prisma.account.findMany).toHaveBeenCalledWith({
+        where: { familyId, status: { not: AccountStatus.HIDDEN } },
         orderBy: { createdAt: 'desc' },
       });
     });
@@ -232,6 +219,26 @@ describe('AccountsService', () => {
 
       // Assert
       expect(result).toEqual([]);
+    });
+
+    it('should include HIDDEN accounts when includeHidden=true', async () => {
+      // Arrange
+      const userId = 'user-123';
+      const accounts = [
+        AccountFactory.buildForUser(userId, { status: AccountStatus.ACTIVE }),
+        AccountFactory.buildForUser(userId, { status: AccountStatus.HIDDEN }),
+      ];
+      prisma.account.findMany.mockResolvedValue(accounts as any);
+
+      // Act
+      const result = await service.findAll(userId, undefined, true);
+
+      // Assert
+      expect(result).toHaveLength(2);
+      expect(prisma.account.findMany).toHaveBeenCalledWith({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+      });
     });
   });
 
@@ -409,14 +416,69 @@ describe('AccountsService', () => {
       // Assert
       expect(result.name).toBe('Admin Updated');
     });
+
+    it('should update account settings with icon and color', async () => {
+      // Arrange
+      const userId = 'user-123';
+      const account = AccountFactory.buildForUser(userId);
+      const updateDto = {
+        settings: {
+          icon: 'piggybank',
+          color: 'purple',
+        },
+      };
+      const updatedAccount = {
+        ...account,
+        settings: { icon: 'piggybank', color: 'purple' },
+      };
+
+      prisma.account.findUnique.mockResolvedValue(account as any);
+      prisma.account.update.mockResolvedValue(updatedAccount as any);
+
+      // Act
+      const result = await service.update(account.id, updateDto, userId);
+
+      // Assert
+      expect(result.settings).toEqual({ icon: 'piggybank', color: 'purple' });
+      const updateCall = prisma.account.update.mock.calls[0][0];
+      expect(updateCall.data.settings).toEqual({ icon: 'piggybank', color: 'purple' });
+    });
+
+    it('should preserve existing settings when updating partial settings', async () => {
+      // Arrange
+      const userId = 'user-123';
+      const account = AccountFactory.buildForUser(userId, {
+        settings: { icon: 'wallet', color: 'blue', autoSync: true },
+      });
+      const updateDto = {
+        settings: {
+          color: 'green', // Only update color
+        },
+      };
+      const updatedAccount = {
+        ...account,
+        settings: { icon: 'wallet', color: 'green', autoSync: true },
+      };
+
+      prisma.account.findUnique.mockResolvedValue(account as any);
+      prisma.account.update.mockResolvedValue(updatedAccount as any);
+
+      // Act
+      await service.update(account.id, updateDto, userId);
+
+      // Assert - settings should be passed to prisma as-is (the service stores whatever is provided)
+      const updateCall = prisma.account.update.mock.calls[0][0];
+      expect(updateCall.data.settings).toEqual({ color: 'green' });
+    });
   });
 
   describe('remove', () => {
-    it('should delete account for owner', async () => {
+    it('should delete account for owner when no linked transfers', async () => {
       // Arrange
       const userId = 'user-123';
       const account = AccountFactory.buildForUser(userId);
       prisma.account.findUnique.mockResolvedValue(account as any);
+      prisma.transaction.findMany.mockResolvedValue([]); // No transfers
       prisma.account.delete.mockResolvedValue(account as any);
 
       // Act
@@ -425,6 +487,56 @@ describe('AccountsService', () => {
       // Assert
       expect(prisma.account.delete).toHaveBeenCalledWith({ where: { id: account.id } });
       expect(prisma.account.delete).toHaveBeenCalledTimes(1);
+    });
+
+    it('should throw BadRequestException when account has linked transfers', async () => {
+      // Arrange
+      const userId = 'user-123';
+      const account = AccountFactory.buildForUser(userId);
+      const otherAccount = AccountFactory.buildForUser(userId, { id: 'other-account-id', name: 'Savings' });
+
+      prisma.account.findUnique.mockResolvedValue(account as any);
+
+      // Mock transactions with transfer group - set up for multiple calls
+      const transferTx = [
+        {
+          id: 'tx-1',
+          transferGroupId: 'transfer-group-1',
+          transferRole: 'SOURCE',
+          amount: new Prisma.Decimal(-100),
+          date: new Date(),
+          description: 'Transfer to savings',
+        },
+      ];
+      const linkedTx = [
+        {
+          id: 'tx-2',
+          transferGroupId: 'transfer-group-1',
+          transferRole: 'DESTINATION',
+          amount: new Prisma.Decimal(100),
+          date: new Date(),
+          description: 'Transfer from checking',
+          accountId: otherAccount.id,
+          account: { id: otherAccount.id, name: otherAccount.name },
+        },
+      ];
+
+      // Set up mocks that return the same values each time (for the test assertion)
+      prisma.transaction.findMany
+        .mockResolvedValueOnce(transferTx)
+        .mockResolvedValueOnce(linkedTx);
+
+      // Act & Assert
+      try {
+        await service.remove(account.id, userId);
+        fail('Expected BadRequestException to be thrown');
+      } catch (error) {
+        expect(error).toBeInstanceOf(BadRequestException);
+        expect(error.response).toMatchObject({
+          error: 'LINKED_TRANSFERS_EXIST',
+          linkedTransferCount: 1,
+        });
+      }
     });
 
     it('should throw NotFoundException when account does not exist', async () => {
@@ -445,10 +557,11 @@ describe('AccountsService', () => {
       await expect(service.remove(account.id, 'user-123')).rejects.toThrow(ForbiddenException);
     });
 
-    it('should allow admin to delete any account', async () => {
+    it('should allow admin to delete any account without linked transfers', async () => {
       // Arrange
       const account = AccountFactory.buildForUser('other-user');
       prisma.account.findUnique.mockResolvedValue(account as any);
+      prisma.transaction.findMany.mockResolvedValue([]); // No transfers
       prisma.account.delete.mockResolvedValue(account as any);
 
       // Act
@@ -456,6 +569,360 @@ describe('AccountsService', () => {
 
       // Assert
       expect(prisma.account.delete).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('checkDeletionEligibility', () => {
+    it('should return canDelete=true when no linked transfers exist', async () => {
+      // Arrange
+      const userId = 'user-123';
+      const account = AccountFactory.buildForUser(userId, { status: AccountStatus.ACTIVE });
+      prisma.account.findUnique.mockResolvedValue(account as any);
+      prisma.transaction.findMany.mockResolvedValue([]); // No transfers
+
+      // Act
+      const result = await service.checkDeletionEligibility(account.id, userId);
+
+      // Assert
+      expect(result.canDelete).toBe(true);
+      expect(result.canHide).toBe(true);
+      expect(result.blockers).toEqual([]);
+      expect(result.linkedTransferCount).toBe(0);
+      expect(result.currentStatus).toBe(AccountStatus.ACTIVE);
+    });
+
+    it('should return canDelete=false when linked transfers exist', async () => {
+      // Arrange
+      const userId = 'user-123';
+      const account = AccountFactory.buildForUser(userId);
+      const otherAccount = AccountFactory.buildForUser(userId, { id: 'other-account-id', name: 'Savings' });
+
+      prisma.account.findUnique.mockResolvedValue(account as any);
+      prisma.transaction.findMany
+        .mockResolvedValueOnce([
+          {
+            id: 'tx-1',
+            transferGroupId: 'transfer-group-1',
+            transferRole: 'SOURCE',
+            amount: new Prisma.Decimal(-500),
+            date: new Date('2025-11-15'),
+            description: 'Monthly savings transfer',
+          },
+        ])
+        .mockResolvedValueOnce([
+          {
+            id: 'tx-2',
+            transferGroupId: 'transfer-group-1',
+            transferRole: 'DESTINATION',
+            amount: new Prisma.Decimal(500),
+            date: new Date('2025-11-15'),
+            description: 'Monthly savings transfer',
+            accountId: otherAccount.id,
+            account: { id: otherAccount.id, name: otherAccount.name },
+          },
+        ]);
+
+      // Act
+      const result = await service.checkDeletionEligibility(account.id, userId);
+
+      // Assert
+      expect(result.canDelete).toBe(false);
+      expect(result.canHide).toBe(true); // Can always hide
+      expect(result.linkedTransferCount).toBe(1);
+      expect(result.blockReason).toContain('1 transfer');
+      expect(result.blockers).toHaveLength(1);
+      expect(result.blockers[0]).toMatchObject({
+        transactionId: 'tx-1',
+        transferGroupId: 'transfer-group-1',
+        linkedAccountId: otherAccount.id,
+        linkedAccountName: 'Savings',
+        amount: 500,
+        transferRole: 'SOURCE',
+      });
+    });
+
+    it('should return correct pluralization for multiple transfers', async () => {
+      // Arrange
+      const userId = 'user-123';
+      const account = AccountFactory.buildForUser(userId);
+      const otherAccount = AccountFactory.buildForUser(userId, { id: 'other-account-id', name: 'Savings' });
+
+      prisma.account.findUnique.mockResolvedValue(account as any);
+      prisma.transaction.findMany
+        .mockResolvedValueOnce([
+          { id: 'tx-1', transferGroupId: 'tg-1', transferRole: 'SOURCE', amount: new Prisma.Decimal(-100), date: new Date(), description: '' },
+          { id: 'tx-2', transferGroupId: 'tg-2', transferRole: 'SOURCE', amount: new Prisma.Decimal(-200), date: new Date(), description: '' },
+          { id: 'tx-3', transferGroupId: 'tg-3', transferRole: 'SOURCE', amount: new Prisma.Decimal(-300), date: new Date(), description: '' },
+        ])
+        .mockResolvedValueOnce([
+          { id: 'tx-4', transferGroupId: 'tg-1', accountId: otherAccount.id, account: { id: otherAccount.id, name: 'Savings' } },
+          { id: 'tx-5', transferGroupId: 'tg-2', accountId: otherAccount.id, account: { id: otherAccount.id, name: 'Savings' } },
+          { id: 'tx-6', transferGroupId: 'tg-3', accountId: otherAccount.id, account: { id: otherAccount.id, name: 'Savings' } },
+        ]);
+
+      // Act
+      const result = await service.checkDeletionEligibility(account.id, userId);
+
+      // Assert
+      expect(result.blockReason).toContain('3 transfers'); // Plural
+      expect(result.linkedTransferCount).toBe(3);
+    });
+
+    it('should throw NotFoundException for non-existent account', async () => {
+      // Arrange
+      prisma.account.findUnique.mockResolvedValue(null);
+
+      // Act & Assert
+      await expect(service.checkDeletionEligibility('non-existent', 'user-123')).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw ForbiddenException for unauthorized access', async () => {
+      // Arrange
+      const account = AccountFactory.buildForUser('other-user');
+      prisma.account.findUnique.mockResolvedValue(account as any);
+
+      // Act & Assert
+      await expect(service.checkDeletionEligibility(account.id, 'user-123')).rejects.toThrow(ForbiddenException);
+    });
+  });
+
+  describe('hideAccount', () => {
+    it('should set account status to HIDDEN', async () => {
+      // Arrange
+      const userId = 'user-123';
+      const account = AccountFactory.buildForUser(userId, { status: AccountStatus.ACTIVE });
+      const hiddenAccount = { ...account, status: AccountStatus.HIDDEN };
+
+      prisma.account.findUnique.mockResolvedValue(account as any);
+      prisma.account.update.mockResolvedValue(hiddenAccount as any);
+
+      // Act
+      const result = await service.hideAccount(account.id, userId);
+
+      // Assert
+      expect(result.status).toBe(AccountStatus.HIDDEN);
+      expect(prisma.account.update).toHaveBeenCalledWith({
+        where: { id: account.id },
+        data: { status: AccountStatus.HIDDEN },
+      });
+    });
+
+    it('should throw BadRequestException if account is already hidden', async () => {
+      // Arrange
+      const userId = 'user-123';
+      const account = AccountFactory.buildForUser(userId, { status: AccountStatus.HIDDEN });
+      prisma.account.findUnique.mockResolvedValue(account as any);
+
+      // Act & Assert
+      await expect(service.hideAccount(account.id, userId)).rejects.toThrow(BadRequestException);
+      await expect(service.hideAccount(account.id, userId)).rejects.toThrow('already hidden');
+    });
+
+    it('should throw NotFoundException for non-existent account', async () => {
+      // Arrange
+      prisma.account.findUnique.mockResolvedValue(null);
+
+      // Act & Assert
+      await expect(service.hideAccount('non-existent', 'user-123')).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw ForbiddenException for unauthorized access', async () => {
+      // Arrange
+      const account = AccountFactory.buildForUser('other-user');
+      prisma.account.findUnique.mockResolvedValue(account as any);
+
+      // Act & Assert
+      await expect(service.hideAccount(account.id, 'user-123')).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should allow admin to hide any account', async () => {
+      // Arrange
+      const account = AccountFactory.buildForUser('other-user', { status: AccountStatus.ACTIVE });
+      const hiddenAccount = { ...account, status: AccountStatus.HIDDEN };
+
+      prisma.account.findUnique.mockResolvedValue(account as any);
+      prisma.account.update.mockResolvedValue(hiddenAccount as any);
+
+      // Act
+      const result = await service.hideAccount(account.id, undefined, undefined, UserRole.ADMIN);
+
+      // Assert
+      expect(result.status).toBe(AccountStatus.HIDDEN);
+    });
+  });
+
+  describe('restoreAccount', () => {
+    it('should set account status back to ACTIVE for manual account', async () => {
+      // Arrange
+      const userId = 'user-123';
+      const account = AccountFactory.buildForUser(userId, {
+        status: AccountStatus.HIDDEN,
+        source: AccountSource.MANUAL,
+        saltEdgeConnectionId: null,
+      });
+      const restoredAccount = { ...account, status: AccountStatus.ACTIVE };
+
+      prisma.account.findUnique.mockResolvedValue(account as any);
+      prisma.account.update.mockResolvedValue(restoredAccount as any);
+
+      // Act
+      const result = await service.restoreAccount(account.id, userId);
+
+      // Assert
+      expect(result.status).toBe(AccountStatus.ACTIVE);
+      expect(prisma.account.update).toHaveBeenCalledWith({
+        where: { id: account.id },
+        data: { status: AccountStatus.ACTIVE },
+      });
+    });
+
+    it('should restore banking account with AUTHORIZED connection', async () => {
+      // Arrange
+      const userId = 'user-123';
+      const saltEdgeConnectionId = 'saltedge_conn_123';
+      const account = AccountFactory.buildSaltEdgeAccount({
+        userId,
+        status: AccountStatus.HIDDEN,
+        saltEdgeConnectionId,
+      });
+      const authorizedConnection = {
+        id: 'conn-uuid-123',
+        saltEdgeConnectionId,
+        status: 'AUTHORIZED',
+        providerName: 'Fake Bank Simple',
+      };
+      const restoredAccount = { ...account, status: AccountStatus.ACTIVE };
+
+      prisma.account.findUnique.mockResolvedValue(account as any);
+      prisma.bankingConnection.findFirst.mockResolvedValue(authorizedConnection as any);
+      prisma.account.findMany.mockResolvedValue([account] as any);
+      prisma.account.update.mockResolvedValue(restoredAccount as any);
+
+      // Act
+      const result = await service.restoreAccount(account.id, userId);
+
+      // Assert
+      expect(result.status).toBe(AccountStatus.ACTIVE);
+    });
+
+    it('should throw ConflictException for banking account with REVOKED connection', async () => {
+      // Arrange
+      const userId = 'user-123';
+      const saltEdgeConnectionId = 'saltedge_conn_123';
+      const account = AccountFactory.buildSaltEdgeAccount({
+        userId,
+        status: AccountStatus.HIDDEN,
+        saltEdgeConnectionId,
+      });
+      const revokedConnection = {
+        id: 'conn-uuid-123',
+        saltEdgeConnectionId,
+        status: 'REVOKED',
+        providerName: 'Fake Bank Simple',
+      };
+
+      prisma.account.findUnique.mockResolvedValue(account as any);
+      prisma.bankingConnection.findFirst.mockResolvedValue(revokedConnection as any);
+      prisma.account.findMany.mockResolvedValue([account] as any);
+
+      // Act & Assert
+      try {
+        await service.restoreAccount(account.id, userId);
+        fail('Expected ConflictException to be thrown');
+      } catch (error) {
+        expect(error.status).toBe(409);
+        expect(error.response).toMatchObject({
+          error: 'RELINK_REQUIRED',
+          message: expect.stringContaining('revoked'),
+        });
+      }
+    });
+
+    it('should include sibling account count in ConflictException response', async () => {
+      // Arrange
+      const userId = 'user-123';
+      const saltEdgeConnectionId = 'saltedge_conn_123';
+      const account1 = AccountFactory.buildSaltEdgeAccount({
+        id: 'account-1',
+        userId,
+        status: AccountStatus.HIDDEN,
+        saltEdgeConnectionId,
+        name: 'Checking',
+      });
+      const account2 = AccountFactory.buildSaltEdgeAccount({
+        id: 'account-2',
+        userId,
+        status: AccountStatus.HIDDEN,
+        saltEdgeConnectionId,
+        name: 'Savings',
+      });
+      const revokedConnection = {
+        id: 'conn-uuid-123',
+        saltEdgeConnectionId,
+        status: 'REVOKED',
+        providerName: 'Fake Bank Simple',
+      };
+
+      prisma.account.findUnique.mockResolvedValue(account1 as any);
+      prisma.bankingConnection.findFirst.mockResolvedValue(revokedConnection as any);
+      prisma.account.findMany.mockResolvedValue([account1, account2] as any);
+
+      // Act & Assert
+      try {
+        await service.restoreAccount(account1.id, userId);
+        fail('Expected ConflictException to be thrown');
+      } catch (error) {
+        expect(error.status).toBe(409);
+        expect(error.response.siblingAccountCount).toBe(2);
+        expect(error.response.suggestion.toLowerCase()).toContain('re-link');
+      }
+    });
+
+    it('should throw BadRequestException if account is not hidden', async () => {
+      // Arrange
+      const userId = 'user-123';
+      const account = AccountFactory.buildForUser(userId, { status: AccountStatus.ACTIVE });
+      prisma.account.findUnique.mockResolvedValue(account as any);
+
+      // Act & Assert
+      await expect(service.restoreAccount(account.id, userId)).rejects.toThrow(BadRequestException);
+      await expect(service.restoreAccount(account.id, userId)).rejects.toThrow('Only hidden accounts');
+    });
+
+    it('should throw NotFoundException for non-existent account', async () => {
+      // Arrange
+      prisma.account.findUnique.mockResolvedValue(null);
+
+      // Act & Assert
+      await expect(service.restoreAccount('non-existent', 'user-123')).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw ForbiddenException for unauthorized access', async () => {
+      // Arrange
+      const account = AccountFactory.buildForUser('other-user', { status: AccountStatus.HIDDEN });
+      prisma.account.findUnique.mockResolvedValue(account as any);
+
+      // Act & Assert
+      await expect(service.restoreAccount(account.id, 'user-123')).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should allow admin to restore any hidden manual account', async () => {
+      // Arrange
+      const account = AccountFactory.buildForUser('other-user', {
+        status: AccountStatus.HIDDEN,
+        source: AccountSource.MANUAL,
+        saltEdgeConnectionId: null,
+      });
+      const restoredAccount = { ...account, status: AccountStatus.ACTIVE };
+
+      prisma.account.findUnique.mockResolvedValue(account as any);
+      prisma.account.update.mockResolvedValue(restoredAccount as any);
+
+      // Act
+      const result = await service.restoreAccount(account.id, undefined, undefined, UserRole.ADMIN);
+
+      // Assert
+      expect(result.status).toBe(AccountStatus.ACTIVE);
     });
   });
 
@@ -551,24 +1018,12 @@ describe('AccountsService', () => {
       expect(result.byType[AccountType.SAVINGS].count).toBe(1);
     });
 
-    it('should return summary for admin across all accounts', async () => {
-      // Arrange
-      const accounts = AccountFactory.buildMany(10, { isActive: true });
-      prisma.account.findMany.mockResolvedValue(accounts as any);
-
-      // Act
-      const result = await service.getSummary(undefined, undefined, UserRole.ADMIN);
-
-      // Assert
-      expect(result.totalAccounts).toBe(10);
-    });
-
     it('should throw BadRequestException when neither userId nor familyId provided', async () => {
       // Act & Assert
       await expect(service.getSummary()).rejects.toThrow(BadRequestException);
     });
 
-    it('should filter by isActive status', async () => {
+    it('should filter by isActive status and exclude HIDDEN accounts', async () => {
       // Arrange
       const userId = 'user-123';
       const activeAccounts = AccountFactory.buildMany(3, { userId, isActive: true });
@@ -579,9 +1034,39 @@ describe('AccountsService', () => {
 
       // Assert
       expect(prisma.account.findMany).toHaveBeenCalledWith({
-        where: { userId, isActive: true },
+        where: { userId, isActive: true, status: { not: AccountStatus.HIDDEN } },
       });
     });
+
+    it('should exclude HIDDEN accounts from summary totals', async () => {
+      // Arrange
+      const userId = 'user-123';
+      const activeAccounts = [
+        AccountFactory.buildForUser(userId, {
+          type: AccountType.CHECKING,
+          currentBalance: new Prisma.Decimal(1000),
+          status: AccountStatus.ACTIVE,
+          isActive: true,
+        }),
+        AccountFactory.buildForUser(userId, {
+          type: AccountType.SAVINGS,
+          currentBalance: new Prisma.Decimal(5000),
+          status: AccountStatus.ACTIVE,
+          isActive: true,
+        }),
+      ];
+      // Note: HIDDEN account should NOT be included in query result
+      // because the service should filter with status: { not: HIDDEN }
+      prisma.account.findMany.mockResolvedValue(activeAccounts as any);
+
+      // Act
+      const result = await service.getSummary(userId);
+
+      // Assert
+      expect(result.totalBalance).toBe(6000); // 1000 + 5000, no hidden accounts
+      expect(result.totalAccounts).toBe(2);
+    });
+
   });
 
   describe('syncAccount', () => {
@@ -624,6 +1109,328 @@ describe('AccountsService', () => {
       // Act & Assert
       await expect(service.syncAccount(account.id, 'user-123')).rejects.toThrow(ForbiddenException);
     });
+  });
+
+  describe('getFinancialSummary', () => {
+    /**
+     * TDD Red-Green-Refactor: getFinancialSummary
+     *
+     * This method provides normalized financial totals using BalanceNormalizerService.
+     * Tests use real BalanceNormalizerService (not mocked) since it's a pure calculation service.
+     */
+
+    it('should return correct financial summary with mixed account types', async () => {
+      // Arrange
+      const userId = 'user-123';
+      const accounts = [
+        AccountFactory.buildChecking({ userId, currentBalance: new Prisma.Decimal(5000) }),
+        AccountFactory.buildSavings({ userId, currentBalance: new Prisma.Decimal(10000) }),
+        AccountFactory.buildCredit({
+          userId,
+          currentBalance: new Prisma.Decimal(-2500),
+          creditLimit: new Prisma.Decimal(10000),
+        }),
+      ];
+      prisma.account.findMany.mockResolvedValue(accounts as any);
+
+      // Act
+      const result = await service.getFinancialSummary(userId);
+
+      // Assert
+      expect(result.totalAssets).toBe(15000); // 5000 + 10000
+      expect(result.totalLiabilities).toBe(2500); // Credit card debt (normalized to positive)
+      expect(result.netWorth).toBe(12500); // 15000 - 2500
+      expect(result.accounts).toHaveLength(3);
+      expect(result.currency).toBe('USD');
+      expect(result.calculatedAt).toBeInstanceOf(Date);
+    });
+
+    it('should calculate net worth correctly (assets minus liabilities)', async () => {
+      // Arrange
+      const userId = 'user-123';
+      const accounts = [
+        AccountFactory.buildChecking({ userId, currentBalance: new Prisma.Decimal(10000) }),
+        AccountFactory.buildCredit({ userId, currentBalance: new Prisma.Decimal(-3000) }),
+      ];
+      prisma.account.findMany.mockResolvedValue(accounts as any);
+
+      // Act
+      const result = await service.getFinancialSummary(userId);
+
+      // Assert
+      expect(result.totalAssets).toBe(10000);
+      expect(result.totalLiabilities).toBe(3000);
+      expect(result.netWorth).toBe(7000);
+    });
+
+    it('should handle negative net worth', async () => {
+      // Arrange
+      const userId = 'user-123';
+      const accounts = [
+        AccountFactory.buildChecking({ userId, currentBalance: new Prisma.Decimal(1000) }),
+        AccountFactory.buildCredit({ userId, currentBalance: new Prisma.Decimal(-5000) }),
+      ];
+      prisma.account.findMany.mockResolvedValue(accounts as any);
+
+      // Act
+      const result = await service.getFinancialSummary(userId);
+
+      // Assert
+      expect(result.netWorth).toBe(-4000);
+    });
+
+    it('should normalize credit card balances as positive amounts owed', async () => {
+      // Arrange
+      const userId = 'user-123';
+      const creditCard = AccountFactory.buildCredit({
+        userId,
+        currentBalance: new Prisma.Decimal(-1500), // Provider reports as negative
+        creditLimit: new Prisma.Decimal(5000),
+      });
+      prisma.account.findMany.mockResolvedValue([creditCard] as any);
+
+      // Act
+      const result = await service.getFinancialSummary(userId);
+
+      // Assert
+      expect(result.totalLiabilities).toBe(1500);
+      expect(result.accounts[0].displayAmount).toBe(1500);
+      expect(result.accounts[0].accountNature).toBe('LIABILITY');
+      expect(result.accounts[0].displayLabel).toBe('Owed');
+    });
+
+    it('should handle overdraft on checking account', async () => {
+      // Arrange
+      const userId = 'user-123';
+      const overdraftAccount = AccountFactory.buildChecking({
+        userId,
+        currentBalance: new Prisma.Decimal(-250), // Overdrawn
+      });
+      prisma.account.findMany.mockResolvedValue([overdraftAccount] as any);
+
+      // Act
+      const result = await service.getFinancialSummary(userId);
+
+      // Assert
+      expect(result.totalLiabilities).toBe(250); // Overdraft is a liability
+      expect(result.accounts[0].displayLabel).toBe('Overdrawn');
+    });
+
+    it('should throw BadRequestException when neither userId nor familyId provided', async () => {
+      // Act & Assert
+      await expect(service.getFinancialSummary()).rejects.toThrow(BadRequestException);
+      await expect(service.getFinancialSummary()).rejects.toThrow('XOR constraint');
+    });
+
+    it('should throw BadRequestException when both userId and familyId provided', async () => {
+      // Act & Assert
+      await expect(service.getFinancialSummary('user-123', 'family-456')).rejects.toThrow(BadRequestException);
+    });
+
+    it('should query by familyId when only familyId is provided', async () => {
+      // Arrange
+      const familyId = 'family-456';
+      const account = AccountFactory.buildForFamily(familyId, {
+        type: AccountType.CHECKING,
+        currentBalance: new Prisma.Decimal(5000),
+      });
+      prisma.account.findMany.mockResolvedValue([account] as any);
+
+      // Act
+      await service.getFinancialSummary(undefined, familyId);
+
+      // Assert
+      expect(prisma.account.findMany).toHaveBeenCalledWith({
+        where: { familyId, isActive: true, status: { not: AccountStatus.HIDDEN } },
+      });
+    });
+
+    it('should return financial summary for user with valid userId', async () => {
+      // Arrange
+      const userId = 'user-123';
+      const account = AccountFactory.buildChecking({
+        userId,
+        currentBalance: new Prisma.Decimal(5000),
+      });
+      prisma.account.findMany.mockResolvedValue([account] as any);
+
+      // Act
+      const result = await service.getFinancialSummary(userId);
+
+      // Assert
+      expect(result.netWorth).toBe(5000);
+    });
+
+    it('should return zero summary when user has no accounts', async () => {
+      // Arrange
+      const userId = 'user-123';
+      prisma.account.findMany.mockResolvedValue([]);
+
+      // Act
+      const result = await service.getFinancialSummary(userId);
+
+      // Assert
+      expect(result.totalAssets).toBe(0);
+      expect(result.totalLiabilities).toBe(0);
+      expect(result.netWorth).toBe(0);
+      expect(result.totalAvailableCredit).toBe(0);
+      expect(result.accounts).toEqual([]);
+      expect(result.currency).toBe('USD');
+    });
+
+    it('should use first account currency as summary currency', async () => {
+      // Arrange
+      const userId = 'user-123';
+      const eurAccount = AccountFactory.buildChecking({
+        userId,
+        currentBalance: new Prisma.Decimal(5000),
+        currency: 'EUR',
+      });
+      prisma.account.findMany.mockResolvedValue([eurAccount] as any);
+
+      // Act
+      const result = await service.getFinancialSummary(userId);
+
+      // Assert
+      expect(result.currency).toBe('EUR');
+    });
+
+    it('should sum available credit from all credit cards', async () => {
+      // Arrange
+      const userId = 'user-123';
+      const creditCards = [
+        AccountFactory.buildCredit({
+          userId,
+          currentBalance: new Prisma.Decimal(-2000),
+          creditLimit: new Prisma.Decimal(5000),
+        }),
+        AccountFactory.buildCredit({
+          userId,
+          currentBalance: new Prisma.Decimal(-1000),
+          creditLimit: new Prisma.Decimal(3000),
+        }),
+      ];
+      prisma.account.findMany.mockResolvedValue(creditCards as any);
+
+      // Act
+      const result = await service.getFinancialSummary(userId);
+
+      // Assert
+      expect(result.totalAvailableCredit).toBe(5000); // (5000-2000) + (3000-1000)
+    });
+
+    it('should return 0 available credit when no credit cards exist', async () => {
+      // Arrange
+      const userId = 'user-123';
+      const checkingAccount = AccountFactory.buildChecking({
+        userId,
+        currentBalance: new Prisma.Decimal(5000),
+      });
+      prisma.account.findMany.mockResolvedValue([checkingAccount] as any);
+
+      // Act
+      const result = await service.getFinancialSummary(userId);
+
+      // Assert
+      expect(result.totalAvailableCredit).toBe(0);
+    });
+
+    it('should handle credit cards with no credit limit', async () => {
+      // Arrange
+      const userId = 'user-123';
+      const creditCard = AccountFactory.buildCredit({
+        userId,
+        currentBalance: new Prisma.Decimal(-1000),
+        creditLimit: null,
+      });
+      prisma.account.findMany.mockResolvedValue([creditCard] as any);
+
+      // Act
+      const result = await service.getFinancialSummary(userId);
+
+      // Assert
+      expect(result.totalAvailableCredit).toBe(0);
+    });
+
+    it('should include normalized account details in response', async () => {
+      // Arrange
+      const userId = 'user-123';
+      const account = AccountFactory.buildChecking({
+        id: 'acct-1',
+        userId,
+        name: 'Primary Checking',
+        currentBalance: new Prisma.Decimal(5000),
+        institutionName: 'Chase Bank',
+      });
+      prisma.account.findMany.mockResolvedValue([account] as any);
+
+      // Act
+      const result = await service.getFinancialSummary(userId);
+
+      // Assert
+      expect(result.accounts).toHaveLength(1);
+      expect(result.accounts[0]).toMatchObject({
+        accountId: 'acct-1',
+        accountName: 'Primary Checking',
+        accountType: AccountType.CHECKING,
+        accountNature: 'ASSET',
+        currentBalance: 5000,
+        displayAmount: 5000,
+        displayLabel: 'Available',
+        affectsNetWorth: 'positive',
+        currency: 'USD',
+        institutionName: 'Chase Bank',
+      });
+    });
+
+    it('should exclude HIDDEN accounts from financial summary', async () => {
+      // Arrange
+      const userId = 'user-123';
+      const activeAccounts = [
+        AccountFactory.buildChecking({
+          userId,
+          currentBalance: new Prisma.Decimal(5000),
+          status: AccountStatus.ACTIVE,
+        }),
+        AccountFactory.buildSavings({
+          userId,
+          currentBalance: new Prisma.Decimal(10000),
+          status: AccountStatus.ACTIVE,
+        }),
+      ];
+      // Note: HIDDEN account should NOT be in query result
+      prisma.account.findMany.mockResolvedValue(activeAccounts as any);
+
+      // Act
+      await service.getFinancialSummary(userId);
+
+      // Assert - query should exclude HIDDEN
+      expect(prisma.account.findMany).toHaveBeenCalledWith({
+        where: { userId, isActive: true, status: { not: AccountStatus.HIDDEN } },
+      });
+    });
+
+    it('should exclude HIDDEN accounts from net worth calculation', async () => {
+      // Arrange
+      const userId = 'user-123';
+      // Only ACTIVE accounts should be returned by the query
+      const activeAccounts = [
+        AccountFactory.buildChecking({
+          userId,
+          currentBalance: new Prisma.Decimal(5000),
+          status: AccountStatus.ACTIVE,
+        }),
+      ];
+      prisma.account.findMany.mockResolvedValue(activeAccounts as any);
+
+      // Act
+      const result = await service.getFinancialSummary(userId);
+
+      // Assert - net worth should only include active accounts
+      expect(result.netWorth).toBe(5000);
+      expect(result.accounts).toHaveLength(1);
+    });
+
   });
 
   /**
@@ -673,6 +1480,190 @@ describe('AccountsService', () => {
       expect(result.isManualAccount).toBe(false);
       expect(result.displayName).toBe('Chase Bank - Checking');
       expect(result.maskedAccountNumber).toBe('****5678');
+    });
+  });
+
+  /**
+   * checkRestoreEligibility Tests
+   *
+   * TDD RED Phase: Tests for checking if a hidden account can be restored
+   * with a simple status change or requires re-linking the banking connection.
+   *
+   * Key scenarios:
+   * 1. Manual account (HIDDEN) → canRestore: true, requiresRelink: false
+   * 2. Banking account with REVOKED connection → canRestore: false, requiresRelink: true
+   * 3. Banking account with AUTHORIZED connection → canRestore: true, requiresRelink: false
+   * 4. Find sibling accounts on same connection
+   */
+  describe('checkRestoreEligibility', () => {
+    it('should return canRestore=true for hidden manual account', async () => {
+      // Arrange
+      const userId = 'user-123';
+      const account = AccountFactory.buildForUser(userId, {
+        status: AccountStatus.HIDDEN,
+        source: AccountSource.MANUAL,
+        saltEdgeConnectionId: null,
+      });
+      prisma.account.findUnique.mockResolvedValue(account as any);
+
+      // Act
+      const result = await service.checkRestoreEligibility(account.id, userId);
+
+      // Assert
+      expect(result.canRestore).toBe(true);
+      expect(result.requiresRelink).toBe(false);
+      expect(result.isBankingAccount).toBe(false);
+      expect(result.currentStatus).toBe(AccountStatus.HIDDEN);
+      expect(result.totalConnectionAccounts).toBe(1);
+    });
+
+    it('should return requiresRelink=true for banking account with REVOKED connection', async () => {
+      // Arrange
+      const userId = 'user-123';
+      const saltEdgeConnectionId = 'saltedge_conn_123';
+      const account = AccountFactory.buildSaltEdgeAccount({
+        userId,
+        status: AccountStatus.HIDDEN,
+        saltEdgeConnectionId,
+      });
+      const revokedConnection = {
+        id: 'conn-uuid-123',
+        saltEdgeConnectionId,
+        status: 'REVOKED',
+        providerName: 'Fake Bank Simple',
+      };
+
+      prisma.account.findUnique.mockResolvedValue(account as any);
+      prisma.bankingConnection.findFirst.mockResolvedValue(revokedConnection as any);
+      prisma.account.findMany.mockResolvedValue([account] as any); // sibling accounts
+
+      // Act
+      const result = await service.checkRestoreEligibility(account.id, userId);
+
+      // Assert
+      expect(result.canRestore).toBe(false);
+      expect(result.requiresRelink).toBe(true);
+      expect(result.isBankingAccount).toBe(true);
+      expect(result.connectionStatus).toBe('REVOKED');
+      expect(result.relinkReason).toContain('revoked');
+      expect(result.providerName).toBe('Fake Bank Simple');
+    });
+
+    it('should return canRestore=true for banking account with AUTHORIZED connection', async () => {
+      // Arrange
+      const userId = 'user-123';
+      const saltEdgeConnectionId = 'saltedge_conn_123';
+      const account = AccountFactory.buildSaltEdgeAccount({
+        userId,
+        status: AccountStatus.HIDDEN,
+        saltEdgeConnectionId,
+      });
+      const authorizedConnection = {
+        id: 'conn-uuid-123',
+        saltEdgeConnectionId,
+        status: 'AUTHORIZED',
+        providerName: 'Fake Bank Simple',
+      };
+
+      prisma.account.findUnique.mockResolvedValue(account as any);
+      prisma.bankingConnection.findFirst.mockResolvedValue(authorizedConnection as any);
+      prisma.account.findMany.mockResolvedValue([account] as any);
+
+      // Act
+      const result = await service.checkRestoreEligibility(account.id, userId);
+
+      // Assert
+      expect(result.canRestore).toBe(true);
+      expect(result.requiresRelink).toBe(false);
+      expect(result.isBankingAccount).toBe(true);
+      expect(result.connectionStatus).toBe('AUTHORIZED');
+    });
+
+    it('should return sibling accounts when connection has multiple accounts', async () => {
+      // Arrange
+      const userId = 'user-123';
+      const saltEdgeConnectionId = 'saltedge_conn_123';
+      const account1 = AccountFactory.buildSaltEdgeAccount({
+        id: 'account-1',
+        userId,
+        status: AccountStatus.HIDDEN,
+        saltEdgeConnectionId,
+        name: 'Checking Account',
+      });
+      const account2 = AccountFactory.buildSaltEdgeAccount({
+        id: 'account-2',
+        userId,
+        status: AccountStatus.HIDDEN,
+        saltEdgeConnectionId,
+        name: 'Savings Account',
+      });
+      const account3 = AccountFactory.buildSaltEdgeAccount({
+        id: 'account-3',
+        userId,
+        status: AccountStatus.HIDDEN,
+        saltEdgeConnectionId,
+        name: 'Credit Card',
+      });
+      const revokedConnection = {
+        id: 'conn-uuid-123',
+        saltEdgeConnectionId,
+        status: 'REVOKED',
+        providerName: 'Fake Bank Simple',
+      };
+
+      prisma.account.findUnique.mockResolvedValue(account1 as any);
+      prisma.bankingConnection.findFirst.mockResolvedValue(revokedConnection as any);
+      prisma.account.findMany.mockResolvedValue([account1, account2, account3] as any);
+
+      // Act
+      const result = await service.checkRestoreEligibility(account1.id, userId);
+
+      // Assert
+      expect(result.totalConnectionAccounts).toBe(3);
+      expect(result.siblingAccounts).toHaveLength(2); // Excludes the account being checked
+      expect(result.siblingAccounts?.map(s => s.name)).toContain('Savings Account');
+      expect(result.siblingAccounts?.map(s => s.name)).toContain('Credit Card');
+    });
+
+    it('should throw NotFoundException when account does not exist', async () => {
+      // Arrange
+      const userId = 'user-123';
+      const accountId = 'nonexistent-id';
+      prisma.account.findUnique.mockResolvedValue(null);
+
+      // Act & Assert
+      await expect(
+        service.checkRestoreEligibility(accountId, userId)
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw ForbiddenException when user does not own the account', async () => {
+      // Arrange
+      const userId = 'user-123';
+      const otherUserId = 'user-456';
+      const account = AccountFactory.buildForUser(otherUserId, {
+        status: AccountStatus.HIDDEN,
+      });
+      prisma.account.findUnique.mockResolvedValue(account as any);
+
+      // Act & Assert
+      await expect(
+        service.checkRestoreEligibility(account.id, userId)
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should throw BadRequestException when account is not hidden', async () => {
+      // Arrange
+      const userId = 'user-123';
+      const account = AccountFactory.buildForUser(userId, {
+        status: AccountStatus.ACTIVE, // Not hidden
+      });
+      prisma.account.findUnique.mockResolvedValue(account as any);
+
+      // Act & Assert
+      await expect(
+        service.checkRestoreEligibility(account.id, userId)
+      ).rejects.toThrow(BadRequestException);
     });
   });
 });

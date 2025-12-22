@@ -31,7 +31,7 @@ MoneyWise is a personal finance management system built as a monorepo with micro
 │                         CLIENT LAYER                         │
 ├───────────────────────────┬─────────────────────────────────┤
 │      Web Application      │         Mobile (Future)         │
-│       (Next.js 14)        │         (React Native)          │
+│       (Next.js 15)        │     (React Native 0.76/Expo 52) │
 └───────────────┬───────────┴─────────────────────────────────┘
                 │
 ┌───────────────┴─────────────────────────────────────────────┐
@@ -59,22 +59,22 @@ MoneyWise is a personal finance management system built as a monorepo with micro
 ## Technology Stack
 
 ### Frontend (apps/web)
-- **Framework**: Next.js 14 with App Router
-- **Language**: TypeScript 5.3
-- **Styling**: Tailwind CSS
+- **Framework**: Next.js 15 with App Router
+- **Language**: TypeScript 5.6
+- **Styling**: Tailwind CSS v4 (CSS-based configuration)
 - **UI Library**: Radix UI
 - **State Management**: Zustand
 - **API Client**: Axios
-- **Testing**: Vitest, React Testing Library, Playwright
+- **Testing**: Vitest 4, React Testing Library, Playwright
 
 ### Backend (apps/backend)
-- **Framework**: NestJS 10
-- **Language**: TypeScript 5.3
-- **Database ORM**: TypeORM
+- **Framework**: NestJS 11 + Express 5
+- **Language**: TypeScript 5.6
+- **Database ORM**: Prisma
 - **Validation**: class-validator
 - **Authentication**: JWT with Passport
 - **Documentation**: Swagger/OpenAPI
-- **Testing**: Jest, Supertest
+- **Testing**: Jest 30, Supertest
 
 ### Shared (packages/)
 - **types**: TypeScript type definitions
@@ -86,6 +86,8 @@ MoneyWise is a personal finance management system built as a monorepo with micro
 - **Cache**: Redis 7
 - **Container**: Docker & Docker Compose
 - **CI/CD**: GitHub Actions
+- **Build System**: Turborepo 2.6
+- **Package Manager**: pnpm 10.24
 - **Monitoring**: Winston logging, Sentry
 
 ## Design Patterns
@@ -261,6 +263,139 @@ CREATE TABLE categories (
 - SQL injection prevention via parameterized queries
 - XSS protection with CSP headers
 - CORS configuration
+
+## Account Lifecycle Management
+
+### Three-Tier Account Status System
+
+MoneyWise implements a YNAB-inspired account lifecycle to preserve data integrity:
+
+```
+┌─────────┐     ┌─────────┐     ┌─────────┐
+│ ACTIVE  │ ──▶ │ HIDDEN  │ ──▶ │ DELETED │
+└─────────┘     └─────────┘     └─────────┘
+     │               │               │
+   Normal        Soft delete     Hard delete
+   operation     Preserves       Only if no
+                 history         linked transfers
+```
+
+### Account Status Values
+
+| Status | Description | Use Case |
+|--------|-------------|----------|
+| ACTIVE | Normal operating account | Default state |
+| HIDDEN | Soft-deleted, preserved | Account no longer needed but has history |
+| INACTIVE | Temporarily disabled | Paused accounts |
+| CLOSED | Officially closed | Bank-closed accounts |
+| ERROR | Sync/connection issues | Linked account problems |
+
+### Transfer Integrity Validation
+
+**Problem**: Deleting an account with transfer transactions creates orphan entries.
+
+**Solution**: Block hard deletion when linked transfers exist.
+
+```typescript
+// API: GET /accounts/:id/deletion-eligibility
+{
+  canDelete: false,
+  canHide: true,
+  blockReason: "Account has 3 transfers linked to other accounts",
+  blockers: [
+    {
+      transactionId: "uuid",
+      linkedAccountName: "Savings",
+      amount: 500,
+      transferRole: "SOURCE"
+    }
+  ]
+}
+```
+
+### Account API Endpoints
+
+```yaml
+Account Lifecycle:
+  GET    /accounts/:id/deletion-eligibility  # Check before delete
+  PATCH  /accounts/:id/hide                   # Soft delete (HIDDEN)
+  PATCH  /accounts/:id/restore                # Restore to ACTIVE
+  DELETE /accounts/:id                        # Hard delete (blocked if transfers)
+```
+
+### Business Rules
+
+1. **HIDDEN accounts** are excluded from active views by default
+2. **Hard delete** requires zero linked transfers
+3. **Hide** preserves all transactions and transfer pairs
+4. **Restore** sets status back to ACTIVE
+
+**Reference**: [YNAB Account Close vs Delete](https://support.ynab.com/en_us/how-to-close-or-delete-an-account-in-ynab-ry_409Gko)
+
+---
+
+## Banking Integration (SaltEdge v6)
+
+### OAuth Flow Architecture
+
+MoneyWise uses SaltEdge v6 API with popup-based OAuth for improved UX:
+
+```
+┌────────────────┐     ┌─────────────────┐     ┌──────────────┐
+│  Accounts Page │ ──▶ │ OAuthPopupModal │ ──▶ │ SaltEdge     │
+│ (blurred bg)   │     │ (status display)│     │ Connect      │
+└────────────────┘     └────────┬────────┘     └──────┬───────┘
+                                │                      │
+                                │ postMessage          │ OAuth
+                                ◀──────────────────────┘
+```
+
+**Key Features**:
+- `javascript_callback_type: 'post_message'` enables popup communication
+- Parent page shows modal with blurred backdrop during OAuth
+- SaltEdge sends completion/error via `window.postMessage`
+- Accounts auto-refresh on successful link
+
+### Account Re-link Deduplication
+
+When users re-authorize a revoked banking connection, SaltEdge generates **new account IDs**. The backend handles this with fallback matching:
+
+```typescript
+// 1. Try exact match by saltEdgeAccountId
+existingAccount = await findFirst({ saltEdgeAccountId: newId });
+
+// 2. Fallback: Match HIDDEN accounts by characteristics
+if (!existingAccount) {
+  existingAccount = await findFirst({
+    status: 'HIDDEN',
+    name: account.name,
+    institutionName: account.bankName,
+    type: account.type
+  });
+}
+
+// 3. Update saltEdgeAccountId and restore to ACTIVE
+if (existingAccount) {
+  await update({
+    saltEdgeAccountId: newId,
+    saltEdgeConnectionId: newConnectionId,
+    status: 'ACTIVE'
+  });
+}
+```
+
+### Banking Components
+
+| Component | Purpose |
+|-----------|---------|
+| `OAuthPopupModal` | Popup OAuth with blurred backdrop |
+| `BankingLinkButton` | Initial bank linking button |
+| `RevokeConfirmation` | Disconnect confirmation with sibling warning |
+| `AccountList` | Display linked accounts with sync status |
+
+**Reference**: [Salt Edge Connect Widget Docs](https://docs.saltedge.com/v6/)
+
+---
 
 ## Performance Optimizations
 

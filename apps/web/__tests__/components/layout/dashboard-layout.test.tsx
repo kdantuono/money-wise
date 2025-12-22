@@ -88,7 +88,7 @@ describe('DashboardLayout Component', () => {
   });
 
   describe('Navigation Menu', () => {
-    it('renders all navigation items', () => {
+    it('renders all main navigation items', () => {
       render(
         <DashboardLayout>
           <div>Content</div>
@@ -99,8 +99,44 @@ describe('DashboardLayout Component', () => {
       expect(screen.getAllByText('Accounts').length).toBeGreaterThan(0);
       expect(screen.getAllByText('Transactions').length).toBeGreaterThan(0);
       expect(screen.getAllByText('Investments').length).toBeGreaterThan(0);
-      expect(screen.getAllByText('Goals').length).toBeGreaterThan(0);
       expect(screen.getAllByText('Settings').length).toBeGreaterThan(0);
+    });
+
+    it('renders Planning section with Budgets and Goals', async () => {
+      const { user } = render(
+        <DashboardLayout>
+          <div>Content</div>
+        </DashboardLayout>
+      );
+
+      // Planning dropdown should be visible
+      const planningButton = screen.getByTestId('nav-planning');
+      expect(planningButton).toBeInTheDocument();
+
+      // Click to expand Planning section
+      await user.click(planningButton);
+
+      // Both Budgets and Goals should be under Planning
+      expect(screen.getAllByText('Budgets').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('Goals').length).toBeGreaterThan(0);
+    });
+
+    it('Goals is nested under Planning, not in main navigation', () => {
+      render(
+        <DashboardLayout>
+          <div>Content</div>
+        </DashboardLayout>
+      );
+
+      // Goals should NOT be in main navigation (no testid nav-goals at top level)
+      const mainNavItems = ['nav-dashboard', 'nav-accounts', 'nav-transactions', 'nav-investments'];
+      mainNavItems.forEach(testId => {
+        expect(screen.getByTestId(testId)).toBeInTheDocument();
+      });
+
+      // Goals should be under Planning section
+      const planningButton = screen.getByTestId('nav-planning');
+      expect(planningButton).toBeInTheDocument();
     });
 
     it('navigation links have correct hrefs', () => {

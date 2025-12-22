@@ -1,19 +1,31 @@
 # Development Progress
 
 > **Live tracking of MoneyWise development milestones**
-> **Last Updated: December 3, 2025**
+> **Last Updated: December 18, 2025**
 
-## Project Status: MVP 95% Complete
+## Project Status: MVP Sprint 100% Complete 🎉
 
 ### Current State Summary
 
-MoneyWise has achieved near-MVP completion with:
-- Full authentication system (frontend + backend)
-- Complete dashboard with financial insights
-- Banking integration via SaltEdge v6
-- Budget management with category tracking
-- Analytics API with spending analysis
-- Robust E2E testing infrastructure
+MoneyWise MVP Sprint is **COMPLETE** with all 11 phases delivered:
+- ✅ **Phase -1**: Foundation Upgrade (Turbo 2.6, Tailwind v4, Jest 30, NestJS 11)
+- ✅ **Phase 0**: Schema Foundation (Financial models, Categories seed, Balance normalizer)
+- ✅ **Phase 1**: Categories Enhanced (Full UI, spending analytics, Specification Pattern)
+- ✅ **Phase 2**: Transaction Management (CRUD, filters, CSV export, Command Palette)
+- ✅ **Phase 3**: Account Details (Account page with filtered transactions)
+- ✅ **Phase 4**: Liabilities (CRUD, BNPL detection, Installments, Dashboard widget)
+- ✅ **Phase 5**: Scheduled Transactions (Recurrence, calendar events, auto-generate)
+- ✅ **Phase 6**: Financial Calendar (Monthly view, cash flow projection, event navigation)
+- ✅ **Phase 7**: Settings & Preferences (Profile, timezone, currency, notifications)
+- ✅ **Phase 8**: Notifications (In-app bell, notification list, read/unread state)
+- ✅ **Phase 9**: Dashboard Integration (Net Worth, Available-to-Spend, Financial Alerts)
+- ✅ **Phase 10**: Testing & Polish (32 E2E tests, dark mode theme support)
+
+### Ready for Production
+- All MVP features implemented
+- All E2E tests passing
+- Dark mode / theme system functional
+- 1941+ unit tests passing
 
 ---
 
@@ -90,56 +102,172 @@ MoneyWise has achieved near-MVP completion with:
 - Analytics API: Done
 - Banking integration: Done
 
+### Phase -1: Foundation Upgrades (December 2025) - COMPLETE
+**PR**: #231
+
+Major dependency upgrades completed successfully:
+- **Tailwind CSS v4**: CSS-based configuration, @import syntax
+- **Jest 30**: Updated test patterns and assertions
+- **NestJS 11**: Enhanced decorators, new JWT types
+- **Expo 52**: Latest React Native tooling
+- **pnpm 10.24**: Modern package management
+
+All 2302 tests passing, zero breaking changes in application code.
+
+### Phase 2: Transaction Management UI (December 2025) - COMPLETE
+**Branch**: `feature/phase-2-transactions`
+**PR**: #238 (Merged December 6, 2025)
+
+- **Transaction CRUD**: Full create, read, update, delete for manual transactions
+- **Transaction Components**: Form, Modal, Row, List with filtering/search
+- **Category Selector**: Dropdown with icons and color indicators
+- **Bulk Operations**: Multi-select, bulk categorize, bulk delete
+- **Account Details Page**: `/dashboard/accounts/[id]` with filtered transactions
+- **Command Palette**: Cmd+K global navigation shortcut
+- **CSV Export**: Export transactions with ISO + localized dates
+- **Zustand Store**: Full state management for transactions
+- **Test Coverage**: 7 test files covering all major components
+
+### Phase 4: Liabilities Module (December 2025) - COMPLETE
+**Branch**: `feature/phase-4-liabilities`
+**PR**: #239 (Merged December 7, 2025)
+
+- **Liabilities CRUD**: Full backend module with NestJS (service, controller, DTOs)
+- **BNPL Detection**: 10 providers (PayPal Pay-in-3/4/6/12/24, Klarna, Afterpay, Affirm, Clearpay, Satispay)
+- **InstallmentPlan Management**: Create/manage payment plans with individual installments
+- **Frontend Components**: LiabilityCard, LiabilityList, LiabilityForm, InstallmentTimeline
+- **Dashboard Widget**: UpcomingPayments component for quick visibility
+- **Liabilities Pages**: List view + detail page with edit/delete
+- **Pagination**: Backend pagination support for large liability lists
+- **Cross-field Validation**: Type-specific DTO validation (CC requires creditLimit, etc.)
+- **Test Coverage**: 47 tests (34 service + 13 controller)
+
+### Phase 5: Scheduled Transactions (December 2025) - COMPLETE
+**Branch**: `feature/phase-5-scheduled`
+**PR**: #240 (Merged December 7, 2025)
+
+- **ScheduledModule**: NestJS module with CRUD operations and family-based authorization
+- **RecurrenceService**: Calculate next occurrences (daily/weekly/monthly/yearly/once)
+- **Calendar Events Endpoint**: Integration point for Phase 6 Financial Calendar
+- **Auto-generate from Liabilities**: Create scheduled transactions from liability payments
+- **Skip and Complete**: Mark scheduled transactions as skipped or completed
+- **Frontend Components**: ScheduledTransactionCard, List, Form components
+- **RecurrenceSelector**: User-friendly recurrence pattern builder
+- **UpcomingScheduled Widget**: Dashboard widget for upcoming transactions
+- **Scheduled Page**: `/dashboard/scheduled` management interface
+- **Test Coverage**: 73 tests (recurrence, service, controller) + 22 API integration tests
+
+### Phase 1: Categories Enhanced (December 2025) - COMPLETE
+**Branch**: `feature/phase-1-categories-enhanced`
+**PR**: #275, #278 (Merged December 12-13, 2025)
+
+- **Categories Management Page**: `/dashboard/categories` with hierarchical tree view
+- **CategoryTree Component**: Collapsible hierarchy with expand/collapse controls
+- **CategoryForm Modal**: Create/edit with name, type, parent, icon, and color selection
+- **IconPicker Component**: Curated Lucide icon selection (~50 icons)
+- **ColorPicker Component**: Preset color palette for category customization
+- **CategorySpendingSummary**: Spending analytics with date range filtering
+- **Spending Rollup Queries**: Recursive CTE for hierarchical spending calculation
+- **Specification Pattern**: Business rule validation (CategoryValidationSpecification)
+- **Schema Migration**: Removed TRANSFER from CategoryType (transfers use FlowType)
+- **Test Coverage**: 33+ unit tests, Specification Pattern tests, API integration tests
+
 ---
 
 ## Technical Stack
 
 | Component | Technology |
 |-----------|------------|
-| Backend | NestJS + Prisma + PostgreSQL + Redis |
-| Frontend | Next.js 15 + React + Tailwind CSS |
-| Mobile | React Native (Expo) - Pending |
-| Testing | Jest + Vitest + Playwright |
-| CI/CD | GitHub Actions |
+| Backend | NestJS 11 + Express 5 + Prisma + PostgreSQL + Redis |
+| Frontend | Next.js 15 + React 19 + Tailwind CSS v4 |
+| Mobile | React Native 0.76 (Expo 52) - Pending |
+| Testing | Jest 30 + Vitest 4 + Playwright |
+| CI/CD | GitHub Actions + Turborepo 2.6 |
 | Monitoring | Sentry |
 | Banking | SaltEdge v6 API |
+| Package Manager | pnpm 10.24 |
 
 ---
 
 ## Metrics
 
 ### Feature Completion
-- **Backend API**: 95%
-- **Frontend Web**: 90%
-- **Mobile App**: 0% (Pending)
-- **E2E Tests**: 100% passing
+- **Backend API**: 100% ✅
+- **Frontend Web**: 100% ✅
+- **Mobile App**: 0% (Post-MVP)
+- **E2E Tests**: 100% passing (32 tests)
 - **CI/CD**: 100% operational
 
 ### Code Quality
-- **Unit Test Coverage**: 70%+
+- **Unit Tests**: 1941+ tests passing
 - **Lint/TypeCheck**: Zero errors
 - **Security Alerts**: Resolved
+- **Dark Mode**: Fully functional
 
 ---
 
-## Remaining Work
+## MVP Sprint Complete - All Phases Delivered ✅
 
-### High Priority
-1. **Transaction Management UI**: Full CRUD for manual transactions
-2. **Account Details Page**: View linked account details/transactions
-3. **Investment Tracking**: Portfolio management UI
-4. **Goal Setting**: Financial goal creation and tracking
+### Phase 6: Financial Calendar (December 2025) - COMPLETE
+**Branch**: `epic/mvp-completion`
 
-### Medium Priority
-5. **Mobile App**: React Native authentication
-6. **Recurring Transactions**: Auto-categorize repeating expenses
-7. **Export/Reports**: PDF/CSV financial reports
-8. **Settings Page**: User preferences, notification settings
+- **Calendar View**: Monthly calendar with scheduled transactions and events
+- **Event Types**: Bills, income, installments displayed with appropriate styling
+- **Navigation**: Previous/next month, today button, month summary
+- **Cash Flow Projection**: Monthly totals for income, expenses, and net flow
+- **Selected Day Detail**: Click any day to see all scheduled items
 
-### Low Priority
-9. **Multi-currency**: Support for multiple currencies
-10. **Family Sharing**: Shared household budgets
-11. **Bill Reminders**: Upcoming payment notifications
+### Phase 7: Settings & Preferences (December 2025) - COMPLETE
+**Branch**: `epic/mvp-completion`
+
+- **Profile Settings**: Name, email, and personal information
+- **Preferences**: Timezone, currency, date format selection
+- **Notification Settings**: Toggle for budget alerts, transaction alerts, reminders
+- **Theme Support**: Light, dark, and system preference modes
+- **Persistence**: All settings saved to backend and localStorage
+
+### Phase 8: Notifications (December 2025) - COMPLETE
+**Branch**: `epic/mvp-completion`
+
+- **In-app Bell**: Notification bell icon with unread count badge
+- **Notification List**: Dropdown with recent notifications
+- **Read/Unread State**: Mark notifications as read
+- **Backend Module**: NotificationsModule with full CRUD
+
+### Phase 9: Dashboard Integration (December 2025) - COMPLETE
+**Branch**: `epic/mvp-completion`
+
+- **NetWorthWidget**: Total assets, liabilities, and net worth breakdown
+- **AvailableToSpendCard**: Budget remaining calculation with progress bar
+- **FinancialAlertsWidget**: Priority notifications on dashboard
+- **useFinancialSummary Hook**: React Query integration for financial data
+- **useAvailableToSpend Hook**: Budget-based spending calculation
+
+### Phase 10: Testing & Polish (December 2025) - COMPLETE
+**Branch**: `epic/mvp-completion`
+
+- **Transaction E2E Tests**: 7 tests for full CRUD and filtering
+- **Budget E2E Tests**: 7 tests for budget management
+- **Scheduled E2E Tests**: 8 tests for recurring transactions
+- **Settings E2E Tests**: 10 tests for preferences and account
+- **Dark Mode**: ThemeProvider with light/dark/system modes
+- **Total E2E Coverage**: 32 test cases across critical flows
+
+---
+
+## Post-MVP Roadmap
+
+### Next Priority
+- Investment Tracking (portfolio management, asset allocation)
+- Goal Setting (savings goals, targets, progress tracking)
+- Mobile App (React Native with Expo 52)
+
+### Future Enhancements
+- Multi-currency support
+- Advanced analytics and reporting
+- Family/household expense sharing
+- Bill scanning and OCR
+- AI-powered categorization
 
 ---
 
@@ -147,7 +275,15 @@ MoneyWise has achieved near-MVP completion with:
 
 | Date | PR | Description |
 |------|-----|-------------|
-| Dec 3 | hotfix/tech-debt-phase4 | SaltEdge v6 API compliance fix, transactions page display |
+| Dec 18 | MVP | **Phase 9 & 10 Complete** - Dashboard widgets, Dark mode, 32 E2E tests |
+| Dec 13 | #278 | **Phase 1: Categories Enhanced** - Full UI, spending analytics |
+| Dec 12 | #275 | Categories management page with hierarchical tree view |
+| Dec 7 | #240 | **Phase 5: Scheduled Transactions** - Recurrence, calendar events |
+| Dec 7 | #239 | **Phase 4: Liabilities Module** - BNPL detection, InstallmentPlans, Dashboard widget |
+| Dec 6 | #238 | **Phase 2: Transaction Management** - CRUD, CSV export, Command Palette |
+| Dec 5 | #237 | **Phase 0: Schema Foundation** - Financial models, Category seed, Balance normalizer |
+| Dec 3 | #231 | **Phase -1: Foundation Upgrades** - Tailwind v4, Jest 30, NestJS 11, pnpm 10.24 |
+| Dec 3 | #230 | SaltEdge v6 API compliance fix, transactions page display |
 | Dec 1 | #225 | Goals navigation fix |
 | Dec 1 | #224 | Docker E2E infrastructure |
 | Nov 30 | #223 | Planning dropdown in sidebar |
@@ -182,4 +318,17 @@ MoneyWise has achieved near-MVP completion with:
 
 ---
 
-*This document reflects the actual state of the codebase as of December 1, 2025*
+*This document reflects the actual state of the codebase as of December 18, 2025*
+
+## 🎉 MVP Complete!
+
+MoneyWise MVP Sprint is complete with all 11 phases delivered. The application includes:
+- Full personal finance management (accounts, transactions, categories)
+- Budget tracking with progress visualization
+- Liabilities management with BNPL detection
+- Scheduled transactions with recurrence support
+- Financial calendar with cash flow projection
+- Settings and preferences with dark mode
+- Comprehensive E2E test coverage
+
+**Ready for production release!**

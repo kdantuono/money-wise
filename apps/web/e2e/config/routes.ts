@@ -41,6 +41,12 @@ export const ROUTES = {
     EDIT: (id: string) => `/transactions/${id}/edit`,
   },
 
+  // Categories
+  CATEGORIES: {
+    INDEX: '/dashboard/categories',
+    DETAILS: (slug: string) => `/dashboard/categories/${slug}`,
+  },
+
   // Budgets
   BUDGETS: {
     INDEX: '/dashboard/budgets',
@@ -120,6 +126,16 @@ export const API_ROUTES = {
     ACCOUNTS: '/api/banking/accounts',
     SYNC: (accountId: string) => `/api/banking/accounts/${accountId}/sync`,
     DISCONNECT: (connectionId: string) => `/api/banking/connections/${connectionId}`,
+  },
+
+  // Categories
+  CATEGORIES: {
+    LIST: '/api/categories',
+    CREATE: '/api/categories',
+    GET: (id: string) => `/api/categories/${id}`,
+    UPDATE: (id: string) => `/api/categories/${id}`,
+    DELETE: (id: string) => `/api/categories/${id}`,
+    SPENDING: '/api/categories/spending',
   },
 
   // Budgets

@@ -17,37 +17,17 @@
 
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import {
-  TransactionList,
   ErrorAlert,
   ErrorBoundary,
 } from '@/components/banking';
-import {
-  useBanking,
-  useAccounts,
-  useBankingError,
-  useBankingLoading,
-} from '@/store';
-import { BankingAccount } from '@/lib/banking-types';
-import { CreditCard, RefreshCw, Wallet, ArrowRight } from 'lucide-react';
-import { transactionsClient, type Transaction as ApiTransaction } from '@/services/transactions.client';
-
-/**
- * Transaction type from TransactionList component
- */
-interface Transaction {
-  id: string;
-  date: Date | string;
-  description: string;
-  amount: number;
-  type: 'DEBIT' | 'CREDIT';
-  merchant?: string;
-  reference?: string;
-  status: 'pending' | 'completed' | 'cancelled';
-  currency?: string;
-}
+import { CreditCard, RefreshCw, Wallet, ArrowRight, Plus } from 'lucide-react';
+import { transactionsClient, type Transaction } from '@/services/transactions.client';
+import { accountsClient, type Account } from '@/services/accounts.client';
+import { categoriesClient, type CategoryOption } from '@/services/categories.client';
+import { QuickAddTransaction, EnhancedTransactionList } from '@/components/transactions';
 
 /**
  * TransactionsPage Component
@@ -58,34 +38,56 @@ interface Transaction {
  * @returns {JSX.Element} Transactions page with transaction list UI
  */
 export default function TransactionsPage() {
-  // Zustand store hooks
-  const { fetchAccounts, clearError } = useBanking();
-  const accounts = useAccounts();
-  const error = useBankingError();
-  const { isLoading } = useBankingLoading();
+  // Local state for all accounts (includes manual + linked)
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [isLoadingAccounts, setIsLoadingAccounts] = useState(false);
+  const [accountsError, setAccountsError] = useState<string | null>(null);
 
-  // Local state
+  // Category state
+  const [categories, setCategories] = useState<CategoryOption[]>([]);
+
+  // Transaction state
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoadingTransactions, setIsLoadingTransactions] = useState(false);
   const [selectedAccountId, setSelectedAccountId] = useState<string>('all');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
 
+  // Create maps for category and account names
+  const categoryMap = useMemo(() => {
+    const map = new Map<string, string>();
+    categories.forEach((cat) => map.set(cat.id, cat.name));
+    return map;
+  }, [categories]);
+
+  const accountMap = useMemo(() => {
+    const map = new Map<string, string>();
+    accounts.forEach((acc) => map.set(acc.id, acc.displayName || acc.name));
+    return map;
+  }, [accounts]);
+
   /**
-   * Map API transaction to component transaction format
+   * Fetch all accounts and categories from API
    */
-  const mapApiTransactionToComponent = useCallback((tx: ApiTransaction): Transaction => {
-    return {
-      id: tx.id,
-      date: tx.date,
-      description: tx.description,
-      amount: Math.abs(tx.amount),
-      type: tx.type,
-      merchant: tx.merchantName || undefined,
-      reference: tx.reference || undefined,
-      status: tx.isPending ? 'pending' : tx.status === 'CANCELLED' ? 'cancelled' : 'completed',
-      currency: tx.currency,
-    };
+  const fetchAccountsAndCategories = useCallback(async () => {
+    setIsLoadingAccounts(true);
+    setAccountsError(null);
+    try {
+      // Fetch accounts and categories in parallel
+      const [allAccounts, allCategories] = await Promise.all([
+        accountsClient.getAccounts(),
+        categoriesClient.getOptions(),
+      ]);
+      // Only include active accounts in the filter
+      const activeAccounts = allAccounts.filter(acc => acc.isActive);
+      setAccounts(activeAccounts);
+      setCategories(allCategories);
+    } catch (err) {
+      console.error('Failed to fetch accounts/categories:', err);
+      setAccountsError(err instanceof Error ? err.message : 'Failed to fetch accounts');
+    } finally {
+      setIsLoadingAccounts(false);
+    }
   }, []);
 
   /**
@@ -97,27 +99,22 @@ export default function TransactionsPage() {
       const apiTransactions = await transactionsClient.getTransactions({
         accountId: accountId === 'all' ? undefined : accountId,
       });
-      const mappedTransactions = apiTransactions.map(mapApiTransactionToComponent);
-      setTransactions(mappedTransactions);
+      setTransactions(apiTransactions);
     } catch (err) {
       console.error('Failed to fetch transactions:', err);
       setLocalError(err instanceof Error ? err.message : 'Failed to fetch transactions');
     } finally {
       setIsLoadingTransactions(false);
     }
-  }, [mapApiTransactionToComponent]);
+  }, []);
 
   /**
    * Fetch accounts and transactions on component mount
    */
   useEffect(() => {
     const loadData = async () => {
-      try {
-        // Fetch accounts (for the filter dropdown)
-        await fetchAccounts();
-      } catch (err) {
-        console.error('Failed to fetch accounts:', err);
-      }
+      // Fetch accounts and categories (for dropdowns) - includes manual + linked
+      await fetchAccountsAndCategories();
 
       // Always fetch transactions on mount
       await fetchTransactions(selectedAccountId);
@@ -145,10 +142,10 @@ export default function TransactionsPage() {
     try {
       setIsRefreshing(true);
       setLocalError(null);
-      clearError();
+      setAccountsError(null);
 
-      // Refresh accounts first
-      await fetchAccounts();
+      // Refresh accounts and categories
+      await fetchAccountsAndCategories();
 
       // Refresh transactions
       await fetchTransactions(selectedAccountId);
@@ -176,11 +173,14 @@ export default function TransactionsPage() {
    */
   const handleDismissError = () => {
     setLocalError(null);
-    clearError();
+    setAccountsError(null);
   };
 
-  // Compute effective error (local or store error)
-  const effectiveError = localError || error;
+  // Compute effective error (local or accounts error)
+  const effectiveError = localError || accountsError;
+
+  // Loading state combines both
+  const isLoading = isLoadingAccounts || isLoadingTransactions;
 
   // Check if any accounts are linked
   const hasAccounts = accounts.length > 0;
@@ -212,9 +212,9 @@ export default function TransactionsPage() {
           </div>
 
           {/* Action Buttons */}
-          {hasAccounts && (
-            <div className="flex items-center gap-3">
-              {/* Account Filter */}
+          <div className="flex items-center gap-3">
+            {/* Account Filter - only show when accounts exist */}
+            {hasAccounts && (
               <select
                 value={selectedAccountId}
                 onChange={(e) => handleAccountFilterChange(e.target.value)}
@@ -224,13 +224,16 @@ export default function TransactionsPage() {
                   bg-white"
               >
                 <option value="all">All Accounts</option>
-                {(accounts as BankingAccount[]).map((account) => (
+                {accounts.map((account) => (
                   <option key={account.id} value={account.id}>
-                    {account.bankName} - {account.name}
+                    {account.institutionName ? `${account.institutionName} - ` : ''}{account.displayName || account.name}
                   </option>
                 ))}
               </select>
+            )}
 
+            {/* Refresh Button - only show when accounts exist */}
+            {hasAccounts && (
               <button
                 onClick={handleRefresh}
                 disabled={isLoading || isRefreshing}
@@ -248,8 +251,26 @@ export default function TransactionsPage() {
                 />
                 {isRefreshing ? 'Refreshing...' : 'Refresh'}
               </button>
-            </div>
-          )}
+            )}
+
+            {/* Add Transaction Button */}
+            <QuickAddTransaction
+              trigger={({ onClick }) => (
+                <button
+                  type="button"
+                  onClick={onClick}
+                  className="inline-flex items-center justify-center px-4 py-2 rounded-lg font-medium
+                    transition-colors duration-200
+                    bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800
+                    focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500"
+                >
+                  <Plus className="h-4 w-4 mr-2" aria-hidden="true" />
+                  Add Transaction
+                </button>
+              )}
+              onSuccess={() => fetchTransactions(selectedAccountId)}
+            />
+          </div>
         </div>
 
         {/* Error Alert */}
@@ -296,19 +317,14 @@ export default function TransactionsPage() {
         )}
 
         {/* Transaction List */}
-        <div className="bg-white rounded-xl border border-gray-200">
-          <div className="p-4 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900">
-              Recent Transactions
-            </h2>
-          </div>
-          <div className="p-4">
-            <TransactionList
-              accountId={selectedAccountId}
-              transactions={transactions}
-              isLoading={isLoadingTransactions || isLoading}
-            />
-          </div>
+        <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <EnhancedTransactionList
+            transactions={transactions}
+            isLoading={isLoadingTransactions || isLoading}
+            categoryMap={categoryMap}
+            accountMap={accountMap}
+            onRefresh={() => fetchTransactions(selectedAccountId)}
+          />
         </div>
 
         {/* Prompt to connect accounts (shown below transactions if no accounts linked) */}

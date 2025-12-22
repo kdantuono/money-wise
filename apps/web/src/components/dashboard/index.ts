@@ -13,3 +13,7 @@ export { BudgetProgress } from './BudgetProgress';
 export { SpendingChart } from './SpendingChart';
 export { QuickActions } from './QuickActions';
 export { DashboardFilters } from './DashboardFilters';
+export { CommandPalette, useCommandPalette } from './CommandPalette';
+export { NetWorthWidget } from './NetWorthWidget';
+export { AvailableToSpendCard } from './AvailableToSpendCard';
+export { FinancialAlertsWidget } from './FinancialAlertsWidget';

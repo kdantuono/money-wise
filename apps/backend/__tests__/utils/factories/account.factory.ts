@@ -162,6 +162,32 @@ export class AccountFactory {
   }
 
   /**
+   * Build SaltEdge-linked account
+   */
+  static buildSaltEdgeAccount(overrides: Partial<any> = {}): any {
+    return this.build({
+      source: AccountSource.SALTEDGE,
+      saltEdgeAccountId: `saltedge_acc_${faker.string.alphanumeric(20)}`,
+      saltEdgeConnectionId: `saltedge_conn_${faker.string.alphanumeric(20)}`,
+      institutionName: faker.company.name(),
+      accountNumber: faker.finance.accountNumber(4),
+      syncEnabled: true,
+      lastSyncedAt: faker.date.recent(),
+      ...overrides,
+    });
+  }
+
+  /**
+   * Build hidden SaltEdge account (revoked connection)
+   */
+  static buildHiddenSaltEdgeAccount(overrides: Partial<any> = {}): any {
+    return this.buildSaltEdgeAccount({
+      status: AccountStatus.HIDDEN,
+      ...overrides,
+    });
+  }
+
+  /**
    * Build family account
    */
   static buildFamilyAccount(overrides: Partial<any> = {}): any {

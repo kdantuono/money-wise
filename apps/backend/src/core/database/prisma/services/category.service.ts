@@ -7,6 +7,19 @@ import {
 import { PrismaService } from '../prisma.service';
 import { Category, CategoryType, CategoryStatus, Prisma } from '../../../../../generated/prisma';
 import { CategoryWithRelations, CategoryWithOptionalRelations } from './types';
+import { validateUuid } from '../../../../common/validators';
+
+/**
+ * Spending rollup result for a category
+ */
+export interface CategorySpending {
+  categoryId: string;
+  categoryName: string;
+  icon: string | null;
+  color: string | null;
+  totalAmount: number;
+  transactionCount: number;
+}
 
 /**
  * CategoryService - Prisma-based category management
@@ -113,9 +126,9 @@ export class CategoryService {
     sortOrder?: number;
   }): Promise<Category> {
     // 1. Validate UUIDs
-    this.validateUuid(createCategoryDto.familyId);
+    validateUuid(createCategoryDto.familyId);
     if (createCategoryDto.parentId) {
-      this.validateUuid(createCategoryDto.parentId);
+      validateUuid(createCategoryDto.parentId);
     }
 
     // 2. Validate slug format
@@ -218,7 +231,7 @@ export class CategoryService {
    * @throws BadRequestException - Invalid UUID format
    */
   async findOne(id: string): Promise<Category | null> {
-    this.validateUuid(id);
+    validateUuid(id);
 
     return await this.prisma.category.findUnique({
       where: { id },
@@ -241,7 +254,7 @@ export class CategoryService {
    * @throws BadRequestException - Invalid UUID format
    */
   async findOneWithRelations(id: string): Promise<CategoryWithRelations | null> {
-    this.validateUuid(id);
+    validateUuid(id);
 
     return await this.prisma.category.findUnique({
       where: { id },
@@ -260,7 +273,7 @@ export class CategoryService {
    * - take: Number of records to return (default: 50)
    *
    * FILTERING:
-   * - where.type: Filter by category type (INCOME, EXPENSE, TRANSFER)
+   * - where.type: Filter by category type (INCOME, EXPENSE)
    * - where.status: Filter by status (ACTIVE, INACTIVE, ARCHIVED)
    * - where.parentId: Filter by parent category (get children)
    *
@@ -292,7 +305,7 @@ export class CategoryService {
       };
     }
   ): Promise<Category[] | CategoryWithOptionalRelations[]> {
-    this.validateUuid(familyId);
+    validateUuid(familyId);
 
     const {
       where = {},
@@ -330,7 +343,7 @@ export class CategoryService {
    * @throws BadRequestException - Invalid UUID format
    */
   async findTopLevel(familyId: string, type?: CategoryType): Promise<Category[]> {
-    this.validateUuid(familyId);
+    validateUuid(familyId);
 
     const where: Prisma.CategoryWhereInput = {
       familyId,
@@ -367,7 +380,7 @@ export class CategoryService {
       };
     }
   ): Promise<Category[] | CategoryWithOptionalRelations[]> {
-    this.validateUuid(parentId);
+    validateUuid(parentId);
 
     return await this.prisma.category.findMany({
       where: { parentId },
@@ -419,7 +432,7 @@ export class CategoryService {
       sortOrder: number;
     }>
   ): Promise<Category> {
-    this.validateUuid(id);
+    validateUuid(id);
 
     // Validate slug if provided
     if (updateCategoryDto.slug) {
@@ -439,7 +452,7 @@ export class CategoryService {
       }
 
       // Validate parent UUID
-      this.validateUuid(updateCategoryDto.parentId);
+      validateUuid(updateCategoryDto.parentId);
     }
 
     // Build update data
@@ -488,7 +501,7 @@ export class CategoryService {
    * @throws NotFoundException - Category not found
    */
   async delete(id: string): Promise<Category> {
-    this.validateUuid(id);
+    validateUuid(id);
 
     // Check if category exists and is not system category
     const category = await this.prisma.category.findUnique({
@@ -548,13 +561,125 @@ export class CategoryService {
    * @throws BadRequestException - Invalid UUID format
    */
   async exists(id: string): Promise<boolean> {
-    this.validateUuid(id);
+    validateUuid(id);
 
     const count = await this.prisma.category.count({
       where: { id },
     });
 
     return count > 0;
+  }
+
+  // ============================================================================
+  // ANALYTICS METHODS
+  // ============================================================================
+
+  /**
+   * Get spending aggregated by category for a date range
+   *
+   * Uses a recursive CTE to roll up spending from child categories to parent categories.
+   * Only includes DEBIT transactions (expenses).
+   *
+   * BEHAVIOR:
+   * - If parentOnly=true: Returns only top-level (parent) categories with aggregated child spending
+   * - If parentOnly=false: Returns all categories with their individual spending
+   *
+   * @param familyId - Family UUID
+   * @param startDate - Start of date range
+   * @param endDate - End of date range
+   * @param options - Optional settings (parentOnly: boolean)
+   * @returns Array of spending by category
+   * @throws BadRequestException - Invalid UUID format
+   */
+  async getSpendingByCategory(
+    familyId: string,
+    startDate: Date,
+    endDate: Date,
+    options?: { parentOnly?: boolean }
+  ): Promise<CategorySpending[]> {
+    validateUuid(familyId);
+
+    const { parentOnly = true } = options || {};
+
+    if (parentOnly) {
+      // Use recursive CTE to roll up child spending to parent categories
+      const result = await this.prisma.$queryRaw<CategorySpending[]>`
+        WITH RECURSIVE category_tree AS (
+          -- Base case: all categories with their root ancestor
+          SELECT
+            c.id,
+            c.name,
+            c.parent_id,
+            CASE WHEN c.parent_id IS NULL THEN c.id ELSE NULL END as root_id,
+            0 as depth
+          FROM categories c
+          WHERE c.family_id = ${familyId}::uuid
+            AND c.status = 'ACTIVE'
+            AND c.parent_id IS NULL
+
+          UNION ALL
+
+          -- Recursive case: add children, carrying forward root_id
+          SELECT
+            c.id,
+            c.name,
+            c.parent_id,
+            ct.root_id,
+            ct.depth + 1
+          FROM categories c
+          JOIN category_tree ct ON c.parent_id = ct.id
+          WHERE c.status = 'ACTIVE'
+        ),
+        -- Aggregate spending for all categories in each tree
+        spending_by_tree AS (
+          SELECT
+            ct.root_id as category_id,
+            COALESCE(SUM(ABS(t.amount)), 0) as total_amount,
+            COUNT(t.id) as transaction_count
+          FROM category_tree ct
+          LEFT JOIN transactions t ON t.category_id = ct.id
+            AND t.date >= ${startDate}
+            AND t.date <= ${endDate}
+            AND t.type = 'DEBIT'
+          WHERE ct.root_id IS NOT NULL
+          GROUP BY ct.root_id
+        )
+        SELECT
+          s.category_id as "categoryId",
+          c.name as "categoryName",
+          c.icon,
+          c.color,
+          s.total_amount::float as "totalAmount",
+          s.transaction_count::int as "transactionCount"
+        FROM spending_by_tree s
+        JOIN categories c ON s.category_id = c.id
+        ORDER BY s.total_amount DESC
+      `;
+
+      return result;
+    } else {
+      // Simple aggregation per category without rollup
+      const result = await this.prisma.$queryRaw<CategorySpending[]>`
+        SELECT
+          c.id as "categoryId",
+          c.name as "categoryName",
+          c.icon,
+          c.color,
+          COALESCE(SUM(ABS(t.amount)), 0)::float as "totalAmount",
+          COUNT(t.id)::int as "transactionCount"
+        FROM categories c
+        LEFT JOIN transactions t ON t.category_id = c.id
+          AND t.date >= ${startDate}
+          AND t.date <= ${endDate}
+          AND t.type = 'DEBIT'
+        WHERE c.family_id = ${familyId}::uuid
+          AND c.status = 'ACTIVE'
+        GROUP BY c.id, c.name, c.icon, c.color
+        ORDER BY "totalAmount" DESC
+      `;
+
+      return result;
+    }
   }
 
   // ============================================================================
@@ -643,28 +768,4 @@ export class CategoryService {
     }
   }
 
-  /**
-   * Validate UUID format (RFC 4122)
-   *
-   * FORMAT REQUIREMENTS:
-   * - 8-4-4-4-12 hexadecimal digits
-   * - Case-insensitive
-   * - Example: 550e8400-e29b-41d4-a716-446655440000
-   *
-   * RATIONALE:
-   * - Catch invalid UUIDs at service layer (fail fast)
-   * - Prevents unnecessary database queries
-   * - Provides clear error messages
-   *
-   * @param uuid - UUID string to validate
-   * @throws BadRequestException - Invalid UUID format
-   * @private
-   */
-  private validateUuid(uuid: string): void {
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-    if (!uuidRegex.test(uuid)) {
-      throw new BadRequestException(`Invalid UUID format: ${uuid}`);
-    }
-  }
 }
