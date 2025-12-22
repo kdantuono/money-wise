@@ -11,6 +11,9 @@ import {
   Request,
   HttpCode,
   HttpStatus,
+  BadRequestException,
+  NotFoundException,
+  ForbiddenException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -150,7 +153,7 @@ export class CategoriesController {
 
     // Validate dates
     if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-      throw new Error('Invalid date format. Use ISO 8601 format (e.g., 2025-01-01)');
+      throw new BadRequestException('Invalid date format. Use ISO 8601 format (e.g., 2025-01-01)');
     }
 
     // Parse parentOnly (default true)
@@ -197,12 +200,12 @@ export class CategoriesController {
     const category = await this.categoryService.findOneWithRelations(id);
 
     if (!category) {
-      throw new Error(`Category with ID ${id} not found`);
+      throw new NotFoundException(`Category with ID ${id} not found`);
     }
 
     // Verify category belongs to user's family
     if (category.familyId !== req.user.familyId) {
-      throw new Error('Access denied to this category');
+      throw new ForbiddenException('Access denied to this category');
     }
 
     return CategoryResponseDto.fromEntity(category);
@@ -230,10 +233,10 @@ export class CategoriesController {
     // Verify category belongs to user's family
     const existing = await this.categoryService.findOne(id);
     if (!existing) {
-      throw new Error(`Category with ID ${id} not found`);
+      throw new NotFoundException(`Category with ID ${id} not found`);
     }
     if (existing.familyId !== req.user.familyId) {
-      throw new Error('Access denied to this category');
+      throw new ForbiddenException('Access denied to this category');
     }
 
     // Cast DTO types to Prisma types for database layer
@@ -280,10 +283,10 @@ export class CategoriesController {
     // Verify category belongs to user's family
     const existing = await this.categoryService.findOne(id);
     if (!existing) {
-      throw new Error(`Category with ID ${id} not found`);
+      throw new NotFoundException(`Category with ID ${id} not found`);
     }
     if (existing.familyId !== req.user.familyId) {
-      throw new Error('Access denied to this category');
+      throw new ForbiddenException('Access denied to this category');
     }
 
     await this.categoryService.delete(id);

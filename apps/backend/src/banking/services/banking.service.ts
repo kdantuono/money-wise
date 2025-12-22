@@ -721,7 +721,7 @@ export class BankingService {
               // Restore hidden accounts to active
               status: AccountStatus.ACTIVE,
               settings: {
-                ...(existingAccount.settings as object || {}),
+                ...((existingAccount.settings ?? {}) as Record<string, unknown>),
                 bankCountry: account.bankCountry,
                 accountHolderName: account.accountHolderName,
                 accountType: account.type,
@@ -1152,6 +1152,42 @@ export class BankingService {
   }
 
   /**
+   * Type-safe check for 404/not-found errors from banking providers.
+   * Handles various error shapes safely without crashing on property access.
+   */
+  private isNotFoundError(error: unknown): boolean {
+    // Handle null/undefined
+    if (error === null || error === undefined) {
+      return false;
+    }
+
+    // Handle non-object types (strings, numbers, etc.)
+    if (typeof error !== 'object') {
+      return false;
+    }
+
+    // Safe property access on object
+    const err = error as Record<string, unknown>;
+
+    // Check for SaltEdgeNotFoundError by name
+    if (err.name === 'SaltEdgeNotFoundError') {
+      return true;
+    }
+
+    // Check for HTTP 404 status code
+    if (err.statusCode === 404) {
+      return true;
+    }
+
+    // Check for "not found (404)" in message
+    if (typeof err.message === 'string' && err.message.includes('not found (404)')) {
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
    * Revoke banking connection
    *
    * If the connection no longer exists on the provider side (404),
@@ -1179,13 +1215,10 @@ export class BankingService {
       if (providerConnectionId) {
         try {
           await bankingProvider.revokeConnection(providerConnectionId);
-        } catch (revokeError) {
+        } catch (revokeError: unknown) {
           // If the connection was already deleted on the provider side (404),
           // continue with local cleanup - this is not an error condition
-          const isNotFoundError = revokeError.name === 'SaltEdgeNotFoundError' ||
-                                  revokeError.statusCode === 404 ||
-                                  revokeError.message?.includes('not found (404)');
-          if (isNotFoundError) {
+          if (this.isNotFoundError(revokeError)) {
             this.logger.warn(
               `Connection ${providerConnectionId} already deleted on provider side. Proceeding with local cleanup.`,
             );
