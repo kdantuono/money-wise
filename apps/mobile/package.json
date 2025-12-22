@@ -39,7 +39,7 @@
     "@babel/core": "^7.26.0",
     "@types/react": "~18.3.0",
     "jest": "^29.7.0",
-    "jest-expo": "~52.0.0",
+    "jest-expo": "~54.0.16",
     "tailwindcss": "^3.4.0",
     "typescript": "^5.6.0"
   }
