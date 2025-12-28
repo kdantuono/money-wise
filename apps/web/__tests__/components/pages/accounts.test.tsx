@@ -591,10 +591,13 @@ describe('AccountsPage', () => {
       const editButton = screen.getByTestId('edit-button');
       await user.click(editButton);
 
-      // Wait for the edit form to appear
-      await waitFor(() => {
-        expect(screen.getByTestId('account-name-input')).toBeInTheDocument();
-      });
+      // Wait for the edit form to appear (increase timeout for CI environment)
+      await waitFor(
+        () => {
+          expect(screen.getByTestId('account-name-input')).toBeInTheDocument();
+        },
+        { timeout: 3000 }
+      );
 
       // Update the account name
       const nameInput = screen.getByTestId('account-name-input');
@@ -779,11 +782,14 @@ describe('AccountsPage', () => {
       await user.click(editButton);
 
       // Form should appear - for linked accounts, only icon/color should be editable
-      await waitFor(() => {
-        // Should have icon and color selectors
-        const iconSelector = screen.queryByTestId('icon-bank') || screen.queryByTestId('icon-wallet');
-        expect(iconSelector).toBeInTheDocument();
-      });
+      await waitFor(
+        () => {
+          // Should have icon and color selectors
+          const iconSelector = screen.queryByTestId('icon-bank') || screen.queryByTestId('icon-wallet');
+          expect(iconSelector).toBeInTheDocument();
+        },
+        { timeout: 3000 }
+      );
 
       // Select an icon and color
       const bankIcon = screen.queryByTestId('icon-bank');
