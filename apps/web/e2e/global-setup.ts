@@ -228,19 +228,33 @@ async function createTestUserPool() {
 }
 
 /**
+ * Generate a URL-friendly slug from a name
+ * Must match backend validation: lowercase letters, numbers, and hyphens only
+ */
+function generateSlug(name: string): string {
+  return name
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, '') // Remove special characters except spaces and hyphens
+    .replace(/\s+/g, '-')          // Replace spaces with hyphens
+    .replace(/-+/g, '-');          // Replace multiple hyphens with single hyphen
+}
+
+/**
  * Default categories to seed for each test user
+ * Note: slug is generated dynamically from name to match backend requirements
  */
 const DEFAULT_CATEGORIES = [
   // Expense categories
-  { name: 'Food & Dining', type: 'EXPENSE', color: '#F59E0B', icon: 'Utensils' },
-  { name: 'Transportation', type: 'EXPENSE', color: '#3B82F6', icon: 'Car' },
-  { name: 'Shopping', type: 'EXPENSE', color: '#EC4899', icon: 'ShoppingBag' },
-  { name: 'Bills & Utilities', type: 'EXPENSE', color: '#8B5CF6', icon: 'FileText' },
-  { name: 'Entertainment', type: 'EXPENSE', color: '#10B981', icon: 'Film' },
+  { name: 'Food & Dining', slug: 'food-dining', type: 'EXPENSE', color: '#F59E0B', icon: 'Utensils' },
+  { name: 'Transportation', slug: 'transportation', type: 'EXPENSE', color: '#3B82F6', icon: 'Car' },
+  { name: 'Shopping', slug: 'shopping', type: 'EXPENSE', color: '#EC4899', icon: 'ShoppingBag' },
+  { name: 'Bills & Utilities', slug: 'bills-utilities', type: 'EXPENSE', color: '#8B5CF6', icon: 'FileText' },
+  { name: 'Entertainment', slug: 'entertainment', type: 'EXPENSE', color: '#10B981', icon: 'Film' },
   // Income categories
-  { name: 'Salary', type: 'INCOME', color: '#22C55E', icon: 'Wallet' },
-  { name: 'Freelance', type: 'INCOME', color: '#14B8A6', icon: 'Laptop' },
-  { name: 'Investments', type: 'INCOME', color: '#6366F1', icon: 'TrendingUp' },
+  { name: 'Salary', slug: 'salary', type: 'INCOME', color: '#22C55E', icon: 'Wallet' },
+  { name: 'Freelance', slug: 'freelance', type: 'INCOME', color: '#14B8A6', icon: 'Laptop' },
+  { name: 'Investments', slug: 'investments', type: 'INCOME', color: '#6366F1', icon: 'TrendingUp' },
 ];
 
 /**
@@ -340,9 +354,13 @@ async function seedCategoriesForTestUsers() {
 
           if (response.ok || response.status === 409) {
             created++;
+          } else {
+            // Log error details for debugging
+            const errorBody = await response.text().catch(() => 'Unknown error');
+            console.warn(`    ⚠️ Category "${category.name}" failed (${response.status}): ${errorBody.substring(0, 100)}`);
           }
-        } catch {
-          // Ignore individual category errors
+        } catch (err) {
+          console.warn(`    ⚠️ Category "${category.name}" error: ${err instanceof Error ? err.message : String(err)}`);
         }
       }
 
