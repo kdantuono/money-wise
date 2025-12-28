@@ -295,7 +295,7 @@ export function CategoryTree({
   // Loading state
   if (isLoading) {
     return (
-      <div className={`space-y-2 ${className}`}>
+      <div className={`space-y-2 ${className}`} data-testid="category-tree-loading">
         {[1, 2, 3, 4, 5].map((i) => (
           <div
             key={i}
@@ -313,7 +313,7 @@ export function CategoryTree({
   // Empty state
   if (tree.length === 0) {
     return (
-      <div className={`text-center py-8 ${className}`}>
+      <div className={`text-center py-8 ${className}`} data-testid="category-tree-empty">
         <Folder className="h-12 w-12 text-gray-300 mx-auto mb-3" />
         <p className="text-gray-500 font-medium">No categories found</p>
         <p className="text-gray-400 text-sm mt-1">
