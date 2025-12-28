@@ -48,11 +48,16 @@ test.describe('Categories List Page', () => {
     // Wait for categories to load
     await page.waitForResponse(r => r.url().includes(API_ROUTES.CATEGORIES.LIST));
 
-    // Click expense tab
-    await page.getByRole('tab', { name: /expense/i }).click();
+    // Wait for the category tree to render first
+    await page.waitForSelector('[data-testid="category-tree"]', { state: 'visible' });
 
-    // Categories list should show expense categories
-    // (specific assertions depend on seeded data)
+    // Click income tab to change filter
+    await page.getByRole('tab', { name: /income/i }).click();
+
+    // Wait for re-render after tab switch
+    await page.waitForTimeout(300);
+
+    // Categories list should still be visible with income categories
     await expect(page.locator('[data-testid="category-tree"]')).toBeVisible();
   });
 
@@ -161,9 +166,13 @@ test.describe('Edit Category Flow', () => {
     // Wait for categories to load
     await page.waitForResponse(r => r.url().includes(API_ROUTES.CATEGORIES.LIST));
 
-    // Click on a category name to navigate
-    const categoryLink = page.locator('[role="treeitem"]').first().locator('button').first();
-    await categoryLink.click();
+    // Wait for the category tree to render
+    await page.waitForSelector('[data-testid="category-tree"]');
+
+    // Click on the info button to navigate to detail page
+    // The info button has aria-label "View details of ..." and is more reliable than clicking the name
+    const infoButton = page.locator('[aria-label^="View details of"]').first();
+    await infoButton.click();
 
     // Should navigate to detail page
     await expect(page).toHaveURL(/\/dashboard\/categories\/.+/);
@@ -172,10 +181,15 @@ test.describe('Edit Category Flow', () => {
   test('should show edit button on category detail page', async ({ page }) => {
     await page.goto(ROUTES.CATEGORIES.INDEX);
 
-    // Wait for categories to load and click first category
+    // Wait for categories to load
     await page.waitForResponse(r => r.url().includes(API_ROUTES.CATEGORIES.LIST));
-    const categoryLink = page.locator('[role="treeitem"]').first().locator('button').first();
-    await categoryLink.click();
+
+    // Wait for the category tree to render
+    await page.waitForSelector('[data-testid="category-tree"]');
+
+    // Click on the info button to navigate to detail page
+    const infoButton = page.locator('[aria-label^="View details of"]').first();
+    await infoButton.click();
 
     // Should have edit button on detail page
     await expect(page.getByRole('button', { name: /edit/i })).toBeVisible();
