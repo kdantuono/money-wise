@@ -268,7 +268,7 @@ async function seedCategoriesForTestUsers() {
 
   for (const user of users) {
     try {
-      // Step 1: Login to get access token
+      // Step 1: Login to get access token (returned as HttpOnly cookie)
       const loginResponse = await fetch(`${BACKEND_URL}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -280,18 +280,37 @@ async function seedCategoriesForTestUsers() {
         continue;
       }
 
-      const loginData = await loginResponse.json();
-      const accessToken = loginData.accessToken;
+      // Extract accessToken from Set-Cookie header (HttpOnly cookie)
+      // The header format is: accessToken=xxx; Path=/; HttpOnly; ...
+      const setCookieHeader = loginResponse.headers.get('set-cookie');
+      let accessToken: string | null = null;
+      let cookieHeader = '';
+
+      if (setCookieHeader) {
+        // Handle multiple cookies - they may be separated by commas
+        const cookieParts = setCookieHeader.split(/,\s*(?=[a-zA-Z]+=)/);
+        for (const part of cookieParts) {
+          // Extract just the name=value part before the first semicolon
+          const nameValue = part.split(';')[0].trim();
+          if (nameValue.startsWith('accessToken=')) {
+            accessToken = nameValue.substring('accessToken='.length);
+            cookieHeader = nameValue; // Use as cookie header
+            break;
+          }
+        }
+      }
 
       if (!accessToken) {
-        console.warn(`  ⚠️ No access token for ${user.email}`);
+        console.warn(`  ⚠️ No access token cookie for ${user.email}`);
         continue;
       }
 
       // Step 2: Check if user already has categories
+      // Use Cookie header (primary) and Authorization header (fallback)
       const existingResponse = await fetch(`${BACKEND_URL}/api/categories`, {
         headers: {
           'Content-Type': 'application/json',
+          'Cookie': cookieHeader,
           'Authorization': `Bearer ${accessToken}`
         }
       });
@@ -313,6 +332,7 @@ async function seedCategoriesForTestUsers() {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
+              'Cookie': cookieHeader,
               'Authorization': `Bearer ${accessToken}`
             },
             body: JSON.stringify(category)
