@@ -133,6 +133,8 @@ let passwordCounter = 0;
  * Generates a test password that meets backend requirements
  * - At least 12 characters (backend minimum)
  * - Contains uppercase, lowercase, number, and special character
+ * - Avoids sequential characters (abc, 123)
+ * - Avoids common password patterns
  *
  * Uses deterministic generation with a counter for uniqueness.
  * This avoids security scanner false positives about insecure randomness
@@ -140,9 +142,11 @@ let passwordCounter = 0;
  */
 function generateTestPassword(): string {
   const count = ++passwordCounter;
-  // Format: TestPass + counter padded to 4 digits + special char
-  // Example: TestPass0001! (12 characters, meets all requirements)
-  return `TestPass${count.toString().padStart(4, '0')}!`;
+  // Format: Secure#Finance + unique suffix
+  // Uses varied digits to avoid sequential detection (e.g., 2, 5, 7, 9)
+  // Example: Secure#Finance2579! (18 characters, meets all requirements)
+  const suffix = `${(count * 2) % 10}${(count * 5) % 10}${(count * 7) % 10}${(count * 9) % 10}`;
+  return `Secure#Finance${suffix}!`;
 }
 
 /**

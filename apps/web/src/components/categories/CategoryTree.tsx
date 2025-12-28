@@ -327,6 +327,7 @@ export function CategoryTree({
     <div
       role="tree"
       aria-label="Category tree"
+      data-testid="category-tree"
       className={`space-y-1 ${className}`}
     >
       {tree.map((node) => (
