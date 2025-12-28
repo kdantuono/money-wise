@@ -64,7 +64,10 @@ async function globalSetup(config: FullConfig) {
     // Step 3: Create test user pool for parallel execution
     await createTestUserPool();
 
-    // Step 4: Create authenticated user session
+    // Step 4: Seed categories for test users
+    await seedCategoriesForTestUsers();
+
+    // Step 5: Create authenticated user session
     await createAuthenticatedSession(config);
 
     console.log('✅ Global setup completed successfully');
@@ -222,6 +225,156 @@ async function createTestUserPool() {
   if (createdUsers.length === 0) {
     throw new Error('Failed to create any test users. Please check backend connection and logs.');
   }
+}
+
+/**
+ * Generate a URL-friendly slug from a name
+ * Must match backend validation: lowercase letters, numbers, and hyphens only
+ */
+function generateSlug(name: string): string {
+  return name
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, '') // Remove special characters except spaces and hyphens
+    .replace(/\s+/g, '-')          // Replace spaces with hyphens
+    .replace(/-+/g, '-');          // Replace multiple hyphens with single hyphen
+}
+
+/**
+ * Default categories to seed for each test user
+ * Note: slug is generated dynamically from name to match backend requirements
+ */
+const DEFAULT_CATEGORIES = [
+  // Expense categories
+  { name: 'Food & Dining', slug: 'food-dining', type: 'EXPENSE', color: '#F59E0B', icon: 'Utensils' },
+  { name: 'Transportation', slug: 'transportation', type: 'EXPENSE', color: '#3B82F6', icon: 'Car' },
+  { name: 'Shopping', slug: 'shopping', type: 'EXPENSE', color: '#EC4899', icon: 'ShoppingBag' },
+  { name: 'Bills & Utilities', slug: 'bills-utilities', type: 'EXPENSE', color: '#8B5CF6', icon: 'FileText' },
+  { name: 'Entertainment', slug: 'entertainment', type: 'EXPENSE', color: '#10B981', icon: 'Film' },
+  // Income categories
+  { name: 'Salary', slug: 'salary', type: 'INCOME', color: '#22C55E', icon: 'Wallet' },
+  { name: 'Freelance', slug: 'freelance', type: 'INCOME', color: '#14B8A6', icon: 'Laptop' },
+  { name: 'Investments', slug: 'investments', type: 'INCOME', color: '#6366F1', icon: 'TrendingUp' },
+];
+
+/**
+ * Seed default categories for all test users
+ * Logs in as each user and creates default categories
+ */
+async function seedCategoriesForTestUsers() {
+  console.log('📂 Seeding categories for test users...');
+
+  // Read the test users file
+  if (!fs.existsSync(TEST_USERS_FILE)) {
+    console.warn('⚠️ No test users file found, skipping category seeding');
+    return;
+  }
+
+  const userPool = JSON.parse(fs.readFileSync(TEST_USERS_FILE, 'utf-8'));
+  const users = userPool.users || [];
+
+  if (users.length === 0) {
+    console.warn('⚠️ No test users found, skipping category seeding');
+    return;
+  }
+
+  let seededCount = 0;
+
+  for (const user of users) {
+    try {
+      // Step 1: Login to get access token (returned as HttpOnly cookie)
+      const loginResponse = await fetch(`${BACKEND_URL}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: user.email, password: user.password })
+      });
+
+      if (!loginResponse.ok) {
+        console.warn(`  ⚠️ Login failed for ${user.email}: ${loginResponse.status}`);
+        continue;
+      }
+
+      // Extract accessToken from Set-Cookie header (HttpOnly cookie)
+      // The header format is: accessToken=xxx; Path=/; HttpOnly; ...
+      const setCookieHeader = loginResponse.headers.get('set-cookie');
+      let accessToken: string | null = null;
+      let cookieHeader = '';
+
+      if (setCookieHeader) {
+        // Handle multiple cookies - they may be separated by commas
+        const cookieParts = setCookieHeader.split(/,\s*(?=[a-zA-Z]+=)/);
+        for (const part of cookieParts) {
+          // Extract just the name=value part before the first semicolon
+          const nameValue = part.split(';')[0].trim();
+          if (nameValue.startsWith('accessToken=')) {
+            accessToken = nameValue.substring('accessToken='.length);
+            cookieHeader = nameValue; // Use as cookie header
+            break;
+          }
+        }
+      }
+
+      if (!accessToken) {
+        console.warn(`  ⚠️ No access token cookie for ${user.email}`);
+        continue;
+      }
+
+      // Step 2: Check if user already has categories
+      // Use Cookie header (primary) and Authorization header (fallback)
+      const existingResponse = await fetch(`${BACKEND_URL}/api/categories`, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Cookie': cookieHeader,
+          'Authorization': `Bearer ${accessToken}`
+        }
+      });
+
+      if (existingResponse.ok) {
+        const existing = await existingResponse.json();
+        if (existing && existing.length > 0) {
+          console.log(`  ℹ️ ${user.email}: Already has ${existing.length} categories`);
+          seededCount++;
+          continue;
+        }
+      }
+
+      // Step 3: Create default categories
+      let created = 0;
+      for (const category of DEFAULT_CATEGORIES) {
+        try {
+          const response = await fetch(`${BACKEND_URL}/api/categories`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Cookie': cookieHeader,
+              'Authorization': `Bearer ${accessToken}`
+            },
+            body: JSON.stringify(category)
+          });
+
+          if (response.ok || response.status === 409) {
+            created++;
+          } else {
+            // Log error details for debugging
+            const errorBody = await response.text().catch(() => 'Unknown error');
+            console.warn(`    ⚠️ Category "${category.name}" failed (${response.status}): ${errorBody.substring(0, 100)}`);
+          }
+        } catch (err) {
+          console.warn(`    ⚠️ Category "${category.name}" error: ${err instanceof Error ? err.message : String(err)}`);
+        }
+      }
+
+      console.log(`  ✅ ${user.email}: Seeded ${created} categories`);
+      seededCount++;
+
+      // Small delay between users
+      await new Promise(resolve => setTimeout(resolve, 50));
+    } catch (error) {
+      console.warn(`  ⚠️ Error seeding ${user.email}: ${error instanceof Error ? error.message : error}`);
+    }
+  }
+
+  console.log(`✅ Categories seeded for ${seededCount}/${users.length} users`);
 }
 
 /**

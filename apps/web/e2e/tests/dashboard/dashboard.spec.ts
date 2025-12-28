@@ -57,15 +57,22 @@ test.describe('Dashboard', () => {
   test('should have working navigation', async ({ page }) => {
     // Wait for dashboard to load
     await expect(page.locator('h1')).toContainText('Welcome back', { timeout: 10000 });
-    
-    // Verify main navigation links are present
+
+    // Verify main navigation links are present (top-level nav)
     await expect(page.getByRole('link', { name: 'Dashboard' })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Accounts' })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Transactions' })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Investments' })).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Goals' })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Settings' })).toBeVisible();
-    
+
+    // Verify Planning dropdown exists (Goals is inside this dropdown)
+    await expect(page.locator('[data-testid="nav-planning"]')).toBeVisible();
+
+    // Expand Planning dropdown to verify nested items
+    await page.locator('[data-testid="nav-planning"]').click();
+    await expect(page.getByRole('link', { name: 'Goals' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Budgets' })).toBeVisible();
+
     // Verify logout button is present
     await expect(page.getByRole('button', { name: 'Logout' })).toBeVisible();
   });
@@ -73,14 +80,15 @@ test.describe('Dashboard', () => {
   test('should display quick actions', async ({ page }) => {
     // Wait for dashboard to load
     await expect(page.locator('h1')).toContainText('Welcome back', { timeout: 10000 });
-    
+
     // Scroll to quick actions section if needed
     const quickActionsSection = page.locator('text=Quick Actions').first();
     await quickActionsSection.scrollIntoViewIfNeeded();
-    
-    // Verify quick action links are present (these are Link elements, not buttons)
+
+    // Verify quick action elements are present
+    // Note: Add Account, Set Budget, Schedule Payment are links; Add Transaction is a button (modal trigger)
     await expect(page.getByRole('link', { name: /add account/i })).toBeVisible();
-    await expect(page.getByRole('link', { name: /add transaction/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /add transaction/i })).toBeVisible();
     await expect(page.getByRole('link', { name: /set budget/i })).toBeVisible();
     await expect(page.getByRole('link', { name: /schedule payment/i })).toBeVisible();
   });

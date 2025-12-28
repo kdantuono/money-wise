@@ -266,10 +266,15 @@ export function CategoryForm({
 
       {/* Modal */}
       <div className="flex min-h-full items-center justify-center p-4">
-        <div className="relative w-full max-w-lg bg-white rounded-xl shadow-xl">
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="category-form-title"
+          className="relative w-full max-w-lg bg-white rounded-xl shadow-xl"
+        >
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b border-gray-200">
-            <h2 className="text-xl font-semibold text-gray-900">
+            <h2 id="category-form-title" className="text-xl font-semibold text-gray-900">
               {isEditMode ? 'Edit Category' : isSubcategoryMode ? 'Add Subcategory' : 'Create Category'}
             </h2>
             <button
