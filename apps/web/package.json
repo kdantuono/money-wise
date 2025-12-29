@@ -95,7 +95,7 @@
     "eslint-plugin-jsx-a11y": "^6.8.0",
     "eslint-plugin-react-hooks": "^7.0.1",
     "jsdom": "^23.0.1",
-    "msw": "^2.12.3",
+    "msw": "^2.12.7",
     "typescript": "^5.9.3",
     "vitest": "^4.0.0"
   },
