@@ -394,7 +394,7 @@ jobs:
 
       - name: 🔧 Set up Docker Buildx
         if: steps.dockerfile-check.outputs.exists == 'true'
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: 🔐 Log in to Container Registry
         if: steps.dockerfile-check.outputs.exists == 'true'
