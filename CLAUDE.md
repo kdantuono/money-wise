@@ -21,7 +21,7 @@ packages/
   types/      - Shared TypeScript type definitions
   ui/         - Shared React components (Radix + Tailwind + CVA, built with tsup)
   utils/      - Shared utility functions (placeholder)
-test-utils/   - Shared testing helpers (Testing Library)
+  test-utils/ - Shared testing helpers (Testing Library, currently excluded from workspace)
 ```
 
 Path aliases: `@money-wise/types`, `@money-wise/utils`, `@money-wise/ui`, `@money-wise/test-utils`
@@ -51,7 +51,7 @@ pnpm build:web                # Build web only
 pnpm --filter @money-wise/backend test              # All backend tests
 pnpm --filter @money-wise/backend test:unit          # Unit tests only
 pnpm --filter @money-wise/backend test:integration   # Integration tests (needs DB)
-pnpm --filter @money-wise/backend test -- --testPathPattern="path/to/test"  # Single test file
+pnpm --filter @money-wise/backend test -- --testPathPatterns="path/to/test"  # Single test file
 
 # Web (Vitest + jsdom)
 pnpm --filter @money-wise/web test                   # All web tests
@@ -80,7 +80,7 @@ pnpm format                   # Prettier formatting
 ```bash
 pnpm db:migrate               # Run Prisma migrations
 pnpm db:seed                  # Seed database
-pnpm db:reset                 # Reset database
+pnpm --filter @money-wise/backend prisma migrate reset --force  # Reset database
 pnpm --filter @money-wise/backend prisma:studio   # Open Prisma Studio
 ```
 
@@ -124,7 +124,7 @@ Forms: react-hook-form + Zod. Charts: recharts. Icons: lucide-react.
 - **Never work directly on main** - always use feature branches
 - Commit format: `type(scope): description` (commitlint enforced)
 - Types: fix, feat, refactor, test, docs, chore, ci, perf, style
-- Pre-commit hooks (Husky): Prettier + ESLint via lint-staged on `*.{ts,tsx,js,jsx}`
+- Pre-commit hooks (Husky): doc governance, Prisma client gen, actionlint (if workflows staged), lint, typecheck, unit tests
 - Pre-push validation: `./.claude/scripts/validate-ci.sh 10` (all 10 levels must pass)
 - Protected branches: main, develop, gh-pages, safety/*
 - After push: verify CI with `gh run list --branch [branch] --limit 1`
