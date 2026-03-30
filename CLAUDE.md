@@ -1,419 +1,158 @@
-# MoneyWise - AI Development Orchestration
+# CLAUDE.md
 
-## 🚨 CRITICAL: Session Initialization
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-### 1️⃣ Recover Last Session (NEW!)
+## Project Overview
 
-**FIRST ACTION IN ANY SESSION**:
-```bash
-/resume-work
+MoneyWise is a personal finance management application. Monorepo using pnpm workspaces + Turborepo.
+
+**Stack**: NestJS 11 (backend) + Next.js 15 (web) + Expo/React Native (mobile) + PostgreSQL (TimescaleDB) + Redis
+**Package manager**: pnpm 10+ (Node 22+)
+**ORM**: Prisma 6 (schema at `apps/backend/prisma/schema.prisma`)
+
+## Monorepo Structure
+
+```
+apps/
+  backend/    - NestJS REST API (Prisma, Passport JWT, Redis caching, Sentry)
+  web/        - Next.js App Router (Zustand + TanStack Query, Tailwind v4, Radix UI, Vitest)
+  mobile/     - Expo/React Native (NativeWind, Expo Router)
+packages/
+  types/      - Shared TypeScript type definitions
+  ui/         - Shared React components (Radix + Tailwind + CVA, built with tsup)
+  utils/      - Shared utility functions (placeholder)
+  test-utils/ - Shared testing helpers (Testing Library, currently excluded from workspace)
 ```
 
-This command automatically:
-- ✅ Restores your complete todo list from last session
-- ✅ Shows recent git activity and changes
-- ✅ Displays recent documentation updates
-- ✅ Provides clear "next action" suggestion
-- ✅ Ensures continuity across sessions
+Path aliases: `@money-wise/types`, `@money-wise/utils`, `@money-wise/ui`, `@money-wise/test-utils`
 
-**See**: `.claude/SESSION-RECOVERY-GUIDE.md` for details
-
-### 2️⃣ Verify Environment
-
-**MANDATORY**: Execute `.claude/scripts/init-session.sh` at session start
-**FALLBACK**: If script fails, manually verify:
-
-1. NOT on main branch (`git branch --show-current`)
-2. Docker services running (`docker compose ps`)
-3. Dependencies installed (`pnpm install`)
-
-## 🎯 Intelligent Agent Selection
-
-### Pattern-Based Auto-Loading
-
-```yaml
-IF architecture || design || scalability:
-   LOAD: .claude/agents/architect-agent.md
-   PRIORITY: Critical
-
-IF epic || stories || decompose:
-   LOAD: .claude/orchestration/epic-orchestrator.md
-   EXECUTE: Parallel multi-agent workflow
-
-IF analytics || monitoring || events:
-   LOAD: .claude/agents/analytics-specialist.md
-   EXECUTE: Analytics implementation workflow
-
-IF documentation || docs || readme:
-   LOAD: .claude/agents/documentation-specialist.md
-   EXECUTE: Documentation maintenance workflow
-
-IF quality || incident || review:
-   LOAD: .claude/agents/quality-evolution-specialist.md
-   EXECUTE: Continuous improvement workflow
-
-IF board || project || tracking:
-   LOAD: .claude/orchestration/board-integration.md
-   EXECUTE: Board-first execution pattern
-
-IF api || backend || service:
-   LOAD: .claude/agents/backend-specialist.md
-   LOAD: .claude/agents/database-specialist.md
-
-IF ui || component || frontend:
-   LOAD: .claude/agents/frontend-specialist.md
-
-IF test || coverage || e2e:
-   LOAD: .claude/agents/test-specialist.md
-
-IF security || vulnerability:
-   LOAD: .claude/agents/security-specialist.md
-   PRIORITY: Critical
-
-IF ci/cd || pipeline || github actions || workflow || quality gates:
-   LOAD: .claude/agents/cicd-pipeline-agent.md
-   EXECUTE: CI/CD pipeline configuration
-
-IF deploy || infrastructure || monitoring:
-   LOAD: .claude/agents/devops-specialist.md
-   EXECUTE: Deployment and infrastructure setup
-
-IF bug || fix || issue:
-   ANALYZE: Domain → Load appropriate specialists
-```
-
-## ⚡ Quick Commands
-
-### Essential
-- **`/resume-work`** - **Restore last session (todos + context)** ⭐ USE FIRST
-- `/status` - Show execution status
+## Common Commands
 
 ### Development
-- `/epic:init [name]` - Initialize epic with decomposition
-- `/epic:execute` - Execute with parallel agents
-- `/feature [name]` - Standard feature development
-- `/fix [issue-#]` - Fix GitHub issue
-
-## 🔄 Git Workflow (NEVER OVERRIDE)
-
 ```bash
-# ⛔ NEVER work on main
-git checkout -b feature/[name]  # ALWAYS
-
-# Commit atomically
-git add [specific-files]
-git commit -m "type(scope): description"
-
-# Progressive merge
-task → story → epic → dev → main
+pnpm install                  # Install all dependencies
+pnpm dev                      # Run all apps in parallel (Turbo)
+pnpm dev:backend              # Backend only (NestJS watch mode)
+pnpm dev:web                  # Web only (Next.js dev server, port 3000)
+pnpm docker:dev               # Start TimescaleDB + Redis containers
+pnpm docker:down              # Stop infrastructure containers
 ```
 
-## 📋 Documentation Governance (LAYERED APPROACH)
-
-### Architecture: 4 Layers of Organization
-
-```
-LAYER 1: Cleanup Script  → Remediation of OLD/ORPHAN files
-         .claude/scripts/cleanup-root.sh (--check, --fix, --report)
-
-LAYER 2: Pre-Commit Hook → Prevention of NEW violations
-         .husky/pre-commit → auto-fix-doc-governance.sh
-
-LAYER 3: Audit Command   → Periodic monitoring & verification
-         /doc-audit (--check, --fix, --report, --monitor)
-
-LAYER 4: Extended Rules  → Multi-type file governance
-         .claude/rules/markdown.rules (supports .md, .txt, .log, etc)
-```
-
-### Quick Reference
-
-#### 📋 Layer 1: One-Time Cleanup
+### Build
 ```bash
-./.claude/scripts/cleanup-root.sh --check    # See violations
-./.claude/scripts/cleanup-root.sh --fix      # Move violations
-./.claude/scripts/cleanup-root.sh --report   # Statistics
+pnpm build                    # Build all (runs scripts/build-clean.sh)
+pnpm build:backend            # Build backend only
+pnpm build:web                # Build web only
 ```
 
-#### ⚙️ Layer 2: Automatic Prevention (Always Running)
-- ✅ Runs on every commit automatically
-- ✅ Prevents NEW markdown/text/log violations
-- ✅ Silent auto-fix (never blocks commits)
-- ✅ Only affects staged files
-
-#### 🔍 Layer 3: Monitoring Command
+### Testing
 ```bash
-/doc-audit              # Default: check & report
-/doc-audit --check      # Dry-run showing violations
-/doc-audit --fix        # Apply fixes interactively
-/doc-audit --report     # Detailed statistics
+# Backend (Jest, ts-jest)
+pnpm --filter @money-wise/backend test              # All backend tests
+pnpm --filter @money-wise/backend test:unit          # Unit tests only
+pnpm --filter @money-wise/backend test:integration   # Integration tests (needs DB)
+pnpm --filter @money-wise/backend test -- --testPathPatterns="path/to/test"  # Single test file
+
+# Web (Vitest + jsdom)
+pnpm --filter @money-wise/web test                   # All web tests
+pnpm --filter @money-wise/web test:watch             # Watch mode
+pnpm --filter @money-wise/web test -- path/to/test   # Single test file
+
+# E2E (Playwright, from root)
+pnpm test:e2e                      # All E2E tests (auto-starts web dev server)
+pnpm test:e2e:playwright:headed    # With browser visible
+pnpm test:e2e:playwright:debug     # Debug mode
+
+# Coverage
+pnpm test:coverage                 # Run with coverage across all apps
+pnpm test:coverage:report          # Generate combined report
 ```
 
-#### 📄 Layer 4: File Types Governed
-- **Markdown** (.md): Whitelist + 12 auto-move patterns
-- **Text** (.txt): No whitelist, auto-moves to `docs/archive/`
-- **Logs** (.log): No whitelist, auto-moves to `docs/archive/`
-
-### Files Allowed in Root
-```
-✅ README.md
-✅ CHANGELOG.md
-✅ CONTRIBUTING.md
-✅ FRONTEND_HANDOFF.md
-✅ LICENSE.md
-✅ CLAUDE.md
-```
-
-### Key Features
-
-**For You (Claude)**:
-- Create files anywhere - they'll be auto-organized
-- No manual consolidation needed
-- Supported file types: `.md`, `.txt`, `.log`
-- Rules are configurable (see `.claude/rules/markdown.rules`)
-
-**Automatic Prevention**:
-- Hook prevents NEW violations at commit time
-- Pattern-based intelligent routing
-- Never fails or blocks commits
-- Silent auto-fix with transparent reporting
-
-**Periodic Maintenance**:
-- `/doc-audit` command for regular checks
-- Identifies orphan or stale files
-- Interactive fix mode with confirmation
-- Detailed violation statistics
-
-### Documentation References
-
-- **Complete System**: `.claude/DOC_GOVERNANCE_SYSTEM.md`
-- **Rules Definition**: `.claude/rules/markdown.rules`
-- **Cleanup Script**: `.claude/scripts/cleanup-root.sh`
-- **Audit Command**: `.claude/commands/doc-audit.md`
-
----
-
-## 🚨 MANDATORY CI/CD VERIFICATION
-
-**ABSOLUTE REQUIREMENT AFTER ANY PUSH:**
-
+### Linting & Type Checking
 ```bash
-# ALWAYS verify CI/CD status after pushing
-git push origin [branch]
-gh run list --branch [branch] --limit 1  # Check latest run
-gh run watch [run-id]                     # Wait for completion
-
-# ❌ NEVER CLAIM SUCCESS WITHOUT VERIFICATION
-# ❌ NEVER PROCEED IF ANY PIPELINE FAILS
-# ✅ ONLY PROCEED WHEN ALL WORKFLOWS ARE GREEN
+pnpm lint                     # ESLint across all packages
+pnpm lint:fix                 # ESLint with auto-fix
+pnpm typecheck                # TypeScript type checking across all packages
+pnpm format                   # Prettier formatting
 ```
 
-**ENFORCEMENT RULES:**
-
-1. **ZERO TOLERANCE**: Any failed pipeline MUST be fixed before proceeding
-2. **VERIFICATION MANDATORY**: Must confirm green status with `gh run view`
-3. **NO FALSE CLAIMS**: Never report success without actual pipeline verification
-4. **BLOCKING REQUIREMENT**: Failed CI/CD blocks ALL development work
-
-## 🔒 STRICT WORKFLOW DISCIPLINE
-
-### Pre-Push Validation (MANDATORY)
-
-**BEFORE ANY GIT PUSH, EXECUTE:**
-
+### Database
 ```bash
-# Run comprehensive local validation (levels 1-10)
-./.claude/scripts/validate-ci.sh 10
-
-# Result must be:
-# ✅ ALL 10 LEVELS PASSED before push is allowed
-# ✅ All ZERO TOLERANCE checks green
-# ✅ Local workflow simulation successful (act)
+pnpm db:migrate               # Run Prisma migrations
+pnpm db:seed                  # Seed database
+pnpm --filter @money-wise/backend prisma migrate reset --force  # Reset database
+pnpm --filter @money-wise/backend prisma:studio   # Open Prisma Studio
 ```
 
-**Levels Breakdown:**
-- **Levels 1-8**: Blocking pre-push checks (linting, types, tests, integration)
-- **Levels 9-10**: Mandatory workflow simulation (requires Docker + act installed)
-  - Level 9: Dry-run (parse workflows, verify syntax)
-  - Level 10: Full execution (run foundation job locally)
+## Architecture
 
-**Installation Check:**
-```bash
-# Verify act is installed (required for levels 9-10)
-command -v act &> /dev/null || pnpm setup:act
+### Backend (`apps/backend/src/`)
+NestJS modular architecture with global JWT auth guard.
 
-# Verify Docker is running
-docker ps > /dev/null || (echo "Start Docker and try again" && exit 1)
-```
+- `core/` - Infrastructure: config, database (Prisma), redis, health, monitoring (Sentry), logging
+- `auth/` - Authentication: Passport JWT/Local strategies, guards, decorators
+- `accounts/` - Financial account management
+- `transactions/` - Transaction CRUD with DTOs
+- `budgets/` - Budget management with validators
+- `categories/` - Category hierarchy
+- `banking/` - Banking provider integrations (SaltEdge primary; Tink, Yapily, TrueLayer planned)
+- `analytics/` - Reporting and analytics
+- `users/`, `notifications/`, `liabilities/`, `scheduled/` - Other domain modules
 
-### ZERO TOLERANCE Enforcement
+Backend builds: `prisma generate` runs before `nest build`.
 
-**Three-Tier Validation System:**
+### Web (`apps/web/src/`)
+Next.js 15 App Router with standalone output mode.
 
-1. **Pre-Commit Hook** (automatic)
-   - Linting + type checking on staged files
-   - Fails commit if violations found
-   - Cannot be bypassed with `--no-verify`
+- `app/` - Next.js App Router pages and layouts
+- `components/` - Feature-grouped components + `ui/` base components + `providers/`
+- `services/` - API client layer (axios-based, per-domain)
+- `hooks/` - Custom hooks (query wrappers, theme, dashboard)
+- `store/` + `stores/` - Zustand stores (banking, budgets, transactions, auth)
+- `lib/` - Auth service, API helpers, performance utilities
+- `utils/` - CSRF, CSV export, sanitization, budget helpers
 
-2. **Pre-Push Validation** (automatic)
-   - Runs `./.claude/scripts/validate-ci.sh 10`
-   - All 10 levels must pass
-   - Git hook blocks push if any level fails
-   - Manual override: `./.claude/scripts/validate-ci.sh 10` then `git push --force-with-lease` (use sparingly)
+Forms: react-hook-form + Zod. Charts: recharts. Icons: lucide-react.
 
-3. **GitHub Actions** (automatic on push)
-   - CI/CD Pipeline runs all workflows
-   - All status checks must pass before merge allowed
-   - Branch protection prevents merge if any check fails
-   - Pull request review required (1+ reviewers)
+### Infrastructure
+- `docker-compose.dev.yml` - TimescaleDB (port 5432) + Redis (port 6379)
+- `docker-compose.e2e.yml` - E2E test environment
+- `docker-compose.monitoring.yml` - Monitoring stack
 
-### Branch Protection Compliance
+## Git Workflow
 
-**Protected Branches:** main, develop, gh-pages, safety/*
+- **Never work directly on main** - always use feature branches
+- Commit format: `type(scope): description` (commitlint enforced)
+- Types: fix, feat, refactor, test, docs, chore, ci, perf, style
+- Pre-commit hooks (Husky): doc governance, Prisma client gen, actionlint (if workflows staged), lint, typecheck, unit tests
+- Pre-push validation: `./.claude/scripts/validate-ci.sh 10` (all 10 levels must pass)
+- Protected branches: main, develop, gh-pages, safety/*
+- After push: verify CI with `gh run list --branch [branch] --limit 1`
 
-**Merge Requirements:**
-- ✅ All status checks passing
-- ✅ 1+ pull request approvals
-- ✅ Branch up-to-date with base branch
-- ✅ Code owners approval (if applicable)
-- ✅ No stale approvals (auto-dismissed on new commits)
+## Testing Patterns
 
-**Key Rules:**
-- ❌ NO direct commits to protected branches
-- ❌ NO force pushes allowed on protected branches
-- ❌ NO merging without PR review and green CI/CD
-- ✅ Emergency hotfixes use `safety/` branches (still require PR + validation)
+- **Backend**: Jest with ts-jest. Tests in `__tests__/` directories. 30s timeout. Integration tests need running DB.
+- **Web**: Vitest with jsdom. Coverage target: 70% statements, 65% branches.
+- **E2E**: Playwright. Tests in `apps/web/e2e/`. Runs against localhost:3000. Projects: chromium, firefox, webkit, mobile chrome, mobile safari.
+- `passWithNoTests: false` in Jest - every package must have tests or explicit skip.
 
-**See:** `.github/BRANCH_PROTECTION.md` for complete rules
+## Session & CI Discipline
 
-### Commit Quality Standards
+- Run `/resume-work` at session start to restore previous context
+- Run `./.claude/scripts/init-session.sh` to verify environment
+- Run `./.claude/scripts/validate-ci.sh 10` before any push (all levels must pass)
+- Never claim CI success without verifying via `gh run view`
+- Failed pipelines block all further work until fixed
 
-**Commit Messages:**
-```
-type(scope): description
+## Documentation Governance
 
-Details explaining why this change was made (if needed).
+Files allowed in root: README.md, CHANGELOG.md, CONTRIBUTING.md, FRONTEND_HANDOFF.md, LICENSE.md, CLAUDE.md. All other docs auto-moved by pre-commit hook. Rules in `.claude/rules/markdown.rules`.
 
-References: #issue-number (if applicable)
-```
+## Agent & Orchestration References
 
-**Types:** fix, feat, refactor, test, docs, chore, ci, perf, style
-
-**Atomic Commits:**
-- One logical change per commit
-- Commit only related files
-- Each commit should pass validation independently
-- Avoid bundling unrelated changes
-
-**Pre-Commit Checklist:**
-- [ ] Code follows project style guide
-- [ ] All tests pass locally
-- [ ] Types check with no errors
-- [ ] Linting passes
-- [ ] No console logs or debug code
-- [ ] Commit message is clear and descriptive
-
-### Session Discipline
-
-**Start of Session:**
-```bash
-# 1. Restore previous work
-/resume-work
-
-# 2. Verify environment
-./.claude/scripts/init-session.sh
-
-# 3. Check branch status
-git status
-git branch --show-current  # Should NOT be 'main'
-
-# 4. Pull latest from develop
-git pull origin develop
-```
-
-**End of Session (Before Push):**
-```bash
-# 1. Review changes
-git diff
-
-# 2. Run comprehensive validation
-./.claude/scripts/validate-ci.sh 10
-
-# 3. Only after ALL levels pass:
-git push origin [branch]
-
-# 4. Watch CI/CD
-gh run watch $(gh run list --branch [branch] -L1 --json number -q)
-
-# 5. Verify completion
-gh run view [run-id] --json conclusion
-```
-
-**Session Suspension (Mid-Work):**
-```bash
-# Save incomplete work
-git stash  # or create WIP commit if preferred
-
-# Your todos are auto-saved in .claude/todos/
-# Next session: /resume-work will restore everything
-```
-
-## 📊 Project Context
-
-**Application**: MoneyWise Personal Finance
-**Stack**: NestJS + Next.js + PostgreSQL + Redis
-**Stage**: MVP Development
-**Architecture**: Monorepo (apps/, packages/)
-
-## 🤖 Available Agents (13 Specialists)
-
-| Agent | Trigger Keywords | Specialization |
-|-------|-----------------|----------------|
-| **architect** | architecture, design, scalability | System design, ADR, patterns |
-| **analytics-specialist** | analytics, monitoring, events | Metrics, tracking, behavior analysis |
-| **documentation-specialist** | documentation, docs, readme | Auto-docs, standards, newcomer accessibility |
-| **quality-evolution-specialist** | quality, incident, review | Continuous improvement, technical debt |
-| backend-specialist | api, endpoint, service | NestJS, TypeORM, REST |
-| frontend-specialist | ui, component, react | Next.js, React, Tailwind |
-| database-specialist | schema, migration, query | PostgreSQL, Redis |
-| test-specialist | test, coverage, e2e | Jest, Playwright |
-| security-specialist | security, auth, vulnerability | OWASP, JWT |
-| orchestrator | epic, orchestrate | Multi-agent coordination |
-| product-manager | story, requirement | GitHub Projects |
-| **cicd-pipeline-agent** | ci/cd, pipeline, workflow, quality gates | GitHub Actions, automated testing, deployment |
-| devops-specialist | deploy, infrastructure, monitoring | Docker, cloud deployment |
-
-## 📚 References
-
-### 🤖 AI Orchestration (Operational Instructions)
-
-- **Agent Details**: `.claude/agents/_README.md`
-- **Process Agents**: `.claude/agents/[analytics|documentation|quality]-specialist.md`
-- **Board Integration**: `.claude/orchestration/board-integration.md`
-- **Commands**: `.claude/commands/README.md`
-- **Epic Workflow**: `.claude/workflows/epic-workflow.md`
-- **Architecture Decisions**: `.claude/knowledge/architecture.md`
-- **Legacy Standards**: `.claude/best-practices.md` (selective sections)
-
-### 📋 Project Planning (Requirements & Roadmaps)
-
-- **MVP Planning Hub**: `docs/planning/README.md` - Complete development roadmaps
-- **App Vision**: `docs/planning/app-overview.md` - Multi-generational finance platform
-- **Critical Path**: `docs/planning/critical-path.md` - 47 blocking tasks for MVP
-- **Milestones**: `docs/planning/milestones/` - 6 detailed implementation phases
-- **Integration Specs**: `docs/planning/integrations/` - Third-party API implementations
-
-### 🏗️ Development Progress
-
-- **Setup Guide**: `docs/development/setup.md` - Environment configuration
-- **Live Progress**: `docs/development/progress.md` - Real-time development tracking
-
-## 🔍 Optimized Discovery Flow
-
-**Operational Questions** ("How does Claude work?") → `.claude/` (agents, commands, workflows)
-**Planning Questions** ("What should I build?") → `docs/planning/` (requirements, roadmaps, specifications)
-**Development Questions** ("How do I set up/develop?") → `docs/development/` (setup, progress, guides)
-
----
-
-## Version: 4.0.0 | Planning-Optimized Discovery
+- Agent details: `.claude/agents/_README.md`
+- Commands: `.claude/commands/README.md`
+- Epic workflow: `.claude/workflows/epic-workflow.md`
+- Architecture decisions: `.claude/knowledge/architecture.md`
+- MVP planning: `docs/planning/README.md`
+- Development setup: `docs/development/setup.md`
