@@ -39,6 +39,7 @@ detect_runtime() {
         if docker compose version &>/dev/null; then
             COMPOSE_AVAILABLE="true"
         else
+            echo "WARN: Docker found but compose plugin missing. Install with: sudo apt-get install docker-compose-plugin" >&2
             COMPOSE_AVAILABLE="false"
         fi
         RUNTIME_NAME="docker"
@@ -55,7 +56,7 @@ detect_runtime() {
 }
 
 # Run detection immediately on source
-detect_runtime || exit 1
+detect_runtime || return 1 2>/dev/null || exit 1
 
 # ── Helper Functions ─────────────────────────────────────────────────────────
 
@@ -93,15 +94,15 @@ start_infra_services() {
 
     # Non-compose path: create resources and run containers directly
 
-    # Create network if missing
-    $CONTAINER_CMD network exists "$_NETWORK_NAME" 2>/dev/null \
+    # Create network if missing (use inspect for Docker+Podman compat)
+    $CONTAINER_CMD network inspect "$_NETWORK_NAME" >/dev/null 2>&1 \
         || $CONTAINER_CMD network create "$_NETWORK_NAME" >/dev/null 2>&1 \
         || true  # ignore if already exists (race or different error)
 
-    # Create volumes if missing
-    $CONTAINER_CMD volume exists postgres_data 2>/dev/null \
+    # Create volumes if missing (use inspect for Docker+Podman compat)
+    $CONTAINER_CMD volume inspect postgres_data >/dev/null 2>&1 \
         || $CONTAINER_CMD volume create postgres_data >/dev/null 2>&1 || true
-    $CONTAINER_CMD volume exists redis_data 2>/dev/null \
+    $CONTAINER_CMD volume inspect redis_data >/dev/null 2>&1 \
         || $CONTAINER_CMD volume create redis_data >/dev/null 2>&1 || true
 
     # Start PostgreSQL (TimescaleDB)
@@ -159,10 +160,12 @@ infra_logs() {
         return $?
     fi
 
-    # Tail both containers in parallel
+    # Tail both containers in parallel; clean up on interrupt
+    trap 'kill $(jobs -p) 2>/dev/null' INT TERM EXIT
     $CONTAINER_CMD logs -f "$_PG_NAME" 2>&1 | sed "s/^/[postgres] /" &
     $CONTAINER_CMD logs -f "$_REDIS_NAME" 2>&1 | sed "s/^/[redis]    /" &
     wait
+    trap - INT TERM EXIT
 }
 
 infra_status() {

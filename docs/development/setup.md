@@ -17,7 +17,7 @@
    cd money-wise
    ```
 
-2. **Run automated setup** (works on distrobox, WSL, and plain Linux):
+2. **Run automated setup** (works on distrobox, WSL, and Debian/Ubuntu-based Linux):
    ```bash
    bash .claude/scripts/bootstrap-dev.sh
    ```

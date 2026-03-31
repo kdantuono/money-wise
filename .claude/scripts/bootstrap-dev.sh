@@ -176,7 +176,15 @@ install_node() {
         return 0
     fi
 
-    curl -fsSL https://deb.nodesource.com/setup_${NODE_MAJOR}.x | sudo -E bash -
+    local _ns_installer
+    _ns_installer="$(mktemp -t nodesource-setup-XXXXXX.sh)"
+    if ! curl -fsSL "https://deb.nodesource.com/setup_${NODE_MAJOR}.x" -o "$_ns_installer"; then
+        error "Failed to download NodeSource installer"
+        rm -f "$_ns_installer"
+        return 1
+    fi
+    sudo -E bash "$_ns_installer"
+    rm -f "$_ns_installer"
     sudo apt-get install -y -qq nodejs
     corepack enable
     success "Node.js $(node --version) installed with corepack"
@@ -204,7 +212,15 @@ install_claude_code() {
         return 0
     fi
 
-    curl -fsSL https://claude.ai/install.sh | bash -s stable
+    local _claude_installer
+    _claude_installer="$(mktemp -t claude-install-XXXXXX.sh)"
+    if ! curl -fsSL "https://claude.ai/install.sh" -o "$_claude_installer"; then
+        error "Failed to download Claude Code installer"
+        rm -f "$_claude_installer"
+        return 1
+    fi
+    bash "$_claude_installer" stable
+    rm -f "$_claude_installer"
     success "Claude Code installed"
 }
 
