@@ -112,7 +112,7 @@
       "turbo"
     ],
     "overrides": {
-      "axios": "^0.30.2",
+      "axios": ">=1.7.4",
       "glob": "^10.5.0",
       "js-yaml": "^4.1.1",
       "express": "^5.0.1",
@@ -127,7 +127,13 @@
       "@types/react": "^19.0.0",
       "@types/react-dom": "^19.0.0",
       "babel-plugin-istanbul": "^7.0.0",
-      "test-exclude": "^7.0.0"
+      "test-exclude": "^7.0.0",
+      "handlebars": "^4.7.9",
+      "jws": "^3.2.3",
+      "node-forge": "^1.4.0",
+      "diff": "^4.0.4",
+      "lodash": "^4.17.23",
+      "flatted": "^3.4.2"
     },
     "ignoredBuiltDependencies": [
       "@nestjs/core",
