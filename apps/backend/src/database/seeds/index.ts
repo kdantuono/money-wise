@@ -13,5 +13,9 @@
  * Use demo seed only for screenshots, demos, or offline development.
  */
 
-// Re-export from auth-seed and run it
-import './auth-seed';
+import { main } from './auth-seed';
+
+void main().catch((error) => {
+  console.error('Database seeding failed:', error);
+  process.exit(1);
+});

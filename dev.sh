@@ -4,9 +4,9 @@
 echo "🚀 Starting MoneyWise Development Environment"
 echo "============================================="
 
-# Start Docker services
-echo "📦 Starting Docker services..."
-docker compose -f docker-compose.dev.yml up -d
+# Start infrastructure services (auto-detects Docker/Podman/distrobox)
+echo "📦 Starting infrastructure services..."
+bash "$(dirname "$0")/.claude/scripts/infra.sh" start
 
 # Wait a moment for services to start
 sleep 3

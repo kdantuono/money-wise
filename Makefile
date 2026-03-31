@@ -66,18 +66,15 @@ format: ## Format code with Prettier
 	@echo "$(GREEN)Formatting code...$(NC)"
 	pnpm format
 
-# Docker commands
-docker-up: ## Start Docker services
-	@echo "$(GREEN)Starting Docker services...$(NC)"
-	docker compose -f docker-compose.dev.yml up -d
-	@echo "$(GREEN)✅ Docker services started$(NC)"
+# Infrastructure commands
+docker-up: ## Start infrastructure services (TimescaleDB + Redis)
+	@bash ./.claude/scripts/infra.sh start
 
-docker-down: ## Stop Docker services
-	@echo "$(YELLOW)Stopping Docker services...$(NC)"
-	docker compose -f docker-compose.dev.yml down
+docker-down: ## Stop infrastructure services
+	@bash ./.claude/scripts/infra.sh stop
 
-docker-logs: ## View Docker logs
-	docker compose -f docker-compose.dev.yml logs -f
+docker-logs: ## View infrastructure logs
+	@bash ./.claude/scripts/infra.sh logs
 
 # Database commands
 db-migrate: ## Run database migrations
@@ -110,6 +107,5 @@ health: ## Check system health
 	@echo "$(GREEN)Checking system health...$(NC)"
 	@echo "Node version: $$(node --version)"
 	@echo "pnpm version: $$(pnpm --version)"
-	@echo "Docker status: $$(docker --version)"
-	@echo "Docker Compose status: $$(docker compose version)"
+	@bash ./.claude/scripts/infra.sh status
 	@echo "$(GREEN)✅ System health check completed$(NC)"

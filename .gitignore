@@ -80,8 +80,8 @@ docker-compose.override.yml
 
 
 # Personal Claude configuration
-
 CLAUDE.local.md
+.claude/settings.local.json
 
 
 
