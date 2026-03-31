@@ -30,6 +30,9 @@ BACKEND_ENV="$PROJECT_ROOT/apps/backend/.env"
 BACKEND_ENV_TEST="$PROJECT_ROOT/apps/backend/.env.test"
 TMUX_SESSION="moneywise-dev"
 
+# Source container runtime detection
+source "$SCRIPT_DIR/container-runtime.sh"
+
 # Utility functions
 print_header() {
     echo -e "\n${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
@@ -111,60 +114,54 @@ fi
 echo ""
 
 # ============================================================================
-# STEP 2: Check Docker services
+# STEP 2: Check infrastructure services
 # ============================================================================
-print_step "Checking Docker services..."
+print_step "Checking infrastructure services (runtime: $RUNTIME_NAME)..."
 
-docker_running=true
-
-# Check if Docker is available
-if ! command -v docker &> /dev/null; then
-    print_error "Docker is not installed or not in PATH"
-    exit 1
-fi
+infra_running=true
 
 # Check PostgreSQL
-if docker ps --filter "name=postgres-dev" --format "{{.Names}}" 2>/dev/null | grep -q "postgres-dev"; then
+if container_ps_check postgres-dev; then
     print_success "PostgreSQL (postgres-dev) is running"
 else
     print_warning "PostgreSQL (postgres-dev) is not running"
-    docker_running=false
+    infra_running=false
 fi
 
 # Check Redis
-if docker ps --filter "name=redis-dev" --format "{{.Names}}" 2>/dev/null | grep -q "redis-dev"; then
+if container_ps_check redis-dev; then
     print_success "Redis (redis-dev) is running"
 else
     print_warning "Redis (redis-dev) is not running"
-    docker_running=false
+    infra_running=false
 fi
 
-if [[ "$docker_running" == "false" ]]; then
+if [[ "$infra_running" == "false" ]]; then
     echo ""
-    if prompt_continue "Start Docker services with 'docker compose up -d'?"; then
-        print_step "Starting Docker services..."
-        docker compose -f docker-compose.dev.yml up -d
+    if prompt_continue "Start infrastructure services?"; then
+        print_step "Starting infrastructure services..."
+        start_infra_services
 
-        # Wait for services to be healthy
+        # Wait for services to be ready
         print_step "Waiting for services to be ready..."
         sleep 3
 
         # Verify they started
-        if docker ps --filter "name=postgres-dev" --format "{{.Names}}" | grep -q "postgres-dev"; then
+        if container_ps_check postgres-dev; then
             print_success "PostgreSQL started successfully"
         else
             print_error "PostgreSQL failed to start"
             exit 1
         fi
 
-        if docker ps --filter "name=redis-dev" --format "{{.Names}}" | grep -q "redis-dev"; then
+        if container_ps_check redis-dev; then
             print_success "Redis started successfully"
         else
             print_error "Redis failed to start"
             exit 1
         fi
     else
-        print_error "Docker services are required. Exiting."
+        print_error "Infrastructure services are required. Exiting."
         exit 1
     fi
 fi
@@ -217,7 +214,7 @@ print_step "Checking database seed status..."
 cd "$PROJECT_ROOT/apps/backend"
 
 # Check if users table has data (simple check)
-user_count=$(docker exec postgres-dev psql -U postgres -d moneywise -t -c "SELECT COUNT(*) FROM users;" 2>/dev/null | tr -d ' ' || echo "0")
+user_count=$(container_exec postgres-dev psql -U postgres -d moneywise -t -c "SELECT COUNT(*) FROM users;" 2>/dev/null | tr -d ' ' || echo "0")
 
 if [[ "$user_count" -gt 0 ]]; then
     print_success "Database has $user_count user(s)"

@@ -51,9 +51,15 @@
     "db:migrate": "pnpm --filter @money-wise/backend db:migrate",
     "db:seed": "pnpm --filter @money-wise/backend db:seed",
     "db:reset": "pnpm --filter @money-wise/backend db:reset",
-    "docker:dev": "docker compose -f docker-compose.dev.yml up -d",
-    "docker:down": "docker compose -f docker-compose.dev.yml down",
-    "docker:logs": "docker compose -f docker-compose.dev.yml logs -f",
+    "infra:start": "bash ./.claude/scripts/infra.sh start",
+    "infra:stop": "bash ./.claude/scripts/infra.sh stop",
+    "infra:logs": "bash ./.claude/scripts/infra.sh logs",
+    "infra:status": "bash ./.claude/scripts/infra.sh status",
+    "infra:help": "bash ./.claude/scripts/infra.sh help",
+    "infra:cleanup": "bash ./.claude/scripts/infra.sh cleanup",
+    "docker:dev": "bash ./.claude/scripts/infra.sh start",
+    "docker:down": "bash ./.claude/scripts/infra.sh stop",
+    "docker:logs": "bash ./.claude/scripts/infra.sh logs",
     "postinstall": "husky install"
   },
   "devDependencies": {

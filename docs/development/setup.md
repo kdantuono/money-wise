@@ -4,10 +4,10 @@
 
 ## Prerequisites
 
-- Node.js 18+
-- Docker & Docker Compose
+- Node.js 22+ (installed by bootstrap script)
+- Docker, Podman, or distrobox+podman (auto-detected)
 - Git
-- pnpm (will be installed automatically)
+- pnpm (installed by bootstrap script via corepack)
 
 ## Quick Setup
 
@@ -17,11 +17,12 @@
    cd money-wise
    ```
 
-2. **Run automated setup**:
+2. **Run automated setup** (works on distrobox, WSL, and plain Linux):
    ```bash
-   chmod +x .claude/scripts/setup-dev-environment.sh
-   ./.claude/scripts/setup-dev-environment.sh
+   bash .claude/scripts/bootstrap-dev.sh
    ```
+
+   Use `--help` for options, `--dry-run` to preview, `--env-only` for system tools only.
 
 3. **Validate environment**:
    ```bash
@@ -122,7 +123,7 @@ We use **actionlint** to validate GitHub Actions workflows locally before pushin
 actionlint is installed automatically during the initial setup:
 
 ```bash
-./.claude/scripts/setup-dev-environment.sh
+bash .claude/scripts/bootstrap-dev.sh
 ```
 
 #### Manual Installation
