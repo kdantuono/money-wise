@@ -105,7 +105,7 @@ export async function seedAuth(): Promise<{
 /**
  * Main execution
  */
-async function main() {
+export async function main() {
   try {
     if (process.env.NODE_ENV === 'production') {
       throw new Error(
