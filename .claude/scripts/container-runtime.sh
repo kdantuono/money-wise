@@ -30,7 +30,7 @@ PROJECT_ROOT="${PROJECT_ROOT:-$(cd "$_CR_SCRIPT_DIR/../.." && pwd)}"
 # ── Runtime Detection ────────────────────────────────────────────────────────
 
 detect_runtime() {
-    if [[ -f /run/.containerenv ]] && distrobox-host-exec podman --version &>/dev/null; then
+    if [[ -f /run/.containerenv ]] && command -v distrobox-host-exec &>/dev/null && distrobox-host-exec podman --version &>/dev/null; then
         CONTAINER_CMD="distrobox-host-exec podman"
         COMPOSE_AVAILABLE="false"
         RUNTIME_NAME="distrobox+podman"
