@@ -133,7 +133,9 @@
       "node-forge": "^1.4.0",
       "diff": "^4.0.4",
       "lodash": "^4.17.23",
-      "flatted": "^3.4.2"
+      "flatted": "^3.4.2",
+      "path-to-regexp": ">=8.4.0",
+      "serialize-javascript": ">=7.0.5"
     },
     "ignoredBuiltDependencies": [
       "@nestjs/core",
