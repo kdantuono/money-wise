@@ -16,7 +16,6 @@
 import { main } from './auth-seed';
 
 void main().catch((error) => {
-  // eslint-disable-next-line no-console
   console.error('Database seeding failed:', error);
   process.exit(1);
 });
