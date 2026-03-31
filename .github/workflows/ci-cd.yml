@@ -887,7 +887,7 @@ jobs:
           fail-on-alert: false
 
       - name: 📈 Upload Test Results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: test-results-${{ github.run_id }}
@@ -961,7 +961,7 @@ jobs:
 
       - name: 📤 Upload Build Artifacts
         if: steps.check-app.outputs.exists == 'true' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: build-${{ matrix.app }}-${{ github.run_id }}
           path: |
@@ -1098,7 +1098,7 @@ jobs:
           echo "✅ test-users.json file created with 8 shard users"
 
       - name: 📤 Upload test user pool as artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: e2e-test-users
           path: apps/web/e2e/.auth/test-users.json
@@ -1207,7 +1207,7 @@ jobs:
       # Cache key includes lockfile to ensure correct browser version
       - name: Cache Playwright browsers
         id: playwright-cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.cache/ms-playwright
           key: ${{ runner.os }}-playwright-${{ hashFiles('pnpm-lock.yaml') }}
@@ -1260,7 +1260,7 @@ jobs:
 
       - name: 📤 Upload test results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-report
           path: apps/web/playwright-report/
