@@ -1,6 +1,3 @@
-#!/usr/bin/env sh
-. "$(dirname -- "$0")/_/husky.sh"
-
 # MoneyWise pre-commit hook
 # Runs essential checks before allowing commit
 

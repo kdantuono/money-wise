@@ -54,7 +54,7 @@
     "axios": "^1.13.2",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.0.0",
-    "date-fns": "^2.30.0",
+    "date-fns": "^4.1.0",
     "immer": "^10.2.0",
     "isomorphic-dompurify": "^3.7.1",
     "lucide-react": "^0.555.0",
@@ -94,7 +94,7 @@
     "eslint-config-next": "^16.0.6",
     "eslint-plugin-jsx-a11y": "^6.8.0",
     "eslint-plugin-react-hooks": "^7.0.1",
-    "jsdom": "^23.0.1",
+    "jsdom": "^27.3.0",
     "msw": "^2.12.14",
     "typescript": "^5.9.3",
     "vitest": "^4.0.0"
