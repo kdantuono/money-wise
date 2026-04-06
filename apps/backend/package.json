@@ -49,7 +49,7 @@
     "@aws-sdk/client-cloudwatch": "^3.1021.0",
     "@aws-sdk/client-cloudwatch-logs": "^3.1021.0",
     "@money-wise/types": "workspace:*",
-    "@nestjs/common": "^11.1.9",
+    "@nestjs/common": "^11.1.18",
     "@nestjs/config": "^4.0.2",
     "@nestjs/core": "^11.1.17",
     "@nestjs/jwt": "^11.0.1",
