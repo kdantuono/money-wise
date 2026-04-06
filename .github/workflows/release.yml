@@ -133,7 +133,7 @@ jobs:
 
       - name: 📦 Setup pnpm (if rebuild needed)
         if: steps.check-artifacts.outputs.exists == 'false'
-        uses: pnpm/action-setup@v2
+        uses: pnpm/action-setup@v5
         with:
           version: ${{ env.PNPM_VERSION }}
 
