@@ -17,10 +17,6 @@ export default defineConfig({
       '**/.next/**',
       '**/out/**',
       '**/e2e/**',
-      '**/__tests__/pages/**',
-      '**/__tests__/lib/**',
-      '**/__tests__/components/auth/protected-route.test.tsx',
-      '**/__tests__/components/layout/dashboard-layout.test.tsx'
     ],
     coverage: {
       provider: 'v8',

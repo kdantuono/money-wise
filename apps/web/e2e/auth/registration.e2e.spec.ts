@@ -517,7 +517,8 @@ test.describe('Registration E2E Tests @critical', () => {
   });
 
   test.describe('UI/UX Behavior', () => {
-    test('should disable submit button while loading', async ({ page }) => {
+    // FIXME(tier0): loading state assertion is a tautology — button UX not verified
+    test.fixme('should disable submit button while loading', async ({ page }) => {
       const timestamp = Date.now();
       const uniqueId = Math.random().toString(36).substring(7);
       const testEmail = `loading-${timestamp}-${uniqueId}@example.com`;
@@ -532,16 +533,12 @@ test.describe('Registration E2E Tests @critical', () => {
       await expect(submitButton).not.toBeDisabled();
 
       await registrationPage.submitForm();
-
-      // Button should show loading state or be disabled
-      // Give it a moment to transition
       await page.waitForTimeout(100);
 
-      // Verify button state changed (disabled or text changed)
       const isDisabled = await submitButton.isDisabled();
       const text = await submitButton.textContent();
       const isLoading = text?.includes('Creating') || text?.includes('Loading') || isDisabled;
-      expect(isLoading || true).toBe(true); // Pass even if button doesn't disable (UX variation)
+      expect(isLoading).toBe(true);
     });
 
     test('should show login link for existing users', async ({ page }) => {

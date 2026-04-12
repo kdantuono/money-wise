@@ -44,9 +44,10 @@ module.exports = {
   // globalSetup: '<rootDir>/__tests__/setup/global-setup.ts',
   // globalTeardown: '<rootDir>/__tests__/setup/global-teardown.ts',
 
-  // Test match patterns for backend (consolidated __tests__ structure)
+  // Test match patterns for backend (consolidated __tests__ + colocated src specs)
   testMatch: [
     '<rootDir>/__tests__/**/*.{test,spec}.{ts,js}',
+    '<rootDir>/src/**/*.{test,spec}.{ts,js}',
   ],
 
   // Parallel execution for faster test runs
@@ -97,12 +98,14 @@ module.exports = {
     '!src/banking/providers/saltedge.provider.ts', // SaltEdge integration (external API)
   ],
 
-  // Coverage thresholds DISABLED due to Jest bug in CI
-  // Bug: "Cannot read properties of undefined (reading 'sync')" in _checkThreshold
-  // See: https://github.com/jestjs/jest/issues/11381
-  // Coverage is manually checked via json-summary output in CI
-  // Target: 70% statements, 65% branches, 70% functions, 70% lines
-  coverageThreshold: undefined,
+  coverageThreshold: {
+    global: {
+      statements: 70,
+      branches: 65,
+      functions: 72,
+      lines: 70,
+    },
+  },
 
   // Coverage reporters - include json-summary for CI/CD
   coverageReporters: [

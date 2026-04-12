@@ -1,7 +1,7 @@
 import jestOpenAPI from 'jest-openapi'
 import { Test, TestingModule } from '@nestjs/testing'
 import { INestApplication } from '@nestjs/common'
-import { spec } from '@/docs/openapi.spec'
+import { spec } from '@/docs/openapi.schema'
 
 // Type spec properly for OpenAPI 3.0
 interface OpenAPISpec {

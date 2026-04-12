@@ -4,7 +4,7 @@
  * Tests the utility functions for className merging
  */
 import { describe, it, expect } from 'vitest';
-import { cn } from '../../lib/utils';
+import { cn } from '../../src/lib/utils';
 
 describe('cn utility function', () => {
   describe('Basic class merging', () => {

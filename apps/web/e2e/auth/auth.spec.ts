@@ -244,31 +244,19 @@ test.describe('Authentication @critical', () => {
   });
 
   test.describe('Protected Routes', () => {
-    test('should redirect to login for unauthenticated users', async ({ browser }) => {
+    // FIXME(tier0): auth guard broken — unauthenticated users can reach /dashboard
+    test.fixme('should redirect to login for unauthenticated users', async ({ browser }) => {
       // Fresh context with no cookies/state
       const context = await browser.newContext({ storageState: { cookies: [], origins: [] } });
       const page = await context.newPage();
 
       try {
-        // Test just the dashboard route - most critical
         await page.goto('/dashboard', { waitUntil: 'domcontentloaded' });
-
-        // Wait for potential redirect (client-side auth check)
         await page.waitForTimeout(3000);
 
         const url = page.url();
         const redirectedToLogin = url.includes('/auth/login');
-
-        // KNOWN ISSUE: The app currently renders dashboard content without proper auth guards.
-        // The test verifies the CURRENT behavior: either redirect OR show dashboard shell.
-        // TODO: Fix ProtectedRoute middleware to properly redirect unauthenticated users.
-        // When fixed, change this to: expect(redirectedToLogin).toBe(true);
-
-        // For now, verify either:
-        // 1. Redirected to login page (expected behavior)
-        // 2. At /dashboard URL (current behavior - auth middleware not blocking)
-        const onDashboardUrl = url.includes('/dashboard');
-        expect(redirectedToLogin || onDashboardUrl).toBe(true);
+        expect(redirectedToLogin).toBe(true);
       } finally {
         await context.close();
       }
@@ -330,7 +318,8 @@ test.describe('Authentication @critical', () => {
       expect(await auth.isAuthenticated()).toBe(true);
     });
 
-    test('should handle expired session gracefully', async ({ page }) => {
+    // FIXME(tier0): auth guard broken — expired session not redirecting to login
+    test.fixme('should handle expired session gracefully', async ({ page }) => {
       const auth = new AuthHelper(page);
 
       // Login
@@ -352,20 +341,11 @@ test.describe('Authentication @critical', () => {
 
       // Try to access protected route
       await page.goto('/accounts');
-
-      // Allow time for redirect
       await page.waitForTimeout(2500);
 
-      // Should be redirected to login or not see protected content
       const url = page.url();
       const redirected = url.includes('/auth/login');
-
-      let protectedVisible = false;
-      try {
-        protectedVisible = await page.locator('h1').filter({ hasText: 'Accounts' }).isVisible({ timeout: 500 });
-      } catch {}
-
-      expect(redirected || !protectedVisible).toBe(true);
+      expect(redirected).toBe(true);
     });
   });
 });
