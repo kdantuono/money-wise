@@ -183,14 +183,14 @@
 
 | Category | Completeness | Last Updated | Owner |
 |----------|-------------|--------------|-------|
-| **Planning** | 95% | Oct 20, 2025 | @nemesi |
-| **Development** | 85% | Oct 22, 2025 | @nemesi |
-| **Architecture** | 70% | Oct 20, 2025 | @nemesi |
+| **Planning** | 95% | Oct 20, 2025 | @kdantuono |
+| **Development** | 85% | Oct 22, 2025 | @kdantuono |
+| **Architecture** | 70% | Oct 20, 2025 | @kdantuono |
 | **API Documentation** | 40% | Oct 18, 2025 | TODO |
 | **Testing** | 60% | Oct 18, 2025 | TODO |
 | **Security** | 75% | Oct 18, 2025 | TODO |
 | **Deployment** | 0% | - | TODO |
-| **Analysis** | 90% | Oct 22, 2025 | @nemesi |
+| **Analysis** | 90% | Oct 22, 2025 | @kdantuono |
 
 ---
 

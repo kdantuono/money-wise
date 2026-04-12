@@ -157,7 +157,7 @@ Files allowed in root: README.md, CHANGELOG.md, CONTRIBUTING.md, FRONTEND_HANDOF
 
 ## Agent & Orchestration References
 
-- Agent details: `.claude/agents/_README.md`
+- Agent details: `.claude/agents/README.md`
 - Commands: `.claude/commands/README.md`
 - Epic workflow: `.claude/workflows/epic-workflow.md`
 - Architecture decisions: `.claude/knowledge/architecture.md`
