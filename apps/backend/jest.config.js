@@ -44,9 +44,10 @@ module.exports = {
   // globalSetup: '<rootDir>/__tests__/setup/global-setup.ts',
   // globalTeardown: '<rootDir>/__tests__/setup/global-teardown.ts',
 
-  // Test match patterns for backend (consolidated __tests__ structure)
+  // Test match patterns for backend (consolidated __tests__ + colocated src specs)
   testMatch: [
     '<rootDir>/__tests__/**/*.{test,spec}.{ts,js}',
+    '<rootDir>/src/**/*.{test,spec}.{ts,js}',
   ],
 
   // Parallel execution for faster test runs
