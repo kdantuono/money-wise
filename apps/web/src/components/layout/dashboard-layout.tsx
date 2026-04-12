@@ -10,7 +10,7 @@
 import { ReactNode, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { useAuthStore } from '@/stores/auth-store';
+import { useAuthStore } from '@/store/auth.store';
 import {
   LayoutDashboard,
   Wallet,

@@ -48,4 +48,4 @@ export type {
 
 // export { useTransactionStore } from './transaction.store';
 // export { useBudgetStore } from './budget.store';
-// export { useAuthStore } from './auth.store';
+export { useAuthStore } from './auth.store';

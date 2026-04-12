@@ -12,7 +12,7 @@ import {
   AvailableToSpendCard,
   FinancialAlertsWidget,
 } from '@/components/dashboard';
-import { useAuthStore } from '@/stores/auth-store';
+import { useAuthStore } from '@/store/auth.store';
 import { useDashboardData } from '@/hooks/useDashboardStats';
 import type { TimePeriod } from '@/types/dashboard.types';
 

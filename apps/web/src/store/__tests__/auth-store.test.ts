@@ -9,7 +9,7 @@
 
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import { useAuthStore } from '../auth-store';
+import { useAuthStore } from '../auth.store';
 import * as authLib from '../../../lib/auth';
 import * as csrfUtils from '@/utils/csrf';
 

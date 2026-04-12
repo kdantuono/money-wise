@@ -10,7 +10,7 @@
 
 import { ReactNode, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuthStore } from '@/stores/auth-store';
+import { useAuthStore } from '@/store/auth.store';
 
 interface ProtectedRouteProps {
   children: ReactNode;

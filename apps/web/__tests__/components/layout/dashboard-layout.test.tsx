@@ -7,7 +7,7 @@ import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, within } from '../../utils/test-utils';
 import { DashboardLayout } from '../../../src/components/layout/dashboard-layout';
-import { useAuthStore } from '../../../src/stores/auth-store';
+import { useAuthStore } from '../../../src/store/auth.store';
 
 // Mock next/navigation
 const mockPush = vi.fn();
@@ -25,7 +25,7 @@ vi.mock('next/navigation', () => ({
 }));
 
 // Mock auth store
-vi.mock('../../../src/stores/auth-store', () => ({
+vi.mock('../../../src/store/auth.store', () => ({
   useAuthStore: vi.fn(),
 }));
 

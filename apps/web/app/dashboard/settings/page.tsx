@@ -26,7 +26,7 @@ import {
   CheckCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useAuthStore } from '@/stores/auth-store';
+import { useAuthStore } from '@/store/auth.store';
 import { getCsrfToken } from '@/utils/csrf';
 import { useTheme } from '@/hooks/useTheme';
 

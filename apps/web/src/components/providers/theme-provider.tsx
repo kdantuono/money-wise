@@ -17,7 +17,7 @@
 'use client';
 
 import { createContext, useEffect, useState, type ReactNode } from 'react';
-import { useAuthStore } from '@/stores/auth-store';
+import { useAuthStore } from '@/store/auth.store';
 import type { Theme, ResolvedTheme, ThemeContextType } from '@/hooks/useTheme';
 
 export const ThemeContext = createContext<ThemeContextType | undefined>(undefined);

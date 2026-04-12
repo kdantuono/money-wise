@@ -17,7 +17,7 @@
  * - Cookies handled automatically by browser
  * - Simplified token refresh (backend handles via cookies)
  *
- * @module stores/auth-store
+ * @module store/auth.store
  */
 
 import { create } from 'zustand';
