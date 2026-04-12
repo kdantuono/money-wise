@@ -141,11 +141,10 @@ describe('Auth Service', () => {
       expect(result).toBe(mockResponse);
     });
 
-    it('should handle 401 error and attempt token refresh', async () => {
-      // This test is skipped because testing axios interceptors in isolation
-      // is complex and the behavior is already covered by integration tests
-      // The interceptor logic is verified through the authService methods
-      expect(true).toBe(true);
+    // TODO(tier0): needs richer mock — interceptor logic not exercised
+    it.skip('should handle 401 error and attempt token refresh', async () => {
+      // This test needs a proper mock of the axios interceptor chain
+      // The interceptor logic should be verified through actual 401 → refresh flow
     });
 
     // TODO(tier0): auth service mock mismatch
@@ -475,16 +474,14 @@ describe('Auth Service', () => {
   });
 
   describe('Token management', () => {
-    it('should handle expired access token with valid refresh token', async () => {
-      // This test is skipped because testing axios interceptors with mocks
-      // is complex and the token refresh behavior is tested in E2E tests
-      expect(true).toBe(true);
+    // TODO(tier0): needs richer mock — token refresh flow not exercised
+    it.skip('should handle expired access token with valid refresh token', async () => {
+      // This test needs a proper mock of the token refresh mechanism
     });
 
-    it('should handle concurrent 401 errors', async () => {
-      // This test is skipped because testing axios interceptors with mocks
-      // is complex and concurrency handling is tested in E2E tests
-      expect(true).toBe(true);
+    // TODO(tier0): needs richer mock — concurrent 401 handling not exercised
+    it.skip('should handle concurrent 401 errors', async () => {
+      // This test needs a proper mock of concurrent request handling
     });
   });
 });
