@@ -458,6 +458,22 @@ This report is a clinical synthesis, not a finding catalog. The catalog lives in
 
 For full severity labels, path:line citations, per-module remediation detail, and complete drift matrix, consult the primary source documents listed above.
 
+### Tier B Execution Log (2026-04-12)
+
+Dead code removal sprint executed with 4-agent parallel team (`tier-b-cleanup`), worktree isolation, SendMessage coordination.
+
+| Item | Status | Commit | Summary |
+|------|--------|--------|---------|
+| B1 (RETIRE-1) | ✅ Done | `9e176b0` | Plaid ghost stubs removed (syncAccount, computeNeedsSync, isPlaidAccount, DTO fields, controller endpoint, tests). Prisma schema fields retained (require migration). |
+| B2 (B5 finding) | ✅ Done | `75a4605` | Duplicate HealthController stub deleted from monitoring module. Real controller at core/health/ unaffected. |
+| B3 (RETIRE-2) | ⏸ Deferred | — | Orphan Prisma models (Achievement, UserAchievement, PushSubscription) left in schema — removal requires migration, risk/reward unfavorable for cleanup sprint. |
+| B4 (A4 partial) | ✅ Done | `7b1617b` | 4 shadow stub routes deleted (accounts, transactions, settings, reports). E2E test routes corrected from root paths to `/dashboard/*`. |
+| B5 (RETIRE-3 partial) | ✅ Done | `6e592b8` | MSWProvider no-op removed from layout, mockServiceWorker.js and browser.ts deleted. Vitest mocks (handlers.ts, server.ts) retained. |
+| B6 | ✅ Done | `a45ef1d` | tests-disabled/ directory deleted (4 TypeORM-era files, 2421 lines). |
+| B7 | ❌ Invalidated | — | `src/common/specifications/` is NOT dead code. `CategoryValidationService` imports and uses `category-validation.specification.ts` on every transaction create/update. Finding was a false negative from planning phase — audit report did not make this claim. |
+
+**Verification:** All backend tests (2257), web tests (1459), builds, typecheck, and lint pass. Application starts and responds correctly (health, auth, accounts endpoints verified).
+
 ---
 
 ## 13. Acknowledgments and methodology
