@@ -2,7 +2,6 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import { ErrorBoundary } from '@/components/ui/error-boundary';
-import { MSWProvider } from '@/components/providers/msw-provider';
 import { QueryProvider } from '@/components/providers/query-provider';
 import { ThemeProvider } from '@/components/providers/theme-provider';
 
@@ -23,9 +22,7 @@ export default function RootLayout({
       <body className={inter.className}>
         <ThemeProvider>
           <QueryProvider>
-            <MSWProvider>
-              <ErrorBoundary>{children}</ErrorBoundary>
-            </MSWProvider>
+            <ErrorBoundary>{children}</ErrorBoundary>
           </QueryProvider>
         </ThemeProvider>
       </body>
