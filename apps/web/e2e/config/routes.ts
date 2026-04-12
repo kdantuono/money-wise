@@ -27,18 +27,18 @@ export const ROUTES = {
 
   // Accounts
   ACCOUNTS: {
-    INDEX: '/accounts',
-    CREATE: '/accounts/create',
-    DETAILS: (id: string) => `/accounts/${id}`,
-    EDIT: (id: string) => `/accounts/${id}/edit`,
+    INDEX: '/dashboard/accounts',
+    CREATE: '/dashboard/accounts/create',
+    DETAILS: (id: string) => `/dashboard/accounts/${id}`,
+    EDIT: (id: string) => `/dashboard/accounts/${id}/edit`,
   },
 
   // Transactions
   TRANSACTIONS: {
-    INDEX: '/transactions',
-    CREATE: '/transactions/create',
-    DETAILS: (id: string) => `/transactions/${id}`,
-    EDIT: (id: string) => `/transactions/${id}/edit`,
+    INDEX: '/dashboard/transactions',
+    CREATE: '/dashboard/transactions/create',
+    DETAILS: (id: string) => `/dashboard/transactions/${id}`,
+    EDIT: (id: string) => `/dashboard/transactions/${id}/edit`,
   },
 
   // Categories
@@ -57,21 +57,21 @@ export const ROUTES = {
 
   // Reports
   REPORTS: {
-    INDEX: '/reports',
-    INCOME_EXPENSE: '/reports/income-expense',
-    CASH_FLOW: '/reports/cash-flow',
-    SPENDING: '/reports/spending',
-    TRENDS: '/reports/trends',
+    INDEX: '/dashboard/reports',
+    INCOME_EXPENSE: '/dashboard/reports/income-expense',
+    CASH_FLOW: '/dashboard/reports/cash-flow',
+    SPENDING: '/dashboard/reports/spending',
+    TRENDS: '/dashboard/reports/trends',
   },
 
   // Settings
   SETTINGS: {
-    INDEX: '/settings',
-    PROFILE: '/settings/profile',
-    SECURITY: '/settings/security',
-    PREFERENCES: '/settings/preferences',
-    NOTIFICATIONS: '/settings/notifications',
-    BANKING: '/settings/banking',
+    INDEX: '/dashboard/settings',
+    PROFILE: '/dashboard/settings/profile',
+    SECURITY: '/dashboard/settings/security',
+    PREFERENCES: '/dashboard/settings/preferences',
+    NOTIFICATIONS: '/dashboard/settings/notifications',
+    BANKING: '/dashboard/settings/banking',
   },
 
   // Other

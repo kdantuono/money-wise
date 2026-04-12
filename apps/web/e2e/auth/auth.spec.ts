@@ -340,7 +340,7 @@ test.describe('Authentication @critical', () => {
       await auth.clearAuth();
 
       // Try to access protected route
-      await page.goto('/accounts');
+      await page.goto('/dashboard/accounts');
       await page.waitForTimeout(2500);
 
       const url = page.url();
