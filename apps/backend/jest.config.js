@@ -98,12 +98,14 @@ module.exports = {
     '!src/banking/providers/saltedge.provider.ts', // SaltEdge integration (external API)
   ],
 
-  // Coverage thresholds DISABLED due to Jest bug in CI
-  // Bug: "Cannot read properties of undefined (reading 'sync')" in _checkThreshold
-  // See: https://github.com/jestjs/jest/issues/11381
-  // Coverage is manually checked via json-summary output in CI
-  // Target: 70% statements, 65% branches, 70% functions, 70% lines
-  coverageThreshold: undefined,
+  coverageThreshold: {
+    global: {
+      statements: 70,
+      branches: 65,
+      functions: 72,
+      lines: 70,
+    },
+  },
 
   // Coverage reporters - include json-summary for CI/CD
   coverageReporters: [

@@ -44,12 +44,14 @@ module.exports = {
     'json'
   ],
 
-  // Coverage thresholds DISABLED due to Jest bug in CI
-  // Bug: "Cannot read properties of undefined (reading 'sync')" in _checkThreshold
-  // See: https://github.com/jestjs/jest/issues/11381
-  // Coverage is manually verified via json-summary output
-  // Target: 70% statements, 65% branches, 70% functions, 70% lines
-  coverageThreshold: undefined,
+  coverageThreshold: {
+    global: {
+      statements: 70,
+      branches: 65,
+      functions: 70,
+      lines: 70,
+    },
+  },
 
   // Module file extensions
   moduleFileExtensions: [
