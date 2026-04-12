@@ -760,7 +760,7 @@ jobs:
           fi
 
       - name: 📊 Test Coverage
-        # Coverage thresholds enforced (70% baseline - see .claude/quality/test-debt.md)
+        # Coverage thresholds enforced (65-72% per-metric baseline - see jest.config.js and vitest.config.mts for exact thresholds)
         env:
           DB_HOST: localhost
           DB_PORT: 5432
