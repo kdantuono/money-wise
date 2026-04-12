@@ -16,7 +16,7 @@
     "pretest:integration": "prisma generate",
     "test": "jest",
     "test:all": "jest --runInBand",
-    "test:unit": "jest --testPathPatterns='__tests__/unit'",
+    "test:unit": "jest --testPathPatterns='__tests__/unit|src/'",
     "test:integration": "jest --testPathPatterns='__tests__/integration'",
     "test:e2e": "jest --config ./__tests__/e2e/jest-e2e.json",
     "test:performance": "jest --testPathPatterns='__tests__/performance' --runInBand --testTimeout=120000 && node scripts/format-benchmarks.js",
