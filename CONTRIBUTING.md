@@ -305,7 +305,7 @@ describe('Auth API (Integration)', () => {
 | Database migrations fail | Reset database: `pnpm prisma migrate reset` |
 | Port 3000 already in use | Kill process: `lsof -ti:3000 \| xargs kill -9` |
 | TypeScript errors after pull | Clean and reinstall: `rm -rf node_modules && pnpm install` |
-| Tests fail locally but pass in CI | Check Node version matches CI (18.x): `node --version` |
+| Tests fail locally but pass in CI | Check Node version matches CI (22.x): `node --version` |
 | Git pre-commit hook fails | Run validation manually: `./.claude/scripts/validate-ci.sh 10` |
 
 ### Development Workflow Issues
@@ -370,7 +370,7 @@ If applicable, add screenshots.
 
 **Environment:**
 - OS: [e.g., macOS 13.0]
-- Node version: [e.g., 18.17.0]
+- Node version: [e.g., 22.12.0]
 - Package version: [e.g., 0.4.6]
 
 **Additional context**
