@@ -313,7 +313,7 @@ export class AccountsController {
     description:
       'Returns restore eligibility information for a hidden account. ' +
       'For manual accounts, simple restore is always possible. ' +
-      'For banking accounts (SaltEdge/Plaid), checks if the connection is still valid. ' +
+      'For banking accounts (SaltEdge), checks if the connection is still valid. ' +
       'If the connection is revoked/failed, re-linking is required.',
   })
   @ApiParam({ name: 'id', description: 'Account UUID' })
@@ -382,27 +382,4 @@ export class AccountsController {
     return this.accountsService.restoreAccount(id, user.id, undefined, user.role);
   }
 
-  @Post(':id/sync')
-  @ApiOperation({ summary: 'Sync account with Plaid' })
-  @ApiParam({ name: 'id', description: 'Account UUID' })
-  @ApiResponse({
-    status: 200,
-    description: 'Account synced successfully',
-    type: AccountResponseDto,
-  })
-  @ApiResponse({
-    status: 403,
-    description: 'Forbidden - can only sync own accounts or not a Plaid account',
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'Account not found',
-  })
-  async syncAccount(
-    @Param('id', ParseUUIDPipe) id: string,
-    @CurrentUser() user: CurrentUserPayload,
-  ): Promise<AccountResponseDto> {
-    // TODO: Add familyId support when User entity is migrated to Prisma
-    return this.accountsService.syncAccount(id, user.id, undefined, user.role);
-  }
 }

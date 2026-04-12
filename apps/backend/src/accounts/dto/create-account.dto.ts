@@ -93,25 +93,6 @@ export class CreateAccountDto {
   @IsString()
   routingNumber?: string;
 
-  @ApiProperty({ description: 'Plaid account ID', required: false })
-  @IsOptional()
-  @IsString()
-  plaidAccountId?: string;
-
-  @ApiProperty({ description: 'Plaid item ID', required: false })
-  @IsOptional()
-  @IsString()
-  plaidItemId?: string;
-
-  @ApiProperty({ description: 'Plaid access token', required: false })
-  @IsOptional()
-  @IsString()
-  plaidAccessToken?: string;
-
-  @ApiProperty({ description: 'Plaid metadata', required: false })
-  @IsOptional()
-  plaidMetadata?: Record<string, unknown>;
-
   @ApiProperty({ description: 'Enable automatic sync', default: true, required: false })
   @IsOptional()
   @IsBoolean()

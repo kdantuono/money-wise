@@ -60,7 +60,6 @@ const createMockAccount = (overrides: Record<string, unknown> = {}) => {
     institutionName: 'Local Bank',
     displayName: 'Local Bank - Test Savings',
     isManualAccount,
-    isPlaidAccount: false,
     isSyncable,
     needsSync: false,
     isActive: true,
@@ -742,7 +741,6 @@ describe('AccountsPage', () => {
         name: 'SaltEdge Bank Account',
         source: AccountSource.SALTEDGE,
         isManualAccount: false,
-        isPlaidAccount: false,
       });
       mockAccountsClient.getAccounts.mockResolvedValue([linkedAccount]);
 
@@ -763,7 +761,6 @@ describe('AccountsPage', () => {
         name: 'SaltEdge Bank Account',
         source: AccountSource.SALTEDGE,
         isManualAccount: false,
-        isPlaidAccount: false,
       });
       mockAccountsClient.getAccounts.mockResolvedValue([linkedAccount]);
       mockAccountsClient.updateAccount.mockResolvedValue({

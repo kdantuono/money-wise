@@ -1069,48 +1069,6 @@ describe('AccountsService', () => {
 
   });
 
-  describe('syncAccount', () => {
-    it('should sync Plaid account successfully', async () => {
-      // Arrange
-      const userId = 'user-123';
-      const account = AccountFactory.buildPlaidAccount({ userId });
-      const syncedAccount = { ...account, lastSyncAt: new Date(), syncError: null };
-
-      prisma.account.findUnique.mockResolvedValue(account as any);
-      prisma.account.update.mockResolvedValue(syncedAccount as any);
-
-      // Act
-      const result = await service.syncAccount(account.id, userId);
-
-      // Assert
-      expect(result.lastSyncAt).toBeTruthy();
-      expect(prisma.account.update).toHaveBeenCalledWith({
-        where: { id: account.id },
-        data: { lastSyncAt: expect.any(Date), syncError: null },
-      });
-    });
-
-    it('should throw ForbiddenException when account is not PLAID source', async () => {
-      // Arrange
-      const userId = 'user-123';
-      const account = AccountFactory.buildForUser(userId, { source: AccountSource.MANUAL });
-      prisma.account.findUnique.mockResolvedValue(account as any);
-
-      // Act & Assert
-      await expect(service.syncAccount(account.id, userId)).rejects.toThrow(ForbiddenException);
-      await expect(service.syncAccount(account.id, userId)).rejects.toThrow('requires a PLAID account');
-    });
-
-    it('should throw ForbiddenException for unauthorized access', async () => {
-      // Arrange
-      const account = AccountFactory.buildPlaidAccount({ userId: 'other-user' });
-      prisma.account.findUnique.mockResolvedValue(account as any);
-
-      // Act & Assert
-      await expect(service.syncAccount(account.id, 'user-123')).rejects.toThrow(ForbiddenException);
-    });
-  });
-
   describe('getFinancialSummary', () => {
     /**
      * TDD Red-Green-Refactor: getFinancialSummary
@@ -1476,7 +1434,6 @@ describe('AccountsService', () => {
       const result = await service.create(createDto, userId);
 
       // Assert
-      expect(result.isPlaidAccount).toBe(true);
       expect(result.isManualAccount).toBe(false);
       expect(result.displayName).toBe('Chase Bank - Checking');
       expect(result.maskedAccountNumber).toBe('****5678');
