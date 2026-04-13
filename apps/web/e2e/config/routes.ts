@@ -55,15 +55,6 @@ export const ROUTES = {
     EDIT: (id: string) => `/dashboard/budgets/${id}/edit`,
   },
 
-  // Reports
-  REPORTS: {
-    INDEX: '/dashboard/reports',
-    INCOME_EXPENSE: '/dashboard/reports/income-expense',
-    CASH_FLOW: '/dashboard/reports/cash-flow',
-    SPENDING: '/dashboard/reports/spending',
-    TRENDS: '/dashboard/reports/trends',
-  },
-
   // Settings
   SETTINGS: {
     INDEX: '/dashboard/settings',
@@ -74,11 +65,6 @@ export const ROUTES = {
     BANKING: '/dashboard/settings/banking',
   },
 
-  // Other
-  HELP: '/help',
-  ABOUT: '/about',
-  PRIVACY: '/privacy',
-  TERMS: '/terms',
 } as const;
 
 /**
