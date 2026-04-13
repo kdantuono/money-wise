@@ -36,7 +36,7 @@ interface AuthStore {
   // Actions
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, firstName: string, lastName: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   validateSession: () => Promise<boolean>;
   clearError: () => void;
   loadUserFromStorage: () => Promise<void>;
@@ -184,18 +184,21 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
    * Logout user and clear all auth data
    * Backend clears HttpOnly cookies
    */
-  logout: () => {
-    // Clear local state immediately (synchronous — prevents stale UI)
-    clearAuthStorage();
-    set({
-      user: null,
-      isAuthenticated: false,
-      error: null
-    });
-    // Notify backend to clear cookies (fire-and-forget)
-    authService.logout().catch((error) => {
+  logout: async () => {
+    try {
+      // Notify backend to clear cookies BEFORE clearing CSRF token
+      await authService.logout();
+    } catch (error) {
       console.error('Logout API call failed:', error);
-    });
+    } finally {
+      // Clear local state after backend call (CSRF token needed for the request above)
+      clearAuthStorage();
+      set({
+        user: null,
+        isAuthenticated: false,
+        error: null
+      });
+    }
   },
 
   /**

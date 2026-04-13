@@ -171,13 +171,18 @@ export default function ScheduledPage() {
       try {
         setIsDataLoading(true);
         const [accountsData, categoriesData] = await Promise.all([
-          accountsClient.getAccounts(),
-          categoriesClient.getAll(),
+          accountsClient.getAccounts(false),
+          categoriesClient.getOptions(),
         ]);
-        setAccounts(accountsData.map(a => ({ id: a.id, name: a.name })));
+        setAccounts(
+          accountsData
+            .filter(a => a.isActive)
+            .map(a => ({ id: a.id, name: a.displayName ?? a.name }))
+        );
         setCategories(categoriesData.map(c => ({ id: c.id, name: c.name })));
       } catch (err) {
         console.error('Failed to load accounts/categories:', err);
+        setError('Failed to load form data. Please refresh the page.');
       } finally {
         setIsDataLoading(false);
       }

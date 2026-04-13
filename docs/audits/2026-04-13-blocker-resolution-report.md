@@ -241,20 +241,24 @@ c281403 fix(security): add tiered password validation for staging environments
 
 ---
 
-## E2E Testing (Playwright) — NOT EXECUTED
+## E2E Testing (Playwright) — VALIDATED LOCALLY
 
-**Status**: Blocked by sandbox infrastructure limitations.
+**Remote sandbox**: Could not run E2E (no Docker). Test compilation verified only.
 
-The sandbox environment cannot run Docker containers (kernel 4.4.0 does not support nftables/iptables required for Docker networking). Without TimescaleDB + Redis + backend API, the web dev server cannot start, and Playwright E2E tests cannot execute.
+**Local validation (2026-04-13)**: Playwright E2E executed on developer machine with full infrastructure (TimescaleDB + Redis via distrobox+podman).
 
-**What was verified**:
-- Playwright v1.57.0 installed, Chromium browser available
-- `npx playwright test --list` succeeds: **104 E2E tests** compile and are ready to run
-- Test coverage includes auth flows, dashboard navigation, categories, smoke tests, and critical user journeys
+**Results**: 27 passed, 3 skipped (`test.fixme`), 0 failed — Chromium project.
 
-**104 tests across 5 spec files**:
-| Spec | Tests | Coverage |
-|------|-------|----------|
+**3 skipped tests** (pre-existing `test.fixme` from Tier 0, not introduced by this PR):
+| Test | Reason |
+|------|--------|
+| `should redirect to login for unauthenticated users` | Auth guard behavior not deterministic in test |
+| `should handle expired session gracefully` | Same auth guard issue |
+| `should disable submit button while loading` | Assertion was tautological, needs rewrite |
+
+**Test coverage across 7 spec files**:
+| Spec | Coverage |
+|------|----------|
 | `auth/auth.spec.ts` | Auth login, signup, logout, protected routes, session management |
 | `auth/registration.e2e.spec.ts` | Registration flow, validation, error recovery, UI/UX |
 | `tests/auth/auth.spec.ts` | Login, registration, protected routes, session persistence |
@@ -262,14 +266,6 @@ The sandbox environment cannot run Docker containers (kernel 4.4.0 does not supp
 | `tests/smoke/smoke.spec.ts` | Home page, login page, dashboard, logout |
 | `tests/dashboard/dashboard.spec.ts` | Dashboard navigation, widgets |
 | `tests/critical/journeys.spec.ts` | End-to-end critical user journeys |
-
-**Action required**: Run E2E tests locally before merging to `develop`:
-```bash
-pnpm docker:dev                   # Start TimescaleDB + Redis
-pnpm db:migrate                   # Run migrations
-pnpm dev                          # Start backend + web
-pnpm test:e2e                     # Run all 104 E2E tests
-```
 
 ---
 
