@@ -40,6 +40,7 @@ services:
   # Backend service for E2E tests
   # Uses pre-built runtime stage - starts in seconds, not minutes
   backend-e2e:
+    image: moneywise-backend:e2e
     build:
       context: .
       dockerfile: apps/backend/Dockerfile
@@ -92,6 +93,7 @@ services:
   # Frontend service for E2E tests
   # Uses pre-built runtime stage with Next.js standalone output
   frontend-e2e:
+    image: moneywise-frontend:e2e
     build:
       context: .
       dockerfile: apps/web/Dockerfile
