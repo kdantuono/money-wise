@@ -16,4 +16,4 @@ export { timescaledbConfig } from './timescaledb.config';
 export { PasswordPolicyConfig, DEFAULT_PASSWORD_POLICY, SPECIAL_CHARACTERS, COMMON_PASSWORDS } from './auth-password-policy.config';
 
 // Custom Validators
-export { IsUniqueSecret, IsStrongPassword } from './validators';
+export { IsUniqueSecret } from './validators';
