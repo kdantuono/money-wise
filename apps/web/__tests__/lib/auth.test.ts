@@ -27,7 +27,7 @@ vi.mock('../../src/utils/sanitize', () => ({
 // Import after mocks are set up
 import { authService } from '../../lib/auth';
 import type { User, AuthResponse } from '../../lib/auth';
-import { getCsrfToken, setCsrfToken, clearCsrfToken } from '../../src/utils/csrf';
+import { getCsrfToken, setCsrfToken, clearCsrfToken, refreshCsrfToken } from '../../src/utils/csrf';
 
 // Helper to create a mock Response
 function mockResponse(data: unknown, options: { ok?: boolean; status?: number } = {}) {
@@ -293,6 +293,9 @@ describe('Auth Service', () => {
           credentials: 'include',
         })
       );
+      // CSRF header must NOT be present on GET requests
+      const headers = callArgs[1]?.headers as Record<string, string> | undefined;
+      expect(headers?.['X-CSRF-Token']).toBeUndefined();
     });
   });
 
@@ -386,7 +389,6 @@ describe('Auth Service', () => {
 
   describe('authService.refreshCsrfToken', () => {
     it('should delegate to refreshCsrfToken utility', async () => {
-      const { refreshCsrfToken } = await import('../../src/utils/csrf');
       vi.mocked(refreshCsrfToken).mockResolvedValue('new-csrf-token');
 
       const result = await authService.refreshCsrfToken();
