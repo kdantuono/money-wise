@@ -777,6 +777,13 @@ jobs:
           verbose: true
           name: coverage-report-${{ github.run_id }}
 
+      - name: 📊 Count Test Skips
+        if: always()
+        continue-on-error: true
+        run: |
+          echo "📊 Test skip inventory..."
+          bash scripts/testing/count-test-skips.sh || true
+
       - name: 📊 Comment PR with Coverage Report
         if: github.event_name == 'pull_request'
         uses: actions/github-script@v7
