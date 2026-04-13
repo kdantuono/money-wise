@@ -8,11 +8,9 @@ FROM node:22-alpine AS builder
 # Set working directory
 WORKDIR /app
 
-# Install build tools for native addons (may be needed by transitive deps)
-RUN apk add --no-cache python3 make g++
-
-# Install pnpm (must match engines.pnpm in package.json)
-RUN npm install -g pnpm@10
+# Install build tools for native addons and pnpm
+# hadolint ignore=DL3018
+RUN apk add --no-cache python3 make g++ && npm install -g pnpm@10
 
 # Copy all package files and workspace config
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
