@@ -43,6 +43,7 @@ export default defineConfig({
         // Infrastructure files (better tested via E2E/integration)
         'instrumentation*.ts',
         'app/global-error.tsx',
+        'public/mockServiceWorker.js',
         // API routes (tested via integration tests, not unit tests)
         'app/api/**/*.ts'
       ],
