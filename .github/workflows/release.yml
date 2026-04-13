@@ -132,7 +132,7 @@ jobs:
 
       - name: 📦 Setup pnpm (if rebuild needed)
         if: steps.check-artifacts.outputs.exists == 'false'
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
 
       - name: 📦 Setup Node.js (if rebuild needed)
         if: steps.check-artifacts.outputs.exists == 'false'
