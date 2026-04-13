@@ -17,7 +17,6 @@ export default defineConfig({
       '**/.next/**',
       '**/out/**',
       '**/e2e/**',
-      '**/__tests__/pages/**'
     ],
     coverage: {
       provider: 'v8',
