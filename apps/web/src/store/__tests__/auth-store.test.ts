@@ -354,7 +354,7 @@ describe('Auth Store', () => {
   });
 
   describe('logout', () => {
-    it('should logout successfully', async () => {
+    it('should logout successfully and clear state synchronously', () => {
       vi.mocked(authLib.authService.logout).mockResolvedValue(undefined);
       vi.mocked(csrfUtils.clearCsrfToken).mockImplementation(() => {});
 
@@ -365,9 +365,9 @@ describe('Auth Store', () => {
         result.current.setUser(mockUser);
       });
 
-      // Then logout
-      await act(async () => {
-        await result.current.logout();
+      // Logout is now synchronous — state clears immediately
+      act(() => {
+        result.current.logout();
       });
 
       expect(result.current.user).toBeNull();
@@ -389,17 +389,22 @@ describe('Auth Store', () => {
         result.current.setUser(mockUser);
       });
 
-      // Then logout (should not throw)
-      await act(async () => {
-        await result.current.logout();
+      // Logout clears state synchronously, even before API resolves
+      act(() => {
+        result.current.logout();
       });
 
+      // State is cleared immediately (synchronous)
       expect(result.current.user).toBeNull();
       expect(result.current.isAuthenticated).toBe(false);
-      expect(console.error).toHaveBeenCalledWith(
-        'Logout API call failed:',
-        expect.any(Error)
-      );
+
+      // Wait for fire-and-forget API call to reject and log error
+      await vi.waitFor(() => {
+        expect(console.error).toHaveBeenCalledWith(
+          'Logout API call failed:',
+          expect.any(Error)
+        );
+      });
     });
   });
 

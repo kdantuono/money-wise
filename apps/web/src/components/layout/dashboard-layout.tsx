@@ -68,9 +68,9 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const isPlanningActive = planningItems.some(item => pathname.startsWith(item.href));
   const [planningOpen, setPlanningOpen] = useState(isPlanningActive);
 
-  const handleLogout = async () => {
-    await logout();
-    router.push('/auth/login');
+  const handleLogout = () => {
+    router.replace('/auth/login');
+    logout();
   };
 
   return (
