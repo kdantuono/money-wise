@@ -84,8 +84,6 @@ jobs:
 
       - name: 📦 Setup pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: '10.11.0'
 
       - name: 📦 Setup Node.js
         uses: actions/setup-node@v5
@@ -211,8 +209,6 @@ jobs:
       - name: 📦 Setup pnpm
         if: steps.should-run.outputs.run == 'true'
         uses: pnpm/action-setup@v4
-        with:
-          version: '10.11.0'
 
       - name: 📦 Setup Node.js
         if: steps.should-run.outputs.run == 'true'
@@ -313,8 +309,6 @@ jobs:
       - name: 📦 Setup pnpm
         if: steps.should-run.outputs.run == 'true'
         uses: pnpm/action-setup@v4
-        with:
-          version: '10.11.0'
 
       - name: 📦 Setup Node.js
         if: steps.should-run.outputs.run == 'true'
@@ -476,8 +470,6 @@ jobs:
 
       - name: 📦 Setup pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: '10.11.0'
 
       - name: 📦 Setup Node.js
         uses: actions/setup-node@v5
@@ -616,8 +608,6 @@ jobs:
 
       - name: 📦 Setup pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: '10.11.0'
 
       - name: 📦 Setup Node.js
         uses: actions/setup-node@v5
@@ -926,8 +916,6 @@ jobs:
       - name: 📦 Setup pnpm
         if: steps.check-app.outputs.exists == 'true'
         uses: pnpm/action-setup@v4
-        with:
-          version: '10.11.0'
 
       - name: 📦 Setup Node.js
         if: steps.check-app.outputs.exists == 'true'
@@ -1006,8 +994,6 @@ jobs:
 
       - name: 📦 Install pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: '10.11.0'
 
       - name: 📦 Setup Node.js
         uses: actions/setup-node@v5
@@ -1128,8 +1114,6 @@ jobs:
 
       - name: 📦 Install pnpm (BEFORE setup-node)
         uses: pnpm/action-setup@v4
-        with:
-          version: '10.11.0'
 
       - name: 📦 Setup Node.js with pnpm cache
         uses: actions/setup-node@v5
@@ -1319,8 +1303,6 @@ jobs:
 
       - name: 📦 Setup pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: '10'
 
       - name: 📥 Install dependencies
         run: pnpm install --frozen-lockfile
