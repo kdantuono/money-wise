@@ -67,7 +67,7 @@
     "@commitlint/config-conventional": "^18.4.3",
     "@playwright/test": "^1.40.0",
     "@types/jest": "^29.5.14",
-    "axios": "^1.12.0",
+    "axios": "^1.15.0",
     "concurrently": "^8.2.2",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-no-secrets": "^2.2.1",
