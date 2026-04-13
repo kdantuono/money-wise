@@ -244,19 +244,15 @@ test.describe('Authentication @critical', () => {
   });
 
   test.describe('Protected Routes', () => {
-    // FIXME(tier0): auth guard broken — unauthenticated users can reach /dashboard
-    test.fixme('should redirect to login for unauthenticated users', async ({ browser }) => {
+    test('should redirect to login for unauthenticated users', async ({ browser }) => {
       // Fresh context with no cookies/state
       const context = await browser.newContext({ storageState: { cookies: [], origins: [] } });
       const page = await context.newPage();
 
       try {
-        await page.goto('/dashboard', { waitUntil: 'domcontentloaded' });
-        await page.waitForTimeout(3000);
-
-        const url = page.url();
-        const redirectedToLogin = url.includes('/auth/login');
-        expect(redirectedToLogin).toBe(true);
+        await page.goto('/dashboard');
+        // Middleware should redirect (302) to /auth/login before the page loads
+        await expect(page).toHaveURL(/\/auth\/login/, { timeout: 10000 });
       } finally {
         await context.close();
       }
@@ -318,8 +314,7 @@ test.describe('Authentication @critical', () => {
       expect(await auth.isAuthenticated()).toBe(true);
     });
 
-    // FIXME(tier0): auth guard broken — expired session not redirecting to login
-    test.fixme('should handle expired session gracefully', async ({ page }) => {
+    test('should handle expired session gracefully', async ({ page }) => {
       const auth = new AuthHelper(page);
 
       // Login
@@ -339,13 +334,9 @@ test.describe('Authentication @critical', () => {
       // Clear auth to simulate expired session
       await auth.clearAuth();
 
-      // Try to access protected route
+      // Try to access protected route — middleware should redirect
       await page.goto('/dashboard/accounts');
-      await page.waitForTimeout(2500);
-
-      const url = page.url();
-      const redirected = url.includes('/auth/login');
-      expect(redirected).toBe(true);
+      await expect(page).toHaveURL(/\/auth\/login/, { timeout: 10000 });
     });
   });
 });
