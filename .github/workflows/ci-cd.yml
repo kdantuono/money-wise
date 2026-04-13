@@ -108,6 +108,13 @@ jobs:
         if: hashFiles('**/.eslintrc*') != ''
         run: pnpm lint
 
+      - name: 📋 Marker Convention Lint
+        if: always()
+        continue-on-error: true
+        run: |
+          echo "📋 Checking marker conventions..."
+          bash scripts/lint-markers.sh || true
+
       - name: 💅 Prettier Format Check
         if: hashFiles('**/.prettierrc*') != ''
         run: |
