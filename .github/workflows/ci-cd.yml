@@ -779,7 +779,7 @@ jobs:
 
       - name: 📊 Comment PR with Coverage Report
         if: github.event_name == 'pull_request'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         continue-on-error: true
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -1336,7 +1336,7 @@ jobs:
 
       - name: Comment PR with bundle size
         if: always()
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
@@ -1379,7 +1379,7 @@ jobs:
     if: always()
     steps:
       - name: Generate summary
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             // Access job results from needs context
