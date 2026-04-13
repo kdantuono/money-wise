@@ -7,6 +7,70 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+_Next: Candidate 6 (Auth Hardening), cleanup pass, develop→main sync._
+
+---
+
+## [0.7.0] - 2026-04-13
+
+### Clinical Audit Response — Candidate 7 + 10
+
+This release completes the two prerequisite workstreams identified by the
+[2026-04-12 Clinical Health Audit](docs/audits/2026-04-12-health-audit.md)
+as non-negotiable before any feature work.
+
+### Added
+
+- **R1 — Test skip counter** (`scripts/testing/count-test-skips.sh`)
+  - CI step reports skip inventory on every pipeline run
+  - `pnpm test:report-skips` for local use
+- **R2 — Marker convention lint** (`scripts/lint-markers.sh` enhanced)
+  - Detects stale TODO/FIXME markers older than 90 days
+  - CI step in development pipeline
+- **R3 — Architecture ownership table** (`docs/ARCHITECTURE_OWNERSHIP.md`)
+  - Maps 9 cross-cutting concerns to canonical owner paths
+- **Dependabot grouping** — consolidated from 9 per-directory entries to 1 root
+  workspace entry with 15 semantic groups (nestjs, testing, linting, prisma, etc.)
+
+### Changed
+
+- **Web test credibility 28 → 60+** (Candidate 7)
+  - Rewrote 7 test files from JWT/axios mocks to cookie/fetch pattern
+  - Removed 97 stale `describe.skip` / `it.skip` markers
+  - Fixed `accounts.test.tsx` flaky timeouts (3s → 5s)
+  - All code review feedback (Claude + Copilot) addressed
+- **GitHub Actions v5** — checkout, setup-node, codecov upgraded across 5 workflows
+- **pnpm/action-setup v4** — reads `packageManager` from package.json (no explicit version)
+- **Playwright E2E cache** — split install into cache-miss (full) vs cache-hit (deps only)
+- **Docker BuildKit** — pre-build E2E images with GHA cache
+- **Pre-commit hook** — skip web tests on Node 24+ (jsdom incompatible)
+- **Telemetry opt-out** — `NEXT_TELEMETRY_DISABLED` in CI env
+
+### Fixed
+
+- **T8 tautology** (`auth.spec.ts`) — replaced `expect(a || b).toBe(true)` with
+  proper `toHaveURL(/\/auth\/login/)` assertion
+- **Auth guard E2E** — 2 `test.fixme` enabled with Playwright `toHaveURL`
+- **Bundle size job** — pnpm must install before setup-node (ordering fix)
+- **Dependabot CI failures** — 30 stale PRs closed, config fixed for pnpm monorepo
+- **Dashboard layout tests** — `router.replace` not `push`, correct button selectors
+
+### Security
+
+- **Dependabot overrides**: axios ≥1.15.0 (CRITICAL), vite ≥6.4.2, defu ≥6.1.5,
+  @xmldom/xmldom ≥0.8.12, picomatch ≥4.0.4 (all HIGH)
+- Critical Dependabot alerts: 2 → 0
+
+### Removed
+
+- Deploy preview placeholder job (commented out — was no-op with fake URL)
+- Phantom `mockServiceWorker.js` coverage exclusion
+- Unused `PNPM_VERSION` env vars from CI workflows
+
+---
+
+## [0.6.2] - 2025-12-05
+
 ### Added
 
 - **Phase 1: Categories Enhanced Module** - Complete category management system
@@ -287,7 +351,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Navigation link validation
   - Empty state and loading state tests
 
-## [Unreleased]
+## [0.5.2] - 2025-12-03 (pre-release, infrastructure)
 
 ### Added
 
@@ -677,35 +741,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## Version History Summary
-
-| Version | Date | Type | Description |
-|---------|------|------|-------------|
-| 0.1.0 | 2025-01-26 | Initial | Complete project infrastructure & MVP foundation |
-
-## Upcoming Releases
-
-### [0.2.0] - Planned (Q1 2025)
-
-- User authentication system
-- Core transaction management
-- Basic budgeting functionality
-- Database schema implementation
-
-### [0.3.0] - Planned (Q1 2025)
-
-- Account management system
-- Transaction categorization
-- Financial goal tracking
-- Enhanced UI components
-
-### [1.0.0] - Planned (Q2 2025)
-
-- Banking integration (Plaid)
-- Advanced financial analytics
-- Mobile application release
-- Production deployment pipeline
-
 ## Semantic Versioning Guidelines
 
 This project follows [Semantic Versioning](https://semver.org/) (SemVer):
@@ -757,4 +792,4 @@ This project follows [Semantic Versioning](https://semver.org/) (SemVer):
 
 **Changelog Automation**: This file is maintained through the documentation-specialist agent pattern, ensuring consistency and accuracy across all releases.
 
-**Last Updated**: 2025-01-26
+**Last Updated**: 2026-04-13

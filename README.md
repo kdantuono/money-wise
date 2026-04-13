@@ -3,7 +3,7 @@
 Personal finance management application with cross-platform support
 
 [![CI/CD Pipeline](https://github.com/kdantuono/money-wise/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/kdantuono/money-wise/actions/workflows/ci-cd.yml)
-[![Version](https://img.shields.io/badge/version-0.6.2-blue.svg)](https://github.com/kdantuono/money-wise)
+[![Version](https://img.shields.io/badge/version-0.7.0-blue.svg)](https://github.com/kdantuono/money-wise)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node Version](https://img.shields.io/badge/node-%3E%3D22.0.0-brightgreen.svg)](https://nodejs.org/)
 [![Package Manager](https://img.shields.io/badge/package%20manager-pnpm%20%3E%3D10.0.0-orange.svg)](https://pnpm.io/)
@@ -12,10 +12,11 @@ Personal finance management application with cross-platform support
 
 MoneyWise is a comprehensive personal finance management application built with modern technologies and cross-platform compatibility. The application helps users track expenses, manage budgets, and gain insights into their financial health.
 
-### **Current Status: MVP Development (v0.6.2)**
+### **Current Status: MVP Development (v0.7.0)**
 - ✅ Project infrastructure and monorepo setup complete
-- ✅ Documentation and planning organization complete
-- 🚧 Core financial features in development
+- ✅ Clinical health audit completed ([report](./docs/audits/2026-04-12-health-audit.md))
+- ✅ Test credibility restored (Candidate 7+10)
+- 🚧 Auth hardening + Family multi-tenancy next
 - 📋 [View Development Progress](./docs/development/progress.md)
 
 ## 🚀 Quick Start (5 Minutes)
