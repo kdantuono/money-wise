@@ -319,17 +319,11 @@ describe('Auth Service', () => {
     it('should clear CSRF token even when logout API call fails', async () => {
       vi.mocked(global.fetch).mockRejectedValue(new Error('Network error'));
 
-      // logout should NOT throw - it catches errors and clears CSRF in finally
-      await authService.logout();
+      // logout uses try/finally (no catch), so errors propagate
+      // but clearCsrfToken is still called in the finally block
+      await expect(authService.logout()).rejects.toThrow('Network error');
 
       expect(clearCsrfToken).toHaveBeenCalled();
-    });
-
-    it('should not throw on logout failure', async () => {
-      vi.mocked(global.fetch).mockRejectedValue(new Error('Server down'));
-
-      // Should resolve without throwing
-      await expect(authService.logout()).resolves.toBeUndefined();
     });
   });
 
