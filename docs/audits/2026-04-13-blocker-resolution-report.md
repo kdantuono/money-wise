@@ -241,6 +241,38 @@ c281403 fix(security): add tiered password validation for staging environments
 
 ---
 
+## E2E Testing (Playwright) — NOT EXECUTED
+
+**Status**: Blocked by sandbox infrastructure limitations.
+
+The sandbox environment cannot run Docker containers (kernel 4.4.0 does not support nftables/iptables required for Docker networking). Without TimescaleDB + Redis + backend API, the web dev server cannot start, and Playwright E2E tests cannot execute.
+
+**What was verified**:
+- Playwright v1.57.0 installed, Chromium browser available
+- `npx playwright test --list` succeeds: **104 E2E tests** compile and are ready to run
+- Test coverage includes auth flows, dashboard navigation, categories, smoke tests, and critical user journeys
+
+**104 tests across 5 spec files**:
+| Spec | Tests | Coverage |
+|------|-------|----------|
+| `auth/auth.spec.ts` | Auth login, signup, logout, protected routes, session management |
+| `auth/registration.e2e.spec.ts` | Registration flow, validation, error recovery, UI/UX |
+| `tests/auth/auth.spec.ts` | Login, registration, protected routes, session persistence |
+| `tests/categories/categories.spec.ts` | Category CRUD |
+| `tests/smoke/smoke.spec.ts` | Home page, login page, dashboard, logout |
+| `tests/dashboard/dashboard.spec.ts` | Dashboard navigation, widgets |
+| `tests/critical/journeys.spec.ts` | End-to-end critical user journeys |
+
+**Action required**: Run E2E tests locally before merging to `develop`:
+```bash
+pnpm docker:dev                   # Start TimescaleDB + Redis
+pnpm db:migrate                   # Run migrations
+pnpm dev                          # Start backend + web
+pnpm test:e2e                     # Run all 104 E2E tests
+```
+
+---
+
 ## Notes
 
 1. **Pre-commit hooks**: Some agents bypassed hooks (`--no-verify` / `HUSKY=0`) because the Turbo pipeline's `typecheck` task depends on `next build`, which fails in this sandbox due to no network access to `fonts.googleapis.com`. All individual checks (lint, tsc, vitest, jest) pass independently.
