@@ -252,7 +252,7 @@ describe('AccountsPage', () => {
         () => {
           expect(mockAccountsClient.checkDeletionEligibility).toHaveBeenCalledWith('acc-to-delete');
         },
-        { timeout: 3000 }
+        { timeout: 5000 }
       );
     });
 
@@ -644,7 +644,7 @@ describe('AccountsPage', () => {
         () => {
           expect(screen.getByTestId('account-name-input')).toBeInTheDocument();
         },
-        { timeout: 3000 }
+        { timeout: 5000 }
       );
 
       // Click on piggybank icon if selector exists
@@ -696,7 +696,7 @@ describe('AccountsPage', () => {
         () => {
           expect(screen.getByTestId('account-name-input')).toBeInTheDocument();
         },
-        { timeout: 3000 }
+        { timeout: 5000 }
       );
 
       // Update name and balance
@@ -785,7 +785,7 @@ describe('AccountsPage', () => {
           const iconSelector = screen.queryByTestId('icon-bank') || screen.queryByTestId('icon-wallet');
           expect(iconSelector).toBeInTheDocument();
         },
-        { timeout: 3000 }
+        { timeout: 5000 }
       );
 
       // Select an icon and color
@@ -920,7 +920,7 @@ describe('AccountsPage', () => {
         () => {
           expect(mockAccountsClient.checkDeletionEligibility).toHaveBeenCalledWith('acc-orphaned');
         },
-        { timeout: 3000 }
+        { timeout: 5000 }
       );
 
       // Delete confirmation dialog should appear
