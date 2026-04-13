@@ -9,7 +9,7 @@
 
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import { useAuthStore } from '../auth-store';
+import { useAuthStore } from '../auth.store';
 import * as authLib from '../../../lib/auth';
 import * as csrfUtils from '@/utils/csrf';
 
@@ -354,7 +354,7 @@ describe('Auth Store', () => {
   });
 
   describe('logout', () => {
-    it('should logout successfully', async () => {
+    it('should logout successfully and clear state after API call', async () => {
       vi.mocked(authLib.authService.logout).mockResolvedValue(undefined);
       vi.mocked(csrfUtils.clearCsrfToken).mockImplementation(() => {});
 
@@ -365,7 +365,7 @@ describe('Auth Store', () => {
         result.current.setUser(mockUser);
       });
 
-      // Then logout
+      // Logout is async — calls backend first, then clears state
       await act(async () => {
         await result.current.logout();
       });
@@ -389,11 +389,12 @@ describe('Auth Store', () => {
         result.current.setUser(mockUser);
       });
 
-      // Then logout (should not throw)
+      // Logout calls API (fails), then clears state in finally block
       await act(async () => {
         await result.current.logout();
       });
 
+      // State is cleared in finally block after API failure
       expect(result.current.user).toBeNull();
       expect(result.current.isAuthenticated).toBe(false);
       expect(console.error).toHaveBeenCalledWith(

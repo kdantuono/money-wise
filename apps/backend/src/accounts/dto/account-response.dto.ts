@@ -42,9 +42,6 @@ export class AccountResponseDto {
   @ApiProperty({ description: 'Display name', example: 'Chase Bank - Checking' })
   displayName: string;
 
-  @ApiProperty({ description: 'Is Plaid account' })
-  isPlaidAccount: boolean;
-
   @ApiProperty({ description: 'Is manual account' })
   isManualAccount: boolean;
 

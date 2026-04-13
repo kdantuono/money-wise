@@ -53,7 +53,6 @@ describe('DatabaseConfig', () => {
     });
 
     it('should require DB_HOST', async () => {
-      // @ts-expect-error Testing missing required field
       config.DB_HOST = undefined;
       config.DB_PORT = 5432;
       config.DB_USERNAME = 'postgres';
@@ -139,7 +138,6 @@ describe('DatabaseConfig', () => {
     it('should require DB_USERNAME', async () => {
       config.DB_HOST = 'localhost';
       config.DB_PORT = 5432;
-      // @ts-expect-error Testing missing required field
       config.DB_USERNAME = undefined;
       config.DB_PASSWORD = 'password123';
       config.DB_NAME = 'testdb';
@@ -186,7 +184,6 @@ describe('DatabaseConfig', () => {
       config.DB_HOST = 'localhost';
       config.DB_PORT = 5432;
       config.DB_USERNAME = 'postgres';
-      // @ts-expect-error Testing missing required field
       config.DB_PASSWORD = undefined;
       config.DB_NAME = 'testdb';
       const errors = await validate(config);
@@ -220,7 +217,6 @@ describe('DatabaseConfig', () => {
       config.DB_PORT = 5432;
       config.DB_USERNAME = 'postgres';
       config.DB_PASSWORD = 'password123';
-      // @ts-expect-error Testing missing required field
       config.DB_NAME = undefined;
       const errors = await validate(config);
       expect(errors.find(e => e.property === 'DB_NAME')).toBeDefined();

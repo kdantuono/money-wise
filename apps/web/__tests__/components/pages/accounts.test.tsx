@@ -60,7 +60,6 @@ const createMockAccount = (overrides: Record<string, unknown> = {}) => {
     institutionName: 'Local Bank',
     displayName: 'Local Bank - Test Savings',
     isManualAccount,
-    isPlaidAccount: false,
     isSyncable,
     needsSync: false,
     isActive: true,
@@ -591,12 +590,12 @@ describe('AccountsPage', () => {
       const editButton = screen.getByTestId('edit-button');
       await user.click(editButton);
 
-      // Wait for the edit form to appear (increase timeout for CI environment)
+      // Wait for the edit form to appear (5s timeout for CI coverage runs)
       await waitFor(
         () => {
           expect(screen.getByTestId('account-name-input')).toBeInTheDocument();
         },
-        { timeout: 3000 }
+        { timeout: 5000 }
       );
 
       // Update the account name
@@ -742,7 +741,6 @@ describe('AccountsPage', () => {
         name: 'SaltEdge Bank Account',
         source: AccountSource.SALTEDGE,
         isManualAccount: false,
-        isPlaidAccount: false,
       });
       mockAccountsClient.getAccounts.mockResolvedValue([linkedAccount]);
 
@@ -763,7 +761,6 @@ describe('AccountsPage', () => {
         name: 'SaltEdge Bank Account',
         source: AccountSource.SALTEDGE,
         isManualAccount: false,
-        isPlaidAccount: false,
       });
       mockAccountsClient.getAccounts.mockResolvedValue([linkedAccount]);
       mockAccountsClient.updateAccount.mockResolvedValue({

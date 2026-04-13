@@ -20,25 +20,8 @@ import {
   type ScheduledTransaction,
   type CreateScheduledTransactionRequest,
 } from '@/services/scheduled.client';
-
-// =============================================================================
-// Mock data for accounts and categories (replace with actual data fetching)
-// =============================================================================
-
-const MOCK_ACCOUNTS = [
-  { id: 'acc-1', name: 'Main Checking' },
-  { id: 'acc-2', name: 'Savings Account' },
-  { id: 'acc-3', name: 'Credit Card' },
-];
-
-const MOCK_CATEGORIES = [
-  { id: 'cat-1', name: 'Utilities' },
-  { id: 'cat-2', name: 'Subscriptions' },
-  { id: 'cat-3', name: 'Insurance' },
-  { id: 'cat-4', name: 'Rent/Mortgage' },
-  { id: 'cat-5', name: 'Transportation' },
-  { id: 'cat-6', name: 'Entertainment' },
-];
+import { accountsClient } from '@/services/accounts.client';
+import { categoriesClient } from '@/services/categories.client';
 
 // =============================================================================
 // Component
@@ -50,6 +33,11 @@ export default function ScheduledPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Accounts and categories state
+  const [accounts, setAccounts] = useState<{ id: string; name: string }[]>([]);
+  const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
+  const [isDataLoading, setIsDataLoading] = useState(true);
 
   // Form state
   const [showForm, setShowForm] = useState(false);
@@ -177,6 +165,31 @@ export default function ScheduledPage() {
     fetchTransactions();
   }, [fetchTransactions]);
 
+  // Fetch accounts and categories on mount
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setIsDataLoading(true);
+        const [accountsData, categoriesData] = await Promise.all([
+          accountsClient.getAccounts(false),
+          categoriesClient.getOptions(),
+        ]);
+        setAccounts(
+          accountsData
+            .filter(a => a.isActive)
+            .map(a => ({ id: a.id, name: a.displayName ?? a.name }))
+        );
+        setCategories(categoriesData.map(c => ({ id: c.id, name: c.name })));
+      } catch (err) {
+        console.error('Failed to load accounts/categories:', err);
+        setError('Failed to load form data. Please refresh the page.');
+      } finally {
+        setIsDataLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
   return (
     <div className="space-y-6" data-testid="scheduled-container">
       {/* Page Header */}
@@ -216,10 +229,12 @@ export default function ScheduledPage() {
           {/* Add New Button */}
           <button
             onClick={handleAddNew}
+            disabled={isDataLoading}
             className="inline-flex items-center justify-center px-4 py-2 rounded-lg font-medium
               transition-colors duration-200 bg-blue-600 text-white
               hover:bg-blue-700 active:bg-blue-800
-              focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500"
+              focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500
+              disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Plus className="h-4 w-4 mr-2" aria-hidden="true" />
             Add New
@@ -257,8 +272,8 @@ export default function ScheduledPage() {
       {showForm && (
         <ScheduledTransactionForm
           transaction={editingTransaction}
-          accounts={MOCK_ACCOUNTS}
-          categories={MOCK_CATEGORIES}
+          accounts={accounts}
+          categories={categories}
           onSubmit={handleSubmit}
           onClose={handleFormClose}
           isLoading={isSubmitting}

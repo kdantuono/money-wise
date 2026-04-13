@@ -17,7 +17,7 @@
  * - Cookies handled automatically by browser
  * - Simplified token refresh (backend handles via cookies)
  *
- * @module stores/auth-store
+ * @module store/auth.store
  */
 
 import { create } from 'zustand';
@@ -186,13 +186,12 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
    */
   logout: async () => {
     try {
-      // Notify backend to clear cookies
+      // Notify backend to clear cookies BEFORE clearing CSRF token
       await authService.logout();
     } catch (error) {
-      // Log error but still clear local state
       console.error('Logout API call failed:', error);
     } finally {
-      // Always clear local state regardless of API response
+      // Clear local state after backend call (CSRF token needed for the request above)
       clearAuthStorage();
       set({
         user: null,

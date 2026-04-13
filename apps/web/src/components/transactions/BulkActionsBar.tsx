@@ -1,7 +1,7 @@
 'use client';
 
 import { memo } from 'react';
-import { X, Tag, Trash2, CheckSquare, Square, Loader2, Download } from 'lucide-react';
+import { X, Tag, Trash2, CheckSquare, Square, Loader2, Download, ArrowLeftRight } from 'lucide-react';
 
 // =============================================================================
 // Type Definitions
@@ -22,6 +22,8 @@ export interface BulkActionsBarProps {
   onDelete: () => void;
   /** Callback to export selected items */
   onExport?: () => void;
+  /** Callback to link selected items as transfer (only shown when exactly 2 selected) */
+  onLinkTransfer?: () => void;
   /** Callback to clear selection */
   onClearSelection: () => void;
   /** Callback to select all items */
@@ -47,6 +49,7 @@ export const BulkActionsBar = memo(function BulkActionsBar({
   onCategorize,
   onDelete,
   onExport,
+  onLinkTransfer,
   onClearSelection,
   onSelectAll,
 }: BulkActionsBarProps) {
@@ -128,6 +131,24 @@ export const BulkActionsBar = memo(function BulkActionsBar({
               <Tag className="h-4 w-4" />
               Categorize
             </button>
+
+            {/* Link as Transfer Button - only visible when exactly 2 items selected */}
+            {selectedCount === 2 && onLinkTransfer && (
+              <button
+                type="button"
+                onClick={onLinkTransfer}
+                disabled={isProcessing}
+                className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium
+                  text-blue-600 bg-white border border-blue-300 rounded-lg
+                  hover:bg-blue-50 hover:text-blue-700
+                  focus:outline-none focus:ring-2 focus:ring-blue-500
+                  disabled:opacity-50 disabled:cursor-not-allowed
+                  transition-colors duration-150"
+              >
+                <ArrowLeftRight className="h-4 w-4" />
+                Link as Transfer
+              </button>
+            )}
 
             {/* Export Button */}
             {onExport && (

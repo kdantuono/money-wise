@@ -82,6 +82,12 @@ while IFS= read -r file; do
         # Create destination directory if needed
         mkdir -p "$destination"
 
+        # Prevent silent overwrite of existing files
+        if [ -f "$destination$filename" ]; then
+            echo "⚠️  SKIP: $filename already exists at $destination (would overwrite)"
+            continue
+        fi
+
         # Move file using git
         git mv "$file" "$destination$filename" 2>/dev/null || {
             # Fallback if git mv fails

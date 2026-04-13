@@ -37,7 +37,7 @@ The MoneyWise backend is **production-ready** for frontend integration. All crit
 - **JWT Tokens**: Access (15m) and Refresh (7d) tokens working ✅
 - **Email Verification**: Comprehensive verification flow with security ✅
 - **Password Security**:
-  - Strength validation (min 32 chars, mixed case, numbers, symbols)
+  - Strength validation (min 12 chars with complexity requirements: mixed case, numbers, symbols)
   - Personal info detection (prevents using name in password)
   - Pattern detection (prevents repeating/sequential chars)
   - Entropy calculation for advanced detection

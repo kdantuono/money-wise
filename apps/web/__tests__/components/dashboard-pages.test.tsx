@@ -13,10 +13,10 @@ import { render, screen } from '../utils/test-utils';
 import InvestmentsPage from '../../app/dashboard/investments/page';
 import GoalsPage from '../../app/dashboard/goals/page';
 import SettingsPage from '../../app/dashboard/settings/page';
-import { useAuthStore } from '../../src/stores/auth-store';
+import { useAuthStore } from '../../src/store/auth.store';
 
 // Mock auth store for SettingsPage (now a full implementation)
-vi.mock('../../src/stores/auth-store', () => ({
+vi.mock('../../src/store/auth.store', () => ({
   useAuthStore: vi.fn(),
 }));
 

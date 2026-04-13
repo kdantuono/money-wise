@@ -25,7 +25,6 @@ describe('EditAccountForm', () => {
     institutionName: 'Local Bank',
     displayName: 'Local Bank - My Savings',
     isManualAccount: true,
-    isPlaidAccount: false,
     needsSync: false,
     isActive: true,
     syncEnabled: false,

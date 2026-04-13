@@ -3,13 +3,14 @@
 # Fixes E2E timeout issue by building during image creation, not container startup
 
 # Build stage
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 
 # Set working directory
 WORKDIR /app
 
-# Install pnpm (must match engines.pnpm in package.json)
-RUN npm install -g pnpm@10
+# Install build tools for native addons (argon2, cpu-features, ssh2) and pnpm
+# hadolint ignore=DL3018
+RUN apk add --no-cache python3 make g++ && npm install -g pnpm@10
 
 # Copy all package files and workspace config
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
@@ -29,7 +30,7 @@ RUN pnpm --filter @money-wise/backend exec prisma generate && \
     pnpm --filter @money-wise/backend build
 
 # Runtime stage
-FROM node:20-alpine AS runtime
+FROM node:22-alpine AS runtime
 
 # Install wget for healthcheck
 # hadolint ignore=DL3018

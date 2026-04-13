@@ -3,7 +3,7 @@
 Personal finance management application with cross-platform support
 
 [![CI/CD Pipeline](https://github.com/kdantuono/money-wise/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/kdantuono/money-wise/actions/workflows/ci-cd.yml)
-[![Version](https://img.shields.io/badge/version-0.6.1-blue.svg)](https://github.com/kdantuono/money-wise)
+[![Version](https://img.shields.io/badge/version-0.6.2-blue.svg)](https://github.com/kdantuono/money-wise)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node Version](https://img.shields.io/badge/node-%3E%3D22.0.0-brightgreen.svg)](https://nodejs.org/)
 [![Package Manager](https://img.shields.io/badge/package%20manager-pnpm%20%3E%3D10.0.0-orange.svg)](https://pnpm.io/)
@@ -12,7 +12,7 @@ Personal finance management application with cross-platform support
 
 MoneyWise is a comprehensive personal finance management application built with modern technologies and cross-platform compatibility. The application helps users track expenses, manage budgets, and gain insights into their financial health.
 
-### **Current Status: MVP Development (v0.6.1)**
+### **Current Status: MVP Development (v0.6.2)**
 - ✅ Project infrastructure and monorepo setup complete
 - ✅ Documentation and planning organization complete
 - 🚧 Core financial features in development
@@ -23,7 +23,7 @@ MoneyWise is a comprehensive personal finance management application built with 
 Get MoneyWise running locally in 5 minutes:
 
 ### **Prerequisites**
-- Node.js 18+ (check with: `node --version`)
+- Node.js 22+ (check with: `node --version`)
 - pnpm package manager (install with: `npm install -g pnpm`)
 - Git (check with: `git --version`)
 - Docker & Docker Compose (for development databases)

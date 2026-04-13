@@ -138,8 +138,8 @@ Forms: react-hook-form + Zod. Charts: recharts. Icons: lucide-react.
 
 ## Testing Patterns
 
-- **Backend**: Jest with ts-jest. Tests in `__tests__/` directories. 30s timeout. Integration tests need running DB.
-- **Web**: Vitest with jsdom. Coverage target: 70% statements, 65% branches.
+- **Backend**: Jest with ts-jest. Tests in `__tests__/` dirs + co-located `src/**/*.spec.ts`. 30s timeout. Coverage: 70% statements/lines, 72% functions, 65% branches. Integration tests need running DB.
+- **Web**: Vitest with jsdom. Coverage: 70% statements/lines/functions, 65% branches.
 - **E2E**: Playwright. Tests in `apps/web/e2e/`. Runs against localhost:3000. Projects: chromium, firefox, webkit, mobile chrome, mobile safari.
 - `passWithNoTests: false` in Jest - every package must have tests or explicit skip.
 
@@ -157,7 +157,7 @@ Files allowed in root: README.md, CHANGELOG.md, CONTRIBUTING.md, FRONTEND_HANDOF
 
 ## Agent & Orchestration References
 
-- Agent details: `.claude/agents/_README.md`
+- Agent details: `.claude/agents/README.md`
 - Commands: `.claude/commands/README.md`
 - Epic workflow: `.claude/workflows/epic-workflow.md`
 - Architecture decisions: `.claude/knowledge/architecture.md`

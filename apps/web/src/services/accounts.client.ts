@@ -51,7 +51,6 @@ export interface Account {
   institutionName?: string;
   maskedAccountNumber?: string;
   displayName: string;
-  isPlaidAccount: boolean;
   isManualAccount: boolean;
   /** Whether account can be synced with banking provider (has valid connection) */
   isSyncable: boolean;

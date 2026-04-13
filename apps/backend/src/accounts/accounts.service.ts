@@ -100,10 +100,6 @@ export class AccountsService {
         institutionName: createAccountDto.institutionName,
         accountNumber: createAccountDto.accountNumber,
         routingNumber: createAccountDto.routingNumber,
-        plaidAccountId: createAccountDto.plaidAccountId,
-        plaidItemId: createAccountDto.plaidItemId,
-        plaidAccessToken: createAccountDto.plaidAccessToken,
-        plaidMetadata: createAccountDto.plaidMetadata as Prisma.JsonValue,
         syncEnabled: createAccountDto.syncEnabled ?? true,
         settings: createAccountDto.settings as Prisma.JsonValue,
         isActive: true,
@@ -332,7 +328,7 @@ export class AccountsService {
 
     const totalBalance = accounts.reduce((sum, acc) => sum + acc.currentBalance.toNumber(), 0);
     const activeAccounts = accounts.filter(acc => acc.status === AccountStatus.ACTIVE).length;
-    const accountsNeedingSync = accounts.filter(acc => this.computeNeedsSync(acc)).length;
+    const accountsNeedingSync = 0;
 
     const byType: AccountSummaryDto['byType'] = {};
     accounts.forEach(account => {
@@ -432,41 +428,6 @@ export class AccountsService {
   }
 
   /**
-   * Sync account with external source (Plaid).
-   * Checks both personal and family ownership authorization.
-   * Requires account to have PLAID source.
-   *
-   * @param id - Account ID
-   * @param userId - User ID (for personal accounts)
-   * @param familyId - Family ID (for family accounts)
-   * @param userRole - User role (ADMIN can sync any account)
-   * @returns Updated account
-   * @throws NotFoundException if account doesn't exist
-   * @throws ForbiddenException if access denied or account is not PLAID
-   */
-  async syncAccount(
-    id: string,
-    userId?: string,
-    familyId?: string,
-    userRole?: UserRole
-  ): Promise<AccountResponseDto> {
-    // Verify access AND require PLAID source
-    await this.verifyAccountAccess(id, userId, familyId, userRole, AccountSource.PLAID);
-
-    // TODO: Implement actual Plaid sync logic
-    // For now, just update lastSyncAt
-    const updatedAccount = await this.prisma.account.update({
-      where: { id },
-      data: {
-        lastSyncAt: new Date(),
-        syncError: null,
-      },
-    });
-
-    return this.toResponseDto(updatedAccount);
-  }
-
-  /**
    * Verify account access authorization.
    * Checks both personal (userId) and family (familyId) ownership.
    *
@@ -522,12 +483,11 @@ export class AccountsService {
    * @returns Account response DTO
    */
   private toResponseDto(account: PrismaAccount): AccountResponseDto {
-    const isPlaidAccount = account.source === AccountSource.PLAID;
     const isManualAccount = account.source === AccountSource.MANUAL;
     // Account is syncable if it has a valid banking provider connection
     // This handles orphaned accounts where source is SALTEDGE but connection was deleted
     const isSyncable = this.computeIsSyncable(account);
-    const needsSync = this.computeNeedsSync(account);
+    const needsSync = false;
     const displayName = account.institutionName
       ? `${account.institutionName} - ${account.name}`
       : account.name;
@@ -549,7 +509,6 @@ export class AccountsService {
       institutionName: account.institutionName,
       maskedAccountNumber,
       displayName,
-      isPlaidAccount,
       isManualAccount,
       isSyncable,
       needsSync,
@@ -875,49 +834,6 @@ export class AccountsService {
   }
 
   /**
-   * Determines if a Plaid account needs synchronization based on business rules.
-   *
-   * **Business Rule**: Plaid accounts require sync if data is older than 1 hour
-   *
-   * Sync Requirements:
-   * - Account must be PLAID source (not MANUAL)
-   * - syncEnabled must be true
-   * - lastSyncAt either null OR > 1 hour old
-   *
-   * **1-Hour Threshold Rationale**:
-   * - Balance freshness: Financial data should be reasonably current
-   * - API rate limits: Avoid excessive Plaid API calls
-   * - User experience: Show sync indicator when data is stale
-   * - Cost optimization: Plaid charges per API call
-   *
-   * @param account - Prisma Account model with sync metadata
-   * @returns true if account needs sync, false otherwise
-   *
-   * @example
-   * // Never synced - needs sync
-   * account.lastSyncAt = null → returns true
-   *
-   * @example
-   * // Synced 30 minutes ago - fresh
-   * account.lastSyncAt = 30 minutes ago → returns false
-   *
-   * @example
-   * // Synced 2 hours ago - stale
-   * account.lastSyncAt = 2 hours ago → returns true
-   *
-   * @example
-   * // Manual account - never needs sync
-   * account.source = MANUAL → returns false
-   */
-  private computeNeedsSync(account: PrismaAccount): boolean {
-    if (!account.syncEnabled || account.source !== AccountSource.PLAID) return false;
-    if (!account.lastSyncAt) return true;
-
-    const hoursSinceSync = (Date.now() - account.lastSyncAt.getTime()) / (1000 * 60 * 60);
-    return hoursSinceSync >= 1;
-  }
-
-  /**
    * Determines if an account can be synced with a banking provider.
    *
    * An account is syncable if:
@@ -946,11 +862,6 @@ export class AccountsService {
     // For SaltEdge accounts, must have valid connection ID
     if (account.source === AccountSource.SALTEDGE) {
       return !!account.saltEdgeConnectionId && !!account.bankingProvider;
-    }
-
-    // For Plaid accounts, must have valid Plaid credentials
-    if (account.source === AccountSource.PLAID) {
-      return !!account.plaidAccessToken && !!account.plaidAccountId;
     }
 
     // For other sources (TINK, YAPILY), check for banking provider

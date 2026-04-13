@@ -4,7 +4,10 @@ import {
   ForbiddenException,
   BadRequestException,
 } from '@nestjs/common';
-import { Prisma, Transaction as PrismaTransaction, TransactionType, UserRole } from '../../generated/prisma';
+import { Prisma, Transaction as PrismaTransaction, TransactionType, UserRole, FlowType, TransferRole } from '../../generated/prisma';
+import { v4 as uuidv4 } from 'uuid';
+import { LinkTransferDto, LinkTransferResponseDto } from './dto/link-transfer.dto';
+import { BulkOperationDto, BulkOperationResponseDto, BulkOperation } from './dto/bulk-operation.dto';
 import { PrismaService } from '../core/database/prisma/prisma.service';
 import { TransactionService as CoreTransactionService } from '../core/database/prisma/services/transaction.service';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
@@ -348,6 +351,217 @@ export class TransactionsService {
       isCredit,
       isPlaidTransaction: transaction.source === 'PLAID',
       isManualTransaction: transaction.source === 'MANUAL',
+    };
+  }
+
+  // ============================================
+  // Transfer Linking Methods
+  // ============================================
+
+  /**
+   * Link two transactions as a transfer pair
+   */
+  async linkAsTransfer(
+    dto: LinkTransferDto,
+    userId: string,
+    userRole?: UserRole,
+  ): Promise<LinkTransferResponseDto> {
+    const [txId1, txId2] = dto.transactionIds;
+
+    // Fetch both transactions
+    const [tx1, tx2] = await Promise.all([
+      this.prisma.transaction.findUnique({
+        where: { id: txId1 },
+        include: { account: true },
+      }),
+      this.prisma.transaction.findUnique({
+        where: { id: txId2 },
+        include: { account: true },
+      }),
+    ]);
+
+    if (!tx1 || !tx2) {
+      throw new NotFoundException('One or both transactions not found');
+    }
+
+    // Verify ownership of both accounts
+    await this.verifyAccountOwnership(tx1.accountId, userId, userRole);
+    await this.verifyAccountOwnership(tx2.accountId, userId, userRole);
+
+    // Validate: transactions must have opposite flow types or DEBIT/CREDIT
+    const isOpposite =
+      (tx1.type === 'DEBIT' && tx2.type === 'CREDIT') ||
+      (tx1.type === 'CREDIT' && tx2.type === 'DEBIT');
+
+    if (!isOpposite) {
+      throw new BadRequestException(
+        'Transfer requires one DEBIT and one CREDIT transaction',
+      );
+    }
+
+    // Use provided transferGroupId or generate new one
+    const transferGroupId = dto.transferGroupId || uuidv4();
+
+    // Determine roles based on type
+    const tx1Role = tx1.type === 'DEBIT' ? TransferRole.SOURCE : TransferRole.DESTINATION;
+    const tx2Role = tx2.type === 'DEBIT' ? TransferRole.SOURCE : TransferRole.DESTINATION;
+
+    // Update both transactions in a transaction
+    await this.prisma.$transaction([
+      this.prisma.transaction.update({
+        where: { id: txId1 },
+        data: {
+          transferGroupId,
+          transferRole: tx1Role,
+          flowType: FlowType.TRANSFER,
+        },
+      }),
+      this.prisma.transaction.update({
+        where: { id: txId2 },
+        data: {
+          transferGroupId,
+          transferRole: tx2Role,
+          flowType: FlowType.TRANSFER,
+        },
+      }),
+    ]);
+
+    return {
+      transferGroupId,
+      linkedCount: 2,
+    };
+  }
+
+  /**
+   * Unlink a transaction from its transfer group
+   */
+  async unlinkTransfer(
+    transactionId: string,
+    userId: string,
+    userRole?: UserRole,
+  ): Promise<void> {
+    const transaction = await this.prisma.transaction.findUnique({
+      where: { id: transactionId },
+    });
+
+    if (!transaction) {
+      throw new NotFoundException('Transaction not found');
+    }
+
+    if (!transaction.transferGroupId) {
+      throw new BadRequestException('Transaction is not part of a transfer');
+    }
+
+    // Verify ownership
+    await this.verifyAccountOwnership(transaction.accountId, userId, userRole);
+
+    // Get all transactions in the transfer group
+    const groupTransactions = await this.prisma.transaction.findMany({
+      where: { transferGroupId: transaction.transferGroupId },
+    });
+
+    // If only 2 transactions in group, unlink both (transfer is dissolved)
+    if (groupTransactions.length <= 2) {
+      await this.prisma.transaction.updateMany({
+        where: { transferGroupId: transaction.transferGroupId },
+        data: {
+          transferGroupId: null,
+          transferRole: null,
+          flowType: null,
+        },
+      });
+    } else {
+      // Just unlink this one transaction
+      await this.prisma.transaction.update({
+        where: { id: transactionId },
+        data: {
+          transferGroupId: null,
+          transferRole: null,
+          flowType: null,
+        },
+      });
+    }
+  }
+
+  /**
+   * Get user's family ID from their accounts
+   */
+  async getUserFamilyId(userId: string): Promise<string | null> {
+    const account = await this.prisma.account.findFirst({
+      where: { userId },
+      select: { familyId: true },
+    });
+    return account?.familyId ?? null;
+  }
+
+  // ============================================
+  // Bulk Operations Methods
+  // ============================================
+
+  /**
+   * Perform bulk operation on multiple transactions
+   */
+  async bulkOperation(
+    dto: BulkOperationDto,
+    userId: string,
+    userRole?: UserRole,
+  ): Promise<BulkOperationResponseDto> {
+    // Verify all transactions exist and user owns them
+    const transactions = await this.prisma.transaction.findMany({
+      where: { id: { in: dto.transactionIds } },
+      include: { account: true },
+    });
+
+    if (transactions.length !== dto.transactionIds.length) {
+      throw new NotFoundException('One or more transactions not found');
+    }
+
+    // Verify ownership of all transactions
+    for (const tx of transactions) {
+      await this.verifyAccountOwnership(tx.accountId, userId, userRole);
+    }
+
+    let affectedCount = 0;
+
+    switch (dto.operation) {
+      case BulkOperation.CATEGORIZE:
+        if (!dto.data?.categoryId) {
+          throw new BadRequestException('categoryId is required for categorize operation');
+        }
+        const result = await this.prisma.transaction.updateMany({
+          where: { id: { in: dto.transactionIds } },
+          data: { categoryId: dto.data.categoryId },
+        });
+        affectedCount = result.count;
+        break;
+
+      case BulkOperation.DELETE:
+        const deleteResult = await this.prisma.transaction.deleteMany({
+          where: { id: { in: dto.transactionIds } },
+        });
+        affectedCount = deleteResult.count;
+        break;
+
+      case BulkOperation.MARK_TRANSFER:
+        const transferGroupId = dto.data?.transferGroupId || uuidv4();
+        const markResult = await this.prisma.transaction.updateMany({
+          where: { id: { in: dto.transactionIds } },
+          data: {
+            transferGroupId,
+            flowType: FlowType.TRANSFER,
+          },
+        });
+        affectedCount = markResult.count;
+        break;
+
+      default:
+        throw new BadRequestException(`Unknown operation: ${dto.operation}`);
+    }
+
+    return {
+      affectedCount,
+      operation: dto.operation,
+      success: true,
     };
   }
 }

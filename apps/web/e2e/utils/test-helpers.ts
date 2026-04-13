@@ -28,12 +28,12 @@ export class NavigationHelpers {
 
   async goToAccounts() {
     await this.page.click('[data-testid="nav-accounts"]');
-    await this.page.waitForURL('/accounts');
+    await this.page.waitForURL('/dashboard/accounts');
   }
 
   async goToTransactions() {
     await this.page.click('[data-testid="nav-transactions"]');
-    await this.page.waitForURL('/transactions');
+    await this.page.waitForURL('/dashboard/transactions');
   }
 
   async goToBudgets() {
@@ -43,7 +43,7 @@ export class NavigationHelpers {
 
   async goToReports() {
     await this.page.click('[data-testid="nav-reports"]');
-    await this.page.waitForURL('/reports');
+    await this.page.waitForURL('/dashboard/reports');
   }
 }
 

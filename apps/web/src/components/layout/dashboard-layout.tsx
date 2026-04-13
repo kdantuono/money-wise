@@ -10,7 +10,7 @@
 import { ReactNode, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { useAuthStore } from '@/stores/auth-store';
+import { useAuthStore } from '@/store/auth.store';
 import {
   LayoutDashboard,
   Wallet,
@@ -68,9 +68,9 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const isPlanningActive = planningItems.some(item => pathname.startsWith(item.href));
   const [planningOpen, setPlanningOpen] = useState(isPlanningActive);
 
-  const handleLogout = async () => {
-    await logout();
-    router.push('/auth/login');
+  const handleLogout = () => {
+    router.replace('/auth/login');
+    logout();
   };
 
   return (

@@ -1,14 +1,11 @@
 /**
  * Custom Validator: IsStrongPassword
  *
- * Enforces strong password requirements in production environments.
- * Development/test environments have relaxed requirements for convenience.
+ * Enforces environment-tiered password requirements for config values.
  *
- * Production Requirements:
- * - Minimum 32 characters
- * - Mixed case (upper + lower)
- * - At least one number
- * - At least one symbol
+ * - production: 32+ chars, mixed case, numbers, symbols
+ * - staging: 16+ chars, mixed case, at least one number
+ * - development/test: no enforcement (convenience)
  *
  * @example
  * class DatabaseConfig {
@@ -25,12 +22,23 @@ import {
 @ValidatorConstraint({ name: 'isStrongPassword', async: false })
 export class IsStrongPassword implements ValidatorConstraintInterface {
   validate(value: string, _args: ValidationArguments): boolean {
-    // Only enforce in production for security-critical fields
-    if (process.env.NODE_ENV !== 'production') {
+    const env = process.env.NODE_ENV;
+
+    // Development and test: skip validation for convenience
+    if (env === 'development' || env === 'test' || !env) {
       return true;
     }
 
-    // Production requirements
+    // Staging: moderate requirements
+    if (env === 'staging') {
+      const hasLength = value.length >= 16;
+      const hasUpper = /[A-Z]/.test(value);
+      const hasLower = /[a-z]/.test(value);
+      const hasNumber = /[0-9]/.test(value);
+      return hasLength && hasUpper && hasLower && hasNumber;
+    }
+
+    // Production: full requirements
     const hasLength = value.length >= 32;
     const hasUpper = /[A-Z]/.test(value);
     const hasLower = /[a-z]/.test(value);
@@ -41,6 +49,12 @@ export class IsStrongPassword implements ValidatorConstraintInterface {
   }
 
   defaultMessage(args: ValidationArguments): string {
+    const env = process.env.NODE_ENV;
+
+    if (env === 'staging') {
+      return `${args.property} must be a strong password in staging (16+ chars, mixed case, numbers)`;
+    }
+
     return `${args.property} must be a strong password in production (32+ chars, mixed case, numbers, symbols)`;
   }
 }

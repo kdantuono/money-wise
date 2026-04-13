@@ -13,10 +13,10 @@ import { renderHook, act } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { useTheme } from '../useTheme';
 import { ThemeProvider } from '@/components/providers/theme-provider';
-import { useAuthStore } from '@/stores/auth-store';
+import { useAuthStore } from '@/store/auth.store';
 
 // Mock auth store
-vi.mock('@/stores/auth-store', () => ({
+vi.mock('@/store/auth.store', () => ({
   useAuthStore: vi.fn(),
 }));
 

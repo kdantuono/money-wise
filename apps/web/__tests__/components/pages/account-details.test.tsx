@@ -39,7 +39,6 @@ const mockAccount = {
   currency: 'USD',
   institutionName: 'Chase Bank',
   maskedAccountNumber: '****1234',
-  isPlaidAccount: false,
   isManualAccount: false,
   isSyncable: true,
   needsSync: false,
