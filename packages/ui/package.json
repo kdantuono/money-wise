@@ -51,7 +51,7 @@
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@typescript-eslint/eslint-plugin": "^6.0.0",
-    "@typescript-eslint/parser": "^6.0.0",
+    "@typescript-eslint/parser": "^8.58.1",
     "autoprefixer": "^10.4.16",
     "eslint": "^8.55.0",
     "identity-obj-proxy": "^3.0.0",
