@@ -11,7 +11,7 @@ import { render, screen, waitFor } from '../../utils/test-utils';
 import SettingsPage from '../../../app/dashboard/settings/page';
 
 // Mock auth store
-vi.mock('../../../src/stores/auth-store', () => ({
+vi.mock('../../../src/store/auth.store', () => ({
   useAuthStore: vi.fn(),
 }));
 
@@ -30,7 +30,7 @@ vi.mock('../../../src/utils/csrf', () => ({
   getCsrfToken: vi.fn(() => 'mock-csrf-token'),
 }));
 
-import { useAuthStore } from '../../../src/stores/auth-store';
+import { useAuthStore } from '../../../src/store/auth.store';
 const mockUseAuthStore = useAuthStore as unknown as ReturnType<typeof vi.fn>;
 
 // Mock user matching the User interface

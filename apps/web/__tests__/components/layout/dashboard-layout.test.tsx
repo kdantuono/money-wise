@@ -27,7 +27,7 @@ vi.mock('next/navigation', () => ({
 }));
 
 // Mock auth store
-vi.mock('../../../src/stores/auth-store', () => ({
+vi.mock('../../../src/store/auth.store', () => ({
   useAuthStore: vi.fn(),
 }));
 
@@ -36,7 +36,7 @@ vi.mock('../../../src/components/notifications', () => ({
   NotificationBell: () => <div data-testid="notification-bell">Notifications</div>,
 }));
 
-import { useAuthStore } from '../../../src/stores/auth-store';
+import { useAuthStore } from '../../../src/store/auth.store';
 const mockUseAuthStore = useAuthStore as unknown as ReturnType<typeof vi.fn>;
 
 // Mock user data

@@ -21,12 +21,12 @@ vi.mock('next/navigation', () => ({
 }));
 
 // Mock auth store - matches current interface: { isAuthenticated, user, validateSession }
-vi.mock('../../../src/stores/auth-store', () => ({
+vi.mock('../../../src/store/auth.store', () => ({
   useAuthStore: vi.fn(),
 }));
 
 // Import the mocked store for per-test configuration
-import { useAuthStore } from '../../../src/stores/auth-store';
+import { useAuthStore } from '../../../src/store/auth.store';
 const mockUseAuthStore = useAuthStore as unknown as ReturnType<typeof vi.fn>;
 
 // Standard mock user
