@@ -1,14 +1,74 @@
 /**
  * Tests for SettingsPage component
- * Tests empty state placeholder with CTA
+ *
+ * Tests the full settings form including profile fields, theme selection,
+ * notification preferences, and save functionality.
  */
 
-import { describe, it, expect } from 'vitest';
-import { render, screen } from '../../utils/test-utils';
+import React from 'react';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, waitFor } from '../../utils/test-utils';
 import SettingsPage from '../../../app/dashboard/settings/page';
 
-// TODO(tier0): mock structure does not match current settings page
-describe.skip('SettingsPage', () => {
+// Mock auth store
+vi.mock('../../../src/store/auth.store', () => ({
+  useAuthStore: vi.fn(),
+}));
+
+// Mock useTheme hook
+vi.mock('../../../src/hooks/useTheme', () => ({
+  useTheme: vi.fn(() => ({
+    theme: 'light',
+    resolvedTheme: 'light',
+    isDark: false,
+    setTheme: vi.fn(),
+  })),
+}));
+
+// Mock CSRF utility
+vi.mock('../../../src/utils/csrf', () => ({
+  getCsrfToken: vi.fn(() => 'mock-csrf-token'),
+}));
+
+import { useAuthStore } from '../../../src/store/auth.store';
+const mockUseAuthStore = useAuthStore as unknown as ReturnType<typeof vi.fn>;
+
+// Mock user matching the User interface
+const mockUser = {
+  id: '550e8400-e29b-41d4-a716-446655440000',
+  email: 'john@example.com',
+  firstName: 'John',
+  lastName: 'Doe',
+  role: 'USER',
+  status: 'ACTIVE',
+  timezone: 'America/New_York',
+  currency: 'USD',
+  preferences: {
+    theme: 'light',
+    language: 'en',
+    notifications: {
+      email: true,
+      push: true,
+      categories: true,
+      budgets: true,
+    },
+  },
+  createdAt: '2024-01-01T00:00:00.000Z',
+  updatedAt: '2024-01-01T00:00:00.000Z',
+  fullName: 'John Doe',
+  isEmailVerified: true,
+  isActive: true,
+};
+
+describe('SettingsPage', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockUseAuthStore.mockReturnValue({
+      user: mockUser,
+      setUser: vi.fn(),
+    });
+  });
+
   describe('Header', () => {
     it('renders the page heading', () => {
       render(<SettingsPage />);
@@ -30,54 +90,154 @@ describe.skip('SettingsPage', () => {
     });
   });
 
-  describe('Empty State', () => {
-    it('renders empty state title', () => {
+  describe('Profile Information Form', () => {
+    it('renders Profile Information section heading', () => {
       render(<SettingsPage />);
 
-      // Settings page has "Settings" as the empty state title
-      const headings = screen.getAllByRole('heading', { level: 2 });
-      expect(headings.some(h => h.textContent === 'Settings')).toBe(true);
+      expect(screen.getByText('Profile Information')).toBeInTheDocument();
     });
 
-    it('renders empty state description', () => {
+    it('renders first name input with user value', () => {
       render(<SettingsPage />);
 
-      expect(screen.getByText(/Profile settings, notifications, security/)).toBeInTheDocument();
+      const firstNameInput = screen.getByLabelText('First Name');
+      expect(firstNameInput).toBeInTheDocument();
+      expect(firstNameInput).toHaveValue('John');
     });
 
-    it('renders large icon in empty state', () => {
-      const { container } = render(<SettingsPage />);
+    it('renders last name input with user value', () => {
+      render(<SettingsPage />);
 
-      const emptyStateIcon = container.querySelector('.h-12.w-12.text-gray-300');
-      expect(emptyStateIcon).toBeInTheDocument();
+      const lastNameInput = screen.getByLabelText('Last Name');
+      expect(lastNameInput).toBeInTheDocument();
+      expect(lastNameInput).toHaveValue('Doe');
+    });
+
+    it('renders email input with user value', () => {
+      render(<SettingsPage />);
+
+      const emailInput = screen.getByLabelText(/Email Address/i);
+      expect(emailInput).toBeInTheDocument();
+      expect(emailInput).toHaveValue('john@example.com');
     });
   });
 
-  describe('CTA Button', () => {
-    it('renders Edit Profile button', () => {
+  describe('Regional Settings', () => {
+    it('renders Regional Settings section heading', () => {
       render(<SettingsPage />);
 
-      expect(screen.getByRole('button', { name: /Edit Profile/i })).toBeInTheDocument();
+      expect(screen.getByText('Regional Settings')).toBeInTheDocument();
     });
 
-    it('button is disabled', () => {
+    it('renders timezone select', () => {
       render(<SettingsPage />);
 
-      const button = screen.getByRole('button', { name: /Edit Profile/i });
-      expect(button).toBeDisabled();
+      const timezoneSelect = screen.getByLabelText('Timezone');
+      expect(timezoneSelect).toBeInTheDocument();
     });
 
-    it('button has Coming soon title attribute', () => {
+    it('renders currency select', () => {
       render(<SettingsPage />);
 
-      const button = screen.getByRole('button', { name: /Edit Profile/i });
-      expect(button).toHaveAttribute('title', 'Coming soon');
+      const currencySelect = screen.getByLabelText(/Preferred Currency/i);
+      expect(currencySelect).toBeInTheDocument();
+    });
+  });
+
+  describe('Appearance', () => {
+    it('renders Appearance section heading', () => {
+      render(<SettingsPage />);
+
+      expect(screen.getByText('Appearance')).toBeInTheDocument();
     });
 
-    it('renders Coming soon text below button', () => {
+    it('renders theme options: Light, Dark, System', () => {
       render(<SettingsPage />);
 
-      expect(screen.getByText('Coming soon')).toBeInTheDocument();
+      expect(screen.getByText('Light')).toBeInTheDocument();
+      expect(screen.getByText('Dark')).toBeInTheDocument();
+      expect(screen.getByText('System')).toBeInTheDocument();
+    });
+  });
+
+  describe('Notifications', () => {
+    it('renders Notifications section heading', () => {
+      render(<SettingsPage />);
+
+      expect(screen.getByText('Notifications')).toBeInTheDocument();
+    });
+
+    it('renders notification toggle options', () => {
+      render(<SettingsPage />);
+
+      expect(screen.getByText('Email Notifications')).toBeInTheDocument();
+      expect(screen.getByText('Push Notifications')).toBeInTheDocument();
+      expect(screen.getByText('Budget Alerts')).toBeInTheDocument();
+      expect(screen.getByText('Category Insights')).toBeInTheDocument();
+    });
+  });
+
+  describe('Account Information', () => {
+    it('renders Account Information section', () => {
+      render(<SettingsPage />);
+
+      expect(screen.getByText('Account Information')).toBeInTheDocument();
+    });
+
+    it('displays user account status', () => {
+      render(<SettingsPage />);
+
+      expect(screen.getByText('Account Status')).toBeInTheDocument();
+      expect(screen.getByText('ACTIVE')).toBeInTheDocument();
+    });
+  });
+
+  describe('Save Button', () => {
+    it('renders Save Changes button', () => {
+      render(<SettingsPage />);
+
+      const saveButton = screen.getByRole('button', { name: /Save Changes/i });
+      expect(saveButton).toBeInTheDocument();
+    });
+
+    it('Save Changes button is enabled by default', () => {
+      render(<SettingsPage />);
+
+      const saveButton = screen.getByRole('button', { name: /Save Changes/i });
+      expect(saveButton).not.toBeDisabled();
+    });
+
+    it('Save Changes button is a submit button', () => {
+      render(<SettingsPage />);
+
+      const saveButton = screen.getByRole('button', { name: /Save Changes/i });
+      expect(saveButton).toHaveAttribute('type', 'submit');
+    });
+  });
+
+  describe('Loading State', () => {
+    it('renders loading spinner when user is null', () => {
+      mockUseAuthStore.mockReturnValue({
+        user: null,
+        setUser: vi.fn(),
+      });
+
+      const { container } = render(<SettingsPage />);
+
+      // When user is null, a Loader2 spinner is shown
+      const spinner = container.querySelector('.animate-spin');
+      expect(spinner).toBeInTheDocument();
+    });
+
+    it('does not render form when user is null', () => {
+      mockUseAuthStore.mockReturnValue({
+        user: null,
+        setUser: vi.fn(),
+      });
+
+      render(<SettingsPage />);
+
+      expect(screen.queryByRole('button', { name: /Save Changes/i })).not.toBeInTheDocument();
     });
   });
 });

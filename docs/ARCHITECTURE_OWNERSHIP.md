@@ -1,65 +1,42 @@
-# Architecture Ownership
+# Architecture Ownership Table
 
-> Module map and ownership table for the MoneyWise codebase.
+> **Purpose**: Each architectural concern has ONE canonical owner.
+> Friction-driven decisions become lookups. When you need to find the
+> authoritative source for a concern, consult this table instead of
+> searching the codebase.
+>
+> This is a living document. Update it when ownership changes.
+>
+> **Last reviewed**: 2026-04-13
 
-## Backend (`apps/backend/src/`)
+## Ownership Map
 
-| Module | Owner | Test Status | Notes |
-|---|---|---|---|
-| `accounts/` | @kdantuono | 7 test files, passing | Financial account CRUD |
-| `analytics/` | @kdantuono | 4 test files, passing | Reporting and analytics |
-| `auth/` | @kdantuono | 21 test files, passing | JWT/Local auth, guards, decorators |
-| `banking/` | @kdantuono | 7 test files, passing | SaltEdge integration |
-| `budgets/` | @kdantuono | 6 test files, passing | Budget management |
-| `categories/` | @kdantuono | 4 test files, passing | Category hierarchy |
-| `common/` | @kdantuono | 6 test files, passing | Decorators, interceptors, types |
-| `config/` | @kdantuono | 2 test files, 1 skip | SaltEdge config (1 skip: path edge case) |
-| `core/` | @kdantuono | 17 test files, some skips | Database, redis, health, monitoring, logging |
-| `database/` | @kdantuono | 12 test files, passing | Prisma services, repositories |
-| `docs/` | @kdantuono | 3 test files, passing | OpenAPI schema |
-| `liabilities/` | @kdantuono | 5 test files, passing | Liability tracking |
-| `notifications/` | @kdantuono | 2 test files, passing | Notification system |
-| `scheduled/` | @kdantuono | 6 test files, passing | Scheduled tasks |
-| `transactions/` | @kdantuono | 8 test files, passing | Transaction CRUD, transfers, categorization |
-| `users/` | @kdantuono | 4 test files, passing | User management |
-
-## Web (`apps/web/`)
-
-| Route / Area | Owner | Test Status | Notes |
-|---|---|---|---|
-| `app/accounts/` | @kdantuono | Covered by E2E | Account pages |
-| `app/auth/` | @kdantuono | E2E + unit (some skips) | Login, registration |
-| `app/banking/` | @kdantuono | Covered by E2E | Banking connection pages |
-| `app/dashboard/` | @kdantuono | Unit tests (some skips) | Dashboard layout |
-| `app/reports/` | @kdantuono | Covered by E2E | Report pages |
-| `app/settings/` | @kdantuono | Unit tests (all skipped) | Settings page — mock mismatch |
-| `app/transactions/` | @kdantuono | Unit tests (some skips) | Transaction pages |
-| `components/` | @kdantuono | 59+ test files | UI components |
-| `services/` | @kdantuono | Covered by component tests | API client layer |
-| `stores/` | @kdantuono | Covered by component tests | Zustand stores |
-| `hooks/` | @kdantuono | Covered by component tests | Custom hooks |
-| `lib/` | @kdantuono | Unit tests (some skips) | Auth service, utilities |
-
-## Shared Packages (`packages/`)
-
-| Package | Owner | Test Status | Notes |
-|---|---|---|---|
-| `types/` | @kdantuono | Skip (no logic) | TypeScript type definitions |
-| `ui/` | @kdantuono | Skip (placeholder) | Shared Radix + Tailwind components |
-| `utils/` | @kdantuono | Skip (placeholder) | Shared utility functions |
-| `test-utils/` | @kdantuono | N/A (excluded from workspace) | Testing helpers |
-
-## Infrastructure
-
-| Area | Owner | Notes |
+| Concern | Canonical Owner | Notes |
 |---|---|---|
-| `.github/workflows/` | @kdantuono | CI/CD pipeline |
-| `docker-compose.*.yml` | @kdantuono | Dev, E2E, monitoring stacks |
-| `.claude/` | @kdantuono | Claude Code config, scripts, agents |
-| `scripts/` | @kdantuono | Build, testing, deployment scripts |
+| Health endpoints | `apps/backend/src/core/health/` | Duplicate at monitoring/ was deleted |
+| Auth state (client) | `apps/web/src/stores/auth-store.ts` | Single Zustand store for auth |
+| Authenticated route surface | `apps/web/app/dashboard/*/page.tsx` | Shadow stubs deleted, /banking migrated |
+| Test contract / exclusion policy | Per-app configs: `jest.config.js` (backend), `vitest.config.mts` (web) | Single testMatch source of truth per app |
+| Password policy | `apps/backend/src/auth/dto/register.dto.ts` | Real rule: @MinLength(12) + complexity regex |
+| Banking provider | `apps/backend/src/banking/` | SaltEdge primary; Plaid ghost stubs retired |
+| Multi-tenancy model | `apps/backend/src/users/` + `apps/backend/src/core/database/prisma/services/family.service.ts` | familyId comments across accounts, budgets, categories |
+| Shared UI | `packages/ui/` | Currently empty stub (src/index.ts only); populate during Figma refactor or retire |
+| Coverage target | Backend: 70/72/70/65, Web: 70/70/70/65 | Aligned in jest.config.js, vitest.config.mts, coverage-report.js |
 
-## Coverage Summary
+## How to Use This Table
 
-- **Backend**: 72.46% statements, 67.04% branches, 74.13% functions, 72.69% lines
-- **Web**: 70% statements target (enforced via vitest.config.mts)
-- **Thresholds enforced**: Backend jest.config.js, Web vitest.config.mts
+1. **Before adding a new module**: Check if the concern already has an owner.
+   If it does, extend the existing module rather than creating a parallel one.
+
+2. **Before refactoring**: Verify the canonical owner has not moved. Update
+   this table if it has.
+
+3. **During code review**: If a PR introduces a new source of truth for an
+   existing concern, flag it. Either the PR should update this table or it
+   should use the existing owner.
+
+## Change Log
+
+| Date | Change | Author |
+|---|---|---|
+| 2026-04-13 | Initial table created from audit findings | CI automation |

@@ -1,13 +1,14 @@
 /**
  * Tests for ProtectedRoute component
- * Tests authentication checking, redirection, loading states, and HOC
+ *
+ * Tests authentication checking, redirection, and content rendering
+ * with the cookie-based auth system (validateSession, not loadUserFromStorage).
  */
 
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '../../utils/test-utils';
-import { ProtectedRoute, withAuth } from '../../../src/components/auth/protected-route';
-import { useAuthStore } from '../../../src/store/auth.store';
+import { ProtectedRoute } from '../../../src/components/auth/protected-route';
 
 // Mock next/navigation
 const mockPush = vi.fn();
@@ -19,45 +20,42 @@ vi.mock('next/navigation', () => ({
   }),
 }));
 
-// Mock auth store
+// Mock auth store - matches current interface: { isAuthenticated, user, validateSession }
 vi.mock('../../../src/store/auth.store', () => ({
   useAuthStore: vi.fn(),
 }));
 
+// Import the mocked store for per-test configuration
+import { useAuthStore } from '../../../src/store/auth.store';
 const mockUseAuthStore = useAuthStore as unknown as ReturnType<typeof vi.fn>;
 
-// TODO(tier0): mock structure does not match current ProtectedRoute component
-describe.skip('ProtectedRoute Component', () => {
+// Standard mock user
+const mockUser = {
+  id: '550e8400-e29b-41d4-a716-446655440000',
+  email: 'test@example.com',
+  firstName: 'John',
+  lastName: 'Doe',
+  role: 'USER',
+  status: 'ACTIVE',
+  createdAt: '2024-01-01T00:00:00.000Z',
+  updatedAt: '2024-01-01T00:00:00.000Z',
+  fullName: 'John Doe',
+  isEmailVerified: true,
+  isActive: true,
+};
+
+describe('ProtectedRoute Component', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockPush.mockClear();
   });
 
-  describe('Loading State', () => {
-    it('shows loading spinner during initialization', () => {
+  describe('Checking State', () => {
+    it('returns null during session validation (no spinner)', () => {
       mockUseAuthStore.mockReturnValue({
         isAuthenticated: false,
-        isLoading: true,
-        loadUserFromStorage: vi.fn(),
-      });
-
-      render(
-        <ProtectedRoute>
-          <div>Protected Content</div>
-        </ProtectedRoute>
-      );
-
-      // Should show spinner (animate-spin class)
-      const spinner = document.querySelector('.animate-spin');
-      expect(spinner).toBeInTheDocument();
-      expect(screen.queryByText('Protected Content')).not.toBeInTheDocument();
-    });
-
-    it('shows loading spinner while auth is loading', () => {
-      mockUseAuthStore.mockReturnValue({
-        isAuthenticated: false,
-        isLoading: true,
-        loadUserFromStorage: vi.fn(),
+        user: null,
+        validateSession: vi.fn().mockReturnValue(new Promise(() => {})), // never resolves
       });
 
       const { container } = render(
@@ -66,8 +64,25 @@ describe.skip('ProtectedRoute Component', () => {
         </ProtectedRoute>
       );
 
-      const loadingContainer = container.querySelector('.min-h-screen.flex.items-center.justify-center');
-      expect(loadingContainer).toBeInTheDocument();
+      // ProtectedRoute returns null during checking - no spinner, no content
+      expect(container.innerHTML).toBe('');
+      expect(screen.queryByText('Protected Content')).not.toBeInTheDocument();
+    });
+
+    it('does not render children while checking authentication', () => {
+      mockUseAuthStore.mockReturnValue({
+        isAuthenticated: false,
+        user: null,
+        validateSession: vi.fn().mockReturnValue(new Promise(() => {})),
+      });
+
+      render(
+        <ProtectedRoute>
+          <div>Protected Content</div>
+        </ProtectedRoute>
+      );
+
+      expect(screen.queryByText('Protected Content')).not.toBeInTheDocument();
     });
   });
 
@@ -75,8 +90,8 @@ describe.skip('ProtectedRoute Component', () => {
     it('renders children when user is authenticated', async () => {
       mockUseAuthStore.mockReturnValue({
         isAuthenticated: true,
-        isLoading: false,
-        loadUserFromStorage: vi.fn(),
+        user: mockUser,
+        validateSession: vi.fn(),
       });
 
       render(
@@ -93,8 +108,8 @@ describe.skip('ProtectedRoute Component', () => {
     it('does not redirect when user is authenticated', async () => {
       mockUseAuthStore.mockReturnValue({
         isAuthenticated: true,
-        isLoading: false,
-        loadUserFromStorage: vi.fn(),
+        user: mockUser,
+        validateSession: vi.fn(),
       });
 
       render(
@@ -104,17 +119,19 @@ describe.skip('ProtectedRoute Component', () => {
       );
 
       await waitFor(() => {
-        expect(mockPush).not.toHaveBeenCalled();
+        expect(screen.getByText('Protected Content')).toBeInTheDocument();
       });
+
+      expect(mockPush).not.toHaveBeenCalled();
     });
 
-    it('calls loadUserFromStorage on mount', () => {
-      const loadUserFromStorage = vi.fn();
+    it('does not call validateSession when already authenticated with user', async () => {
+      const validateSession = vi.fn();
 
       mockUseAuthStore.mockReturnValue({
         isAuthenticated: true,
-        isLoading: false,
-        loadUserFromStorage,
+        user: mockUser,
+        validateSession,
       });
 
       render(
@@ -123,16 +140,41 @@ describe.skip('ProtectedRoute Component', () => {
         </ProtectedRoute>
       );
 
-      expect(loadUserFromStorage).toHaveBeenCalledTimes(1);
+      await waitFor(() => {
+        expect(screen.getByText('Protected Content')).toBeInTheDocument();
+      });
+
+      // When already authenticated with user, validateSession should not be called
+      expect(validateSession).not.toHaveBeenCalled();
     });
   });
 
   describe('Unauthenticated Access', () => {
-    it('redirects to login when not authenticated', async () => {
+    it('calls validateSession when not authenticated', async () => {
+      const validateSession = vi.fn().mockResolvedValue(false);
+
       mockUseAuthStore.mockReturnValue({
         isAuthenticated: false,
-        isLoading: false,
-        loadUserFromStorage: vi.fn(),
+        user: null,
+        validateSession,
+      });
+
+      render(
+        <ProtectedRoute>
+          <div>Protected Content</div>
+        </ProtectedRoute>
+      );
+
+      await waitFor(() => {
+        expect(validateSession).toHaveBeenCalledTimes(1);
+      });
+    });
+
+    it('redirects to login when validateSession returns false', async () => {
+      mockUseAuthStore.mockReturnValue({
+        isAuthenticated: false,
+        user: null,
+        validateSession: vi.fn().mockResolvedValue(false),
       });
 
       render(
@@ -146,30 +188,11 @@ describe.skip('ProtectedRoute Component', () => {
       });
     });
 
-    it('shows access denied message when not authenticated', async () => {
-      mockUseAuthStore.mockReturnValue({
-        isAuthenticated: false,
-        isLoading: false,
-        loadUserFromStorage: vi.fn(),
-      });
-
-      render(
-        <ProtectedRoute>
-          <div>Protected Content</div>
-        </ProtectedRoute>
-      );
-
-      await waitFor(() => {
-        expect(screen.getByText('Access Denied')).toBeInTheDocument();
-        expect(screen.getByText(/You need to be logged in/)).toBeInTheDocument();
-      });
-    });
-
     it('does not render protected content when not authenticated', async () => {
       mockUseAuthStore.mockReturnValue({
         isAuthenticated: false,
-        isLoading: false,
-        loadUserFromStorage: vi.fn(),
+        user: null,
+        validateSession: vi.fn().mockResolvedValue(false),
       });
 
       render(
@@ -179,64 +202,64 @@ describe.skip('ProtectedRoute Component', () => {
       );
 
       await waitFor(() => {
-        expect(screen.queryByText('Protected Content')).not.toBeInTheDocument();
+        expect(mockPush).toHaveBeenCalledWith('/auth/login');
       });
+
+      expect(screen.queryByText('Protected Content')).not.toBeInTheDocument();
     });
   });
 
-  describe('Custom Fallback', () => {
-    it('renders custom fallback when provided and not authenticated', async () => {
+  describe('Session Validation Success', () => {
+    it('renders children after successful session validation', async () => {
+      // Start unauthenticated, but validateSession succeeds
+      // After validateSession succeeds, the store will update to authenticated
+      const validateSession = vi.fn().mockResolvedValue(true);
+
       mockUseAuthStore.mockReturnValue({
         isAuthenticated: false,
-        isLoading: false,
-        loadUserFromStorage: vi.fn(),
+        user: null,
+        validateSession,
       });
 
-      const CustomFallback = () => <div>Custom Access Denied</div>;
-
-      render(
-        <ProtectedRoute fallback={<CustomFallback />}>
+      const { rerender } = render(
+        <ProtectedRoute>
           <div>Protected Content</div>
         </ProtectedRoute>
       );
 
+      // Wait for validateSession to be called
       await waitFor(() => {
-        expect(screen.getByText('Custom Access Denied')).toBeInTheDocument();
-        expect(screen.queryByText('Access Denied')).not.toBeInTheDocument();
+        expect(validateSession).toHaveBeenCalled();
       });
-    });
 
-    it('does not render custom fallback when authenticated', async () => {
+      // Simulate store update after successful validation
       mockUseAuthStore.mockReturnValue({
         isAuthenticated: true,
-        isLoading: false,
-        loadUserFromStorage: vi.fn(),
+        user: mockUser,
+        validateSession,
       });
 
-      const CustomFallback = () => <div>Custom Access Denied</div>;
-
-      render(
-        <ProtectedRoute fallback={<CustomFallback />}>
+      rerender(
+        <ProtectedRoute>
           <div>Protected Content</div>
         </ProtectedRoute>
       );
 
       await waitFor(() => {
-        expect(screen.queryByText('Custom Access Denied')).not.toBeInTheDocument();
         expect(screen.getByText('Protected Content')).toBeInTheDocument();
       });
     });
   });
 
   describe('Authentication State Transitions', () => {
-    it('handles transition from loading to authenticated', async () => {
-      const loadUserFromStorage = vi.fn();
+    it('handles transition from checking to authenticated', async () => {
+      const validateSession = vi.fn().mockResolvedValue(true);
 
-      // Start with loading state
+      // Start not authenticated
       mockUseAuthStore.mockReturnValue({
         isAuthenticated: false,
-        isLoading: true,
-        loadUserFromStorage,
+        user: null,
+        validateSession,
       });
 
       const { rerender } = render(
@@ -245,14 +268,14 @@ describe.skip('ProtectedRoute Component', () => {
         </ProtectedRoute>
       );
 
-      // Should show loading
-      expect(document.querySelector('.animate-spin')).toBeInTheDocument();
+      // Should render null (checking)
+      expect(screen.queryByText('Protected Content')).not.toBeInTheDocument();
 
       // Transition to authenticated
       mockUseAuthStore.mockReturnValue({
         isAuthenticated: true,
-        isLoading: false,
-        loadUserFromStorage,
+        user: mockUser,
+        validateSession,
       });
 
       rerender(
@@ -266,30 +289,16 @@ describe.skip('ProtectedRoute Component', () => {
       });
     });
 
-    it('handles transition from loading to unauthenticated', async () => {
-      const loadUserFromStorage = vi.fn();
+    it('handles transition from checking to unauthenticated', async () => {
+      const validateSession = vi.fn().mockResolvedValue(false);
 
-      // Start with loading state
       mockUseAuthStore.mockReturnValue({
         isAuthenticated: false,
-        isLoading: true,
-        loadUserFromStorage,
+        user: null,
+        validateSession,
       });
 
-      const { rerender } = render(
-        <ProtectedRoute>
-          <div>Protected Content</div>
-        </ProtectedRoute>
-      );
-
-      // Transition to unauthenticated
-      mockUseAuthStore.mockReturnValue({
-        isAuthenticated: false,
-        isLoading: false,
-        loadUserFromStorage,
-      });
-
-      rerender(
+      render(
         <ProtectedRoute>
           <div>Protected Content</div>
         </ProtectedRoute>
@@ -305,8 +314,8 @@ describe.skip('ProtectedRoute Component', () => {
     it('renders all children when authenticated', async () => {
       mockUseAuthStore.mockReturnValue({
         isAuthenticated: true,
-        isLoading: false,
-        loadUserFromStorage: vi.fn(),
+        user: mockUser,
+        validateSession: vi.fn(),
       });
 
       render(
@@ -321,124 +330,6 @@ describe.skip('ProtectedRoute Component', () => {
         expect(screen.getByText('Child 1')).toBeInTheDocument();
         expect(screen.getByText('Child 2')).toBeInTheDocument();
         expect(screen.getByText('Child 3')).toBeInTheDocument();
-      });
-    });
-  });
-});
-
-// TODO(tier0): mock structure does not match current ProtectedRoute component
-describe.skip('withAuth Higher-Order Component', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    mockPush.mockClear();
-  });
-
-  describe('Component Wrapping', () => {
-    it('wraps component with ProtectedRoute', async () => {
-      mockUseAuthStore.mockReturnValue({
-        isAuthenticated: true,
-        isLoading: false,
-        loadUserFromStorage: vi.fn(),
-      });
-
-      const TestComponent = ({ title }: { title: string }) => <div>{title}</div>;
-      const ProtectedComponent = withAuth(TestComponent);
-
-      render(<ProtectedComponent title="Test Title" />);
-
-      await waitFor(() => {
-        expect(screen.getByText('Test Title')).toBeInTheDocument();
-      });
-    });
-
-    it('forwards props to wrapped component', async () => {
-      mockUseAuthStore.mockReturnValue({
-        isAuthenticated: true,
-        isLoading: false,
-        loadUserFromStorage: vi.fn(),
-      });
-
-      const TestComponent = ({ name, age }: { name: string; age: number }) => (
-        <div>
-          {name} - {age}
-        </div>
-      );
-
-      const ProtectedComponent = withAuth(TestComponent);
-
-      render(<ProtectedComponent name="John" age={30} />);
-
-      await waitFor(() => {
-        expect(screen.getByText('John - 30')).toBeInTheDocument();
-      });
-    });
-
-    it('protects wrapped component from unauthenticated access', async () => {
-      mockUseAuthStore.mockReturnValue({
-        isAuthenticated: false,
-        isLoading: false,
-        loadUserFromStorage: vi.fn(),
-      });
-
-      const TestComponent = () => <div>Sensitive Data</div>;
-      const ProtectedComponent = withAuth(TestComponent);
-
-      render(<ProtectedComponent />);
-
-      await waitFor(() => {
-        expect(screen.queryByText('Sensitive Data')).not.toBeInTheDocument();
-        expect(screen.getByText('Access Denied')).toBeInTheDocument();
-      });
-    });
-
-    it('redirects to login when wrapped component accessed without auth', async () => {
-      mockUseAuthStore.mockReturnValue({
-        isAuthenticated: false,
-        isLoading: false,
-        loadUserFromStorage: vi.fn(),
-      });
-
-      const TestComponent = () => <div>Protected Page</div>;
-      const ProtectedComponent = withAuth(TestComponent);
-
-      render(<ProtectedComponent />);
-
-      await waitFor(() => {
-        expect(mockPush).toHaveBeenCalledWith('/auth/login');
-      });
-    });
-  });
-
-  describe('HOC with Complex Components', () => {
-    it('works with components that have state', async () => {
-      mockUseAuthStore.mockReturnValue({
-        isAuthenticated: true,
-        isLoading: false,
-        loadUserFromStorage: vi.fn(),
-      });
-
-      const StatefulComponent = () => {
-        const [count, setCount] = React.useState(0);
-        return (
-          <div>
-            <p>Count: {count}</p>
-            <button onClick={() => setCount(count + 1)}>Increment</button>
-          </div>
-        );
-      };
-
-      const ProtectedComponent = withAuth(StatefulComponent);
-      const { user } = render(<ProtectedComponent />);
-
-      await waitFor(() => {
-        expect(screen.getByText('Count: 0')).toBeInTheDocument();
-      });
-
-      const button = screen.getByRole('button', { name: /increment/i });
-      await user.click(button);
-
-      await waitFor(() => {
-        expect(screen.getByText('Count: 1')).toBeInTheDocument();
       });
     });
   });
