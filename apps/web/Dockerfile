@@ -3,10 +3,13 @@
 # Fixes E2E timeout issue by building during image creation, not container startup
 
 # Build stage
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 
 # Set working directory
 WORKDIR /app
+
+# Install build tools for native addons (may be needed by transitive deps)
+RUN apk add --no-cache python3 make g++
 
 # Install pnpm (must match engines.pnpm in package.json)
 RUN npm install -g pnpm@10
@@ -33,7 +36,7 @@ COPY . .
 RUN pnpm --filter @money-wise/web build
 
 # Runtime stage - use standalone output
-FROM node:20-alpine AS runtime
+FROM node:22-alpine AS runtime
 
 # Create non-root user for security
 RUN addgroup -g 1001 -S nodejs && adduser -S nextjs -u 1001
