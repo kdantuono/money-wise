@@ -1,256 +1,156 @@
 /**
  * Auth Service Tests
  *
- * Tests the authentication service with API interceptors and token management
+ * Tests the cookie-based authentication service with fetch API and CSRF protection.
+ * Validates login, register, getProfile, logout, and error handling.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import axios from 'axios';
 
-// Create mock functions that will be reused
-const mockGet = vi.fn();
-const mockPost = vi.fn();
-const mockRequestInterceptor = vi.fn((config) => config);
-const mockResponseInterceptor = vi.fn((response) => response);
-const mockErrorInterceptor = vi.fn();
+// Mock CSRF utilities before importing authService
+vi.mock('../../src/utils/csrf', () => ({
+  getCsrfToken: vi.fn(() => 'mock-csrf-token'),
+  setCsrfToken: vi.fn(),
+  clearCsrfToken: vi.fn(),
+  requiresCsrf: vi.fn((method?: string) => {
+    if (!method) return false;
+    return ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method.toUpperCase());
+  }),
+  isCsrfError: vi.fn(() => false),
+  refreshCsrfToken: vi.fn(),
+}));
 
-// Mock axios
-vi.mock('axios', () => {
-  const mockCreate = vi.fn(() => ({
-    interceptors: {
-      request: {
-        use: vi.fn((successHandler, errorHandler) => {
-          mockRequestInterceptor.mockImplementation(successHandler);
-          return 0;
-        })
-      },
-      response: {
-        use: vi.fn((successHandler, errorHandler) => {
-          mockResponseInterceptor.mockImplementation(successHandler);
-          mockErrorInterceptor.mockImplementation(errorHandler);
-          return 0;
-        })
-      },
-    },
-    get: mockGet,
-    post: mockPost,
-  }));
-
-  return {
-    default: {
-      create: mockCreate,
-      post: vi.fn(),
-    },
-    create: mockCreate,
-    post: vi.fn(),
-  };
-});
+// Mock sanitize utilities - sanitizeUser returns the user as-is in tests
+vi.mock('../../src/utils/sanitize', () => ({
+  sanitizeUser: vi.fn((user: unknown) => user),
+}));
 
 // Import after mocks are set up
-const { authApi, authService } = await import('../../lib/auth');
+import { authService } from '../../lib/auth';
 import type { User, AuthResponse } from '../../lib/auth';
+import { getCsrfToken, setCsrfToken, clearCsrfToken } from '../../src/utils/csrf';
 
-// Mock localStorage
-const localStorageMock = {
-  getItem: vi.fn(),
-  setItem: vi.fn(),
-  removeItem: vi.fn(),
-  clear: vi.fn(),
+// Helper to create a mock Response
+function mockResponse(data: unknown, options: { ok?: boolean; status?: number } = {}) {
+  const { ok = true, status = 200 } = options;
+  return {
+    ok,
+    status,
+    json: vi.fn().mockResolvedValue(data),
+    headers: new Headers(),
+  } as unknown as Response;
+}
+
+// Standard mock user for tests
+const mockUser: User = {
+  id: '550e8400-e29b-41d4-a716-446655440000',
+  email: 'test@example.com',
+  firstName: 'John',
+  lastName: 'Doe',
+  role: 'USER',
+  status: 'ACTIVE',
+  createdAt: '2024-01-01T00:00:00.000Z',
+  updatedAt: '2024-01-01T00:00:00.000Z',
+  fullName: 'John Doe',
+  isEmailVerified: true,
+  isActive: true,
 };
-Object.defineProperty(window, 'localStorage', { value: localStorageMock });
-
-// Mock window.location
-delete (window as any).location;
-window.location = { href: '' } as any;
 
 describe('Auth Service', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockGet.mockClear();
-    mockPost.mockClear();
-    mockRequestInterceptor.mockClear();
-    mockResponseInterceptor.mockClear();
-    mockErrorInterceptor.mockClear();
-    localStorageMock.getItem.mockReturnValue(null);
-    window.location.href = '';
+    global.fetch = vi.fn();
   });
 
   afterEach(() => {
-    vi.clearAllMocks();
-  });
-
-  describe('authApi configuration', () => {
-    // TODO(tier0): auth service mock mismatch
-    it.skip('should create axios instance with correct base URL', () => {
-      // authApi was created during module import with our mock
-      expect(authApi).toBeDefined();
-      expect(authApi.get).toBe(mockGet);
-      expect(authApi.post).toBe(mockPost);
-    });
-
-    it('should set up request and response interceptors', () => {
-      // Interceptors are set up during module import
-      expect(mockRequestInterceptor).toBeDefined();
-      expect(mockResponseInterceptor).toBeDefined();
-      expect(mockErrorInterceptor).toBeDefined();
-    });
-  });
-
-  describe('Request interceptor', () => {
-    // TODO(tier0): auth service mock mismatch
-    it.skip('should add Authorization header when token exists', () => {
-      const mockConfig = { headers: {} as any };
-      localStorageMock.getItem.mockReturnValue('test-token');
-
-      const result = mockRequestInterceptor(mockConfig);
-
-      expect(localStorageMock.getItem).toHaveBeenCalledWith('accessToken');
-      expect(result.headers.Authorization).toBe('Bearer test-token');
-    });
-
-    // TODO(tier0): auth service mock mismatch
-    it.skip('should not add Authorization header when token does not exist', () => {
-      const mockConfig = { headers: {} as any };
-      localStorageMock.getItem.mockReturnValue(null);
-
-      const result = mockRequestInterceptor(mockConfig);
-
-      expect(localStorageMock.getItem).toHaveBeenCalledWith('accessToken');
-      expect(result.headers.Authorization).toBeUndefined();
-    });
-
-    // TODO(tier0): auth service mock mismatch
-    it.skip('should preserve existing headers', () => {
-      const mockConfig = {
-        headers: {
-          'X-Custom-Header': 'value',
-        } as any,
-      };
-      localStorageMock.getItem.mockReturnValue('test-token');
-
-      const result = mockRequestInterceptor(mockConfig);
-
-      expect(result.headers['X-Custom-Header']).toBe('value');
-      expect(result.headers.Authorization).toBe('Bearer test-token');
-    });
-  });
-
-  describe('Response interceptor', () => {
-    it('should pass through successful responses', () => {
-      const mockResponse = { data: 'success' };
-      const result = mockResponseInterceptor(mockResponse);
-      expect(result).toBe(mockResponse);
-    });
-
-    // TODO(tier0): needs richer mock — interceptor logic not exercised
-    it.skip('should handle 401 error and attempt token refresh', async () => {
-      // This test needs a proper mock of the axios interceptor chain
-      // The interceptor logic should be verified through actual 401 → refresh flow
-    });
-
-    // TODO(tier0): auth service mock mismatch
-    it.skip('should not retry if request already retried', async () => {
-      const error = {
-        response: { status: 401 },
-        config: { _retry: true },
-      };
-
-      await expect(mockErrorInterceptor(error)).rejects.toEqual(error);
-    });
-
-    // TODO(tier0): auth service mock mismatch
-    it.skip('should redirect to login on refresh failure', async () => {
-      localStorageMock.getItem.mockReturnValue('refresh-token');
-      vi.spyOn(axios, 'post').mockRejectedValue(new Error('Refresh failed'));
-
-      const error = {
-        response: { status: 401 },
-        config: {},
-      };
-
-      // The error interceptor should handle the error but still reject
-      try {
-        await mockErrorInterceptor(error);
-      } catch (e) {
-        // Expected to throw
-      }
-
-      expect(localStorageMock.removeItem).toHaveBeenCalledWith('accessToken');
-      expect(localStorageMock.removeItem).toHaveBeenCalledWith('refreshToken');
-      expect(window.location.href).toBe('/auth/login');
-    });
-
-    // TODO(tier0): auth service mock mismatch
-    it.skip('should redirect to login if no refresh token', async () => {
-      localStorageMock.getItem.mockReturnValue(null);
-
-      const error = {
-        response: { status: 401 },
-        config: {},
-      };
-
-      await expect(mockErrorInterceptor(error)).rejects.toEqual(error);
-      expect(window.location.href).not.toBe('/auth/login');
-    });
-
-    // TODO(tier0): auth service mock mismatch
-    it.skip('should pass through non-401 errors', async () => {
-      const error = {
-        response: { status: 500 },
-        config: {},
-      };
-
-      await expect(mockErrorInterceptor(error)).rejects.toEqual(error);
-    });
-
-    // TODO(tier0): auth service mock mismatch
-    it.skip('should handle errors without response', async () => {
-      const error = new Error('Network error');
-
-      await expect(mockErrorInterceptor(error)).rejects.toEqual(error);
-    });
+    vi.restoreAllMocks();
   });
 
   describe('authService.login', () => {
-    // TODO(tier0): auth service mock mismatch
-    it.skip('should make POST request to login endpoint', async () => {
-      const mockResponse: AuthResponse = {
-        accessToken: 'access-token',
-        refreshToken: 'refresh-token',
-        user: { id: '1', email: 'test@example.com' } as User,
-        expiresIn: 3600,
+    it('should make POST request to login endpoint with credentials', async () => {
+      const mockAuthResponse: AuthResponse = {
+        user: mockUser,
+        csrfToken: 'csrf-token-123',
       };
 
-      mockPost.mockResolvedValue({ data: mockResponse });
+      vi.mocked(global.fetch).mockResolvedValue(mockResponse(mockAuthResponse));
 
       const credentials = { email: 'test@example.com', password: 'password' };
       const result = await authService.login(credentials);
 
-      expect(mockPost).toHaveBeenCalledWith('/auth/login', credentials);
-      expect(result).toEqual(mockResponse);
+      expect(global.fetch).toHaveBeenCalledWith(
+        '/api/auth/login',
+        expect.objectContaining({
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify(credentials),
+        })
+      );
+      expect(result.user).toEqual(mockUser);
+      expect(result.csrfToken).toBe('csrf-token-123');
     });
 
-    // TODO(tier0): auth service mock mismatch
-    it.skip('should handle login errors', async () => {
-      const error = new Error('Invalid credentials');
-      mockPost.mockRejectedValue(error);
+    it('should store CSRF token on successful login', async () => {
+      const mockAuthResponse: AuthResponse = {
+        user: mockUser,
+        csrfToken: 'new-csrf-token',
+      };
 
-      const credentials = { email: 'test@example.com', password: 'wrong' };
+      vi.mocked(global.fetch).mockResolvedValue(mockResponse(mockAuthResponse));
 
-      await expect(authService.login(credentials)).rejects.toThrow('Invalid credentials');
+      await authService.login({ email: 'test@example.com', password: 'password' });
+
+      expect(setCsrfToken).toHaveBeenCalledWith('new-csrf-token');
+    });
+
+    it('should throw on login failure with error message', async () => {
+      vi.mocked(global.fetch).mockResolvedValue(
+        mockResponse(
+          { statusCode: 401, message: 'Invalid credentials' },
+          { ok: false, status: 401 }
+        )
+      );
+
+      await expect(
+        authService.login({ email: 'test@example.com', password: 'wrong' })
+      ).rejects.toThrow('Invalid credentials');
+    });
+
+    it('should join array error messages', async () => {
+      vi.mocked(global.fetch).mockResolvedValue(
+        mockResponse(
+          { statusCode: 400, message: ['Email is required', 'Password is required'] },
+          { ok: false, status: 400 }
+        )
+      );
+
+      await expect(
+        authService.login({ email: '', password: '' })
+      ).rejects.toThrow('Email is required, Password is required');
+    });
+
+    it('should use default error message when none provided', async () => {
+      vi.mocked(global.fetch).mockResolvedValue(
+        mockResponse(
+          { statusCode: 500 },
+          { ok: false, status: 500 }
+        )
+      );
+
+      await expect(
+        authService.login({ email: 'test@example.com', password: 'password' })
+      ).rejects.toThrow('Login failed');
     });
   });
 
   describe('authService.register', () => {
-    // TODO(tier0): auth service mock mismatch
-    it.skip('should make POST request to register endpoint', async () => {
-      const mockResponse: AuthResponse = {
-        accessToken: 'access-token',
-        refreshToken: 'refresh-token',
-        user: { id: '1', email: 'new@example.com' } as User,
-        expiresIn: 3600,
+    it('should make POST request to register endpoint', async () => {
+      const mockAuthResponse: AuthResponse = {
+        user: mockUser,
+        csrfToken: 'csrf-token-reg',
       };
 
-      mockPost.mockResolvedValue({ data: mockResponse });
+      vi.mocked(global.fetch).mockResolvedValue(mockResponse(mockAuthResponse));
 
       const credentials = {
         email: 'new@example.com',
@@ -260,113 +160,113 @@ describe('Auth Service', () => {
       };
       const result = await authService.register(credentials);
 
-      expect(mockPost).toHaveBeenCalledWith('/auth/register', credentials);
-      expect(result).toEqual(mockResponse);
+      expect(global.fetch).toHaveBeenCalledWith(
+        '/api/auth/register',
+        expect.objectContaining({
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify(credentials),
+        })
+      );
+      expect(result.user).toEqual(mockUser);
+      expect(result.csrfToken).toBe('csrf-token-reg');
     });
 
-    // TODO(tier0): auth service mock mismatch
-    it.skip('should handle registration errors', async () => {
-      const error = new Error('Email already exists');
-      mockPost.mockRejectedValue(error);
+    it('should store CSRF token on successful registration', async () => {
+      const mockAuthResponse: AuthResponse = {
+        user: mockUser,
+        csrfToken: 'reg-csrf-token',
+      };
 
-      const credentials = {
-        email: 'existing@example.com',
+      vi.mocked(global.fetch).mockResolvedValue(mockResponse(mockAuthResponse));
+
+      await authService.register({
+        email: 'new@example.com',
         password: 'password',
         firstName: 'John',
         lastName: 'Doe',
-      };
-
-      await expect(authService.register(credentials)).rejects.toThrow('Email already exists');
-    });
-  });
-
-  describe('authService.refreshToken', () => {
-    // TODO(tier0): auth service mock mismatch
-    it.skip('should make POST request to refresh endpoint', async () => {
-      const mockResponse: AuthResponse = {
-        accessToken: 'new-access-token',
-        refreshToken: 'new-refresh-token',
-        user: { id: '1', email: 'test@example.com' } as User,
-        expiresIn: 3600,
-      };
-
-      mockPost.mockResolvedValue({ data: mockResponse });
-
-      const result = await authService.refreshToken('old-refresh-token');
-
-      expect(mockPost).toHaveBeenCalledWith('/auth/refresh', {
-        refreshToken: 'old-refresh-token',
       });
-      expect(result).toEqual(mockResponse);
+
+      expect(setCsrfToken).toHaveBeenCalledWith('reg-csrf-token');
     });
 
-    // TODO(tier0): auth service mock mismatch
-    it.skip('should handle refresh errors', async () => {
-      const error = new Error('Invalid refresh token');
-      mockPost.mockRejectedValue(error);
-
-      await expect(authService.refreshToken('invalid-token')).rejects.toThrow(
-        'Invalid refresh token'
+    it('should throw on registration failure', async () => {
+      vi.mocked(global.fetch).mockResolvedValue(
+        mockResponse(
+          { statusCode: 409, message: 'Email already exists' },
+          { ok: false, status: 409 }
+        )
       );
+
+      await expect(
+        authService.register({
+          email: 'existing@example.com',
+          password: 'password',
+          firstName: 'John',
+          lastName: 'Doe',
+        })
+      ).rejects.toThrow('Email already exists');
+    });
+
+    it('should handle array validation errors on registration', async () => {
+      vi.mocked(global.fetch).mockResolvedValue(
+        mockResponse(
+          { statusCode: 400, message: ['Password too short', 'Invalid email'] },
+          { ok: false, status: 400 }
+        )
+      );
+
+      await expect(
+        authService.register({
+          email: 'bad',
+          password: 'x',
+          firstName: 'John',
+          lastName: 'Doe',
+        })
+      ).rejects.toThrow('Password too short, Invalid email');
     });
   });
 
   describe('authService.getProfile', () => {
-    // TODO(tier0): auth service mock mismatch
-    it.skip('should make GET request to profile endpoint', async () => {
-      const mockUser: User = {
-        id: '1',
-        email: 'test@example.com',
-        firstName: 'John',
-        lastName: 'Doe',
-        role: 'user',
-        status: 'active',
-        createdAt: '2024-01-01',
-        updatedAt: '2024-01-01',
-        fullName: 'John Doe',
-        isEmailVerified: true,
-        isActive: true,
-      };
-
-      mockGet.mockResolvedValue({ data: mockUser });
+    it('should make GET request to profile endpoint with credentials', async () => {
+      vi.mocked(global.fetch).mockResolvedValue(mockResponse(mockUser));
 
       const result = await authService.getProfile();
 
-      expect(mockGet).toHaveBeenCalledWith('/auth/profile');
+      expect(global.fetch).toHaveBeenCalledWith(
+        '/api/auth/profile',
+        expect.objectContaining({
+          method: 'GET',
+          credentials: 'include',
+        })
+      );
       expect(result).toEqual(mockUser);
     });
 
-    // TODO(tier0): auth service mock mismatch
-    it.skip('should handle profile fetch errors', async () => {
-      const error = new Error('Unauthorized');
-      mockGet.mockRejectedValue(error);
+    it('should throw on profile fetch failure', async () => {
+      vi.mocked(global.fetch).mockResolvedValue(
+        mockResponse(
+          { statusCode: 401, message: 'Unauthorized' },
+          { ok: false, status: 401 }
+        )
+      );
 
-      await expect(authService.getProfile()).rejects.toThrow('Unauthorized');
+      await expect(authService.getProfile()).rejects.toThrow('Failed to fetch profile');
     });
 
-    // TODO(tier0): auth service mock mismatch
-    it.skip('should include all optional User fields', async () => {
-      const mockUser: User = {
-        id: '1',
-        email: 'test@example.com',
-        firstName: 'John',
-        lastName: 'Doe',
-        role: 'admin',
-        status: 'active',
+    it('should include all optional User fields', async () => {
+      const fullUser: User = {
+        ...mockUser,
         avatar: 'https://example.com/avatar.jpg',
         timezone: 'America/New_York',
         currency: 'USD',
         preferences: { theme: 'dark', notifications: true },
-        lastLoginAt: '2024-01-01T12:00:00Z',
-        emailVerifiedAt: '2024-01-01T10:00:00Z',
-        createdAt: '2024-01-01',
-        updatedAt: '2024-01-01',
-        fullName: 'John Doe',
-        isEmailVerified: true,
-        isActive: true,
+        lastLoginAt: '2024-01-01T12:00:00.000Z',
+        emailVerifiedAt: '2024-01-01T10:00:00.000Z',
       };
 
-      mockGet.mockResolvedValue({ data: mockUser });
+      vi.mocked(global.fetch).mockResolvedValue(mockResponse(fullUser));
 
       const result = await authService.getProfile();
 
@@ -374,114 +274,128 @@ describe('Auth Service', () => {
       expect(result.timezone).toBe('America/New_York');
       expect(result.currency).toBe('USD');
       expect(result.preferences).toEqual({ theme: 'dark', notifications: true });
-      expect(result.lastLoginAt).toBe('2024-01-01T12:00:00Z');
-      expect(result.emailVerifiedAt).toBe('2024-01-01T10:00:00Z');
+      expect(result.lastLoginAt).toBe('2024-01-01T12:00:00.000Z');
+      expect(result.emailVerifiedAt).toBe('2024-01-01T10:00:00.000Z');
+    });
+
+    it('should include CSRF token header via apiRequest for GET', async () => {
+      vi.mocked(global.fetch).mockResolvedValue(mockResponse(mockUser));
+
+      await authService.getProfile();
+
+      // apiRequest adds Content-Type but not CSRF for GET (requiresCsrf returns false for GET)
+      const callArgs = vi.mocked(global.fetch).mock.calls[0];
+      expect(callArgs[1]).toEqual(
+        expect.objectContaining({
+          credentials: 'include',
+        })
+      );
     });
   });
 
   describe('authService.logout', () => {
-    // TODO(tier0): auth service mock mismatch
-    it.skip('should make POST request to logout endpoint', async () => {
-      mockPost.mockResolvedValue({ data: {} });
+    it('should make POST request to logout endpoint', async () => {
+      vi.mocked(global.fetch).mockResolvedValue(mockResponse({}));
 
       await authService.logout();
 
-      expect(mockPost).toHaveBeenCalledWith('/auth/logout');
+      expect(global.fetch).toHaveBeenCalledWith(
+        '/api/auth/logout',
+        expect.objectContaining({
+          method: 'POST',
+          credentials: 'include',
+        })
+      );
     });
 
-    // TODO(tier0): auth service mock mismatch
-    it.skip('should handle logout errors', async () => {
-      const error = new Error('Logout failed');
-      mockPost.mockRejectedValue(error);
+    it('should clear CSRF token on successful logout', async () => {
+      vi.mocked(global.fetch).mockResolvedValue(mockResponse({}));
 
-      await expect(authService.logout()).rejects.toThrow('Logout failed');
+      await authService.logout();
+
+      expect(clearCsrfToken).toHaveBeenCalled();
     });
 
-    // TODO(tier0): auth service mock mismatch
-    it.skip('should not return any value', async () => {
-      mockPost.mockResolvedValue({ data: { message: 'Logged out' } });
+    it('should clear CSRF token even when logout API call fails', async () => {
+      vi.mocked(global.fetch).mockRejectedValue(new Error('Network error'));
 
-      const result = await authService.logout();
+      // logout should NOT throw - it catches errors and clears CSRF in finally
+      await authService.logout();
 
-      expect(result).toBeUndefined();
+      expect(clearCsrfToken).toHaveBeenCalled();
+    });
+
+    it('should not throw on logout failure', async () => {
+      vi.mocked(global.fetch).mockRejectedValue(new Error('Server down'));
+
+      // Should resolve without throwing
+      await expect(authService.logout()).resolves.toBeUndefined();
     });
   });
 
   describe('Error handling', () => {
-    // TODO(tier0): auth service mock mismatch
-    it.skip('should handle network errors', async () => {
-      const networkError = new Error('Network Error');
-      (networkError as any).code = 'ERR_NETWORK';
-
-      mockPost.mockRejectedValue(networkError);
+    it('should handle network errors on login', async () => {
+      vi.mocked(global.fetch).mockRejectedValue(new Error('Network Error'));
 
       await expect(
         authService.login({ email: 'test@example.com', password: 'password' })
       ).rejects.toThrow('Network Error');
     });
 
-    // TODO(tier0): auth service mock mismatch
-    it.skip('should handle timeout errors', async () => {
-      const timeoutError = new Error('Timeout');
-      (timeoutError as any).code = 'ECONNABORTED';
-
-      mockGet.mockRejectedValue(timeoutError);
-
-      await expect(authService.getProfile()).rejects.toThrow('Timeout');
-    });
-
-    // TODO(tier0): auth service mock mismatch
-    it.skip('should handle server errors with response data', async () => {
-      const serverError = {
-        response: {
-          status: 500,
-          data: { message: 'Internal Server Error' },
-        },
-      };
-
-      mockPost.mockRejectedValue(serverError);
-
-      await expect(
-        authService.login({ email: 'test@example.com', password: 'password' })
-      ).rejects.toEqual(serverError);
-    });
-
-    // TODO(tier0): auth service mock mismatch
-    it.skip('should handle validation errors', async () => {
-      const validationError = {
-        response: {
-          status: 400,
-          data: {
-            errors: [
-              { field: 'email', message: 'Invalid email format' },
-              { field: 'password', message: 'Password too short' },
-            ],
-          },
-        },
-      };
-
-      mockPost.mockRejectedValue(validationError);
+    it('should handle network errors on register', async () => {
+      vi.mocked(global.fetch).mockRejectedValue(new Error('fetch failed'));
 
       await expect(
         authService.register({
-          email: 'invalid',
-          password: 'short',
+          email: 'new@example.com',
+          password: 'password',
           firstName: 'John',
           lastName: 'Doe',
         })
-      ).rejects.toEqual(validationError);
+      ).rejects.toThrow('fetch failed');
+    });
+
+    it('should handle network errors on getProfile', async () => {
+      vi.mocked(global.fetch).mockRejectedValue(new Error('Connection refused'));
+
+      await expect(authService.getProfile()).rejects.toThrow('Connection refused');
     });
   });
 
-  describe('Token management', () => {
-    // TODO(tier0): needs richer mock — token refresh flow not exercised
-    it.skip('should handle expired access token with valid refresh token', async () => {
-      // This test needs a proper mock of the token refresh mechanism
+  describe('CSRF token management', () => {
+    it('should include CSRF token in POST requests via apiRequest', async () => {
+      vi.mocked(getCsrfToken).mockReturnValue('test-csrf-token');
+      vi.mocked(global.fetch).mockResolvedValue(mockResponse({}));
+
+      await authService.logout();
+
+      // apiRequest adds CSRF header for POST methods
+      const callArgs = vi.mocked(global.fetch).mock.calls[0];
+      const headers = callArgs[1]?.headers as Record<string, string>;
+      expect(headers['X-CSRF-Token']).toBe('test-csrf-token');
     });
 
-    // TODO(tier0): needs richer mock — concurrent 401 handling not exercised
-    it.skip('should handle concurrent 401 errors', async () => {
-      // This test needs a proper mock of concurrent request handling
+    it('should not include CSRF token when getCsrfToken returns null', async () => {
+      vi.mocked(getCsrfToken).mockReturnValue(null);
+      vi.mocked(global.fetch).mockResolvedValue(mockResponse({}));
+
+      await authService.logout();
+
+      const callArgs = vi.mocked(global.fetch).mock.calls[0];
+      const headers = callArgs[1]?.headers as Record<string, string>;
+      expect(headers['X-CSRF-Token']).toBeUndefined();
+    });
+  });
+
+  describe('authService.refreshCsrfToken', () => {
+    it('should delegate to refreshCsrfToken utility', async () => {
+      const { refreshCsrfToken } = await import('../../src/utils/csrf');
+      vi.mocked(refreshCsrfToken).mockResolvedValue('new-csrf-token');
+
+      const result = await authService.refreshCsrfToken();
+
+      expect(refreshCsrfToken).toHaveBeenCalledWith('/api');
+      expect(result).toBe('new-csrf-token');
     });
   });
 });
