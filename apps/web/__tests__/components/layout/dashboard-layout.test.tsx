@@ -241,7 +241,7 @@ describe.skip('DashboardLayout Component', () => {
         </DashboardLayout>
       );
 
-      const signOutButtons = screen.getAllByRole('button', { name: /sign out/i });
+      const signOutButtons = screen.getAllByTestId('logout-button');
       expect(signOutButtons.length).toBeGreaterThan(0);
     });
 
@@ -259,11 +259,11 @@ describe.skip('DashboardLayout Component', () => {
         </DashboardLayout>
       );
 
-      const signOutButtons = screen.getAllByRole('button', { name: /sign out/i });
+      const signOutButtons = screen.getAllByTestId('logout-button');
       await user.click(signOutButtons[0]);
 
       expect(mockLogout).toHaveBeenCalledTimes(1);
-      expect(mockPush).toHaveBeenCalledWith('/auth/login');
+      expect(mockRouter.replace).toHaveBeenCalledWith('/auth/login');
     });
 
     it('redirects to login even if logout fails', async () => {
@@ -280,12 +280,12 @@ describe.skip('DashboardLayout Component', () => {
         </DashboardLayout>
       );
 
-      const signOutButtons = screen.getAllByRole('button', { name: /sign out/i });
+      const signOutButtons = screen.getAllByTestId('logout-button');
       await user.click(signOutButtons[0]);
 
       expect(mockLogout).toHaveBeenCalledTimes(1);
       // Should still redirect even on error
-      expect(mockPush).toHaveBeenCalledWith('/auth/login');
+      expect(mockRouter.replace).toHaveBeenCalledWith('/auth/login');
     });
   });
 
