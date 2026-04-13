@@ -13,6 +13,9 @@ Thank you for your interest in contributing to MoneyWise! This document provides
 
 2. **Set up development environment**
    ```bash
+   # Check Node version (must be 22+)
+   node --version  # v22.x.x or higher
+
    # Install dependencies
    pnpm install
 

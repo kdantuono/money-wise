@@ -455,7 +455,7 @@ pnpm test --passWithNoTests 2>&1 | grep "Test Suites"
 3. **Rate limiting**: 5 login attempts per 15 minutes (per IP)
 4. **Token expiry**: Access tokens expire in 15 minutes
 5. **Refresh tokens**: Use these to get new access tokens
-6. **Password requirements**: Min 32 chars, mixed case, numbers, symbols
+6. **Password requirements**: Min 12 chars, mixed case, numbers, symbols (see `register.dto.ts`)
 7. **No direct DB access**: All data through REST API
 8. **Transactions are immutable**: Update creates new record (audit trail)
 
