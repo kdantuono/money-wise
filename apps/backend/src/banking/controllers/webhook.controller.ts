@@ -271,9 +271,17 @@ export class WebhookController {
   @Post()
   @Public()
   @HttpCode(HttpStatus.OK)
-  @ApiExcludeEndpoint() // Don't show in Swagger
-  async handlePing(): Promise<{ status: string }> {
+  @ApiExcludeEndpoint()
+  async handlePing(
+    @Body() body: Record<string, unknown>,
+    @Headers('x-saltedge-signature') signature: string,
+  ): Promise<{ status: string }> {
     this.logger.debug('Webhook ping received');
+
+    if (!this.verifySignature(signature, JSON.stringify(body))) {
+      throw new UnauthorizedException('Invalid webhook signature');
+    }
+
     return { status: 'ok' };
   }
 
