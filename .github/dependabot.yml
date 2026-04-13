@@ -1,123 +1,154 @@
 version: 2
 updates:
-  # NPM dependencies for root workspace
+  # ─────────────────────────────────────────────────────────
+  # NPM: single root entry for the entire pnpm workspace.
+  # Dependabot reads pnpm-lock.yaml at "/" and updates it
+  # together with whichever workspace package.json changes.
+  # Per-directory entries (apps/backend, apps/web, …) caused
+  # broken PRs because they never touched the root lockfile.
+  # ─────────────────────────────────────────────────────────
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
       interval: "weekly"
       day: "monday"
       time: "09:00"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 15
     labels:
       - "dependencies"
       - "automated"
     reviewers:
       - "kdantuono"
     commit-message:
-      prefix: "chore"
+      prefix: "chore(deps)"
       include: "scope"
+    # Groups batch related packages into one PR each,
+    # instead of one PR per package.
+    groups:
+      # ── Frameworks ──
+      nestjs:
+        patterns: ["@nestjs/*", "nestjs-*"]
+      nextjs:
+        patterns: ["next", "@next/*"]
+      expo:
+        patterns: ["expo", "expo-*", "react-native*", "@expo/*"]
+      # ── Security & Vulnerability fixes ──
+      security:
+        dependency-type: "production"
+        update-types: ["security"]
+      # ── Testing ──
+      testing:
+        patterns:
+          - "vitest"
+          - "@vitest/*"
+          - "jest"
+          - "jest-*"
+          - "@types/jest"
+          - "ts-jest"
+          - "@testing-library/*"
+          - "playwright"
+          - "@playwright/*"
+          - "supertest"
+          - "@types/supertest"
+      # ── Linting & Formatting ──
+      linting:
+        patterns:
+          - "eslint"
+          - "eslint-*"
+          - "@eslint/*"
+          - "@typescript-eslint/*"
+          - "prettier"
+          - "@next/eslint-plugin-next"
+      # ── Build tooling ──
+      build-tools:
+        patterns:
+          - "typescript"
+          - "tsup"
+          - "turbo"
+          - "esbuild"
+          - "vite"
+          - "@vitejs/*"
+          - "postcss"
+          - "postcss-*"
+          - "tailwindcss"
+          - "autoprefixer"
+      # ── Prisma ──
+      prisma:
+        patterns: ["prisma", "@prisma/*"]
+      # ── Storybook ──
+      storybook:
+        patterns: ["storybook", "@storybook/*"]
+      # ── AWS / Monitoring ──
+      aws:
+        patterns: ["@aws-sdk/*"]
+      sentry:
+        patterns: ["@sentry/*"]
+      # ── React ecosystem ──
+      react:
+        patterns:
+          - "react"
+          - "react-dom"
+          - "@types/react"
+          - "@types/react-dom"
+          - "react-hook-form"
+          - "@hookform/*"
+      tanstack:
+        patterns: ["@tanstack/*"]
+      # ── Misc production deps (catch-all for ungrouped) ──
+      misc-prod:
+        dependency-type: "production"
+        exclude-patterns:
+          - "@nestjs/*"
+          - "nestjs-*"
+          - "next"
+          - "@next/*"
+          - "expo"
+          - "expo-*"
+          - "react-native*"
+          - "@expo/*"
+          - "prisma"
+          - "@prisma/*"
+          - "@aws-sdk/*"
+          - "@sentry/*"
+          - "react"
+          - "react-dom"
+          - "@types/react"
+          - "@types/react-dom"
+          - "@tanstack/*"
+      # ── Misc dev deps (catch-all for ungrouped) ──
+      misc-dev:
+        dependency-type: "development"
+        exclude-patterns:
+          - "vitest"
+          - "@vitest/*"
+          - "jest"
+          - "jest-*"
+          - "@types/jest"
+          - "ts-jest"
+          - "@testing-library/*"
+          - "playwright"
+          - "@playwright/*"
+          - "supertest"
+          - "@types/supertest"
+          - "eslint"
+          - "eslint-*"
+          - "@eslint/*"
+          - "@typescript-eslint/*"
+          - "prettier"
+          - "typescript"
+          - "tsup"
+          - "turbo"
+          - "esbuild"
+          - "vite"
+          - "@vitejs/*"
+          - "postcss"
+          - "postcss-*"
+          - "storybook"
+          - "@storybook/*"
 
-  # Backend NPM dependencies
-  - package-ecosystem: "npm"
-    directory: "/apps/backend"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "09:00"
-    open-pull-requests-limit: 5
-    labels:
-      - "dependencies"
-      - "backend"
-      - "automated"
-    reviewers:
-      - "kdantuono"
-    commit-message:
-      prefix: "chore(backend)"
-
-  # Web NPM dependencies
-  - package-ecosystem: "npm"
-    directory: "/apps/web"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "09:00"
-    open-pull-requests-limit: 5
-    labels:
-      - "dependencies"
-      - "web"
-      - "automated"
-    reviewers:
-      - "kdantuono"
-    commit-message:
-      prefix: "chore(web)"
-
-  # Mobile NPM dependencies
-  - package-ecosystem: "npm"
-    directory: "/apps/mobile"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "09:00"
-    open-pull-requests-limit: 5
-    labels:
-      - "dependencies"
-      - "mobile"
-      - "automated"
-    reviewers:
-      - "kdantuono"
-    commit-message:
-      prefix: "chore(mobile)"
-
-  # Shared packages NPM dependencies
-  - package-ecosystem: "npm"
-    directory: "/packages/types"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "09:00"
-    open-pull-requests-limit: 3
-    labels:
-      - "dependencies"
-      - "packages"
-      - "automated"
-    reviewers:
-      - "kdantuono"
-    commit-message:
-      prefix: "chore(types)"
-
-  - package-ecosystem: "npm"
-    directory: "/packages/ui"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "09:00"
-    open-pull-requests-limit: 3
-    labels:
-      - "dependencies"
-      - "packages"
-      - "automated"
-    reviewers:
-      - "kdantuono"
-    commit-message:
-      prefix: "chore(ui)"
-
-  - package-ecosystem: "npm"
-    directory: "/packages/utils"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "09:00"
-    open-pull-requests-limit: 3
-    labels:
-      - "dependencies"
-      - "packages"
-      - "automated"
-    reviewers:
-      - "kdantuono"
-    commit-message:
-      prefix: "chore(utils)"
-
-  # Docker dependencies
+  # ─────────────────────────────────────────────────────────
+  # Docker: base image updates (node, postgres, redis)
+  # ─────────────────────────────────────────────────────────
   - package-ecosystem: "docker"
     directory: "/"
     schedule:
@@ -134,7 +165,9 @@ updates:
     commit-message:
       prefix: "chore(docker)"
 
-  # GitHub Actions dependencies
+  # ─────────────────────────────────────────────────────────
+  # GitHub Actions: workflow action version bumps
+  # ─────────────────────────────────────────────────────────
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
