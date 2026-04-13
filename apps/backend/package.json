@@ -46,7 +46,7 @@
     "prisma:format": "prisma format"
   },
   "dependencies": {
-    "@aws-sdk/client-cloudwatch": "^3.1021.0",
+    "@aws-sdk/client-cloudwatch": "^3.1029.0",
     "@aws-sdk/client-cloudwatch-logs": "^3.1021.0",
     "@money-wise/types": "workspace:*",
     "@nestjs/common": "^11.1.9",
