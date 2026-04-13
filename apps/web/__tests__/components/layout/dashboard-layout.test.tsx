@@ -257,7 +257,7 @@ describe('DashboardLayout Component', () => {
     });
 
     it('redirects to login even if logout API fails', async () => {
-      const mockLogout = vi.fn().mockResolvedValue(undefined);
+      const mockLogout = vi.fn().mockRejectedValue(new Error('Logout failed'));
 
       mockUseAuthStore.mockReturnValue({
         user: mockUser,
@@ -328,8 +328,10 @@ describe('DashboardLayout Component', () => {
         </DashboardLayout>
       );
 
-      // Open sidebar
-      const menuButton = container.querySelector('button.lg\\:hidden');
+      // Open sidebar — menu button is inside <header>, not the sidebar close button
+      const header = container.querySelector('header');
+      const menuButton = header?.querySelector('button');
+      expect(menuButton).toBeInTheDocument();
       await user.click(menuButton!);
 
       // Backdrop should appear
@@ -344,8 +346,9 @@ describe('DashboardLayout Component', () => {
         </DashboardLayout>
       );
 
-      // Open sidebar
-      const menuButton = container.querySelector('button.lg\\:hidden');
+      // Open sidebar via header menu button
+      const header = container.querySelector('header');
+      const menuButton = header?.querySelector('button');
       await user.click(menuButton!);
 
       // Click backdrop to close

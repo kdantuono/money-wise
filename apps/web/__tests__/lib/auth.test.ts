@@ -55,6 +55,8 @@ const mockUser: User = {
   isActive: true,
 };
 
+const originalFetch = global.fetch;
+
 describe('Auth Service', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -63,6 +65,7 @@ describe('Auth Service', () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
+    global.fetch = originalFetch;
   });
 
   describe('authService.login', () => {
@@ -278,7 +281,7 @@ describe('Auth Service', () => {
       expect(result.emailVerifiedAt).toBe('2024-01-01T10:00:00.000Z');
     });
 
-    it('should include CSRF token header via apiRequest for GET', async () => {
+    it('should not include CSRF token header for GET requests', async () => {
       vi.mocked(global.fetch).mockResolvedValue(mockResponse(mockUser));
 
       await authService.getProfile();
