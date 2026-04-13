@@ -27,7 +27,7 @@ vi.mock('../../src/utils/sanitize', () => ({
 // Import after mocks are set up
 import { authService } from '../../lib/auth';
 import type { User, AuthResponse } from '../../lib/auth';
-import { getCsrfToken, setCsrfToken, clearCsrfToken } from '../../src/utils/csrf';
+import { getCsrfToken, setCsrfToken, clearCsrfToken, refreshCsrfToken } from '../../src/utils/csrf';
 
 // Helper to create a mock Response
 function mockResponse(data: unknown, options: { ok?: boolean; status?: number } = {}) {
@@ -55,6 +55,8 @@ const mockUser: User = {
   isActive: true,
 };
 
+const originalFetch = global.fetch;
+
 describe('Auth Service', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -63,6 +65,7 @@ describe('Auth Service', () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
+    global.fetch = originalFetch;
   });
 
   describe('authService.login', () => {
@@ -278,7 +281,7 @@ describe('Auth Service', () => {
       expect(result.emailVerifiedAt).toBe('2024-01-01T10:00:00.000Z');
     });
 
-    it('should include CSRF token header via apiRequest for GET', async () => {
+    it('should not include CSRF token header for GET requests', async () => {
       vi.mocked(global.fetch).mockResolvedValue(mockResponse(mockUser));
 
       await authService.getProfile();
@@ -290,6 +293,9 @@ describe('Auth Service', () => {
           credentials: 'include',
         })
       );
+      // CSRF header must NOT be present on GET requests
+      const headers = callArgs[1]?.headers as Record<string, string> | undefined;
+      expect(headers?.['X-CSRF-Token']).toBeUndefined();
     });
   });
 
@@ -383,7 +389,6 @@ describe('Auth Service', () => {
 
   describe('authService.refreshCsrfToken', () => {
     it('should delegate to refreshCsrfToken utility', async () => {
-      const { refreshCsrfToken } = await import('../../src/utils/csrf');
       vi.mocked(refreshCsrfToken).mockResolvedValue('new-csrf-token');
 
       const result = await authService.refreshCsrfToken();
