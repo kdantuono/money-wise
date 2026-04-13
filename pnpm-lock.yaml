@@ -453,7 +453,7 @@ importers:
         version: 5.90.11(react@19.2.1)
       '@tanstack/react-query-devtools':
         specifier: ^5
-        version: 5.91.1(@tanstack/react-query@5.90.11(react@19.2.1))(react@19.2.1)
+        version: 5.99.0(@tanstack/react-query@5.90.11(react@19.2.1))(react@19.2.1)
       axios:
         specifier: '>=1.15.0'
         version: 1.15.0
@@ -2547,7 +2547,7 @@ packages:
 
   '@expo/bunyan@4.0.1':
     resolution: {integrity: sha512-+Lla7nYSiHZirgK+U/uYzsLv/X+HaJienbD5AKX1UQZHYfWaP+9uuQluRB4GrEVWF0GZ7vEVp/jzaOT9k/SQlg==}
-    engines: {'0': node >=0.10.0}
+    engines: {node: '>=0.10.0'}
 
   '@expo/cli@0.22.26':
     resolution: {integrity: sha512-I689wc8Fn/AX7aUGiwrh3HnssiORMJtR2fpksX+JIe8Cj/EDleblYMSwRPd0025wrwOV9UN1KM/RuEt/QjCS3Q==}
@@ -5720,13 +5720,13 @@ packages:
   '@tanstack/query-core@5.90.11':
     resolution: {integrity: sha512-f9z/nXhCgWDF4lHqgIE30jxLe4sYv15QodfdPDKYAk7nAEjNcndy4dHz3ezhdUaR23BpWa4I2EH4/DZ0//Uf8A==}
 
-  '@tanstack/query-devtools@5.91.1':
-    resolution: {integrity: sha512-l8bxjk6BMsCaVQH6NzQEE/bEgFy1hAs5qbgXl0xhzezlaQbPk6Mgz9BqEg2vTLPOHD8N4k+w/gdgCbEzecGyNg==}
+  '@tanstack/query-devtools@5.99.0':
+    resolution: {integrity: sha512-m4ufXaJ8FjWXw7xDtyzE/6fkZAyQFg9WrbMrUpt8ZecRJx58jiFOZ2lxZMphZdIpAnIeto/S8stbwLKLusyckQ==}
 
-  '@tanstack/react-query-devtools@5.91.1':
-    resolution: {integrity: sha512-tRnJYwEbH0kAOuToy8Ew7bJw1lX3AjkkgSlf/vzb+NpnqmHPdWM+lA2DSdGQSLi1SU0PDRrrCI1vnZnci96CsQ==}
+  '@tanstack/react-query-devtools@5.99.0':
+    resolution: {integrity: sha512-CqqX7LCU9yOfCY/vBURSx2YSD83ryfX+QkfkaKionTfg1s2Hdm572Ro99gW3QPoJjzvsj1HM4pnN4nbDy3MXKA==}
     peerDependencies:
-      '@tanstack/react-query': ^5.90.10
+      '@tanstack/react-query': ^5.99.0
       react: ^18 || ^19
 
   '@tanstack/react-query@5.90.11':
@@ -8651,8 +8651,8 @@ packages:
   fast-xml-builder@1.1.4:
     resolution: {integrity: sha512-f2jhpN4Eccy0/Uz9csxh3Nu6q4ErKxf0XIsasomfOihuSUa3/xw6w8dnOtCDgEItQFJG8KyXPzQXzcODDrrbOg==}
 
-  fast-xml-parser@4.5.5:
-    resolution: {integrity: sha512-cK9c5I/DwIOI7/Q7AlGN3DuTdwN61gwSfL8rvuVPK+0mcCNHHGxRrpiFtaZZRfRMJL3Gl8B2AFlBG6qXf03w9A==}
+  fast-xml-parser@4.5.6:
+    resolution: {integrity: sha512-Yd4vkROfJf8AuJrDIVMVmYfULKmIJszVsMv7Vo71aocsKgFxpdlpSHXSaInvyYfgw2PRuObQSW2GFpVMUjxu9A==}
     hasBin: true
 
   fast-xml-parser@5.5.8:
@@ -14917,7 +14917,7 @@ snapshots:
 
   '@babel/helper-wrap-function@7.28.3':
     dependencies:
-      '@babel/template': 7.28.6
+      '@babel/template': 7.27.2
       '@babel/traverse': 7.29.0
       '@babel/types': 7.29.0
     transitivePeerDependencies:
@@ -20280,7 +20280,7 @@ snapshots:
       '@react-native-community/cli-tools': 11.3.7
       chalk: 4.1.2
       execa: 5.1.1
-      fast-xml-parser: 4.5.5
+      fast-xml-parser: 4.5.6
       glob: 10.5.0
       ora: 5.4.1
     transitivePeerDependencies:
@@ -22352,11 +22352,11 @@ snapshots:
 
   '@tanstack/query-core@5.90.11': {}
 
-  '@tanstack/query-devtools@5.91.1': {}
+  '@tanstack/query-devtools@5.99.0': {}
 
-  '@tanstack/react-query-devtools@5.91.1(@tanstack/react-query@5.90.11(react@19.2.1))(react@19.2.1)':
+  '@tanstack/react-query-devtools@5.99.0(@tanstack/react-query@5.90.11(react@19.2.1))(react@19.2.1)':
     dependencies:
-      '@tanstack/query-devtools': 5.91.1
+      '@tanstack/query-devtools': 5.99.0
       '@tanstack/react-query': 5.90.11(react@19.2.1)
       react: 19.2.1
 
@@ -26161,7 +26161,7 @@ snapshots:
     dependencies:
       path-expression-matcher: 1.2.0
 
-  fast-xml-parser@4.5.5:
+  fast-xml-parser@4.5.6:
     dependencies:
       strnum: 1.1.2
     optional: true
@@ -28003,7 +28003,7 @@ snapshots:
   jest-util@27.5.1:
     dependencies:
       '@jest/types': 27.5.1
-      '@types/node': 20.19.25
+      '@types/node': 25.5.0
       chalk: 4.1.2
       ci-info: 3.9.0
       graceful-fs: 4.2.11
@@ -29289,8 +29289,8 @@ snapshots:
   metro-transform-plugins@0.81.5:
     dependencies:
       '@babel/core': 7.29.0
-      '@babel/generator': 7.29.1
-      '@babel/template': 7.28.6
+      '@babel/generator': 7.28.5
+      '@babel/template': 7.27.2
       '@babel/traverse': 7.28.5
       flow-enums-runtime: 0.0.6
       nullthrows: 1.1.1
@@ -29321,9 +29321,9 @@ snapshots:
   metro-transform-worker@0.81.5:
     dependencies:
       '@babel/core': 7.29.0
-      '@babel/generator': 7.29.1
-      '@babel/parser': 7.29.2
-      '@babel/types': 7.29.0
+      '@babel/generator': 7.28.5
+      '@babel/parser': 7.28.5
+      '@babel/types': 7.28.5
       flow-enums-runtime: 0.0.6
       metro: 0.81.5
       metro-babel-transformer: 0.81.5
