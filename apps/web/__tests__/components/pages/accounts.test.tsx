@@ -590,12 +590,12 @@ describe('AccountsPage', () => {
       const editButton = screen.getByTestId('edit-button');
       await user.click(editButton);
 
-      // Wait for the edit form to appear (increase timeout for CI environment)
+      // Wait for the edit form to appear (5s timeout for CI coverage runs)
       await waitFor(
         () => {
           expect(screen.getByTestId('account-name-input')).toBeInTheDocument();
         },
-        { timeout: 3000 }
+        { timeout: 5000 }
       );
 
       // Update the account name

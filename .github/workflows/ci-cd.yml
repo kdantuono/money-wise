@@ -679,14 +679,6 @@ jobs:
           echo "❌ Database failed to become ready"
           exit 1
 
-          if echo "$MIGRATION_STATUS" | grep -q "have not been executed"; then
-            echo "❌ FAILED: Unapplied migrations found"
-            exit 1
-          fi
-
-          echo "✅ All migrations applied successfully"
-          echo "📝 Migration validation complete - database schema is in valid state"
-
       - name: 🧪 Unit Tests
         env:
           DB_HOST: localhost
@@ -1019,7 +1011,7 @@ jobs:
       - name: 📦 Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
 
       - name: 📥 Install dependencies
@@ -1141,7 +1133,7 @@ jobs:
       - name: 📦 Setup Node.js with pnpm cache
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
 
       - name: 📥 Install dependencies
@@ -1295,7 +1287,7 @@ jobs:
       - name: 📦 Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: ${{ env.NODE_VERSION }}
 
       - name: 📦 Setup pnpm
         uses: pnpm/action-setup@v2

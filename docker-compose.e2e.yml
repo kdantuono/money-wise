@@ -1,5 +1,3 @@
-version: '3.8'
-
 # E2E Test Docker Configuration
 # Fixes timeout issue by building during image creation, not container startup
 # Expected startup time: < 30 seconds (vs 3+ minutes before)

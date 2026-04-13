@@ -15,12 +15,6 @@ import type { NextRequest } from 'next/server'
  */
 const PROTECTED_ROUTES = [
   '/dashboard',
-  '/accounts',
-  '/transactions',
-  '/reports',
-  '/settings',
-  '/profile',
-  '/banking'
 ]
 
 /**

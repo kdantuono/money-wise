@@ -79,40 +79,32 @@ interface SaltEdgeFailPayload {
 export class WebhookController {
   private readonly logger = new Logger(WebhookController.name);
   private readonly webhookSecret: string;
-  private readonly signatureVerificationEnabled: boolean;
 
   constructor(
     private readonly bankingService: BankingService,
     private readonly configService: ConfigService,
   ) {
     this.webhookSecret = this.configService.get<string>('SALTEDGE_WEBHOOK_SECRET', '');
-    this.signatureVerificationEnabled = this.configService.get<boolean>(
-      'SALTEDGE_VERIFY_WEBHOOK_SIGNATURE',
-      true,
-    );
   }
 
   /**
-   * Verify SaltEdge webhook signature
-   * SaltEdge signs webhooks with SHA256 HMAC using the app secret
+   * Verify SaltEdge webhook signature using HMAC-SHA256.
+   *
+   * Throws UnauthorizedException when signature header is missing
+   * or when the webhook secret is not configured.
    */
   private verifySignature(
     signature: string | undefined,
     payload: string,
   ): boolean {
-    if (!this.signatureVerificationEnabled) {
-      this.logger.warn('Webhook signature verification is disabled');
-      return true;
-    }
-
     if (!signature) {
-      this.logger.warn('Missing webhook signature');
-      return false;
+      throw new UnauthorizedException('Missing webhook signature');
     }
 
     if (!this.webhookSecret) {
-      this.logger.warn('SALTEDGE_WEBHOOK_SECRET not configured');
-      return false;
+      throw new UnauthorizedException(
+        'SALTEDGE_WEBHOOK_SECRET not configured — cannot verify webhook signatures',
+      );
     }
 
     const expectedSignature = crypto
@@ -120,10 +112,14 @@ export class WebhookController {
       .update(payload)
       .digest('base64');
 
-    return crypto.timingSafeEqual(
-      Buffer.from(signature),
-      Buffer.from(expectedSignature),
-    );
+    const signatureBuffer = Buffer.from(signature);
+    const expectedBuffer = Buffer.from(expectedSignature);
+
+    if (signatureBuffer.length !== expectedBuffer.length) {
+      return false;
+    }
+
+    return crypto.timingSafeEqual(signatureBuffer, expectedBuffer);
   }
 
   /**
@@ -294,11 +290,15 @@ export class WebhookController {
   })
   async handleCallback(
     @Body() body: Record<string, unknown>,
-    @Headers('x-saltedge-signature') _signature: string,
+    @Headers('x-saltedge-signature') signature: string,
   ): Promise<{ status: string }> {
     this.logger.log(`Generic webhook received: ${JSON.stringify(body)}`);
 
-    // Log for debugging but don't fail
+    // Verify signature
+    if (!this.verifySignature(signature, JSON.stringify(body))) {
+      throw new UnauthorizedException('Invalid webhook signature');
+    }
+
     return { status: 'ok' };
   }
 }
