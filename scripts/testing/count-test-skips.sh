@@ -93,7 +93,7 @@ fi
 # Scan for skip patterns
 ###############################################################################
 # Patterns: describe.skip, it.skip, test.skip, xit(, xdescribe(, xtest(
-SKIP_PATTERN='(describe\.skip|it\.skip|test\.skip|xit\(|xdescribe\(|xtest\()'
+SKIP_PATTERN='(describe\.skip|it\.skip|test\.skip|\bxit\(|\bxdescribe\(|\bxtest\()'
 
 TOTAL=0
 FOUND_ANY=false
