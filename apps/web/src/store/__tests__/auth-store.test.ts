@@ -354,7 +354,7 @@ describe('Auth Store', () => {
   });
 
   describe('logout', () => {
-    it('should logout successfully and clear state synchronously', () => {
+    it('should logout successfully and clear state after API call', async () => {
       vi.mocked(authLib.authService.logout).mockResolvedValue(undefined);
       vi.mocked(csrfUtils.clearCsrfToken).mockImplementation(() => {});
 
@@ -365,9 +365,9 @@ describe('Auth Store', () => {
         result.current.setUser(mockUser);
       });
 
-      // Logout is now synchronous — state clears immediately
-      act(() => {
-        result.current.logout();
+      // Logout is async — calls backend first, then clears state
+      await act(async () => {
+        await result.current.logout();
       });
 
       expect(result.current.user).toBeNull();
@@ -389,22 +389,18 @@ describe('Auth Store', () => {
         result.current.setUser(mockUser);
       });
 
-      // Logout clears state synchronously, even before API resolves
-      act(() => {
-        result.current.logout();
+      // Logout calls API (fails), then clears state in finally block
+      await act(async () => {
+        await result.current.logout();
       });
 
-      // State is cleared immediately (synchronous)
+      // State is cleared in finally block after API failure
       expect(result.current.user).toBeNull();
       expect(result.current.isAuthenticated).toBe(false);
-
-      // Wait for fire-and-forget API call to reject and log error
-      await vi.waitFor(() => {
-        expect(console.error).toHaveBeenCalledWith(
-          'Logout API call failed:',
-          expect.any(Error)
-        );
-      });
+      expect(console.error).toHaveBeenCalledWith(
+        'Logout API call failed:',
+        expect.any(Error)
+      );
     });
   });
 
