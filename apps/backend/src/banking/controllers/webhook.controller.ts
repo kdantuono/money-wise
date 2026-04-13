@@ -271,9 +271,23 @@ export class WebhookController {
   @Post()
   @Public()
   @HttpCode(HttpStatus.OK)
-  @ApiExcludeEndpoint() // Don't show in Swagger
-  async handlePing(): Promise<{ status: string }> {
-    this.logger.debug('Webhook ping received');
+  @ApiExcludeEndpoint()
+  async handlePing(
+    @Body() body: Record<string, unknown>,
+    @Headers('x-saltedge-signature') signature?: string,
+  ): Promise<{ status: string }> {
+    // Signature is optional for health-check pings (SaltEdge reachability probes
+    // may not include a signature). Log a warning when missing so we can detect
+    // unauthorized probing, but don't reject — this endpoint is not state-changing.
+    if (signature) {
+      if (!this.verifySignature(signature, JSON.stringify(body))) {
+        throw new UnauthorizedException('Invalid webhook signature');
+      }
+      this.logger.debug('Webhook ping received (signature verified)');
+    } else {
+      this.logger.warn('Webhook ping received WITHOUT signature — unsigned health check');
+    }
+
     return { status: 'ok' };
   }
 
