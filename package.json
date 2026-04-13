@@ -34,6 +34,7 @@
     "test:e2e:playwright:debug": "playwright test --debug",
     "test:e2e:playwright:ui": "playwright test --ui",
     "test:e2e:playwright:headed": "playwright test --headed",
+    "test:report-skips": "bash scripts/testing/count-test-skips.sh",
     "test:ci": "turbo run test:coverage --output-logs=new-only && pnpm test:coverage:report",
     "lint": "turbo run lint",
     "lint:fix": "turbo run lint:fix",

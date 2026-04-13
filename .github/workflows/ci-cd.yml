@@ -108,6 +108,13 @@ jobs:
         if: hashFiles('**/.eslintrc*') != ''
         run: pnpm lint
 
+      - name: 📋 Marker Convention Lint
+        if: always()
+        continue-on-error: true
+        run: |
+          echo "📋 Checking marker conventions..."
+          bash scripts/lint-markers.sh || true
+
       - name: 💅 Prettier Format Check
         if: hashFiles('**/.prettierrc*') != ''
         run: |
@@ -776,6 +783,13 @@ jobs:
           fail_ci_if_error: false
           verbose: true
           name: coverage-report-${{ github.run_id }}
+
+      - name: 📊 Count Test Skips
+        if: always()
+        continue-on-error: true
+        run: |
+          echo "📊 Test skip inventory..."
+          bash scripts/testing/count-test-skips.sh || true
 
       - name: 📊 Comment PR with Coverage Report
         if: github.event_name == 'pull_request'
