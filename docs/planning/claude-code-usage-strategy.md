@@ -1,5 +1,11 @@
 # Strategia di Utilizzo Ottimale di Claude Code per Zecca
 
+**Last Updated**: April 14, 2026
+**Status**: Approved
+**Purpose**: Operational playbook for optimizing Claude Code sessions across the Zecca 18-week roadmap — session scoping, parallelization, review workflow, and risk mitigations for a solo developer.
+
+---
+
 > **Contesto**: MVP MoneyWise 100% completo (1941+ test, 32 E2E, CI green). Prossimo step: migrazione completa a Supabase (Phase 0, 4-5 settimane) seguita da 18 settimane di roadmap con feature strategiche. Sviluppatore singolo.
 
 ---
@@ -38,7 +44,7 @@ Usa per **lavoro che richiede contesto ampio senza tool di sistema**:
 
 La migrazione è **intrinsecamente sequenziale** (schema → auth → data layer → edge functions → cleanup). Ma puoi sovrapporre la preparazione:
 
-```
+```text
 Settimana 1 (locale): Schema + RLS + Auth setup
     ↕ contemporaneamente
     Web session: Drafta le seed SQL e DB functions per Settimana 2
@@ -60,7 +66,7 @@ git worktree add ../mobile-v1 -b feature/mobile-v1 main
 
 | | Track A: Stripe Billing | Track B: Mobile v1 |
 |---|---|---|
-| **Tocca** | `supabase/functions/stripe-*`, `apps/web/src/app/billing/`, tabelle DB | `apps/mobile/` (quasi vuoto ora) |
+| **Tocca** | `supabase/functions/stripe-*`, `apps/web/app/(dashboard)/billing/`, tabelle DB | `apps/mobile/` (quasi vuoto ora) |
 | **Agente** | backend-specialist + Stripe MCP | frontend-specialist |
 | **Conflitti** | Solo `packages/types/` (minimo) | Solo `packages/types/` (minimo) |
 | **Sessione** | CLI locale #1 | CLI locale #2 |
@@ -172,7 +178,7 @@ Motivi:
 
 A partire da Phase 1, il sistema epic aggiunge valore reale:
 
-```
+```text
 /epic:init stripe-billing    # Decompone in stories + task con dipendenze
 /epic:init mobile-auth-nav   # Assegna agenti, identifica parallelismo
 ```
@@ -188,7 +194,7 @@ A partire da Phase 1, il sistema epic aggiunge valore reale:
 1. **Diff-first**: `git diff --stat` poi `git diff` dopo ogni sessione. Più efficiente che leggere file interi
 2. **RLS è il confine di sicurezza**: Ogni policy DEVE avere un test esplicito: "User A può vedere dati di User B?" → scrivi come asserzioni SQL via `execute_sql`. Non fidarti senza test
 3. **Esegui l'app**: Dopo ogni service file migrato → `pnpm dev:web` → click-through manuale della feature. I test unitari verificano correttezza del codice, non correttezza della feature
-4. **Sfrutta la CI**: `validate-ci.sh` livelli 1-8 (senza Docker) dopo ogni 2-3 sessioni
+4. **Sfrutta la CI**: esegui spesso `./.claude/scripts/validate-ci.sh 8` (controllo rapido, senza Docker) dopo ogni 2-3 sessioni, ma **prima di ogni push** esegui sempre `./.claude/scripts/validate-ci.sh 10`
 
 ### Plan mode vs esecuzione diretta
 
@@ -247,7 +253,7 @@ Per uno sviluppatore singolo, i subagent aggiungono latenza. Usali solo quando:
 
 ### Durante Phase 0 (sequenziale)
 
-```
+```text
 🌅 Mattina
 ├── Apri terminale → /resume-work
 ├── Controlla checklist in zecca-phase0-supabase-migration.md
@@ -264,7 +270,7 @@ Per uno sviluppatore singolo, i subagent aggiungono latenza. Usali solo quando:
 
 ### Durante Phase 1+ (parallelo)
 
-```
+```text
 🌅 Mattina — Track A (es. Stripe)
 ├── Terminale 1, worktree stripe-billing
 ├── 2 sessioni focalizzate (45-90 min ciascuna)
@@ -296,7 +302,7 @@ Per uno sviluppatore singolo, i subagent aggiungono latenza. Usali solo quando:
 
 ## 9. Riepilogo Decisionale
 
-```
+```text
                         FASE 0                    FASE 1-2                  FASE 3-4
                      (Migration)               (Features)                (Polish+Launch)
 
