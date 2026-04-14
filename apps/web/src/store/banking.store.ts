@@ -396,7 +396,7 @@ export const useBankingStore = create<BankingState>()(
             state.error = errorMessage;
           });
 
-          throw error;
+          // Don't rethrow — banking backend not available during Supabase migration
         }
       },
 

@@ -50,11 +50,11 @@ function StatCardSkeleton() {
       <CardContent className="p-4 sm:p-6">
         <div className="flex items-center justify-between">
           <div className="space-y-2">
-            <div className="h-4 w-20 bg-gray-200 rounded animate-pulse" />
-            <div className="h-7 w-28 bg-gray-200 rounded animate-pulse" />
-            <div className="h-3 w-24 bg-gray-200 rounded animate-pulse" />
+            <div className="h-4 w-20 bg-muted rounded animate-pulse" />
+            <div className="h-7 w-28 bg-muted rounded animate-pulse" />
+            <div className="h-3 w-24 bg-muted rounded animate-pulse" />
           </div>
-          <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-gray-200 animate-pulse" />
+          <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-muted animate-pulse" />
         </div>
       </CardContent>
     </Card>
