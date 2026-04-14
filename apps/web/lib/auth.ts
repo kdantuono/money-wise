@@ -86,7 +86,7 @@ export const authService = {
     return { user: profileToUser(profile, data.user.email!, data.user.email_confirmed_at) }
   },
 
-  async register(credentials: RegisterCredentials): Promise<{ user: User }> {
+  async register(credentials: RegisterCredentials): Promise<{ user: User; needsEmailConfirmation: boolean }> {
     const supabase = createClient()
 
     const { data, error } = await supabase.auth.signUp({
@@ -103,6 +103,27 @@ export const authService = {
     if (error) throw new Error(error.message)
     if (!data.user) throw new Error('Registration failed — no user returned')
 
+    // If email confirmation is required, session is null — can't query profiles via RLS
+    if (!data.session) {
+      return {
+        needsEmailConfirmation: true,
+        user: {
+          id: data.user.id,
+          email: data.user.email!,
+          firstName: credentials.firstName,
+          lastName: credentials.lastName,
+          role: 'ADMIN',
+          status: 'ACTIVE',
+          currency: 'EUR',
+          createdAt: data.user.created_at,
+          updatedAt: data.user.created_at,
+          fullName: `${credentials.firstName} ${credentials.lastName}`,
+          isEmailVerified: false,
+          isActive: true,
+        },
+      }
+    }
+
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('*')
@@ -111,7 +132,10 @@ export const authService = {
 
     if (profileError) throw new Error('Failed to load profile after registration')
 
-    return { user: profileToUser(profile, data.user.email!, data.user.email_confirmed_at) }
+    return {
+      needsEmailConfirmation: false,
+      user: profileToUser(profile, data.user.email!, data.user.email_confirmed_at),
+    }
   },
 
   async getProfile(): Promise<User> {

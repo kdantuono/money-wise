@@ -200,34 +200,34 @@ export default function SettingsPage() {
     setSuccess(null);
 
     try {
-      const headers: HeadersInit = {
-        'Content-Type': 'application/json',
-      };
+      const { createClient } = await import('@/utils/supabase/client');
+      const supabase = createClient();
 
-      const response = await fetch(`/api/users/${user.id}`, {
-        method: 'PUT',
-        headers,
-        body: JSON.stringify({
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          email: formData.email,
+      // Update profile in Supabase
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({
+          first_name: formData.firstName,
+          last_name: formData.lastName,
           timezone: formData.timezone,
           currency: formData.currency,
           preferences: formData.preferences,
-        }),
-      });
+        })
+        .eq('id', user.id);
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to update profile');
+      if (profileError) {
+        throw new Error(profileError.message || 'Failed to update profile');
       }
-
-      const updatedUser = await response.json();
 
       // Update the auth store with new user data
       setUser({
         ...user,
-        ...updatedUser,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        timezone: formData.timezone,
+        currency: formData.currency,
+        preferences: formData.preferences as Record<string, unknown>,
+        fullName: `${formData.firstName} ${formData.lastName}`,
       });
 
       setSuccess('Profile updated successfully!');

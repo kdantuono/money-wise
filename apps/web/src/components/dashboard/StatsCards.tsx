@@ -68,8 +68,8 @@ function formatCurrency(amount: number): string {
   }).format(amount);
 }
 
-function formatPercentage(value: number): string {
-  return `${value.toFixed(1)}%`;
+function formatPercentage(value: number | undefined | null): string {
+  return `${(value ?? 0).toFixed(1)}%`;
 }
 
 // Icons as inline SVG for simplicity
@@ -248,7 +248,13 @@ export function StatsCards({ stats, isLoading }: StatsCardsProps) {
       />
       <StatCard
         title="Savings Rate"
-        value={formatPercentage(stats.savingsRate)}
+        value={formatPercentage(
+          stats.savingsRate ?? (
+            stats.monthlyIncome > 0
+              ? ((stats.monthlyIncome - stats.monthlyExpenses) / stats.monthlyIncome) * 100
+              : 0
+          )
+        )}
         icon={<PiggyBankIcon />}
         className="border-l-4 border-l-blue-500"
       />

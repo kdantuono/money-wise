@@ -66,8 +66,14 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     set({ isLoading: true, error: null })
 
     try {
-      const { user } = await authService.register({ email, password, firstName, lastName })
-      set({ user, isAuthenticated: true, isLoading: false, error: null })
+      const result = await authService.register({ email, password, firstName, lastName })
+
+      if (result.needsEmailConfirmation) {
+        set({ user: result.user, isAuthenticated: false, isLoading: false, error: null })
+        return
+      }
+
+      set({ user: result.user, isAuthenticated: true, isLoading: false, error: null })
     } catch (error) {
       const errorMessage = parseErrorMessage(error)
       set({ error: errorMessage, isLoading: false, user: null, isAuthenticated: false })

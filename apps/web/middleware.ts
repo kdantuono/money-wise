@@ -1,46 +1,60 @@
 /**
  * Next.js Middleware — Supabase Auth Route Protection
  *
- * 1. Refreshes Supabase auth tokens on every request (via updateSession)
- * 2. Protects /dashboard/* routes — redirects to /auth/login if no session
+ * 1. Refreshes Supabase auth tokens on every request
+ * 2. Protects /dashboard/* — redirects to /auth/login if no session
  * 3. Redirects authenticated users away from /auth/* pages
  */
 
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
-import { updateSession } from '@/utils/supabase/middleware'
+import { type NextRequest, NextResponse } from 'next/server'
+import { createServerClient } from '@supabase/ssr'
+import type { Database } from '@/utils/supabase/database.types'
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
 const PROTECTED_PREFIXES = ['/dashboard']
-
 const AUTH_ROUTES = ['/auth/login', '/auth/register', '/auth/forgot-password', '/auth/reset-password']
 
 export async function middleware(request: NextRequest) {
-  // Refresh Supabase session (updates cookies if needed)
-  const response = await updateSession(request)
-
   const { pathname } = request.nextUrl
 
   const isProtected = PROTECTED_PREFIXES.some((p) => pathname.startsWith(p))
   const isAuthRoute = AUTH_ROUTES.some((r) => pathname === r || pathname.startsWith(r + '/'))
 
+  // Skip middleware for non-protected, non-auth routes
   if (!isProtected && !isAuthRoute) {
-    return response
+    return NextResponse.next()
   }
 
-  // Check session by reading the Supabase auth cookie
-  // The updateSession call above already refreshed the token
-  const hasSession = response.headers
-    .getSetCookie()
-    .some((c) => c.includes('sb-') && c.includes('auth-token'))
-    || request.cookies.getAll().some((c) => c.name.includes('sb-') && c.name.includes('auth-token'))
+  // Create a Supabase client that reads/writes cookies on the response
+  let response = NextResponse.next({ request: { headers: request.headers } })
 
-  if (isProtected && !hasSession) {
+  const supabase = createServerClient<Database>(supabaseUrl, supabaseKey, {
+    cookies: {
+      getAll() {
+        return request.cookies.getAll()
+      },
+      setAll(cookiesToSet) {
+        cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+        response = NextResponse.next({ request })
+        cookiesToSet.forEach(({ name, value, options }) =>
+          response.cookies.set(name, value, options)
+        )
+      },
+    },
+  })
+
+  // Refresh session — this is the authoritative check
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (isProtected && !user) {
     const loginUrl = new URL('/auth/login', request.url)
     loginUrl.searchParams.set('returnUrl', pathname)
     return NextResponse.redirect(loginUrl)
   }
 
-  if (isAuthRoute && hasSession) {
+  if (isAuthRoute && user) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
