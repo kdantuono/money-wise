@@ -1,126 +1,89 @@
 /**
- * Accounts API Client
+ * Accounts Client — Supabase
  *
- * Provides type-safe HTTP client for account management endpoints.
- * Handles all account types (manual, linked banking, etc.)
+ * Direct Supabase queries replacing BFF fetch calls.
+ * RLS policies handle family/user isolation automatically.
  *
  * @module services/accounts.client
  */
 
+import { createClient } from '@/utils/supabase/client'
+import type { Database } from '@/utils/supabase/database.types'
 import {
   AccountType,
   AccountStatus,
   AccountSource,
-  FinancialSummary,
-  DeletionEligibilityResponse,
-  RestoreEligibilityResponse,
-} from '../types/account.types';
+  type FinancialSummary,
+  type DeletionEligibilityResponse,
+  type RestoreEligibilityResponse,
+} from '../types/account.types'
+
+type AccountRow = Database['public']['Tables']['accounts']['Row']
+type AccountInsert = Database['public']['Tables']['accounts']['Insert']
 
 // =============================================================================
-// Type Definitions
+// Type Definitions (preserved for component compatibility)
 // =============================================================================
 
-/**
- * Account settings for display customization
- */
 export interface AccountSettings {
-  autoSync?: boolean;
-  syncFrequency?: 'daily' | 'hourly' | 'manual';
-  notifications?: boolean;
-  budgetIncluded?: boolean;
-  /** Account display icon identifier */
-  icon?: string;
-  /** Account display color identifier */
-  color?: string;
+  autoSync?: boolean
+  syncFrequency?: 'daily' | 'hourly' | 'manual'
+  notifications?: boolean
+  budgetIncluded?: boolean
+  icon?: string
+  color?: string
 }
 
-/**
- * Account data returned from API
- */
 export interface Account {
-  id: string;
-  userId: string;
-  name: string;
-  type: AccountType;
-  status: AccountStatus;
-  source: AccountSource;
-  currentBalance: number;
-  availableBalance?: number;
-  creditLimit?: number;
-  currency: string;
-  institutionName?: string;
-  maskedAccountNumber?: string;
-  displayName: string;
-  isManualAccount: boolean;
-  /** Whether account can be synced with banking provider (has valid connection) */
-  isSyncable: boolean;
-  needsSync: boolean;
-  isActive: boolean;
-  syncEnabled: boolean;
-  lastSyncAt?: string;
-  syncError?: string;
-  saltEdgeConnectionId?: string;
-  /** Account display settings */
-  settings?: AccountSettings;
-  createdAt: string;
-  updatedAt: string;
+  id: string
+  userId: string | null
+  familyId: string | null
+  name: string
+  type: AccountType
+  status: AccountStatus
+  source: AccountSource
+  currentBalance: number
+  availableBalance?: number | null
+  creditLimit?: number | null
+  currency: string
+  institutionName?: string | null
+  isActive: boolean
+  syncEnabled: boolean
+  lastSyncAt?: string | null
+  syncError?: string | null
+  settings?: AccountSettings | null
+  saltEdgeConnectionId?: string | null
+  maskedAccountNumber?: string | null
+  displayName: string
+  isManualAccount: boolean
+  isSyncable: boolean
+  needsSync: boolean
+  createdAt: string
+  updatedAt: string
 }
 
-/**
- * Account summary statistics
- */
-export interface AccountSummary {
-  totalAccounts: number;
-  totalBalance: number;
-  activeAccounts: number;
-  accountsNeedingSync: number;
-  byType: {
-    [key in AccountType]?: {
-      count: number;
-      totalBalance: number;
-    };
-  };
-}
-
-/**
- * Data required to create a new manual account
- */
 export interface CreateAccountRequest {
-  name: string;
-  type: AccountType;
-  source: AccountSource;
-  currentBalance: number;
-  currency?: string;
-  institutionName?: string;
-  accountNumber?: string;
-  creditLimit?: number;
+  name: string
+  type: AccountType
+  source: AccountSource
+  currentBalance: number
+  currency?: string
+  institutionName?: string
+  accountNumber?: string
+  creditLimit?: number
+  userId?: string
+  familyId?: string
 }
 
-/**
- * Data for updating an existing account
- */
 export interface UpdateAccountRequest {
-  name?: string;
-  status?: AccountStatus;
-  currentBalance?: number;
-  availableBalance?: number;
-  creditLimit?: number;
-  institutionName?: string;
-  syncEnabled?: boolean;
-  /** Account display settings */
-  settings?: {
-    icon?: string;
-    color?: string;
-  };
-}
-
-/**
- * API error response structure
- */
-export interface ApiErrorResponse {
-  statusCode: number;
-  message: string | string[];
-  error?: string;
+  name?: string
+  status?: AccountStatus
+  currentBalance?: number
+  availableBalance?: number
+  creditLimit?: number
+  institutionName?: string
+  syncEnabled?: boolean
+  settings?: { icon?: string; color?: string }
 }
 
 // =============================================================================
@@ -133,304 +96,281 @@ export class AccountsApiError extends Error {
     public statusCode: number,
     public errorType?: string
   ) {
-    super(message);
-    this.name = 'AccountsApiError';
-    Object.setPrototypeOf(this, AccountsApiError.prototype);
+    super(message)
+    this.name = 'AccountsApiError'
   }
 }
 
 export class AuthenticationError extends AccountsApiError {
-  constructor(message: string = 'Authentication required. Please log in.') {
-    super(message, 401, 'AuthenticationError');
-    this.name = 'AuthenticationError';
-    Object.setPrototypeOf(this, AuthenticationError.prototype);
+  constructor(message = 'Authentication required. Please log in.') {
+    super(message, 401, 'AuthenticationError')
+    this.name = 'AuthenticationError'
   }
 }
 
 export class ValidationError extends AccountsApiError {
-  constructor(message: string = 'Invalid request data.') {
-    super(message, 400, 'ValidationError');
-    this.name = 'ValidationError';
-    Object.setPrototypeOf(this, ValidationError.prototype);
+  constructor(message = 'Invalid request data.') {
+    super(message, 400, 'ValidationError')
+    this.name = 'ValidationError'
   }
 }
 
 export class NotFoundError extends AccountsApiError {
-  constructor(message: string = 'Account not found.') {
-    super(message, 404, 'NotFoundError');
-    this.name = 'NotFoundError';
-    Object.setPrototypeOf(this, NotFoundError.prototype);
+  constructor(message = 'Account not found.') {
+    super(message, 404, 'NotFoundError')
+    this.name = 'NotFoundError'
   }
 }
 
 export class LinkedTransfersError extends AccountsApiError {
-  constructor(
-    message: string = 'Cannot delete account with linked transfers.',
-    public linkedTransferCount: number = 0
-  ) {
-    super(message, 400, 'LINKED_TRANSFERS_EXIST');
-    this.name = 'LinkedTransfersError';
-    Object.setPrototypeOf(this, LinkedTransfersError.prototype);
+  constructor(message = 'Cannot delete account with linked transfers.', public linkedTransferCount = 0) {
+    super(message, 400, 'LINKED_TRANSFERS_EXIST')
+    this.name = 'LinkedTransfersError'
   }
 }
 
 export class RelinkRequiredError extends AccountsApiError {
   constructor(
-    message: string = 'Banking connection is revoked. Re-linking required.',
-    public siblingAccountCount: number = 0,
+    message = 'Banking connection is revoked. Re-linking required.',
+    public siblingAccountCount = 0,
     public providerName?: string,
     public suggestion?: string
   ) {
-    super(message, 409, 'RELINK_REQUIRED');
-    this.name = 'RelinkRequiredError';
-    Object.setPrototypeOf(this, RelinkRequiredError.prototype);
+    super(message, 409, 'RELINK_REQUIRED')
+    this.name = 'RelinkRequiredError'
   }
 }
 
 // =============================================================================
-// HTTP Client Configuration
+// Row → Client Type Mapper
 // =============================================================================
 
-/**
- * API base URL - uses relative path to go through BFF proxy
- * This ensures cookies are properly included (same-origin requests)
- */
-const API_BASE_URL = '/api/accounts';
+function maskAccountNumber(num: string | null): string | null {
+  if (!num || num.length < 4) return num
+  return '••••' + num.slice(-4)
+}
 
-async function handleErrorResponse(response: Response): Promise<never> {
-  let errorData: ApiErrorResponse | null = null;
+function rowToAccount(row: AccountRow): Account {
+  const source = row.source as AccountSource
+  const status = row.status as AccountStatus
+  const isManual = source === 'MANUAL'
 
-  try {
-    const text = await response.text();
-    if (text) {
-      errorData = JSON.parse(text);
-    }
-  } catch {
-    // Failed to parse error response
-  }
-
-  const statusCode = response.status;
-  const message = errorData?.message
-    ? Array.isArray(errorData.message)
-      ? errorData.message.join(', ')
-      : errorData.message
-    : response.statusText || 'An error occurred';
-
-  switch (statusCode) {
-    case 400:
-      throw new ValidationError(message);
-    case 401:
-      throw new AuthenticationError(message);
-    case 404:
-      throw new NotFoundError(message);
-    default:
-      throw new AccountsApiError(message, statusCode, errorData?.error);
+  return {
+    id: row.id,
+    userId: row.user_id,
+    familyId: row.family_id,
+    name: row.name,
+    type: row.type as AccountType,
+    status,
+    source,
+    currentBalance: Number(row.current_balance),
+    availableBalance: row.available_balance != null ? Number(row.available_balance) : null,
+    creditLimit: row.credit_limit != null ? Number(row.credit_limit) : null,
+    currency: row.currency,
+    institutionName: row.institution_name,
+    isActive: status === 'ACTIVE',
+    syncEnabled: row.sync_enabled,
+    lastSyncAt: row.last_sync_at,
+    syncError: row.sync_error,
+    settings: row.settings as AccountSettings | null,
+    saltEdgeConnectionId: row.saltedge_connection_id,
+    maskedAccountNumber: maskAccountNumber(row.account_number),
+    displayName: row.institution_name ? `${row.name} (${row.institution_name})` : row.name,
+    isManualAccount: isManual,
+    isSyncable: !isManual && status === 'ACTIVE' && row.sync_enabled,
+    needsSync: !isManual && status === 'ACTIVE' && row.sync_enabled && !row.last_sync_at,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
   }
 }
 
-async function request<T>(
-  endpoint: string,
-  options: RequestInit = {}
-): Promise<T> {
-  const url = `${API_BASE_URL}${endpoint}`;
-
-  const response = await fetch(url, {
-    ...options,
-    credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-  });
-
-  if (!response.ok) {
-    await handleErrorResponse(response);
-  }
-
-  if (response.status === 204) {
-    return undefined as T;
-  }
-
-  const text = await response.text();
-  if (!text) {
-    return {} as T;
-  }
-
-  return JSON.parse(text);
-}
-
 // =============================================================================
-// Accounts API Client
+// Accounts Client
 // =============================================================================
 
 export const accountsClient = {
-  /**
-   * Get all accounts for the current user
-   * @param includeHidden - Include hidden accounts in results (default: true for accounts page visibility)
-   */
-  async getAccounts(includeHidden: boolean = true): Promise<Account[]> {
-    const queryParams = includeHidden ? '?includeHidden=true' : '';
-    return request<Account[]>(queryParams, { method: 'GET' });
-  },
+  async getAccounts(includeHidden = true): Promise<Account[]> {
+    const supabase = createClient()
+    let query = supabase.from('accounts').select('*').order('created_at', { ascending: false })
 
-  /**
-   * Get a single account by ID
-   */
-  async getAccount(accountId: string): Promise<Account> {
-    return request<Account>(`/${accountId}`, { method: 'GET' });
-  },
-
-  /**
-   * Get account summary statistics
-   */
-  async getAccountSummary(): Promise<AccountSummary> {
-    return request<AccountSummary>('/summary', { method: 'GET' });
-  },
-
-  /**
-   * Get financial summary with net worth calculation
-   */
-  async getFinancialSummary(): Promise<FinancialSummary> {
-    return request<FinancialSummary>('/financial-summary', {
-      method: 'GET',
-    });
-  },
-
-  /**
-   * Create a new manual account
-   */
-  async createAccount(data: CreateAccountRequest): Promise<Account> {
-    return request<Account>('', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
-
-  /**
-   * Update an existing account
-   */
-  async updateAccount(
-    accountId: string,
-    data: UpdateAccountRequest
-  ): Promise<Account> {
-    return request<Account>(`/${accountId}`, {
-      method: 'PATCH',
-      body: JSON.stringify(data),
-    });
-  },
-
-  /**
-   * Delete an account
-   */
-  async deleteAccount(accountId: string): Promise<void> {
-    return request<void>(`/${accountId}`, { method: 'DELETE' });
-  },
-
-  /**
-   * Get account balance only
-   */
-  async getAccountBalance(
-    accountId: string
-  ): Promise<{ currentBalance: number; availableBalance?: number }> {
-    return request<{ currentBalance: number; availableBalance?: number }>(
-      `/${accountId}/balance`,
-      { method: 'GET' }
-    );
-  },
-
-  /**
-   * Check if an account can be deleted
-   * Returns eligibility status and any blocking transfers
-   */
-  async checkDeletionEligibility(
-    accountId: string
-  ): Promise<DeletionEligibilityResponse> {
-    return request<DeletionEligibilityResponse>(
-      `/${accountId}/deletion-eligibility`,
-      { method: 'GET' }
-    );
-  },
-
-  /**
-   * Hide an account (soft delete)
-   * Preserves all transactions but excludes from active views
-   */
-  async hideAccount(accountId: string): Promise<Account> {
-    return request<Account>(`/${accountId}/hide`, {
-      method: 'PATCH',
-    });
-  },
-
-  /**
-   * Check if a hidden account can be restored
-   * Returns eligibility status and re-linking requirements for banking accounts
-   */
-  async checkRestoreEligibility(
-    accountId: string
-  ): Promise<RestoreEligibilityResponse> {
-    return request<RestoreEligibilityResponse>(
-      `/${accountId}/restore-eligibility`,
-      { method: 'GET' }
-    );
-  },
-
-  /**
-   * Restore a hidden account
-   * Sets status back to ACTIVE
-   * @throws RelinkRequiredError if banking connection is revoked
-   */
-  async restoreAccount(accountId: string): Promise<Account> {
-    const url = `${API_BASE_URL}/${accountId}/restore`;
-
-    const response = await fetch(url, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-    });
-
-    if (!response.ok) {
-      // Check for RELINK_REQUIRED error (409)
-      if (response.status === 409) {
-        const errorData = await response.json();
-        if (errorData?.error === 'RELINK_REQUIRED') {
-          throw new RelinkRequiredError(
-            errorData.message,
-            errorData.siblingAccountCount,
-            errorData.providerName,
-            errorData.suggestion
-          );
-        }
-      }
-
-      // Fall through to generic error handling
-      let errorData: ApiErrorResponse | null = null;
-      try {
-        const text = await response.text();
-        if (text) errorData = JSON.parse(text);
-      } catch {
-        // Failed to parse
-      }
-
-      const message = errorData?.message
-        ? Array.isArray(errorData.message)
-          ? errorData.message.join(', ')
-          : errorData.message
-        : response.statusText || 'An error occurred';
-
-      switch (response.status) {
-        case 400:
-          throw new ValidationError(message);
-        case 401:
-          throw new AuthenticationError(message);
-        case 404:
-          throw new NotFoundError(message);
-        default:
-          throw new AccountsApiError(message, response.status, errorData?.error);
-      }
+    if (!includeHidden) {
+      query = query.neq('status', 'HIDDEN')
     }
 
-    return response.json();
+    const { data, error } = await query
+    if (error) throw new AccountsApiError(error.message, 500)
+    return (data ?? []).map(rowToAccount)
   },
-};
 
-export default accountsClient;
+  async getAccount(accountId: string): Promise<Account> {
+    const supabase = createClient()
+    const { data, error } = await supabase
+      .from('accounts')
+      .select('*')
+      .eq('id', accountId)
+      .single()
+
+    if (error) throw new NotFoundError()
+    return rowToAccount(data)
+  },
+
+  async createAccount(input: CreateAccountRequest): Promise<Account> {
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new AccountsApiError('Not authenticated', 401)
+
+    const insert: AccountInsert = {
+      name: input.name,
+      type: input.type,
+      source: input.source,
+      current_balance: input.currentBalance,
+      currency: input.currency ?? 'EUR',
+      institution_name: input.institutionName,
+      credit_limit: input.creditLimit,
+      user_id: input.familyId ? null : user.id,
+      family_id: input.familyId ?? null,
+    }
+
+    // XOR: if no familyId provided, set user_id (personal account)
+    if (!insert.family_id) {
+      insert.user_id = user.id
+    }
+
+    const { data, error } = await supabase
+      .from('accounts')
+      .insert(insert)
+      .select()
+      .single()
+
+    if (error) throw new AccountsApiError(error.message, 400)
+    return rowToAccount(data)
+  },
+
+  async updateAccount(accountId: string, input: UpdateAccountRequest): Promise<Account> {
+    const supabase = createClient()
+    const update: Database['public']['Tables']['accounts']['Update'] = {}
+
+    if (input.name !== undefined) update.name = input.name
+    if (input.status !== undefined) update.status = input.status as Database['public']['Enums']['account_status']
+    if (input.currentBalance !== undefined) update.current_balance = input.currentBalance
+    if (input.availableBalance !== undefined) update.available_balance = input.availableBalance
+    if (input.creditLimit !== undefined) update.credit_limit = input.creditLimit
+    if (input.institutionName !== undefined) update.institution_name = input.institutionName
+    if (input.syncEnabled !== undefined) update.sync_enabled = input.syncEnabled
+    if (input.settings !== undefined) update.settings = input.settings
+
+    const { data, error } = await supabase
+      .from('accounts')
+      .update(update)
+      .eq('id', accountId)
+      .select()
+      .single()
+
+    if (error) throw new AccountsApiError(error.message, 400)
+    return rowToAccount(data)
+  },
+
+  async deleteAccount(accountId: string): Promise<void> {
+    const supabase = createClient()
+    const { error } = await supabase
+      .from('accounts')
+      .delete()
+      .eq('id', accountId)
+
+    if (error) throw new AccountsApiError(error.message, 400)
+  },
+
+  async hideAccount(accountId: string): Promise<Account> {
+    return accountsClient.updateAccount(accountId, { status: AccountStatus.HIDDEN })
+  },
+
+  async restoreAccount(accountId: string): Promise<Account> {
+    return accountsClient.updateAccount(accountId, { status: AccountStatus.ACTIVE })
+  },
+
+  async getAccountBalance(accountId: string): Promise<{ currentBalance: number; availableBalance?: number }> {
+    const account = await accountsClient.getAccount(accountId)
+    return {
+      currentBalance: account.currentBalance,
+      availableBalance: account.availableBalance ?? undefined,
+    }
+  },
+
+  async getFinancialSummary(): Promise<FinancialSummary> {
+    const supabase = createClient()
+    const { data, error } = await supabase.rpc('get_balance_summary')
+    if (error) throw new AccountsApiError(error.message, 500)
+
+    const liabilityTypes = ['CREDIT_CARD', 'LOAN', 'MORTGAGE']
+    let totalAssets = 0
+    let totalLiabilities = 0
+    let totalAvailableCredit = 0
+
+    const accounts: FinancialSummary['accounts'] = (data ?? []).map((a) => {
+      const balance = Number(a.current_balance)
+      const isLiability = liabilityTypes.includes(a.account_type)
+
+      if (isLiability) {
+        totalLiabilities += Math.abs(balance)
+      } else {
+        totalAssets += balance
+      }
+
+      return {
+        accountId: a.account_id,
+        accountName: a.account_name,
+        accountType: a.account_type as AccountType,
+        accountNature: isLiability ? 'LIABILITY' : 'ASSET',
+        currentBalance: balance,
+        displayAmount: Math.abs(balance),
+        displayLabel: isLiability ? (balance === 0 ? 'Paid Off' : 'Owed') : (balance >= 0 ? 'Available' : 'Overdrawn'),
+        affectsNetWorth: isLiability ? 'negative' : 'positive',
+        currency: a.currency,
+      } as FinancialSummary['accounts'][number]
+    })
+
+    return {
+      totalAssets,
+      totalLiabilities,
+      netWorth: totalAssets - totalLiabilities,
+      totalAvailableCredit,
+      accounts,
+      currency: 'EUR',
+      calculatedAt: new Date().toISOString(),
+    }
+  },
+
+  async checkDeletionEligibility(accountId: string): Promise<DeletionEligibilityResponse> {
+    const supabase = createClient()
+    const account = await accountsClient.getAccount(accountId)
+    const { count } = await supabase
+      .from('transactions')
+      .select('*', { count: 'exact', head: true })
+      .eq('account_id', accountId)
+      .not('transfer_group_id', 'is', null)
+
+    const linkedTransferCount = count ?? 0
+
+    return {
+      canDelete: linkedTransferCount === 0,
+      canHide: true,
+      currentStatus: account.status as AccountStatus,
+      blockReason: linkedTransferCount > 0 ? `Account has ${linkedTransferCount} linked transfers` : undefined,
+      blockers: [],
+      linkedTransferCount,
+    }
+  },
+
+  async checkRestoreEligibility(accountId: string): Promise<RestoreEligibilityResponse> {
+    const account = await accountsClient.getAccount(accountId)
+    return {
+      canRestore: account.status === 'HIDDEN',
+      requiresRelink: !account.isManualAccount && !account.saltEdgeConnectionId,
+      currentStatus: account.status as AccountStatus,
+      source: account.source as AccountSource,
+      isBankingAccount: !account.isManualAccount,
+    } as RestoreEligibilityResponse
+  },
+}
+
+export default accountsClient
