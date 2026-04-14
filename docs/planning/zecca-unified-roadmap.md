@@ -1,169 +1,135 @@
-# Zecca — Unified Roadmap: Audit Remediation + Strategic Features
+# Zecca — Unified Roadmap v2: Supabase Migration + Strategic Features
 
 > **Created**: April 14, 2026
 > **Status**: Approved
-> **Supersedes**: `zecca-strategic-feature-plan.md` (strategic vision preserved, timeline corrected)
-> **Inputs**: Health Audit (2026-04-12) + Zecca Strategic Plan (2026-04-14)
+> **Supersedes**: `zecca-strategic-feature-plan.md`, previous unified roadmap v1
+> **Inputs**: Health Audit (2026-04-12) + Zecca Strategic Plan + Supabase migration decision
+> **Detail doc**: `zecca-phase0-supabase-migration.md` (week-by-week migration plan)
 
 ## Context
 
-Two plans merged into one:
+Three inputs converge:
+1. **Health Audit**: Candidates 7, 10, 6 done. Remaining: C3 (Family), C2 (Deploy), C5 (Email), C4 (Admin), C1 (Stripe)
+2. **Zecca Strategic Plan**: Brand, 10 features, competitive positioning
+3. **Supabase Migration Decision**: Full migration eliminates C3, C5, most of C2 and C4
 
-1. **Health Audit (2026-04-12)**: Clinical audit identified 10 candidates, 3 hard blockers for private beta with billing. Candidates 7, 10, 6 already merged to main. Remaining: Family multi-tenancy (C3), Deploy (C2), Email (C5), Admin (C4), Billing/Stripe (C1).
-
-2. **Zecca Strategic Plan (2026-04-14)**: Brand unification under "Zecca", 10 features in 5 phases, infrastructure decisions (Vercel yes, Stripe yes, Supabase no).
-
-**Resolution**: Family MUST precede Stripe (audit invariant). Mobile + Vercel run as parallel track with zero audit dependencies. 16-week unified timeline.
-
----
-
-## What's Done (Audit Remediation)
-
-| Candidate | Description | Status |
-|-----------|-------------|--------|
-| 7 | Test credibility restoration | DONE (PR #413, #416, #418) |
-| 10 | Structural hygiene R1+R2+R3 | DONE (PR #412) |
-| 6 | Auth hardening sweep | DONE (PR #420) |
-| A1-A5 | Transition blockers | DONE (all 5 resolved) |
-
-## What Remains
-
-| Item | Source | Effort | Dependency |
-|------|--------|--------|------------|
-| Family multi-tenancy (C3) | Audit | 7-14 days | Blocks Stripe |
-| Self-host deployment (C2) | Audit | 4 days | Blocks real beta |
-| Email verification (C5) | Audit | 2.5 days | Blocks billing emails |
-| Admin/support MVP (C4) | Audit | 4 days | Blocks user ops |
-| Stripe billing (C1) | Audit + Zecca | 2-3 weeks | Blocked by C3 |
-| Vercel deployment | Zecca | 1-2 days | Independent |
-| Zecca mobile v1 | Zecca | 8-10 weeks | Independent |
-| AI agent backend | Zecca | 3-4 weeks | After Stripe |
-| Gamification | Zecca | 3 weeks | After Family |
-| Savings automation | Zecca | 2-3 weeks | After Stripe |
-| Subscription tracker | Zecca | 2 weeks | After AI agent |
-| Voice input | Zecca | 2 weeks | After mobile v1 |
-| Smart insights | Zecca | 3 weeks | After AI agent |
-| Bill splitting | Zecca | 2-3 weeks | After Family |
-| Zecca Academy | Zecca | 3-4 weeks | After gamification |
+**Key decision**: Full Supabase migration (4-5 weeks) replaces audit remediation patchwork (6-8 weeks) AND leaves a cleaner foundation for every future feature. We take the pain upfront.
 
 ---
 
-## Unified Roadmap (Dual Track)
+## New Stack (post-migration)
 
 ```
-TRACK A (Audit Critical Path)     TRACK B (Zecca Mobile + Infra)
-============================      ==============================
+BEFORE                              AFTER
+------                              -----
+NestJS 11 + Prisma 6                Supabase (PostgreSQL + Auth + RLS + Storage + Realtime)
+PostgreSQL (self-hosted)             PostgreSQL (Supabase, Frankfurt EU)
+Redis                                Removed (Supabase Auth sessions)
+Custom JWT + 5,875 LOC auth          Supabase Auth (0 LOC)
+18,000+ LOC backend                  ~1,650 LOC Edge Functions
+1,941 tests (many unreliable)        Fresh test suite (RLS + E2E)
 
-Week 1-2: Family multi-tenancy   Week 1-2: Vercel deploy setup
-  - 12 TODO familyId in              + Zecca mobile: auth screens
-    accounts.controller.ts              (Expo Router, biometric)
-  - transactions.service:306
-    cross-family access
-  - Wire familyId through
-    budgets, liabilities,
-    scheduled transactions
-  - Family dashboard (web)
-          |                       Week 3-4: Zecca mobile: navigation
-Week 3-4: Family completion         + tab bar, dashboard shell
-  - Parental controls               + quick expense entry (3 taps)
-  - Allowance system                 + swipe categorization
-  - Shared family goals
-  - Age-appropriate views
-          |                       Week 5-6: Zecca mobile: core screens
-Week 5: Deploy + Email + Admin      + transaction list
-  - C2: Self-host deployment         + budget overview
-    (Docker prod, domain)            + account sync status
-  - C5: Email verification           + settings
-    (AWS SES or Resend)
-  - C4: Admin panel (basic)
-          |                       Week 7-8: Zecca mobile: polish
-Week 6-8: Stripe billing            + offline-first sync
-  - Subscription tiers               + push notifications
-    (Free/Pro/Family)                + home widget prototype
-  - Customer portal                  + receipt camera (OCR)
-  - Webhooks lifecycle
-  - EU payments (SEPA)
-  - Family plan billing
-    (single payer, N profiles)
-          |                               |
-          v                               v
-    TRACKS MERGE — Week 9
-    ========================
-          |
-Week 9-10: AI Agent Backend
-  - apps/backend/src/ai/ module
-  - Claude API for insights
-  - Auto-categorization ML
-  - Anomaly detection
-  - Weekly digest (push + email)
-  - Subscription tracker
-          |
-Week 11-12: Gamification + Savings
-  - Achievement system, badges
-  - Family leaderboard
+Web: Next.js 15 + axios → NestJS    Web: Next.js 15 + @supabase/ssr → Supabase direct
+Mobile: empty                        Mobile: Expo 52 + @supabase/supabase-js
+Deploy: Docker self-host             Deploy: Vercel (web) + Supabase (data)
+```
+
+---
+
+## Unified Timeline: 18 weeks
+
+```
+Phase 0: Supabase Migration (Weeks 1-5)
+=========================================
+  Week 1: DB schema + RLS policies + Auth setup
+  Week 2: Seed data + DB functions + Web auth migration
+  Week 3: Web data layer migration (services → Supabase client)
+  Week 4: Banking Edge Functions + NestJS deletion
+  Week 5: Testing + buffer
+
+Phase 1: Stripe + Mobile Kickoff (Weeks 6-9)
+==============================================
+  TRACK A                          TRACK B
+  Stripe billing module            Zecca mobile: auth + navigation
+  - Free/Pro/Family tiers          - Supabase Auth SDK
+  - Customer portal                - Expo Router tabs
+  - SEPA + EU payments             - Quick expense entry (3 taps)
+  - Webhook lifecycle              - Swipe to categorize
+
+Phase 2: Mobile Core + AI Foundation (Weeks 10-13)
+====================================================
+  TRACK A                          TRACK B
+  AI agent backend                 Zecca mobile: core screens
+  - Edge Function for insights     - Transaction list
+  - Auto-categorization ML         - Budget overview
+  - Anomaly detection              - Account sync status
+  - Subscription tracker           - Settings + preferences
+  - Weekly digest (push + email)   - Offline-first sync
+
+Phase 3: Gamification + Savings (Weeks 14-16)
+===============================================
+  - Achievement system, badges, family leaderboard
   - Financial score (0-100)
-  - Challenges engine
-  - Round-up rules
-  - Auto-save rules
+  - Challenges engine (no-spend week, 52-week, etc.)
+  - Savings automation (round-ups, auto-save rules)
   - Visual savings jar
-          |
-Week 13-14: Zecca Mobile v2
+  - Mobile: gamification UI + push from AI agent
+
+Phase 4: Growth + Launch (Weeks 17-18)
+========================================
   - Voice input (Whisper + Claude)
-  - Smart insights in mobile
-  - AI agent push integration
-  - Gamification UI (mobile)
-          |
-Week 15-16: Growth + Launch
+  - Smart insights on mobile
   - Bill splitting
-  - Peer benchmarks
-  - Zecca Academy (education)
-  - App Store submission
+  - Zecca Academy (financial education)
+  - App Store / Play Store submission
   - Marketing site on zecca.app
 ```
 
 ---
 
-## Phase Details
+## Dependency Diagram
 
-### Phase 1: Family + Mobile Kickoff (Weeks 1-4)
+```mermaid
+graph TD
+    DONE["Audit C7+C10+C6 DONE"] --> PH0["Phase 0: Supabase Migration<br/>5 weeks"]
 
-**Track A — Family Multi-tenancy (C3)**
-Files to modify:
-- `apps/backend/src/accounts/accounts.controller.ts` (12 TODOs)
-- `apps/backend/src/accounts/accounts.service.ts` (familyId wiring)
-- `apps/backend/src/transactions/transactions.service.ts` (cross-family access)
-- `apps/backend/src/budgets/` (family budget support)
-- `apps/backend/src/liabilities/` (family visibility)
-- `apps/backend/src/scheduled/` (family scheduling)
-- `apps/backend/src/core/database/prisma/services/family.service.ts` (extend)
-- New: `apps/web/app/dashboard/family/` pages
+    PH0 --> STRIPE["Stripe Billing<br/>2-3 weeks"]
+    PH0 --> MOBILE1["Zecca Mobile v1<br/>4 weeks"]
 
-**Track B — Zecca Mobile + Vercel**
-- Vercel: connect repo, configure standalone Next.js, preview deploys
-- Mobile: Expo Router navigation, auth screens, biometric, quick entry
+    STRIPE --> AI["AI Agent<br/>3-4 weeks"]
+    STRIPE --> SAVINGS["Savings Automation<br/>2-3 weeks"]
 
-### Phase 2: Infrastructure (Weeks 5-8)
+    AI --> SUBS["Subscription Tracker"]
+    AI --> INSIGHTS["Smart Insights"]
+    AI --> MOBILE2["Zecca Mobile v2<br/>AI + Voice + Gamification"]
 
-**Track A**: C2 (deploy) + C5 (email) + C4 (admin) + C1 (Stripe)
-**Track B**: Mobile core screens, offline sync, push, widget, camera
+    PH0 --> GAMIF["Gamification Engine<br/>3 weeks"]
+    GAMIF --> MOBILE2
+    MOBILE1 --> MOBILE2
 
-### Phase 3: Intelligence (Weeks 9-12)
-
-Tracks merge. AI agent, gamification, savings automation.
-
-### Phase 4: Mobile Excellence + Growth (Weeks 13-16)
-
-Voice, insights, gamification mobile, bill splitting, academy, App Store launch.
+    MOBILE2 --> LAUNCH["App Store Launch"]
+    SAVINGS --> LAUNCH
+    INSIGHTS --> LAUNCH
+```
 
 ---
 
-## Brand Strategy
+## What Phase 0 Eliminates
 
-**Public brand**: Everything is **Zecca**
-**Internal code**: Stays `money-wise`
-**Future**: Parent brand TBD when CRM + marketing agents materialize
+| Audit Item | Before (patch) | After (Supabase) |
+|------------|---------------|-------------------|
+| C3: Family multi-tenancy | 7-14 days, 15+ files | **ELIMINATED** — RLS policies |
+| C5: Email verification | 2.5 days | **ELIMINATED** — Supabase Auth |
+| C2: Self-host deployment | 4 days | **ELIMINATED** — Supabase + Vercel |
+| C4: Admin/support MVP | 4 days | **REDUCED** — Supabase Dashboard |
+| Auth bugs (5 findings) | 4 days fix | **ELIMINATED** — not our code |
+| Test theater | Ongoing debt | **ELIMINATED** — fresh start |
+| 13 familyId TODOs | Part of C3 | **ELIMINATED** — RLS |
+| Coverage contradictions | Confusing | **ELIMINATED** — new test suite |
 
-## Pricing Tiers (post-Stripe)
+---
+
+## Pricing Tiers (post-Stripe, Phase 1)
 
 | Tier | Price | Features |
 |------|-------|----------|
@@ -173,8 +139,27 @@ Voice, insights, gamification mobile, bill splitting, academy, App Store launch.
 
 ---
 
+## Brand Strategy
+
+**Public**: Everything is **Zecca**
+**Internal code**: Stays `money-wise` (repo, packages)
+**Future**: Parent brand when CRM + marketing agents materialize
+
+---
+
 ## Risk Callouts
 
-1. **Family effort uncertainty**: 7-14 days. Timebox to 10, defer advanced features if needed.
-2. **Stripe + Family coupling**: Stripe MUST NOT start until Family passes full test coverage.
-3. **Mobile parallel track**: Mobile consumes stable APIs first, family-aware APIs only after C3 lands.
+1. **Supabase Edge Functions (Deno)**: SaltEdge is the only risk. Fallback: tiny Node.js micro-service on Fly.io
+2. **RLS policy bugs**: Test-first with pgTAP before any data migration
+3. **Web migration scope**: Systematic — grep all API calls, replace one service file at a time
+4. **Supabase free tier**: 500MB DB, 50K MAU — more than enough for beta
+5. **Timeline buffer**: Week 5 is pure buffer. If weeks 1-4 go clean, Phase 1 starts early
+
+---
+
+## Reference Documents
+
+- `zecca-phase0-supabase-migration.md` — detailed week-by-week migration plan with code examples
+- `zecca-strategic-feature-plan.md` — brand strategy + competitive analysis (still valid)
+- `docs/audits/2026-04-12-health-audit.md` — original audit findings
+- `docs/audits/2026-04-13-blocker-resolution-report.md` — A1-A5 resolution
