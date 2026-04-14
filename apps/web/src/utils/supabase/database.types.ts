@@ -1316,7 +1316,39 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_balance_summary: {
+        Args: never
+        Returns: {
+          account_id: string
+          account_name: string
+          account_type: Database["public"]["Enums"]["account_type"]
+          currency: string
+          current_balance: number
+          institution_name: string
+          last_sync_at: string
+        }[]
+      }
+      get_category_spending: {
+        Args: { date_from: string; date_to: string; parent_only?: boolean }
+        Returns: {
+          category_color: string
+          category_icon: string
+          category_id: string
+          category_name: string
+          percentage: number
+          total_amount: number
+          transaction_count: number
+        }[]
+      }
+      get_dashboard_stats: { Args: { period?: string }; Returns: Json }
+      get_spending_trends: {
+        Args: { num_periods?: number; period?: string }
+        Returns: {
+          expenses: number
+          income: number
+          period_date: string
+        }[]
+      }
     }
     Enums: {
       account_source: "SALTEDGE" | "TINK" | "YAPILY" | "PLAID" | "MANUAL"
