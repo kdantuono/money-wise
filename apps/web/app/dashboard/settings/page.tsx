@@ -211,7 +211,7 @@ export default function SettingsPage() {
           last_name: formData.lastName,
           timezone: formData.timezone,
           currency: formData.currency,
-          preferences: formData.preferences,
+          preferences: JSON.parse(JSON.stringify(formData.preferences)),
         })
         .eq('id', user.id);
 
