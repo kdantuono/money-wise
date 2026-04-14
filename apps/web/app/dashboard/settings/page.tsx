@@ -27,7 +27,6 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/store/auth.store';
-import { getCsrfToken } from '@/utils/csrf';
 import { useTheme } from '@/hooks/useTheme';
 
 // =============================================================================
@@ -197,18 +196,13 @@ export default function SettingsPage() {
     setSuccess(null);
 
     try {
-      const csrfToken = getCsrfToken();
       const headers: HeadersInit = {
         'Content-Type': 'application/json',
       };
-      if (csrfToken) {
-        headers['X-CSRF-Token'] = csrfToken;
-      }
 
       const response = await fetch(`/api/users/${user.id}`, {
         method: 'PUT',
         headers,
-        credentials: 'include',
         body: JSON.stringify({
           firstName: formData.firstName,
           lastName: formData.lastName,

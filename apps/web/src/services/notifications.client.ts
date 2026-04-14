@@ -22,7 +22,6 @@
  * ```
  */
 
-import { getCsrfToken } from '@/utils/csrf';
 import type {
   Notification,
   NotificationQueryParams,
@@ -156,23 +155,13 @@ async function request<T>(
 ): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
 
-  // Include CSRF token for mutations (PATCH, POST, DELETE)
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...(options.headers as Record<string, string>),
   };
 
-  const method = options.method?.toUpperCase() || 'GET';
-  if (['POST', 'PATCH', 'PUT', 'DELETE'].includes(method)) {
-    const csrfToken = getCsrfToken();
-    if (csrfToken) {
-      headers['X-CSRF-Token'] = csrfToken;
-    }
-  }
-
   const response = await fetch(url, {
     ...options,
-    credentials: 'include',
     headers,
   });
 
