@@ -17,54 +17,62 @@ export function createServiceClient() {
  */
 export function createUserClient(req: Request) {
   const authHeader = req.headers.get('Authorization')
-  if (!authHeader) {
-    throw new Error('Missing Authorization header')
-  }
+  if (!authHeader) throw new Error('Missing Authorization header')
 
   return createClient(
     Deno.env.get('SUPABASE_URL')!,
     Deno.env.get('SUPABASE_ANON_KEY')!,
-    {
-      global: { headers: { Authorization: authHeader } },
-    },
+    { global: { headers: { Authorization: authHeader } } },
   )
 }
 
 /**
- * Extract user ID from JWT via Supabase auth.
- * Passes token explicitly per Supabase docs (more robust than relying on global headers).
+ * Extract Bearer token from Authorization header.
  */
-export async function getUserId(req: Request): Promise<string> {
-  const client = createUserClient(req)
+function extractToken(req: Request): string {
   const authHeader = req.headers.get('Authorization') ?? ''
   const token = authHeader.replace('Bearer ', '').trim()
   if (!token) throw new Error('Unauthorized')
-  const { data: { user }, error } = await client.auth.getUser(token)
-  if (error || !user) throw new Error('Unauthorized')
-  return user.id
+  return token
+}
+
+/**
+ * Extract user ID from JWT claims (local verification, no network call).
+ * Uses getClaims() per Supabase docs for Edge Functions with Signing Keys.
+ * Mapping: claims.sub → profiles.id → auth.users.id
+ */
+export async function getUserId(req: Request): Promise<string> {
+  const client = createUserClient(req)
+  const token = extractToken(req)
+
+  const { data, error } = await client.auth.getClaims(token)
+  if (error || !data?.claims?.sub) throw new Error('Unauthorized')
+
+  return data.claims.sub
 }
 
 /**
  * Get the family ID for a user.
- * Uses explicit token passing per Supabase docs.
+ * First validates JWT via getClaims(), then queries profiles table.
+ * Throws 'Unauthorized' for invalid tokens, 'ProfileNotFound' for missing profiles.
  */
 export async function getFamilyId(req: Request): Promise<string> {
   const client = createUserClient(req)
-  const authHeader = req.headers.get('Authorization') ?? ''
-  const token = authHeader.replace('Bearer ', '').trim()
-  if (!token) throw new Error('Unauthorized')
-  const { data: { user }, error: authError } = await client.auth.getUser(token)
-  if (authError || !user) throw new Error('Unauthorized')
+  const token = extractToken(req)
+
+  const { data, error } = await client.auth.getClaims(token)
+  if (error || !data?.claims?.sub) throw new Error('Unauthorized')
+
+  const userId = data.claims.sub
 
   const { data: profile, error: profileError } = await client
     .from('profiles')
     .select('family_id')
-    .eq('id', user.id)
-    .single()
+    .eq('id', userId)
+    .maybeSingle()
 
-  if (profileError || !profile?.family_id) {
-    throw new Error('User has no family')
-  }
+  if (profileError) throw new Error('ProfileQueryFailed')
+  if (!profile?.family_id) throw new Error('ProfileNotFound')
 
   return profile.family_id
 }
