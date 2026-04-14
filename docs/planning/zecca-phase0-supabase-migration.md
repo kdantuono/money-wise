@@ -27,9 +27,22 @@
 | **Core** (Prisma, Redis, health, logging, monitoring, config) | 30+ files | ~3,000 | **YES** — Supabase infra | DELETE |
 | **Database seeds** | 4 files | ~400 | Port to Supabase SQL seed | Rewrite as SQL |
 
-### Prisma Schema: 21 models → 21 Supabase tables
+### Prisma Schema Mapping
 
-All models map 1:1 to Supabase PostgreSQL tables. The schema IS the migration guide.
+Most Prisma models map 1:1 to app-owned Supabase PostgreSQL tables, but **User is the exception**.
+
+**User model split:**
+- `auth.users` — owned by Supabase Auth (email, password, MFA, sessions)
+- `public.profiles` — app-owned (display name, family_id, role, preferences, avatar)
+- `public.profiles.id` = `auth.users.id` (1:1 relationship, same UUID)
+
+**Migration rule:**
+- 20 domain models → 20 `public.*` tables (1:1)
+- Prisma `User` model → split into `auth.users` + `public.profiles`
+- All foreign keys previously targeting `users.id` → reference `auth.users.id` (or equivalently `profiles.id`)
+- RLS policies use `auth.uid()` as source of truth for current user
+
+The Prisma schema remains the migration guide, with this `auth.users` + `public.profiles` split called out explicitly.
 
 ### What SURVIVES as custom code (Edge Functions)
 
@@ -84,14 +97,14 @@ All models map 1:1 to Supabase PostgreSQL tables. The schema IS the migration gu
 CREATE POLICY "Users see own family accounts"
 ON accounts FOR SELECT
 USING (
-  family_id = (SELECT family_id FROM users WHERE id = auth.uid())
+  family_id = (SELECT family_id FROM public.profiles WHERE id = auth.uid())
 );
 
 -- Users can insert accounts for their family
 CREATE POLICY "Users insert own family accounts"
 ON accounts FOR INSERT
 WITH CHECK (
-  family_id = (SELECT family_id FROM users WHERE id = auth.uid())
+  family_id = (SELECT family_id FROM public.profiles WHERE id = auth.uid())
 );
 
 -- Similar for UPDATE, DELETE with role checks

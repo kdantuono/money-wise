@@ -2,8 +2,9 @@
 
 > **Created**: April 14, 2026
 > **Status**: Approved
-> **Supersedes**: `zecca-strategic-feature-plan.md`, previous unified roadmap v1
-> **Inputs**: Health Audit (2026-04-12) + Zecca Strategic Plan + Supabase migration decision
+> **Supersedes**: previous unified roadmap v1, plus the implementation/infrastructure sections of `zecca-strategic-feature-plan.md`
+> **Inputs retained from strategic plan**: brand direction, feature set, competitive positioning
+> **Inputs**: Health Audit (2026-04-12) + product strategy from `zecca-strategic-feature-plan.md` + Supabase migration decision
 > **Detail doc**: `zecca-phase0-supabase-migration.md` (week-by-week migration plan)
 
 ## Context
@@ -12,6 +13,8 @@ Three inputs converge:
 1. **Health Audit**: Candidates 7, 10, 6 done. Remaining: C3 (Family), C2 (Deploy), C5 (Email), C4 (Admin), C1 (Stripe)
 2. **Zecca Strategic Plan**: Brand, 10 features, competitive positioning
 3. **Supabase Migration Decision**: Full migration eliminates C3, C5, most of C2 and C4
+
+**Authority rule**: This document replaces `zecca-strategic-feature-plan.md` for roadmap sequencing, architecture, infrastructure, and delivery decisions. The older strategic plan remains relevant only for product vision and feature intent; where the two documents conflict, this roadmap and `zecca-phase0-supabase-migration.md` are the source of truth.
 
 **Key decision**: Full Supabase migration (4-5 weeks) replaces audit remediation patchwork (6-8 weeks) AND leaves a cleaner foundation for every future feature. We take the pain upfront.
 
@@ -159,7 +162,7 @@ graph TD
 
 ## Reference Documents
 
-- `zecca-phase0-supabase-migration.md` — detailed week-by-week migration plan with code examples
-- `zecca-strategic-feature-plan.md` — brand strategy + competitive analysis (still valid)
+- `zecca-phase0-supabase-migration.md` — detailed week-by-week migration plan with code examples; use this for all implementation, infra, and migration work
+- `zecca-strategic-feature-plan.md` — still useful for brand strategy, positioning, and competitive analysis only; any backend, infra, or implementation guidance there is superseded by this roadmap and the Phase 0 Supabase migration plan
 - `docs/audits/2026-04-12-health-audit.md` — original audit findings
 - `docs/audits/2026-04-13-blocker-resolution-report.md` — A1-A5 resolution

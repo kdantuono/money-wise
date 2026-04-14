@@ -80,7 +80,7 @@ Family admin panel             Savings challenges & gamification
 
 #### 1. Zecca Mobile Agent (the product IS the agent)
 The app doesn't wait for the user. It monitors, analyzes, and acts:
-- Proactive push: "Hai speso il 40% in piu in ristoranti questa settimana"
+- Proactive push: "Hai speso il 40% in più in ristoranti questa settimana"
 - Auto-categorization that learns from user corrections
 - Budget reallocation: "Sposta 50 EUR da Shopping a Risparmio?"
 - Anomaly detection: unusual charges, duplicate subscriptions
@@ -91,7 +91,7 @@ The app doesn't wait for the user. It monitors, analyzes, and acts:
 - Home widget: "Puoi spendere EUR X oggi"
 - Biometric auth (FaceID/fingerprint)
 - Offline-first with background sync
-- **Backend**: New `apps/backend/src/ai/` module (NestJS scheduled jobs + Claude API)
+- **Backend**: Supabase Edge Functions + DB functions/scheduled jobs (agent orchestration, weekly digests, anomaly checks, Claude API integration)
 - **Mobile**: Full build of `apps/mobile/src/` (Expo Router + NativeWind)
 - **Effort**: 8-10 weeks (agent logic + mobile screens)
 
@@ -103,7 +103,7 @@ Netflix model for family finances:
 - Shared family goals (vacation fund, new car, etc.)
 - Age-appropriate views (schema already supports UserRole: ADMIN/MEMBER/VIEWER)
 - Kids mode: visual savings jars, achievement badges, mascot
-- **Backend**: New `apps/backend/src/families/` module
+- **Backend**: Supabase families schema + RLS policies for household access, parental controls, and shared goals
 - **Frontend**: New dashboard pages under `/dashboard/family/`
 - **Effort**: 4-5 weeks
 
@@ -114,14 +114,14 @@ Netflix model for family finances:
 - Customer portal for self-service billing
 - EU payment methods (SEPA, cards, iDEAL)
 - Webhook-driven subscription lifecycle
-- **Backend**: New `apps/backend/src/billing/` module
+- **Implementation**: Supabase Edge Functions + Stripe webhooks + DB subscription state
 - **Effort**: 2-3 weeks
 
 ### Tier 2 — Retention Drivers
 
 #### 4. Gamification Engine
 - Achievement system (badges: savings streaks, budgets respected, goals met)
-- Family leaderboard (chi risparmia di piu questo mese?)
+- Family leaderboard (chi risparmia di più questo mese?)
 - Monthly financial score (0-100)
 - Challenges: no-spend week, save X in Y days, 52-week challenge
 - XP/levels for younger users (<18)
@@ -151,8 +151,8 @@ Netflix model for family finances:
 - **Effort**: 2 weeks
 
 #### 8. Smart Insights
-- Spending velocity: "stai spendendo il 23% piu veloce questa settimana"
-- Peer comparison (anonymized): "spendi meno della media per la tua eta"
+- Spending velocity: "stai spendendo il 23% più veloce questa settimana"
+- Peer comparison (anonymized): "spendi meno della media per la tua età"
 - Predictive cash flow: "a fine mese avrai circa EUR X"
 - Natural language trend explanations (Claude-generated)
 - **Effort**: 3 weeks
@@ -181,10 +181,15 @@ Netflix model for family finances:
 - Subscriptions, customer portal, EU payments, SCA compliant
 - **Effort**: 2-3 weeks | **Cost**: 1.4% + 0.25 EUR/txn
 
-### Supabase — NO (skip it)
-- NestJS backend is mature (1941+ tests, full module architecture)
-- Migration would cost 8-12 weeks for marginal benefit
-- Use instead: NestJS SSE/WebSockets for realtime, S3/R2 for storage, Expo Push directly
+### Supabase — YES (full migration)
+> **Decision updated**: Initial assessment was "no". After deeper analysis of solo-dev reality,
+> GDPR delegation, RLS solving Family multi-tenancy, and audit findings, decision reversed to full migration.
+> See `zecca-phase0-supabase-migration.md` for detailed plan and `zecca-unified-roadmap.md` for timeline.
+- Full migration: PostgreSQL + Auth + RLS + Storage + Realtime
+- Eliminates 18,000+ LOC NestJS backend → ~1,650 LOC Edge Functions
+- RLS policies replace 13 familyId TODOs (audit C3)
+- Auth built-in replaces custom JWT with 5 audit-flagged bugs
+- **Effort**: 4-5 weeks | **Cost**: Free tier (500MB DB, 50K MAU)
 
 ---
 
