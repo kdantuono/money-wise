@@ -126,16 +126,20 @@ export default function SettingsPage() {
         email: user.email || '',
         timezone: user.timezone || 'America/New_York',
         currency: user.currency || 'USD',
-        preferences: {
-          theme: user.preferences?.theme || 'auto',
-          language: user.preferences?.language || 'en',
-          notifications: {
-            email: user.preferences?.notifications?.email ?? true,
-            push: user.preferences?.notifications?.push ?? true,
-            categories: user.preferences?.notifications?.categories ?? true,
-            budgets: user.preferences?.notifications?.budgets ?? true,
-          },
-        },
+        preferences: (() => {
+          const prefs = user.preferences as Record<string, unknown> | null;
+          const notif = prefs?.notifications as Record<string, boolean> | undefined;
+          return {
+            theme: (prefs?.theme as 'light' | 'dark' | 'auto') || 'auto',
+            language: (prefs?.language as string) || 'en',
+            notifications: {
+              email: notif?.email ?? true,
+              push: notif?.push ?? true,
+              categories: notif?.categories ?? true,
+              budgets: notif?.budgets ?? true,
+            },
+          };
+        })(),
       });
     }
   }, [user]);

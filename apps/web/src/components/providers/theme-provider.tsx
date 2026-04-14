@@ -96,7 +96,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
   const { user } = useAuthStore();
   const [theme, setThemeState] = useState<Theme>(() => {
     // Initialize from user preferences if available
-    return getInitialTheme(user?.preferences?.theme);
+    return getInitialTheme(user?.preferences?.theme as string | undefined);
   });
   const [resolvedTheme, setResolvedTheme] = useState<ResolvedTheme>(() => {
     return resolveTheme(theme);
