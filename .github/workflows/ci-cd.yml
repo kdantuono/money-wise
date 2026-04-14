@@ -584,31 +584,6 @@ jobs:
       issues: write
       pull-requests: write
 
-    services:
-      postgres:
-        image: timescale/timescaledb:latest-pg15
-        env:
-          POSTGRES_USER: test
-          POSTGRES_PASSWORD: testpass
-          POSTGRES_DB: test_db
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U test -d test_db"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-      redis:
-        image: redis:7-alpine
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
     steps:
       - name: 📥 Checkout Repository
         uses: actions/checkout@v5
@@ -625,150 +600,12 @@ jobs:
       - name: 📥 Install Dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: 🔧 Generate Prisma Client
-        run: |
-          echo "🔧 Generating Prisma Client for tests..."
-          cd apps/backend && pnpm prisma:generate && cd ../..
-          echo "✅ Prisma Client generated"
-
-      - name: 🔧 Run Database Migrations
-        env:
-          DATABASE_URL: postgresql://test:testpass@localhost:5432/test_db
-        run: |
-          echo "🔧 Running database migrations..."
-          cd apps/backend && pnpm db:migrate && cd ../..
-          echo "✅ Migrations completed"
-
-      - name: 🔄 Validate Prisma Migration Status
-        env:
-          DATABASE_URL: postgresql://test:testpass@localhost:5432/test_db
-        run: |
-          echo "🔍 Validating migration status..."
-          cd apps/backend
-
-          # Check migration status
-          MIGRATION_STATUS=$(pnpm prisma migrate status 2>&1)
-          echo "$MIGRATION_STATUS"
-
-          # Verify all migrations are applied (no pending migrations)
-          if echo "$MIGRATION_STATUS" | grep -q "pending"; then
-            echo "❌ FAILED: Pending migrations detected"
-            echo "This indicates migrations failed to apply properly"
-            exit 1
-          fi
-
-      - name: ⏳ Wait for Database Readiness
-        env:
-          DATABASE_URL: postgresql://test:testpass@localhost:5432/test_db
-        run: |
-          echo "⏳ Ensuring database is fully ready for tests..."
-
-          # Test connection with explicit credentials
-          for i in {1..30}; do
-            if PGPASSWORD=testpass psql -h localhost -U test -d test_db -c "SELECT 1" >/dev/null 2>&1; then
-              echo "✅ Database connection verified (attempt $i)"
-              sleep 2  # Brief stabilization period
-              exit 0
-            fi
-            echo "⏳ Waiting for database (attempt $i/30)..."
-            sleep 2
-          done
-
-          echo "❌ Database failed to become ready"
-          exit 1
-
       - name: 🧪 Unit Tests
-        env:
-          DB_HOST: localhost
-          DB_PORT: 5432
-          DB_USERNAME: test
-          DB_PASSWORD: testpass
-          DB_NAME: test_db
-          DATABASE_URL: postgresql://test:testpass@localhost:5432/test_db
-          DATABASE_HOST: localhost
-          DATABASE_PORT: 5432
-          REDIS_HOST: localhost
-          REDIS_PORT: 6379
-          REDIS_PASSWORD: ""
-          JWT_ACCESS_SECRET: test-jwt-access-secret-minimum-32-characters-long-for-testing-purposes
-          JWT_REFRESH_SECRET: test-jwt-refresh-secret-minimum-32-characters-long-different-from-access
-          NODE_ENV: test
         run: pnpm test:unit | tee unit-tests.log
 
-      - name: 🔗 Integration Tests
-        env:
-          DB_HOST: localhost
-          DB_PORT: 5432
-          DB_USERNAME: test
-          DB_PASSWORD: testpass
-          DB_NAME: test_db
-          DATABASE_URL: postgresql://test:testpass@localhost:5432/test_db
-          DATABASE_HOST: localhost
-          DATABASE_PORT: 5432
-          REDIS_HOST: localhost
-          REDIS_PORT: 6379
-          REDIS_PASSWORD: ""
-          JWT_ACCESS_SECRET: test-jwt-access-secret-minimum-32-characters-long-for-testing-purposes
-          JWT_REFRESH_SECRET: test-jwt-refresh-secret-minimum-32-characters-long-different-from-access
-          NODE_ENV: test
-        run: pnpm test:integration | tee integration-tests.log
-
-      - name: ⚡ Performance Tests
-        continue-on-error: true
-        env:
-          DB_HOST: localhost
-          DB_PORT: 5432
-          DB_USERNAME: test
-          DB_PASSWORD: testpass
-          DB_NAME: test_db
-          DATABASE_URL: postgresql://test:testpass@localhost:5432/test_db
-          DATABASE_HOST: localhost
-          DATABASE_PORT: 5432
-          REDIS_HOST: localhost
-          REDIS_PORT: 6379
-          REDIS_PASSWORD: ""
-          JWT_ACCESS_SECRET: test-jwt-access-secret-minimum-32-characters-long-for-testing-purposes
-          JWT_REFRESH_SECRET: test-jwt-refresh-secret-minimum-32-characters-long-different-from-access
-          NODE_ENV: test
-        run: pnpm test:performance | tee performance-tests.log
-
-      - name: 📊 Performance Results Validation
-        if: always()
-        run: |
-          echo "📊 Validating performance results..."
-          if [ ! -f "apps/backend/performance-results.json" ]; then
-            echo "⚠️ No performance results generated - tests may have been skipped"
-            echo "✅ Skipping benchmark storage for feature branches"
-          else
-            if node -e "JSON.parse(require('fs').readFileSync('apps/backend/performance-results.json'))"; then
-              echo "✅ Performance results JSON is valid"
-              echo "📈 Results ready for benchmark storage"
-            else
-              echo "❌ Performance results JSON is invalid - check format"
-              exit 1
-            fi
-          fi
-
       - name: 📊 Test Coverage
-        # Coverage thresholds enforced (65-72% per-metric baseline - see jest.config.js and vitest.config.mts for exact thresholds)
-        env:
-          DB_HOST: localhost
-          DB_PORT: 5432
-          DB_USERNAME: test
-          DB_PASSWORD: testpass
-          DB_NAME: test_db
-          DATABASE_URL: postgresql://test:testpass@localhost:5432/test_db
-          DATABASE_HOST: localhost
-          DATABASE_PORT: 5432
-          REDIS_HOST: localhost
-          REDIS_PORT: 6379
-          REDIS_PASSWORD: ""
-          JWT_ACCESS_SECRET: test-jwt-access-secret-minimum-32-characters-long-for-testing-purposes
-          JWT_REFRESH_SECRET: test-jwt-refresh-secret-minimum-32-characters-long-different-from-access
-          NODE_ENV: test
+        # Coverage thresholds enforced (see vitest.config.mts for exact thresholds)
         run: |
-          # Coverage thresholds enforced (Phase 1: 70% baseline)
-          pnpm --filter @money-wise/backend test:coverage:unit
           pnpm --filter @money-wise/web test:coverage
           echo "✅ Coverage check completed"
 
@@ -777,9 +614,8 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: |
-            apps/backend/coverage/coverage-final.json
             apps/web/coverage/coverage-final.json
-          flags: backend,web
+          flags: web
           fail_ci_if_error: false
           verbose: true
           name: coverage-report-${{ github.run_id }}
@@ -800,15 +636,6 @@ jobs:
           script: |
             const fs = require('fs');
             try {
-              // Try to read backend coverage
-              let backendCoverage = null;
-              if (fs.existsSync('apps/backend/coverage/coverage-summary.json')) {
-                const backendData = JSON.parse(fs.readFileSync('apps/backend/coverage/coverage-summary.json'));
-                if (backendData.total) {
-                  backendCoverage = backendData.total;
-                }
-              }
-
               // Try to read web coverage
               let webCoverage = null;
               if (fs.existsSync('apps/web/coverage/coverage-summary.json')) {
@@ -818,7 +645,7 @@ jobs:
                 }
               }
 
-              if (!backendCoverage && !webCoverage) {
+              if (!webCoverage) {
                 console.log('⚠️ No coverage data found');
                 return;
               }
@@ -832,27 +659,14 @@ jobs:
 
               let comment = '## 📊 Coverage Report\n\n';
 
-              if (backendCoverage) {
-                const linesPct = backendCoverage.lines.pct;
-                comment += `### Backend\n`;
-                comment += `| Metric | Coverage | Status |\n`;
-                comment += `|--------|----------|--------|\n`;
-                comment += `| Lines | ${linesPct}% | ${getCoverageBadge(linesPct)} |\n`;
-                comment += `| Statements | ${backendCoverage.statements.pct}% | ${getCoverageBadge(backendCoverage.statements.pct)} |\n`;
-                comment += `| Functions | ${backendCoverage.functions.pct}% | ${getCoverageBadge(backendCoverage.functions.pct)} |\n`;
-                comment += `| Branches | ${backendCoverage.branches.pct}% | ${getCoverageBadge(backendCoverage.branches.pct)} |\n\n`;
-              }
-
-              if (webCoverage) {
-                const linesPct = webCoverage.lines.pct;
-                comment += `### Web\n`;
-                comment += `| Metric | Coverage | Status |\n`;
-                comment += `|--------|----------|--------|\n`;
-                comment += `| Lines | ${linesPct}% | ${getCoverageBadge(linesPct)} |\n`;
-                comment += `| Statements | ${webCoverage.statements.pct}% | ${getCoverageBadge(webCoverage.statements.pct)} |\n`;
-                comment += `| Functions | ${webCoverage.functions.pct}% | ${getCoverageBadge(webCoverage.functions.pct)} |\n`;
-                comment += `| Branches | ${webCoverage.branches.pct}% | ${getCoverageBadge(webCoverage.branches.pct)} |\n\n`;
-              }
+              const linesPct = webCoverage.lines.pct;
+              comment += `### Web\n`;
+              comment += `| Metric | Coverage | Status |\n`;
+              comment += `|--------|----------|--------|\n`;
+              comment += `| Lines | ${linesPct}% | ${getCoverageBadge(linesPct)} |\n`;
+              comment += `| Statements | ${webCoverage.statements.pct}% | ${getCoverageBadge(webCoverage.statements.pct)} |\n`;
+              comment += `| Functions | ${webCoverage.functions.pct}% | ${getCoverageBadge(webCoverage.functions.pct)} |\n`;
+              comment += `| Branches | ${webCoverage.branches.pct}% | ${getCoverageBadge(webCoverage.branches.pct)} |\n\n`;
 
               comment += `> Target: 80% for all metrics`;
 
@@ -869,32 +683,15 @@ jobs:
               console.log('⚠️ Failed to post coverage report:', e.message);
             }
 
-      - name: 📊 Store Performance Benchmark Results
-        uses: benchmark-action/github-action-benchmark@v1
-        if: always() && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
-        continue-on-error: true
-        with:
-          tool: 'customBiggerIsBetter'
-          output-file-path: apps/backend/performance-results.json
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          auto-push: false
-          skip-fetch-gh-pages: true
-          alert-threshold: '110%'
-          comment-on-alert: true
-          fail-on-alert: false
-
       - name: 📈 Upload Test Results
         uses: actions/upload-artifact@v7
         if: always()
         with:
           name: test-results-${{ github.run_id }}
           path: |
-            apps/backend/coverage/
             apps/web/coverage/
             packages/*/coverage/
             unit-tests.log
-            integration-tests.log
-            performance-tests.log
           retention-days: 7
 
   # ===================================================================
@@ -910,7 +707,7 @@ jobs:
 
     strategy:
       matrix:
-        app: [backend, web, mobile]
+        app: [web, mobile]
 
     steps:
       - name: 📥 Checkout Repository
@@ -946,9 +743,7 @@ jobs:
         if: steps.check-app.outputs.exists == 'true'
         run: |
           echo "🏗️ Building ${{ matrix.app }}..."
-          if [[ "${{ matrix.app }}" == "backend" ]]; then
-            pnpm --filter @money-wise/backend build
-          elif [[ "${{ matrix.app }}" == "web" ]]; then
+          if [[ "${{ matrix.app }}" == "web" ]]; then
             pnpm --filter @money-wise/web build
           elif [[ "${{ matrix.app }}" == "mobile" ]]; then
             echo "📱 Mobile build not yet configured"
@@ -965,155 +760,14 @@ jobs:
           retention-days: 7
 
   # ===================================================================
-  # 👥 E2E SETUP: Create test users ONCE before sharded test execution
-  # ===================================================================
-
-  e2e-setup:
-    name: 👥 E2E Setup (Create Test Users)
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    needs: [foundation, development, testing]
-    # Run E2E setup on same conditions as E2E tests
-    if: |
-      (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/heads/hotfix/'))) ||
-      (github.event_name == 'pull_request' && (github.event.action == 'ready_for_review' || startsWith(github.head_ref, 'hotfix/')))
-    services:
-      postgres:
-        image: timescale/timescaledb:latest-pg15
-        env:
-          POSTGRES_USER: test
-          POSTGRES_PASSWORD: testpass
-          POSTGRES_DB: test_db
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U test -d test_db"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-      redis:
-        image: redis:7-alpine
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-    steps:
-      - name: 📥 Checkout Repository
-        uses: actions/checkout@v5
-
-      - name: 📦 Install pnpm
-        uses: pnpm/action-setup@v4
-
-      - name: 📦 Setup Node.js
-        uses: actions/setup-node@v5
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
-
-      - name: 📥 Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: 🔧 Generate Prisma Client
-        run: |
-          cd apps/backend && pnpm prisma:generate
-
-      - name: 🗄️ Run database migrations
-        run: |
-          cd apps/backend
-          DATABASE_URL=postgresql://test:testpass@localhost:5432/test_db pnpm prisma:migrate:deploy
-
-      - name: 🏗️ Build backend
-        run: pnpm --filter @money-wise/backend build
-
-      - name: 🚀 Start backend server
-        run: |
-          cd apps/backend
-          DATABASE_URL=postgresql://test:testpass@localhost:5432/test_db \
-          REDIS_URL=redis://localhost:6379 \
-          NODE_ENV=test \
-          PORT=3001 \
-          JWT_SECRET=test-secret-key \
-          nohup pnpm start:prod > backend.log 2>&1 &
-          echo $! > backend.pid
-
-      - name: ⏳ Wait for backend health check
-        run: |
-          echo "Waiting for backend to be ready..."
-          for i in {1..30}; do
-            if curl -f http://localhost:3001/api/health > /dev/null 2>&1; then
-              echo "✅ Backend is healthy!"
-              exit 0
-            fi
-            echo "Attempt $i/30: Backend not ready yet..."
-            sleep 2
-          done
-          echo "❌ Backend failed to start"
-          cat backend.log
-          exit 1
-
-      - name: 👤 Create test users (all shards)
-        run: |
-          echo "Creating shard test users for parallel E2E execution..."
-          # Create 8 shard users matching globalSetup expectations
-          # Password: SecureTest#2025! (matches apps/web/e2e/global-setup.ts)
-          for i in {0..7}; do
-            echo "Creating e2e-shard-$i@moneywise.test..."
-            curl -s -X POST http://localhost:3001/api/auth/register \
-              -H "Content-Type: application/json" \
-              -d "{\"email\":\"e2e-shard-$i@moneywise.test\",\"password\":\"SecureTest#2025!\",\"firstName\":\"E2E\",\"lastName\":\"Shard$i\"}" \
-              -w " (HTTP: %{http_code})\n" \
-              || echo "User might already exist (409) - continuing..."
-          done
-          echo "✅ All 8 shard test users created"
-
-      - name: 📝 Create test-users.json file
-        run: |
-          mkdir -p apps/web/e2e/.auth
-          cat > apps/web/e2e/.auth/test-users.json << 'EOF'
-          {
-            "users": [
-              { "email": "e2e-shard-0@moneywise.test", "password": "SecureTest#2025!", "firstName": "E2E", "lastName": "Shard0" },
-              { "email": "e2e-shard-1@moneywise.test", "password": "SecureTest#2025!", "firstName": "E2E", "lastName": "Shard1" },
-              { "email": "e2e-shard-2@moneywise.test", "password": "SecureTest#2025!", "firstName": "E2E", "lastName": "Shard2" },
-              { "email": "e2e-shard-3@moneywise.test", "password": "SecureTest#2025!", "firstName": "E2E", "lastName": "Shard3" },
-              { "email": "e2e-shard-4@moneywise.test", "password": "SecureTest#2025!", "firstName": "E2E", "lastName": "Shard4" },
-              { "email": "e2e-shard-5@moneywise.test", "password": "SecureTest#2025!", "firstName": "E2E", "lastName": "Shard5" },
-              { "email": "e2e-shard-6@moneywise.test", "password": "SecureTest#2025!", "firstName": "E2E", "lastName": "Shard6" },
-              { "email": "e2e-shard-7@moneywise.test", "password": "SecureTest#2025!", "firstName": "E2E", "lastName": "Shard7" }
-            ]
-          }
-          EOF
-          echo "✅ test-users.json file created with 8 shard users"
-
-      - name: 📤 Upload test user pool as artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: e2e-test-users
-          path: apps/web/e2e/.auth/test-users.json
-          retention-days: 1
-
-      - name: 🛑 Stop backend server
-        if: always()
-        run: |
-          if [ -f backend.pid ]; then
-            kill $(cat backend.pid) || true
-            rm backend.pid
-          fi
-
-  # ===================================================================
-  # 🧪 E2E TESTS: End-to-end testing with Docker Compose infrastructure
+  # 🧪 E2E TESTS: End-to-end testing against Supabase
   # ===================================================================
 
   e2e-tests:
     name: 🧪 E2E Tests
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    needs: [foundation, development, testing, e2e-setup]
+    needs: [foundation, development, testing]
     # Run E2E tests on:
     # - Push to main/develop/hotfix branches
     # - Pull requests from hotfix branches (to ensure E2E before merge to main)
@@ -1137,84 +791,6 @@ jobs:
 
       - name: 📥 Install dependencies
         run: pnpm install --frozen-lockfile
-
-      - name: 🔧 Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: 🐳 Pre-build Docker images (with GHA cache)
-        run: |
-          echo "🏗️ Building backend image with BuildKit cache..."
-          docker buildx build \
-            --cache-from type=gha,scope=e2e-backend \
-            --cache-to type=gha,mode=max,scope=e2e-backend \
-            -f apps/backend/Dockerfile --target runtime \
-            --load -t moneywise-backend:e2e .
-
-          echo "🏗️ Building frontend image with BuildKit cache..."
-          docker buildx build \
-            --cache-from type=gha,scope=e2e-frontend \
-            --cache-to type=gha,mode=max,scope=e2e-frontend \
-            -f apps/web/Dockerfile --target runtime \
-            --build-arg NEXT_PUBLIC_API_URL=http://localhost:3001 \
-            --load -t moneywise-frontend:e2e .
-
-          echo "✅ Docker images pre-built with GHA cache"
-
-      - name: 🐳 Start E2E infrastructure with Docker Compose
-        run: |
-          echo "🚀 Starting Docker Compose services (using pre-built images)..."
-          docker compose -f docker-compose.e2e.yml up -d
-          echo "✅ Docker Compose services started"
-          echo "📋 Initial service status:"
-          docker compose -f docker-compose.e2e.yml ps
-
-      - name: ⏳ Wait for all services to be healthy
-        run: |
-          echo "⏳ Waiting for backend and frontend to be ready (max 5 minutes)..."
-
-          for i in {1..150}; do
-            # Check if containers exist first
-            BACKEND_EXISTS=$(docker ps -a --filter name=moneywise-backend-e2e --format '{{.Names}}' | grep -c moneywise-backend-e2e || echo "0")
-            FRONTEND_EXISTS=$(docker ps -a --filter name=moneywise-frontend-e2e --format '{{.Names}}' | grep -c moneywise-frontend-e2e || echo "0")
-
-            if [ "$BACKEND_EXISTS" = "0" ] || [ "$FRONTEND_EXISTS" = "0" ]; then
-              echo "⚠️ Containers not yet created, waiting..."
-              sleep 2
-              continue
-            fi
-
-            # Get health status
-            BACKEND_HEALTHY=$(docker inspect --format='{{.State.Health.Status}}' moneywise-backend-e2e 2>/dev/null || echo "starting")
-            FRONTEND_HEALTHY=$(docker inspect --format='{{.State.Health.Status}}' moneywise-frontend-e2e 2>/dev/null || echo "starting")
-
-            if [ "$BACKEND_HEALTHY" = "healthy" ] && [ "$FRONTEND_HEALTHY" = "healthy" ]; then
-              echo "✅ All services are healthy!"
-              docker compose -f docker-compose.e2e.yml ps
-              echo "📋 Backend logs (last 20 lines):"
-              docker logs moneywise-backend-e2e --tail 20
-              echo "📋 Frontend logs (last 20 lines):"
-              docker logs moneywise-frontend-e2e --tail 20
-              exit 0
-            fi
-
-            # Show progress every 10 attempts
-            if [ $((i % 10)) -eq 0 ]; then
-              echo "Attempt $i/150: Backend=$BACKEND_HEALTHY, Frontend=$FRONTEND_HEALTHY"
-            fi
-
-            sleep 2
-          done
-
-          echo "❌ Services failed to become healthy within 5 minutes"
-          echo "📋 Final service status:"
-          docker compose -f docker-compose.e2e.yml ps
-          echo "📋 Backend logs:"
-          docker logs moneywise-backend-e2e
-          echo "📋 Frontend logs:"
-          docker logs moneywise-frontend-e2e
-          echo "📋 Postgres logs:"
-          docker logs moneywise-postgres-e2e
-          exit 1
 
       # OPTIMIZATION: Cache Playwright browsers
       # Cache key includes lockfile to ensure correct browser version
@@ -1241,36 +817,9 @@ jobs:
           pnpm exec playwright install-deps chromium
           echo "✅ System deps installed, browsers from cache"
 
-      - name: 🔧 Create test user
-        run: |
-          echo "🔧 Creating test user: e2e-test@moneywise.test"
-          # Password must NOT contain email, firstName, or lastName parts
-
-          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST http://localhost:3001/api/auth/register \
-            -H "Content-Type: application/json" \
-            -d '{"email":"e2e-test@moneywise.test","password":"Qwerty#2025!Strong","firstName":"Automation","lastName":"Tester"}')
-
-          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
-          BODY=$(echo "$RESPONSE" | head -n -1)
-
-          echo "📋 Response (HTTP $HTTP_CODE):"
-          echo "$BODY"
-
-          if [ "$HTTP_CODE" -eq 201 ] || [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 409 ]; then
-            echo "✅ Test user ready"
-          else
-            echo "❌ User creation failed (HTTP $HTTP_CODE)"
-            exit 1
-          fi
-
       - name: 🧪 Run E2E tests
         env:
-          DATABASE_URL: postgresql://test:testpass@localhost:5432/test_db
-          REDIS_URL: redis://localhost:6379
-          JWT_ACCESS_SECRET: test-jwt-access-secret-minimum-32-characters-long-for-testing-purposes
-          JWT_REFRESH_SECRET: test-jwt-refresh-secret-minimum-32-characters-long-different-from-access
           CI: true
-          SKIP_WEBSERVER: 'true'
         run: |
           cd apps/web
           echo "🏃 Running full E2E test suite"
@@ -1282,13 +831,6 @@ jobs:
         with:
           name: playwright-report
           path: apps/web/playwright-report/
-
-      - name: 🧹 Cleanup Docker Compose
-        if: always()
-        run: |
-          echo "Stopping Docker Compose services..."
-          docker compose -f docker-compose.e2e.yml logs
-          docker compose -f docker-compose.e2e.yml down -v
 
   # ===================================================================
   # 📦 BUNDLE SIZE: Monitor Next.js bundle size (PR-only)

@@ -32,7 +32,6 @@ env:
   NODE_VERSION: '22'
   TURBO_TELEMETRY_DISABLED: '1'  # Opt-out of anonymous telemetry
   SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-  SENTRY_PROJECT_BACKEND: ${{ secrets.SENTRY_BACKEND }}
   SENTRY_PROJECT_WEB: ${{ secrets.SENTRY_PROJECT_WEB }}
   SENTRY_PROJECT_MOBILE: ${{ secrets.SENTRY_PROJECT_MOBILE }}
   SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
@@ -102,10 +101,6 @@ jobs:
     if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/')
     timeout-minutes: 15
 
-    strategy:
-      matrix:
-        app: [backend, web]
-
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@v5
@@ -116,18 +111,18 @@ jobs:
         uses: actions/download-artifact@v8
         continue-on-error: true
         with:
-          name: build-${{ matrix.app }}-${{ github.run_id }}
-          path: apps/${{ matrix.app }}/
+          name: build-web-${{ github.run_id }}
+          path: apps/web/
 
       - name: 🔍 Check if build artifacts exist
         id: check-artifacts
         run: |
-          if [[ -d "apps/${{ matrix.app }}/dist" || -d "apps/${{ matrix.app }}/.next" ]]; then
+          if [[ -d "apps/web/.next" ]]; then
             echo "exists=true" >> $GITHUB_OUTPUT
-            echo "✅ Build artifacts found for ${{ matrix.app }}"
+            echo "✅ Build artifacts found for web"
           else
             echo "exists=false" >> $GITHUB_OUTPUT
-            echo "⚠️ No build artifacts, will rebuild ${{ matrix.app }}"
+            echo "⚠️ No build artifacts, will rebuild web"
           fi
 
       - name: 📦 Setup pnpm (if rebuild needed)
@@ -148,12 +143,8 @@ jobs:
       - name: 🏗️ Rebuild Application (if needed)
         if: steps.check-artifacts.outputs.exists == 'false'
         run: |
-          echo "🏗️ Rebuilding ${{ matrix.app }}..."
-          if [[ "${{ matrix.app }}" == "backend" ]]; then
-            pnpm --filter @money-wise/backend build
-          elif [[ "${{ matrix.app }}" == "web" ]]; then
-            pnpm --filter @money-wise/web build
-          fi
+          echo "🏗️ Rebuilding web..."
+          pnpm --filter @money-wise/web build
         env:
           SENTRY_RELEASE: ${{ needs.validate-release.outputs.version }}
           SENTRY_ORG: ${{ env.SENTRY_ORG }}
@@ -165,24 +156,14 @@ jobs:
       - name: 📦 Create Sentry Release
         run: |
           VERSION="${{ needs.validate-release.outputs.version }}"
-          PROJECT="${{ matrix.app == 'backend' && env.SENTRY_PROJECT_BACKEND || env.SENTRY_PROJECT_WEB }}"
 
-          sentry-cli releases new -p $PROJECT $VERSION
+          sentry-cli releases new -p $SENTRY_PROJECT_WEB $VERSION
           sentry-cli releases set-commits --auto $VERSION
 
-          echo "✅ Created Sentry release: $VERSION for ${{ matrix.app }}"
-
-      - name: 📤 Upload Source Maps (Backend)
-        if: matrix.app == 'backend' && (hashFiles('apps/backend/dist/**/*.map') != '')
-        run: |
-          VERSION="${{ needs.validate-release.outputs.version }}"
-          sentry-cli sourcemaps upload \
-            --release=$VERSION \
-            --project=$SENTRY_PROJECT_BACKEND \
-            apps/backend/dist
+          echo "✅ Created Sentry release: $VERSION for web"
 
       - name: 📤 Upload Source Maps (Web)
-        if: matrix.app == 'web' && (hashFiles('apps/web/.next/**/*.map') != '')
+        if: hashFiles('apps/web/.next/**/*.map') != ''
         run: |
           VERSION="${{ needs.validate-release.outputs.version }}"
           sentry-cli sourcemaps upload \
@@ -193,9 +174,8 @@ jobs:
       - name: ✅ Finalize Sentry Release
         run: |
           VERSION="${{ needs.validate-release.outputs.version }}"
-          PROJECT="${{ matrix.app == 'backend' && env.SENTRY_PROJECT_BACKEND || env.SENTRY_PROJECT_WEB }}"
 
-          sentry-cli releases finalize -p $PROJECT $VERSION
+          sentry-cli releases finalize -p $SENTRY_PROJECT_WEB $VERSION
           echo "✅ Finalized Sentry release: $VERSION"
 
   # ===================================================================
@@ -324,12 +304,6 @@ jobs:
         run: |
           echo "📦 Preparing release assets..."
 
-          if [ -d "release-artifacts/build-backend-${{ github.run_id }}/dist" ]; then
-            tar -czf backend-${{ needs.validate-release.outputs.version }}.tar.gz \
-              -C release-artifacts/build-backend-${{ github.run_id }} dist
-            echo "✅ Backend archive created"
-          fi
-
           cat > version-info.json << EOF
           {
             "version": "${{ needs.validate-release.outputs.version }}",
@@ -350,7 +324,6 @@ jobs:
           body_path: changelog.md
           prerelease: ${{ needs.validate-release.outputs.is_prerelease }}
           files: |
-            backend-${{ needs.validate-release.outputs.version }}.tar.gz
             version-info.json
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -368,7 +341,7 @@ jobs:
 
     strategy:
       matrix:
-        app: [backend, web]
+        app: [web]
 
     permissions:
       contents: read
@@ -445,7 +418,6 @@ jobs:
           VERSION="${{ needs.validate-release.outputs.version }}"
           ENVIRONMENT=$([ "${{ github.ref }}" = "refs/heads/main" ] && echo "production" || echo "staging")
 
-          sentry-cli releases deploys $VERSION new -e $ENVIRONMENT -p $SENTRY_PROJECT_BACKEND || true
           sentry-cli releases deploys $VERSION new -e $ENVIRONMENT -p $SENTRY_PROJECT_WEB || true
           sentry-cli releases deploys $VERSION new -e $ENVIRONMENT -p $SENTRY_PROJECT_MOBILE || true
 

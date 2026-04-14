@@ -13,12 +13,10 @@
   },
   "scripts": {
     "dev": "turbo run dev --parallel",
-    "dev:backend": "turbo run dev --filter=@money-wise/backend",
     "dev:web": "turbo run dev --filter=@money-wise/web",
     "dev:mobile": "turbo run dev --filter=@money-wise/mobile",
     "dev:ready": "./.claude/scripts/dev-ready.sh",
     "build": "./scripts/build-clean.sh",
-    "build:backend": "./scripts/build-clean.sh --filter=@money-wise/backend",
     "build:web": "./scripts/build-clean.sh --filter=@money-wise/web",
     "build:mobile": "./scripts/build-clean.sh --filter=@money-wise/mobile",
     "test": "turbo run test",
@@ -49,9 +47,9 @@
     "setup:actionlint": "bash ./.claude/scripts/setup-actionlint.sh",
     "setup:act": "bash ./.claude/scripts/setup-act.sh",
     "clean": "pnpm --recursive clean && rm -rf node_modules",
-    "db:migrate": "pnpm --filter @money-wise/backend db:migrate",
-    "db:seed": "pnpm --filter @money-wise/backend db:seed",
-    "db:reset": "pnpm --filter @money-wise/backend db:reset",
+    "db:migrate": "supabase db push",
+    "db:seed": "supabase db seed",
+    "db:reset": "supabase db reset",
     "infra:start": "bash ./.claude/scripts/infra.sh start",
     "infra:stop": "bash ./.claude/scripts/infra.sh stop",
     "infra:logs": "bash ./.claude/scripts/infra.sh logs",
@@ -99,17 +97,10 @@
       ]
     },
     "onlyBuiltDependencies": [
-      "@prisma/client",
-      "@prisma/engines",
       "@scarf/scarf",
       "@sentry/cli",
-      "argon2",
-      "cpu-features",
       "esbuild",
-      "prisma",
-      "protobufjs",
       "sharp",
-      "ssh2",
       "turbo"
     ],
     "overrides": {
@@ -142,8 +133,6 @@
       "serialize-javascript": ">=7.0.5"
     },
     "ignoredBuiltDependencies": [
-      "@nestjs/core",
-      "@sentry-internal/node-cpu-profiler",
       "msw",
       "unrs-resolver"
     ]
@@ -163,7 +152,7 @@
     "budgeting",
     "transactions",
     "monorepo",
-    "nestjs",
+    "supabase",
     "nextjs",
     "react-native"
   ],
@@ -184,7 +173,6 @@
     ]
   },
   "dependencies": {
-    "@sentry/nestjs": "^10.27.0",
     "@sentry/nextjs": "^10.27.0",
     "@sentry/node": "^10.27.0",
     "@sentry/profiling-node": "^10.27.0",
