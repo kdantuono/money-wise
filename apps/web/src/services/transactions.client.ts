@@ -1,8 +1,8 @@
 /**
- * Transactions API Client
+ * Transactions Client — Supabase
  *
- * Provides type-safe HTTP client for transactions endpoints.
- * Handles authentication, error handling, and request/response interceptors.
+ * Direct Supabase queries replacing BFF fetch calls.
+ * RLS policies handle account/family isolation automatically.
  *
  * @module services/transactions.client
  *
@@ -22,6 +22,17 @@
  * const transaction = await transactionsClient.getTransaction('tx-uuid');
  * ```
  */
+
+import { createClient } from '@/utils/supabase/client'
+import type { Database } from '@/utils/supabase/database.types'
+
+type TransactionRow = Database['public']['Tables']['transactions']['Row']
+type TransactionInsert = Database['public']['Tables']['transactions']['Insert']
+type CategoryRow = Database['public']['Tables']['categories']['Row']
+
+type TransactionWithCategory = TransactionRow & {
+  categories: CategoryRow | null
+}
 
 // =============================================================================
 // Type Definitions
@@ -155,17 +166,6 @@ export interface UpdateTransactionData {
   includeInBudget?: boolean;
 }
 
-/**
- * HTTP error response structure
- */
-interface ApiErrorResponse {
-  statusCode: number;
-  message: string | string[];
-  error?: string;
-  timestamp?: string;
-  path?: string;
-}
-
 // =============================================================================
 // Error Classes
 // =============================================================================
@@ -233,82 +233,58 @@ export class ValidationError extends TransactionsApiError {
 }
 
 // =============================================================================
-// HTTP Client Configuration
+// Row → Client Type Mapper
 // =============================================================================
 
-const API_BASE_URL = '/api/transactions';
+function rowToTransaction(row: TransactionWithCategory): Transaction {
+  const type = row.type as TransactionType
+  const source = row.source as TransactionSource
 
-/**
- * Handle error response from API
- */
-async function handleErrorResponse(response: Response): Promise<never> {
-  let errorData: ApiErrorResponse | null = null;
-
-  try {
-    const text = await response.text();
-    errorData = text ? JSON.parse(text) : null;
-  } catch {
-    // Ignore parsing errors
-  }
-
-  const message =
-    errorData?.message instanceof Array
-      ? errorData.message.join(', ')
-      : errorData?.message || `Request failed with status ${response.status}`;
-
-  switch (response.status) {
-    case 400:
-      throw new ValidationError(message, errorData);
-    case 401:
-      throw new AuthenticationError(message);
-    case 403:
-      throw new AuthorizationError(message);
-    case 404:
-      throw new NotFoundError(message);
-    default:
-      throw new TransactionsApiError(message, response.status, errorData?.error);
+  return {
+    id: row.id,
+    accountId: row.account_id,
+    categoryId: row.category_id,
+    amount: Number(row.amount),
+    displayAmount: Math.abs(Number(row.amount)),
+    type,
+    status: row.status as TransactionStatus,
+    source,
+    date: row.date,
+    authorizedDate: row.authorized_date,
+    description: row.description,
+    merchantName: row.merchant_name,
+    originalDescription: row.original_description,
+    currency: row.currency,
+    reference: row.reference,
+    checkNumber: row.check_number,
+    notes: row.notes,
+    isPending: row.is_pending,
+    isRecurring: row.is_recurring,
+    isHidden: row.is_hidden,
+    includeInBudget: row.include_in_budget,
+    plaidTransactionId: row.plaid_transaction_id,
+    plaidAccountId: row.plaid_account_id,
+    saltedgeTransactionId: row.saltedge_transaction_id,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    isDebit: type === 'DEBIT',
+    isCredit: type === 'CREDIT',
+    isPlaidTransaction: source === 'PLAID',
+    isManualTransaction: source === 'MANUAL',
+    flowType: row.flow_type as FlowType | null,
+    transferGroupId: row.transfer_group_id,
+    transferRole: row.transfer_role as TransferRole | null,
   }
 }
 
-/**
- * Make authenticated request to transactions API
- */
-async function request<T>(
-  endpoint: string,
-  options: RequestInit = {}
-): Promise<T> {
-  const url = `${API_BASE_URL}${endpoint}`;
-
-  const response = await fetch(url, {
-    ...options,
-    credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-  });
-
-  if (!response.ok) {
-    await handleErrorResponse(response);
-  }
-
-  // Handle empty responses
-  const text = await response.text();
-  if (!text) {
-    return {} as T;
-  }
-
-  return JSON.parse(text);
-}
-
 // =============================================================================
-// Transactions Client API
+// Transactions Client
 // =============================================================================
 
 /**
  * Transactions API Client
  *
- * Provides methods for fetching and managing transactions.
+ * Provides methods for fetching and managing transactions via Supabase.
  */
 export const transactionsClient = {
   /**
@@ -329,28 +305,32 @@ export const transactionsClient = {
    * ```
    */
   async getTransactions(filters?: TransactionFilters): Promise<Transaction[]> {
-    const params = new URLSearchParams();
+    const supabase = createClient()
+    let query = supabase
+      .from('transactions')
+      .select('*, categories(*)')
+      .order('date', { ascending: false })
 
     if (filters?.accountId && filters.accountId !== 'all') {
-      params.append('accountId', filters.accountId);
+      query = query.eq('account_id', filters.accountId)
     }
     if (filters?.type) {
-      params.append('type', filters.type);
+      query = query.eq('type', filters.type)
     }
     if (filters?.startDate) {
-      params.append('startDate', filters.startDate);
+      query = query.gte('date', filters.startDate)
     }
     if (filters?.endDate) {
-      params.append('endDate', filters.endDate);
+      query = query.lte('date', filters.endDate)
     }
     if (filters?.search) {
-      params.append('search', filters.search);
+      const term = `%${filters.search}%`
+      query = query.or(`description.ilike.${term},merchant_name.ilike.${term}`)
     }
 
-    const queryString = params.toString();
-    const endpoint = queryString ? `?${queryString}` : '';
-
-    return request<Transaction[]>(endpoint);
+    const { data, error } = await query
+    if (error) throw new TransactionsApiError(error.message, 500)
+    return (data ?? []).map((row) => rowToTransaction(row as unknown as TransactionWithCategory))
   },
 
   /**
@@ -366,7 +346,15 @@ export const transactionsClient = {
    * ```
    */
   async getTransaction(id: string): Promise<Transaction> {
-    return request<Transaction>(`/${id}`);
+    const supabase = createClient()
+    const { data, error } = await supabase
+      .from('transactions')
+      .select('*, categories(*)')
+      .eq('id', id)
+      .single()
+
+    if (error) throw new NotFoundError()
+    return rowToTransaction(data as unknown as TransactionWithCategory)
   },
 
   /**
@@ -389,18 +377,46 @@ export const transactionsClient = {
    * });
    * ```
    */
-  async createTransaction(data: CreateTransactionData): Promise<Transaction> {
-    return request<Transaction>('', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
+  async createTransaction(input: CreateTransactionData): Promise<Transaction> {
+    const supabase = createClient()
+
+    const insert: TransactionInsert = {
+      account_id: input.accountId,
+      amount: input.amount,
+      type: input.type as Database['public']['Enums']['transaction_type'],
+      source: input.source as Database['public']['Enums']['transaction_source'],
+      date: input.date,
+      description: input.description,
+      category_id: input.categoryId,
+      status: (input.status ?? 'POSTED') as Database['public']['Enums']['transaction_status'],
+      authorized_date: input.authorizedDate,
+      merchant_name: input.merchantName,
+      original_description: input.originalDescription,
+      currency: input.currency ?? 'EUR',
+      reference: input.reference,
+      check_number: input.checkNumber,
+      notes: input.notes,
+      is_pending: input.isPending ?? false,
+      is_recurring: input.isRecurring ?? false,
+      is_hidden: input.isHidden ?? false,
+      include_in_budget: input.includeInBudget ?? true,
+    }
+
+    const { data, error } = await supabase
+      .from('transactions')
+      .insert(insert)
+      .select('*, categories(*)')
+      .single()
+
+    if (error) throw new TransactionsApiError(error.message, 400)
+    return rowToTransaction(data as unknown as TransactionWithCategory)
   },
 
   /**
    * Update an existing transaction
    *
    * @param id - Transaction ID (UUID)
-   * @param data - Partial transaction data to update
+   * @param input - Partial transaction data to update
    * @returns Updated transaction
    * @throws AuthenticationError if not authenticated
    * @throws AuthorizationError if transaction belongs to different family
@@ -417,12 +433,39 @@ export const transactionsClient = {
    */
   async updateTransaction(
     id: string,
-    data: UpdateTransactionData
+    input: UpdateTransactionData
   ): Promise<Transaction> {
-    return request<Transaction>(`/${id}`, {
-      method: 'PATCH',
-      body: JSON.stringify(data),
-    });
+    const supabase = createClient()
+    const update: Database['public']['Tables']['transactions']['Update'] = {}
+
+    if (input.categoryId !== undefined) update.category_id = input.categoryId
+    if (input.amount !== undefined) update.amount = input.amount
+    if (input.type !== undefined) update.type = input.type as Database['public']['Enums']['transaction_type']
+    if (input.status !== undefined) update.status = input.status as Database['public']['Enums']['transaction_status']
+    if (input.source !== undefined) update.source = input.source as Database['public']['Enums']['transaction_source']
+    if (input.date !== undefined) update.date = input.date
+    if (input.authorizedDate !== undefined) update.authorized_date = input.authorizedDate
+    if (input.description !== undefined) update.description = input.description
+    if (input.merchantName !== undefined) update.merchant_name = input.merchantName
+    if (input.originalDescription !== undefined) update.original_description = input.originalDescription
+    if (input.currency !== undefined) update.currency = input.currency
+    if (input.reference !== undefined) update.reference = input.reference
+    if (input.checkNumber !== undefined) update.check_number = input.checkNumber
+    if (input.notes !== undefined) update.notes = input.notes
+    if (input.isPending !== undefined) update.is_pending = input.isPending
+    if (input.isRecurring !== undefined) update.is_recurring = input.isRecurring
+    if (input.isHidden !== undefined) update.is_hidden = input.isHidden
+    if (input.includeInBudget !== undefined) update.include_in_budget = input.includeInBudget
+
+    const { data, error } = await supabase
+      .from('transactions')
+      .update(update)
+      .eq('id', id)
+      .select('*, categories(*)')
+      .single()
+
+    if (error) throw new TransactionsApiError(error.message, 400)
+    return rowToTransaction(data as unknown as TransactionWithCategory)
   },
 
   /**
@@ -439,10 +482,14 @@ export const transactionsClient = {
    * ```
    */
   async deleteTransaction(id: string): Promise<void> {
-    await request<void>(`/${id}`, {
-      method: 'DELETE',
-    });
-  },
-};
+    const supabase = createClient()
+    const { error } = await supabase
+      .from('transactions')
+      .delete()
+      .eq('id', id)
 
-export default transactionsClient;
+    if (error) throw new TransactionsApiError(error.message, 400)
+  },
+}
+
+export default transactionsClient

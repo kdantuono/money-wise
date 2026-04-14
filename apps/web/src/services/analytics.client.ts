@@ -1,27 +1,13 @@
 /**
- * Analytics API Client
+ * Analytics Client — Supabase
  *
- * Provides type-safe HTTP client for dashboard analytics endpoints.
- * Handles authentication, error handling, and request/response interceptors.
+ * Direct Supabase RPC and queries replacing BFF fetch calls.
+ * RLS policies handle family/user isolation automatically.
  *
  * @module services/analytics.client
- *
- * @example
- * ```typescript
- * // Get dashboard stats
- * const stats = await analyticsClient.getStats('monthly');
- *
- * // Get spending by category
- * const spending = await analyticsClient.getSpendingByCategory('monthly');
- *
- * // Get recent transactions
- * const transactions = await analyticsClient.getRecentTransactions(10);
- *
- * // Get trends
- * const trends = await analyticsClient.getTrends('monthly');
- * ```
  */
 
+import { createClient } from '@/utils/supabase/client'
 import type {
   DashboardStats,
   CategorySpending,
@@ -34,9 +20,6 @@ import type {
 // Error Classes
 // =============================================================================
 
-/**
- * Base error class for analytics API errors
- */
 export class AnalyticsApiError extends Error {
   constructor(
     message: string,
@@ -50,9 +33,6 @@ export class AnalyticsApiError extends Error {
   }
 }
 
-/**
- * Authentication error (401)
- */
 export class AuthenticationError extends AnalyticsApiError {
   constructor(message: string = 'Authentication failed. Please log in again.') {
     super(message, 401, 'AuthenticationError');
@@ -61,9 +41,6 @@ export class AuthenticationError extends AnalyticsApiError {
   }
 }
 
-/**
- * Server error (500)
- */
 export class ServerError extends AnalyticsApiError {
   constructor(
     message: string = 'Internal server error. Please try again later.'
@@ -75,165 +52,153 @@ export class ServerError extends AnalyticsApiError {
 }
 
 // =============================================================================
-// HTTP Client Configuration
+// Helpers
 // =============================================================================
 
 /**
- * API base URL - uses relative path to go through BFF proxy
- * This ensures cookies are properly included (same-origin requests)
+ * Convert a TimePeriod to date_from / date_to for RPC calls.
  */
-const API_BASE_URL = '/api/analytics';
+function periodToDateRange(period: TimePeriod): { dateFrom: string; dateTo: string } {
+  const now = new Date();
+  const dateTo = now.toISOString().split('T')[0];
+  let dateFrom: string;
 
-/**
- * HTTP error response structure
- */
-interface ApiErrorResponse {
-  statusCode: number;
-  message: string | string[];
-  error?: string;
-}
-
-/**
- * Parse error response and throw appropriate error
- */
-async function handleErrorResponse(response: Response): Promise<never> {
-  let errorData: ApiErrorResponse | null = null;
-
-  try {
-    const text = await response.text();
-    if (text) {
-      errorData = JSON.parse(text);
+  switch (period) {
+    case 'weekly': {
+      const d = new Date(now);
+      d.setDate(d.getDate() - 7);
+      dateFrom = d.toISOString().split('T')[0];
+      break;
     }
-  } catch {
-    // Failed to parse error response
+    case 'yearly': {
+      const d = new Date(now);
+      d.setFullYear(d.getFullYear() - 1);
+      dateFrom = d.toISOString().split('T')[0];
+      break;
+    }
+    case 'monthly':
+    default: {
+      const d = new Date(now);
+      d.setMonth(d.getMonth() - 1);
+      dateFrom = d.toISOString().split('T')[0];
+      break;
+    }
   }
 
-  const statusCode = response.status;
-  const message = errorData?.message
-    ? Array.isArray(errorData.message)
-      ? errorData.message.join(', ')
-      : errorData.message
-    : response.statusText || 'An error occurred';
-
-  // Throw appropriate error type
-  switch (statusCode) {
-    case 401:
-      throw new AuthenticationError(message);
-    case 500:
-    case 502:
-    case 503:
-    case 504:
-      throw new ServerError(message);
-    default:
-      throw new AnalyticsApiError(
-        message,
-        statusCode,
-        errorData?.error,
-        errorData
-      );
-  }
+  return { dateFrom, dateTo };
 }
 
 /**
- * Make HTTP request with authentication and error handling
+ * Map a transaction row (snake_case) to the dashboard Transaction type.
  */
-async function request<T>(
-  endpoint: string,
-  options: RequestInit = {}
-): Promise<T> {
-  const url = `${API_BASE_URL}${endpoint}`;
-
-  const response = await fetch(url, {
-    ...options,
-    credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-  });
-
-  if (!response.ok) {
-    await handleErrorResponse(response);
-  }
-
-  const text = await response.text();
-  if (!text) {
-    return {} as T;
-  }
-
-  return JSON.parse(text);
+function rowToTransaction(row: {
+  id: string;
+  description: string;
+  amount: number;
+  date: string;
+  type: string;
+  categories: { name: string } | null;
+  accounts: { name: string } | null;
+}): Transaction {
+  return {
+    id: row.id,
+    description: row.description,
+    amount: Number(row.amount),
+    date: row.date,
+    category: row.categories?.name ?? 'Uncategorized',
+    type: row.type === 'CREDIT' ? 'income' : 'expense',
+    accountName: row.accounts?.name ?? undefined,
+  };
 }
 
 // =============================================================================
-// Analytics API Client
+// Analytics Client
 // =============================================================================
 
-/**
- * Analytics API Client
- *
- * Provides methods for fetching dashboard analytics data.
- * All methods are authenticated and include proper error handling.
- */
 export const analyticsClient = {
   /**
-   * Get dashboard statistics
-   *
-   * Returns aggregated stats including total balance, income, expenses,
-   * and savings rate for the selected time period.
-   *
-   * @param period - Time period (weekly, monthly, yearly)
-   * @returns Dashboard statistics
+   * Get dashboard statistics via RPC.
+   * The RPC returns Json so we cast to DashboardStats.
    */
   async getStats(period: TimePeriod = 'monthly'): Promise<DashboardStats> {
-    return request<DashboardStats>(`/stats?period=${period}`, {
-      method: 'GET',
-    });
+    const supabase = createClient();
+    const { data, error } = await supabase.rpc('get_dashboard_stats', { period });
+
+    if (error) throw new ServerError(error.message);
+    return data as unknown as DashboardStats;
   },
 
   /**
-   * Get spending breakdown by category
-   *
-   * Returns spending aggregated by category with amounts and percentages.
-   *
-   * @param period - Time period (weekly, monthly, yearly)
-   * @returns Array of category spending data
+   * Get spending breakdown by category via RPC.
    */
   async getSpendingByCategory(
     period: TimePeriod = 'monthly'
   ): Promise<CategorySpending[]> {
-    return request<CategorySpending[]>(
-      `/spending-by-category?period=${period}`,
-      { method: 'GET' }
-    );
+    const supabase = createClient();
+    const { dateFrom, dateTo } = periodToDateRange(period);
+
+    const { data, error } = await supabase.rpc('get_category_spending', {
+      date_from: dateFrom,
+      date_to: dateTo,
+      parent_only: true,
+    });
+
+    if (error) throw new ServerError(error.message);
+
+    return (data ?? []).map((row) => ({
+      id: row.category_id,
+      name: row.category_name,
+      amount: Number(row.total_amount),
+      color: row.category_color ?? '#6b7280',
+      percentage: Number(row.percentage),
+      count: Number(row.transaction_count),
+    }));
   },
 
   /**
-   * Get recent transactions
-   *
-   * Returns the most recent transactions across all accounts.
-   *
-   * @param limit - Number of transactions to return (default: 10)
-   * @returns Array of recent transactions
+   * Get recent transactions via direct query.
    */
   async getRecentTransactions(limit: number = 10): Promise<Transaction[]> {
-    return request<Transaction[]>(
-      `/transactions/recent?limit=${limit}`,
-      { method: 'GET' }
-    );
+    const supabase = createClient();
+
+    const { data, error } = await supabase
+      .from('transactions')
+      .select('id, description, amount, date, type, categories(name), accounts(name)')
+      .order('date', { ascending: false })
+      .limit(limit);
+
+    if (error) throw new ServerError(error.message);
+
+    return (data ?? []).map((row) => rowToTransaction({
+      id: row.id,
+      description: row.description,
+      amount: row.amount,
+      date: row.date,
+      type: row.type,
+      categories: row.categories as { name: string } | null,
+      accounts: row.accounts as { name: string } | null,
+    }));
   },
 
   /**
-   * Get spending trends over time
-   *
-   * Returns income and expense trends grouped by time intervals.
-   *
-   * @param period - Time period (weekly, monthly, yearly)
-   * @returns Array of trend data points
+   * Get spending trends over time via RPC.
    */
   async getTrends(period: TimePeriod = 'monthly'): Promise<TrendData[]> {
-    return request<TrendData[]>(`/trends?period=${period}`, {
-      method: 'GET',
+    const supabase = createClient();
+    const numPeriods = period === 'yearly' ? 5 : period === 'weekly' ? 12 : 6;
+
+    const { data, error } = await supabase.rpc('get_spending_trends', {
+      period,
+      num_periods: numPeriods,
     });
+
+    if (error) throw new ServerError(error.message);
+
+    return (data ?? []).map((row) => ({
+      date: row.period_date,
+      income: Number(row.income),
+      expenses: Number(row.expenses),
+    }));
   },
 };
 
