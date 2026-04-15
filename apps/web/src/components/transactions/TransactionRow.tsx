@@ -103,8 +103,8 @@ export const TransactionRow = memo(function TransactionRow({
 
   return (
     <article
-      className={`rounded-lg border bg-white p-4 transition-all duration-150
-        ${isSelected ? 'bg-blue-50 border-blue-200' : 'border-gray-200 hover:border-gray-300'}
+      className={`rounded-lg border bg-card p-4 transition-all duration-150
+        ${isSelected ? 'bg-blue-50 border-blue-200' : 'border-border hover:border-border'}
         ${isUpdating || isDeleting ? 'opacity-75' : ''}
         hover:shadow focus-within:ring-2 focus-within:ring-blue-500`}
     >
@@ -117,7 +117,7 @@ export const TransactionRow = memo(function TransactionRow({
               checked={isSelected}
               onChange={handleSelect}
               aria-label={`Select ${transaction.description}`}
-              className="h-4 w-4 rounded border-gray-300 text-blue-600
+              className="h-4 w-4 rounded border-border text-blue-600
                 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
             />
           </div>
@@ -134,7 +134,7 @@ export const TransactionRow = memo(function TransactionRow({
         {/* Transaction Info */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <h3 className="font-medium text-gray-900 truncate">
+            <h3 className="font-medium text-foreground truncate">
               {transaction.description}
             </h3>
             {isPending && (
@@ -158,27 +158,27 @@ export const TransactionRow = memo(function TransactionRow({
             )}
           </div>
 
-          <div className="flex items-center gap-2 mt-1 text-sm text-gray-600">
+          <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
             {transaction.merchantName && (
               <span className="truncate">{transaction.merchantName}</span>
             )}
             {transaction.merchantName && (categoryName || accountName) && (
-              <span className="text-gray-400">•</span>
+              <span className="text-muted-foreground">•</span>
             )}
             {categoryName ? (
               <span className="truncate">{categoryName}</span>
             ) : !transaction.categoryId ? (
-              <span className="text-gray-400 italic">Uncategorized</span>
+              <span className="text-muted-foreground italic">Uncategorized</span>
             ) : null}
             {(categoryName || !transaction.categoryId) && accountName && (
-              <span className="text-gray-400">•</span>
+              <span className="text-muted-foreground">•</span>
             )}
             {accountName && (
               <span className="truncate">{accountName}</span>
             )}
           </div>
 
-          <time className="text-xs text-gray-500 mt-1 block">
+          <time className="text-xs text-muted-foreground mt-1 block">
             {formatDate(transaction.date)}
           </time>
         </div>
@@ -186,7 +186,7 @@ export const TransactionRow = memo(function TransactionRow({
         {/* Amount */}
         <div className="flex-shrink-0 text-right">
           <div
-            className={`text-lg font-semibold ${isCredit ? 'text-green-600' : 'text-gray-900'}`}
+            className={`text-lg font-semibold ${isCredit ? 'text-green-600' : 'text-foreground'}`}
             aria-label={`${isCredit ? 'Income' : 'Expense'}: ${formattedAmount}`}
           >
             {amountDisplay}
@@ -202,7 +202,7 @@ export const TransactionRow = memo(function TransactionRow({
             disabled={isUpdating || isDeleting}
             aria-label="Edit transaction"
             aria-busy={isUpdating}
-            className="p-2 rounded-lg text-gray-500 hover:text-blue-600 hover:bg-blue-50
+            className="p-2 rounded-lg text-muted-foreground hover:text-blue-600 hover:bg-blue-50
               focus:outline-none focus:ring-2 focus:ring-blue-500
               disabled:opacity-50 disabled:cursor-not-allowed
               transition-colors duration-150"
@@ -224,7 +224,7 @@ export const TransactionRow = memo(function TransactionRow({
             disabled={isUpdating || isDeleting}
             aria-label="Delete transaction"
             aria-busy={isDeleting}
-            className="p-2 rounded-lg text-gray-500 hover:text-red-600 hover:bg-red-50
+            className="p-2 rounded-lg text-muted-foreground hover:text-red-600 hover:bg-red-50
               focus:outline-none focus:ring-2 focus:ring-red-500
               disabled:opacity-50 disabled:cursor-not-allowed
               transition-colors duration-150"

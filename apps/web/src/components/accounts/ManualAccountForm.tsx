@@ -194,7 +194,7 @@ export function ManualAccountForm({
       noValidate
     >
       {/* Form Title */}
-      <h2 id={titleId} className="text-xl font-semibold text-gray-900">
+      <h2 id={titleId} className="text-xl font-semibold text-foreground">
         Add Manual Account
       </h2>
 
@@ -213,7 +213,7 @@ export function ManualAccountForm({
       <div className="space-y-1">
         <label
           htmlFor={`${formId}-name`}
-          className="block text-sm font-medium text-gray-700"
+          className="block text-sm font-medium text-foreground"
         >
           Account Name
         </label>
@@ -232,9 +232,9 @@ export function ManualAccountForm({
             w-full px-3 py-2 rounded-lg border transition-colors
             ${touched.name && errors.name
               ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
-              : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+              : 'border-border focus:ring-blue-500 focus:border-blue-500'
             }
-            disabled:bg-gray-100 disabled:cursor-not-allowed
+            disabled:bg-muted disabled:cursor-not-allowed
           `}
         />
         {touched.name && errors.name && (
@@ -248,7 +248,7 @@ export function ManualAccountForm({
       <div className="space-y-1">
         <label
           htmlFor={`${formId}-type`}
-          className="block text-sm font-medium text-gray-700"
+          className="block text-sm font-medium text-foreground"
         >
           Account Type
         </label>
@@ -265,9 +265,9 @@ export function ManualAccountForm({
             w-full px-3 py-2 rounded-lg border transition-colors
             ${touched.type && errors.type
               ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
-              : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+              : 'border-border focus:ring-blue-500 focus:border-blue-500'
             }
-            disabled:bg-gray-100 disabled:cursor-not-allowed
+            disabled:bg-muted disabled:cursor-not-allowed
           `}
         >
           {accountTypeOptions.map((option) => (
@@ -291,12 +291,12 @@ export function ManualAccountForm({
       <div className="space-y-1">
         <label
           htmlFor={`${formId}-balance`}
-          className="block text-sm font-medium text-gray-700"
+          className="block text-sm font-medium text-foreground"
         >
           Current Balance
         </label>
         <div className="relative">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
             $
           </span>
           <input
@@ -315,9 +315,9 @@ export function ManualAccountForm({
               w-full pl-8 pr-3 py-2 rounded-lg border transition-colors
               ${touched.balance && errors.balance
                 ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
-                : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+                : 'border-border focus:ring-blue-500 focus:border-blue-500'
               }
-              disabled:bg-gray-100 disabled:cursor-not-allowed
+              disabled:bg-muted disabled:cursor-not-allowed
             `}
           />
         </div>
@@ -326,7 +326,7 @@ export function ManualAccountForm({
             {errors.balance}
           </p>
         )}
-        <p className="text-xs text-gray-500">
+        <p className="text-xs text-muted-foreground">
           Use negative values for amounts owed (credit cards, loans)
         </p>
       </div>
@@ -336,12 +336,12 @@ export function ManualAccountForm({
         <div className="space-y-1">
           <label
             htmlFor={`${formId}-credit-limit`}
-            className="block text-sm font-medium text-gray-700"
+            className="block text-sm font-medium text-foreground"
           >
             Credit Limit
           </label>
           <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
               $
             </span>
             <input
@@ -361,9 +361,9 @@ export function ManualAccountForm({
                 w-full pl-8 pr-3 py-2 rounded-lg border transition-colors
                 ${touched.creditLimit && errors.creditLimit
                   ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
-                  : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+                  : 'border-border focus:ring-blue-500 focus:border-blue-500'
                 }
-                disabled:bg-gray-100 disabled:cursor-not-allowed
+                disabled:bg-muted disabled:cursor-not-allowed
               `}
             />
           </div>
@@ -379,7 +379,7 @@ export function ManualAccountForm({
       <div className="space-y-1">
         <label
           htmlFor={`${formId}-currency`}
-          className="block text-sm font-medium text-gray-700"
+          className="block text-sm font-medium text-foreground"
         >
           Currency
         </label>
@@ -389,7 +389,7 @@ export function ManualAccountForm({
           value={currency}
           onChange={(e) => setCurrency(e.target.value)}
           disabled={isSubmitting}
-          className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+          className="w-full px-3 py-2 rounded-lg border border-border focus:ring-blue-500 focus:border-blue-500 disabled:bg-muted disabled:cursor-not-allowed"
         >
           {currencyOptions.map((option) => (
             <option key={option.value} value={option.value}>
@@ -403,9 +403,9 @@ export function ManualAccountForm({
       <div className="space-y-1">
         <label
           htmlFor={`${formId}-institution`}
-          className="block text-sm font-medium text-gray-700"
+          className="block text-sm font-medium text-foreground"
         >
-          Institution Name <span className="text-gray-400">(optional)</span>
+          Institution Name <span className="text-muted-foreground">(optional)</span>
         </label>
         <input
           id={`${formId}-institution`}
@@ -415,7 +415,7 @@ export function ManualAccountForm({
           onChange={(e) => setInstitutionName(e.target.value)}
           disabled={isSubmitting}
           placeholder="e.g., Chase, Bank of America"
-          className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+          className="w-full px-3 py-2 rounded-lg border border-border focus:ring-blue-500 focus:border-blue-500 disabled:bg-muted disabled:cursor-not-allowed"
         />
       </div>
 
@@ -423,9 +423,9 @@ export function ManualAccountForm({
       <div className="space-y-1">
         <label
           htmlFor={`${formId}-account-number`}
-          className="block text-sm font-medium text-gray-700"
+          className="block text-sm font-medium text-foreground"
         >
-          Account Number <span className="text-gray-400">(optional)</span>
+          Account Number <span className="text-muted-foreground">(optional)</span>
         </label>
         <input
           id={`${formId}-account-number`}
@@ -435,7 +435,7 @@ export function ManualAccountForm({
           onChange={(e) => setAccountNumber(e.target.value)}
           disabled={isSubmitting}
           placeholder="Last 4 digits, e.g., ****1234"
-          className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+          className="w-full px-3 py-2 rounded-lg border border-border focus:ring-blue-500 focus:border-blue-500 disabled:bg-muted disabled:cursor-not-allowed"
         />
       </div>
 
@@ -445,7 +445,7 @@ export function ManualAccountForm({
           type="button"
           onClick={onCancel}
           disabled={isSubmitting}
-          className="flex-1 px-4 py-2 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex-1 px-4 py-2 rounded-lg border border-border text-foreground font-medium hover:bg-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Cancel
         </button>
@@ -492,7 +492,7 @@ export function ManualAccountForm({
         aria-modal="true"
         className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
       >
-        <div className="bg-white rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto p-6">
+        <div className="bg-card rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto p-6">
           {formContent}
         </div>
       </div>

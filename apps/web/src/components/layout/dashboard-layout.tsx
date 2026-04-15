@@ -74,7 +74,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex min-h-screen bg-muted">
       {/* Mobile sidebar backdrop */}
       {sidebarOpen && (
         <div
@@ -86,21 +86,21 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       {/* Sidebar Navigation */}
       <aside
         className={`
-          fixed inset-y-0 left-0 z-30 w-64 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out
+          fixed inset-y-0 left-0 z-30 w-64 bg-card border-r border-border transform transition-transform duration-300 ease-in-out
           lg:translate-x-0 lg:static lg:inset-0
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
         `}
       >
         <div className="flex flex-col h-full">
           {/* Logo */}
-          <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200">
+          <div className="flex items-center justify-between h-16 px-6 border-b border-border">
             <Link href="/dashboard" className="flex items-center space-x-2">
               <Wallet className="h-8 w-8 text-blue-600" />
-              <span className="text-xl font-bold text-gray-900">MoneyWise</span>
+              <span className="text-xl font-bold text-foreground">MoneyWise</span>
             </Link>
             <button
               onClick={() => setSidebarOpen(false)}
-              className="lg:hidden text-gray-500 hover:text-gray-700"
+              className="lg:hidden text-muted-foreground hover:text-foreground"
             >
               <X className="h-6 w-6" />
             </button>
@@ -118,14 +118,14 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                   className={`flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors group ${
                     isActive
                       ? 'bg-blue-100 text-blue-600'
-                      : 'text-gray-700 hover:bg-blue-50 hover:text-blue-600'
+                      : 'text-foreground hover:bg-blue-50 hover:text-blue-600'
                   }`}
                   data-testid={`nav-${item.name.toLowerCase()}`}
                   aria-current={isActive ? 'page' : undefined}
                 >
                   <item.icon
                     className={`mr-3 h-5 w-5 ${
-                      isActive ? 'text-blue-600' : 'text-gray-400 group-hover:text-blue-600'
+                      isActive ? 'text-blue-600' : 'text-muted-foreground group-hover:text-blue-600'
                     }`}
                   />
                   {item.name}
@@ -140,7 +140,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 className={`w-full flex items-center justify-between px-4 py-3 text-sm font-medium rounded-lg transition-colors group ${
                   isPlanningActive
                     ? 'bg-blue-50 text-blue-600'
-                    : 'text-gray-700 hover:bg-blue-50 hover:text-blue-600'
+                    : 'text-foreground hover:bg-blue-50 hover:text-blue-600'
                 }`}
                 data-testid="nav-planning"
                 aria-expanded={planningOpen}
@@ -148,7 +148,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 <div className="flex items-center">
                   <ClipboardList
                     className={`mr-3 h-5 w-5 ${
-                      isPlanningActive ? 'text-blue-600' : 'text-gray-400 group-hover:text-blue-600'
+                      isPlanningActive ? 'text-blue-600' : 'text-muted-foreground group-hover:text-blue-600'
                     }`}
                   />
                   Planning
@@ -156,7 +156,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 <ChevronDown
                   className={`h-4 w-4 transition-transform duration-200 ${
                     planningOpen ? 'rotate-180' : ''
-                  } ${isPlanningActive ? 'text-blue-600' : 'text-gray-400'}`}
+                  } ${isPlanningActive ? 'text-blue-600' : 'text-muted-foreground'}`}
                 />
               </button>
 
@@ -172,14 +172,14 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                         className={`flex items-center px-4 py-2.5 text-sm font-medium rounded-lg transition-colors group ${
                           isActive
                             ? 'bg-blue-100 text-blue-600'
-                            : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600'
+                            : 'text-muted-foreground hover:bg-blue-50 hover:text-blue-600'
                         }`}
                         data-testid={`nav-${item.name.toLowerCase()}`}
                         aria-current={isActive ? 'page' : undefined}
                       >
                         <item.icon
                           className={`mr-3 h-4 w-4 ${
-                            isActive ? 'text-blue-600' : 'text-gray-400 group-hover:text-blue-600'
+                            isActive ? 'text-blue-600' : 'text-muted-foreground group-hover:text-blue-600'
                           }`}
                         />
                         {item.name}
@@ -191,7 +191,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             </div>
 
             {/* Bottom navigation items (Settings) */}
-            <div className="pt-4 border-t border-gray-100 mt-4">
+            <div className="pt-4 border-t border-border mt-4">
               {bottomNavigation.map((item) => {
                 const isActive = pathname === item.href;
                 return (
@@ -201,14 +201,14 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                     className={`flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors group ${
                       isActive
                         ? 'bg-blue-100 text-blue-600'
-                        : 'text-gray-700 hover:bg-blue-50 hover:text-blue-600'
+                        : 'text-foreground hover:bg-blue-50 hover:text-blue-600'
                     }`}
                     data-testid={`nav-${item.name.toLowerCase()}`}
                     aria-current={isActive ? 'page' : undefined}
                   >
                     <item.icon
                       className={`mr-3 h-5 w-5 ${
-                        isActive ? 'text-blue-600' : 'text-gray-400 group-hover:text-blue-600'
+                        isActive ? 'text-blue-600' : 'text-muted-foreground group-hover:text-blue-600'
                       }`}
                     />
                     {item.name}
@@ -219,18 +219,18 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           </nav>
 
           {/* User Info */}
-          <div className="p-4 border-t border-gray-200">
-            <div className="flex items-center space-x-3 px-4 py-3 rounded-lg bg-gray-50" data-testid="user-menu">
+          <div className="p-4 border-t border-border">
+            <div className="flex items-center space-x-3 px-4 py-3 rounded-lg bg-muted" data-testid="user-menu">
               <div className="flex-shrink-0">
                 <div className="h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center">
                   <User className="h-6 w-6 text-white" />
                 </div>
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900 truncate">
+                <p className="text-sm font-medium text-foreground truncate">
                   {user?.firstName} {user?.lastName}
                 </p>
-                <p className="text-xs text-gray-500 truncate">
+                <p className="text-xs text-muted-foreground truncate">
                   {user?.email}
                 </p>
               </div>
@@ -242,12 +242,12 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
         {/* Top Header Bar */}
-        <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
+        <header className="bg-card border-b border-border sticky top-0 z-10">
           <div className="flex items-center justify-between h-16 px-4 sm:px-6 lg:px-8">
             {/* Mobile menu button */}
             <button
               onClick={() => setSidebarOpen(true)}
-              className="lg:hidden text-gray-500 hover:text-gray-700"
+              className="lg:hidden text-muted-foreground hover:text-foreground"
             >
               <Menu className="h-6 w-6" />
             </button>
@@ -256,11 +256,11 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             <div className="hidden lg:flex flex-1 max-w-lg">
               <div className="relative w-full">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Search className="h-5 w-5 text-gray-400" />
+                  <Search className="h-5 w-5 text-muted-foreground" />
                 </div>
                 <input
                   type="text"
-                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  className="block w-full pl-10 pr-3 py-2 border border-border rounded-lg leading-5 bg-card placeholder-muted-foreground focus:outline-none focus:placeholder-muted-foreground focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                   placeholder="Search transactions, accounts..."
                   data-testid="search-input"
                 />

@@ -162,7 +162,7 @@ export default function BudgetsPage() {
             <Target className="h-6 w-6 text-emerald-600" aria-hidden="true" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Budgets</h1>
+            <h1 className="text-2xl font-bold text-foreground">Budgets</h1>
             <p className="text-sm text-gray-500">
               Track your spending across categories
             </p>
@@ -178,7 +178,7 @@ export default function BudgetsPage() {
             aria-busy={isLoading}
             className="inline-flex items-center justify-center px-4 py-2 rounded-lg font-medium
               transition-colors duration-200 border border-gray-300
-              text-gray-700 bg-white hover:bg-gray-50 active:bg-gray-100
+              text-foreground bg-card hover:bg-muted active:bg-muted/80
               focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-emerald-500
               disabled:opacity-50 disabled:cursor-not-allowed"
           >
@@ -235,25 +235,25 @@ export default function BudgetsPage() {
           data-testid="budget-stats-container"
           className="grid grid-cols-1 md:grid-cols-4 gap-4"
         >
-          <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <div className="bg-card rounded-xl border border-border p-4">
             <p className="text-sm text-gray-600 font-medium">Total Budgets</p>
             <p className="text-3xl font-bold text-gray-900 mt-2">
               {summary.total}
             </p>
           </div>
-          <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <div className="bg-card rounded-xl border border-border p-4">
             <p className="text-sm text-gray-600 font-medium">Total Budgeted</p>
             <p className="text-3xl font-bold text-gray-900 mt-2">
               ${summary.totalBudgeted.toLocaleString()}
             </p>
           </div>
-          <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <div className="bg-card rounded-xl border border-border p-4">
             <p className="text-sm text-gray-600 font-medium">Total Spent</p>
             <p className="text-3xl font-bold text-gray-900 mt-2">
               ${summary.totalSpent.toLocaleString()}
             </p>
           </div>
-          <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <div className="bg-card rounded-xl border border-border p-4">
             <p className="text-sm text-gray-600 font-medium">Over Budget</p>
             <p className={`text-3xl font-bold mt-2 ${summary.overBudgetCount > 0 ? 'text-red-600' : 'text-green-600'}`}>
               {summary.overBudgetCount}
@@ -286,7 +286,7 @@ export default function BudgetsPage() {
       {/* Delete confirmation modal */}
       {deleteConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4 shadow-xl">
+          <div className="bg-card rounded-xl p-6 max-w-md w-full mx-4 shadow-xl">
             <h3 className="text-lg font-medium text-gray-900 mb-2">
               Delete Budget
             </h3>
@@ -315,9 +315,9 @@ export default function BudgetsPage() {
 
       {/* Budget list - wrapped in card when budgets exist */}
       {(isLoading || budgets.length > 0) && (
-        <div className="bg-white rounded-xl border border-gray-200">
+        <div className="bg-card rounded-xl border border-border">
           <div className="p-4 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900">
+            <h2 className="text-lg font-semibold text-foreground">
               All Budgets
             </h2>
             <p className="text-sm text-gray-500 mt-1">
@@ -339,7 +339,7 @@ export default function BudgetsPage() {
 
       {/* Empty State */}
       {!isLoading && budgets.length === 0 && (
-        <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
+        <div className="bg-card rounded-xl border border-border p-12 text-center">
           <Target className="h-12 w-12 text-gray-300 mx-auto mb-4" aria-hidden="true" />
           <h2 className="text-lg font-medium text-gray-900 mb-2">
             No budgets yet

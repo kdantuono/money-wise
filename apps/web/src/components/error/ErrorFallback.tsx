@@ -11,17 +11,17 @@ interface ErrorFallbackProps {
 
 export function ErrorFallback({ error, resetError, onShowDialog }: ErrorFallbackProps) {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="max-w-md w-full bg-white shadow-lg rounded-lg p-6 text-center">
+    <div className="min-h-screen flex items-center justify-center bg-muted px-4">
+      <div className="max-w-md w-full bg-card shadow-lg rounded-lg p-6 text-center">
         <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
           <AlertTriangle className="h-6 w-6 text-red-600" />
         </div>
 
-        <h1 className="text-lg font-semibold text-gray-900 mb-2">
+        <h1 className="text-lg font-semibold text-foreground mb-2">
           Oops! Something went wrong
         </h1>
 
-        <p className="text-sm text-gray-600 mb-6">
+        <p className="text-sm text-muted-foreground mb-6">
           We&apos;re sorry, but something unexpected happened. Please try refreshing the page or contact support if the problem persists.
         </p>
 
@@ -48,7 +48,7 @@ export function ErrorFallback({ error, resetError, onShowDialog }: ErrorFallback
           {onShowDialog && (
             <button
               onClick={onShowDialog}
-              className="w-full flex items-center justify-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              className="w-full flex items-center justify-center px-4 py-2 border border-border text-sm font-medium rounded-md text-foreground bg-card hover:bg-muted focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
               <MessageSquare className="h-4 w-4 mr-2" />
               Report Issue
@@ -57,13 +57,13 @@ export function ErrorFallback({ error, resetError, onShowDialog }: ErrorFallback
 
           <button
             onClick={() => window.location.href = '/'}
-            className="w-full flex items-center justify-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            className="w-full flex items-center justify-center px-4 py-2 border border-border text-sm font-medium rounded-md text-foreground bg-card hover:bg-muted focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >
             Go to Homepage
           </button>
         </div>
 
-        <p className="text-xs text-gray-500 mt-6">
+        <p className="text-xs text-muted-foreground mt-6">
           Error ID: {Math.random().toString(36).substr(2, 9)}
         </p>
       </div>

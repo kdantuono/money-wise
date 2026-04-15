@@ -172,14 +172,14 @@ export const TransferLinkModal = memo(function TransferLinkModal({
       />
 
       {/* Modal */}
-      <div className="relative bg-white rounded-xl shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-auto">
+      <div className="relative bg-card rounded-xl shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-auto">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-blue-100 rounded-lg">
               <ArrowLeftRight className="h-5 w-5 text-blue-600" />
             </div>
-            <h2 id="transfer-link-title" className="text-lg font-semibold text-gray-900">
+            <h2 id="transfer-link-title" className="text-lg font-semibold text-foreground">
               Link as Transfer
             </h2>
           </div>
@@ -187,8 +187,8 @@ export const TransferLinkModal = memo(function TransferLinkModal({
             type="button"
             onClick={onClose}
             disabled={isLinking}
-            className="p-2 text-gray-400 hover:text-gray-600 rounded-lg
-              hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-500
+            className="p-2 text-muted-foreground hover:text-muted-foreground rounded-lg
+              hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring
               disabled:opacity-50 disabled:cursor-not-allowed"
             aria-label="Close modal"
           >
@@ -210,7 +210,7 @@ export const TransferLinkModal = memo(function TransferLinkModal({
               </span>
             </div>
             {matchQuality.reasons.length > 0 && (
-              <p className="mt-2 text-sm text-gray-500">
+              <p className="mt-2 text-sm text-muted-foreground">
                 {matchQuality.reasons.join(' • ')}
               </p>
             )}
@@ -223,8 +223,8 @@ export const TransferLinkModal = memo(function TransferLinkModal({
 
             {/* Arrow */}
             <div className="flex items-center justify-center">
-              <div className="p-2 bg-gray-100 rounded-full">
-                <ArrowRight className="h-5 w-5 text-gray-500" />
+              <div className="p-2 bg-muted rounded-full">
+                <ArrowRight className="h-5 w-5 text-muted-foreground" />
               </div>
             </div>
 
@@ -247,14 +247,14 @@ export const TransferLinkModal = memo(function TransferLinkModal({
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-200 bg-gray-50">
+        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-border bg-muted">
           <button
             type="button"
             onClick={onClose}
             disabled={isLinking}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white
-              border border-gray-300 rounded-lg hover:bg-gray-50
-              focus:outline-none focus:ring-2 focus:ring-gray-500
+            className="px-4 py-2 text-sm font-medium text-foreground bg-card
+              border border-border rounded-lg hover:bg-muted
+              focus:outline-none focus:ring-2 focus:ring-ring
               disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Cancel
@@ -294,7 +294,7 @@ const TransactionCard = memo(function TransactionCard({
   const formattedAmount = formatCurrency(transaction.amount, transaction.currency);
 
   return (
-    <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
+    <div className="p-4 bg-muted border border-border rounded-lg">
       <div className="flex items-center gap-2 mb-2">
         <span
           className={`px-2 py-0.5 text-xs font-medium rounded ${
@@ -314,28 +314,28 @@ const TransactionCard = memo(function TransactionCard({
         </span>
       </div>
 
-      <h4 className="font-medium text-gray-900 truncate">
+      <h4 className="font-medium text-foreground truncate">
         {transaction.description}
       </h4>
 
       {transaction.merchantName && (
-        <p className="text-sm text-gray-500 truncate mt-1">
+        <p className="text-sm text-muted-foreground truncate mt-1">
           {transaction.merchantName}
         </p>
       )}
 
       <div className="mt-3 space-y-1">
         <div className="flex justify-between text-sm">
-          <span className="text-gray-500">Amount</span>
+          <span className="text-muted-foreground">Amount</span>
           <span
-            className={`font-medium ${isCredit ? 'text-green-600' : 'text-gray-900'}`}
+            className={`font-medium ${isCredit ? 'text-green-600' : 'text-foreground'}`}
           >
             {amountPrefix}{formattedAmount}
           </span>
         </div>
         <div className="flex justify-between text-sm">
-          <span className="text-gray-500">Date</span>
-          <span className="text-gray-900">{formatDate(transaction.date)}</span>
+          <span className="text-muted-foreground">Date</span>
+          <span className="text-foreground">{formatDate(transaction.date)}</span>
         </div>
       </div>
     </div>

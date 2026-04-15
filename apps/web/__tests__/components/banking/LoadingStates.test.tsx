@@ -27,7 +27,7 @@ describe('LoadingStates Components', () => {
 
       expect(container.querySelector('.rounded-lg')).toBeInTheDocument();
       expect(container.querySelector('.border')).toBeInTheDocument();
-      expect(container.querySelector('.bg-white')).toBeInTheDocument();
+      expect(container.querySelector('.bg-card')).toBeInTheDocument();
     });
 
     it('includes header and content sections', () => {
@@ -344,7 +344,7 @@ describe('LoadingStates Components', () => {
       const { container } = render(<AccountSkeleton />);
 
       const pulseBox = container.querySelector('.animate-pulse');
-      expect(pulseBox).toHaveClass('bg-gray-200');
+      expect(pulseBox).toHaveClass('bg-muted');
     });
   });
 

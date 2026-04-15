@@ -1,3 +1,5 @@
+> NOTE: This document references the pre-migration NestJS backend which was replaced by Supabase Edge Functions in Phase 0 (April 2026).
+
 # P.3.4 User Entity Migration Plan: TypeORM → Prisma
 
 **Phase**: 3.4 - User Service Layer Migration

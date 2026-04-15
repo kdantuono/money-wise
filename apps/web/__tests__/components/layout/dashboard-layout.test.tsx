@@ -547,7 +547,7 @@ describe('DashboardLayout Component', () => {
       );
 
       const accountsLink = screen.getByTestId('nav-accounts');
-      expect(accountsLink).toHaveClass('text-gray-700');
+      expect(accountsLink).toHaveClass('text-foreground');
       expect(accountsLink).not.toHaveClass('bg-blue-100');
     });
   });

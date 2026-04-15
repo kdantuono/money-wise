@@ -1,6 +1,6 @@
 /**
  * Tests for BankingLinkButton component
- * 
+ *
  * React 19 + @testing-library/react v16 compatibility:
  * - Tests that involve user interactions use real timers (default)
  * - Tests that need timer control (polling, delays) use fake timers explicitly
@@ -10,6 +10,20 @@ import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, act, waitFor } from '../../utils/test-utils';
 import { BankingLinkButton } from '../../../src/components/banking/BankingLinkButton';
+
+// Mock the banking.client service module
+vi.mock('../../../src/services/banking.client', () => ({
+  initiateLink: vi.fn(),
+  BankingApiError: class BankingApiError extends Error {
+    constructor(message: string) {
+      super(message);
+      this.name = 'BankingApiError';
+    }
+  },
+}));
+
+import { initiateLink, BankingApiError } from '../../../src/services/banking.client';
+const mockInitiateLink = vi.mocked(initiateLink);
 
 // Mock window.open
 const mockWindowOpen = vi.fn();
@@ -22,7 +36,6 @@ const mockPopup = {
 describe('BankingLinkButton Component', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    global.fetch = vi.fn();
     global.window.open = mockWindowOpen;
     mockWindowOpen.mockReturnValue(mockPopup);
     mockPopup.closed = false;
@@ -81,14 +94,9 @@ describe('BankingLinkButton Component', () => {
   // ============================================
 
   it('initiates OAuth flow on click', async () => {
-    const mockResponse = {
+    mockInitiateLink.mockResolvedValueOnce({
       redirectUrl: 'https://oauth.example.com/auth',
       _connectionId: 'conn-123',
-    };
-
-    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-      ok: true,
-      json: async () => mockResponse,
     });
 
     const { user } = render(<BankingLinkButton provider="SALTEDGE" />);
@@ -99,11 +107,7 @@ describe('BankingLinkButton Component', () => {
 
     await user.click(button);
 
-    expect(global.fetch).toHaveBeenCalledWith('/api/banking/initiate-link', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ provider: 'SALTEDGE' }),
-    });
+    expect(mockInitiateLink).toHaveBeenCalledWith('SALTEDGE');
 
     expect(mockWindowOpen).toHaveBeenCalledWith(
       'https://oauth.example.com/auth',
@@ -113,9 +117,9 @@ describe('BankingLinkButton Component', () => {
   });
 
   it('focuses popup window after opening', async () => {
-    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ redirectUrl: 'https://oauth.example.com/auth', _connectionId: 'conn-123' }),
+    mockInitiateLink.mockResolvedValueOnce({
+      redirectUrl: 'https://oauth.example.com/auth',
+      _connectionId: 'conn-123',
     });
 
     const { user } = render(<BankingLinkButton />);
@@ -130,9 +134,9 @@ describe('BankingLinkButton Component', () => {
   });
 
   it('sends correct provider in request', async () => {
-    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ redirectUrl: 'https://oauth.example.com/auth', _connectionId: 'conn-123' }),
+    mockInitiateLink.mockResolvedValueOnce({
+      redirectUrl: 'https://oauth.example.com/auth',
+      _connectionId: 'conn-123',
     });
 
     const { user } = render(<BankingLinkButton provider="TINK" />);
@@ -143,12 +147,7 @@ describe('BankingLinkButton Component', () => {
 
     await user.click(button);
 
-    expect(global.fetch).toHaveBeenCalledWith(
-      '/api/banking/initiate-link',
-      expect.objectContaining({
-        body: JSON.stringify({ provider: 'TINK' }),
-      })
-    );
+    expect(mockInitiateLink).toHaveBeenCalledWith('TINK');
   });
 
   // ============================================
@@ -158,9 +157,9 @@ describe('BankingLinkButton Component', () => {
   it('calls onSuccess when OAuth completion message is received', async () => {
     const onSuccess = vi.fn();
 
-    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ redirectUrl: 'https://oauth.example.com/auth', _connectionId: 'conn-123' }),
+    mockInitiateLink.mockResolvedValueOnce({
+      redirectUrl: 'https://oauth.example.com/auth',
+      _connectionId: 'conn-123',
     });
 
     const { user } = render(<BankingLinkButton onSuccess={onSuccess} />);
@@ -184,9 +183,9 @@ describe('BankingLinkButton Component', () => {
   it('calls onError when OAuth error message is received', async () => {
     const onError = vi.fn();
 
-    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ redirectUrl: 'https://oauth.example.com/auth', _connectionId: 'conn-123' }),
+    mockInitiateLink.mockResolvedValueOnce({
+      redirectUrl: 'https://oauth.example.com/auth',
+      _connectionId: 'conn-123',
     });
 
     const { user } = render(<BankingLinkButton onError={onError} />);
@@ -210,9 +209,9 @@ describe('BankingLinkButton Component', () => {
   it('ignores messages from different origins', async () => {
     const onSuccess = vi.fn();
 
-    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ redirectUrl: 'https://oauth.example.com/auth', _connectionId: 'conn-123' }),
+    mockInitiateLink.mockResolvedValueOnce({
+      redirectUrl: 'https://oauth.example.com/auth',
+      _connectionId: 'conn-123',
     });
 
     const { user } = render(<BankingLinkButton onSuccess={onSuccess} />);
@@ -243,10 +242,9 @@ describe('BankingLinkButton Component', () => {
   it('handles API error gracefully', async () => {
     const onError = vi.fn();
 
-    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-      ok: false,
-      json: async () => ({ message: 'Failed to initiate OAuth' }),
-    });
+    mockInitiateLink.mockRejectedValueOnce(
+      new BankingApiError('Failed to initiate OAuth')
+    );
 
     const { user } = render(<BankingLinkButton onError={onError} />);
     const button = screen.getByRole('button');
@@ -262,9 +260,9 @@ describe('BankingLinkButton Component', () => {
   });
 
   it('handles missing redirect URL', async () => {
-    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ _connectionId: 'conn-123' }), // No redirectUrl
+    mockInitiateLink.mockResolvedValueOnce({
+      redirectUrl: '',
+      _connectionId: 'conn-123',
     });
 
     const { user } = render(<BankingLinkButton />);
@@ -280,9 +278,9 @@ describe('BankingLinkButton Component', () => {
   it('handles popup blocking', async () => {
     mockWindowOpen.mockReturnValueOnce(null);
 
-    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ redirectUrl: 'https://oauth.example.com/auth', _connectionId: 'conn-123' }),
+    mockInitiateLink.mockResolvedValueOnce({
+      redirectUrl: 'https://oauth.example.com/auth',
+      _connectionId: 'conn-123',
     });
 
     const { user } = render(<BankingLinkButton />);
@@ -296,7 +294,7 @@ describe('BankingLinkButton Component', () => {
   });
 
   it('handles network errors', async () => {
-    (global.fetch as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('Network error'));
+    mockInitiateLink.mockRejectedValueOnce(new Error('Network error'));
 
     const { user } = render(<BankingLinkButton />);
     const button = screen.getByRole('button');
@@ -307,10 +305,9 @@ describe('BankingLinkButton Component', () => {
   });
 
   it('error has correct ARIA attributes', async () => {
-    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-      ok: false,
-      json: async () => ({ message: 'Test error' }),
-    });
+    mockInitiateLink.mockRejectedValueOnce(
+      new BankingApiError('Test error')
+    );
 
     const { user } = render(<BankingLinkButton />);
     const button = screen.getByRole('button');
@@ -324,10 +321,9 @@ describe('BankingLinkButton Component', () => {
   });
 
   it('allows dismissing error message', async () => {
-    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-      ok: false,
-      json: async () => ({ message: 'Test error' }),
-    });
+    mockInitiateLink.mockRejectedValueOnce(
+      new BankingApiError('Test error')
+    );
 
     const { user } = render(<BankingLinkButton />);
     const button = screen.getByRole('button');
@@ -358,9 +354,9 @@ describe('BankingLinkButton Component', () => {
     });
 
     it('displays loading state during OAuth flow', async () => {
-      // Use resolved promise instead of setTimeout to avoid fake timer/async interaction
+      // Use a pending promise to keep loading state
       let resolvePromise: ((value: unknown) => void) | undefined;
-      (global.fetch as ReturnType<typeof vi.fn>).mockImplementationOnce(() =>
+      mockInitiateLink.mockImplementationOnce(() =>
         new Promise(resolve => {
           resolvePromise = resolve;
         })
@@ -378,19 +374,19 @@ describe('BankingLinkButton Component', () => {
       expect(button).toHaveAttribute('aria-busy', 'true');
       expect(button).toBeDisabled();
 
-      // Resolve the fetch to clean up
+      // Resolve the promise to clean up
       await act(async () => {
         resolvePromise?.({
-          ok: true,
-          json: async () => ({ redirectUrl: 'https://oauth.example.com/auth', _connectionId: 'conn-123' }),
+          redirectUrl: 'https://oauth.example.com/auth',
+          _connectionId: 'conn-123',
         });
       });
     });
 
     it('displays spinner during loading', async () => {
-      // Use resolved promise instead of setTimeout
+      // Use a pending promise to keep loading state
       let resolvePromise: ((value: unknown) => void) | undefined;
-      (global.fetch as ReturnType<typeof vi.fn>).mockImplementationOnce(() =>
+      mockInitiateLink.mockImplementationOnce(() =>
         new Promise(resolve => {
           resolvePromise = resolve;
         })
@@ -408,11 +404,11 @@ describe('BankingLinkButton Component', () => {
       const svg = button.querySelector('svg.animate-spin');
       expect(svg).toBeInTheDocument();
 
-      // Clean up - resolve fetch
+      // Clean up - resolve promise
       await act(async () => {
         resolvePromise?.({
-          ok: true,
-          json: async () => ({ redirectUrl: 'https://oauth.example.com/auth', _connectionId: 'conn-123' }),
+          redirectUrl: 'https://oauth.example.com/auth',
+          _connectionId: 'conn-123',
         });
       });
     });
@@ -420,9 +416,9 @@ describe('BankingLinkButton Component', () => {
     it('does not call onSuccess when popup is closed without OAuth completion', async () => {
       const onSuccess = vi.fn();
 
-      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ redirectUrl: 'https://oauth.example.com/auth', _connectionId: 'conn-123' }),
+      mockInitiateLink.mockResolvedValueOnce({
+        redirectUrl: 'https://oauth.example.com/auth',
+        _connectionId: 'conn-123',
       });
 
       render(<BankingLinkButton onSuccess={onSuccess} />);

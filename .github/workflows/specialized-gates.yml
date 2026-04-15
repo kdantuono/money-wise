@@ -8,17 +8,17 @@ on:
   pull_request:
     branches: [main, develop]
     paths:
-      - 'apps/backend/src/core/database/migrations/**'
-      - 'apps/backend/src/**/*.entity.ts'
       - '**/Dockerfile*'
       - '**/docker-compose*.yml'
+      - 'supabase/migrations/**'
+      - 'supabase/functions/**'
   push:
     branches: [main, develop]
     paths:
-      - 'apps/backend/src/core/database/migrations/**'
-      - 'apps/backend/src/**/*.entity.ts'
       - '**/Dockerfile*'
       - '**/docker-compose*.yml'
+      - 'supabase/migrations/**'
+      - 'supabase/functions/**'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -33,187 +33,6 @@ env:
   TURBO_TELEMETRY_DISABLED: '1'  # Opt-out of anonymous telemetry
 
 jobs:
-  # ===================================================================
-  # 🗃️ MIGRATION VALIDATION: Database schema changes
-  # ===================================================================
-
-  migration-validation:
-    name: 🗃️ Migration Validation
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-
-    services:
-      postgres:
-        image: timescale/timescaledb:latest-pg15
-        env:
-          POSTGRES_DB: moneywise_migration_test
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: password
-        options: >-
-          --health-cmd "pg_isready -U postgres -d moneywise_migration_test"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
-
-      postgres-rollback:
-        image: timescale/timescaledb:latest-pg15
-        env:
-          POSTGRES_DB: moneywise_rollback_test
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: password
-        options: >-
-          --health-cmd "pg_isready -U postgres -d moneywise_rollback_test"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5433:5432
-
-    steps:
-      - name: 📥 Checkout
-        uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
-
-      - name: 📦 Setup pnpm
-        uses: pnpm/action-setup@v4
-
-      - name: 🔧 Setup Node.js
-        uses: actions/setup-node@v5
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
-
-      - name: 📦 Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: 🏗️ Build backend
-        run: pnpm --filter @money-wise/backend build
-
-      - name: 🔍 Check for new migrations
-        id: check-migrations
-        run: |
-          NEW_MIGRATIONS=$(git diff --name-only origin/main...HEAD | grep -E "apps/backend/src/core/database/migrations/.*\.(ts|js)$" || echo "")
-
-          if [ -n "$NEW_MIGRATIONS" ]; then
-            echo "found=true" >> $GITHUB_OUTPUT
-            echo "📋 New migrations found:"
-            echo "$NEW_MIGRATIONS"
-          else
-            echo "found=false" >> $GITHUB_OUTPUT
-            echo "📋 No new migrations found"
-          fi
-
-      - name: 🗃️ Run fresh migration
-        run: |
-          echo "🗃️ Running fresh database migration..."
-          pnpm --filter @money-wise/backend migration:run
-        env:
-          DB_HOST: localhost
-          DB_PORT: 5432
-          DB_USERNAME: postgres
-          DB_PASSWORD: password
-          DB_NAME: moneywise_migration_test
-          NODE_ENV: test
-
-      - name: 🔍 Validate schema after migration
-        run: |
-          echo "🔍 Validating database schema..."
-
-          PGPASSWORD=password psql -h localhost -U postgres -d moneywise_migration_test -c "
-            SELECT table_name
-            FROM information_schema.tables
-            WHERE table_schema = 'public'
-            ORDER BY table_name;
-          "
-
-          PGPASSWORD=password psql -h localhost -U postgres -d moneywise_migration_test -c "
-            SELECT
-              schemaname,
-              tablename,
-              indexname,
-              indexdef
-            FROM pg_indexes
-            WHERE schemaname = 'public'
-            ORDER BY tablename, indexname;
-          "
-
-      - name: 🔄 Test migration rollback
-        if: steps.check-migrations.outputs.found == 'true'
-        run: |
-          echo "🔄 Testing migration rollback..."
-
-          pnpm --filter @money-wise/backend migration:run
-
-          echo "⏪ Attempting to rollback latest migration..."
-          pnpm --filter @money-wise/backend migration:revert || {
-            echo "⚠️ Migration rollback failed - manual review required"
-          }
-        env:
-          DB_HOST: localhost
-          DB_PORT: 5433
-          DB_USERNAME: postgres
-          DB_PASSWORD: password
-          DB_NAME: moneywise_rollback_test
-          NODE_ENV: test
-
-      - name: 📊 Migration performance test
-        if: steps.check-migrations.outputs.found == 'true'
-        run: |
-          echo "📊 Testing migration performance..."
-
-          PGPASSWORD=password psql -h localhost -U postgres -d moneywise_migration_test -c "
-            INSERT INTO users (id, email, created_at, updated_at)
-            SELECT
-              generate_random_uuid(),
-              'test' || i || '@example.com',
-              NOW() - INTERVAL '1 day' * (i % 365),
-              NOW()
-            FROM generate_series(1, 1000) i
-            ON CONFLICT DO NOTHING;
-          " 2>/dev/null || echo "📋 Sample data insertion skipped"
-
-          START_TIME=$(date +%s)
-          pnpm --filter @money-wise/backend migration:run
-          END_TIME=$(date +%s)
-
-          DURATION=$((END_TIME - START_TIME))
-          echo "📊 Migration re-run took: ${DURATION}s"
-
-          if [ $DURATION -gt 30 ]; then
-            echo "⚠️ Migration took longer than 30 seconds - consider optimization"
-          else
-            echo "✅ Migration performance acceptable"
-          fi
-        env:
-          DB_HOST: localhost
-          DB_PORT: 5432
-          DB_USERNAME: postgres
-          DB_PASSWORD: password
-          DB_NAME: moneywise_migration_test
-          NODE_ENV: test
-
-      - name: 🛡️ Security check for migrations
-        if: steps.check-migrations.outputs.found == 'true'
-        run: |
-          echo "🛡️ Checking migrations for security issues..."
-
-          if find apps/backend/src/core/database/migrations -name "*.ts" -newer .git/FETCH_HEAD 2>/dev/null | xargs grep -i "drop\|truncate\|delete.*from" 2>/dev/null; then
-            echo "⚠️ Potentially destructive SQL operations found"
-            echo "📋 Please review these operations carefully"
-          else
-            echo "✅ No obviously destructive operations found"
-          fi
-
-          if find apps/backend/src/core/database/migrations -name "*.ts" -newer .git/FETCH_HEAD 2>/dev/null | xargs grep -iE "(password|secret|key|token).*['\"][^'\"]{8,}" 2>/dev/null; then
-            echo "⚠️ Potential hardcoded sensitive data found"
-            echo "📋 Use environment variables or secure configuration"
-          else
-            echo "✅ No hardcoded sensitive data found"
-          fi
-
   # ===================================================================
   # 🐳 DOCKERFILE SECURITY: Container security scanning
   # ===================================================================
@@ -263,13 +82,156 @@ jobs:
           fi
 
   # ===================================================================
+  # 🗃️ SUPABASE SCHEMA: Migration & Edge Function validation
+  # ===================================================================
+
+  supabase-validation:
+    name: 🗃️ Supabase Schema Validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: 🔍 Check changed Supabase files
+        id: changes
+        run: |
+          # Determine correct base/head SHAs for the diff
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE_SHA="${{ github.event.pull_request.base.sha }}"
+            HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+          else
+            BASE_SHA="${{ github.event.before }}"
+            HEAD_SHA="${{ github.sha }}"
+          fi
+
+          # Detect which categories of files changed
+          MIGRATIONS_CHANGED="false"
+          FUNCTIONS_CHANGED="false"
+          CHANGED_MIGRATIONS=""
+
+          if git diff --name-only "$BASE_SHA" "$HEAD_SHA" 2>/dev/null | grep -q '^supabase/migrations/'; then
+            MIGRATIONS_CHANGED="true"
+            CHANGED_MIGRATIONS=$(git diff --name-only "$BASE_SHA" "$HEAD_SHA" 2>/dev/null | grep '^supabase/migrations/' || true)
+          fi
+          if git diff --name-only "$BASE_SHA" "$HEAD_SHA" 2>/dev/null | grep -q '^supabase/functions/'; then
+            FUNCTIONS_CHANGED="true"
+          fi
+
+          echo "migrations_changed=$MIGRATIONS_CHANGED" >> $GITHUB_OUTPUT
+          echo "functions_changed=$FUNCTIONS_CHANGED" >> $GITHUB_OUTPUT
+          # Store changed migration files for targeted validation
+          echo "changed_migrations<<EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGED_MIGRATIONS" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          echo "📋 Migrations changed: $MIGRATIONS_CHANGED"
+          echo "📋 Functions changed: $FUNCTIONS_CHANGED"
+
+      - name: 🗃️ Validate migration file naming
+        if: steps.changes.outputs.migrations_changed == 'true'
+        run: |
+          echo "🔍 Checking changed migration file naming conventions..."
+          ERRORS=0
+
+          # Only validate migrations changed in this PR/push
+          while IFS= read -r file; do
+            [ -z "$file" ] && continue
+            [ -e "$file" ] || continue
+            basename=$(basename "$file")
+
+            # Check naming: YYYYMMDDHHMMSS_description.sql
+            if ! echo "$basename" | grep -qE '^[0-9]{14}_[a-z0-9_]+\.sql$'; then
+              echo "❌ Invalid migration name: $basename (expected: YYYYMMDDHHMMSS_description.sql)"
+              ERRORS=$((ERRORS + 1))
+            fi
+
+            # Check file is not empty
+            if [ ! -s "$file" ]; then
+              echo "❌ Empty migration file: $basename"
+              ERRORS=$((ERRORS + 1))
+            fi
+          done <<< "${{ steps.changes.outputs.changed_migrations }}"
+
+          if [ $ERRORS -gt 0 ]; then
+            echo "❌ Found $ERRORS migration naming issues"
+            exit 1
+          fi
+
+          echo "✅ Changed migration files follow naming conventions"
+
+      - name: 🗃️ Validate SQL syntax (basic)
+        if: steps.changes.outputs.migrations_changed == 'true'
+        run: |
+          echo "🔍 Running basic SQL validation on changed migrations..."
+
+          # Only validate migrations changed in this PR/push
+          while IFS= read -r file; do
+            [ -z "$file" ] && continue
+            [ -e "$file" ] || continue
+            basename=$(basename "$file")
+
+            # Check for common SQL issues
+            # 1. Unmatched BEGIN/END blocks
+            BEGIN_COUNT=$(grep -ci '^\s*BEGIN' "$file" || true)
+            END_COUNT=$(grep -ci '^\s*END;' "$file" || true)
+            if [ "$BEGIN_COUNT" -ne "$END_COUNT" ] && [ "$BEGIN_COUNT" -gt 0 ]; then
+              echo "⚠️ $basename: Mismatched BEGIN ($BEGIN_COUNT) / END ($END_COUNT) blocks"
+            fi
+
+            # 2. Check for dangerous operations without IF EXISTS / IF NOT EXISTS
+            if grep -qiE '^\s*DROP\s+(TABLE|INDEX|FUNCTION|TRIGGER)\b' "$file" 2>/dev/null \
+              && ! grep -qiE '^\s*DROP\s+(TABLE|INDEX|FUNCTION|TRIGGER)\s+IF\s+EXISTS\b' "$file" 2>/dev/null; then
+              echo "⚠️ $basename: DROP without IF EXISTS detected"
+            fi
+
+            echo "  ✅ $basename — basic checks passed"
+          done <<< "${{ steps.changes.outputs.changed_migrations }}"
+
+          echo "✅ SQL validation completed"
+
+      - name: 🔧 Validate Edge Function structure
+        if: steps.changes.outputs.functions_changed == 'true'
+        run: |
+          echo "🔍 Checking Edge Function structure..."
+          ERRORS=0
+
+          for dir in supabase/functions/*/; do
+            [ -d "$dir" ] || continue
+            func_name=$(basename "$dir")
+
+            # Skip shared directory
+            if [ "$func_name" = "_shared" ]; then
+              continue
+            fi
+
+            # Check for index.ts entry point
+            if [ ! -f "${dir}index.ts" ]; then
+              echo "❌ $func_name: Missing index.ts entry point"
+              ERRORS=$((ERRORS + 1))
+            fi
+
+            echo "  ✅ $func_name — structure valid"
+          done
+
+          if [ $ERRORS -gt 0 ]; then
+            echo "❌ Found $ERRORS Edge Function structure issues"
+            exit 1
+          fi
+
+          FUNC_COUNT=$(find supabase/functions -mindepth 1 -maxdepth 1 -type d ! -name '_shared' | wc -l)
+          echo "✅ All $FUNC_COUNT Edge Functions have valid structure"
+
+  # ===================================================================
   # ✅ SPECIALIZED GATES SUMMARY
   # ===================================================================
 
   gates-summary:
     name: ✅ Specialized Gates Summary
     runs-on: ubuntu-latest
-    needs: [migration-validation, dockerfile-security]
+    needs: [dockerfile-security, supabase-validation]
     if: always()
     timeout-minutes: 3
 
@@ -284,13 +246,13 @@ jobs:
           echo "| Gate | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|------|--------|" >> $GITHUB_STEP_SUMMARY
 
-          MIG_ICON="${{ needs.migration-validation.result == 'success' && '✅' || needs.migration-validation.result == 'failure' && '❌' || '⏭️' }}"
-          MIG_RESULT="${{ needs.migration-validation.result || 'skipped' }}"
-          echo "| 🗃️ Migration Validation | $MIG_ICON $MIG_RESULT |" >> $GITHUB_STEP_SUMMARY
-
           DOCKER_ICON="${{ needs.dockerfile-security.result == 'success' && '✅' || needs.dockerfile-security.result == 'failure' && '❌' || '⏭️' }}"
           DOCKER_RESULT="${{ needs.dockerfile-security.result || 'skipped' }}"
           echo "| 🐳 Dockerfile Security | $DOCKER_ICON $DOCKER_RESULT |" >> $GITHUB_STEP_SUMMARY
+
+          SUPABASE_ICON="${{ needs.supabase-validation.result == 'success' && '✅' || needs.supabase-validation.result == 'failure' && '❌' || '⏭️' }}"
+          SUPABASE_RESULT="${{ needs.supabase-validation.result || 'skipped' }}"
+          echo "| 🗃️ Supabase Schema | $SUPABASE_ICON $SUPABASE_RESULT |" >> $GITHUB_STEP_SUMMARY
 
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "---" >> $GITHUB_STEP_SUMMARY

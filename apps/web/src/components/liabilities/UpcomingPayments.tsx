@@ -207,15 +207,15 @@ export const UpcomingPayments = memo(function UpcomingPayments({
 
   if (upcomingPayments.length === 0) {
     return (
-      <div className="bg-white rounded-xl border border-gray-200 p-6">
+      <div className="bg-card rounded-xl border border-border p-6">
         <div className="flex items-center gap-2 mb-4">
-          <Clock className="h-5 w-5 text-gray-400" />
-          <h3 className="font-semibold text-gray-900">Upcoming Payments</h3>
+          <Clock className="h-5 w-5 text-muted-foreground" />
+          <h3 className="font-semibold text-foreground">Upcoming Payments</h3>
         </div>
         <div className="text-center py-8">
-          <CreditCard className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-          <p className="text-gray-500">No upcoming payments</p>
-          <p className="text-sm text-gray-400 mt-1">
+          <CreditCard className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+          <p className="text-muted-foreground">No upcoming payments</p>
+          <p className="text-sm text-muted-foreground mt-1">
             All caught up! No payments due.
           </p>
         </div>
@@ -225,11 +225,11 @@ export const UpcomingPayments = memo(function UpcomingPayments({
 
   if (compact) {
     return (
-      <div className="bg-white rounded-xl border border-gray-200 p-4">
+      <div className="bg-card rounded-xl border border-border p-4">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <Clock className="h-4 w-4 text-gray-400" />
-            <h3 className="font-medium text-gray-900">Upcoming</h3>
+            <Clock className="h-4 w-4 text-muted-foreground" />
+            <h3 className="font-medium text-foreground">Upcoming</h3>
           </div>
           {overdueCount > 0 && (
             <span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs rounded-full">
@@ -245,19 +245,19 @@ export const UpcomingPayments = memo(function UpcomingPayments({
               type="button"
               onClick={() => handlePaymentClick(payment)}
               className={`w-full flex items-center justify-between p-2 rounded-lg transition-colors
-                ${payment.isOverdue ? 'bg-red-50' : payment.isDueSoon ? 'bg-yellow-50' : 'bg-gray-50'}
-                ${onPaymentClick ? 'hover:bg-gray-100 cursor-pointer' : ''}`}
+                ${payment.isOverdue ? 'bg-red-50' : payment.isDueSoon ? 'bg-yellow-50' : 'bg-muted'}
+                ${onPaymentClick ? 'hover:bg-muted cursor-pointer' : ''}`}
             >
               <div className="flex items-center gap-2 min-w-0">
                 {payment.isOverdue && (
                   <AlertTriangle className="h-4 w-4 text-red-500 flex-shrink-0" />
                 )}
-                <span className="text-sm font-medium text-gray-900 truncate">
+                <span className="text-sm font-medium text-foreground truncate">
                   {payment.liabilityName}
                 </span>
               </div>
               <div className="text-right flex-shrink-0 ml-2">
-                <span className={`text-sm font-semibold ${payment.isOverdue ? 'text-red-700' : 'text-gray-900'}`}>
+                <span className={`text-sm font-semibold ${payment.isOverdue ? 'text-red-700' : 'text-foreground'}`}>
                   {formatCurrency(payment.amount, payment.currency)}
                 </span>
               </div>
@@ -279,12 +279,12 @@ export const UpcomingPayments = memo(function UpcomingPayments({
   }
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-6">
+    <div className="bg-card rounded-xl border border-border p-6">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2">
-          <Clock className="h-5 w-5 text-gray-400" />
-          <h3 className="font-semibold text-gray-900">Upcoming Payments</h3>
+          <Clock className="h-5 w-5 text-muted-foreground" />
+          <h3 className="font-semibold text-foreground">Upcoming Payments</h3>
         </div>
         {overdueCount > 0 && (
           <span className="px-2.5 py-1 bg-red-100 text-red-700 text-xs font-medium rounded-full">
@@ -294,16 +294,16 @@ export const UpcomingPayments = memo(function UpcomingPayments({
       </div>
 
       {/* Summary */}
-      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg mb-4">
+      <div className="flex items-center justify-between p-4 bg-muted rounded-lg mb-4">
         <div>
-          <p className="text-sm text-gray-500">Total Due</p>
-          <p className="text-xl font-bold text-gray-900">
+          <p className="text-sm text-muted-foreground">Total Due</p>
+          <p className="text-xl font-bold text-foreground">
             {formatCurrency(totalAmountDue)}
           </p>
         </div>
         <div className="text-right">
-          <p className="text-sm text-gray-500">Payments</p>
-          <p className="text-xl font-bold text-gray-900">{upcomingPayments.length}</p>
+          <p className="text-sm text-muted-foreground">Payments</p>
+          <p className="text-xl font-bold text-foreground">{upcomingPayments.length}</p>
         </div>
       </div>
 
@@ -326,7 +326,7 @@ export const UpcomingPayments = memo(function UpcomingPayments({
                 ? 'bg-red-50 border-red-200'
                 : payment.isDueSoon
                 ? 'bg-yellow-50 border-yellow-200'
-                : 'bg-white border-gray-200'
+                : 'bg-card border-border'
               }
               ${onPaymentClick ? 'cursor-pointer hover:shadow-md' : ''}`}
           >
@@ -337,7 +337,7 @@ export const UpcomingPayments = memo(function UpcomingPayments({
                   ? 'bg-red-500 text-white'
                   : payment.isDueSoon
                   ? 'bg-yellow-500 text-white'
-                  : 'bg-gray-200 text-gray-500'
+                  : 'bg-muted text-muted-foreground'
                 }`}
             >
               {payment.isOverdue ? (
@@ -350,14 +350,14 @@ export const UpcomingPayments = memo(function UpcomingPayments({
             {/* Payment Info */}
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
-                <h4 className="font-medium text-gray-900 truncate">
+                <h4 className="font-medium text-foreground truncate">
                   {payment.liabilityName}
                 </h4>
-                <span className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded">
+                <span className="px-2 py-0.5 bg-muted text-muted-foreground text-xs rounded">
                   {getTypeLabel(payment.liabilityType)}
                 </span>
               </div>
-              <p className="text-sm text-gray-500 mt-0.5">
+              <p className="text-sm text-muted-foreground mt-0.5">
                 {payment.type === 'installment'
                   ? `Payment ${payment.installmentNumber} of ${payment.totalInstallments}`
                   : 'Minimum payment'}
@@ -368,7 +368,7 @@ export const UpcomingPayments = memo(function UpcomingPayments({
             <div className="text-right">
               <p
                 className={`font-semibold ${
-                  payment.isOverdue ? 'text-red-700' : 'text-gray-900'
+                  payment.isOverdue ? 'text-red-700' : 'text-foreground'
                 }`}
               >
                 {formatCurrency(payment.amount, payment.currency)}
@@ -379,7 +379,7 @@ export const UpcomingPayments = memo(function UpcomingPayments({
                     ? 'text-red-600 font-medium'
                     : payment.isDueSoon
                     ? 'text-yellow-700'
-                    : 'text-gray-500'
+                    : 'text-muted-foreground'
                 }`}
               >
                 {payment.isOverdue ? 'Overdue' : `Due ${formatDate(payment.dueDate)}`}
@@ -388,7 +388,7 @@ export const UpcomingPayments = memo(function UpcomingPayments({
 
             {/* Chevron */}
             {onPaymentClick && (
-              <ChevronRight className="h-5 w-5 text-gray-400 flex-shrink-0" />
+              <ChevronRight className="h-5 w-5 text-muted-foreground flex-shrink-0" />
             )}
           </div>
         ))}

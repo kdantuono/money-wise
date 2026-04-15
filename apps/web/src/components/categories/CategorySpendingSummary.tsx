@@ -152,7 +152,7 @@ function DonutChart({ data, size = 200, onSegmentClick }: DonutChartProps) {
         className="flex items-center justify-center"
         style={{ width: size, height: size }}
       >
-        <div className="text-center text-gray-400">
+        <div className="text-center text-muted-foreground">
           <TrendingDown className="h-8 w-8 mx-auto mb-2" />
           <p className="text-sm">No spending data</p>
         </div>
@@ -184,7 +184,7 @@ function DonutChart({ data, size = 200, onSegmentClick }: DonutChartProps) {
         x={center}
         y={center - 8}
         textAnchor="middle"
-        className="fill-gray-500 text-xs"
+        className="fill-muted-foreground text-xs"
       >
         Total
       </text>
@@ -192,7 +192,7 @@ function DonutChart({ data, size = 200, onSegmentClick }: DonutChartProps) {
         x={center}
         y={center + 12}
         textAnchor="middle"
-        className="fill-gray-900 text-lg font-semibold"
+        className="fill-foreground text-lg font-semibold"
       >
         {formatCurrency(total)}
       </text>
@@ -222,7 +222,7 @@ function SpendingLegend({ data, total, onCategoryClick }: SpendingLegendProps) {
             key={item.categoryId}
             type="button"
             onClick={() => onCategoryClick?.(item.categoryId)}
-            className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50
+            className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-muted
               transition-colors text-left"
           >
             {/* Color indicator and icon */}
@@ -239,18 +239,18 @@ function SpendingLegend({ data, total, onCategoryClick }: SpendingLegendProps) {
             {/* Category name and percentage */}
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-900 truncate">
+                <span className="text-sm font-medium text-foreground truncate">
                   {item.categoryName}
                 </span>
-                <span className="text-sm text-gray-500 ml-2">
+                <span className="text-sm text-muted-foreground ml-2">
                   {percentage.toFixed(1)}%
                 </span>
               </div>
               <div className="flex items-center justify-between mt-0.5">
-                <span className="text-xs text-gray-500">
+                <span className="text-xs text-muted-foreground">
                   {item.transactionCount} transactions
                 </span>
-                <span className="text-sm font-medium text-gray-900">
+                <span className="text-sm font-medium text-foreground">
                   {formatCurrency(item.totalAmount)}
                 </span>
               </div>
@@ -319,10 +319,10 @@ export function CategorySpendingSummary({
   }, [fetchSpending]);
 
   return (
-    <div className={`bg-white rounded-xl border border-gray-200 p-6 ${className}`}>
+    <div className={`bg-card rounded-xl border border-border p-6 ${className}`}>
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-lg font-semibold text-gray-900">Spending by Category</h2>
+        <h2 className="text-lg font-semibold text-foreground">Spending by Category</h2>
 
         {/* Date Range Selector */}
         <div className="flex items-center gap-2">
@@ -334,7 +334,7 @@ export function CategorySpendingSummary({
               className={`px-3 py-1.5 text-sm rounded-lg transition-colors
                 ${datePreset === option.id
                   ? 'bg-blue-100 text-blue-700 font-medium'
-                  : 'text-gray-600 hover:bg-gray-100'
+                  : 'text-muted-foreground hover:bg-muted'
                 }`}
             >
               {option.label}
@@ -347,21 +347,21 @@ export function CategorySpendingSummary({
       {datePreset === 'custom' && (
         <div className="flex items-center gap-4 mb-6">
           <div>
-            <label className="block text-xs text-gray-500 mb-1">From</label>
+            <label className="block text-xs text-muted-foreground mb-1">From</label>
             <input
               type="date"
               value={formatDate(customStart)}
               onChange={(e) => setCustomStart(new Date(e.target.value))}
-              className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm"
+              className="border border-border rounded-lg px-3 py-1.5 text-sm"
             />
           </div>
           <div>
-            <label className="block text-xs text-gray-500 mb-1">To</label>
+            <label className="block text-xs text-muted-foreground mb-1">To</label>
             <input
               type="date"
               value={formatDate(customEnd)}
               onChange={(e) => setCustomEnd(new Date(e.target.value))}
-              className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm"
+              className="border border-border rounded-lg px-3 py-1.5 text-sm"
             />
           </div>
         </div>
@@ -370,7 +370,7 @@ export function CategorySpendingSummary({
       {/* Content */}
       {isLoading ? (
         <div className="flex items-center justify-center h-64">
-          <Loader2 className="h-6 w-6 text-gray-400 animate-spin" />
+          <Loader2 className="h-6 w-6 text-muted-foreground animate-spin" />
         </div>
       ) : error ? (
         <div className="flex items-center gap-3 p-4 bg-red-50 rounded-lg">
@@ -397,9 +397,9 @@ export function CategorySpendingSummary({
         </div>
       ) : (
         <div className="text-center py-12">
-          <TrendingDown className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-          <p className="text-gray-500 font-medium">No spending data</p>
-          <p className="text-gray-400 text-sm mt-1">
+          <TrendingDown className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+          <p className="text-muted-foreground font-medium">No spending data</p>
+          <p className="text-muted-foreground text-sm mt-1">
             No transactions found for this period
           </p>
         </div>

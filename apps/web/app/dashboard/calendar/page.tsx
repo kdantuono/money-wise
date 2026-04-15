@@ -196,7 +196,7 @@ export default function CalendarPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Financial Calendar</h1>
+          <h1 className="text-2xl font-bold text-foreground">Financial Calendar</h1>
           <p className="text-sm text-gray-500 mt-1">
             View your scheduled transactions and upcoming payments
           </p>
@@ -213,7 +213,7 @@ export default function CalendarPage() {
 
       {/* Monthly Summary */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
+        <div className="bg-card rounded-xl border border-border p-4">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-green-100 rounded-lg">
               <ArrowUpCircle className="h-5 w-5 text-green-600" />
@@ -227,7 +227,7 @@ export default function CalendarPage() {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
+        <div className="bg-card rounded-xl border border-border p-4">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-red-100 rounded-lg">
               <ArrowDownCircle className="h-5 w-5 text-red-600" />
@@ -241,7 +241,7 @@ export default function CalendarPage() {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
+        <div className="bg-card rounded-xl border border-border p-4">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-blue-100 rounded-lg">
               <DollarSign className="h-5 w-5 text-blue-600" />
@@ -262,10 +262,10 @@ export default function CalendarPage() {
       </div>
 
       {/* Calendar Grid */}
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div className="bg-card rounded-xl border border-border overflow-hidden">
         {/* Calendar Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900">{monthName}</h2>
+          <h2 className="text-lg font-semibold text-foreground">{monthName}</h2>
           <div className="flex items-center gap-2">
             <button
               onClick={goToToday}
@@ -390,8 +390,8 @@ export default function CalendarPage() {
 
       {/* Selected Day Details */}
       {selectedDate && selectedDayEvents.length > 0 && (
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+        <div className="bg-card rounded-xl border border-border p-6">
+          <h3 className="text-lg font-semibold text-foreground mb-4">
             {selectedDate.toLocaleDateString('en-US', {
               weekday: 'long',
               month: 'long',
@@ -452,7 +452,7 @@ export default function CalendarPage() {
 
       {/* Empty State for Selected Day */}
       {selectedDate && selectedDayEvents.length === 0 && (
-        <div className="bg-white rounded-xl border border-gray-200 p-6 text-center">
+        <div className="bg-card rounded-xl border border-border p-6 text-center">
           <CalendarIcon className="h-12 w-12 text-gray-300 mx-auto mb-3" />
           <h3 className="text-lg font-medium text-gray-900 mb-1">No scheduled transactions</h3>
           <p className="text-gray-500 text-sm">

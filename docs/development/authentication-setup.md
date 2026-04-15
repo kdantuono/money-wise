@@ -1,3 +1,5 @@
+> NOTE: This document references the pre-migration NestJS backend which was replaced by Supabase Edge Functions in Phase 0 (April 2026).
+
 # Authentication Setup Guide
 
 This guide provides step-by-step instructions for setting up and developing with the MoneyWise authentication system.

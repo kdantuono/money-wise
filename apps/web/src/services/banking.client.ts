@@ -1,30 +1,34 @@
 /**
  * Banking Integration API Client
  *
- * Provides type-safe HTTP client for banking provider integration endpoints.
- * Handles authentication, error handling, and request/response interceptors.
+ * Provides type-safe client for banking provider integration via Supabase Edge Functions.
+ * Uses supabase.functions.invoke() for Edge Function calls and direct Supabase queries
+ * where RLS policies handle authorization.
  *
  * @module services/banking.client
  *
  * @example
  * ```typescript
  * // Initialize banking link
- * const { redirectUrl, connectionId } = await bankingClient.initiateLink('SALTEDGE');
+ * const { redirectUrl, connectionId } = await initiateLink('SALTEDGE');
  * window.location.href = redirectUrl;
  *
  * // After OAuth redirect, complete the link
- * const { accounts } = await bankingClient.completeLink(connectionId);
+ * const { accounts } = await completeLink(connectionId);
  *
  * // Get all linked accounts
- * const { accounts } = await bankingClient.getAccounts();
+ * const { accounts } = await getAccounts();
  *
  * // Sync a specific account
- * const syncResult = await bankingClient.syncAccount(accountId);
+ * const syncResult = await syncAccount(accountId);
  *
  * // Revoke a connection
- * await bankingClient.revokeConnection(connectionId);
+ * await revokeConnection(connectionId);
  * ```
  */
+
+import { createClient } from '@/utils/supabase/client';
+import { FunctionsHttpError, FunctionsRelayError } from '@supabase/supabase-js';
 
 // =============================================================================
 // Type Definitions
@@ -248,303 +252,371 @@ export class ServerError extends BankingApiError {
 }
 
 // =============================================================================
-// HTTP Client Configuration
+// Error Handling
 // =============================================================================
 
 /**
- * API base URL - uses relative path to go through BFF proxy
- * This ensures cookies are properly included (same-origin requests)
+ * Handle Edge Function error and throw the appropriate typed error.
+ *
+ * supabase.functions.invoke() returns { data, error } where error is one of:
+ * - FunctionsHttpError: HTTP error from the function (has context with status)
+ * - FunctionsRelayError: relay/network error
+ * - FunctionsFetchError: fetch-level failure
+ *
+ * Edge Functions return { error: "message" } in their response body for errors.
  */
-const API_BASE_URL = '/api/banking';
+async function handleEdgeFunctionError(error: Error): Promise<never> {
+  if (error instanceof FunctionsHttpError) {
+    // The function returned an HTTP error — parse the response body
+    let statusCode = 500;
+    let message = 'An error occurred';
+
+    try {
+      const errorBody = await error.context.json();
+      message = errorBody?.error || errorBody?.message || message;
+      statusCode = error.context.status || statusCode;
+    } catch {
+      // If we can't parse the body, use the status from context
+      statusCode = error.context?.status || statusCode;
+      message = error.message || message;
+    }
+
+    switch (statusCode) {
+      case 400:
+        throw new ValidationError(message);
+      case 401:
+        throw new AuthenticationError(message);
+      case 403:
+        throw new AuthorizationError(message);
+      case 404:
+        throw new NotFoundError(message);
+      case 500:
+      case 502:
+      case 503:
+      case 504:
+        throw new ServerError(message);
+      default:
+        throw new BankingApiError(message, statusCode);
+    }
+  }
+
+  if (error instanceof FunctionsRelayError) {
+    throw new ServerError(
+      error.message || 'Edge Function relay error. Please try again later.'
+    );
+  }
+
+  // FunctionsFetchError or unknown error
+  throw new ServerError(
+    error.message || 'Failed to reach the server. Please check your connection.'
+  );
+}
+
+// =============================================================================
+// Database Row Mapper
+// =============================================================================
 
 /**
- * Parse error response and throw appropriate error
+ * Supabase accounts table row shape (snake_case fields from the database).
+ * Kept minimal — only the columns we SELECT.
  */
-async function handleErrorResponse(response: Response): Promise<never> {
-  let errorData: ApiErrorResponse | null = null;
-
-  try {
-    const text = await response.text();
-    if (text) {
-      errorData = JSON.parse(text);
-    }
-  } catch {
-    // Failed to parse error response
-  }
-
-  const statusCode = response.status;
-  const message = errorData?.message
-    ? Array.isArray(errorData.message)
-      ? errorData.message.join(', ')
-      : errorData.message
-    : response.statusText || 'An error occurred';
-
-  // Throw appropriate error type
-  switch (statusCode) {
-    case 400:
-      throw new ValidationError(message, errorData);
-    case 401:
-      throw new AuthenticationError(message);
-    case 403:
-      throw new AuthorizationError(message);
-    case 404:
-      throw new NotFoundError(message);
-    case 500:
-    case 502:
-    case 503:
-    case 504:
-      throw new ServerError(message);
-    default:
-      throw new BankingApiError(
-        message,
-        statusCode,
-        errorData?.error,
-        errorData
-      );
-  }
+interface AccountRow {
+  id: string;
+  name: string;
+  current_balance: number;
+  currency: string;
+  institution_name: string | null;
+  sync_status: SyncStatus;
+  last_sync_at: string | null;
+  created_at: string;
+  account_number: string | null;
+  type: string | null;
+  account_holder_name?: string | null;
 }
 
 /**
- * Make HTTP request with authentication and error handling
+ * Map a Supabase accounts row (snake_case) to the BankingAccount interface (camelCase).
  */
-async function request<T>(
-  endpoint: string,
-  options: RequestInit = {}
-): Promise<T> {
-  const url = `${API_BASE_URL}${endpoint}`;
+function mapRowToBankingAccount(row: AccountRow): BankingAccount {
+  return {
+    id: row.id,
+    name: row.name,
+    balance: row.current_balance,
+    currency: row.currency,
+    bankName: row.institution_name ?? undefined,
+    syncStatus: row.sync_status,
+    lastSynced: row.last_sync_at,
+    linkedAt: row.created_at,
+    accountNumber: row.account_number,
+    accountType: row.type,
+    bankCountry: null,
+    accountHolderName: null,
+  };
+}
 
-  const response = await fetch(url, {
-    ...options,
-    credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
+// =============================================================================
+// Banking API Functions
+// =============================================================================
+
+/**
+ * Initiate banking link
+ *
+ * Starts the OAuth flow to link a bank account.
+ * Returns a redirect URL that the user should navigate to for authorization.
+ *
+ * @param provider Banking provider (defaults to SALTEDGE)
+ * @returns Redirect URL and connection ID
+ * @throws {AuthenticationError} If not authenticated
+ * @throws {ValidationError} If provider is invalid
+ * @throws {ServerError} If server error occurs
+ *
+ * @example
+ * ```typescript
+ * const { redirectUrl, connectionId } = await initiateLink('SALTEDGE');
+ * sessionStorage.setItem('banking_connection_id', connectionId);
+ * window.location.href = redirectUrl;
+ * ```
+ */
+export async function initiateLink(
+  provider?: BankingProvider
+): Promise<InitiateLinkResponse> {
+  const supabase = createClient();
+  const { data, error } = await supabase.functions.invoke(
+    'banking-initiate-link',
+    { body: { provider } }
+  );
+
+  if (error) {
+    await handleEdgeFunctionError(error);
+  }
+
+  return data as InitiateLinkResponse;
+}
+
+/**
+ * Complete banking link
+ *
+ * Called after user completes OAuth authorization.
+ * Fetches the linked accounts and stores them in the database.
+ *
+ * @param connectionId Connection ID from initiate-link response (our internal UUID)
+ * @param saltEdgeConnectionId Optional SaltEdge connection_id from redirect URL
+ * @returns Array of linked accounts
+ * @throws {AuthenticationError} If not authenticated
+ * @throws {ValidationError} If connectionId is invalid
+ * @throws {NotFoundError} If connection not found
+ * @throws {ServerError} If server error occurs
+ *
+ * @example
+ * ```typescript
+ * const connectionId = searchParams.get('connectionId');
+ * const saltEdgeConnectionId = searchParams.get('connection_id');
+ * if (connectionId) {
+ *   const { accounts } = await completeLink(connectionId, saltEdgeConnectionId);
+ *   console.log(`Linked ${accounts.length} accounts`);
+ * }
+ * ```
+ */
+export async function completeLink(
+  connectionId: string,
+  saltEdgeConnectionId?: string
+): Promise<CompleteLinkResponse> {
+  const supabase = createClient();
+  const body: { connectionId: string; saltEdgeConnectionId?: string } = {
+    connectionId,
+  };
+  if (saltEdgeConnectionId) {
+    body.saltEdgeConnectionId = saltEdgeConnectionId;
+  }
+
+  const { data, error } = await supabase.functions.invoke(
+    'banking-complete-link',
+    { body }
+  );
+
+  if (error) {
+    await handleEdgeFunctionError(error);
+  }
+
+  return data as CompleteLinkResponse;
+}
+
+/**
+ * Get linked accounts
+ *
+ * Retrieves all banking accounts linked by the authenticated user.
+ * Uses a direct Supabase query with RLS policies for authorization.
+ *
+ * @returns Array of linked accounts with sync status
+ * @throws {AuthenticationError} If not authenticated
+ * @throws {ServerError} If server error occurs
+ *
+ * @example
+ * ```typescript
+ * const { accounts } = await getAccounts();
+ * accounts.forEach(account => {
+ *   console.log(`${account.name}: ${account.balance} ${account.currency}`);
+ * });
+ * ```
+ */
+export async function getAccounts(): Promise<GetAccountsResponse> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from('accounts')
+    .select(
+      'id, name, current_balance, currency, institution_name, sync_status, last_sync_at, created_at, account_number, type'
+    )
+    .in('source', ['SALTEDGE', 'TINK', 'YAPILY', 'PLAID']);
+
+  if (error) {
+    if (error.code === 'PGRST301' || error.message?.includes('JWT')) {
+      throw new AuthenticationError();
+    }
+    throw new ServerError(error.message || 'Failed to fetch banking accounts.');
+  }
+
+  const accounts = (data ?? []).map((row) =>
+    mapRowToBankingAccount(row as unknown as AccountRow)
+  );
+
+  return { accounts };
+}
+
+/**
+ * Sync banking account
+ *
+ * Triggers a synchronization of transactions and balance for a specific account.
+ * This operation may take a few moments as it fetches data from the banking provider.
+ *
+ * @param accountId Account ID to sync
+ * @returns Sync result with transaction count and balance update status
+ * @throws {AuthenticationError} If not authenticated
+ * @throws {ValidationError} If accountId is invalid
+ * @throws {NotFoundError} If account not found
+ * @throws {ServerError} If server error occurs
+ *
+ * @example
+ * ```typescript
+ * const result = await syncAccount('acc-123');
+ * if (result.status === 'SYNCED') {
+ *   console.log(`Synced ${result.transactionsSynced} transactions`);
+ * }
+ * ```
+ */
+export async function syncAccount(accountId: string): Promise<SyncResponse> {
+  const supabase = createClient();
+  const { data, error } = await supabase.functions.invoke('banking-sync', {
+    body: { accountId },
   });
 
-  if (!response.ok) {
-    await handleErrorResponse(response);
+  if (error) {
+    await handleEdgeFunctionError(error);
   }
 
-  if (response.status === 204) {
-    return undefined as T;
-  }
+  return data as SyncResponse;
+}
 
-  const text = await response.text();
-  if (!text) {
-    return {} as T;
-  }
+/**
+ * Revoke banking connection
+ *
+ * Disconnects a banking provider connection and marks all associated accounts
+ * as disconnected. The user will need to re-authorize to link accounts again.
+ *
+ * @param connectionId Connection ID to revoke
+ * @throws {AuthenticationError} If not authenticated
+ * @throws {ValidationError} If connectionId is invalid
+ * @throws {NotFoundError} If connection not found
+ * @throws {ServerError} If server error occurs
+ *
+ * @example
+ * ```typescript
+ * await revokeConnection('conn-789');
+ * console.log('Connection revoked successfully');
+ * ```
+ */
+export async function revokeConnection(connectionId: string): Promise<void> {
+  const supabase = createClient();
+  const { error } = await supabase.functions.invoke('banking-revoke', {
+    body: { connectionId },
+  });
 
-  return JSON.parse(text);
+  if (error) {
+    await handleEdgeFunctionError(error);
+  }
+}
+
+/**
+ * Revoke banking connection by account ID
+ *
+ * Alternative method that accepts an Account ID instead of BankingConnection ID.
+ * The Edge Function looks up the BankingConnection using the account's saltEdgeConnectionId.
+ *
+ * @param accountId Account ID whose banking connection to revoke
+ * @throws {AuthenticationError} If not authenticated
+ * @throws {ValidationError} If account is not linked to banking
+ * @throws {NotFoundError} If account not found
+ * @throws {ServerError} If server error occurs
+ *
+ * @example
+ * ```typescript
+ * await revokeConnectionByAccountId('acc-123');
+ * console.log('Banking connection revoked successfully');
+ * ```
+ */
+export async function revokeConnectionByAccountId(
+  accountId: string
+): Promise<void> {
+  const supabase = createClient();
+  const { error } = await supabase.functions.invoke('banking-revoke', {
+    body: { accountId },
+  });
+
+  if (error) {
+    await handleEdgeFunctionError(error);
+  }
+}
+
+/**
+ * Get available banking providers
+ *
+ * Returns the list of supported banking providers. This is a hardcoded list
+ * since there is no Edge Function for provider discovery.
+ *
+ * @returns Array of available provider types and enabled status
+ *
+ * @example
+ * ```typescript
+ * const { providers, enabled } = await getProviders();
+ * if (enabled) {
+ *   console.log(`Available providers: ${providers.join(', ')}`);
+ * }
+ * ```
+ */
+export async function getProviders(): Promise<AvailableProvidersResponse> {
+  return {
+    providers: ['SALTEDGE'] as BankingProvider[],
+    enabled: true,
+  };
 }
 
 // =============================================================================
-// Banking API Client
+// Legacy Compatibility — bankingClient object
 // =============================================================================
 
 /**
- * Banking Integration API Client
+ * Banking client object for backward compatibility with existing imports.
  *
- * Provides methods for interacting with banking provider integration endpoints.
- * All methods are authenticated and include proper error handling.
+ * @deprecated Prefer importing individual functions directly:
+ * `import { initiateLink, completeLink, getAccounts } from '@/services/banking.client'`
  */
 export const bankingClient = {
-  /**
-   * Initiate banking link
-   *
-   * Starts the OAuth flow to link a bank account.
-   * Returns a redirect URL that the user should navigate to for authorization.
-   *
-   * @param provider Banking provider (defaults to SALTEDGE)
-   * @returns Redirect URL and connection ID
-   * @throws {AuthenticationError} If not authenticated
-   * @throws {ValidationError} If provider is invalid
-   * @throws {ServerError} If server error occurs
-   *
-   * @example
-   * ```typescript
-   * const { redirectUrl, connectionId } = await bankingClient.initiateLink('SALTEDGE');
-   * // Store connectionId for later use
-   * sessionStorage.setItem('banking_connection_id', connectionId);
-   * // Redirect user to bank authorization
-   * window.location.href = redirectUrl;
-   * ```
-   */
-  async initiateLink(
-    provider?: BankingProvider
-  ): Promise<InitiateLinkResponse> {
-    return request<InitiateLinkResponse>('/initiate-link', {
-      method: 'POST',
-      body: JSON.stringify(provider ? { provider } : {}),
-    });
-  },
-
-  /**
-   * Complete banking link
-   *
-   * Called after user completes OAuth authorization.
-   * Fetches the linked accounts and stores them in the database.
-   *
-   * @param connectionId Connection ID from initiate-link response (our internal UUID)
-   * @param saltEdgeConnectionId Optional SaltEdge connection_id from redirect URL
-   * @returns Array of linked accounts
-   * @throws {AuthenticationError} If not authenticated
-   * @throws {ValidationError} If connectionId is invalid
-   * @throws {NotFoundError} If connection not found
-   * @throws {ServerError} If server error occurs
-   *
-   * @example
-   * ```typescript
-   * // After OAuth redirect back to app
-   * const connectionId = searchParams.get('connectionId');
-   * const saltEdgeConnectionId = searchParams.get('connection_id');
-   * if (connectionId) {
-   *   const { accounts } = await bankingClient.completeLink(connectionId, saltEdgeConnectionId);
-   *   console.log(`Linked ${accounts.length} accounts`);
-   * }
-   * ```
-   */
-  async completeLink(connectionId: string, saltEdgeConnectionId?: string): Promise<CompleteLinkResponse> {
-    const body: { connectionId: string; saltEdgeConnectionId?: string } = { connectionId };
-    if (saltEdgeConnectionId) {
-      body.saltEdgeConnectionId = saltEdgeConnectionId;
-    }
-    return request<CompleteLinkResponse>('/complete-link', {
-      method: 'POST',
-      body: JSON.stringify(body),
-    });
-  },
-
-  /**
-   * Get linked accounts
-   *
-   * Retrieves all banking accounts linked by the authenticated user.
-   *
-   * @returns Array of linked accounts with sync status
-   * @throws {AuthenticationError} If not authenticated
-   * @throws {ServerError} If server error occurs
-   *
-   * @example
-   * ```typescript
-   * const { accounts } = await bankingClient.getAccounts();
-   * accounts.forEach(account => {
-   *   console.log(`${account.name}: ${account.balance} ${account.currency}`);
-   * });
-   * ```
-   */
-  async getAccounts(): Promise<GetAccountsResponse> {
-    return request<GetAccountsResponse>('/accounts', {
-      method: 'GET',
-    });
-  },
-
-  /**
-   * Sync banking account
-   *
-   * Triggers a synchronization of transactions and balance for a specific account.
-   * This operation may take a few moments as it fetches data from the banking provider.
-   *
-   * @param accountId Account ID to sync
-   * @returns Sync result with transaction count and balance update status
-   * @throws {AuthenticationError} If not authenticated
-   * @throws {ValidationError} If accountId is invalid
-   * @throws {NotFoundError} If account not found
-   * @throws {ServerError} If server error occurs
-   *
-   * @example
-   * ```typescript
-   * const result = await bankingClient.syncAccount('acc-123');
-   * if (result.status === 'SYNCED') {
-   *   console.log(`Synced ${result.transactionsSynced} transactions`);
-   * } else if (result.status === 'ERROR') {
-   *   console.error(`Sync failed: ${result.error}`);
-   * }
-   * ```
-   */
-  async syncAccount(accountId: string): Promise<SyncResponse> {
-    return request<SyncResponse>(`/sync/${accountId}`, {
-      method: 'POST',
-      body: JSON.stringify({}),
-    });
-  },
-
-  /**
-   * Revoke banking connection
-   *
-   * Disconnects a banking provider connection and marks all associated accounts
-   * as disconnected. The user will need to re-authorize to link accounts again.
-   *
-   * @param connectionId Connection ID to revoke
-   * @returns void (204 No Content)
-   * @throws {AuthenticationError} If not authenticated
-   * @throws {ValidationError} If connectionId is invalid
-   * @throws {NotFoundError} If connection not found
-   * @throws {ServerError} If server error occurs
-   *
-   * @example
-   * ```typescript
-   * await bankingClient.revokeConnection('conn-789');
-   * console.log('Connection revoked successfully');
-   * ```
-   */
-  async revokeConnection(connectionId: string): Promise<void> {
-    return request<void>(`/revoke/${connectionId}`, {
-      method: 'DELETE',
-    });
-  },
-
-  /**
-   * Revoke banking connection by account ID
-   *
-   * Alternative method that accepts an Account ID instead of BankingConnection ID.
-   * The backend looks up the BankingConnection using the account's saltEdgeConnectionId.
-   * This is more convenient when the frontend only has access to the Account ID.
-   *
-   * @param accountId Account ID whose banking connection to revoke
-   * @returns void (204 No Content)
-   * @throws {AuthenticationError} If not authenticated
-   * @throws {ValidationError} If account is not linked to banking
-   * @throws {NotFoundError} If account not found
-   * @throws {ServerError} If server error occurs
-   *
-   * @example
-   * ```typescript
-   * await bankingClient.revokeConnectionByAccountId('acc-123');
-   * console.log('Banking connection revoked successfully');
-   * ```
-   */
-  async revokeConnectionByAccountId(accountId: string): Promise<void> {
-    return request<void>(`/revoke-by-account/${accountId}`, {
-      method: 'DELETE',
-    });
-  },
-
-  /**
-   * Get available banking providers
-   *
-   * Retrieves a list of banking providers currently available in the system.
-   *
-   * @returns Array of available provider types and enabled status
-   * @throws {AuthenticationError} If not authenticated
-   * @throws {ServerError} If server error occurs
-   *
-   * @example
-   * ```typescript
-   * const { providers, enabled } = await bankingClient.getProviders();
-   * if (enabled) {
-   *   console.log(`Available providers: ${providers.join(', ')}`);
-   * }
-   * ```
-   */
-  async getProviders(): Promise<AvailableProvidersResponse> {
-    return request<AvailableProvidersResponse>('/providers', {
-      method: 'GET',
-    });
-  },
+  initiateLink,
+  completeLink,
+  getAccounts,
+  syncAccount,
+  revokeConnection,
+  revokeConnectionByAccountId,
+  getProviders,
 };
-
-// =============================================================================
-// Exports
-// =============================================================================
 
 export default bankingClient;

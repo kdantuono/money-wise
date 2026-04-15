@@ -250,7 +250,7 @@ function BankingCallbackContent() {
         {/* Processing State */}
         {status === 'processing' && (
           <div
-            className="bg-white rounded-lg shadow-lg p-8 text-center"
+            className="bg-card rounded-lg shadow-lg p-8 text-center"
             role="status"
             aria-live="polite"
             aria-label="Processing bank account linking"
@@ -282,7 +282,7 @@ function BankingCallbackContent() {
         {/* Success State */}
         {status === 'success' && (
           <div
-            className="bg-white rounded-lg shadow-lg p-8 text-center"
+            className="bg-card rounded-lg shadow-lg p-8 text-center"
             role="status"
             aria-live="polite"
             aria-label="Bank account linked successfully"
@@ -348,7 +348,7 @@ function BankingCallbackContent() {
         {/* Error State */}
         {status === 'error' && (
           <div
-            className="bg-white rounded-lg shadow-lg p-8"
+            className="bg-card rounded-lg shadow-lg p-8"
             role="alert"
             aria-live="assertive"
             aria-label="Error linking bank account"
@@ -406,7 +406,7 @@ function BankingCallbackContent() {
               <button
                 onClick={handleBackToBanking}
                 className="flex-1 inline-flex items-center justify-center px-4 py-3 rounded-lg font-medium
-                  bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 active:bg-gray-100
+                  bg-card text-foreground border border-border hover:bg-muted active:bg-muted/80
                   focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-gray-500
                   transition-colors duration-200"
                 aria-label="Go back to banking page"
@@ -421,7 +421,7 @@ function BankingCallbackContent() {
         {/* Invalid State */}
         {status === 'invalid' && (
           <div
-            className="bg-white rounded-lg shadow-lg p-8"
+            className="bg-card rounded-lg shadow-lg p-8"
             role="alert"
             aria-live="assertive"
             aria-label="Invalid connection link"
@@ -481,7 +481,7 @@ export default function BankingCallbackPage() {
         <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
           <div className="w-full max-w-md">
             <div
-              className="bg-white rounded-lg shadow-lg p-8 text-center"
+              className="bg-card rounded-lg shadow-lg p-8 text-center"
               role="status"
               aria-live="polite"
               aria-label="Loading bank account linking"

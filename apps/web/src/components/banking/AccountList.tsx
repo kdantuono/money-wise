@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   Wallet,
   PiggyBank,
@@ -114,8 +114,8 @@ const statusConfig = {
   },
   [BankingSyncStatus.DISCONNECTED]: {
     label: 'Disconnected',
-    color: 'text-gray-500',
-    bgColor: 'bg-gray-50',
+    color: 'text-muted-foreground',
+    bgColor: 'bg-muted',
   },
 };
 
@@ -133,6 +133,11 @@ export function AccountList({
 }: AccountListProps) {
   const [syncingIds, setSyncingIds] = useState<Set<string>>(new Set());
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    return () => { isMountedRef.current = false; };
+  }, []);
 
   const handleSync = async (accountId: string) => {
     setSyncingIds((prev) => new Set(prev).add(accountId));
@@ -143,11 +148,13 @@ export function AccountList({
     } catch (_err) {
       onSyncComplete?.(accountId, false);
     } finally {
-      setSyncingIds((prev) => {
-        const next = new Set(prev);
-        next.delete(accountId);
-        return next;
-      });
+      if (isMountedRef.current) {
+        setSyncingIds((prev) => {
+          const next = new Set(prev);
+          next.delete(accountId);
+          return next;
+        });
+      }
     }
   };
 
@@ -172,13 +179,13 @@ export function AccountList({
   if (accounts.length === 0) {
     return (
       <div
-        className={`flex flex-col items-center justify-center p-8 rounded-lg border-2 border-dashed border-gray-300 ${className}`}
+        className={`flex flex-col items-center justify-center p-8 rounded-lg border-2 border-dashed border-border ${className}`}
         role="status"
         aria-label="No accounts linked"
       >
-        <Wallet className="w-12 h-12 text-gray-400 mb-3" aria-hidden="true" />
-        <p className="text-gray-600 font-medium mb-2">No accounts yet</p>
-        <p className="text-gray-500 text-sm text-center">
+        <Wallet className="w-12 h-12 text-muted-foreground mb-3" aria-hidden="true" />
+        <p className="text-muted-foreground font-medium mb-2">No accounts yet</p>
+        <p className="text-muted-foreground text-sm text-center">
           Add a manual account or link your bank to get started
         </p>
       </div>
@@ -209,7 +216,7 @@ export function AccountList({
           <div
             key={account.id}
             role="listitem"
-            className={`rounded-xl border bg-white overflow-hidden transition-all duration-200
+            className={`rounded-xl border bg-card overflow-hidden transition-all duration-200
               ${isSelected ? 'border-blue-500 shadow-lg ring-2 ring-blue-100' : `${accentBorder} hover:shadow-md`}
               focus-within:ring-2 focus-within:ring-blue-500`}
             onFocus={() => setSelectedId(account.id)}
@@ -228,11 +235,11 @@ export function AccountList({
                 {/* Account Info */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-0.5">
-                    <h3 className="font-semibold text-gray-900 truncate">
+                    <h3 className="font-semibold text-foreground truncate">
                       {account.name}
                     </h3>
                   </div>
-                  <p className="text-sm text-gray-500 truncate">{account.bankName}</p>
+                  <p className="text-sm text-muted-foreground truncate">{account.bankName}</p>
 
                   {/* Status Row - Sync button + Status for linked, just badge for manual */}
                   <div className="flex items-center gap-2 mt-2">
@@ -249,7 +256,7 @@ export function AccountList({
                           className={`p-1.5 rounded-lg transition-colors duration-150
                             ${isSyncing
                               ? 'bg-blue-100 text-blue-400 cursor-not-allowed'
-                              : 'bg-gray-100 text-gray-500 hover:bg-blue-100 hover:text-blue-600'
+                              : 'bg-muted text-muted-foreground hover:bg-blue-100 hover:text-blue-600'
                             }`}
                         >
                           <RefreshCw
@@ -277,7 +284,7 @@ export function AccountList({
 
                 {/* Balance - Top Right */}
                 <div className="text-right flex-shrink-0">
-                  <p className="text-lg font-bold text-gray-900">
+                  <p className="text-lg font-bold text-foreground">
                     {new Intl.NumberFormat('en-US', {
                       style: 'currency',
                       currency: account.currency,
@@ -285,14 +292,14 @@ export function AccountList({
                       maximumFractionDigits: 0,
                     }).format(account.balance)}
                   </p>
-                  <p className="text-xs text-gray-400">{account.currency}</p>
+                  <p className="text-xs text-muted-foreground">{account.currency}</p>
                 </div>
               </div>
             </div>
 
             {/* Account Details - Compact */}
             {(account.accountNumber || account.accountType || account.lastSyncedAt) && (
-              <div className="px-4 pb-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
+              <div className="px-4 pb-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
                 {account.accountType && (
                   <span className="capitalize">{account.accountType}</span>
                 )}
@@ -313,15 +320,15 @@ export function AccountList({
             )}
 
             {/* Unified Action Bar */}
-            <div className="px-4 py-3 bg-gray-50 border-t border-gray-100 flex items-center gap-2">
+            <div className="px-4 py-3 bg-muted border-t border-border flex items-center gap-2">
               {/* View Details - Primary action */}
               {onView && (
                 <button
                   onClick={() => onView(account.id)}
                   aria-label={`View details for ${account.name}`}
                   className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium
-                    bg-white border border-gray-200 text-gray-700
-                    hover:bg-gray-50 hover:border-gray-300 active:bg-gray-100
+                    bg-card border border-border text-foreground
+                    hover:bg-muted hover:border-border active:bg-muted
                     focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500
                     transition-colors duration-150"
                 >
@@ -335,8 +342,8 @@ export function AccountList({
                 onClick={() => onEdit?.(account.id)}
                 aria-label={`Edit ${account.name}`}
                 data-testid="edit-button"
-                className="p-2 rounded-lg text-gray-500
-                  hover:bg-white hover:text-gray-700 hover:shadow-sm
+                className="p-2 rounded-lg text-muted-foreground
+                  hover:bg-card hover:text-foreground hover:shadow-sm
                   focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500
                   transition-colors duration-150"
               >
@@ -350,7 +357,7 @@ export function AccountList({
                   disabled={isSyncing}
                   aria-label={`Disconnect ${account.name}`}
                   data-testid="disconnect-button"
-                  className="p-2 rounded-lg text-gray-500
+                  className="p-2 rounded-lg text-muted-foreground
                     hover:bg-red-50 hover:text-red-600
                     focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500
                     disabled:opacity-50 disabled:cursor-not-allowed
@@ -363,7 +370,7 @@ export function AccountList({
                   onClick={() => onDelete?.(account.id)}
                   aria-label={`Delete ${account.name}`}
                   data-testid="delete-button"
-                  className="p-2 rounded-lg text-gray-500
+                  className="p-2 rounded-lg text-muted-foreground
                     hover:bg-red-50 hover:text-red-600
                     focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500
                     transition-colors duration-150"

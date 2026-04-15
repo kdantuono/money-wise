@@ -78,12 +78,12 @@ function DeleteConfirmationModal({
         aria-hidden="true"
       />
       <div className="flex min-h-full items-center justify-center p-4">
-        <div className="relative w-full max-w-md bg-white rounded-xl shadow-xl p-6">
+        <div className="relative w-full max-w-md bg-card rounded-xl shadow-xl p-6">
           <div className="flex items-center gap-3 mb-4">
             <div className="p-2 bg-red-100 rounded-lg">
               <Trash2 className="h-5 w-5 text-red-600" />
             </div>
-            <h3 className="text-lg font-semibold text-gray-900">
+            <h3 className="text-lg font-semibold text-foreground">
               Delete Category
             </h3>
           </div>
@@ -325,7 +325,7 @@ export default function CategoryDetailPage() {
       </button>
 
       {/* Category Header */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6">
+      <div className="bg-card rounded-xl border border-border p-6">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-4">
             {/* Icon */}
@@ -344,7 +344,7 @@ export default function CategoryDetailPage() {
             {/* Name and Type */}
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-bold text-gray-900">{category.name}</h1>
+                <h1 className="text-2xl font-bold text-foreground">{category.name}</h1>
                 {category.isSystem && (
                   <Lock
                     className="h-4 w-4 text-gray-400"
@@ -452,9 +452,9 @@ export default function CategoryDetailPage() {
 
       {/* Child Categories */}
       {childCategories.length > 0 && (
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
+        <div className="bg-card rounded-xl border border-border p-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">
+            <h2 className="text-lg font-semibold text-foreground">
               Subcategories ({childCategories.length})
             </h2>
             {canHaveSubcategories && !category.isSystem && (
@@ -476,7 +476,7 @@ export default function CategoryDetailPage() {
 
       {/* Empty subcategories state */}
       {childCategories.length === 0 && canHaveSubcategories && !category.isSystem && (
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
+        <div className="bg-card rounded-xl border border-border p-6">
           <div className="text-center py-6">
             <p className="text-gray-500 mb-3">No subcategories yet</p>
             <button
@@ -491,7 +491,7 @@ export default function CategoryDetailPage() {
       )}
 
       {/* View Transactions Link */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6">
+      <div className="bg-card rounded-xl border border-border p-6">
         <a
           href={`/dashboard/transactions?categoryId=${category.id}`}
           className="flex items-center justify-between p-4 rounded-lg border border-gray-200

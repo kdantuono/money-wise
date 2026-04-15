@@ -1,8 +1,8 @@
 /**
- * Categories API Client
+ * Categories Client — Supabase
  *
- * Provides type-safe HTTP client for category management endpoints.
- * Handles authentication, error handling, and request/response formatting.
+ * Direct Supabase queries replacing BFF fetch calls.
+ * RLS policies handle family/user isolation automatically.
  *
  * @module services/categories.client
  *
@@ -18,6 +18,13 @@
  * const category = await categoriesClient.getOne('category-id');
  * ```
  */
+
+import { createClient } from '@/utils/supabase/client'
+import type { Database, Json } from '@/utils/supabase/database.types'
+
+type CategoryRow = Database['public']['Tables']['categories']['Row']
+type CategoryInsert = Database['public']['Tables']['categories']['Insert']
+type CategoryUpdate = Database['public']['Tables']['categories']['Update']
 
 // =============================================================================
 // Type Definitions
@@ -68,6 +75,7 @@ export interface Category {
   isDefault: boolean;
   isSystem: boolean;
   sortOrder: number;
+  depth: number;
   parentId: string | null;
   familyId: string;
   rules: CategoryRule | null;
@@ -237,93 +245,30 @@ export class ServerError extends CategoriesApiError {
 }
 
 // =============================================================================
-// HTTP Client Configuration
+// Row → Client Type Mapper
 // =============================================================================
 
-/**
- * API base URL - uses relative path to go through BFF proxy
- * This ensures cookies are properly included (same-origin requests)
- */
-const API_BASE_URL = '/api/categories';
-
-/**
- * Parse error response and throw appropriate error
- */
-async function handleErrorResponse(response: Response): Promise<never> {
-  let errorData: ApiErrorResponse | null = null;
-
-  try {
-    const text = await response.text();
-    if (text) {
-      errorData = JSON.parse(text);
-    }
-  } catch {
-    // Failed to parse error response
+function rowToCategory(row: CategoryRow): Category {
+  return {
+    id: row.id,
+    name: row.name,
+    slug: row.slug,
+    description: row.description,
+    type: row.type as CategoryType,
+    status: row.status as CategoryStatus,
+    color: row.color,
+    icon: row.icon,
+    isDefault: row.is_default,
+    isSystem: row.is_system,
+    sortOrder: row.sort_order,
+    depth: row.depth,
+    parentId: row.parent_id,
+    familyId: row.family_id,
+    rules: row.rules as CategoryRule | null,
+    metadata: row.metadata as CategoryMetadata | null,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
   }
-
-  const statusCode = response.status;
-  const message = errorData?.message
-    ? Array.isArray(errorData.message)
-      ? errorData.message.join(', ')
-      : errorData.message
-    : response.statusText || 'An error occurred';
-
-  // Throw appropriate error type
-  switch (statusCode) {
-    case 400:
-      throw new ValidationError(message, errorData);
-    case 401:
-      throw new AuthenticationError(message);
-    case 403:
-      throw new AuthorizationError(message);
-    case 404:
-      throw new NotFoundError(message);
-    case 500:
-    case 502:
-    case 503:
-    case 504:
-      throw new ServerError(message);
-    default:
-      throw new CategoriesApiError(
-        message,
-        statusCode,
-        errorData?.error,
-        errorData
-      );
-  }
-}
-
-/**
- * Make HTTP request with authentication and error handling
- */
-async function request<T>(
-  endpoint: string,
-  options: RequestInit = {}
-): Promise<T> {
-  const url = `${API_BASE_URL}${endpoint}`;
-
-  // Make request with cookies (authentication handled by HttpOnly cookies)
-  const response = await fetch(url, {
-    ...options,
-    credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-  });
-
-  // Handle errors
-  if (!response.ok) {
-    await handleErrorResponse(response);
-  }
-
-  // Handle empty responses
-  const text = await response.text();
-  if (!text) {
-    return {} as T;
-  }
-
-  return JSON.parse(text);
 }
 
 // =============================================================================
@@ -333,8 +278,8 @@ async function request<T>(
 /**
  * Categories API Client
  *
- * Provides methods for interacting with category management endpoints.
- * All methods are authenticated and include proper error handling.
+ * Provides methods for interacting with categories via Supabase.
+ * RLS policies handle family isolation automatically.
  */
 export const categoriesClient = {
   /**
@@ -342,8 +287,7 @@ export const categoriesClient = {
    *
    * @param type - Optional filter by category type (EXPENSE, INCOME)
    * @returns List of categories
-   * @throws {AuthenticationError} If not authenticated
-   * @throws {ServerError} If server error occurs
+   * @throws {CategoriesApiError} If query fails
    *
    * @example
    * ```typescript
@@ -355,21 +299,29 @@ export const categoriesClient = {
    * ```
    */
   async getAll(type?: CategoryType): Promise<Category[]> {
-    const queryParams = type ? `?type=${type}` : '';
-    return request<Category[]>(queryParams, {
-      method: 'GET',
-    });
+    const supabase = createClient()
+    let query = supabase
+      .from('categories')
+      .select('*')
+      .order('sort_order', { ascending: true })
+      .order('name', { ascending: true })
+
+    if (type) {
+      query = query.eq('type', type)
+    }
+
+    const { data, error } = await query
+    if (error) throw new CategoriesApiError(error.message, 500)
+    return (data ?? []).map(rowToCategory)
   },
 
   /**
    * Get a specific category by ID
    *
    * @param id - Category ID
-   * @returns Category with optional parent/children relations
-   * @throws {AuthenticationError} If not authenticated
+   * @returns Category with optional children
    * @throws {NotFoundError} If category not found
-   * @throws {AuthorizationError} If category belongs to different family
-   * @throws {ServerError} If server error occurs
+   * @throws {CategoriesApiError} If query fails
    *
    * @example
    * ```typescript
@@ -378,9 +330,28 @@ export const categoriesClient = {
    * ```
    */
   async getOne(id: string): Promise<Category> {
-    return request<Category>(`/${id}`, {
-      method: 'GET',
-    });
+    const supabase = createClient()
+    const { data, error } = await supabase
+      .from('categories')
+      .select('*')
+      .eq('id', id)
+      .single()
+
+    if (error) throw new NotFoundError()
+    const category = rowToCategory(data)
+
+    // Fetch children for this category
+    const { data: childRows } = await supabase
+      .from('categories')
+      .select('*')
+      .eq('parent_id', id)
+      .order('sort_order', { ascending: true })
+
+    if (childRows && childRows.length > 0) {
+      category.children = childRows.map(rowToCategory)
+    }
+
+    return category
   },
 
   /**
@@ -433,7 +404,7 @@ export const categoriesClient = {
    * @returns Created category
    * @throws {AuthenticationError} If not authenticated
    * @throws {ValidationError} If data is invalid
-   * @throws {ServerError} If server error occurs
+   * @throws {CategoriesApiError} If query fails
    *
    * @example
    * ```typescript
@@ -447,10 +418,58 @@ export const categoriesClient = {
    * ```
    */
   async create(data: CreateCategoryRequest): Promise<Category> {
-    return request<Category>('', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new AuthenticationError()
+
+    // Look up the user's family_id from their profile
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('family_id')
+      .eq('id', user.id)
+      .single()
+
+    if (profileError || !profile) {
+      throw new CategoriesApiError('Could not determine family. Profile not found.', 500)
+    }
+
+    // Determine depth based on parent
+    let depth = 0
+    if (data.parentId) {
+      const { data: parent } = await supabase
+        .from('categories')
+        .select('depth')
+        .eq('id', data.parentId)
+        .single()
+      if (parent) {
+        depth = parent.depth + 1
+      }
+    }
+
+    const insert: CategoryInsert = {
+      name: data.name,
+      slug: data.slug,
+      type: data.type as Database['public']['Enums']['category_type'],
+      description: data.description ?? null,
+      color: data.color ?? null,
+      icon: data.icon ?? null,
+      parent_id: data.parentId ?? null,
+      is_default: data.isDefault ?? false,
+      sort_order: data.sortOrder ?? 0,
+      rules: (data.rules ?? null) as Json,
+      metadata: (data.metadata ?? null) as Json,
+      family_id: profile.family_id,
+      depth,
+    }
+
+    const { data: row, error } = await supabase
+      .from('categories')
+      .insert(insert)
+      .select()
+      .single()
+
+    if (error) throw new CategoriesApiError(error.message, 400)
+    return rowToCategory(row)
   },
 
   /**
@@ -459,11 +478,9 @@ export const categoriesClient = {
    * @param id - Category ID to update
    * @param data - Category update data
    * @returns Updated category
-   * @throws {AuthenticationError} If not authenticated
    * @throws {NotFoundError} If category not found
-   * @throws {AuthorizationError} If category belongs to different family
    * @throws {ValidationError} If data is invalid
-   * @throws {ServerError} If server error occurs
+   * @throws {CategoriesApiError} If query fails
    *
    * @example
    * ```typescript
@@ -474,21 +491,36 @@ export const categoriesClient = {
    * ```
    */
   async update(id: string, data: UpdateCategoryRequest): Promise<Category> {
-    return request<Category>(`/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    });
+    const supabase = createClient()
+    const update: CategoryUpdate = {}
+
+    if (data.name !== undefined) update.name = data.name
+    if (data.slug !== undefined) update.slug = data.slug
+    if (data.description !== undefined) update.description = data.description ?? null
+    if (data.color !== undefined) update.color = data.color ?? null
+    if (data.icon !== undefined) update.icon = data.icon ?? null
+    if (data.parentId !== undefined) update.parent_id = data.parentId
+    if (data.status !== undefined) update.status = data.status as Database['public']['Enums']['category_status']
+    if (data.sortOrder !== undefined) update.sort_order = data.sortOrder
+    if (data.rules !== undefined) update.rules = (data.rules ?? null) as Json
+    if (data.metadata !== undefined) update.metadata = (data.metadata ?? null) as Json
+
+    const { data: row, error } = await supabase
+      .from('categories')
+      .update(update)
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (error) throw new CategoriesApiError(error.message, 400)
+    return rowToCategory(row)
   },
 
   /**
    * Delete a category
    *
    * @param id - Category ID to delete
-   * @throws {AuthenticationError} If not authenticated
-   * @throws {NotFoundError} If category not found
-   * @throws {AuthorizationError} If category belongs to different family
-   * @throws {ForbiddenError} If category is a system category
-   * @throws {ServerError} If server error occurs
+   * @throws {CategoriesApiError} If query fails
    *
    * @example
    * ```typescript
@@ -496,21 +528,24 @@ export const categoriesClient = {
    * ```
    */
   async delete(id: string): Promise<void> {
-    return request<void>(`/${id}`, {
-      method: 'DELETE',
-    });
+    const supabase = createClient()
+    const { error } = await supabase
+      .from('categories')
+      .delete()
+      .eq('id', id)
+
+    if (error) throw new CategoriesApiError(error.message, 400)
   },
 
   /**
    * Get spending aggregated by category for a date range
+   * Uses the get_category_spending RPC for server-side aggregation.
    *
    * @param startDate - Start of date range (ISO format)
    * @param endDate - End of date range (ISO format)
    * @param parentOnly - Roll up child spending to parents (default: true)
    * @returns Spending summary with categories and totals
-   * @throws {AuthenticationError} If not authenticated
-   * @throws {ValidationError} If dates are invalid
-   * @throws {ServerError} If server error occurs
+   * @throws {CategoriesApiError} If query fails
    *
    * @example
    * ```typescript
@@ -523,15 +558,32 @@ export const categoriesClient = {
     endDate: string,
     parentOnly: boolean = true
   ): Promise<CategorySpendingSummary> {
-    const params = new URLSearchParams({
+    const supabase = createClient()
+    const { data, error } = await supabase.rpc('get_category_spending', {
+      date_from: startDate,
+      date_to: endDate,
+      parent_only: parentOnly,
+    })
+
+    if (error) throw new CategoriesApiError(error.message, 500)
+
+    const categories: CategorySpending[] = (data ?? []).map((row) => ({
+      categoryId: row.category_id,
+      categoryName: row.category_name,
+      icon: row.category_icon,
+      color: row.category_color,
+      totalAmount: Number(row.total_amount),
+      transactionCount: Number(row.transaction_count),
+    }))
+
+    const totalSpending = categories.reduce((sum, cat) => sum + cat.totalAmount, 0)
+
+    return {
+      categories,
+      totalSpending,
       startDate,
       endDate,
-      parentOnly: String(parentOnly),
-    });
-
-    return request<CategorySpendingSummary>(`/spending?${params}`, {
-      method: 'GET',
-    });
+    }
   },
 };
 

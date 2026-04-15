@@ -64,12 +64,12 @@ export function NotificationDropdown({
 
   return (
     <div
-      className="w-80 sm:w-96 bg-white rounded-lg shadow-lg ring-1 ring-black ring-opacity-5 overflow-hidden"
+      className="w-80 sm:w-96 bg-card rounded-lg shadow-lg ring-1 ring-black ring-opacity-5 overflow-hidden"
       data-testid="notifications-dropdown"
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-        <h3 className="text-sm font-semibold text-gray-900">Notifications</h3>
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+        <h3 className="text-sm font-semibold text-foreground">Notifications</h3>
         {notifications.length > 0 && (
           <button
             onClick={onMarkAllAsRead}
@@ -91,20 +91,20 @@ export function NotificationDropdown({
       <div className="max-h-96 overflow-y-auto">
         {isLoading ? (
           <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
         ) : error ? (
           <div className="px-4 py-8 text-center">
             <p className="text-sm text-red-600">Failed to load notifications</p>
-            <p className="mt-1 text-xs text-gray-500">{error.message}</p>
+            <p className="mt-1 text-xs text-muted-foreground">{error.message}</p>
           </div>
         ) : notifications.length === 0 ? (
           <div className="px-4 py-8 text-center">
-            <Bell className="h-8 w-8 mx-auto text-gray-300" />
-            <p className="mt-2 text-sm text-gray-500">No new notifications</p>
+            <Bell className="h-8 w-8 mx-auto text-muted-foreground" />
+            <p className="mt-2 text-sm text-muted-foreground">No new notifications</p>
           </div>
         ) : (
-          <div className="divide-y divide-gray-100">
+          <div className="divide-y divide-border">
             {notifications.map((notification) => (
               <NotificationItem
                 key={notification.id}
@@ -120,10 +120,10 @@ export function NotificationDropdown({
 
       {/* Footer */}
       {notifications.length > 0 && (
-        <div className="border-t border-gray-100">
+        <div className="border-t border-border">
           <Link
             href="/dashboard/notifications"
-            className="block px-4 py-3 text-center text-sm text-blue-600 hover:text-blue-700 hover:bg-gray-50 transition-colors"
+            className="block px-4 py-3 text-center text-sm text-blue-600 hover:text-blue-700 hover:bg-muted transition-colors"
             onClick={onClose}
             data-testid="view-all-notifications-link"
           >

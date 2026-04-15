@@ -11,14 +11,14 @@ export default function GoalsPage() {
           <Target className="h-6 w-6 text-orange-600" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Goals</h1>
+          <h1 className="text-2xl font-bold text-foreground">Goals</h1>
           <p className="text-sm text-gray-500">
             Set and track your financial goals
           </p>
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
+      <div className="bg-card rounded-xl border border-border p-12 text-center">
         <Target className="h-12 w-12 text-gray-300 mx-auto mb-4" />
         <h2 className="text-lg font-medium text-gray-900 mb-2">
           No goals set

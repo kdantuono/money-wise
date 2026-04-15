@@ -37,11 +37,11 @@ export function LinkBankAccountExample() {
 
   return (
     <div className="max-w-md mx-auto py-8">
-      <div className="bg-white rounded-lg shadow p-6">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">
+      <div className="bg-card rounded-lg shadow p-6">
+        <h1 className="text-2xl font-bold text-foreground mb-2">
           Connect Your Bank
         </h1>
-        <p className="text-gray-600 mb-6">
+        <p className="text-muted-foreground mb-6">
           Link your bank account to start tracking your finances automatically.
         </p>
 
@@ -159,10 +159,10 @@ export function BankAccountsDashboardExample() {
   return (
     <div className="max-w-6xl mx-auto py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
+        <h1 className="text-3xl font-bold text-foreground mb-2">
           Linked Accounts
         </h1>
-        <p className="text-gray-600">
+        <p className="text-muted-foreground">
           Manage your connected bank accounts and sync transactions
         </p>
       </div>
@@ -299,7 +299,7 @@ export function TransactionsListExample() {
 
   return (
     <div className="max-w-4xl mx-auto py-8">
-      <h1 className="text-3xl font-bold text-gray-900 mb-6">Transactions</h1>
+      <h1 className="text-3xl font-bold text-foreground mb-6">Transactions</h1>
 
       <ErrorBoundary
         onError={(error) => console.error('Transactions error:', error)}
@@ -323,7 +323,7 @@ export function LoadingStatesExample() {
   return (
     <div className="max-w-6xl mx-auto py-8 space-y-8">
       <section>
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">
+        <h2 className="text-2xl font-bold text-foreground mb-4">
           Account Skeletons
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -334,14 +334,14 @@ export function LoadingStatesExample() {
       </section>
 
       <section>
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">
+        <h2 className="text-2xl font-bold text-foreground mb-4">
           Syncing Indicator
         </h2>
         <SyncingIndicator accountName="Chase Checking" />
       </section>
 
       <section>
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">Error Alert</h2>
+        <h2 className="text-2xl font-bold text-foreground mb-4">Error Alert</h2>
         <ErrorAlert
           title="Sync Failed"
           message="Unable to sync account transactions"
@@ -402,11 +402,11 @@ export function CompleteIntegratedExample() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Accounts Sidebar */}
         <div className="lg:col-span-1">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">Your Accounts</h2>
+          <h2 className="text-xl font-bold text-foreground mb-4">Your Accounts</h2>
 
           {accounts.length === 0 ? (
-            <div className="rounded-lg border-2 border-dashed border-gray-300 p-6 text-center">
-              <p className="text-gray-600 mb-4">No accounts linked yet</p>
+            <div className="rounded-lg border-2 border-dashed border-border p-6 text-center">
+              <p className="text-muted-foreground mb-4">No accounts linked yet</p>
               <BankingLinkButton
                 onSuccess={handleAddAccount}
                 className="w-full"
@@ -421,12 +421,12 @@ export function CompleteIntegratedExample() {
                   className={`w-full text-left p-3 rounded-lg border transition-all ${
                     selectedAccount?.id === account.id
                       ? 'border-blue-500 bg-blue-50'
-                      : 'border-gray-200 hover:border-gray-300'
+                      : 'border-border hover:border-border'
                   }`}
                 >
-                  <p className="font-medium text-gray-900">{account.name}</p>
-                  <p className="text-sm text-gray-600">{account.bankName}</p>
-                  <p className="text-sm font-semibold text-gray-900 mt-1">
+                  <p className="font-medium text-foreground">{account.name}</p>
+                  <p className="text-sm text-muted-foreground">{account.bankName}</p>
+                  <p className="text-sm font-semibold text-foreground mt-1">
                     {new Intl.NumberFormat('en-US', {
                       style: 'currency',
                       currency: account.currency,
@@ -449,8 +449,8 @@ export function CompleteIntegratedExample() {
               />
             </ErrorBoundary>
           ) : (
-            <div className="rounded-lg border-2 border-dashed border-gray-300 p-8 text-center">
-              <p className="text-gray-600">
+            <div className="rounded-lg border-2 border-dashed border-border p-8 text-center">
+              <p className="text-muted-foreground">
                 Select an account to view details
               </p>
             </div>

@@ -198,7 +198,7 @@ export function TransactionForm({
       noValidate
     >
       {/* Header */}
-      <h3 className="text-lg font-semibold text-gray-900">
+      <h3 className="text-lg font-semibold text-foreground">
         {isEditMode ? 'Edit Transaction' : 'Add Transaction'}
       </h3>
 
@@ -236,7 +236,7 @@ export function TransactionForm({
           className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-colors ${
             transactionType === 'DEBIT'
               ? 'bg-red-100 text-red-700 border-2 border-red-500'
-              : 'bg-gray-100 text-gray-600 border-2 border-transparent hover:bg-gray-200'
+              : 'bg-muted text-muted-foreground border-2 border-transparent hover:bg-muted'
           } ${formLoading || isFieldLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
           Expense
@@ -249,7 +249,7 @@ export function TransactionForm({
           className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-colors ${
             transactionType === 'CREDIT'
               ? 'bg-green-100 text-green-700 border-2 border-green-500'
-              : 'bg-gray-100 text-gray-600 border-2 border-transparent hover:bg-gray-200'
+              : 'bg-muted text-muted-foreground border-2 border-transparent hover:bg-muted'
           } ${formLoading || isFieldLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
           Income
@@ -260,12 +260,12 @@ export function TransactionForm({
       <div>
         <label
           htmlFor="amount"
-          className="block text-sm font-medium text-gray-700 mb-1"
+          className="block text-sm font-medium text-foreground mb-1"
         >
           Amount <span className="text-red-500">*</span>
         </label>
         <div className="relative">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
             $
           </span>
           <input
@@ -278,8 +278,8 @@ export function TransactionForm({
             placeholder="0.00"
             disabled={formLoading || isFieldLocked}
             className={`w-full pl-8 pr-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500
-              ${errors.amount ? 'border-red-300' : 'border-gray-300'}
-              ${formLoading || isFieldLocked ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+              ${errors.amount ? 'border-red-300' : 'border-border'}
+              ${formLoading || isFieldLocked ? 'bg-muted cursor-not-allowed' : ''}`}
           />
         </div>
         {errors.amount && (
@@ -291,7 +291,7 @@ export function TransactionForm({
       <div>
         <label
           htmlFor="description"
-          className="block text-sm font-medium text-gray-700 mb-1"
+          className="block text-sm font-medium text-foreground mb-1"
         >
           Description <span className="text-red-500">*</span>
         </label>
@@ -303,8 +303,8 @@ export function TransactionForm({
           placeholder="What was this for?"
           disabled={formLoading || isFieldLocked}
           className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500
-            ${errors.description ? 'border-red-300' : 'border-gray-300'}
-            ${formLoading || isFieldLocked ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+            ${errors.description ? 'border-red-300' : 'border-border'}
+            ${formLoading || isFieldLocked ? 'bg-muted cursor-not-allowed' : ''}`}
         />
         {errors.description && (
           <p className="mt-1 text-sm text-red-600">{errors.description}</p>
@@ -315,7 +315,7 @@ export function TransactionForm({
       <div>
         <label
           htmlFor="date"
-          className="block text-sm font-medium text-gray-700 mb-1"
+          className="block text-sm font-medium text-foreground mb-1"
         >
           Date <span className="text-red-500">*</span>
         </label>
@@ -326,8 +326,8 @@ export function TransactionForm({
           onChange={(e) => setDate(e.target.value)}
           disabled={formLoading || isFieldLocked}
           className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500
-            ${errors.date ? 'border-red-300' : 'border-gray-300'}
-            ${formLoading || isFieldLocked ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+            ${errors.date ? 'border-red-300' : 'border-border'}
+            ${formLoading || isFieldLocked ? 'bg-muted cursor-not-allowed' : ''}`}
         />
         {errors.date && (
           <p className="mt-1 text-sm text-red-600">{errors.date}</p>
@@ -338,7 +338,7 @@ export function TransactionForm({
       <div>
         <label
           htmlFor="account"
-          className="block text-sm font-medium text-gray-700 mb-1"
+          className="block text-sm font-medium text-foreground mb-1"
         >
           Account <span className="text-red-500">*</span>
         </label>
@@ -348,8 +348,8 @@ export function TransactionForm({
           onChange={(e) => setAccountId(e.target.value)}
           disabled={formLoading || isFieldLocked}
           className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500
-            ${errors.accountId ? 'border-red-300' : 'border-gray-300'}
-            ${formLoading || isFieldLocked ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+            ${errors.accountId ? 'border-red-300' : 'border-border'}
+            ${formLoading || isFieldLocked ? 'bg-muted cursor-not-allowed' : ''}`}
         >
           <option value="">Select an account</option>
           {accounts.map((account) => (
@@ -382,7 +382,7 @@ export function TransactionForm({
       <div>
         <label
           htmlFor="notes"
-          className="block text-sm font-medium text-gray-700 mb-1"
+          className="block text-sm font-medium text-foreground mb-1"
         >
           Notes
         </label>
@@ -393,8 +393,8 @@ export function TransactionForm({
           placeholder="Add any additional notes..."
           rows={3}
           disabled={formLoading}
-          className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500
-            ${formLoading ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+          className={`w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500
+            ${formLoading ? 'bg-muted cursor-not-allowed' : ''}`}
         />
       </div>
 
@@ -404,8 +404,8 @@ export function TransactionForm({
           type="button"
           onClick={onCancel}
           disabled={formLoading}
-          className="flex-1 py-2.5 px-4 border border-gray-300 rounded-lg text-gray-700 font-medium
-            hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500
+          className="flex-1 py-2.5 px-4 border border-border rounded-lg text-foreground font-medium
+            hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring
             disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Cancel

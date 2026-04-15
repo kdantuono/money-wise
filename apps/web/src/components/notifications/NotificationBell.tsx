@@ -109,8 +109,8 @@ export function NotificationBell({
         ref={buttonRef}
         onClick={handleToggle}
         className={cn(
-          'p-2 text-gray-400 hover:text-gray-500 rounded-full hover:bg-gray-100 relative transition-colors',
-          isOpen && 'bg-gray-100 text-gray-500',
+          'p-2 text-muted-foreground hover:text-muted-foreground rounded-full hover:bg-muted relative transition-colors',
+          isOpen && 'bg-muted text-muted-foreground',
           className
         )}
         data-testid="notification-bell"

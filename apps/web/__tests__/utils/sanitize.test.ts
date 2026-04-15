@@ -363,7 +363,8 @@ describe('Input Sanitization Utilities', () => {
       expect(user.currency).toBe('USD');
       expect(user.preferences).toEqual({ theme: 'dark' });
       expect(user.lastLoginAt).toBe('2025-01-14T12:00:00.000Z');
-      expect(user.emailVerifiedAt).toBe('2025-01-02T00:00:00.000Z');
+      // emailVerifiedAt is used internally for isEmailVerified but not stored on User
+      expect(user.isEmailVerified).toBe(true);
     });
 
     it('sanitizes role and status to valid values', () => {
@@ -497,7 +498,8 @@ describe('Input Sanitization Utilities', () => {
 
       expect(user.avatar).toBeUndefined();
       expect(user.timezone).toBeUndefined();
-      expect(user.currency).toBeUndefined();
+      // currency defaults to 'EUR' when input is non-string (required field on User type)
+      expect(user.currency).toBe('EUR');
     });
 
     it('skips non-object preferences', () => {

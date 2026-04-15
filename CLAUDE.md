@@ -6,15 +6,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 MoneyWise is a personal finance management application. Monorepo using pnpm workspaces + Turborepo.
 
-**Stack**: NestJS 11 (backend) + Next.js 15 (web) + Expo/React Native (mobile) + PostgreSQL (TimescaleDB) + Redis
+**Stack**: Next.js 15 (web) + Supabase (PostgreSQL, Auth, Edge Functions) + Expo/React Native (mobile)
 **Package manager**: pnpm 10+ (Node 22+)
-**ORM**: Prisma 6 (schema at `apps/backend/prisma/schema.prisma`)
+**Database**: Supabase-hosted PostgreSQL with RLS policies (schema in `supabase/migrations/`)
 
 ## Monorepo Structure
 
 ```
 apps/
-  backend/    - NestJS REST API (Prisma, Passport JWT, Redis caching, Sentry)
   web/        - Next.js App Router (Zustand + TanStack Query, Tailwind v4, Radix UI, Vitest)
   mobile/     - Expo/React Native (NativeWind, Expo Router)
 packages/
@@ -22,6 +21,10 @@ packages/
   ui/         - Shared React components (Radix + Tailwind + CVA, built with tsup)
   utils/      - Shared utility functions (placeholder)
   test-utils/ - Shared testing helpers (Testing Library, currently excluded from workspace)
+supabase/
+  migrations/ - SQL migrations (schema, RLS policies, seed functions)
+  functions/  - Deno Edge Functions (banking, categorization, transfer detection, BNPL)
+  config.toml - Supabase project configuration
 ```
 
 Path aliases: `@money-wise/types`, `@money-wise/utils`, `@money-wise/ui`, `@money-wise/test-utils`
@@ -32,27 +35,17 @@ Path aliases: `@money-wise/types`, `@money-wise/utils`, `@money-wise/ui`, `@mone
 ```bash
 pnpm install                  # Install all dependencies
 pnpm dev                      # Run all apps in parallel (Turbo)
-pnpm dev:backend              # Backend only (NestJS watch mode)
 pnpm dev:web                  # Web only (Next.js dev server, port 3000)
-pnpm docker:dev               # Start TimescaleDB + Redis containers
-pnpm docker:down              # Stop infrastructure containers
 ```
 
 ### Build
 ```bash
 pnpm build                    # Build all (runs scripts/build-clean.sh)
-pnpm build:backend            # Build backend only
 pnpm build:web                # Build web only
 ```
 
 ### Testing
 ```bash
-# Backend (Jest, ts-jest)
-pnpm --filter @money-wise/backend test              # All backend tests
-pnpm --filter @money-wise/backend test:unit          # Unit tests only
-pnpm --filter @money-wise/backend test:integration   # Integration tests (needs DB)
-pnpm --filter @money-wise/backend test -- --testPathPatterns="path/to/test"  # Single test file
-
 # Web (Vitest + jsdom)
 pnpm --filter @money-wise/web test                   # All web tests
 pnpm --filter @money-wise/web test:watch             # Watch mode
@@ -76,51 +69,50 @@ pnpm typecheck                # TypeScript type checking across all packages
 pnpm format                   # Prettier formatting
 ```
 
-### Database
+### Database (Supabase)
 ```bash
-pnpm db:migrate               # Run Prisma migrations
-pnpm db:seed                  # Seed database
-pnpm --filter @money-wise/backend prisma migrate reset --force  # Reset database
-pnpm --filter @money-wise/backend prisma:studio   # Open Prisma Studio
+supabase db push              # Push schema changes
+supabase db reset             # Reset database
+supabase migration new <name> # Create new migration
+supabase functions serve      # Serve Edge Functions locally
+supabase functions deploy     # Deploy all Edge Functions
 ```
 
 ## Architecture
-
-### Backend (`apps/backend/src/`)
-NestJS modular architecture with global JWT auth guard.
-
-- `core/` - Infrastructure: config, database (Prisma), redis, health, monitoring (Sentry), logging
-- `auth/` - Authentication: Passport JWT/Local strategies, guards, decorators
-- `accounts/` - Financial account management
-- `transactions/` - Transaction CRUD with DTOs
-- `budgets/` - Budget management with validators
-- `categories/` - Category hierarchy
-- `banking/` - Banking provider integrations (SaltEdge primary; Tink, Yapily, TrueLayer planned)
-- `analytics/` - Reporting and analytics
-- `users/`, `notifications/`, `liabilities/`, `scheduled/` - Other domain modules
-
-Backend builds: `prisma generate` runs before `nest build`.
 
 ### Web (`apps/web/src/`)
 Next.js 15 App Router with standalone output mode.
 
 - `app/` - Next.js App Router pages and layouts
 - `components/` - Feature-grouped components + `ui/` base components + `providers/`
-- `services/` - API client layer (axios-based, per-domain)
+- `services/` - Supabase client layer (per-domain: accounts, transactions, budgets, etc.)
 - `hooks/` - Custom hooks (query wrappers, theme, dashboard)
 - `store/` + `stores/` - Zustand stores (banking, budgets, transactions, auth)
-- `lib/` - Auth service, API helpers, performance utilities
-- `utils/` - CSRF, CSV export, sanitization, budget helpers
+- `lib/` - Auth service (Supabase Auth), performance utilities
+- `utils/` - CSV export, sanitization, budget helpers, Supabase client setup
 
 Forms: react-hook-form + Zod. Charts: recharts. Icons: lucide-react.
+Auth: Supabase Auth via `@supabase/ssr` (cookie-based sessions, middleware refresh).
+
+### Supabase (`supabase/`)
+- `migrations/` - SQL schema (20 tables, 27 enums, 63 RLS policies, 4 analytics RPCs)
+- `functions/` - Deno Edge Functions:
+  - `categorize-transaction` - 5-strategy categorization cascade
+  - `detect-transfers` - Scoring algorithm for transfer pair detection
+  - `detect-bnpl` - 10 BNPL provider pattern matching
+  - `banking-initiate-link` - SaltEdge OAuth flow start
+  - `banking-complete-link` - OAuth completion + account storage
+  - `banking-sync` - Transaction sync from SaltEdge
+  - `banking-webhook` - SaltEdge webhook handler (public, signature verification pending — audit B19)
+  - `banking-revoke` - Connection revocation
+  - `_shared/` - Shared utilities (CORS, Supabase client, SaltEdge client, responses)
+- `config.toml` - Project config (project ID: `qhsrkuucldwklkdzbkuw`)
 
 ### Infrastructure
-- `docker-compose.dev.yml` - TimescaleDB (port 5432) + Redis (port 6379)
-- `docker-compose.e2e.yml` - E2E test environment
+- `docker-compose.e2e.yml` - E2E test environment (web only, connects to Supabase)
 - `docker-compose.monitoring.yml` - Monitoring stack
-- `.claude/scripts/infra.sh` - Runtime-agnostic service management (supports Docker, Podman, distrobox)
-- `.claude/scripts/container-runtime.sh` - Auto-detects container runtime
-- `.claude/scripts/bootstrap-dev.sh` - Unified dev environment setup (distrobox/WSL/Linux)
+- `.claude/scripts/infra.sh` - Runtime-agnostic service management
+- `.claude/scripts/bootstrap-dev.sh` - Unified dev environment setup
 
 ### Claude Code Settings
 - `.claude/settings.json` - Shared project config (committed). Contains env flags like Agent Teams.
@@ -131,17 +123,15 @@ Forms: react-hook-form + Zod. Charts: recharts. Icons: lucide-react.
 - **Never work directly on main** - always use feature branches
 - Commit format: `type(scope): description` (commitlint enforced)
 - Types: fix, feat, refactor, test, docs, chore, ci, perf, style
-- Pre-commit hooks (Husky): doc governance, Prisma client gen, actionlint (if workflows staged), lint, typecheck, unit tests
+- Pre-commit hooks (Husky): doc governance, actionlint (if workflows staged), lint, typecheck, unit tests
 - Pre-push validation: `./.claude/scripts/validate-ci.sh 10` (all 10 levels must pass)
 - Protected branches: main, develop, gh-pages, safety/*
 - After push: verify CI with `gh run list --branch [branch] --limit 1`
 
 ## Testing Patterns
 
-- **Backend**: Jest with ts-jest. Tests in `__tests__/` dirs + co-located `src/**/*.spec.ts`. 30s timeout. Coverage: 70% statements/lines, 72% functions, 65% branches. Integration tests need running DB.
 - **Web**: Vitest with jsdom. Coverage: 70% statements/lines/functions, 65% branches.
-- **E2E**: Playwright. Tests in `apps/web/e2e/`. Runs against localhost:3000. Projects: chromium, firefox, webkit, mobile chrome, mobile safari.
-- `passWithNoTests: false` in Jest - every package must have tests or explicit skip.
+- **E2E**: Playwright. Tests in `apps/web/e2e/`. Runs against localhost:3000 + Supabase. Projects: chromium, mobile chrome.
 
 ## Session & CI Discipline
 

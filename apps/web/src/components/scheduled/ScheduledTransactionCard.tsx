@@ -43,9 +43,9 @@ function getStatusColors(status: ScheduledTransactionStatus): { bg: string; text
     case 'COMPLETED':
       return { bg: 'bg-blue-50', text: 'text-blue-700' };
     case 'CANCELLED':
-      return { bg: 'bg-gray-50', text: 'text-gray-700' };
+      return { bg: 'bg-muted', text: 'text-foreground' };
     default:
-      return { bg: 'bg-gray-50', text: 'text-gray-700' };
+      return { bg: 'bg-muted', text: 'text-foreground' };
   }
 }
 
@@ -111,7 +111,7 @@ function getDaysUntilText(days: number): { text: string; color: string } {
   if (days <= 7) {
     return { text: `Due in ${days} days`, color: 'text-blue-600' };
   }
-  return { text: `Due in ${days} days`, color: 'text-gray-600' };
+  return { text: `Due in ${days} days`, color: 'text-muted-foreground' };
 }
 
 // =============================================================================
@@ -166,14 +166,14 @@ export const ScheduledTransactionCard = memo(function ScheduledTransactionCard({
         tabIndex={onClick ? 0 : undefined}
         onClick={handleClick}
         onKeyDown={onClick ? handleKeyDown : undefined}
-        className={`flex items-center gap-3 p-3 rounded-lg border border-gray-200 bg-white
-          ${onClick ? 'cursor-pointer hover:border-gray-300 hover:shadow-sm' : ''}`}
+        className={`flex items-center gap-3 p-3 rounded-lg border border-border bg-card
+          ${onClick ? 'cursor-pointer hover:border-border hover:shadow-sm' : ''}`}
       >
         <div className={`p-2 rounded-lg ${typeColors.bg}`}>
           {getTypeIcon(scheduled.type, `h-4 w-4 ${typeColors.icon}`)}
         </div>
         <div className="flex-1 min-w-0">
-          <p className="font-medium text-gray-900 truncate">{scheduled.description}</p>
+          <p className="font-medium text-foreground truncate">{scheduled.description}</p>
           <p className={`text-sm ${daysInfo.color}`}>{daysInfo.text}</p>
         </div>
         <div className="text-right">
@@ -196,8 +196,8 @@ export const ScheduledTransactionCard = memo(function ScheduledTransactionCard({
       tabIndex={onClick ? 0 : undefined}
       onClick={handleClick}
       onKeyDown={onClick ? handleKeyDown : undefined}
-      className={`rounded-xl border border-gray-200 bg-white p-5 transition-all
-        ${onClick ? 'cursor-pointer hover:border-gray-300 hover:shadow-md' : ''}
+      className={`rounded-xl border border-border bg-card p-5 transition-all
+        ${onClick ? 'cursor-pointer hover:border-border hover:shadow-md' : ''}
         focus:outline-none focus:ring-2 focus:ring-blue-500`}
     >
       {/* Header */}
@@ -206,13 +206,13 @@ export const ScheduledTransactionCard = memo(function ScheduledTransactionCard({
           {getTypeIcon(scheduled.type, `h-6 w-6 ${typeColors.icon}`)}
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-gray-900 truncate">{scheduled.description}</h3>
+          <h3 className="font-semibold text-foreground truncate">{scheduled.description}</h3>
           <div className="flex items-center gap-2 mt-1">
             {scheduled.merchantName && (
-              <span className="text-sm text-gray-500">{scheduled.merchantName}</span>
+              <span className="text-sm text-muted-foreground">{scheduled.merchantName}</span>
             )}
             {scheduled.recurrenceRule && (
-              <span className="inline-flex items-center gap-1 text-xs text-gray-500">
+              <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                 <Repeat className="h-3 w-3" />
                 {scheduled.recurrenceDescription}
               </span>
@@ -228,26 +228,26 @@ export const ScheduledTransactionCard = memo(function ScheduledTransactionCard({
             {scheduled.type === 'DEBIT' ? '-' : '+'}
             {formatCurrency(scheduled.amount, scheduled.currency)}
           </p>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-muted-foreground">
             {scheduled.type === 'DEBIT' ? 'Expense' : 'Income'}
           </p>
         </div>
       </div>
 
       {/* Due Date and Status */}
-      <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
+      <div className="flex items-center justify-between mt-4 pt-4 border-t border-border">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
-            <Calendar className="h-4 w-4 text-gray-400" />
+            <Calendar className="h-4 w-4 text-muted-foreground" />
             <div>
-              <p className="text-xs text-gray-500">Next Due</p>
-              <p className="text-sm font-medium text-gray-900">
+              <p className="text-xs text-muted-foreground">Next Due</p>
+              <p className="text-sm font-medium text-foreground">
                 {formatDate(scheduled.nextDueDate)}
               </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Clock className="h-4 w-4 text-gray-400" />
+            <Clock className="h-4 w-4 text-muted-foreground" />
             <p className={`text-sm font-medium ${daysInfo.color}`}>{daysInfo.text}</p>
           </div>
         </div>
@@ -286,7 +286,7 @@ export const ScheduledTransactionCard = memo(function ScheduledTransactionCard({
             <button
               type="button"
               onClick={handleSkip}
-              className="px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500"
+              className="px-3 py-2 text-sm font-medium text-foreground bg-muted rounded-lg hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring"
             >
               Skip This Time
             </button>

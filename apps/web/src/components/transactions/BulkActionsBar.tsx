@@ -64,7 +64,7 @@ export const BulkActionsBar = memo(function BulkActionsBar({
     <div
       role="toolbar"
       aria-label="Bulk actions"
-      className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-200 shadow-lg"
+      className="fixed bottom-0 left-0 right-0 z-40 bg-card border-t border-border shadow-lg"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between py-3">
@@ -78,7 +78,7 @@ export const BulkActionsBar = memo(function BulkActionsBar({
                   className="h-4 w-4 animate-spin text-blue-600"
                 />
               )}
-              <span className="text-sm font-medium text-gray-900">
+              <span className="text-sm font-medium text-foreground">
                 {isProcessing ? (
                   'Processing...'
                 ) : (
@@ -95,7 +95,7 @@ export const BulkActionsBar = memo(function BulkActionsBar({
               onClick={isAllSelected ? onClearSelection : onSelectAll}
               disabled={isProcessing}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium
-                text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg
+                text-foreground hover:text-foreground hover:bg-muted rounded-lg
                 focus:outline-none focus:ring-2 focus:ring-blue-500
                 disabled:opacity-50 disabled:cursor-not-allowed
                 transition-colors duration-150"
@@ -122,8 +122,8 @@ export const BulkActionsBar = memo(function BulkActionsBar({
               onClick={onCategorize}
               disabled={isProcessing}
               className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium
-                text-gray-700 bg-white border border-gray-300 rounded-lg
-                hover:bg-gray-50 hover:text-gray-900
+                text-foreground bg-card border border-border rounded-lg
+                hover:bg-muted hover:text-foreground
                 focus:outline-none focus:ring-2 focus:ring-blue-500
                 disabled:opacity-50 disabled:cursor-not-allowed
                 transition-colors duration-150"
@@ -139,7 +139,7 @@ export const BulkActionsBar = memo(function BulkActionsBar({
                 onClick={onLinkTransfer}
                 disabled={isProcessing}
                 className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium
-                  text-blue-600 bg-white border border-blue-300 rounded-lg
+                  text-blue-600 bg-card border border-blue-300 rounded-lg
                   hover:bg-blue-50 hover:text-blue-700
                   focus:outline-none focus:ring-2 focus:ring-blue-500
                   disabled:opacity-50 disabled:cursor-not-allowed
@@ -157,8 +157,8 @@ export const BulkActionsBar = memo(function BulkActionsBar({
                 onClick={onExport}
                 disabled={isProcessing}
                 className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium
-                  text-gray-700 bg-white border border-gray-300 rounded-lg
-                  hover:bg-gray-50 hover:text-gray-900
+                  text-foreground bg-card border border-border rounded-lg
+                  hover:bg-muted hover:text-foreground
                   focus:outline-none focus:ring-2 focus:ring-blue-500
                   disabled:opacity-50 disabled:cursor-not-allowed
                   transition-colors duration-150"
@@ -174,7 +174,7 @@ export const BulkActionsBar = memo(function BulkActionsBar({
               onClick={onDelete}
               disabled={isProcessing}
               className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium
-                text-red-600 bg-white border border-red-300 rounded-lg
+                text-red-600 bg-card border border-red-300 rounded-lg
                 hover:bg-red-50 hover:text-red-700
                 focus:outline-none focus:ring-2 focus:ring-red-500
                 disabled:opacity-50 disabled:cursor-not-allowed
@@ -190,8 +190,8 @@ export const BulkActionsBar = memo(function BulkActionsBar({
               onClick={onClearSelection}
               disabled={isProcessing}
               aria-label="Clear selection"
-              className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg
-                focus:outline-none focus:ring-2 focus:ring-gray-500
+              className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg
+                focus:outline-none focus:ring-2 focus:ring-ring
                 disabled:opacity-50 disabled:cursor-not-allowed
                 transition-colors duration-150"
             >

@@ -128,27 +128,27 @@ export function DeleteAccountConfirmation({
       />
 
       {/* Dialog Content */}
-      <div className="relative bg-white rounded-xl shadow-xl max-w-md w-full">
+      <div className="relative bg-card rounded-xl shadow-xl max-w-md w-full">
         {/* Header */}
-        <div className="flex items-start gap-4 p-6 border-b border-gray-200">
+        <div className="flex items-start gap-4 p-6 border-b border-border">
           <div className="flex-shrink-0 p-2 bg-red-100 rounded-full">
             <AlertTriangle className="h-6 w-6 text-red-600" aria-hidden="true" />
           </div>
           <div className="flex-1">
-            <h2 id={titleId} className="text-lg font-semibold text-gray-900">
+            <h2 id={titleId} className="text-lg font-semibold text-foreground">
               Delete Account
             </h2>
-            <p className="mt-1 text-sm text-gray-600">
+            <p className="mt-1 text-sm text-muted-foreground">
               <span className="font-medium">{account.name}</span>
-              <span className="text-gray-500"> ({formattedBalance})</span>
+              <span className="text-muted-foreground"> ({formattedBalance})</span>
             </p>
           </div>
           <button
             type="button"
             onClick={onCancel}
             disabled={isDeleting}
-            className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100
-              focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500
+            className="p-2 rounded-lg text-muted-foreground hover:text-muted-foreground hover:bg-muted
+              focus:outline-none focus-visible:ring-2 focus-visible:ring-ring
               disabled:opacity-50 disabled:cursor-not-allowed
               transition-colors"
             aria-label="Close"
@@ -160,7 +160,7 @@ export function DeleteAccountConfirmation({
         {/* Content */}
         <div className="p-6 space-y-4">
           {/* Warning */}
-          <p id={descId} className="text-sm text-gray-600">
+          <p id={descId} className="text-sm text-muted-foreground">
             Are you sure you want to delete this account? This action{' '}
             <span className="font-semibold text-red-600">cannot be undone</span>.
           </p>
@@ -222,18 +222,18 @@ export function DeleteAccountConfirmation({
                 {eligibility.blockers.map((transfer) => (
                   <div
                     key={transfer.transactionId}
-                    className="flex items-center justify-between p-2 bg-white rounded border border-amber-100"
+                    className="flex items-center justify-between p-2 bg-card rounded border border-amber-100"
                   >
                     <div className="flex items-center gap-2 text-sm">
                       <ArrowRight className="h-4 w-4 text-amber-500" />
-                      <span className="text-gray-600">
+                      <span className="text-muted-foreground">
                         {transfer.transferRole === 'SOURCE' ? 'Sent to' : 'Received from'}
                       </span>
-                      <span className="font-medium text-gray-900">
+                      <span className="font-medium text-foreground">
                         {transfer.linkedAccountName}
                       </span>
                     </div>
-                    <span className="text-sm font-medium text-gray-900">
+                    <span className="text-sm font-medium text-foreground">
                       {new Intl.NumberFormat('en-US', {
                         style: 'currency',
                         currency: account.currency || 'USD',
@@ -253,11 +253,11 @@ export function DeleteAccountConfirmation({
           {/* Transaction Handling Options */}
           {hasTransactions && (
             <div className="space-y-3">
-              <p className="text-sm font-medium text-gray-700">
+              <p className="text-sm font-medium text-foreground">
                 What should happen to the {transactionCount} transactions in this account?
               </p>
               <div className="space-y-2">
-                <label className="flex items-start gap-3 p-3 rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer">
+                <label className="flex items-start gap-3 p-3 rounded-lg border border-border hover:bg-muted cursor-pointer">
                   <input
                     type="radio"
                     name="transactionHandling"
@@ -267,15 +267,15 @@ export function DeleteAccountConfirmation({
                     className="mt-0.5"
                   />
                   <div>
-                    <span className="text-sm font-medium text-gray-900">
+                    <span className="text-sm font-medium text-foreground">
                       Delete all transactions
                     </span>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-muted-foreground">
                       All transaction history will be permanently deleted
                     </p>
                   </div>
                 </label>
-                <label className="flex items-start gap-3 p-3 rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer">
+                <label className="flex items-start gap-3 p-3 rounded-lg border border-border hover:bg-muted cursor-pointer">
                   <input
                     type="radio"
                     name="transactionHandling"
@@ -285,10 +285,10 @@ export function DeleteAccountConfirmation({
                     className="mt-0.5"
                   />
                   <div>
-                    <span className="text-sm font-medium text-gray-900">
+                    <span className="text-sm font-medium text-foreground">
                       Keep transactions as unassigned
                     </span>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-muted-foreground">
                       Transactions will be kept but marked as unassigned
                     </p>
                   </div>
@@ -302,7 +302,7 @@ export function DeleteAccountConfirmation({
             <div>
               <label
                 htmlFor={`${dialogId}-confirm`}
-                className="block text-sm font-medium text-gray-700 mb-1"
+                className="block text-sm font-medium text-foreground mb-1"
               >
                 Type the account name to confirm
               </label>
@@ -313,25 +313,25 @@ export function DeleteAccountConfirmation({
                 onChange={(e) => setConfirmName(e.target.value)}
                 disabled={isDeleting}
                 placeholder={`Type "${account.name}" to confirm`}
-                className="w-full px-3 py-2 rounded-lg border border-gray-300
+                className="w-full px-3 py-2 rounded-lg border border-border
                   focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500
-                  disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  disabled:bg-muted disabled:cursor-not-allowed"
               />
             </div>
           )}
         </div>
 
         {/* Actions */}
-        <div className="flex gap-3 p-6 border-t border-gray-200">
+        <div className="flex gap-3 p-6 border-t border-border">
           <button
             ref={cancelButtonRef}
             type="button"
             onClick={onCancel}
             disabled={isDeleting || isHiding}
-            className="flex-1 px-4 py-2 rounded-lg border border-gray-300
-              text-gray-700 font-medium
-              hover:bg-gray-50 active:bg-gray-100
-              focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500
+            className="flex-1 px-4 py-2 rounded-lg border border-border
+              text-foreground font-medium
+              hover:bg-muted active:bg-muted
+              focus:outline-none focus-visible:ring-2 focus-visible:ring-ring
               disabled:opacity-50 disabled:cursor-not-allowed
               transition-colors"
           >

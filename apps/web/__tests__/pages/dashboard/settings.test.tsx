@@ -85,7 +85,7 @@ describe('SettingsPage', () => {
     it('renders the Settings icon in header', () => {
       const { container } = render(<SettingsPage />);
 
-      const headerIcon = container.querySelector('.bg-gray-100 svg');
+      const headerIcon = container.querySelector('.bg-muted svg');
       expect(headerIcon).toBeInTheDocument();
     });
   });

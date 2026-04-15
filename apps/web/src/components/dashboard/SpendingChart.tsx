@@ -78,10 +78,10 @@ function LegendItem({ category }: LegendItemProps) {
           className="w-3 h-3 rounded-full flex-shrink-0"
           style={{ backgroundColor: category.color }}
         />
-        <span className="text-sm text-gray-700 truncate">{category.name}</span>
+        <span className="text-sm text-foreground truncate">{category.name}</span>
       </div>
       <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-        <span className="text-sm font-medium text-gray-900">
+        <span className="text-sm font-medium text-foreground">
           {formatCurrency(category.amount)}
         </span>
         <span className="text-xs text-muted-foreground w-8 text-right">
@@ -96,17 +96,17 @@ function SpendingChartSkeleton() {
   return (
     <Card className="min-h-[340px] flex flex-col">
       <CardHeader className="pb-2">
-        <div className="h-5 w-40 bg-gray-200 rounded animate-pulse" />
-        <div className="h-4 w-32 bg-gray-200 rounded animate-pulse mt-1" />
+        <div className="h-5 w-40 bg-muted rounded animate-pulse" />
+        <div className="h-4 w-32 bg-muted rounded animate-pulse mt-1" />
       </CardHeader>
       <CardContent>
         <div className="flex flex-col sm:flex-row items-center gap-6">
-          <div className="w-40 h-40 rounded-full bg-gray-200 animate-pulse" />
+          <div className="w-40 h-40 rounded-full bg-muted animate-pulse" />
           <div className="flex-1 w-full space-y-3">
             {[1, 2, 3, 4, 5].map((i) => (
               <div key={i} className="flex justify-between">
-                <div className="h-4 w-24 bg-gray-200 rounded animate-pulse" />
-                <div className="h-4 w-16 bg-gray-200 rounded animate-pulse" />
+                <div className="h-4 w-24 bg-muted rounded animate-pulse" />
+                <div className="h-4 w-16 bg-muted rounded animate-pulse" />
               </div>
             ))}
           </div>
@@ -129,7 +129,7 @@ function EmptyState() {
       </CardHeader>
       <CardContent className="flex-1 flex flex-col justify-center">
         <div className="flex flex-col items-center justify-center text-center">
-          <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+          <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="24"
@@ -140,15 +140,15 @@ function EmptyState() {
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
-              className="text-gray-400"
+              className="text-muted-foreground"
             >
               <circle cx="12" cy="12" r="10" />
               <line x1="12" y1="8" x2="12" y2="12" />
               <line x1="12" y1="16" x2="12.01" y2="16" />
             </svg>
           </div>
-          <p className="text-gray-600 font-medium">No spending data</p>
-          <p className="text-sm text-gray-500 mt-1">
+          <p className="text-muted-foreground font-medium">No spending data</p>
+          <p className="text-sm text-muted-foreground mt-1">
             Start tracking your expenses to see spending breakdown
           </p>
         </div>
@@ -191,7 +191,7 @@ export function SpendingChart({ data, isLoading }: SpendingChartProps) {
             {/* Center text */}
             <div className="absolute inset-0 flex flex-col items-center justify-center">
               <span className="text-xs text-muted-foreground">Total</span>
-              <span className="text-lg font-bold text-gray-900">
+              <span className="text-lg font-bold text-foreground">
                 {formatCurrency(totalSpending)}
               </span>
             </div>
@@ -199,7 +199,7 @@ export function SpendingChart({ data, isLoading }: SpendingChartProps) {
 
           {/* Legend */}
           <div className="flex-1 w-full">
-            <div className="divide-y divide-gray-100">
+            <div className="divide-y divide-border">
               {data.map((category) => (
                 <LegendItem key={category.id} category={category} />
               ))}

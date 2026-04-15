@@ -1,3 +1,5 @@
+> NOTE: This document references the pre-migration NestJS backend which was replaced by Supabase Edge Functions in Phase 0 (April 2026).
+
 # pnpm 10 Upgrade Plan
 ## From 8.15.1 → 10.20.0
 

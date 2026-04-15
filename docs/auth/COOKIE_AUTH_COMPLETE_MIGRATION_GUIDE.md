@@ -1,3 +1,5 @@
+> NOTE: This document references the pre-migration NestJS backend which was replaced by Supabase Edge Functions in Phase 0 (April 2026).
+
 # Complete Cookie Authentication Migration Guide
 
 ## Executive Summary

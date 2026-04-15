@@ -1,46 +1,24 @@
 /**
- * Budgets API Client
+ * Budgets Client — Supabase
  *
- * Provides type-safe HTTP client for budget management endpoints.
- * Handles authentication, error handling, and request/response formatting.
+ * Direct Supabase queries replacing BFF fetch calls.
+ * RLS policies handle family/user isolation automatically.
  *
  * @module services/budgets.client
- *
- * @example
- * ```typescript
- * // Get all budgets
- * const { budgets } = await budgetsClient.getAll();
- *
- * // Create a new budget
- * const newBudget = await budgetsClient.create({
- *   name: 'Groceries',
- *   categoryId: 'uuid',
- *   amount: 500,
- *   period: 'MONTHLY',
- *   startDate: '2025-01-01',
- *   endDate: '2025-01-31',
- * });
- *
- * // Update a budget
- * const updated = await budgetsClient.update('budget-id', { amount: 600 });
- *
- * // Delete a budget
- * await budgetsClient.delete('budget-id');
- * ```
  */
 
+import { createClient } from '@/utils/supabase/client'
+import type { Database } from '@/utils/supabase/database.types'
+
+type BudgetRow = Database['public']['Tables']['budgets']['Row']
+type BudgetInsert = Database['public']['Tables']['budgets']['Insert']
+type CategoryRow = Database['public']['Tables']['categories']['Row']
+
 // =============================================================================
-// Type Definitions
+// Type Definitions (preserved for component compatibility)
 // =============================================================================
 
-/**
- * Budget period type
- */
 export type BudgetPeriod = 'MONTHLY' | 'QUARTERLY' | 'YEARLY' | 'CUSTOM';
-
-/**
- * Budget status
- */
 export type BudgetStatus = 'ACTIVE' | 'COMPLETED' | 'DRAFT';
 
 /**
@@ -52,9 +30,6 @@ export type BudgetStatus = 'ACTIVE' | 'COMPLETED' | 'DRAFT';
  */
 export type ProgressStatus = 'safe' | 'warning' | 'maxed' | 'over';
 
-/**
- * Category summary in budget response
- */
 export interface CategorySummary {
   id: string;
   name: string;
@@ -62,9 +37,6 @@ export interface CategorySummary {
   color?: string | null;
 }
 
-/**
- * Budget entity with calculated fields
- */
 export interface Budget {
   id: string;
   name: string;
@@ -81,24 +53,17 @@ export interface Budget {
   notes?: string | null;
   isOverBudget: boolean;
   progressStatus: ProgressStatus;
-  /** Whether the budget period has expired (endDate has passed) */
   isExpired: boolean;
   createdAt: string;
   updatedAt: string;
 }
 
-/**
- * Response from list budgets endpoint
- */
 export interface BudgetListResponse {
   budgets: Budget[];
   total: number;
   overBudgetCount: number;
 }
 
-/**
- * Data for creating a new budget
- */
 export interface CreateBudgetData {
   name: string;
   categoryId: string;
@@ -110,9 +75,6 @@ export interface CreateBudgetData {
   notes?: string;
 }
 
-/**
- * Data for updating a budget
- */
 export interface UpdateBudgetData {
   name?: string;
   categoryId?: string;
@@ -124,9 +86,6 @@ export interface UpdateBudgetData {
   notes?: string;
 }
 
-/**
- * HTTP error response structure
- */
 export interface ApiErrorResponse {
   statusCode: number;
   message: string | string[];
@@ -139,9 +98,6 @@ export interface ApiErrorResponse {
 // Error Classes
 // =============================================================================
 
-/**
- * Base error class for budgets API errors
- */
 export class BudgetsApiError extends Error {
   constructor(
     message: string,
@@ -155,9 +111,6 @@ export class BudgetsApiError extends Error {
   }
 }
 
-/**
- * Authentication error (401)
- */
 export class AuthenticationError extends BudgetsApiError {
   constructor(message: string = 'Authentication failed. Please log in again.') {
     super(message, 401, 'AuthenticationError');
@@ -166,9 +119,6 @@ export class AuthenticationError extends BudgetsApiError {
   }
 }
 
-/**
- * Authorization error (403)
- */
 export class AuthorizationError extends BudgetsApiError {
   constructor(
     message: string = 'You do not have permission to perform this action.'
@@ -179,9 +129,6 @@ export class AuthorizationError extends BudgetsApiError {
   }
 }
 
-/**
- * Not found error (404)
- */
 export class NotFoundError extends BudgetsApiError {
   constructor(message: string = 'Budget not found.') {
     super(message, 404, 'NotFoundError');
@@ -190,9 +137,6 @@ export class NotFoundError extends BudgetsApiError {
   }
 }
 
-/**
- * Validation error (400)
- */
 export class ValidationError extends BudgetsApiError {
   constructor(message: string = 'Invalid request data.', details?: unknown) {
     super(message, 400, 'ValidationError', details);
@@ -201,9 +145,6 @@ export class ValidationError extends BudgetsApiError {
   }
 }
 
-/**
- * Server error (500)
- */
 export class ServerError extends BudgetsApiError {
   constructor(
     message: string = 'Internal server error. Please try again later.'
@@ -215,231 +156,199 @@ export class ServerError extends BudgetsApiError {
 }
 
 // =============================================================================
-// HTTP Client Configuration
+// Helpers
 // =============================================================================
 
-/**
- * API base URL - uses relative path to go through BFF proxy
- * This ensures cookies are properly included (same-origin requests)
- */
-const API_BASE_URL = '/api/budgets';
+function computeProgressStatus(percentage: number): ProgressStatus {
+  if (percentage > 100) return 'over';
+  if (percentage === 100) return 'maxed';
+  if (percentage >= 80) return 'warning';
+  return 'safe';
+}
 
-/**
- * Parse error response and throw appropriate error
- */
-async function handleErrorResponse(response: Response): Promise<never> {
-  let errorData: ApiErrorResponse | null = null;
+type BudgetWithCategory = BudgetRow & {
+  categories: Pick<CategoryRow, 'id' | 'name' | 'icon' | 'color'> | null;
+}
 
-  try {
-    const text = await response.text();
-    if (text) {
-      errorData = JSON.parse(text);
-    }
-  } catch {
-    // Failed to parse error response
-  }
+function rowToBudget(row: BudgetWithCategory, spent: number): Budget {
+  const amount = Number(row.amount);
+  const remaining = Math.max(0, amount - spent);
+  const percentage = amount > 0 ? Math.round((spent / amount) * 100) : 0;
+  const now = new Date();
+  const endDate = new Date(row.end_date);
 
-  const statusCode = response.status;
-  const message = errorData?.message
-    ? Array.isArray(errorData.message)
-      ? errorData.message.join(', ')
-      : errorData.message
-    : response.statusText || 'An error occurred';
-
-  // Throw appropriate error type
-  switch (statusCode) {
-    case 400:
-      throw new ValidationError(message, errorData);
-    case 401:
-      throw new AuthenticationError(message);
-    case 403:
-      throw new AuthorizationError(message);
-    case 404:
-      throw new NotFoundError(message);
-    case 500:
-    case 502:
-    case 503:
-    case 504:
-      throw new ServerError(message);
-    default:
-      throw new BudgetsApiError(
-        message,
-        statusCode,
-        errorData?.error,
-        errorData
-      );
-  }
+  return {
+    id: row.id,
+    name: row.name,
+    amount,
+    spent,
+    remaining,
+    percentage,
+    status: row.status as BudgetStatus,
+    period: row.period as BudgetPeriod,
+    startDate: row.start_date,
+    endDate: row.end_date,
+    category: row.categories
+      ? { id: row.categories.id, name: row.categories.name, icon: row.categories.icon, color: row.categories.color }
+      : { id: row.category_id, name: 'Unknown' },
+    alertThresholds: row.alert_thresholds ?? [],
+    notes: row.notes,
+    isOverBudget: spent > amount,
+    progressStatus: computeProgressStatus(percentage),
+    isExpired: endDate < now,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
 }
 
 /**
- * Make HTTP request with authentication and error handling
+ * Compute total spent for a budget by summing DEBIT transactions
+ * within the budget's date range and category.
  */
-async function request<T>(
-  endpoint: string,
-  options: RequestInit = {}
-): Promise<T> {
-  const url = `${API_BASE_URL}${endpoint}`;
+async function computeSpent(
+  supabase: ReturnType<typeof createClient>,
+  categoryId: string,
+  startDate: string,
+  endDate: string
+): Promise<number> {
+  const { data, error } = await supabase
+    .from('transactions')
+    .select('amount')
+    .eq('category_id', categoryId)
+    .eq('type', 'DEBIT')
+    .eq('include_in_budget', true)
+    .gte('date', startDate)
+    .lte('date', endDate)
 
-  const response = await fetch(url, {
-    ...options,
-    credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-  });
+  if (error) return 0;
+  return (data ?? []).reduce((sum, t) => sum + Math.abs(Number(t.amount)), 0);
+}
 
-  if (!response.ok) {
-    await handleErrorResponse(response);
-  }
+/**
+ * Look up the current user's family_id from their profile.
+ */
+async function getUserFamilyId(supabase: ReturnType<typeof createClient>): Promise<string> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new AuthenticationError();
 
-  if (response.status === 204) {
-    return undefined as T;
-  }
+  const { data: profile, error } = await supabase
+    .from('profiles')
+    .select('family_id')
+    .eq('id', user.id)
+    .single();
 
-  const text = await response.text();
-  if (!text) {
-    return {} as T;
-  }
-
-  return JSON.parse(text);
+  if (error || !profile) throw new BudgetsApiError('Could not resolve family', 500);
+  return profile.family_id;
 }
 
 // =============================================================================
-// Budgets API Client
+// Budgets Client
 // =============================================================================
 
-/**
- * Budgets API Client
- *
- * Provides methods for interacting with budget management endpoints.
- * All methods are authenticated and include proper error handling.
- */
 export const budgetsClient = {
-  /**
-   * Get all budgets for the user's family
-   *
-   * @returns List of budgets with spent amounts and progress
-   * @throws {AuthenticationError} If not authenticated
-   * @throws {ServerError} If server error occurs
-   *
-   * @example
-   * ```typescript
-   * const { budgets, total, overBudgetCount } = await budgetsClient.getAll();
-   * budgets.forEach(budget => {
-   *   console.log(`${budget.name}: ${budget.percentage}% used`);
-   * });
-   * ```
-   */
   async getAll(): Promise<BudgetListResponse> {
-    return request<BudgetListResponse>('', {
-      method: 'GET',
-    });
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from('budgets')
+      .select('*, categories(id, name, icon, color)')
+      .order('created_at', { ascending: false });
+
+    if (error) throw new BudgetsApiError(error.message, 500);
+
+    const rows = (data ?? []) as BudgetWithCategory[];
+    const budgets: Budget[] = await Promise.all(
+      rows.map(async (row) => {
+        const spent = await computeSpent(supabase, row.category_id, row.start_date, row.end_date);
+        return rowToBudget(row, spent);
+      })
+    );
+
+    const overBudgetCount = budgets.filter((b) => b.isOverBudget).length;
+
+    return {
+      budgets,
+      total: budgets.length,
+      overBudgetCount,
+    };
   },
 
-  /**
-   * Get a specific budget by ID
-   *
-   * @param id - Budget ID
-   * @returns Budget with spent amount and progress
-   * @throws {AuthenticationError} If not authenticated
-   * @throws {NotFoundError} If budget not found
-   * @throws {AuthorizationError} If budget belongs to different family
-   * @throws {ServerError} If server error occurs
-   *
-   * @example
-   * ```typescript
-   * const budget = await budgetsClient.getOne('budget-id');
-   * console.log(`${budget.name}: $${budget.spent} of $${budget.amount}`);
-   * ```
-   */
   async getOne(id: string): Promise<Budget> {
-    return request<Budget>(`/${id}`, {
-      method: 'GET',
-    });
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from('budgets')
+      .select('*, categories(id, name, icon, color)')
+      .eq('id', id)
+      .single();
+
+    if (error) throw new NotFoundError();
+
+    const row = data as BudgetWithCategory;
+    const spent = await computeSpent(supabase, row.category_id, row.start_date, row.end_date);
+    return rowToBudget(row, spent);
   },
 
-  /**
-   * Create a new budget
-   *
-   * @param data - Budget creation data
-   * @returns Created budget with calculated fields
-   * @throws {AuthenticationError} If not authenticated
-   * @throws {ValidationError} If data is invalid
-   * @throws {ServerError} If server error occurs
-   *
-   * @example
-   * ```typescript
-   * const budget = await budgetsClient.create({
-   *   name: 'Groceries',
-   *   categoryId: 'category-uuid',
-   *   amount: 500,
-   *   period: 'MONTHLY',
-   *   startDate: '2025-01-01',
-   *   endDate: '2025-01-31',
-   * });
-   * console.log(`Created budget: ${budget.id}`);
-   * ```
-   */
   async create(data: CreateBudgetData): Promise<Budget> {
-    return request<Budget>('', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
+    const supabase = createClient();
+    const familyId = await getUserFamilyId(supabase);
+
+    const insert: BudgetInsert = {
+      name: data.name,
+      category_id: data.categoryId,
+      amount: data.amount,
+      period: data.period as Database['public']['Enums']['budget_period'],
+      start_date: data.startDate,
+      end_date: data.endDate,
+      alert_thresholds: data.alertThresholds ?? [],
+      notes: data.notes ?? null,
+      family_id: familyId,
+    };
+
+    const { data: created, error } = await supabase
+      .from('budgets')
+      .insert(insert)
+      .select('*, categories(id, name, icon, color)')
+      .single();
+
+    if (error) throw new ValidationError(error.message);
+    return rowToBudget(created as BudgetWithCategory, 0);
   },
 
-  /**
-   * Update a budget
-   *
-   * @param id - Budget ID
-   * @param data - Update data (only provided fields are modified)
-   * @returns Updated budget with calculated fields
-   * @throws {AuthenticationError} If not authenticated
-   * @throws {ValidationError} If data is invalid
-   * @throws {NotFoundError} If budget not found
-   * @throws {AuthorizationError} If budget belongs to different family
-   * @throws {ServerError} If server error occurs
-   *
-   * @example
-   * ```typescript
-   * const budget = await budgetsClient.update('budget-id', {
-   *   amount: 600,
-   *   notes: 'Increased for holidays',
-   * });
-   * console.log(`Updated budget: ${budget.amount}`);
-   * ```
-   */
   async update(id: string, data: UpdateBudgetData): Promise<Budget> {
-    return request<Budget>(`/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    });
+    const supabase = createClient();
+    const update: Database['public']['Tables']['budgets']['Update'] = {};
+
+    if (data.name !== undefined) update.name = data.name;
+    if (data.categoryId !== undefined) update.category_id = data.categoryId;
+    if (data.amount !== undefined) update.amount = data.amount;
+    if (data.period !== undefined) update.period = data.period as Database['public']['Enums']['budget_period'];
+    if (data.startDate !== undefined) update.start_date = data.startDate;
+    if (data.endDate !== undefined) update.end_date = data.endDate;
+    if (data.alertThresholds !== undefined) update.alert_thresholds = data.alertThresholds;
+    if (data.notes !== undefined) update.notes = data.notes;
+
+    const { data: updated, error } = await supabase
+      .from('budgets')
+      .update(update)
+      .eq('id', id)
+      .select('*, categories(id, name, icon, color)')
+      .single();
+
+    if (error) throw new BudgetsApiError(error.message, 400);
+
+    const row = updated as BudgetWithCategory;
+    const spent = await computeSpent(supabase, row.category_id, row.start_date, row.end_date);
+    return rowToBudget(row, spent);
   },
 
-  /**
-   * Delete a budget
-   *
-   * @param id - Budget ID
-   * @throws {AuthenticationError} If not authenticated
-   * @throws {NotFoundError} If budget not found
-   * @throws {AuthorizationError} If budget belongs to different family
-   * @throws {ServerError} If server error occurs
-   *
-   * @example
-   * ```typescript
-   * await budgetsClient.delete('budget-id');
-   * console.log('Budget deleted');
-   * ```
-   */
   async delete(id: string): Promise<void> {
-    return request<void>(`/${id}`, {
-      method: 'DELETE',
-    });
+    const supabase = createClient();
+    const { error } = await supabase
+      .from('budgets')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw new BudgetsApiError(error.message, 400);
   },
 };
-
-// =============================================================================
-// Exports
-// =============================================================================
 
 export default budgetsClient;

@@ -27,11 +27,11 @@ export default function DashboardPage() {
       <div className="space-y-6" data-testid="dashboard">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
               Welcome back,{' '}
               <span data-testid="user-name">{user?.firstName}</span>!
             </h1>
-            <p className="text-gray-600 mt-1">
+            <p className="text-muted-foreground mt-1">
               Here&apos;s an overview of your financial dashboard
             </p>
           </div>
@@ -53,11 +53,11 @@ export default function DashboardPage() {
       {/* Welcome Section with Filters */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
             Welcome back,{' '}
             <span data-testid="user-name">{user?.firstName}</span>!
           </h1>
-          <p className="text-gray-600 mt-1">
+          <p className="text-muted-foreground mt-1">
             Here&apos;s an overview of your financial dashboard
           </p>
         </div>

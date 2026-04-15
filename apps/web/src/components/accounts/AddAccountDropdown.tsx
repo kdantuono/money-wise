@@ -199,7 +199,7 @@ export function AddAccountDropdown({
           font-medium text-sm transition-colors duration-200
           ${
             isButtonDisabled
-              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              ? 'bg-secondary text-muted-foreground cursor-not-allowed'
               : 'bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500'
           }
         `}
@@ -272,7 +272,7 @@ export function AddAccountDropdown({
           onKeyDown={handleKeyDown}
           className="
             absolute right-0 z-50 mt-2 w-72
-            origin-top-right rounded-lg bg-white
+            origin-top-right rounded-lg bg-card
             shadow-lg ring-1 ring-black ring-opacity-5
             focus:outline-none
           "
@@ -292,21 +292,21 @@ export function AddAccountDropdown({
                   ${
                     focusedIndex === index
                       ? 'bg-blue-50 text-blue-900'
-                      : 'text-gray-700 hover:bg-gray-50'
+                      : 'text-foreground hover:bg-muted'
                   }
                 `}
               >
                 <span
                   className={`
                     flex-shrink-0 mt-0.5
-                    ${focusedIndex === index ? 'text-blue-600' : 'text-gray-400'}
+                    ${focusedIndex === index ? 'text-blue-600' : 'text-muted-foreground'}
                   `}
                 >
                   {item.icon}
                 </span>
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-sm">{item.label}</p>
-                  <p className="text-xs text-gray-500 mt-0.5">
+                  <p className="text-xs text-muted-foreground mt-0.5">
                     {item.description}
                   </p>
                 </div>

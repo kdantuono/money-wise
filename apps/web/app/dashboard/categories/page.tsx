@@ -66,12 +66,12 @@ function DeleteConfirmationModal({
         aria-hidden="true"
       />
       <div className="flex min-h-full items-center justify-center p-4">
-        <div className="relative w-full max-w-md bg-white rounded-xl shadow-xl p-6">
+        <div className="relative w-full max-w-md bg-card rounded-xl shadow-xl p-6">
           <div className="flex items-center gap-3 mb-4">
             <div className="p-2 bg-red-100 rounded-lg">
               <Trash2 className="h-5 w-5 text-red-600" />
             </div>
-            <h3 className="text-lg font-semibold text-gray-900">
+            <h3 className="text-lg font-semibold text-foreground">
               Delete Category
             </h3>
           </div>
@@ -283,7 +283,7 @@ export default function CategoriesPage() {
             <Tag className="h-6 w-6 text-purple-600" aria-hidden="true" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Categories</h1>
+            <h1 className="text-2xl font-bold text-foreground">Categories</h1>
             <p className="text-sm text-gray-500">
               Organize your transactions with custom categories
             </p>
@@ -299,7 +299,7 @@ export default function CategoriesPage() {
             aria-busy={isRefreshing}
             className="inline-flex items-center justify-center px-4 py-2 rounded-lg font-medium
               transition-colors duration-200 border border-gray-300
-              text-gray-700 bg-white hover:bg-gray-50 active:bg-gray-100
+              text-foreground bg-card hover:bg-muted active:bg-muted/80
               focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500
               disabled:opacity-50 disabled:cursor-not-allowed"
           >
@@ -383,7 +383,7 @@ export default function CategoriesPage() {
       </div>
 
       {/* Category Tree */}
-      <div className="bg-white rounded-xl border border-gray-200 p-4">
+      <div className="bg-card rounded-xl border border-border p-4">
         <CategoryTree
           categories={filteredCategories}
           onSelect={handleCategoryClick}
