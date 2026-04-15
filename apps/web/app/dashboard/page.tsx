@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion } from 'motion';
+import { motion } from 'framer-motion';
 import {
   ArrowUpRight,
   ArrowDownRight,

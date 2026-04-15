@@ -1,6 +1,6 @@
 'use client';
 
-import { motion } from 'motion';
+import { motion } from 'framer-motion';
 
 /**
  * Dashboard Loading — Zecca branded, theme-aware

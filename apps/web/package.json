@@ -57,6 +57,7 @@
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.0.0",
     "date-fns": "^4.1.0",
+    "framer-motion": "^12.38.0",
     "immer": "^10.2.0",
     "isomorphic-dompurify": "^3.7.1",
     "lucide-react": "^0.555.0",
