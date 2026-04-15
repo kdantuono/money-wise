@@ -32,13 +32,13 @@ export const test = base.extend<{
         `❌ Authentication state file not found at: ${AUTH_FILE}\n\n` +
         `This usually means the global setup did not run successfully.\n\n` +
         `To fix this issue:\n` +
-        `  1. Make sure the backend is running: pnpm --filter @money-wise/backend dev\n` +
-        `  2. Make sure the frontend is running: pnpm --filter @money-wise/web dev\n` +
+        `  1. Make sure the frontend is running: pnpm dev:web\n` +
+        `  2. Make sure Supabase env vars are set (NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY)\n` +
         `  3. Run global setup manually: pnpm --filter @money-wise/web exec playwright test --global-setup\n` +
         `  4. Or run E2E tests normally (global setup runs automatically): pnpm test:e2e\n\n` +
         `If the problem persists, check:\n` +
-        `  - Backend health endpoint: http://localhost:3001/api/health\n` +
-        `  - Frontend health endpoint: http://localhost:3000\n` +
+        `  - Frontend: http://localhost:3000\n` +
+        `  - Supabase Dashboard for auth settings\n` +
         `  - Check logs in global-setup.ts for error details`
       );
     }

@@ -103,7 +103,7 @@ Auth: Supabase Auth via `@supabase/ssr` (cookie-based sessions, middleware refre
   - `banking-initiate-link` - SaltEdge OAuth flow start
   - `banking-complete-link` - OAuth completion + account storage
   - `banking-sync` - Transaction sync from SaltEdge
-  - `banking-webhook` - SaltEdge webhook handler (HMAC verified, public)
+  - `banking-webhook` - SaltEdge webhook handler (public, signature verification pending — audit B19)
   - `banking-revoke` - Connection revocation
   - `_shared/` - Shared utilities (CORS, Supabase client, SaltEdge client, responses)
 - `config.toml` - Project config (project ID: `qhsrkuucldwklkdzbkuw`)

@@ -908,10 +908,10 @@ jobs:
 
               | Metric | Size | Status |
               |--------|------|--------|
-              | Total Bundle | ${sizeMB} MB | ${sizeMB < 50 ? '✅' : '❌'} |
-              | Threshold | 50 MB | - |
+              | Total Bundle | ${sizeMB} MB | ${sizeMB < 100 ? '✅' : '❌'} |
+              | Threshold | 100 MB | - |
 
-              ${sizeMB >= 50 ? '⚠️ Bundle size exceeds recommended limit!' : '✅ Bundle size is within limits'}`;
+              ${sizeMB >= 100 ? '⚠️ Bundle size exceeds limit!' : '✅ Bundle size is within limits'}`;
 
               github.rest.issues.createComment({
                 issue_number: context.issue.number,

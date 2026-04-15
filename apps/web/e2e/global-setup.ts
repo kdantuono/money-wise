@@ -1,9 +1,14 @@
 /**
  * Global setup for Playwright E2E tests
- * Runs once before all tests to prepare test environment
+ *
+ * Post-Supabase migration: user provisioning goes through Supabase Auth
+ * directly (signUp/signInWithPassword) instead of the deleted NestJS backend.
+ *
+ * Runs once before all tests to prepare test environment.
  */
 
 import { chromium, FullConfig } from '@playwright/test';
+import { createClient } from '@supabase/supabase-js';
 import * as path from 'path';
 import * as fs from 'fs';
 import { fileURLToPath } from 'url';
@@ -15,16 +20,19 @@ const __dirname = dirname(__filename);
 const AUTH_FILE = path.join(__dirname, '.auth/user.json');
 const TEST_USERS_FILE = path.join(__dirname, '.auth/test-users.json');
 const FRONTEND_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
+// Supabase configuration (same env vars the frontend uses)
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 // Test user credentials
 // Password must NOT contain firstName, lastName, or email parts
-// Password requirements: 12+ chars, uppercase, lowercase, digits, special chars, score >= 60
+// Password requirements: 12+ chars, uppercase, lowercase, digits, special chars
 const TEST_USER = {
   email: 'e2e-test@moneywise.app',
-  password: 'Secure#Finance2025!',  // 19 chars, no user info
+  password: 'Secure#Finance2025!',
   firstName: 'E2E',
-  lastName: 'Automation'  // Changed from 'TestUser' to avoid confusion
+  lastName: 'Automation',
 };
 
 // Test users to create (from test-data.ts fixtures)
@@ -52,22 +60,22 @@ const TEST_USERS = [
 async function globalSetup(config: FullConfig) {
   console.log('🚀 Starting global setup for E2E tests...');
   console.log(`📍 Frontend URL: ${FRONTEND_URL}`);
-  console.log(`📍 Backend URL: ${BACKEND_URL}`);
+  console.log(`📍 Supabase URL: ${SUPABASE_URL ? '✅ configured' : '❌ missing'}`);
 
   try {
-    // Step 1: Check backend health
-    await checkBackendHealth();
+    // Step 1: Verify Supabase configuration
+    checkSupabaseConfig();
 
-    // Step 2: Clean up previous auth state
-    await cleanupAuthState();
+    // Step 2: Wait for frontend to be ready
+    await waitForFrontend();
 
-    // Step 3: Create test user pool for parallel execution
+    // Step 3: Clean up previous auth state
+    cleanupAuthState();
+
+    // Step 4: Create test user pool via Supabase Auth
     await createTestUserPool();
 
-    // Step 4: Seed categories for test users
-    await seedCategoriesForTestUsers();
-
-    // Step 5: Create authenticated user session
+    // Step 5: Create authenticated user session via browser
     await createAuthenticatedSession(config);
 
     console.log('✅ Global setup completed successfully');
@@ -78,58 +86,64 @@ async function globalSetup(config: FullConfig) {
 }
 
 /**
- * Check if backend API is healthy and responding
+ * Verify that Supabase environment variables are configured.
+ * Without these, E2E tests cannot create users or authenticate.
  */
-async function checkBackendHealth() {
-  console.log('🏥 Checking backend health...');
+function checkSupabaseConfig() {
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    throw new Error(
+      'Supabase configuration is required for E2E tests.\n\n' +
+      'Please set the following environment variables:\n' +
+      '  NEXT_PUBLIC_SUPABASE_URL - Your Supabase project URL\n' +
+      '  NEXT_PUBLIC_SUPABASE_ANON_KEY - Your Supabase anon/public key\n\n' +
+      'These can be found in your Supabase Dashboard → Settings → API.'
+    );
+  }
+  console.log('✅ Supabase configuration verified');
+}
+
+/**
+ * Wait for the frontend dev server to be ready.
+ * Replaces the old backend health check.
+ */
+async function waitForFrontend() {
+  console.log('🌐 Waiting for frontend...');
 
   const maxRetries = 30;
   const retryDelay = 2000;
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      const response = await fetch(`${BACKEND_URL}/api/health`, {
+      const response = await fetch(FRONTEND_URL, {
         method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
-        cache: 'no-store'
+        cache: 'no-store',
       });
 
-      if (response.ok) {
-        // Some environments return additional fields; prefer status==='ok' if present
-        let healthy = true;
-        try {
-          const data = await response.json();
-          healthy = !data?.status || data.status === 'ok';
-        } catch {
-          // Non-JSON response is fine; treat as healthy
-        }
-        if (healthy) {
-          console.log('✅ Backend health check passed');
-          return;
-        }
-      } else {
-        console.warn(`⚠️ Backend health check failed (attempt ${attempt}/${maxRetries}): ${response.status} ${response.statusText}`);
+      if (response.ok || response.status === 200 || response.status === 304) {
+        console.log('✅ Frontend is ready');
+        return;
       }
     } catch (error) {
-      console.warn(`⚠️ Backend health check error (attempt ${attempt}/${maxRetries}):`, error instanceof Error ? error.message : error);
+      if (attempt < maxRetries) {
+        console.log(`⏳ Frontend not ready (attempt ${attempt}/${maxRetries}), retrying in ${retryDelay / 1000}s...`);
+      }
     }
 
     if (attempt < maxRetries) {
-      console.log(`⏳ Retrying in ${retryDelay / 1000}s...`);
       await new Promise(resolve => setTimeout(resolve, retryDelay));
     }
   }
 
   throw new Error(
-    `Backend API is not responding after ${maxRetries} attempts. ` +
-    `Please ensure the backend is running at ${BACKEND_URL}/api/health`
+    `Frontend is not responding after ${maxRetries} attempts. ` +
+    `Please ensure the dev server is running at ${FRONTEND_URL}`
   );
 }
 
 /**
  * Clean up any existing auth state
  */
-async function cleanupAuthState() {
+function cleanupAuthState() {
   console.log('🧹 Cleaning up previous auth state...');
 
   if (fs.existsSync(AUTH_FILE)) {
@@ -141,11 +155,13 @@ async function cleanupAuthState() {
 }
 
 /**
- * Create test user pool for parallel test execution
- * Creates 8 users (one per shard) to avoid race conditions
+ * Create test user pool via Supabase Auth for parallel test execution.
+ * Uses signUp() which works with the anon key.
  */
 async function createTestUserPool() {
-  console.log('👥 Creating test user pool for parallel execution...');
+  console.log('👥 Creating test user pool via Supabase Auth...');
+
+  const supabase = createClient(SUPABASE_URL!, SUPABASE_ANON_KEY!);
 
   // Ensure .auth directory exists
   const authDir = path.dirname(TEST_USERS_FILE);
@@ -156,30 +172,39 @@ async function createTestUserPool() {
   const createdUsers: Array<{ email: string; password: string }> = [];
   const failedUsers: Array<{ email: string; error: string }> = [];
 
-  // Create 8 users for parallel shards (matching Playwright default workers)
+  // Create shard users for parallel execution
   for (let i = 0; i < 8; i++) {
     const user = {
       email: `e2e-shard-${i}@moneywise.test`,
       password: 'SecureTest#2025!',
       firstName: 'E2E',
-      lastName: `Shard${i}`
+      lastName: `Shard${i}`,
     };
 
     try {
-      const response = await fetch(`${BACKEND_URL}/api/auth/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(user)
+      const { data, error } = await supabase.auth.signUp({
+        email: user.email,
+        password: user.password,
+        options: {
+          data: {
+            first_name: user.firstName,
+            last_name: user.lastName,
+          },
+        },
       });
 
-      if (response.ok || response.status === 409 || response.status === 400) {
-        // Success or user already exists (both are fine)
+      if (error) {
+        // "User already registered" is fine — means the user exists
+        if (error.message?.includes('already registered') || error.message?.includes('already exists')) {
+          createdUsers.push({ email: user.email, password: user.password });
+          console.log(`  ✅ User ${i + 1}/8: ${user.email} (existing)`);
+        } else {
+          failedUsers.push({ email: user.email, error: error.message });
+          console.warn(`  ⚠️ User ${i + 1}/8 failed: ${user.email} - ${error.message}`);
+        }
+      } else {
         createdUsers.push({ email: user.email, password: user.password });
         console.log(`  ✅ User ${i + 1}/8: ${user.email}`);
-      } else {
-        const errorText = await response.text().catch(() => 'Unknown error');
-        failedUsers.push({ email: user.email, error: `${response.status}: ${errorText}` });
-        console.warn(`  ⚠️ User ${i + 1}/8 failed: ${user.email} - ${errorText}`);
       }
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
@@ -187,22 +212,29 @@ async function createTestUserPool() {
       console.warn(`  ⚠️ User ${i + 1}/8 error: ${user.email} - ${errorMsg}`);
     }
 
-    // Small delay to avoid overwhelming backend
+    // Small delay to avoid rate limiting
     await new Promise(resolve => setTimeout(resolve, 100));
   }
 
-  // Also add the pre-defined test users from TEST_USERS array
+  // Also add the pre-defined test users
   for (const user of TEST_USERS) {
     try {
-      const response = await fetch(`${BACKEND_URL}/api/auth/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(user)
+      const { error } = await supabase.auth.signUp({
+        email: user.email,
+        password: user.password,
+        options: {
+          data: {
+            first_name: user.firstName,
+            last_name: user.lastName,
+          },
+        },
       });
 
-      if (response.ok || response.status === 409 || response.status === 400) {
+      if (!error || error.message?.includes('already registered') || error.message?.includes('already exists')) {
         createdUsers.push({ email: user.email, password: user.password });
         console.log(`  ✅ Predefined user: ${user.email}`);
+      } else {
+        console.warn(`  ⚠️ Predefined user failed: ${user.email} - ${error.message}`);
       }
     } catch (error) {
       console.warn(`  ⚠️ Predefined user failed: ${user.email}`);
@@ -223,183 +255,45 @@ async function createTestUserPool() {
   }
 
   if (createdUsers.length === 0) {
-    throw new Error('Failed to create any test users. Please check backend connection and logs.');
+    throw new Error('Failed to create any test users. Please check Supabase connection and auth settings.');
   }
 }
 
 /**
- * Generate a URL-friendly slug from a name
- * Must match backend validation: lowercase letters, numbers, and hyphens only
- */
-function generateSlug(name: string): string {
-  return name
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9\s-]/g, '') // Remove special characters except spaces and hyphens
-    .replace(/\s+/g, '-')          // Replace spaces with hyphens
-    .replace(/-+/g, '-');          // Replace multiple hyphens with single hyphen
-}
-
-/**
- * Default categories to seed for each test user
- * Note: slug is generated dynamically from name to match backend requirements
- */
-const DEFAULT_CATEGORIES = [
-  // Expense categories
-  { name: 'Food & Dining', slug: 'food-dining', type: 'EXPENSE', color: '#F59E0B', icon: 'Utensils' },
-  { name: 'Transportation', slug: 'transportation', type: 'EXPENSE', color: '#3B82F6', icon: 'Car' },
-  { name: 'Shopping', slug: 'shopping', type: 'EXPENSE', color: '#EC4899', icon: 'ShoppingBag' },
-  { name: 'Bills & Utilities', slug: 'bills-utilities', type: 'EXPENSE', color: '#8B5CF6', icon: 'FileText' },
-  { name: 'Entertainment', slug: 'entertainment', type: 'EXPENSE', color: '#10B981', icon: 'Film' },
-  // Income categories
-  { name: 'Salary', slug: 'salary', type: 'INCOME', color: '#22C55E', icon: 'Wallet' },
-  { name: 'Freelance', slug: 'freelance', type: 'INCOME', color: '#14B8A6', icon: 'Laptop' },
-  { name: 'Investments', slug: 'investments', type: 'INCOME', color: '#6366F1', icon: 'TrendingUp' },
-];
-
-/**
- * Seed default categories for all test users
- * Logs in as each user and creates default categories
- */
-async function seedCategoriesForTestUsers() {
-  console.log('📂 Seeding categories for test users...');
-
-  // Read the test users file
-  if (!fs.existsSync(TEST_USERS_FILE)) {
-    console.warn('⚠️ No test users file found, skipping category seeding');
-    return;
-  }
-
-  const userPool = JSON.parse(fs.readFileSync(TEST_USERS_FILE, 'utf-8'));
-  const users = userPool.users || [];
-
-  if (users.length === 0) {
-    console.warn('⚠️ No test users found, skipping category seeding');
-    return;
-  }
-
-  let seededCount = 0;
-
-  for (const user of users) {
-    try {
-      // Step 1: Login to get access token (returned as HttpOnly cookie)
-      const loginResponse = await fetch(`${BACKEND_URL}/api/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: user.email, password: user.password })
-      });
-
-      if (!loginResponse.ok) {
-        console.warn(`  ⚠️ Login failed for ${user.email}: ${loginResponse.status}`);
-        continue;
-      }
-
-      // Extract accessToken from Set-Cookie header (HttpOnly cookie)
-      // The header format is: accessToken=xxx; Path=/; HttpOnly; ...
-      const setCookieHeader = loginResponse.headers.get('set-cookie');
-      let accessToken: string | null = null;
-      let cookieHeader = '';
-
-      if (setCookieHeader) {
-        // Handle multiple cookies - they may be separated by commas
-        const cookieParts = setCookieHeader.split(/,\s*(?=[a-zA-Z]+=)/);
-        for (const part of cookieParts) {
-          // Extract just the name=value part before the first semicolon
-          const nameValue = part.split(';')[0].trim();
-          if (nameValue.startsWith('accessToken=')) {
-            accessToken = nameValue.substring('accessToken='.length);
-            cookieHeader = nameValue; // Use as cookie header
-            break;
-          }
-        }
-      }
-
-      if (!accessToken) {
-        console.warn(`  ⚠️ No access token cookie for ${user.email}`);
-        continue;
-      }
-
-      // Step 2: Check if user already has categories
-      // Use Cookie header (primary) and Authorization header (fallback)
-      const existingResponse = await fetch(`${BACKEND_URL}/api/categories`, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Cookie': cookieHeader,
-          'Authorization': `Bearer ${accessToken}`
-        }
-      });
-
-      if (existingResponse.ok) {
-        const existing = await existingResponse.json();
-        if (existing && existing.length > 0) {
-          console.log(`  ℹ️ ${user.email}: Already has ${existing.length} categories`);
-          seededCount++;
-          continue;
-        }
-      }
-
-      // Step 3: Create default categories
-      let created = 0;
-      for (const category of DEFAULT_CATEGORIES) {
-        try {
-          const response = await fetch(`${BACKEND_URL}/api/categories`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Cookie': cookieHeader,
-              'Authorization': `Bearer ${accessToken}`
-            },
-            body: JSON.stringify(category)
-          });
-
-          if (response.ok || response.status === 409) {
-            created++;
-          } else {
-            // Log error details for debugging
-            const errorBody = await response.text().catch(() => 'Unknown error');
-            console.warn(`    ⚠️ Category "${category.name}" failed (${response.status}): ${errorBody.substring(0, 100)}`);
-          }
-        } catch (err) {
-          console.warn(`    ⚠️ Category "${category.name}" error: ${err instanceof Error ? err.message : String(err)}`);
-        }
-      }
-
-      console.log(`  ✅ ${user.email}: Seeded ${created} categories`);
-      seededCount++;
-
-      // Small delay between users
-      await new Promise(resolve => setTimeout(resolve, 50));
-    } catch (error) {
-      console.warn(`  ⚠️ Error seeding ${user.email}: ${error instanceof Error ? error.message : error}`);
-    }
-  }
-
-  console.log(`✅ Categories seeded for ${seededCount}/${users.length} users`);
-}
-
-/**
- * Create authenticated user session
+ * Create authenticated user session via browser UI login.
+ *
+ * Uses UI-based login because Supabase Auth sets HttpOnly cookies
+ * that need to go through the same-origin frontend middleware.
  */
 async function createAuthenticatedSession(config: FullConfig) {
   console.log('👤 Creating authenticated user session...');
 
+  const supabase = createClient(SUPABASE_URL!, SUPABASE_ANON_KEY!);
   const browser = await chromium.launch();
   const context = await browser.newContext();
   const page = await context.newPage();
 
-  const baseURL = config.projects[0].use?.baseURL || 'http://localhost:3000';
-
   try {
-    // Step 1: Try to create test user via API
-    const userCreated = await createTestUserViaAPI();
+    // Step 1: Ensure primary test user exists via Supabase Auth
+    const { error: signUpError } = await supabase.auth.signUp({
+      email: TEST_USER.email,
+      password: TEST_USER.password,
+      options: {
+        data: {
+          first_name: TEST_USER.firstName,
+          last_name: TEST_USER.lastName,
+        },
+      },
+    });
 
-    if (!userCreated) {
-      console.log('⚠️ API user creation failed, trying browser registration...');
-      await createTestUserViaBrowser(page);
+    if (signUpError && !signUpError.message?.includes('already registered') && !signUpError.message?.includes('already exists')) {
+      console.warn(`⚠️ Test user signUp issue: ${signUpError.message}`);
+      // Continue anyway — user might already exist and signUp returns an error
+    } else {
+      console.log('✅ Primary test user ready');
     }
 
     // Step 2: Login to get auth state via UI
-    // Using UI-based login for HttpOnly cookie auth (required for BFF pattern)
     await loginViaUI(page);
 
     // Step 3: Save auth state
@@ -417,94 +311,12 @@ async function createAuthenticatedSession(config: FullConfig) {
 }
 
 /**
- * Create test user via API (preferred method)
- */
-async function createTestUserViaAPI(): Promise<boolean> {
-  console.log('📝 Creating test user via API...');
-
-  try {
-    const response = await fetch(`${BACKEND_URL}/api/auth/register`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email: TEST_USER.email,
-        password: TEST_USER.password,
-        firstName: TEST_USER.firstName,
-        lastName: TEST_USER.lastName
-      })
-    });
-
-    if (response.ok) {
-      console.log('✅ Test user created successfully via API');
-      return true;
-    } else if (response.status === 409 || response.status === 400) {
-      // User already exists - this is fine
-      console.log('ℹ️ Test user already exists (will use existing account)');
-      return true;
-    } else {
-      const errorText = await response.text();
-      console.warn(`⚠️ API registration failed (${response.status}):`, errorText);
-      return false;
-    }
-  } catch (error) {
-    console.warn('⚠️ API registration error:', error instanceof Error ? error.message : error);
-    return false;
-  }
-}
-
-/**
- * Create test user via browser registration (fallback method)
- */
-async function createTestUserViaBrowser(page: any) {
-  console.log('📝 Creating test user via browser...');
-
-  try {
-    await page.goto(`${FRONTEND_URL}/auth/register`);
-    await page.waitForLoadState('networkidle');
-
-    // Fill registration form
-    await page.fill('input[name="email"]', TEST_USER.email);
-    await page.fill('input[name="password"]', TEST_USER.password);
-    await page.fill('input[name="firstName"]', TEST_USER.firstName);
-    await page.fill('input[name="lastName"]', TEST_USER.lastName);
-
-    // Submit form
-    await page.click('button[type="submit"]');
-
-    // Wait for either success or error
-    await Promise.race([
-      page.waitForURL(`${FRONTEND_URL}/dashboard`, { timeout: 10000 }),
-      page.waitForSelector('[role="alert"]', { timeout: 10000 })
-    ]);
-
-    // Check if we're on dashboard (success)
-    const currentUrl = page.url();
-    if (currentUrl.includes('/dashboard')) {
-      console.log('✅ Test user created successfully via browser');
-      return;
-    }
-
-    // Check for "user already exists" error
-    const alertText = await page.textContent('[role="alert"]').catch(() => '');
-    if (alertText.toLowerCase().includes('already exists') || alertText.toLowerCase().includes('409')) {
-      console.log('ℹ️ Test user already exists (will use existing account)');
-      return;
-    }
-
-    throw new Error(`Registration failed: ${alertText}`);
-  } catch (error) {
-    console.error('❌ Browser registration failed:', error);
-    throw error;
-  }
-}
-
-/**
  * Login via UI to get auth cookies
  *
  * IMPORTANT: Must use UI-based login because:
- * 1. HttpOnly cookies require same-origin requests through the BFF
- * 2. page.request.post() creates a separate HTTP context that doesn't share cookies
- * 3. The frontend uses Next.js BFF pattern (/api routes proxy to backend)
+ * 1. Supabase Auth sets HttpOnly cookies through the middleware
+ * 2. The frontend cookie refresh mechanism only works with same-origin requests
+ * 3. Direct API signIn doesn't set browser cookies properly
  */
 async function loginViaUI(page: any) {
   console.log('🔐 Logging in via UI...');
@@ -517,26 +329,20 @@ async function loginViaUI(page: any) {
     // Wait for login form to be ready
     await page.waitForSelector('[data-testid="login-form"]', {
       state: 'visible',
-      timeout: 10000
+      timeout: 10000,
     });
 
     // Fill login form
     await page.fill('[data-testid="email-input"]', TEST_USER.email);
     await page.fill('[data-testid="password-input"]', TEST_USER.password);
 
-    // Submit form and wait for response + navigation
+    // Submit form and wait for navigation
     await Promise.all([
-      page.waitForResponse(
-        (r: any) => r.url().includes('/api/auth/login') && r.status() === 200,
-        { timeout: 15000 }
-      ),
-      page.click('[data-testid="login-button"]')
+      page.waitForURL('**/dashboard', { timeout: 15000 }),
+      page.click('[data-testid="login-button"]'),
     ]);
 
-    // Wait for redirect to dashboard
-    await page.waitForURL(`${FRONTEND_URL}/dashboard`, { timeout: 15000 });
-
-    // Verify we're logged in by checking we're on dashboard
+    // Verify we're logged in
     const currentUrl = page.url();
     if (!currentUrl.includes('/dashboard')) {
       throw new Error(`Login verification failed: expected /dashboard, got ${currentUrl}`);

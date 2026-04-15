@@ -29,4 +29,8 @@ double_confirm_changes = true
 enable_confirmations = false
 
 [functions]
+# JWT verification disabled: Supabase signs JWTs with ES256 (ECDSA), but Edge
+# Functions' built-in verifier only supports HS256. Auth is enforced manually via
+# getClaims() in each function. Re-enable when Supabase adds ES256 support.
+# Tracked: audit finding — monitor Supabase release notes for ES256 compatibility.
 verify_jwt = false

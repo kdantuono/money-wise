@@ -344,7 +344,7 @@ describe('LoadingStates Components', () => {
       const { container } = render(<AccountSkeleton />);
 
       const pulseBox = container.querySelector('.animate-pulse');
-      expect(pulseBox).toHaveClass('bg-gray-200');
+      expect(pulseBox).toHaveClass('bg-muted');
     });
   });
 

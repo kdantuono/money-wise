@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   Wallet,
   PiggyBank,
@@ -133,6 +133,11 @@ export function AccountList({
 }: AccountListProps) {
   const [syncingIds, setSyncingIds] = useState<Set<string>>(new Set());
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    return () => { isMountedRef.current = false; };
+  }, []);
 
   const handleSync = async (accountId: string) => {
     setSyncingIds((prev) => new Set(prev).add(accountId));
@@ -143,11 +148,13 @@ export function AccountList({
     } catch (_err) {
       onSyncComplete?.(accountId, false);
     } finally {
-      setSyncingIds((prev) => {
-        const next = new Set(prev);
-        next.delete(accountId);
-        return next;
-      });
+      if (isMountedRef.current) {
+        setSyncingIds((prev) => {
+          const next = new Set(prev);
+          next.delete(accountId);
+          return next;
+        });
+      }
     }
   };
 

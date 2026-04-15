@@ -67,7 +67,7 @@ describe('Loading Components', () => {
       const { container } = render(<LoadingSpinner />);
 
       const spinner = container.querySelector('.animate-spin');
-      expect(spinner).toHaveClass('border-2', 'border-gray-300', 'border-t-primary');
+      expect(spinner).toHaveClass('border-2', 'border-border', 'border-t-primary');
     });
   });
 

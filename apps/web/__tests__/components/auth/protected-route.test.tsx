@@ -51,21 +51,21 @@ describe('ProtectedRoute Component', () => {
   });
 
   describe('Checking State', () => {
-    it('returns null during session validation (no spinner)', () => {
+    it('shows loading state during session validation', () => {
       mockUseAuthStore.mockReturnValue({
         isAuthenticated: false,
         user: null,
         validateSession: vi.fn().mockReturnValue(new Promise(() => {})), // never resolves
       });
 
-      const { container } = render(
+      render(
         <ProtectedRoute>
           <div>Protected Content</div>
         </ProtectedRoute>
       );
 
-      // ProtectedRoute returns null during checking - no spinner, no content
-      expect(container.innerHTML).toBe('');
+      // ProtectedRoute shows loading spinner while checking
+      expect(screen.getByText('Loading...')).toBeInTheDocument();
       expect(screen.queryByText('Protected Content')).not.toBeInTheDocument();
     });
 

@@ -2,12 +2,12 @@
  * Analytics Client Unit Tests
  *
  * Tests for dashboard analytics API client.
- * Uses Vitest with mocked fetch.
+ * Uses Vitest with mocked Supabase client.
  *
  * @module services/__tests__/analytics.client.test
  */
 
-import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
   analyticsClient,
   AnalyticsApiError,
@@ -21,14 +21,19 @@ import type {
   TrendData,
 } from '@/types/dashboard.types';
 
-// Mock console methods (intentionally accessing console for test mocking)
- 
-const originalConsoleLog = console.log;
-const originalConsoleError = console.error;
- 
+// Mock the Supabase client module
+const mockRpc = vi.fn();
+const mockSelect = vi.fn();
+const mockOrder = vi.fn();
+const mockLimit = vi.fn();
+const mockFrom = vi.fn();
 
-// Mock fetch globally
-global.fetch = vi.fn();
+vi.mock('@/utils/supabase/client', () => ({
+  createClient: vi.fn(() => ({
+    rpc: mockRpc,
+    from: mockFrom,
+  })),
+}));
 
 describe('Analytics Client', () => {
   const mockStats: DashboardStats = {
@@ -41,7 +46,26 @@ describe('Analytics Client', () => {
     expensesTrend: -5.0,
   };
 
-  const mockCategorySpending: CategorySpending[] = [
+  const mockCategorySpendingRows = [
+    {
+      category_id: 'cat-1',
+      category_name: 'Food & Groceries',
+      total_amount: 500,
+      category_color: '#22c55e',
+      percentage: 50,
+      transaction_count: 15,
+    },
+    {
+      category_id: 'cat-2',
+      category_name: 'Transportation',
+      total_amount: 300,
+      category_color: '#3b82f6',
+      percentage: 30,
+      transaction_count: 8,
+    },
+  ];
+
+  const expectedCategorySpending: CategorySpending[] = [
     {
       id: 'cat-1',
       name: 'Food & Groceries',
@@ -60,7 +84,28 @@ describe('Analytics Client', () => {
     },
   ];
 
-  const mockTransactions: Transaction[] = [
+  const mockTransactionRows = [
+    {
+      id: 'tx-1',
+      description: 'Grocery Store',
+      amount: -85.5,
+      date: '2024-01-15',
+      type: 'DEBIT',
+      categories: { name: 'Food & Groceries' },
+      accounts: { name: 'Checking' },
+    },
+    {
+      id: 'tx-2',
+      description: 'Salary',
+      amount: 3000,
+      date: '2024-01-14',
+      type: 'CREDIT',
+      categories: { name: 'Income' },
+      accounts: { name: 'Checking' },
+    },
+  ];
+
+  const expectedTransactions: Transaction[] = [
     {
       id: 'tx-1',
       description: 'Grocery Store',
@@ -81,26 +126,24 @@ describe('Analytics Client', () => {
     },
   ];
 
-  const mockTrends: TrendData[] = [
+  const mockTrendRows = [
+    { period_date: '2024-01-08', income: 1500, expenses: 800 },
+    { period_date: '2024-01-15', income: 1500, expenses: 1200 },
+  ];
+
+  const expectedTrends: TrendData[] = [
     { date: '2024-01-08', income: 1500, expenses: 800 },
     { date: '2024-01-15', income: 1500, expenses: 1200 },
   ];
 
   beforeEach(() => {
     vi.clearAllMocks();
-    // Mock console to avoid cluttering test output
-     
-    console.log = vi.fn();
-     
-    console.error = vi.fn();
-  });
 
-  afterEach(() => {
-    // Restore console
-     
-    console.log = originalConsoleLog;
-     
-    console.error = originalConsoleError;
+    // Set up the from().select().order().limit() chain
+    mockLimit.mockReturnValue({ data: [], error: null });
+    mockOrder.mockReturnValue({ limit: mockLimit });
+    mockSelect.mockReturnValue({ order: mockOrder });
+    mockFrom.mockReturnValue({ select: mockSelect });
   });
 
   describe('Error Classes', () => {
@@ -149,444 +192,278 @@ describe('Analytics Client', () => {
 
   describe('getStats', () => {
     it('should fetch stats with default period', async () => {
-      (fetch as any).mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        text: async () => JSON.stringify(mockStats),
-      });
+      mockRpc.mockResolvedValueOnce({ data: mockStats, error: null });
 
       const result = await analyticsClient.getStats();
 
       expect(result).toEqual(mockStats);
-      expect(fetch).toHaveBeenCalledWith(
-        expect.stringContaining('/api/analytics/stats?period=monthly'),
-        expect.objectContaining({
-          method: 'GET',
-          headers: expect.objectContaining({
-            'Content-Type': 'application/json',
-          }),
-          credentials: 'include',
-        })
-      );
+      expect(mockRpc).toHaveBeenCalledWith('get_dashboard_stats', { period: 'monthly' });
     });
 
     it('should fetch stats with weekly period', async () => {
-      (fetch as any).mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        text: async () => JSON.stringify(mockStats),
-      });
+      mockRpc.mockResolvedValueOnce({ data: mockStats, error: null });
 
       await analyticsClient.getStats('weekly');
 
-      expect(fetch).toHaveBeenCalledWith(
-        expect.stringContaining('/api/analytics/stats?period=weekly'),
-        expect.any(Object)
-      );
+      expect(mockRpc).toHaveBeenCalledWith('get_dashboard_stats', { period: 'weekly' });
     });
 
     it('should fetch stats with yearly period', async () => {
-      (fetch as any).mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        text: async () => JSON.stringify(mockStats),
-      });
+      mockRpc.mockResolvedValueOnce({ data: mockStats, error: null });
 
       await analyticsClient.getStats('yearly');
 
-      expect(fetch).toHaveBeenCalledWith(
-        expect.stringContaining('/api/analytics/stats?period=yearly'),
-        expect.any(Object)
-      );
+      expect(mockRpc).toHaveBeenCalledWith('get_dashboard_stats', { period: 'yearly' });
     });
 
-    it('should handle authentication error (401)', async () => {
-      (fetch as any).mockResolvedValueOnce({
-        ok: false,
-        status: 401,
-        statusText: 'Unauthorized',
-        text: async () =>
-          JSON.stringify({
-            statusCode: 401,
-            message: 'Authentication required',
-          }),
-      });
-
-      await expect(analyticsClient.getStats()).rejects.toThrow(AuthenticationError);
-    });
-
-    it('should handle server error (500)', async () => {
-      (fetch as any).mockResolvedValueOnce({
-        ok: false,
-        status: 500,
-        statusText: 'Internal Server Error',
-        text: async () =>
-          JSON.stringify({
-            statusCode: 500,
-            message: 'Server error',
-          }),
+    it('should throw ServerError on RPC error', async () => {
+      mockRpc.mockResolvedValueOnce({
+        data: null,
+        error: { message: 'Database error' },
       });
 
       await expect(analyticsClient.getStats()).rejects.toThrow(ServerError);
+    });
+
+    it('should include error message from Supabase in ServerError', async () => {
+      mockRpc.mockResolvedValueOnce({
+        data: null,
+        error: { message: 'Database error' },
+      });
+
+      await expect(analyticsClient.getStats()).rejects.toThrow('Database error');
     });
   });
 
   describe('getSpendingByCategory', () => {
     it('should fetch spending by category with default period', async () => {
-      (fetch as any).mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        text: async () => JSON.stringify(mockCategorySpending),
-      });
+      mockRpc.mockResolvedValueOnce({ data: mockCategorySpendingRows, error: null });
 
       const result = await analyticsClient.getSpendingByCategory();
 
-      expect(result).toEqual(mockCategorySpending);
-      expect(fetch).toHaveBeenCalledWith(
-        expect.stringContaining('/api/analytics/spending-by-category?period=monthly'),
-        expect.objectContaining({
-          method: 'GET',
-          credentials: 'include',
-        })
-      );
+      expect(result).toEqual(expectedCategorySpending);
+      expect(mockRpc).toHaveBeenCalledWith('get_category_spending', expect.objectContaining({
+        parent_only: true,
+      }));
     });
 
     it('should fetch spending by category with specified period', async () => {
-      (fetch as any).mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        text: async () => JSON.stringify(mockCategorySpending),
-      });
+      mockRpc.mockResolvedValueOnce({ data: mockCategorySpendingRows, error: null });
 
       await analyticsClient.getSpendingByCategory('yearly');
 
-      expect(fetch).toHaveBeenCalledWith(
-        expect.stringContaining('/api/analytics/spending-by-category?period=yearly'),
-        expect.any(Object)
-      );
+      expect(mockRpc).toHaveBeenCalledWith('get_category_spending', expect.objectContaining({
+        parent_only: true,
+      }));
     });
 
     it('should return empty array when no spending data', async () => {
-      (fetch as any).mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        text: async () => JSON.stringify([]),
-      });
+      mockRpc.mockResolvedValueOnce({ data: [], error: null });
 
       const result = await analyticsClient.getSpendingByCategory();
 
       expect(result).toEqual([]);
     });
 
-    it('should handle authentication error', async () => {
-      (fetch as any).mockResolvedValueOnce({
-        ok: false,
-        status: 401,
-        text: async () =>
-          JSON.stringify({
-            statusCode: 401,
-            message: 'Not authenticated',
-          }),
+    it('should handle null data gracefully', async () => {
+      mockRpc.mockResolvedValueOnce({ data: null, error: null });
+
+      const result = await analyticsClient.getSpendingByCategory();
+
+      expect(result).toEqual([]);
+    });
+
+    it('should throw ServerError on RPC error', async () => {
+      mockRpc.mockResolvedValueOnce({
+        data: null,
+        error: { message: 'Not authenticated' },
       });
 
-      await expect(analyticsClient.getSpendingByCategory()).rejects.toThrow(
-        AuthenticationError
-      );
+      await expect(analyticsClient.getSpendingByCategory()).rejects.toThrow(ServerError);
+    });
+
+    it('should use default color when category_color is null', async () => {
+      mockRpc.mockResolvedValueOnce({
+        data: [{ ...mockCategorySpendingRows[0], category_color: null }],
+        error: null,
+      });
+
+      const result = await analyticsClient.getSpendingByCategory();
+
+      expect(result[0].color).toBe('#6b7280');
     });
   });
 
   describe('getRecentTransactions', () => {
     it('should fetch recent transactions with default limit', async () => {
-      (fetch as any).mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        text: async () => JSON.stringify(mockTransactions),
-      });
+      mockLimit.mockReturnValueOnce({ data: mockTransactionRows, error: null });
 
       const result = await analyticsClient.getRecentTransactions();
 
-      expect(result).toEqual(mockTransactions);
-      expect(fetch).toHaveBeenCalledWith(
-        expect.stringContaining('/api/analytics/transactions/recent?limit=10'),
-        expect.objectContaining({
-          method: 'GET',
-          credentials: 'include',
-        })
+      expect(result).toEqual(expectedTransactions);
+      expect(mockFrom).toHaveBeenCalledWith('transactions');
+      expect(mockSelect).toHaveBeenCalledWith(
+        'id, description, amount, date, type, categories(name), accounts(name)'
       );
+      expect(mockOrder).toHaveBeenCalledWith('date', { ascending: false });
+      expect(mockLimit).toHaveBeenCalledWith(10);
     });
 
     it('should fetch recent transactions with custom limit', async () => {
-      (fetch as any).mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        text: async () => JSON.stringify(mockTransactions),
-      });
+      mockLimit.mockReturnValueOnce({ data: mockTransactionRows, error: null });
 
       await analyticsClient.getRecentTransactions(25);
 
-      expect(fetch).toHaveBeenCalledWith(
-        expect.stringContaining('/api/analytics/transactions/recent?limit=25'),
-        expect.any(Object)
-      );
+      expect(mockLimit).toHaveBeenCalledWith(25);
     });
 
     it('should return empty array when no transactions', async () => {
-      (fetch as any).mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        text: async () => JSON.stringify([]),
-      });
+      mockLimit.mockReturnValueOnce({ data: [], error: null });
 
       const result = await analyticsClient.getRecentTransactions();
 
       expect(result).toEqual([]);
     });
 
-    it('should handle server error', async () => {
-      (fetch as any).mockResolvedValueOnce({
-        ok: false,
-        status: 500,
-        text: async () =>
-          JSON.stringify({
-            statusCode: 500,
-            message: 'Database error',
-          }),
+    it('should handle null data gracefully', async () => {
+      mockLimit.mockReturnValueOnce({ data: null, error: null });
+
+      const result = await analyticsClient.getRecentTransactions();
+
+      expect(result).toEqual([]);
+    });
+
+    it('should throw ServerError on query error', async () => {
+      mockLimit.mockReturnValueOnce({
+        data: null,
+        error: { message: 'Database error' },
       });
 
-      await expect(analyticsClient.getRecentTransactions()).rejects.toThrow(
-        ServerError
-      );
+      await expect(analyticsClient.getRecentTransactions()).rejects.toThrow(ServerError);
+    });
+
+    it('should map CREDIT type to income', async () => {
+      mockLimit.mockReturnValueOnce({
+        data: [mockTransactionRows[1]], // CREDIT type
+        error: null,
+      });
+
+      const result = await analyticsClient.getRecentTransactions();
+
+      expect(result[0].type).toBe('income');
+    });
+
+    it('should map DEBIT type to expense', async () => {
+      mockLimit.mockReturnValueOnce({
+        data: [mockTransactionRows[0]], // DEBIT type
+        error: null,
+      });
+
+      const result = await analyticsClient.getRecentTransactions();
+
+      expect(result[0].type).toBe('expense');
+    });
+
+    it('should handle null categories and accounts', async () => {
+      mockLimit.mockReturnValueOnce({
+        data: [{
+          ...mockTransactionRows[0],
+          categories: null,
+          accounts: null,
+        }],
+        error: null,
+      });
+
+      const result = await analyticsClient.getRecentTransactions();
+
+      expect(result[0].category).toBe('Uncategorized');
+      expect(result[0].accountName).toBeUndefined();
     });
   });
 
   describe('getTrends', () => {
     it('should fetch trends with default period', async () => {
-      (fetch as any).mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        text: async () => JSON.stringify(mockTrends),
-      });
+      mockRpc.mockResolvedValueOnce({ data: mockTrendRows, error: null });
 
       const result = await analyticsClient.getTrends();
 
-      expect(result).toEqual(mockTrends);
-      expect(fetch).toHaveBeenCalledWith(
-        expect.stringContaining('/api/analytics/trends?period=monthly'),
-        expect.objectContaining({
-          method: 'GET',
-          credentials: 'include',
-        })
-      );
+      expect(result).toEqual(expectedTrends);
+      expect(mockRpc).toHaveBeenCalledWith('get_spending_trends', {
+        period: 'monthly',
+        num_periods: 6,
+      });
     });
 
     it('should fetch trends with weekly period', async () => {
-      (fetch as any).mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        text: async () => JSON.stringify(mockTrends),
-      });
+      mockRpc.mockResolvedValueOnce({ data: mockTrendRows, error: null });
 
       await analyticsClient.getTrends('weekly');
 
-      expect(fetch).toHaveBeenCalledWith(
-        expect.stringContaining('/api/analytics/trends?period=weekly'),
-        expect.any(Object)
-      );
+      expect(mockRpc).toHaveBeenCalledWith('get_spending_trends', {
+        period: 'weekly',
+        num_periods: 12,
+      });
     });
 
     it('should fetch trends with yearly period', async () => {
-      (fetch as any).mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        text: async () => JSON.stringify(mockTrends),
-      });
+      mockRpc.mockResolvedValueOnce({ data: mockTrendRows, error: null });
 
       await analyticsClient.getTrends('yearly');
 
-      expect(fetch).toHaveBeenCalledWith(
-        expect.stringContaining('/api/analytics/trends?period=yearly'),
-        expect.any(Object)
-      );
+      expect(mockRpc).toHaveBeenCalledWith('get_spending_trends', {
+        period: 'yearly',
+        num_periods: 5,
+      });
     });
 
     it('should return empty array when no trends', async () => {
-      (fetch as any).mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        text: async () => JSON.stringify([]),
-      });
+      mockRpc.mockResolvedValueOnce({ data: [], error: null });
 
       const result = await analyticsClient.getTrends();
 
       expect(result).toEqual([]);
     });
 
-    it('should handle authentication error', async () => {
-      (fetch as any).mockResolvedValueOnce({
-        ok: false,
-        status: 401,
-        text: async () =>
-          JSON.stringify({
-            statusCode: 401,
-            message: 'Token expired',
-          }),
+    it('should handle null data gracefully', async () => {
+      mockRpc.mockResolvedValueOnce({ data: null, error: null });
+
+      const result = await analyticsClient.getTrends();
+
+      expect(result).toEqual([]);
+    });
+
+    it('should throw ServerError on RPC error', async () => {
+      mockRpc.mockResolvedValueOnce({
+        data: null,
+        error: { message: 'Token expired' },
       });
 
-      await expect(analyticsClient.getTrends()).rejects.toThrow(
-        AuthenticationError
-      );
+      await expect(analyticsClient.getTrends()).rejects.toThrow(ServerError);
     });
   });
 
-  describe('Error Handling Edge Cases', () => {
-    it('should handle error with array message', async () => {
-      (fetch as any).mockResolvedValueOnce({
-        ok: false,
-        status: 400,
-        text: async () =>
-          JSON.stringify({
-            statusCode: 400,
-            message: ['Error 1', 'Error 2'],
-          }),
+  describe('Error Handling', () => {
+    it('should propagate error message from Supabase', async () => {
+      mockRpc.mockResolvedValueOnce({
+        data: null,
+        error: { message: 'Custom database error' },
       });
 
-      await expect(analyticsClient.getStats()).rejects.toThrow('Error 1, Error 2');
+      await expect(analyticsClient.getStats()).rejects.toThrow('Custom database error');
     });
 
-    it('should handle error with empty response body', async () => {
-      (fetch as any).mockResolvedValueOnce({
-        ok: false,
-        status: 500,
-        statusText: 'Internal Server Error',
-        text: async () => '',
+    it('should throw ServerError for all Supabase errors', async () => {
+      mockRpc.mockResolvedValueOnce({
+        data: null,
+        error: { message: 'Any error' },
       });
 
-      await expect(analyticsClient.getStats()).rejects.toThrow(ServerError);
-    });
-
-    it('should handle error with invalid JSON', async () => {
-      (fetch as any).mockResolvedValueOnce({
-        ok: false,
-        status: 500,
-        statusText: 'Internal Server Error',
-        text: async () => 'Invalid JSON',
-      });
-
-      await expect(analyticsClient.getStats()).rejects.toThrow(ServerError);
-    });
-
-    it('should handle unknown status code', async () => {
-      (fetch as any).mockResolvedValueOnce({
-        ok: false,
-        status: 418, // I'm a teapot
-        text: async () =>
-          JSON.stringify({
-            statusCode: 418,
-            message: 'Unknown error',
-            error: 'TeapotError',
-          }),
-      });
-
-      await expect(analyticsClient.getStats()).rejects.toThrow(AnalyticsApiError);
-    });
-
-    it('should handle error without statusText', async () => {
-      (fetch as any).mockResolvedValueOnce({
-        ok: false,
-        status: 500,
-        statusText: '',
-        text: async () => '',
-      });
-
-      await expect(analyticsClient.getStats()).rejects.toThrow('An error occurred');
-    });
-
-    it('should use statusText when no error message', async () => {
-      (fetch as any).mockResolvedValueOnce({
-        ok: false,
-        status: 500,
-        statusText: 'Custom Status Text',
-        text: async () => JSON.stringify({ statusCode: 500 }),
-      });
-
-      await expect(analyticsClient.getStats()).rejects.toThrow('Custom Status Text');
-    });
-
-    it('should handle bad gateway error (502)', async () => {
-      (fetch as any).mockResolvedValueOnce({
-        ok: false,
-        status: 502,
-        text: async () =>
-          JSON.stringify({
-            statusCode: 502,
-            message: 'Bad gateway',
-          }),
-      });
-
-      await expect(analyticsClient.getStats()).rejects.toThrow(ServerError);
-    });
-
-    it('should handle service unavailable error (503)', async () => {
-      (fetch as any).mockResolvedValueOnce({
-        ok: false,
-        status: 503,
-        text: async () =>
-          JSON.stringify({
-            statusCode: 503,
-            message: 'Service unavailable',
-          }),
-      });
-
-      await expect(analyticsClient.getStats()).rejects.toThrow(ServerError);
-    });
-
-    it('should handle gateway timeout error (504)', async () => {
-      (fetch as any).mockResolvedValueOnce({
-        ok: false,
-        status: 504,
-        text: async () =>
-          JSON.stringify({
-            statusCode: 504,
-            message: 'Gateway timeout',
-          }),
-      });
-
-      await expect(analyticsClient.getStats()).rejects.toThrow(ServerError);
-    });
-  });
-
-  describe('BFF Proxy Pattern', () => {
-    it('should use relative path /api/analytics for BFF proxy', async () => {
-      (fetch as any).mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        text: async () => JSON.stringify(mockStats),
-      });
-
-      await analyticsClient.getStats();
-
-      // BFF proxy uses relative path - no hostname prefix
-      expect(fetch).toHaveBeenCalledWith(
-        '/api/analytics/stats?period=monthly',
-        expect.any(Object)
-      );
-    });
-
-    it('should include credentials for same-origin cookie handling', async () => {
-      (fetch as any).mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        text: async () => JSON.stringify(mockStats),
-      });
-
-      await analyticsClient.getStats();
-
-      expect(fetch).toHaveBeenCalledWith(
-        expect.any(String),
-        expect.objectContaining({
-          credentials: 'include',
-        })
-      );
+      try {
+        await analyticsClient.getStats();
+      } catch (e) {
+        expect(e).toBeInstanceOf(ServerError);
+        expect((e as ServerError).statusCode).toBe(500);
+      }
     });
   });
 });

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { BankingConnectionStatus, BankingSyncStatus } from '../../lib/banking-types';
 import { RevokeConfirmation } from './RevokeConfirmation';
 import { AccountDetailsSkeleton } from './LoadingStates';
@@ -104,6 +104,11 @@ export function AccountDetails({
   const [isSyncing, setIsSyncing] = useState(false);
   const [showRevokeConfirm, setShowRevokeConfirm] = useState(false);
   const [syncError, setSyncError] = useState<string | null>(null);
+  const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    return () => { isMountedRef.current = false; };
+  }, []);
 
   const handleSync = async () => {
     setIsSyncing(true);
@@ -113,9 +118,9 @@ export function AccountDetails({
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : 'Failed to sync account';
-      setSyncError(errorMessage);
+      if (isMountedRef.current) setSyncError(errorMessage);
     } finally {
-      setIsSyncing(false);
+      if (isMountedRef.current) setIsSyncing(false);
     }
   };
 
