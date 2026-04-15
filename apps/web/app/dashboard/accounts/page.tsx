@@ -1,12 +1,14 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   CreditCard,
   Wallet,
   PiggyBank,
   Banknote,
+  Plus,
   MoreVertical,
   Pencil,
   Trash2,
@@ -18,8 +20,8 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { accountsClient, type Account } from '@/services/accounts.client';
 import { useBankingStore } from '@/store';
-import { BankingLinkButton } from '@/components/banking';
-import { EditAccountForm } from '@/components/accounts';
+import { initiateLink } from '@/services/banking.client';
+import { ManualAccountForm } from '@/components/accounts';
 
 // ---------------------------------------------------------------------------
 // Helpers — 1:1 from Figma Accounts.tsx styling
@@ -63,6 +65,7 @@ function getAccountStyle(type: string) {
 // ---------------------------------------------------------------------------
 
 export default function AccountsPage() {
+  const router = useRouter();
   const { syncAccount } = useBankingStore();
 
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -70,8 +73,9 @@ export default function AccountsPage() {
   const [showHidden, setShowHidden] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
-  const [editingAccount, setEditingAccount] = useState<Account | null>(null);
   const [deletingAccount, setDeletingAccount] = useState<Account | null>(null);
+  const [showAddMenu, setShowAddMenu] = useState(false);
+  const [showManualForm, setShowManualForm] = useState(false);
 
   const fetchAccounts = useCallback(async () => {
     try {
@@ -125,7 +129,7 @@ export default function AccountsPage() {
 
   return (
     <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-8">
-      {/* Header */}
+      {/* Header — 1:1 Figma */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h1 className="text-[32px] tracking-[-0.03em] text-foreground">Conti e Carte</h1>
@@ -134,13 +138,65 @@ export default function AccountsPage() {
         <div className="flex items-center gap-3">
           <Button
             variant="outline"
-            className="rounded-xl border-border/50"
+            className="rounded-xl border-border/50 text-[13px]"
             onClick={() => setShowHidden(!showHidden)}
           >
             {showHidden ? <EyeOff className="w-4 h-4 mr-2" /> : <Eye className="w-4 h-4 mr-2" />}
-            {showHidden ? 'Nascondi' : 'Mostra nascosti'}
+            {showHidden ? 'Nascondi' : `Mostra nascosti${accounts.filter(a => a.status === 'HIDDEN').length > 0 ? ` (${accounts.filter(a => a.status === 'HIDDEN').length})` : ''}`}
           </Button>
-          <BankingLinkButton />
+          {/* Aggiungi Conto dropdown — Figma style */}
+          <div className="relative">
+            <Button
+              className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white shadow-lg shadow-emerald-500/20 border-0 rounded-xl px-5 py-2.5 text-[13px]"
+              onClick={() => setShowAddMenu(!showAddMenu)}
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Aggiungi Conto
+            </Button>
+            <AnimatePresence>
+              {showAddMenu && (
+                <motion.div
+                  initial={{ opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -4 }}
+                  className="absolute right-0 top-full mt-2 w-52 bg-card border border-border/50 rounded-2xl shadow-xl z-20 overflow-hidden"
+                >
+                  <button
+                    onClick={() => { setShowManualForm(true); setShowAddMenu(false); }}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-[13px] text-foreground hover:bg-muted/30 transition-colors"
+                  >
+                    <div className="w-8 h-8 rounded-xl bg-blue-500/10 flex items-center justify-center">
+                      <Wallet className="w-4 h-4 text-blue-500" />
+                    </div>
+                    <div className="text-left">
+                      <p className="font-medium">Conto Manuale</p>
+                      <p className="text-[11px] text-muted-foreground">Aggiungi manualmente</p>
+                    </div>
+                  </button>
+                  <button
+                    onClick={async () => {
+                      setShowAddMenu(false);
+                      try {
+                        const { redirectUrl } = await initiateLink('SALTEDGE');
+                        window.open(redirectUrl, '_blank', 'width=600,height=700');
+                      } catch (err) {
+                        console.error('Banking link failed:', err);
+                      }
+                    }}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-[13px] text-foreground hover:bg-muted/30 transition-colors border-t border-border/30"
+                  >
+                    <div className="w-8 h-8 rounded-xl bg-emerald-500/10 flex items-center justify-center">
+                      <CreditCard className="w-4 h-4 text-emerald-500" />
+                    </div>
+                    <div className="text-left">
+                      <p className="font-medium">Collega Banca</p>
+                      <p className="text-[11px] text-muted-foreground">Via SaltEdge OAuth</p>
+                    </div>
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
       </div>
 
@@ -182,8 +238,8 @@ export default function AccountsPage() {
                           className="absolute right-0 top-full mt-1 w-40 bg-card border border-border rounded-xl shadow-lg z-10 overflow-hidden"
                           onClick={(e) => e.stopPropagation()}
                         >
-                          <button onClick={() => { setEditingAccount(account); setMenuOpenId(null); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-muted">
-                            <Pencil className="w-3.5 h-3.5" /> Modifica
+                          <button onClick={() => { router.push(`/dashboard/accounts/${account.id}`); setMenuOpenId(null); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-muted">
+                            <Pencil className="w-3.5 h-3.5" /> Dettagli
                           </button>
                           {account.source === 'SALTEDGE' && (
                             <button onClick={() => { handleSync(account.id); setMenuOpenId(null); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-muted">
@@ -216,43 +272,75 @@ export default function AccountsPage() {
         })}
       </div>
 
-      {/* Account Details */}
+      {/* Account Details — 1:1 Figma layout 2/3 + 1/3 */}
       {selectedAccount && (
-        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
-          <Card className="p-6 rounded-2xl border-0 shadow-sm">
-            <h3 className="text-[16px] font-medium text-foreground mb-4">
-              Dettagli — {selectedAccount.name}
-            </h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div>
-                <p className="text-[11px] uppercase tracking-wide text-muted-foreground/60 font-medium">Tipo</p>
-                <p className="text-[13px] font-medium text-foreground mt-1">{getAccountTypeLabel(selectedAccount.type)}</p>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          {/* Left: Details */}
+          <div className="lg:col-span-2">
+            <Card className="p-6 rounded-2xl border-0 shadow-sm">
+              <h3 className="text-[16px] font-medium text-foreground mb-6">
+                Dettagli — {selectedAccount.name}
+              </h3>
+              <div className="space-y-3.5">
+                <div>
+                  <p className="text-[11px] uppercase tracking-wide text-muted-foreground/60 font-medium">Nome</p>
+                  <p className="text-[13px] font-medium text-foreground mt-1">{selectedAccount.name}</p>
+                </div>
+                <div>
+                  <p className="text-[11px] uppercase tracking-wide text-muted-foreground/60 font-medium">Tipo</p>
+                  <p className="text-[13px] font-medium text-foreground mt-1">{getAccountTypeLabel(selectedAccount.type)}</p>
+                </div>
+                <div>
+                  <p className="text-[11px] uppercase tracking-wide text-muted-foreground/60 font-medium">Saldo</p>
+                  <p className="text-[20px] font-semibold text-foreground mt-1 tabular-nums">€{(selectedAccount.currentBalance ?? 0).toLocaleString('it-IT', { minimumFractionDigits: 2 })}</p>
+                </div>
+                <div>
+                  <p className="text-[11px] uppercase tracking-wide text-muted-foreground/60 font-medium">Fonte</p>
+                  <p className="text-[13px] font-medium text-foreground mt-1">{selectedAccount.source ?? 'Manuale'}</p>
+                </div>
+                {selectedAccount.lastSyncAt && (
+                  <div>
+                    <p className="text-[11px] uppercase tracking-wide text-muted-foreground/60 font-medium">Ultimo Aggiornamento</p>
+                    <p className="text-[13px] font-medium text-foreground mt-1">{new Date(selectedAccount.lastSyncAt).toLocaleString('it-IT')}</p>
+                  </div>
+                )}
               </div>
-              <div>
-                <p className="text-[11px] uppercase tracking-wide text-muted-foreground/60 font-medium">Saldo</p>
-                <p className="text-[20px] font-semibold text-foreground mt-1 tabular-nums">€{(selectedAccount.currentBalance ?? 0).toLocaleString('it-IT', { minimumFractionDigits: 2 })}</p>
+            </Card>
+          </div>
+
+          {/* Right: Actions — 1:1 Figma sidebar */}
+          <div className="space-y-4">
+            <Card className="p-5 rounded-2xl border-0 shadow-sm">
+              <h3 className="text-[16px] font-medium text-foreground mb-4">Azioni</h3>
+              <div className="space-y-2">
+                {selectedAccount.source === 'SALTEDGE' && (
+                  <Button
+                    className="w-full rounded-xl border-border/50 hover:bg-muted/50 text-[13px]"
+                    variant="outline"
+                    onClick={() => handleSync(selectedAccount.id)}
+                  >
+                    <RefreshCw className="w-4 h-4 mr-2" /> Sincronizza
+                  </Button>
+                )}
+                <Button
+                  className="w-full rounded-xl text-rose-600 hover:text-rose-700 border-rose-200 dark:border-rose-500/20 hover:bg-rose-50 dark:hover:bg-rose-500/10 text-[13px]"
+                  variant="outline"
+                  onClick={() => setDeletingAccount(selectedAccount)}
+                >
+                  <Trash2 className="w-4 h-4 mr-2" /> Elimina Conto
+                </Button>
               </div>
-              <div>
-                <p className="text-[11px] uppercase tracking-wide text-muted-foreground/60 font-medium">Fonte</p>
-                <p className="text-[13px] font-medium text-foreground mt-1">{selectedAccount.source ?? 'Manuale'}</p>
-              </div>
-              <div>
-                <p className="text-[11px] uppercase tracking-wide text-muted-foreground/60 font-medium">Stato</p>
-                <p className="text-[13px] font-medium text-foreground mt-1">{selectedAccount.status}</p>
-              </div>
-            </div>
-          </Card>
-        </motion.div>
+            </Card>
+          </div>
+        </div>
       )}
 
-      {/* Edit Modal — reuse existing component */}
-      {editingAccount && (
-        <EditAccountForm
-          account={editingAccount}
-          onCancel={() => setEditingAccount(null)}
-          onSubmit={async (data) => {
-            await accountsClient.updateAccount(data.id, data);
-            setEditingAccount(null);
+      {/* Manual Account Form */}
+      {showManualForm && (
+        <ManualAccountForm
+          onCancel={() => setShowManualForm(false)}
+          onSubmit={async () => {
+            setShowManualForm(false);
             await fetchAccounts();
           }}
         />
