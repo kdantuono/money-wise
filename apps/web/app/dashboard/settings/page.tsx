@@ -11,6 +11,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { CategoryManager } from '@/components/categories/CategoryManager';
 import {
   User,
   CreditCard,
@@ -40,7 +41,6 @@ import {
   TrendingUp,
   Wallet,
   Sparkles,
-  Tag,
   Eye,
   EyeOff,
   Copy,
@@ -102,17 +102,6 @@ const TABS: { key: TabKey; label: string }[] = [
   { key: 'integrations', label: 'Integrazioni' },
   { key: 'security', label: 'Sicurezza' },
   { key: 'data', label: 'Dati' },
-];
-
-const DEFAULT_CATEGORIES = [
-  { id: '1', name: 'Alimentari', icon: '🛒', color: '#22c55e', type: 'expense' as const },
-  { id: '2', name: 'Trasporti', icon: '🚗', color: '#3b82f6', type: 'expense' as const },
-  { id: '3', name: 'Casa', icon: '🏠', color: '#f59e0b', type: 'expense' as const },
-  { id: '4', name: 'Salute', icon: '💊', color: '#ef4444', type: 'expense' as const },
-  { id: '5', name: 'Intrattenimento', icon: '🎬', color: '#8b5cf6', type: 'expense' as const },
-  { id: '6', name: 'Shopping', icon: '🛍️', color: '#ec4899', type: 'expense' as const },
-  { id: '7', name: 'Stipendio', icon: '💰', color: '#10b981', type: 'income' as const },
-  { id: '8', name: 'Investimenti', icon: '📈', color: '#06b6d4', type: 'income' as const },
 ];
 
 const plans = [
@@ -592,90 +581,11 @@ export default function SettingsPage() {
       )}
 
       {/* ================================================================= */}
-      {/* Categories Tab */}
+      {/* Categories Tab — real CRUD via CategoryManager */}
       {/* ================================================================= */}
       {activeTab === 'categories' && (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-          <Card className="p-6 rounded-2xl border-0 shadow-sm">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h3 className="text-[18px] font-medium text-foreground">Gestione Categorie</h3>
-                <p className="text-[13px] text-muted-foreground mt-1">Personalizza le categorie di spesa e entrata</p>
-              </div>
-              <Button className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white shadow-lg shadow-emerald-500/20 border-0 rounded-xl">
-                <Tag className="w-4 h-4 mr-2" />
-                Nuova Categoria
-              </Button>
-            </div>
-
-            {/* Default Categories */}
-            <div className="mb-8">
-              <h4 className="text-[14px] font-medium text-foreground mb-4 flex items-center gap-2">
-                <Tag className="w-4 h-4 text-muted-foreground" />
-                Categorie Predefinite
-              </h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {DEFAULT_CATEGORIES.filter((c) => c.type === 'expense').map((cat) => (
-                  <motion.div
-                    key={cat.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="flex items-center justify-between p-4 rounded-xl bg-gradient-to-r from-muted/30 to-muted/10 hover:from-muted/50 hover:to-muted/20 transition-all group"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div
-                        className="w-11 h-11 rounded-xl flex items-center justify-center text-[20px] shadow-sm group-hover:scale-110 transition-transform"
-                        style={{ backgroundColor: `${cat.color}15`, border: `2px solid ${cat.color}30` }}
-                      >
-                        {cat.icon}
-                      </div>
-                      <div>
-                        <p className="text-[14px] font-medium text-foreground">{cat.name}</p>
-                        <p className="text-[11px] text-muted-foreground capitalize">Spesa</p>
-                      </div>
-                    </div>
-                    <Badge className="text-[10px]" style={{ backgroundColor: cat.color, color: 'white' }}>
-                      {cat.color}
-                    </Badge>
-                  </motion.div>
-                ))}
-              </div>
-            </div>
-
-            {/* Income Categories */}
-            <div>
-              <h4 className="text-[14px] font-medium text-foreground mb-4 flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-emerald-500" />
-                Categorie Entrata
-              </h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {DEFAULT_CATEGORIES.filter((c) => c.type === 'income').map((cat) => (
-                  <motion.div
-                    key={cat.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="flex items-center justify-between p-4 rounded-xl bg-gradient-to-r from-emerald-500/5 to-teal-500/5 border border-emerald-500/20 hover:border-emerald-500/40 transition-all group"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div
-                        className="w-11 h-11 rounded-xl flex items-center justify-center text-[20px] shadow-sm group-hover:scale-110 transition-transform"
-                        style={{ backgroundColor: `${cat.color}15`, border: `2px solid ${cat.color}30` }}
-                      >
-                        {cat.icon}
-                      </div>
-                      <div>
-                        <p className="text-[14px] font-medium text-foreground">{cat.name}</p>
-                        <p className="text-[11px] text-muted-foreground capitalize">Entrata</p>
-                      </div>
-                    </div>
-                    <Badge className="text-[10px]" style={{ backgroundColor: cat.color, color: 'white' }}>
-                      {cat.color}
-                    </Badge>
-                  </motion.div>
-                ))}
-              </div>
-            </div>
-          </Card>
+          <CategoryManager />
         </motion.div>
       )}
 
