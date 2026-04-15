@@ -1,978 +1,292 @@
-/**
- * Dashboard Accounts Page
- *
- * Main page for managing ALL accounts (both manual and linked).
- * Displays accounts with sync status, actions, and error handling.
- *
- * Features:
- * - Display ALL accounts (manual + linked banking accounts)
- * - Create manual accounts (cash, portfolio, custom)
- * - Initiate new bank account linking via OAuth
- * - Sync individual accounts
- * - Revoke account access
- * - Handle loading and error states
- * - WCAG 2.2 AA accessibility compliance
- *
- * @module app/dashboard/accounts/page
- */
-
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { motion, AnimatePresence } from 'motion/react';
 import {
-  BankingLinkButton,
-  AccountList,
-  RevokeConfirmation,
-  ErrorAlert,
-  ErrorBoundary,
-} from '@/components/banking';
-import { OAuthPopupModal } from '@/components/banking/OAuthPopupModal';
-import { AddAccountDropdown, ManualAccountForm, EditAccountForm, DeleteAccountConfirmation } from '@/components/accounts';
-import {
-  useBanking,
-  useBankingStore,
-  useAccounts,
-  useBankingError,
-  useBankingLoading,
-} from '@/store';
-import { accountsClient, RelinkRequiredError, type Account, type CreateAccountRequest, type UpdateAccountRequest } from '@/services/accounts.client';
-import { BankingAccount, BankingSyncStatus, BankingConnectionStatus, BankingProvider } from '@/lib/banking-types';
-import { AccountStatus, type DeletionEligibilityResponse } from '@/types/account.types';
-import { Wallet, RefreshCw, Eye, EyeOff, RotateCcw, Trash2, AlertCircle, LinkIcon } from 'lucide-react';
+  CreditCard,
+  Wallet,
+  PiggyBank,
+  Banknote,
+  MoreVertical,
+  Pencil,
+  Trash2,
+  RefreshCw,
+  Eye,
+  EyeOff,
+} from 'lucide-react';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { accountsClient, type Account } from '@/services/accounts.client';
+import { useBankingStore } from '@/store';
+import { BankingLinkButton } from '@/components/banking';
+import { EditAccountForm } from '@/components/accounts';
 
-/**
- * AccountsPage Component
- *
- * Main banking management page with account list, linking, and sync functionality.
- * Rendered within the dashboard layout.
- *
- * @returns {JSX.Element} Accounts page with account management UI
- */
+// ---------------------------------------------------------------------------
+// Helpers — 1:1 from Figma Accounts.tsx styling
+// ---------------------------------------------------------------------------
+
+function getAccountIcon(type: string) {
+  switch (type?.toUpperCase()) {
+    case 'CHECKING': return Wallet;
+    case 'SAVINGS': return PiggyBank;
+    case 'CREDIT_CARD': return CreditCard;
+    case 'CASH': return Banknote;
+    default: return Wallet;
+  }
+}
+
+function getAccountTypeLabel(type: string) {
+  switch (type?.toUpperCase()) {
+    case 'CHECKING': return 'Conto Corrente';
+    case 'SAVINGS': return 'Risparmio';
+    case 'CREDIT_CARD': return 'Carta di Credito';
+    case 'CASH': return 'Contante';
+    case 'INVESTMENT': return 'Investimento';
+    case 'LOAN': return 'Prestito';
+    case 'MORTGAGE': return 'Mutuo';
+    default: return type || 'Conto';
+  }
+}
+
+function getAccountStyle(type: string) {
+  switch (type?.toUpperCase()) {
+    case 'CHECKING': return { gradient: 'from-blue-500/10 to-cyan-500/10', iconBg: 'bg-gradient-to-br from-blue-500 to-cyan-500', ring: 'ring-blue-500/50' };
+    case 'SAVINGS': return { gradient: 'from-emerald-500/10 to-teal-500/10', iconBg: 'bg-gradient-to-br from-emerald-500 to-teal-500', ring: 'ring-emerald-500/50' };
+    case 'CREDIT_CARD': return { gradient: 'from-purple-500/10 to-pink-500/10', iconBg: 'bg-gradient-to-br from-purple-500 to-pink-500', ring: 'ring-purple-500/50' };
+    case 'INVESTMENT': return { gradient: 'from-indigo-500/10 to-violet-500/10', iconBg: 'bg-gradient-to-br from-indigo-500 to-violet-500', ring: 'ring-indigo-500/50' };
+    default: return { gradient: 'from-amber-500/10 to-orange-500/10', iconBg: 'bg-gradient-to-br from-amber-500 to-orange-500', ring: 'ring-amber-500/50' };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Accounts Page — Figma visual + existing banking logic
+// ---------------------------------------------------------------------------
+
 export default function AccountsPage() {
-  // Router for navigation
-  const router = useRouter();
+  const { syncAccount } = useBankingStore();
 
-  // Zustand store hooks (for banking accounts)
-  const { fetchAccounts: fetchBankingAccounts, syncAccount, revokeConnection, clearError } = useBanking();
-  const _bankingAccounts = useAccounts(); // Reserved for banking sync status
-  const bankingError = useBankingError();
-  const { isLoading: isBankingLoading, isLinking } = useBankingLoading();
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [showHidden, setShowHidden] = useState(false);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
+  const [editingAccount, setEditingAccount] = useState<Account | null>(null);
+  const [deletingAccount, setDeletingAccount] = useState<Account | null>(null);
 
-  // Local state for ALL accounts (manual + linked)
-  const [allAccounts, setAllAccounts] = useState<Account[]>([]);
-  const [isLoadingAccounts, setIsLoadingAccounts] = useState(true);
-  const [accountToRevoke, setAccountToRevoke] = useState<BankingAccount | null>(null);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [localError, setLocalError] = useState<string | null>(null);
-
-  // Manual account form state
-  const [showManualForm, setShowManualForm] = useState(false);
-  const [isCreatingAccount, setIsCreatingAccount] = useState(false);
-  const [formError, setFormError] = useState<string | undefined>();
-
-  // Edit account state
-  const [accountToEdit, setAccountToEdit] = useState<Account | null>(null);
-  const [isUpdatingAccount, setIsUpdatingAccount] = useState(false);
-  const [editError, setEditError] = useState<string | undefined>();
-
-  // Delete manual account state
-  const [accountToDelete, setAccountToDelete] = useState<Account | null>(null);
-  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
-
-  // Deletion eligibility state
-  const [deletionEligibility, setDeletionEligibility] = useState<DeletionEligibilityResponse | undefined>();
-  const [isCheckingEligibility, setIsCheckingEligibility] = useState(false);
-  const [isHidingAccount, setIsHidingAccount] = useState(false);
-  const [isRestoringAccount, setIsRestoringAccount] = useState(false);
-
-  // Hidden accounts visibility
-  const [showHiddenAccounts, setShowHiddenAccounts] = useState(false);
-
-  // Sibling account count for revoke warning
-  const [revokeSiblingCount, setRevokeSiblingCount] = useState(0);
-
-  // Re-link prompt state (for banking accounts with revoked connections)
-  const [relinkPrompt, setRelinkPrompt] = useState<{
-    accountId: string;
-    message: string;
-    siblingAccountCount: number;
-    providerName?: string;
-    suggestion?: string;
-  } | null>(null);
-
-  // OAuth popup modal state
-  const [oauthPopup, setOAuthPopup] = useState<{
-    redirectUrl: string;
-    connectionId: string;
-    title: string;
-  } | null>(null);
-
-  /**
-   * Fetch ALL accounts from /api/accounts endpoint
-   */
-  const fetchAllAccounts = useCallback(async () => {
+  const fetchAccounts = useCallback(async () => {
     try {
-      setIsLoadingAccounts(true);
-      const accounts = await accountsClient.getAccounts();
-      setAllAccounts(accounts);
+      const data = await accountsClient.getAccounts(showHidden);
+      setAccounts(data);
+      if (!selectedId && data.length > 0) setSelectedId(data[0].id);
     } catch (err) {
       console.error('Failed to fetch accounts:', err);
-      setLocalError(err instanceof Error ? err.message : 'Failed to fetch accounts');
     } finally {
-      setIsLoadingAccounts(false);
+      setIsLoading(false);
     }
-  }, []);
+  }, [showHidden, selectedId]);
 
-  /**
-   * Fetch accounts on component mount
-   */
-  useEffect(() => {
-    fetchAllAccounts();
-    // Also fetch banking accounts for sync/revoke capabilities
-    fetchBankingAccounts().catch(console.error);
-  }, [fetchAllAccounts, fetchBankingAccounts]);
+  useEffect(() => { fetchAccounts(); }, [fetchAccounts]);
 
-  /**
-   * Handle successful bank linking
-   */
-  const handleLinkSuccess = async () => {
-    try {
-      setLocalError(null);
-      await fetchAllAccounts();
-      await fetchBankingAccounts();
-    } catch (err) {
-      const errorMessage =
-        err instanceof Error
-          ? err.message
-          : 'Failed to refresh accounts after linking. Please refresh the page.';
-      setLocalError(errorMessage);
-    }
-  };
+  const selectedAccount = accounts.find(a => a.id === selectedId);
+  const visibleAccounts = showHidden ? accounts : accounts.filter(a => a.status !== 'HIDDEN');
 
-  /**
-   * Handle bank linking error
-   */
-  const handleLinkError = (errorMessage: string) => {
-    setLocalError(errorMessage);
-  };
-
-  /**
-   * Handle manual account refresh
-   */
-  const handleRefreshAccounts = async () => {
-    try {
-      setIsRefreshing(true);
-      setLocalError(null);
-      clearError();
-      await fetchAllAccounts();
-      await fetchBankingAccounts();
-    } catch (err) {
-      const errorMessage =
-        err instanceof Error
-          ? err.message
-          : 'Failed to refresh accounts. Please try again.';
-      setLocalError(errorMessage);
-    } finally {
-      setIsRefreshing(false);
-    }
-  };
-
-  /**
-   * Handle manual account form open
-   */
-  const handleManualAccountClick = () => {
-    setShowManualForm(true);
-    setFormError(undefined);
-  };
-
-  /**
-   * Handle bank link click (trigger OAuth)
-   */
-  const handleLinkBankClick = () => {
-    // Trigger the BankingLinkButton programmatically
-    const linkButton = document.querySelector('[data-testid="link-bank-button"]') as HTMLButtonElement;
-    linkButton?.click();
-  };
-
-  /**
-   * Handle manual account form submission
-   */
-  const handleCreateManualAccount = async (data: CreateAccountRequest) => {
-    try {
-      setIsCreatingAccount(true);
-      setFormError(undefined);
-      await accountsClient.createAccount(data);
-      setShowManualForm(false);
-      await fetchAllAccounts();
-    } catch (err) {
-      const errorMessage =
-        err instanceof Error
-          ? err.message
-          : 'Failed to create account. Please try again.';
-      setFormError(errorMessage);
-      throw err; // Re-throw so the form knows submission failed
-    } finally {
-      setIsCreatingAccount(false);
-    }
-  };
-
-  /**
-   * Handle manual account form cancel
-   */
-  const handleCancelManualAccount = () => {
-    setShowManualForm(false);
-    setFormError(undefined);
-  };
-
-  /**
-   * Handle account sync
-   */
   const handleSync = async (accountId: string) => {
     try {
-      setLocalError(null);
       await syncAccount(accountId);
-      await fetchAllAccounts(); // Refresh all accounts after sync
+      await fetchAccounts();
     } catch (err) {
       console.error('Sync failed:', err);
     }
   };
 
-  /**
-   * Handle account revocation
-   * Uses allAccounts for lookup since it's the source of truth for the AccountList
-   */
-  const handleRevoke = (accountId: string) => {
-    // Find in allAccounts (source of truth), then convert to BankingAccount format
-    const account = allAccounts.find((acc) => acc.id === accountId);
-    if (account) {
-      // Calculate sibling account count (other accounts on the same connection)
-      // This is important: revoking one account will revoke ALL accounts on the same connection
-      let siblingCount = 0;
-      if (account.saltEdgeConnectionId) {
-        siblingCount = allAccounts.filter(
-          (acc) =>
-            acc.id !== accountId &&
-            acc.saltEdgeConnectionId === account.saltEdgeConnectionId &&
-            acc.status !== AccountStatus.HIDDEN
-        ).length;
-      }
-      setRevokeSiblingCount(siblingCount);
-
-      // Convert to BankingAccount format for RevokeConfirmation component
-      // Using type assertion as Account has all properties needed for display
-      const bankingAccount = {
-        id: account.id,
-        userId: account.userId,
-        connectionId: account.saltEdgeConnectionId || '',
-        provider: account.source === 'SALTEDGE' ? BankingProvider.SALTEDGE : BankingProvider.MANUAL,
-        providerAccountId: account.id,
-        name: account.name,
-        balance: account.currentBalance,
-        currency: account.currency,
-        bankName: account.institutionName || 'Unknown Bank',
-        iban: account.maskedAccountNumber || '',
-        syncStatus: account.needsSync ? BankingSyncStatus.PENDING : (account.syncError ? BankingSyncStatus.ERROR : BankingSyncStatus.SYNCED),
-        connectionStatus: account.isActive ? BankingConnectionStatus.AUTHORIZED : BankingConnectionStatus.REVOKED,
-        lastSyncedAt: account.lastSyncAt ? new Date(account.lastSyncAt) : undefined,
-        linkedAt: new Date(account.createdAt),
-      } as BankingAccount;
-      setAccountToRevoke(bankingAccount);
-    }
-  };
-
-  /**
-   * Confirm account revocation
-   */
-  const handleConfirmRevoke = async () => {
-    if (!accountToRevoke) return;
-
+  const handleDelete = async () => {
+    if (!deletingAccount) return;
     try {
-      setLocalError(null);
-      await revokeConnection(accountToRevoke.id);
-      setAccountToRevoke(null);
-      setRevokeSiblingCount(0);
-      await fetchAllAccounts();
-      await fetchBankingAccounts();
+      await accountsClient.deleteAccount(deletingAccount.id);
+      setDeletingAccount(null);
+      await fetchAccounts();
     } catch (err) {
-      const errorMessage =
-        err instanceof Error
-          ? err.message
-          : 'Failed to revoke account access. Please try again.';
-      setLocalError(errorMessage);
-      setAccountToRevoke(null);
-      setRevokeSiblingCount(0);
+      console.error('Delete failed:', err);
     }
   };
 
-  /**
-   * Cancel account revocation
-   */
-  const handleCancelRevoke = () => {
-    setAccountToRevoke(null);
-    setRevokeSiblingCount(0);
-  };
-
-  /**
-   * Handle view account details
-   * Navigates to the account details page
-   */
-  const handleView = useCallback((accountId: string) => {
-    router.push(`/dashboard/accounts/${accountId}`);
-  }, [router]);
-
-  /**
-   * Handle edit account click
-   * For manual accounts: edit all fields (name, balance, etc.)
-   * For linked accounts: edit only display settings (icon, color)
-   */
-  const handleEdit = (accountId: string) => {
-    const account = allAccounts.find((acc) => acc.id === accountId);
-    if (account) {
-      setAccountToEdit(account);
-      setEditError(undefined);
-    }
-  };
-
-  /**
-   * Handle update account
-   */
-  const handleUpdateAccount = async (data: UpdateAccountRequest & { id?: string }) => {
-    if (!accountToEdit) return;
-
-    try {
-      setIsUpdatingAccount(true);
-      setEditError(undefined);
-      // Strip id from request body - id is in URL path
-      const { id: _id, ...updateData } = data;
-      await accountsClient.updateAccount(accountToEdit.id, updateData);
-      setAccountToEdit(null);
-      await fetchAllAccounts();
-    } catch (err) {
-      const errorMessage =
-        err instanceof Error
-          ? err.message
-          : 'Failed to update account. Please try again.';
-      setEditError(errorMessage);
-      throw err; // Re-throw so the form knows submission failed
-    } finally {
-      setIsUpdatingAccount(false);
-    }
-  };
-
-  /**
-   * Cancel edit account
-   */
-  const handleCancelEdit = () => {
-    setAccountToEdit(null);
-    setEditError(undefined);
-  };
-
-  /**
-   * Handle delete account click
-   * Works for:
-   * - Manual accounts (isManualAccount: true)
-   * - Orphaned linked accounts (isSyncable: false, e.g., lost banking connection)
-   * - Hidden accounts (status: HIDDEN)
-   *
-   * Checks deletion eligibility before showing confirmation
-   */
-  const handleDelete = async (accountId: string) => {
-    const account = allAccounts.find((acc) => acc.id === accountId);
-    // Allow deletion for:
-    // 1. Manual accounts (source: MANUAL)
-    // 2. Orphaned linked accounts (source: SALTEDGE/PLAID but isSyncable: false)
-    // 3. Hidden accounts (already soft-deleted, can be permanently deleted)
-    // These are accounts that have lost their banking connection and can't sync
-    const isHiddenAccount = account?.status === AccountStatus.HIDDEN;
-    const canDelete = account && (account.isManualAccount || !account.isSyncable || isHiddenAccount);
-
-    if (account && canDelete) {
-      setAccountToDelete(account);
-      setDeletionEligibility(undefined);
-      setIsCheckingEligibility(true);
-
-      try {
-        const eligibility = await accountsClient.checkDeletionEligibility(accountId);
-        setDeletionEligibility(eligibility);
-      } catch (err) {
-        console.error('Failed to check deletion eligibility:', err);
-        // Default to allowing deletion if check fails
-        setDeletionEligibility({
-          canDelete: true,
-          canHide: true,
-          currentStatus: AccountStatus.ACTIVE,
-          blockers: [],
-          linkedTransferCount: 0,
-        });
-      } finally {
-        setIsCheckingEligibility(false);
-      }
-    }
-  };
-
-  /**
-   * Confirm delete manual account
-   */
-  const handleConfirmDelete = async (_transactionHandling: 'delete' | 'unassign') => {
-    if (!accountToDelete) return;
-
-    try {
-      setIsDeletingAccount(true);
-      setLocalError(null);
-      // TODO: Pass _transactionHandling option to backend when implemented
-      await accountsClient.deleteAccount(accountToDelete.id);
-      setAccountToDelete(null);
-      await fetchAllAccounts();
-    } catch (err) {
-      const errorMessage =
-        err instanceof Error
-          ? err.message
-          : 'Failed to delete account. Please try again.';
-      setLocalError(errorMessage);
-      setAccountToDelete(null);
-    } finally {
-      setIsDeletingAccount(false);
-    }
-  };
-
-  /**
-   * Cancel delete account
-   */
-  const handleCancelDelete = () => {
-    setAccountToDelete(null);
-    setDeletionEligibility(undefined);
-  };
-
-  /**
-   * Handle hide account (soft delete)
-   */
-  const handleHideAccount = async () => {
-    if (!accountToDelete) return;
-
-    try {
-      setIsHidingAccount(true);
-      setLocalError(null);
-      await accountsClient.hideAccount(accountToDelete.id);
-      setAccountToDelete(null);
-      setDeletionEligibility(undefined);
-      await fetchAllAccounts();
-    } catch (err) {
-      const errorMessage =
-        err instanceof Error
-          ? err.message
-          : 'Failed to hide account. Please try again.';
-      setLocalError(errorMessage);
-    } finally {
-      setIsHidingAccount(false);
-    }
-  };
-
-  /**
-   * Handle restore hidden account
-   * For banking accounts with revoked connections, shows a re-link prompt
-   */
-  const handleRestoreAccount = async (accountId: string) => {
-    try {
-      setIsRestoringAccount(true);
-      setLocalError(null);
-      await accountsClient.restoreAccount(accountId);
-      await fetchAllAccounts();
-    } catch (err) {
-      // Check if this is a re-link required error (banking connection revoked)
-      if (err instanceof RelinkRequiredError) {
-        setRelinkPrompt({
-          accountId,
-          message: err.message,
-          siblingAccountCount: err.siblingAccountCount,
-          providerName: err.providerName,
-          suggestion: err.suggestion,
-        });
-      } else {
-        const errorMessage =
-          err instanceof Error
-            ? err.message
-            : 'Failed to restore account. Please try again.';
-        setLocalError(errorMessage);
-      }
-    } finally {
-      setIsRestoringAccount(false);
-    }
-  };
-
-  /**
-   * Handle re-link bank action from the prompt
-   * Opens the OAuth flow in a popup modal instead of redirecting
-   */
-  const handleRelinkBank = async () => {
-    try {
-      setLocalError(null);
-      // Get the initiateLinking function from the store
-      const { initiateLinking } = useBankingStore.getState();
-
-      // Start the OAuth flow - get the redirect URL
-      const { redirectUrl, connectionId } = await initiateLinking();
-
-      // Close the re-link prompt and show the OAuth popup modal
-      setRelinkPrompt(null);
-      setOAuthPopup({
-        redirectUrl,
-        connectionId,
-        title: 'Re-link Bank Account',
-      });
-    } catch (err) {
-      const errorMessage =
-        err instanceof Error
-          ? err.message
-          : 'Failed to initiate re-linking. Please try again.';
-      setLocalError(errorMessage);
-      setRelinkPrompt(null);
-    }
-  };
-
-  /**
-   * Handle OAuth popup success - refresh accounts
-   */
-  const handleOAuthSuccess = async () => {
-    setOAuthPopup(null);
-    try {
-      await fetchAllAccounts();
-      await fetchBankingAccounts();
-    } catch (err) {
-      console.error('Failed to refresh accounts after OAuth:', err);
-      setLocalError('Accounts linked successfully. Please refresh the page to see them.');
-    }
-  };
-
-  /**
-   * Handle OAuth popup cancel
-   */
-  const handleOAuthCancel = () => {
-    setOAuthPopup(null);
-  };
-
-  /**
-   * Dismiss error message
-   */
-  const handleDismissError = () => {
-    setLocalError(null);
-    clearError();
-  };
-
-  // Compute effective error (local or store error)
-  const effectiveError = localError || bankingError;
-
-  // Compute loading state
-  const isLoading = isLoadingAccounts || isBankingLoading;
-
-  // Separate active and hidden accounts
-  const activeAccounts = allAccounts.filter((acc) => acc.status !== AccountStatus.HIDDEN);
-  const hiddenAccounts = allAccounts.filter((acc) => acc.status === AccountStatus.HIDDEN);
-  const hasHiddenAccounts = hiddenAccounts.length > 0;
-
-  // Convert Account[] to BankingAccount[] format for AccountList
-  // The AccountList component expects BankingAccount format
-  const convertToBankingAccount = (acc: Account) => ({
-    id: acc.id,
-    name: acc.name,
-    balance: acc.currentBalance,
-    currency: acc.currency,
-    bankName: acc.institutionName || (acc.isManualAccount ? 'Manual' : 'Unknown'),
-    iban: acc.maskedAccountNumber || '',
-    syncStatus: acc.needsSync ? BankingSyncStatus.PENDING : (acc.syncError ? BankingSyncStatus.ERROR : BankingSyncStatus.SYNCED),
-    connectionStatus: acc.isActive ? BankingConnectionStatus.AUTHORIZED : BankingConnectionStatus.REVOKED,
-    lastSyncedAt: acc.lastSyncAt ? new Date(acc.lastSyncAt) : undefined,
-    linkedAt: new Date(acc.createdAt),
-    accountNumber: acc.maskedAccountNumber,
-    accountType: acc.type.toLowerCase(),
-    // Additional metadata for UI
-    isManualAccount: acc.isManualAccount,
-    isSyncable: acc.isSyncable,
-    source: acc.source,
-    status: acc.status,
-    // Display customization from settings
-    icon: acc.settings?.icon,
-    color: acc.settings?.color,
-  });
-
-  const accountsForList = activeAccounts.map(convertToBankingAccount) as unknown as BankingAccount[];
-  const _hiddenAccountsForList = hiddenAccounts.map(convertToBankingAccount) as unknown as BankingAccount[];
-
-  return (
-    <ErrorBoundary>
-      <div className="space-y-6" data-testid="accounts-container">
-        {/* Page Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <Wallet className="h-6 w-6 text-blue-600" aria-hidden="true" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-foreground">Accounts</h1>
-              <p className="text-sm text-gray-500">
-                Manage your bank accounts and financial connections
-              </p>
-            </div>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex items-center gap-3">
-            <button
-              onClick={handleRefreshAccounts}
-              disabled={isLoading || isRefreshing || isLinking}
-              aria-label="Refresh accounts"
-              aria-busy={isRefreshing}
-              className="inline-flex items-center justify-center px-4 py-2 rounded-lg font-medium
-                transition-colors duration-200 border border-gray-300
-                text-foreground bg-card hover:bg-muted active:bg-muted/80
-                focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500
-                disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <RefreshCw
-                className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`}
-                aria-hidden="true"
-              />
-              {isRefreshing ? 'Refreshing...' : 'Refresh'}
-            </button>
-
-            {/* Unified Add Account Dropdown */}
-            <AddAccountDropdown
-              onManualAccount={handleManualAccountClick}
-              onLinkBank={handleLinkBankClick}
-              disabled={isLoading || isCreatingAccount}
-              isLinking={isLinking}
-            />
-
-            {/* Hidden BankingLinkButton for OAuth flow */}
-            <div className="hidden">
-              <BankingLinkButton
-                onSuccess={handleLinkSuccess}
-                onError={handleLinkError}
-                ariaLabel="Connect a new bank account"
-              />
-            </div>
+  if (isLoading) {
+    return (
+      <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-8">
+        <div className="animate-pulse space-y-6">
+          <div className="h-10 w-56 bg-muted rounded-xl" />
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {[...Array(4)].map((_, i) => <div key={i} className="h-44 bg-muted rounded-2xl" />)}
           </div>
         </div>
+      </div>
+    );
+  }
 
-        {/* Error Alert */}
-        {effectiveError && (
-          <ErrorAlert
-            title="Error"
-            message={effectiveError}
-            onDismiss={handleDismissError}
-          />
-        )}
-
-        {/* Account Statistics */}
-        {!isLoading && allAccounts.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="bg-card rounded-xl border border-border p-4">
-              <p className="text-sm text-gray-600 font-medium">Total Accounts</p>
-              <p className="text-3xl font-bold text-gray-900 mt-2">
-                {activeAccounts.length}
-              </p>
-              {hasHiddenAccounts && (
-                <p className="text-xs text-gray-400 mt-1">
-                  {hiddenAccounts.length} hidden
-                </p>
-              )}
-            </div>
-
-            <div className="bg-card rounded-xl border border-border p-4">
-              <p className="text-sm text-gray-600 font-medium">Total Balance</p>
-              <p className="text-3xl font-bold text-gray-900 mt-2">
-                {new Intl.NumberFormat('en-US', {
-                  style: 'currency',
-                  currency: activeAccounts[0]?.currency || 'USD',
-                  minimumFractionDigits: 2,
-                }).format(
-                  activeAccounts.reduce((sum, acc) => sum + (acc.currentBalance || 0), 0)
-                )}
-              </p>
-            </div>
-
-            <div className="bg-card rounded-xl border border-border p-4">
-              <p className="text-sm text-gray-600 font-medium">Manual Accounts</p>
-              <p className="text-3xl font-bold text-gray-900 mt-2">
-                {activeAccounts.filter((acc) => acc.isManualAccount).length}
-              </p>
-            </div>
-
-            <div className="bg-card rounded-xl border border-border p-4">
-              <p className="text-sm text-gray-600 font-medium">Linked Accounts</p>
-              <p className="text-3xl font-bold text-gray-900 mt-2">
-                {activeAccounts.filter((acc) => !acc.isManualAccount).length}
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* Account List */}
-        {(isLoading || activeAccounts.length > 0) && (
-          <div className="bg-card rounded-xl border border-border">
-            <div className="p-4 border-b border-gray-200">
-              <h2 className="text-lg font-semibold text-foreground">
-                All Accounts
-              </h2>
-              <p className="text-sm text-gray-500 mt-1">
-                Manage your manual and linked bank accounts
-              </p>
-            </div>
-            <div className="p-4">
-              <AccountList
-                accounts={accountsForList}
-                isLoading={isLoading}
-                onSync={handleSync}
-                onRevoke={handleRevoke}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-                onView={handleView}
-              />
-            </div>
-          </div>
-        )}
-
-        {/* Hidden Accounts Section */}
-        {hasHiddenAccounts && (
-          <div className="space-y-3">
-            <button
-              onClick={() => setShowHiddenAccounts(!showHiddenAccounts)}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg
-                text-sm font-medium text-gray-600
-                hover:bg-gray-100 active:bg-gray-200
-                focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500
-                transition-colors"
-              aria-expanded={showHiddenAccounts}
-            >
-              {showHiddenAccounts ? (
-                <EyeOff className="h-4 w-4" aria-hidden="true" />
-              ) : (
-                <Eye className="h-4 w-4" aria-hidden="true" />
-              )}
-              {showHiddenAccounts ? 'Hide hidden accounts' : `Show hidden accounts (${hiddenAccounts.length})`}
-            </button>
-
-            {showHiddenAccounts && (
-              <div className="bg-gray-50 rounded-xl border border-gray-200">
-                <div className="p-4 border-b border-gray-200">
-                  <h2 className="text-lg font-semibold text-gray-700">
-                    Hidden Accounts
-                  </h2>
-                  <p className="text-sm text-gray-500 mt-1">
-                    These accounts are hidden but their data is preserved
-                  </p>
-                </div>
-                <div className="p-4 space-y-3">
-                  {hiddenAccounts.map((account) => (
-                    <div
-                      key={account.id}
-                      data-account-id={account.id}
-                      className="flex items-center justify-between p-4 bg-card rounded-lg border border-border"
-                    >
-                      <div>
-                        <p className="font-medium text-gray-900">{account.name}</p>
-                        <p className="text-sm text-gray-500">
-                          {account.institutionName || 'Manual Account'}
-                        </p>
-                        <p className="text-sm font-medium text-gray-700 mt-1">
-                          {new Intl.NumberFormat('en-US', {
-                            style: 'currency',
-                            currency: account.currency || 'USD',
-                          }).format(account.currentBalance)}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => handleRestoreAccount(account.id)}
-                          disabled={isRestoringAccount || isDeletingAccount}
-                          className="inline-flex items-center gap-2 px-3 py-2 rounded-lg
-                            text-sm font-medium text-blue-600
-                            bg-blue-50 hover:bg-blue-100 active:bg-blue-200
-                            focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500
-                            disabled:opacity-50 disabled:cursor-not-allowed
-                            transition-colors"
-                          aria-label={`Restore ${account.name}`}
-                        >
-                          <RotateCcw className="h-4 w-4" aria-hidden="true" />
-                          Restore
-                        </button>
-                        <button
-                          onClick={() => handleDelete(account.id)}
-                          disabled={isRestoringAccount || isDeletingAccount}
-                          className="inline-flex items-center gap-2 px-3 py-2 rounded-lg
-                            text-sm font-medium text-red-600
-                            bg-red-50 hover:bg-red-100 active:bg-red-200
-                            focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500
-                            disabled:opacity-50 disabled:cursor-not-allowed
-                            transition-colors"
-                          aria-label={`Delete ${account.name}`}
-                        >
-                          <Trash2 className="h-4 w-4" aria-hidden="true" />
-                          Delete
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Empty State */}
-        {!isLoading && allAccounts.length === 0 && (
-          <div className="bg-card rounded-xl border border-border p-12 text-center">
-            <Wallet className="h-12 w-12 text-gray-300 mx-auto mb-4" aria-hidden="true" />
-            <h2 className="text-lg font-medium text-gray-900 mb-2">
-              No accounts yet
-            </h2>
-            <p className="text-gray-500 mb-6 max-w-sm mx-auto">
-              Add a manual account to track cash or custom balances, or connect your bank accounts for automatic tracking.
-            </p>
-            <AddAccountDropdown
-              onManualAccount={handleManualAccountClick}
-              onLinkBank={handleLinkBankClick}
-              disabled={isCreatingAccount}
-              isLinking={isLinking}
-            />
-          </div>
-        )}
-
-        {/* Manual Account Form Modal */}
-        {showManualForm && (
-          <ManualAccountForm
-            onSubmit={handleCreateManualAccount}
-            onCancel={handleCancelManualAccount}
-            isSubmitting={isCreatingAccount}
-            error={formError}
-            isModal
-          />
-        )}
-
-        {/* Revoke Confirmation Modal (for linked accounts) */}
-        {accountToRevoke && (
-          <RevokeConfirmation
-            account={accountToRevoke}
-            onConfirm={handleConfirmRevoke}
-            onCancel={handleCancelRevoke}
-            siblingAccountCount={revokeSiblingCount}
-          />
-        )}
-
-        {/* Edit Account Modal (for all accounts) */}
-        {accountToEdit && (
-          <EditAccountForm
-            account={accountToEdit}
-            onSubmit={handleUpdateAccount}
-            onCancel={handleCancelEdit}
-            isSubmitting={isUpdatingAccount}
-            error={editError}
-            isModal
-            displaySettingsOnly={!accountToEdit.isManualAccount}
-          />
-        )}
-
-        {/* Delete Account Confirmation (for manual accounts) */}
-        {accountToDelete && (
-          <DeleteAccountConfirmation
-            account={accountToDelete}
-            onConfirm={async (options) => {
-              const transactionHandling = options.deleteTransactions ? 'delete' : 'unassign';
-              await handleConfirmDelete(transactionHandling);
-            }}
-            onCancel={handleCancelDelete}
-            isDeleting={isDeletingAccount}
-            eligibility={deletionEligibility}
-            isCheckingEligibility={isCheckingEligibility}
-            onHide={handleHideAccount}
-            isHiding={isHidingAccount}
-          />
-        )}
-
-        {/* Re-link Bank Prompt (for banking accounts with revoked connections) */}
-        {relinkPrompt && (
-          <div
-            className="fixed inset-0 z-50 overflow-y-auto"
-            aria-labelledby="relink-modal-title"
-            role="dialog"
-            aria-modal="true"
+  return (
+    <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-8">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h1 className="text-[32px] tracking-[-0.03em] text-foreground">Conti e Carte</h1>
+          <p className="text-[13px] text-muted-foreground mt-1.5">Gestisci i tuoi conti correnti e carte</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <Button
+            variant="outline"
+            className="rounded-xl border-border/50"
+            onClick={() => setShowHidden(!showHidden)}
           >
-            <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
-              {/* Backdrop with blur effect */}
-              <div
-                className="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity"
-                aria-hidden="true"
-                onClick={() => setRelinkPrompt(null)}
-              />
+            {showHidden ? <EyeOff className="w-4 h-4 mr-2" /> : <Eye className="w-4 h-4 mr-2" />}
+            {showHidden ? 'Nascondi' : 'Mostra nascosti'}
+          </Button>
+          <BankingLinkButton />
+        </div>
+      </div>
 
-              {/* Modal Content */}
-              <div className="relative transform overflow-hidden rounded-lg bg-card text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg">
-                <div className="bg-card px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
-                  <div className="sm:flex sm:items-start">
-                    <div className="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-amber-100 sm:mx-0 sm:h-10 sm:w-10">
-                      <AlertCircle className="h-6 w-6 text-amber-600" aria-hidden="true" />
-                    </div>
-                    <div className="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
-                      <h3
-                        className="text-base font-semibold leading-6 text-gray-900"
-                        id="relink-modal-title"
-                      >
-                        Re-linking Required
-                      </h3>
-                      <div className="mt-2">
-                        <p className="text-sm text-gray-500">
-                          {relinkPrompt.message}
-                        </p>
-                        {relinkPrompt.siblingAccountCount > 1 && (
-                          <p className="mt-2 text-sm text-gray-500">
-                            This will restore <span className="font-medium">{relinkPrompt.siblingAccountCount} accounts</span>
-                            {relinkPrompt.providerName && (
-                              <> from <span className="font-medium">{relinkPrompt.providerName}</span></>
-                            )}.
-                          </p>
-                        )}
-                        {relinkPrompt.suggestion && (
-                          <p className="mt-3 text-sm text-blue-600 bg-blue-50 p-3 rounded-md">
-                            {relinkPrompt.suggestion}
-                          </p>
-                        )}
-                      </div>
-                    </div>
+      {/* Accounts Grid — 1:1 Figma card styling */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {visibleAccounts.map((account, index) => {
+          const Icon = getAccountIcon(account.type);
+          const style = getAccountStyle(account.type);
+          const isNegative = (account.currentBalance ?? 0) < 0;
+          const isSelected = selectedId === account.id;
+
+          return (
+            <motion.div
+              key={account.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.05 }}
+              onClick={() => setSelectedId(account.id)}
+              className="cursor-pointer"
+            >
+              <Card className={`p-5 rounded-2xl border-0 shadow-sm bg-gradient-to-br ${style.gradient} hover:shadow-lg hover:scale-[1.02] transition-all group ${isSelected ? `ring-2 ${style.ring} shadow-xl` : ''} ${account.status === 'HIDDEN' ? 'opacity-50' : ''}`}>
+                <div className="flex items-start justify-between mb-4">
+                  <div className={`w-11 h-11 rounded-xl ${style.iconBg} flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform`}>
+                    <Icon className="w-5 h-5 text-white" />
+                  </div>
+                  <div className="relative">
+                    <button
+                      className="p-1.5 hover:bg-background/60 rounded-lg transition-colors"
+                      onClick={(e) => { e.stopPropagation(); setMenuOpenId(menuOpenId === account.id ? null : account.id); }}
+                    >
+                      <MoreVertical className="w-4 h-4 text-muted-foreground/60" />
+                    </button>
+                    <AnimatePresence>
+                      {menuOpenId === account.id && (
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.95 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.95 }}
+                          className="absolute right-0 top-full mt-1 w-40 bg-card border border-border rounded-xl shadow-lg z-10 overflow-hidden"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <button onClick={() => { setEditingAccount(account); setMenuOpenId(null); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-muted">
+                            <Pencil className="w-3.5 h-3.5" /> Modifica
+                          </button>
+                          {account.source === 'SALTEDGE' && (
+                            <button onClick={() => { handleSync(account.id); setMenuOpenId(null); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-muted">
+                              <RefreshCw className="w-3.5 h-3.5" /> Sincronizza
+                            </button>
+                          )}
+                          <button onClick={() => { setDeletingAccount(account); setMenuOpenId(null); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20">
+                            <Trash2 className="w-3.5 h-3.5" /> Elimina
+                          </button>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
                 </div>
-                <div className="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
-                  <button
-                    type="button"
-                    className="inline-flex w-full justify-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 sm:ml-3 sm:w-auto"
-                    onClick={handleRelinkBank}
-                  >
-                    <LinkIcon className="h-4 w-4 mr-2" aria-hidden="true" />
-                    Re-link Bank
-                  </button>
-                  <button
-                    type="button"
-                    className="mt-3 inline-flex w-full justify-center rounded-md bg-card px-3 py-2 text-sm font-semibold text-foreground shadow-sm ring-1 ring-inset ring-border hover:bg-muted sm:mt-0 sm:w-auto"
-                    onClick={() => setRelinkPrompt(null)}
-                  >
-                    Cancel
-                  </button>
+                <p className="text-[11px] uppercase tracking-wide text-muted-foreground/60 font-medium">{getAccountTypeLabel(account.type)}</p>
+                <h3 className="text-[15px] font-medium mt-1.5 text-foreground truncate">{account.name}</h3>
+                <div className="mt-4">
+                  <p className={`text-[26px] tracking-[-0.03em] font-semibold tabular-nums ${isNegative ? 'text-rose-600 dark:text-rose-400' : 'text-foreground'}`}>
+                    {isNegative ? '-' : ''}€{Math.abs(account.currentBalance ?? 0).toLocaleString('it-IT', { minimumFractionDigits: 2 })}
+                  </p>
+                  {account.lastSyncAt && (
+                    <p className="text-[10px] text-muted-foreground/60 mt-1.5">
+                      Agg. {new Date(account.lastSyncAt).toLocaleDateString('it-IT')}
+                    </p>
+                  )}
                 </div>
+              </Card>
+            </motion.div>
+          );
+        })}
+      </div>
+
+      {/* Account Details */}
+      {selectedAccount && (
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
+          <Card className="p-6 rounded-2xl border-0 shadow-sm">
+            <h3 className="text-[16px] font-medium text-foreground mb-4">
+              Dettagli — {selectedAccount.name}
+            </h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div>
+                <p className="text-[11px] uppercase tracking-wide text-muted-foreground/60 font-medium">Tipo</p>
+                <p className="text-[13px] font-medium text-foreground mt-1">{getAccountTypeLabel(selectedAccount.type)}</p>
+              </div>
+              <div>
+                <p className="text-[11px] uppercase tracking-wide text-muted-foreground/60 font-medium">Saldo</p>
+                <p className="text-[20px] font-semibold text-foreground mt-1 tabular-nums">€{(selectedAccount.currentBalance ?? 0).toLocaleString('it-IT', { minimumFractionDigits: 2 })}</p>
+              </div>
+              <div>
+                <p className="text-[11px] uppercase tracking-wide text-muted-foreground/60 font-medium">Fonte</p>
+                <p className="text-[13px] font-medium text-foreground mt-1">{selectedAccount.source ?? 'Manuale'}</p>
+              </div>
+              <div>
+                <p className="text-[11px] uppercase tracking-wide text-muted-foreground/60 font-medium">Stato</p>
+                <p className="text-[13px] font-medium text-foreground mt-1">{selectedAccount.status}</p>
               </div>
             </div>
-          </div>
-        )}
+          </Card>
+        </motion.div>
+      )}
 
-        {/* OAuth Popup Modal - for re-linking with blurred background */}
-        {oauthPopup && (
-          <OAuthPopupModal
-            redirectUrl={oauthPopup.redirectUrl}
-            connectionId={oauthPopup.connectionId}
-            title={oauthPopup.title}
-            onSuccess={handleOAuthSuccess}
-            onCancel={handleOAuthCancel}
-          />
+      {/* Edit Modal — reuse existing component */}
+      {editingAccount && (
+        <EditAccountForm
+          account={editingAccount}
+          onCancel={() => setEditingAccount(null)}
+          onSubmit={async (data) => {
+            await accountsClient.updateAccount(data.id, data);
+            setEditingAccount(null);
+            await fetchAccounts();
+          }}
+        />
+      )}
+
+      {/* Delete Confirmation — simple modal */}
+      <AnimatePresence>
+        {deletingAccount && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+            onClick={() => setDeletingAccount(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.95 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.95 }}
+              className="bg-card rounded-2xl shadow-2xl w-full max-w-sm p-6"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 className="text-[16px] font-medium text-foreground mb-2">Elimina Conto</h3>
+              <p className="text-[13px] text-muted-foreground mb-6">
+                Sei sicuro di voler eliminare <strong>{deletingAccount.name}</strong>? Questa azione è irreversibile.
+              </p>
+              <div className="flex justify-end gap-3">
+                <Button variant="outline" className="rounded-xl" onClick={() => setDeletingAccount(null)}>Annulla</Button>
+                <Button className="rounded-xl bg-red-600 hover:bg-red-700 text-white" onClick={handleDelete}>Elimina</Button>
+              </div>
+            </motion.div>
+          </motion.div>
         )}
-      </div>
-    </ErrorBoundary>
+      </AnimatePresence>
+    </div>
   );
 }
