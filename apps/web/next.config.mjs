@@ -1,5 +1,8 @@
 import { withSentryConfig } from '@sentry/nextjs';
 import bundleAnalyzer from '@next/bundle-analyzer';
+import createNextIntlPlugin from 'next-intl/plugin';
+
+const withNextIntl = createNextIntlPlugin();
 
 // Bundle analyzer for development bundle size analysis
 // Enable with: ANALYZE=true pnpm build
@@ -164,6 +167,6 @@ const sentryWebpackPluginOptions = {
 // Export Next.js config wrapped with bundle analyzer and Sentry
 // Order matters: bundle analyzer wraps Next config, then Sentry wraps that
 export default withSentryConfig(
-  withBundleAnalyzer(nextConfig),
+  withNextIntl(withBundleAnalyzer(nextConfig)),
   sentryWebpackPluginOptions
 );
