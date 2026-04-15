@@ -96,24 +96,20 @@ interface LoadingScreenProps {
  */
 export function LoadingScreen({
   message = 'Caricamento...',
-  size = 'lg'
 }: LoadingScreenProps) {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
       <div className="text-center">
-        {/* Zecca branded loader */}
-        <div className="flex justify-center mb-6">
-          <div className="relative">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center shadow-lg shadow-emerald-500/20 animate-pulse">
-              <span className="text-white text-[24px] font-bold">Z</span>
-            </div>
-            <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-card border-2 border-background flex items-center justify-center">
-              <LoadingSpinner size="sm" />
-            </div>
-          </div>
+        <div className="flex items-center justify-center gap-2 mb-5">
+          {[0, 1, 2].map((i) => (
+            <div
+              key={i}
+              className="w-2.5 h-2.5 rounded-full bg-gradient-to-br from-emerald-500 to-teal-500 animate-pulse"
+              style={{ animationDelay: `${i * 200}ms` }}
+            />
+          ))}
         </div>
-        <p className="text-[15px] text-foreground font-medium">● Zecca</p>
-        <p className="text-[13px] text-muted-foreground mt-1">{message}</p>
+        <p className="text-[13px] text-muted-foreground">{message}</p>
       </div>
     </div>
   );
