@@ -252,36 +252,36 @@ export default function SettingsPage() {
     <div className="max-w-3xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <div className="p-2 bg-muted rounded-lg">
+        <div className="p-2 bg-muted rounded-xl">
           <SettingsIcon className="h-6 w-6 text-muted-foreground" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Settings</h1>
-          <p className="text-sm text-muted-foreground">
-            Manage your account settings and preferences
+          <h1 className="text-2xl font-bold tracking-[-0.01em] text-foreground">Impostazioni</h1>
+          <p className="text-[13px] text-muted-foreground">
+            Gestisci il tuo account e le tue preferenze
           </p>
         </div>
       </div>
 
       {/* Alerts */}
       {error && (
-        <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-lg">
-          <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0" />
-          <p className="text-sm text-red-700">{error}</p>
+        <div className="flex items-center gap-3 p-4 bg-rose-500/5 border border-rose-500/10 rounded-2xl">
+          <AlertCircle className="h-5 w-5 text-rose-500 flex-shrink-0" />
+          <p className="text-[13px] text-rose-600">{error}</p>
         </div>
       )}
 
       {success && (
-        <div className="flex items-center gap-3 p-4 bg-green-50 border border-green-200 rounded-lg">
-          <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
-          <p className="text-sm text-green-700">{success}</p>
+        <div className="flex items-center gap-3 p-4 bg-emerald-500/5 border border-emerald-500/10 rounded-2xl">
+          <CheckCircle className="h-5 w-5 text-emerald-500 flex-shrink-0" />
+          <p className="text-[13px] text-emerald-600">{success}</p>
         </div>
       )}
 
       <form onSubmit={handleSave} className="space-y-6">
         {/* Profile Information */}
-        <div className="bg-card rounded-xl border border-border p-6">
-          <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+        <div className="bg-card rounded-2xl border-0 shadow-sm p-6">
+          <h2 className="text-[14px] font-medium text-foreground mb-4 flex items-center gap-2">
             <User className="h-5 w-5 text-muted-foreground" />
             Profile Information
           </h2>
@@ -347,8 +347,8 @@ export default function SettingsPage() {
         </div>
 
         {/* Regional Settings */}
-        <div className="bg-card rounded-xl border border-border p-6">
-          <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+        <div className="bg-card rounded-2xl border-0 shadow-sm p-6">
+          <h2 className="text-[14px] font-medium text-foreground mb-4 flex items-center gap-2">
             <Globe className="h-5 w-5 text-muted-foreground" />
             Regional Settings
           </h2>
@@ -402,8 +402,8 @@ export default function SettingsPage() {
         </div>
 
         {/* Appearance */}
-        <div className="bg-card rounded-xl border border-border p-6">
-          <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+        <div className="bg-card rounded-2xl border-0 shadow-sm p-6">
+          <h2 className="text-[14px] font-medium text-foreground mb-4 flex items-center gap-2">
             <Monitor className="h-5 w-5 text-muted-foreground" />
             Appearance
           </h2>
@@ -444,8 +444,8 @@ export default function SettingsPage() {
         </div>
 
         {/* Notifications */}
-        <div className="bg-card rounded-xl border border-border p-6">
-          <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+        <div className="bg-card rounded-2xl border-0 shadow-sm p-6">
+          <h2 className="text-[14px] font-medium text-foreground mb-4 flex items-center gap-2">
             <Bell className="h-5 w-5 text-muted-foreground" />
             Notifications
           </h2>
@@ -501,9 +501,9 @@ export default function SettingsPage() {
         </div>
 
         {/* Account Information (Read Only) */}
-        <div className="bg-card rounded-xl border border-border p-6">
-          <h2 className="text-lg font-semibold text-foreground mb-4">
-            Account Information
+        <div className="bg-card rounded-2xl border-0 shadow-sm p-6">
+          <h2 className="text-[14px] font-medium text-foreground mb-4">
+            Informazioni Account
           </h2>
 
           <dl className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">

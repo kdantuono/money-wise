@@ -1,54 +1,203 @@
 @import "tailwindcss";
 @plugin "tailwindcss-animate";
 
-/* Dark mode variant - using class strategy */
-@variant dark (&:where(.dark, .dark *));
+/* Dark mode variant - class strategy */
+@custom-variant dark (&:is(.dark *));
 
-/* Theme configuration - migrated from tailwind.config.js */
-@theme {
-  /* Container settings */
+/* =============================================================================
+   ZECCA DESIGN SYSTEM — Figma Make tokens
+   Premium fintech palette with navy primary, Inter typography
+   ============================================================================= */
+
+:root {
+  --font-size: 16px;
+
+  /* Base surfaces */
+  --background: #f8f8fa;
+  --foreground: #1a1a2e;
+
+  /* Card / elevated surfaces */
+  --card: #ffffff;
+  --card-foreground: #1a1a2e;
+
+  /* Popover / dropdown */
+  --popover: #ffffff;
+  --popover-foreground: #1a1a2e;
+
+  /* Primary: dark navy — premium fintech identity */
+  --primary: #1a1a2e;
+  --primary-foreground: #ffffff;
+
+  /* Secondary: cool gray */
+  --secondary: #f0f0f5;
+  --secondary-foreground: #1a1a2e;
+
+  /* Muted: inactive, disabled, subtle backgrounds */
+  --muted: #f0f0f5;
+  --muted-foreground: #8e8ea0;
+
+  /* Accent: subtle highlight */
+  --accent: #e8e8f0;
+  --accent-foreground: #1a1a2e;
+
+  /* Destructive: errors, critical actions */
+  --destructive: #e54d6b;
+  --destructive-foreground: #ffffff;
+
+  /* Borders & inputs */
+  --border: rgba(0, 0, 0, 0.06);
+  --input: transparent;
+  --input-background: #f5f5f8;
+  --switch-background: #d0d0d8;
+
+  /* Focus ring */
+  --ring: #c0c0d0;
+
+  /* Financial semantic */
+  --success: #22c55e;
+  --success-foreground: #ffffff;
+  --warning: #f59e0b;
+  --warning-foreground: #ffffff;
+
+  /* Chart palette */
+  --chart-1: #2dd4a8;
+  --chart-2: #6366f1;
+  --chart-3: #f59e0b;
+  --chart-4: #ec4899;
+  --chart-5: #8b5cf6;
+
+  /* Radius */
+  --radius: 0.75rem;
+
+  /* Font weights */
+  --font-weight-medium: 500;
+  --font-weight-normal: 400;
+
+  /* Sidebar */
+  --sidebar: #ffffff;
+  --sidebar-foreground: #1a1a2e;
+  --sidebar-primary: #1a1a2e;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f5f5f8;
+  --sidebar-accent-foreground: #1a1a2e;
+  --sidebar-border: rgba(0, 0, 0, 0.06);
+  --sidebar-ring: #c0c0d0;
+}
+
+/* Dark mode */
+.dark {
+  --background: #0f0f17;
+  --foreground: #e8e8f0;
+
+  --card: #1a1a28;
+  --card-foreground: #e8e8f0;
+
+  --popover: #1a1a28;
+  --popover-foreground: #e8e8f0;
+
+  --primary: #e8e8f0;
+  --primary-foreground: #1a1a28;
+
+  --secondary: #252535;
+  --secondary-foreground: #e8e8f0;
+
+  --muted: #252535;
+  --muted-foreground: #7a7a90;
+
+  --accent: #252535;
+  --accent-foreground: #e8e8f0;
+
+  --destructive: #e54d6b;
+  --destructive-foreground: #ffffff;
+
+  --border: rgba(255, 255, 255, 0.08);
+  --input: rgba(255, 255, 255, 0.08);
+  --input-background: #252535;
+  --switch-background: #3a3a4a;
+
+  --ring: #3a3a4a;
+
+  --success: #4ade80;
+  --success-foreground: #ffffff;
+  --warning: #fbbf24;
+  --warning-foreground: #ffffff;
+
+  --chart-1: #2dd4a8;
+  --chart-2: #818cf8;
+  --chart-3: #fbbf24;
+  --chart-4: #f472b6;
+  --chart-5: #a78bfa;
+
+  --sidebar: #151520;
+  --sidebar-foreground: #e8e8f0;
+  --sidebar-primary: #818cf8;
+  --sidebar-primary-foreground: #e8e8f0;
+  --sidebar-accent: #252535;
+  --sidebar-accent-foreground: #e8e8f0;
+  --sidebar-border: rgba(255, 255, 255, 0.06);
+  --sidebar-ring: #3a3a4a;
+}
+
+/* =============================================================================
+   Tailwind v4 Theme Mapping — CSS vars → Tailwind tokens
+   ============================================================================= */
+@theme inline {
+  /* Container */
   --container-center: true;
   --container-padding: 2rem;
   --container-max-width-2xl: 1400px;
 
-  /* Custom colors */
-  --color-border: hsl(var(--border));
-  --color-input: hsl(var(--input));
-  --color-ring: hsl(var(--ring));
-  --color-background: hsl(var(--background));
-  --color-foreground: hsl(var(--foreground));
+  /* Colors */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-input-background: var(--input-background);
+  --color-switch-background: var(--switch-background);
+  --color-ring: var(--ring);
 
-  --color-primary: hsl(var(--primary));
-  --color-primary-foreground: hsl(var(--primary-foreground));
+  /* Financial */
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
 
-  --color-secondary: hsl(var(--secondary));
-  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  /* Charts */
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
 
-  --color-destructive: hsl(var(--destructive));
-  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  /* Sidebar */
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
 
-  --color-muted: hsl(var(--muted));
-  --color-muted-foreground: hsl(var(--muted-foreground));
-
-  --color-accent: hsl(var(--accent));
-  --color-accent-foreground: hsl(var(--accent-foreground));
-
-  --color-popover: hsl(var(--popover));
-  --color-popover-foreground: hsl(var(--popover-foreground));
-
-  --color-card: hsl(var(--card));
-  --color-card-foreground: hsl(var(--card-foreground));
-
-  /* Financial accent colors */
-  --color-success: hsl(var(--success));
-  --color-success-foreground: hsl(var(--success-foreground));
-  --color-warning: hsl(var(--warning));
-  --color-warning-foreground: hsl(var(--warning-foreground));
-
-  /* Border radius */
-  --radius-lg: var(--radius);
-  --radius-md: calc(var(--radius) - 2px);
+  /* Radius */
   --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
 
   /* Animations */
   --animate-accordion-down: accordion-down 0.2s ease-out;
@@ -78,107 +227,72 @@
   50% { opacity: 0.7; }
 }
 
-/* ============================================================================
-   ZECCA FINANCIAL THEME — Light Mode
-   Clean, professional fintech palette with high contrast
-   ============================================================================ */
-:root {
-  /* Base: crisp white surface, dark slate text */
-  --background: 210 20% 98%;
-  --foreground: 220 20% 14%;
-
-  /* Cards: white with subtle warmth */
-  --card: 0 0% 100%;
-  --card-foreground: 220 20% 14%;
-
-  /* Popover: same as card */
-  --popover: 0 0% 100%;
-  --popover-foreground: 220 20% 14%;
-
-  /* Primary: professional teal-blue (trust, finance) */
-  --primary: 199 89% 32%;
-  --primary-foreground: 0 0% 100%;
-
-  /* Secondary: cool gray for secondary actions */
-  --secondary: 214 15% 93%;
-  --secondary-foreground: 220 20% 20%;
-
-  /* Muted: soft gray for inactive/disabled */
-  --muted: 214 15% 95%;
-  --muted-foreground: 215 14% 46%;
-
-  /* Accent: light blue highlight */
-  --accent: 199 80% 94%;
-  --accent-foreground: 199 89% 25%;
-
-  /* Destructive: clear red for errors/expenses */
-  --destructive: 0 72% 51%;
-  --destructive-foreground: 0 0% 100%;
-
-  /* Borders & inputs: visible but subtle */
-  --border: 214 20% 88%;
-  --input: 214 20% 88%;
-  --ring: 199 89% 32%;
-
-  /* Financial semantic colors */
-  --success: 152 60% 36%;
-  --success-foreground: 0 0% 100%;
-  --warning: 38 92% 50%;
-  --warning-foreground: 0 0% 100%;
-
-  --radius: 0.625rem;
-}
-
-/* ============================================================================
-   ZECCA FINANCIAL THEME — Dark Mode
-   ============================================================================ */
-.dark {
-  --background: 222 30% 8%;
-  --foreground: 210 20% 93%;
-
-  --card: 222 25% 12%;
-  --card-foreground: 210 20% 93%;
-
-  --popover: 222 25% 12%;
-  --popover-foreground: 210 20% 93%;
-
-  --primary: 199 80% 50%;
-  --primary-foreground: 222 30% 8%;
-
-  --secondary: 220 20% 18%;
-  --secondary-foreground: 210 20% 85%;
-
-  --muted: 220 20% 18%;
-  --muted-foreground: 215 15% 55%;
-
-  --accent: 199 60% 18%;
-  --accent-foreground: 199 80% 70%;
-
-  --destructive: 0 62% 45%;
-  --destructive-foreground: 0 0% 100%;
-
-  --border: 220 20% 20%;
-  --input: 220 20% 20%;
-  --ring: 199 80% 50%;
-
-  --success: 152 55% 45%;
-  --success-foreground: 0 0% 100%;
-  --warning: 38 85% 55%;
-  --warning-foreground: 0 0% 100%;
-}
-
-/* Base layer styles */
+/* =============================================================================
+   Base Typography — Inter font system from Figma
+   ============================================================================= */
 @layer base {
   * {
-    @apply border-border;
+    @apply border-border outline-ring/50;
   }
+
+  html {
+    font-size: var(--font-size);
+  }
+
   body {
-    @apply bg-background text-foreground antialiased;
+    @apply bg-background text-foreground;
+    font-family: var(--font-inter, 'Inter'), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
     font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  h1 {
+    font-size: var(--text-2xl, 1.5rem);
+    font-weight: var(--font-weight-medium);
+    line-height: 1.3;
+    letter-spacing: -0.02em;
+  }
+
+  h2 {
+    font-size: var(--text-xl, 1.25rem);
+    font-weight: var(--font-weight-medium);
+    line-height: 1.3;
+    letter-spacing: -0.01em;
+  }
+
+  h3 {
+    font-size: var(--text-lg, 1.125rem);
+    font-weight: var(--font-weight-medium);
+    line-height: 1.4;
+  }
+
+  h4 {
+    font-size: var(--text-base, 1rem);
+    font-weight: var(--font-weight-medium);
+    line-height: 1.5;
+  }
+
+  label {
+    font-size: var(--text-base, 1rem);
+    font-weight: var(--font-weight-medium);
+    line-height: 1.5;
+  }
+
+  button {
+    font-size: var(--text-base, 1rem);
+    font-weight: var(--font-weight-medium);
+    line-height: 1.5;
+  }
+
+  input {
+    font-size: var(--text-base, 1rem);
+    font-weight: var(--font-weight-normal);
+    line-height: 1.5;
   }
 }
 
-/* Utility layer - custom animations */
+/* Utility layer */
 @layer utilities {
   .animate-budget-pulse {
     animation: budget-pulse 2s ease-in-out infinite;

@@ -52,19 +52,19 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-background py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-foreground">
-            Welcome back to MoneyWise
+          <h2 className="mt-6 text-center text-3xl font-bold tracking-[-0.01em] text-foreground">
+            <span className="text-emerald-500">&#9679;</span> Zecca
           </h2>
-          <p className="mt-2 text-center text-sm text-muted-foreground">
-            Sign in to your account
+          <p className="mt-2 text-center text-[13px] text-muted-foreground">
+            Accedi al tuo account
           </p>
         </div>
 
-        <Card>
+        <Card className="rounded-2xl border-0 shadow-sm">
           <CardHeader>
-            <CardTitle>Sign In</CardTitle>
-            <CardDescription>
-              Enter your email and password to access your account
+            <CardTitle className="text-[14px] font-semibold">Accedi</CardTitle>
+            <CardDescription className="text-[13px]">
+              Inserisci email e password per accedere
             </CardDescription>
           </CardHeader>
 
@@ -129,16 +129,16 @@ export default function LoginPage() {
                   disabled={isLoading}
                   data-testid="login-button"
                 >
-                  {isLoading ? 'Signing in...' : 'Sign In'}
+                  {isLoading ? 'Accesso in corso...' : 'Accedi'}
                 </Button>
 
-                <p className="text-center text-sm text-muted-foreground">
-                  Don&apos;t have an account?{' '}
+                <p className="text-center text-[13px] text-muted-foreground">
+                  Non hai un account?{' '}
                   <Link
                     href="/auth/register"
                     className="font-medium text-primary hover:text-primary/80"
                   >
-                    Sign up
+                    Registrati
                   </Link>
                 </p>
               </CardFooter>

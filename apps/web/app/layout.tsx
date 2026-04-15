@@ -5,11 +5,15 @@ import { ErrorBoundary } from '@/components/ui/error-boundary';
 import { QueryProvider } from '@/components/providers/query-provider';
 import { ThemeProvider } from '@/components/providers/theme-provider';
 
-const inter = Inter({ subsets: ['latin'] });
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-inter',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
-  title: 'MoneyWise - Personal Finance Management',
-  description: 'AI-powered personal finance management platform',
+  title: 'Zecca — Gestione Finanziaria Intelligente',
+  description: 'Piattaforma di gestione finanziaria personale e familiare con AI',
 };
 
 export default function RootLayout({
@@ -19,7 +23,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang='en' suppressHydrationWarning>
-      <body className={inter.className}>
+      <body className={`${inter.variable} font-sans`}>
         <ThemeProvider>
           <QueryProvider>
             <ErrorBoundary>{children}</ErrorBoundary>

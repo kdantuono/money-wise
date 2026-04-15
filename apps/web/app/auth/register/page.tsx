@@ -59,19 +59,19 @@ export default function RegisterPage() {
     <div className="min-h-screen flex items-center justify-center bg-background py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-foreground">
-            Join MoneyWise
+          <h2 className="mt-6 text-center text-3xl font-bold tracking-[-0.01em] text-foreground">
+            <span className="text-emerald-500">&#9679;</span> Zecca
           </h2>
-          <p className="mt-2 text-center text-sm text-muted-foreground">
-            Create your account to get started
+          <p className="mt-2 text-center text-[13px] text-muted-foreground">
+            Crea il tuo account per iniziare
           </p>
         </div>
 
-        <Card>
+        <Card className="rounded-2xl border-0 shadow-sm">
           <CardHeader>
-            <CardTitle>Create Account</CardTitle>
-            <CardDescription>
-              Enter your information to create your MoneyWise account
+            <CardTitle className="text-[14px] font-semibold">Crea Account</CardTitle>
+            <CardDescription className="text-[13px]">
+              Inserisci i tuoi dati per creare un account Zecca
             </CardDescription>
           </CardHeader>
 
@@ -198,16 +198,16 @@ export default function RegisterPage() {
                   disabled={isLoading}
                   data-testid="register-button"
                 >
-                  {isLoading ? 'Creating Account...' : 'Create Account'}
+                  {isLoading ? 'Creazione in corso...' : 'Crea Account'}
                 </Button>
 
-                <p className="text-center text-sm text-muted-foreground">
-                  Already have an account?{' '}
+                <p className="text-center text-[13px] text-muted-foreground">
+                  Hai già un account?{' '}
                   <Link
                     href="/auth/login"
                     className="font-medium text-primary hover:text-primary/80"
                   >
-                    Sign in
+                    Accedi
                   </Link>
                 </p>
               </CardFooter>
