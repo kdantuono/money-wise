@@ -99,12 +99,12 @@ export function TransactionFormModal({
       />
 
       {/* Modal Content */}
-      <div className="relative w-full max-w-lg mx-4 bg-card rounded-xl shadow-xl max-h-[90vh] overflow-y-auto">
+      <div className="relative w-full max-w-lg mx-4 bg-card rounded-2xl shadow-xl max-h-[90vh] overflow-y-auto">
         {/* Close button */}
         <button
           type="button"
           onClick={onClose}
-          className="absolute right-4 top-4 p-1 rounded-full text-muted-foreground hover:text-muted-foreground hover:bg-muted focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="absolute right-4 top-4 p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 transition-colors"
           aria-label="Chiudi"
         >
           <X className="h-5 w-5" />

@@ -247,17 +247,10 @@ export function EnhancedTransactionList({
         if (!matchesDescription && !matchesMerchant) return false;
       }
 
-      // Date filters
-      if (filters.dateFrom) {
-        const txDate = new Date(tx.date);
-        const fromDate = new Date(filters.dateFrom);
-        if (txDate < fromDate) return false;
-      }
-      if (filters.dateTo) {
-        const txDate = new Date(tx.date);
-        const toDate = new Date(filters.dateTo);
-        if (txDate > toDate) return false;
-      }
+      // Date filters — string comparison (YYYY-MM-DD) avoids timezone bugs
+      const txDateStr = tx.date.slice(0, 10);
+      if (filters.dateFrom && txDateStr < filters.dateFrom) return false;
+      if (filters.dateTo && txDateStr > filters.dateTo) return false;
 
       // Type filter
       if (filters.type !== 'all' && tx.type !== filters.type) return false;

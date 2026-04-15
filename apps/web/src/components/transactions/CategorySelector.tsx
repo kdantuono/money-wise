@@ -71,6 +71,33 @@ const CATEGORY_ICONS: Record<string, string> = {
   'repeat': '🔄',
   'send': '📤',
   'download': '📥',
+  // Heroicons names from DB seed
+  'document-text': '📄',
+  'building-storefront': '🏪',
+  'shield-check': '🛡️',
+  'chart-bar': '📊',
+  'currency-dollar': '💲',
+  'academic-cap': '🎓',
+  'receipt-percent': '🧾',
+  'building-library': '🏛️',
+  'building-office': '🏢',
+  'medical-bag': '🏥',
+  'dumbbell': '🏋️',
+  'arrow-uturn-left': '↩️',
+  'computer-desktop': '🖥️',
+  'fire': '🔥',
+  'paw': '🐾',
+  'child': '👶',
+  'banknotes': '💵',
+  'percent': '💹',
+  'user': '👤',
+  'key': '🔑',
+  'play': '▶️',
+  'plus-circle': '➕',
+  'question-mark-circle': '❓',
+  'truck': '🚚',
+  'airplane': '✈️',
+  'parking': '🅿️',
   // Default
   'circle': '⚪',
   'folder': '📁',
@@ -330,9 +357,9 @@ export function CategorySelector({
         onClick={() => handleSelect(category.id)}
         onMouseEnter={() => setHighlightedIndex(index)}
         className={`
-          flex items-center gap-2 px-3 py-2 cursor-pointer
-          ${isHighlighted ? 'bg-blue-50' : 'hover:bg-muted'}
-          ${isSelected ? 'bg-blue-50' : ''}
+          flex items-center gap-2 px-3 py-2 cursor-pointer transition-colors
+          ${isHighlighted ? 'bg-emerald-500/10' : 'hover:bg-muted/50'}
+          ${isSelected ? 'bg-emerald-500/10 text-foreground' : 'text-foreground'}
         `}
       >
         {/* Icon and color indicator */}
@@ -358,7 +385,7 @@ export function CategorySelector({
 
         {/* Selected check */}
         {isSelected && (
-          <Check className="h-4 w-4 text-blue-600 flex-shrink-0" aria-hidden="true" />
+          <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" aria-hidden="true" />
         )}
       </li>
     );
@@ -368,7 +395,7 @@ export function CategorySelector({
   const renderGroupHeader = (type: CategoryType) => (
     <li
       key={`group-${type}`}
-      className="px-3 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider bg-muted"
+      className="px-3 py-1.5 text-[11px] font-semibold text-muted-foreground/60 uppercase tracking-wider bg-muted/30"
     >
       {type.toLowerCase()}
     </li>
@@ -411,10 +438,10 @@ export function CategorySelector({
         tabIndex={disabled ? -1 : 0}
         onClick={handleToggle}
         className={`
-          relative w-full flex items-center gap-2 px-3 py-2 rounded-lg border
-          bg-card text-left cursor-pointer
-          ${disabled ? 'opacity-50 cursor-not-allowed bg-muted' : 'hover:border-border'}
-          ${error ? 'border-red-300 focus:ring-red-500' : 'border-border focus:ring-blue-500'}
+          relative w-full flex items-center gap-2 px-3 py-2.5 rounded-xl border
+          bg-background text-left cursor-pointer
+          ${disabled ? 'opacity-50 cursor-not-allowed bg-muted/30' : 'hover:border-border'}
+          ${error ? 'border-rose-500/50' : 'border-border/50 focus:ring-emerald-500/30 focus:border-emerald-500/50'}
           focus:outline-none focus:ring-2 focus:ring-offset-0
           transition-colors duration-150
         `}
@@ -457,7 +484,7 @@ export function CategorySelector({
             type="button"
             onClick={handleClear}
             aria-label="Cancella selezione"
-            className="p-1 rounded hover:bg-muted focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="p-1 rounded hover:bg-muted focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
           >
             <X className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
           </button>
@@ -482,7 +509,7 @@ export function CategorySelector({
       {/* Dropdown */}
       {isOpen && (
         <div
-          className="absolute z-50 w-full mt-1 bg-card border border-border rounded-lg shadow-lg overflow-hidden"
+          className="absolute z-50 w-full mt-1 bg-card border border-border/50 rounded-xl shadow-xl overflow-hidden"
           role="presentation"
         >
           {/* Search input */}
@@ -499,8 +526,8 @@ export function CategorySelector({
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Cerca categorie..."
-                  className="w-full pl-9 pr-3 py-2 text-sm border border-border rounded-md
-                    focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full pl-9 pr-3 py-2 text-[13px] border border-border/50 rounded-xl bg-background
+                    focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500/50 transition-all"
                   aria-label="Cerca categorie"
                 />
               </div>
