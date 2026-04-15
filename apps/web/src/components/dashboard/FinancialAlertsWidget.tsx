@@ -157,10 +157,10 @@ function getNotificationStyles(type: NotificationType, priority: string) {
       };
     default:
       return {
-        bg: 'bg-gray-50',
-        border: 'border-l-gray-500',
-        iconBg: 'bg-gray-100',
-        iconColor: 'text-gray-600',
+        bg: 'bg-muted',
+        border: 'border-l-border',
+        iconBg: 'bg-muted',
+        iconColor: 'text-muted-foreground',
       };
   }
 }
@@ -196,11 +196,11 @@ function FinancialAlertsSkeleton() {
       <CardContent>
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="flex gap-3 p-3 rounded-lg bg-gray-50">
-              <div className="h-8 w-8 rounded-full bg-gray-200 animate-pulse flex-shrink-0" />
+            <div key={i} className="flex gap-3 p-3 rounded-lg bg-muted">
+              <div className="h-8 w-8 rounded-full bg-muted animate-pulse flex-shrink-0" />
               <div className="flex-1 space-y-2">
-                <div className="h-4 w-3/4 bg-gray-200 rounded animate-pulse" />
-                <div className="h-3 w-full bg-gray-200 rounded animate-pulse" />
+                <div className="h-4 w-3/4 bg-muted rounded animate-pulse" />
+                <div className="h-3 w-full bg-muted rounded animate-pulse" />
               </div>
             </div>
           ))}
@@ -281,7 +281,7 @@ export function FinancialAlertsWidget() {
             <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center text-green-600 mx-auto mb-3">
               <CheckCircleIcon />
             </div>
-            <p className="font-medium text-gray-900">No alerts - you're on track!</p>
+            <p className="font-medium text-foreground">No alerts - you're on track!</p>
             <p className="text-sm text-muted-foreground mt-1">
               All budgets and bills are in good shape
             </p>
@@ -314,7 +314,7 @@ export function FinancialAlertsWidget() {
               <div
                 key={notification.id}
                 className={cn(
-                  'flex gap-3 p-3 rounded-lg border-l-4 transition-colors hover:bg-gray-50',
+                  'flex gap-3 p-3 rounded-lg border-l-4 transition-colors hover:bg-muted',
                   styles.bg,
                   styles.border
                 )}
@@ -330,10 +330,10 @@ export function FinancialAlertsWidget() {
                   {icon}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 truncate">
+                  <p className="text-sm font-medium text-foreground truncate">
                     {notification.title}
                   </p>
-                  <p className="text-xs text-gray-600 line-clamp-2 mt-0.5">
+                  <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">
                     {notification.message}
                   </p>
                   <div className="flex items-center justify-between mt-2">

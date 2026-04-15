@@ -25,7 +25,7 @@ export function DashboardFilters({
   onPeriodChange,
 }: DashboardFiltersProps) {
   return (
-    <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+    <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
       {periods.map((p) => (
         <button
           key={p.value}
@@ -33,8 +33,8 @@ export function DashboardFilters({
           className={cn(
             'px-3 py-1.5 text-sm font-medium rounded-md transition-colors',
             period === p.value
-              ? 'bg-white text-gray-900 shadow-sm'
-              : 'text-gray-600 hover:text-gray-900'
+              ? 'bg-white text-foreground shadow-sm'
+              : 'text-muted-foreground hover:text-foreground'
           )}
         >
           {p.label}

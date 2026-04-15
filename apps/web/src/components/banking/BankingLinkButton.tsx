@@ -205,7 +205,7 @@ export function BankingLinkButton({
         className={`inline-flex items-center justify-center px-4 py-2 rounded-lg font-medium transition-colors duration-200
           ${
             isLoading
-              ? 'bg-gray-400 text-white cursor-not-allowed opacity-75'
+              ? 'bg-secondary text-white cursor-not-allowed opacity-75'
               : 'bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500'
           }
           ${className}`}

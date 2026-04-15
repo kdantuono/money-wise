@@ -331,7 +331,7 @@ export function CategorySelector({
         onMouseEnter={() => setHighlightedIndex(index)}
         className={`
           flex items-center gap-2 px-3 py-2 cursor-pointer
-          ${isHighlighted ? 'bg-blue-50' : 'hover:bg-gray-50'}
+          ${isHighlighted ? 'bg-blue-50' : 'hover:bg-muted'}
           ${isSelected ? 'bg-blue-50' : ''}
         `}
       >
@@ -368,7 +368,7 @@ export function CategorySelector({
   const renderGroupHeader = (type: CategoryType) => (
     <li
       key={`group-${type}`}
-      className="px-3 py-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wider bg-gray-50"
+      className="px-3 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider bg-muted"
     >
       {type.toLowerCase()}
     </li>
@@ -376,7 +376,7 @@ export function CategorySelector({
 
   // Render empty state
   const renderEmptyState = () => (
-    <li className="px-3 py-4 text-center text-gray-500">
+    <li className="px-3 py-4 text-center text-muted-foreground">
       {categories.length === 0 ? (
         'No categories available'
       ) : (
@@ -393,7 +393,7 @@ export function CategorySelector({
     >
       {/* Label */}
       {label && (
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label className="block text-sm font-medium text-foreground mb-1">
           {label}
           {required && <span className="text-red-500 ml-1">*</span>}
         </label>
@@ -413,15 +413,15 @@ export function CategorySelector({
         className={`
           relative w-full flex items-center gap-2 px-3 py-2 rounded-lg border
           bg-white text-left cursor-pointer
-          ${disabled ? 'opacity-50 cursor-not-allowed bg-gray-100' : 'hover:border-gray-400'}
-          ${error ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'}
+          ${disabled ? 'opacity-50 cursor-not-allowed bg-muted' : 'hover:border-border'}
+          ${error ? 'border-red-300 focus:ring-red-500' : 'border-border focus:ring-blue-500'}
           focus:outline-none focus:ring-2 focus:ring-offset-0
           transition-colors duration-150
         `}
       >
         {/* Loading spinner */}
         {isLoading && (
-          <Loader2 className="h-4 w-4 text-gray-400 animate-spin" aria-hidden="true" />
+          <Loader2 className="h-4 w-4 text-muted-foreground animate-spin" aria-hidden="true" />
         )}
 
         {/* Selected value or placeholder */}
@@ -446,7 +446,7 @@ export function CategorySelector({
             )}
           </div>
         ) : (
-          <span className="text-gray-500 flex-grow">
+          <span className="text-muted-foreground flex-grow">
             {isLoading ? 'Loading...' : categories.length === 0 ? 'No categories available' : placeholder}
           </span>
         )}
@@ -457,15 +457,15 @@ export function CategorySelector({
             type="button"
             onClick={handleClear}
             aria-label="Clear selection"
-            className="p-1 rounded hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="p-1 rounded hover:bg-muted focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
-            <X className="h-4 w-4 text-gray-400" aria-hidden="true" />
+            <X className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
           </button>
         )}
 
         {/* Dropdown arrow */}
         <ChevronDown
-          className={`h-4 w-4 text-gray-400 flex-shrink-0 transition-transform ${
+          className={`h-4 w-4 text-muted-foreground flex-shrink-0 transition-transform ${
             isOpen ? 'rotate-180' : ''
           }`}
           aria-hidden="true"
@@ -482,15 +482,15 @@ export function CategorySelector({
       {/* Dropdown */}
       {isOpen && (
         <div
-          className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg overflow-hidden"
+          className="absolute z-50 w-full mt-1 bg-white border border-border rounded-lg shadow-lg overflow-hidden"
           role="presentation"
         >
           {/* Search input */}
           {searchable && (
-            <div className="p-2 border-b border-gray-200">
+            <div className="p-2 border-b border-border">
               <div className="relative">
                 <Search
-                  className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground"
                   aria-hidden="true"
                 />
                 <input
@@ -499,7 +499,7 @@ export function CategorySelector({
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search categories..."
-                  className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 rounded-md
+                  className="w-full pl-9 pr-3 py-2 text-sm border border-border rounded-md
                     focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   aria-label="Search categories"
                 />

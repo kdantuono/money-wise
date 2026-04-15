@@ -103,20 +103,20 @@ function TransactionItem({ transaction }: TransactionItemProps) {
   const isIncome = transaction.type === 'income';
 
   return (
-    <div className="flex items-center justify-between py-3 border-b border-gray-100 last:border-0">
+    <div className="flex items-center justify-between py-3 border-b border-border last:border-0">
       <div className="flex items-center gap-3">
         <div
           className={cn(
             'h-8 w-8 rounded-full flex items-center justify-center',
             isIncome
               ? 'bg-green-100 text-green-600'
-              : 'bg-gray-100 text-gray-600'
+              : 'bg-muted text-muted-foreground'
           )}
         >
           {getCategoryIcon(transaction.category)}
         </div>
         <div className="min-w-0">
-          <p className="font-medium text-sm text-gray-900 truncate">
+          <p className="font-medium text-sm text-foreground truncate">
             {transaction.description}
           </p>
           <p className="text-xs text-muted-foreground">{transaction.category}</p>
@@ -126,7 +126,7 @@ function TransactionItem({ transaction }: TransactionItemProps) {
         <p
           className={cn(
             'font-semibold text-sm',
-            isIncome ? 'text-green-600' : 'text-gray-900'
+            isIncome ? 'text-green-600' : 'text-foreground'
           )}
         >
           {isIncome ? '+' : '-'}{formatCurrency(transaction.amount)}
@@ -160,17 +160,17 @@ function ArrowRightIcon() {
 
 function TransactionSkeleton() {
   return (
-    <div className="flex items-center justify-between py-3 border-b border-gray-100 last:border-0">
+    <div className="flex items-center justify-between py-3 border-b border-border last:border-0">
       <div className="flex items-center gap-3">
-        <div className="h-8 w-8 rounded-full bg-gray-200 animate-pulse" />
+        <div className="h-8 w-8 rounded-full bg-muted animate-pulse" />
         <div className="space-y-1">
-          <div className="h-4 w-24 bg-gray-200 rounded animate-pulse" />
-          <div className="h-3 w-16 bg-gray-200 rounded animate-pulse" />
+          <div className="h-4 w-24 bg-muted rounded animate-pulse" />
+          <div className="h-3 w-16 bg-muted rounded animate-pulse" />
         </div>
       </div>
       <div className="text-right space-y-1">
-        <div className="h-4 w-16 bg-gray-200 rounded animate-pulse" />
-        <div className="h-3 w-12 bg-gray-200 rounded animate-pulse" />
+        <div className="h-4 w-16 bg-muted rounded animate-pulse" />
+        <div className="h-3 w-12 bg-muted rounded animate-pulse" />
       </div>
     </div>
   );
@@ -180,11 +180,11 @@ function RecentTransactionsSkeleton() {
   return (
     <Card className="min-h-[340px] flex flex-col" data-testid="recent-transactions-skeleton">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <div className="h-5 w-40 bg-gray-200 rounded animate-pulse" />
-        <div className="h-4 w-16 bg-gray-200 rounded animate-pulse" />
+        <div className="h-5 w-40 bg-muted rounded animate-pulse" />
+        <div className="h-4 w-16 bg-muted rounded animate-pulse" />
       </CardHeader>
       <CardContent>
-        <div className="divide-y divide-gray-100">
+        <div className="divide-y divide-border">
           {[1, 2, 3, 4, 5].map((i) => (
             <TransactionSkeleton key={i} />
           ))}
@@ -211,7 +211,7 @@ function EmptyState() {
       </CardHeader>
       <CardContent className="flex-1 flex flex-col justify-center">
         <div className="flex flex-col items-center justify-center text-center">
-          <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+          <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="24"
@@ -222,7 +222,7 @@ function EmptyState() {
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
-              className="text-gray-400"
+              className="text-muted-foreground"
             >
               <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
               <line x1="16" y1="2" x2="16" y2="6" />
@@ -230,8 +230,8 @@ function EmptyState() {
               <line x1="3" y1="10" x2="21" y2="10" />
             </svg>
           </div>
-          <p className="text-gray-600 font-medium">No transactions yet</p>
-          <p className="text-sm text-gray-500 mt-1">
+          <p className="text-muted-foreground font-medium">No transactions yet</p>
+          <p className="text-sm text-muted-foreground mt-1">
             Link a bank account or add transactions manually
           </p>
         </div>
@@ -269,7 +269,7 @@ export function RecentTransactions({ transactions, isLoading }: RecentTransactio
         </a>
       </CardHeader>
       <CardContent className="flex-1">
-        <div className="divide-y divide-gray-100">
+        <div className="divide-y divide-border">
           {transactions.map((transaction) => (
             <TransactionItem key={transaction.id} transaction={transaction} />
           ))}

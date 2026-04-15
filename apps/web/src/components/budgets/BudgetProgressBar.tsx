@@ -123,10 +123,10 @@ export function BudgetProgressBar({
                 {getIconEmoji(category.icon)}
               </span>
             )}
-            <span className="font-medium text-sm text-gray-900">
+            <span className="font-medium text-sm text-foreground">
               {name}
             </span>
-            <span className="text-xs text-gray-500">
+            <span className="text-xs text-muted-foreground">
               ({category.name})
             </span>
           </div>
@@ -163,7 +163,7 @@ export function BudgetProgressBar({
 
       {/* Amount row */}
       {showAmount && (
-        <div className="flex justify-between text-xs text-gray-500">
+        <div className="flex justify-between text-xs text-muted-foreground">
           <span>
             {formatCurrency(spent)} spent
           </span>

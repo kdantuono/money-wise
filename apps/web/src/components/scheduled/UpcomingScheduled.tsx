@@ -49,7 +49,7 @@ function getDueDateLabel(daysUntilDue: number): { text: string; color: string } 
   if (daysUntilDue <= 7) {
     return { text: `${daysUntilDue} days`, color: 'text-blue-600 bg-blue-50' };
   }
-  return { text: `${daysUntilDue} days`, color: 'text-gray-600 bg-gray-50' };
+  return { text: `${daysUntilDue} days`, color: 'text-muted-foreground bg-muted' };
 }
 
 // =============================================================================
@@ -69,14 +69,14 @@ export const UpcomingScheduled = memo(function UpcomingScheduled({
 
   if (loading) {
     return (
-      <div className="bg-white rounded-xl border border-gray-200 p-6">
+      <div className="bg-white rounded-xl border border-border p-6">
         <div className="flex items-center justify-between mb-4">
-          <div className="h-6 w-40 bg-gray-200 rounded animate-pulse" />
-          <div className="h-5 w-20 bg-gray-200 rounded animate-pulse" />
+          <div className="h-6 w-40 bg-muted rounded animate-pulse" />
+          <div className="h-5 w-20 bg-muted rounded animate-pulse" />
         </div>
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-16 bg-gray-100 rounded-lg animate-pulse" />
+            <div key={i} className="h-16 bg-muted rounded-lg animate-pulse" />
           ))}
         </div>
       </div>
@@ -84,12 +84,12 @@ export const UpcomingScheduled = memo(function UpcomingScheduled({
   }
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-6">
+    <div className="bg-white rounded-xl border border-border p-6">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Calendar className="h-5 w-5 text-blue-600" />
-          <h3 className="font-semibold text-gray-900">Upcoming Scheduled</h3>
+          <h3 className="font-semibold text-foreground">Upcoming Scheduled</h3>
           {overdueCount > 0 && (
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">
               <AlertCircle className="h-3 w-3" />
@@ -112,8 +112,8 @@ export const UpcomingScheduled = memo(function UpcomingScheduled({
       {/* Content */}
       {displayItems.length === 0 ? (
         <div className="text-center py-8">
-          <Clock className="h-10 w-10 text-gray-300 mx-auto mb-2" />
-          <p className="text-gray-500 text-sm">No upcoming transactions</p>
+          <Clock className="h-10 w-10 text-muted-foreground mx-auto mb-2" />
+          <p className="text-muted-foreground text-sm">No upcoming transactions</p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -131,16 +131,16 @@ export const UpcomingScheduled = memo(function UpcomingScheduled({
                     onItemClick(item);
                   }
                 }}
-                className={`flex items-center justify-between p-3 rounded-lg border border-gray-100
-                  ${item.isOverdue ? 'bg-red-50 border-red-100' : 'bg-gray-50'}
-                  ${onItemClick ? 'cursor-pointer hover:bg-gray-100 transition-colors' : ''}`}
+                className={`flex items-center justify-between p-3 rounded-lg border border-border
+                  ${item.isOverdue ? 'bg-red-50 border-red-100' : 'bg-muted'}
+                  ${onItemClick ? 'cursor-pointer hover:bg-muted transition-colors' : ''}`}
               >
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium text-gray-900 truncate">
+                  <p className="font-medium text-foreground truncate">
                     {item.description}
                   </p>
                   <div className="flex items-center gap-2 mt-0.5">
-                    <span className="text-xs text-gray-500">
+                    <span className="text-xs text-muted-foreground">
                       {formatDate(item.dueDate)}
                     </span>
                     <span
@@ -168,7 +168,7 @@ export const UpcomingScheduled = memo(function UpcomingScheduled({
             <button
               type="button"
               onClick={onViewAll}
-              className="w-full py-2 text-sm text-gray-500 hover:text-gray-700 text-center"
+              className="w-full py-2 text-sm text-muted-foreground hover:text-foreground text-center"
             >
               +{items.length - maxItems} more transactions
             </button>

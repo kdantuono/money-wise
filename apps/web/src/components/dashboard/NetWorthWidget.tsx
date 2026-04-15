@@ -107,23 +107,23 @@ function NetWorthSkeleton() {
           {/* Main net worth display */}
           <div className="flex items-center justify-between">
             <div className="space-y-1">
-              <div className="h-8 w-48 bg-gray-200 rounded animate-pulse" />
-              <div className="h-4 w-32 bg-gray-200 rounded animate-pulse" />
+              <div className="h-8 w-48 bg-muted rounded animate-pulse" />
+              <div className="h-4 w-32 bg-muted rounded animate-pulse" />
             </div>
-            <div className="h-12 w-12 rounded-full bg-gray-200 animate-pulse" />
+            <div className="h-12 w-12 rounded-full bg-muted animate-pulse" />
           </div>
 
           {/* Breakdown */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <div className="h-4 w-24 bg-gray-200 rounded animate-pulse" />
-              <div className="h-6 w-32 bg-gray-200 rounded animate-pulse" />
-              <div className="h-2 w-full bg-gray-200 rounded-full animate-pulse" />
+              <div className="h-4 w-24 bg-muted rounded animate-pulse" />
+              <div className="h-6 w-32 bg-muted rounded animate-pulse" />
+              <div className="h-2 w-full bg-muted rounded-full animate-pulse" />
             </div>
             <div className="space-y-2">
-              <div className="h-4 w-24 bg-gray-200 rounded animate-pulse" />
-              <div className="h-6 w-32 bg-gray-200 rounded animate-pulse" />
-              <div className="h-2 w-full bg-gray-200 rounded-full animate-pulse" />
+              <div className="h-4 w-24 bg-muted rounded animate-pulse" />
+              <div className="h-6 w-32 bg-muted rounded animate-pulse" />
+              <div className="h-2 w-full bg-muted rounded-full animate-pulse" />
             </div>
           </div>
         </div>
@@ -165,7 +165,7 @@ export function NetWorthWidget() {
         </CardHeader>
         <CardContent>
           <div className="text-center py-8">
-            <p className="text-gray-500">No financial data available</p>
+            <p className="text-muted-foreground">No financial data available</p>
           </div>
         </CardContent>
       </Card>
@@ -229,7 +229,7 @@ export function NetWorthWidget() {
                   </p>
                 </div>
               </div>
-              <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+              <div className="h-2 bg-muted rounded-full overflow-hidden">
                 <div
                   className="h-full bg-blue-500 transition-all"
                   style={{ width: `${assetsPercentage}%` }}
@@ -254,7 +254,7 @@ export function NetWorthWidget() {
                   </p>
                 </div>
               </div>
-              <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+              <div className="h-2 bg-muted rounded-full overflow-hidden">
                 <div
                   className="h-full bg-orange-500 transition-all"
                   style={{ width: `${liabilitiesPercentage}%` }}

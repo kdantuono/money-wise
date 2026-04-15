@@ -128,32 +128,32 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
       const isDevelopment = process.env.NODE_ENV === 'development';
 
       return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-          <div className="max-w-md w-full bg-white rounded-lg shadow-lg border border-gray-200 p-6">
+        <div className="min-h-screen flex items-center justify-center bg-muted p-4">
+          <div className="max-w-md w-full bg-white rounded-lg shadow-lg border border-border p-6">
             {/* Error Icon */}
             <div className="flex items-center justify-center w-12 h-12 rounded-full bg-red-100 mx-auto">
               <AlertCircle className="w-6 h-6 text-red-600" aria-hidden="true" />
             </div>
 
             {/* Error Title */}
-            <h2 className="mt-4 text-xl font-semibold text-center text-gray-900">
+            <h2 className="mt-4 text-xl font-semibold text-center text-foreground">
               Something went wrong
             </h2>
 
             {/* Error Message */}
-            <p className="mt-2 text-sm text-center text-gray-600">
+            <p className="mt-2 text-sm text-center text-muted-foreground">
               We&apos;re sorry, but an unexpected error occurred. Please try again or contact support if the problem persists.
             </p>
 
             {/* Error Details (Development Only) */}
             {isDevelopment && (
-              <div className="mt-4 p-3 bg-gray-50 rounded border border-gray-200">
-                <h3 className="text-sm font-semibold text-gray-900 mb-2">Error Details:</h3>
-                <p className="text-xs font-mono text-gray-700 break-words">
+              <div className="mt-4 p-3 bg-muted rounded border border-border">
+                <h3 className="text-sm font-semibold text-foreground mb-2">Error Details:</h3>
+                <p className="text-xs font-mono text-foreground break-words">
                   {this.state.error.message}
                 </p>
                 {this.state.error.stack && (
-                  <pre className="mt-2 text-xs text-gray-600 overflow-auto max-h-32">
+                  <pre className="mt-2 text-xs text-muted-foreground overflow-auto max-h-32">
                     {this.state.error.stack}
                   </pre>
                 )}
@@ -170,7 +170,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
               </button>
               <button
                 onClick={() => window.location.reload()}
-                className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors font-medium"
+                className="flex-1 px-4 py-2 bg-muted text-foreground rounded-md hover:bg-muted transition-colors font-medium"
               >
                 Reload Page
               </button>

@@ -307,7 +307,7 @@ export function EditAccountForm({
         <div>
           <label
             htmlFor={`${formId}-name`}
-            className="block text-sm font-medium text-gray-700 mb-1"
+            className="block text-sm font-medium text-foreground mb-1"
           >
             Account Name *
           </label>
@@ -325,10 +325,10 @@ export function EditAccountForm({
             className={`w-full px-3 py-2 rounded-lg border transition-colors
               ${errors.name
                 ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
-                : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+                : 'border-border focus:ring-blue-500 focus:border-blue-500'
               }
               focus:outline-none focus:ring-2
-              disabled:bg-gray-100 disabled:cursor-not-allowed`}
+              disabled:bg-muted disabled:cursor-not-allowed`}
             placeholder="e.g., My Savings"
           />
           {errors.name && (
@@ -344,7 +344,7 @@ export function EditAccountForm({
         <div>
           <label
             htmlFor={`${formId}-type`}
-            className="block text-sm font-medium text-gray-700 mb-1"
+            className="block text-sm font-medium text-foreground mb-1"
           >
             Account Type *
           </label>
@@ -354,9 +354,9 @@ export function EditAccountForm({
             onChange={(e) => handleChange('type', e.target.value as AccountType)}
             disabled={isSubmitting}
             data-testid="account-type-select"
-            className="w-full px-3 py-2 rounded-lg border border-gray-300
+            className="w-full px-3 py-2 rounded-lg border border-border
               focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
-              disabled:bg-gray-100 disabled:cursor-not-allowed"
+              disabled:bg-muted disabled:cursor-not-allowed"
           >
             {ACCOUNT_TYPES.map((type) => (
               <option key={type.value} value={type.value}>
@@ -373,7 +373,7 @@ export function EditAccountForm({
           <div>
             <label
               htmlFor={`${formId}-balance`}
-              className="block text-sm font-medium text-gray-700 mb-1"
+              className="block text-sm font-medium text-foreground mb-1"
             >
               Current Balance *
             </label>
@@ -390,17 +390,17 @@ export function EditAccountForm({
               className={`w-full px-3 py-2 rounded-lg border transition-colors
                 ${errors.currentBalance
                   ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
-                  : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+                  : 'border-border focus:ring-blue-500 focus:border-blue-500'
                 }
                 focus:outline-none focus:ring-2
-                disabled:bg-gray-100 disabled:cursor-not-allowed`}
+                disabled:bg-muted disabled:cursor-not-allowed`}
             />
           </div>
 
           <div>
             <label
               htmlFor={`${formId}-currency`}
-              className="block text-sm font-medium text-gray-700 mb-1"
+              className="block text-sm font-medium text-foreground mb-1"
             >
               Currency
             </label>
@@ -410,9 +410,9 @@ export function EditAccountForm({
               onChange={(e) => handleChange('currency', e.target.value)}
               disabled={isSubmitting}
               data-testid="account-currency-select"
-              className="w-full px-3 py-2 rounded-lg border border-gray-300
+              className="w-full px-3 py-2 rounded-lg border border-border
                 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
-                disabled:bg-gray-100 disabled:cursor-not-allowed"
+                disabled:bg-muted disabled:cursor-not-allowed"
             >
               {CURRENCIES.map((curr) => (
                 <option key={curr.code} value={curr.code}>
@@ -429,7 +429,7 @@ export function EditAccountForm({
         <div>
           <label
             htmlFor={`${formId}-credit-limit`}
-            className="block text-sm font-medium text-gray-700 mb-1"
+            className="block text-sm font-medium text-foreground mb-1"
           >
             Credit Limit *
           </label>
@@ -447,10 +447,10 @@ export function EditAccountForm({
             className={`w-full px-3 py-2 rounded-lg border transition-colors
               ${errors.creditLimit
                 ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
-                : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+                : 'border-border focus:ring-blue-500 focus:border-blue-500'
               }
               focus:outline-none focus:ring-2
-              disabled:bg-gray-100 disabled:cursor-not-allowed`}
+              disabled:bg-muted disabled:cursor-not-allowed`}
           />
         </div>
       )}
@@ -460,7 +460,7 @@ export function EditAccountForm({
         <div>
           <label
             htmlFor={`${formId}-institution`}
-            className="block text-sm font-medium text-gray-700 mb-1"
+            className="block text-sm font-medium text-foreground mb-1"
           >
             Institution Name
           </label>
@@ -471,9 +471,9 @@ export function EditAccountForm({
             onChange={(e) => handleChange('institutionName', e.target.value)}
             disabled={isSubmitting}
             data-testid="account-institution-input"
-            className="w-full px-3 py-2 rounded-lg border border-gray-300
+            className="w-full px-3 py-2 rounded-lg border border-border
               focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
-              disabled:bg-gray-100 disabled:cursor-not-allowed"
+              disabled:bg-muted disabled:cursor-not-allowed"
             placeholder="e.g., Chase Bank"
           />
         </div>
@@ -481,7 +481,7 @@ export function EditAccountForm({
 
       {/* Icon Selector */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block text-sm font-medium text-foreground mb-2">
           Account Icon
         </label>
         <div
@@ -502,7 +502,7 @@ export function EditAccountForm({
               className={`p-2 rounded-lg border-2 transition-all
                 ${formData.icon === id
                   ? 'border-blue-500 bg-blue-50'
-                  : 'border-gray-200 hover:border-gray-300'
+                  : 'border-border hover:border-border'
                 }
                 disabled:opacity-50 disabled:cursor-not-allowed`}
               title={label}
@@ -515,7 +515,7 @@ export function EditAccountForm({
 
       {/* Color Picker */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block text-sm font-medium text-foreground mb-2">
           Account Color
         </label>
         <div
@@ -549,15 +549,15 @@ export function EditAccountForm({
       </div>
 
       {/* Action Buttons */}
-      <div className="flex gap-3 pt-4 border-t border-gray-200">
+      <div className="flex gap-3 pt-4 border-t border-border">
         <button
           type="button"
           onClick={onCancel}
           disabled={isSubmitting}
-          className="flex-1 px-4 py-2 rounded-lg border border-gray-300
-            text-gray-700 font-medium
-            hover:bg-gray-50 active:bg-gray-100
-            focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500
+          className="flex-1 px-4 py-2 rounded-lg border border-border
+            text-foreground font-medium
+            hover:bg-muted active:bg-muted
+            focus:outline-none focus-visible:ring-2 focus-visible:ring-ring
             disabled:opacity-50 disabled:cursor-not-allowed
             transition-colors"
         >
@@ -612,8 +612,8 @@ export function EditAccountForm({
 
   if (!isModal) {
     return (
-      <div className="bg-white rounded-xl border border-gray-200 p-6">
-        <h2 id={titleId} className="text-xl font-semibold text-gray-900 mb-6">
+      <div className="bg-white rounded-xl border border-border p-6">
+        <h2 id={titleId} className="text-xl font-semibold text-foreground mb-6">
           {modalTitle}
         </h2>
         {formContent}
@@ -639,16 +639,16 @@ export function EditAccountForm({
       {/* Modal Content */}
       <div className="relative bg-white rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h2 id={titleId} className="text-xl font-semibold text-gray-900">
+        <div className="flex items-center justify-between p-6 border-b border-border">
+          <h2 id={titleId} className="text-xl font-semibold text-foreground">
             {modalTitle}
           </h2>
           <button
             type="button"
             onClick={onCancel}
             disabled={isSubmitting}
-            className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100
-              focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500
+            className="p-2 rounded-lg text-muted-foreground hover:text-muted-foreground hover:bg-muted
+              focus:outline-none focus-visible:ring-2 focus-visible:ring-ring
               disabled:opacity-50 disabled:cursor-not-allowed
               transition-colors"
             aria-label="Close"

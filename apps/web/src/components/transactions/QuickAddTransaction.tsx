@@ -144,7 +144,7 @@ export function QuickAddTransaction({
           <div className="bg-white rounded-lg p-6 shadow-xl">
             <div className="flex items-center gap-3">
               <div className="h-5 w-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
-              <span className="text-gray-700">Loading...</span>
+              <span className="text-foreground">Loading...</span>
             </div>
           </div>
         </div>

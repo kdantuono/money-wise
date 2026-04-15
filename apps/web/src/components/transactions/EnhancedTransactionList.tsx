@@ -520,7 +520,7 @@ export function EnhancedTransactionList({
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
   }
@@ -531,13 +531,13 @@ export function EnhancedTransactionList({
       <div className="flex flex-col sm:flex-row gap-3">
         {/* Search */}
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <input
             type="text"
             placeholder="Search transactions..."
             value={filters.search}
             onChange={handleSearchChange}
-            className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm
+            className="w-full pl-10 pr-3 py-2 border border-border rounded-lg text-sm
               focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
@@ -550,7 +550,7 @@ export function EnhancedTransactionList({
             transition-colors duration-150
             ${hasActiveFilters
               ? 'border-blue-500 text-blue-600 bg-blue-50'
-              : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+              : 'border-border text-foreground hover:bg-muted'
             }`}
         >
           <Filter className="h-4 w-4" />
@@ -567,8 +567,8 @@ export function EnhancedTransactionList({
           type="button"
           onClick={handleExportAll}
           disabled={filteredTransactions.length === 0}
-          className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium
-            text-gray-700 hover:bg-gray-50 transition-colors duration-150
+          className="inline-flex items-center gap-2 px-4 py-2 border border-border rounded-lg text-sm font-medium
+            text-foreground hover:bg-muted transition-colors duration-150
             disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Download className="h-4 w-4" />
@@ -578,44 +578,44 @@ export function EnhancedTransactionList({
 
       {/* Expanded Filters */}
       {showFilters && (
-        <div className="p-4 bg-gray-50 rounded-lg border border-gray-200 space-y-4">
+        <div className="p-4 bg-muted rounded-lg border border-border space-y-4">
           {/* First Row: Date Range & Type */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">From Date</label>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">From Date</label>
               <div className="relative">
-                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <input
                   type="date"
                   value={filters.dateFrom}
                   onChange={handleDateFromChange}
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm
+                  className="w-full pl-10 pr-3 py-2 border border-border rounded-lg text-sm
                     focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">To Date</label>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">To Date</label>
               <div className="relative">
-                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <input
                   type="date"
                   value={filters.dateTo}
                   onChange={handleDateToChange}
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm
+                  className="w-full pl-10 pr-3 py-2 border border-border rounded-lg text-sm
                     focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
             </div>
 
             <div>
-              <label htmlFor="filter-type" className="block text-xs font-medium text-gray-600 mb-1">Type</label>
+              <label htmlFor="filter-type" className="block text-xs font-medium text-muted-foreground mb-1">Type</label>
               <select
                 id="filter-type"
                 value={filters.type}
                 onChange={handleTypeChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm
+                className="w-full px-3 py-2 border border-border rounded-lg text-sm
                   focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="all">All Types</option>
@@ -628,12 +628,12 @@ export function EnhancedTransactionList({
           {/* Second Row: Category & Amount Range */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
-              <label htmlFor="filter-category" className="block text-xs font-medium text-gray-600 mb-1">Category</label>
+              <label htmlFor="filter-category" className="block text-xs font-medium text-muted-foreground mb-1">Category</label>
               <select
                 id="filter-category"
                 value={filters.categoryId}
                 onChange={handleCategoryChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm
+                className="w-full px-3 py-2 border border-border rounded-lg text-sm
                   focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="all">All Categories</option>
@@ -650,7 +650,7 @@ export function EnhancedTransactionList({
             </div>
 
             <div>
-              <label htmlFor="filter-min-amount" className="block text-xs font-medium text-gray-600 mb-1">Min Amount</label>
+              <label htmlFor="filter-min-amount" className="block text-xs font-medium text-muted-foreground mb-1">Min Amount</label>
               <input
                 id="filter-min-amount"
                 type="number"
@@ -659,13 +659,13 @@ export function EnhancedTransactionList({
                 placeholder="$0.00"
                 value={filters.amountMin ?? ''}
                 onChange={handleAmountMinChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm
-                  focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400"
+                className="w-full px-3 py-2 border border-border rounded-lg text-sm
+                  focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-muted-foreground"
               />
             </div>
 
             <div>
-              <label htmlFor="filter-max-amount" className="block text-xs font-medium text-gray-600 mb-1">Max Amount</label>
+              <label htmlFor="filter-max-amount" className="block text-xs font-medium text-muted-foreground mb-1">Max Amount</label>
               <input
                 id="filter-max-amount"
                 type="number"
@@ -674,15 +674,15 @@ export function EnhancedTransactionList({
                 placeholder="No limit"
                 value={filters.amountMax ?? ''}
                 onChange={handleAmountMaxChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm
-                  focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400"
+                className="w-full px-3 py-2 border border-border rounded-lg text-sm
+                  focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-muted-foreground"
               />
             </div>
           </div>
 
           {/* Third Row: Sort Options */}
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-2">
+            <label className="block text-xs font-medium text-muted-foreground mb-2">
               <ArrowUpDown className="inline-block h-3 w-3 mr-1" />
               Sort By
             </label>
@@ -694,7 +694,7 @@ export function EnhancedTransactionList({
                   focus:outline-none focus:ring-2 focus:ring-blue-500
                   ${sort.field === 'date'
                     ? 'bg-blue-50 border-blue-300 text-blue-700'
-                    : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                    : 'bg-white border-border text-foreground hover:bg-muted'
                   }`}
               >
                 Date {sort.field === 'date' && (sort.direction === 'desc' ? '↓' : '↑')}
@@ -706,7 +706,7 @@ export function EnhancedTransactionList({
                   focus:outline-none focus:ring-2 focus:ring-blue-500
                   ${sort.field === 'amount'
                     ? 'bg-blue-50 border-blue-300 text-blue-700'
-                    : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                    : 'bg-white border-border text-foreground hover:bg-muted'
                   }`}
               >
                 Amount {sort.field === 'amount' && (sort.direction === 'desc' ? '↓' : '↑')}
@@ -718,7 +718,7 @@ export function EnhancedTransactionList({
                   focus:outline-none focus:ring-2 focus:ring-blue-500
                   ${sort.field === 'description'
                     ? 'bg-blue-50 border-blue-300 text-blue-700'
-                    : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                    : 'bg-white border-border text-foreground hover:bg-muted'
                   }`}
               >
                 A-Z {sort.field === 'description' && (sort.direction === 'desc' ? '↓' : '↑')}
@@ -730,7 +730,7 @@ export function EnhancedTransactionList({
                   focus:outline-none focus:ring-2 focus:ring-blue-500
                   ${sort.field === 'category'
                     ? 'bg-blue-50 border-blue-300 text-blue-700'
-                    : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                    : 'bg-white border-border text-foreground hover:bg-muted'
                   }`}
               >
                 Category {sort.field === 'category' && (sort.direction === 'desc' ? '↓' : '↑')}
@@ -754,17 +754,17 @@ export function EnhancedTransactionList({
       )}
 
       {/* Results Count */}
-      <p className="text-sm text-gray-600">
+      <p className="text-sm text-muted-foreground">
         Showing <span className="font-semibold">{filteredTransactions.length}</span> of{' '}
         <span className="font-semibold">{transactions.length}</span> transactions
       </p>
 
       {/* Transaction List */}
       {filteredTransactions.length === 0 ? (
-        <div className="rounded-lg border-2 border-dashed border-gray-300 p-8 text-center">
-          <p className="text-gray-600 font-medium">No transactions found</p>
+        <div className="rounded-lg border-2 border-dashed border-border p-8 text-center">
+          <p className="text-muted-foreground font-medium">No transactions found</p>
           {hasActiveFilters && (
-            <p className="text-gray-500 text-sm mt-1">Try adjusting your filters</p>
+            <p className="text-muted-foreground text-sm mt-1">Try adjusting your filters</p>
           )}
         </div>
       ) : (

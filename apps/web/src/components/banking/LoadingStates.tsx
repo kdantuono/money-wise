@@ -21,7 +21,7 @@ import React, { ReactNode } from 'react';
  * Reusable skeleton pulse animation
  */
 function PulseBox({
-  className = 'h-6 bg-gray-200 rounded',
+  className = 'h-6 bg-muted rounded',
 }: {
   className?: string;
 }) {
@@ -34,35 +34,35 @@ function PulseBox({
  */
 export function AccountSkeleton() {
   return (
-    <div className="rounded-lg border border-gray-200 bg-white shadow overflow-hidden">
+    <div className="rounded-lg border border-border bg-white shadow overflow-hidden">
       {/* Header */}
-      <div className="bg-gradient-to-r from-gray-100 to-gray-50 p-4 border-b border-gray-200">
+      <div className="bg-gradient-to-r from-muted to-muted p-4 border-b border-border">
         <div className="flex items-start justify-between mb-2">
           <div className="flex-1">
-            <PulseBox className="h-6 w-3/4 bg-gray-200 rounded mb-2" />
-            <PulseBox className="h-4 w-1/2 bg-gray-200 rounded" />
+            <PulseBox className="h-6 w-3/4 bg-muted rounded mb-2" />
+            <PulseBox className="h-4 w-1/2 bg-muted rounded" />
           </div>
-          <PulseBox className="h-6 w-20 bg-gray-200 rounded" />
+          <PulseBox className="h-6 w-20 bg-muted rounded" />
         </div>
       </div>
 
       {/* Content */}
       <div className="p-4 space-y-3">
         {/* Balance */}
-        <PulseBox className="h-8 w-2/3 bg-gray-200 rounded" />
+        <PulseBox className="h-8 w-2/3 bg-muted rounded" />
 
         {/* Info Grid */}
-        <div className="grid grid-cols-2 gap-3 pt-3 border-t border-gray-100">
-          <PulseBox className="h-4 w-full bg-gray-200 rounded" />
-          <PulseBox className="h-4 w-full bg-gray-200 rounded" />
-          <PulseBox className="h-4 w-full bg-gray-200 rounded" />
-          <PulseBox className="h-4 w-full bg-gray-200 rounded" />
+        <div className="grid grid-cols-2 gap-3 pt-3 border-t border-border">
+          <PulseBox className="h-4 w-full bg-muted rounded" />
+          <PulseBox className="h-4 w-full bg-muted rounded" />
+          <PulseBox className="h-4 w-full bg-muted rounded" />
+          <PulseBox className="h-4 w-full bg-muted rounded" />
         </div>
 
         {/* Actions */}
-        <div className="flex gap-2 pt-3 border-t border-gray-100">
-          <PulseBox className="flex-1 h-10 bg-gray-200 rounded" />
-          <PulseBox className="flex-1 h-10 bg-gray-200 rounded" />
+        <div className="flex gap-2 pt-3 border-t border-border">
+          <PulseBox className="flex-1 h-10 bg-muted rounded" />
+          <PulseBox className="flex-1 h-10 bg-muted rounded" />
         </div>
       </div>
     </div>
@@ -75,44 +75,44 @@ export function AccountSkeleton() {
  */
 export function AccountDetailsSkeleton() {
   return (
-    <div className="rounded-lg border border-gray-200 bg-white shadow">
+    <div className="rounded-lg border border-border bg-white shadow">
       {/* Header Section */}
-      <div className="bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 px-6 py-8 border-b border-gray-200">
+      <div className="bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 px-6 py-8 border-b border-border">
         <div className="flex items-start justify-between mb-4">
           <div className="flex-1">
-            <PulseBox className="h-8 w-1/2 bg-gray-300 rounded mb-2" />
-            <PulseBox className="h-5 w-1/3 bg-gray-200 rounded" />
+            <PulseBox className="h-8 w-1/2 bg-secondary rounded mb-2" />
+            <PulseBox className="h-5 w-1/3 bg-muted rounded" />
           </div>
-          <PulseBox className="h-8 w-32 bg-gray-200 rounded-full" />
+          <PulseBox className="h-8 w-32 bg-muted rounded-full" />
         </div>
 
         {/* Balance */}
         <div className="flex items-baseline gap-2">
-          <PulseBox className="h-12 w-2/3 bg-gray-300 rounded" />
+          <PulseBox className="h-12 w-2/3 bg-secondary rounded" />
         </div>
       </div>
 
       {/* Content Section */}
       <div className="p-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 pb-8 border-b border-gray-200">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 pb-8 border-b border-border">
           {/* Basic Info */}
           <section className="space-y-3">
-            <PulseBox className="h-4 w-32 bg-gray-300 rounded" />
+            <PulseBox className="h-4 w-32 bg-secondary rounded" />
             {[1, 2, 3, 4].map((i) => (
               <div key={i}>
-                <PulseBox className="h-3 w-20 bg-gray-200 rounded mb-1" />
-                <PulseBox className="h-4 w-full bg-gray-200 rounded" />
+                <PulseBox className="h-3 w-20 bg-muted rounded mb-1" />
+                <PulseBox className="h-4 w-full bg-muted rounded" />
               </div>
             ))}
           </section>
 
           {/* Additional Info */}
           <section className="space-y-3">
-            <PulseBox className="h-4 w-32 bg-gray-300 rounded" />
+            <PulseBox className="h-4 w-32 bg-secondary rounded" />
             {[1, 2, 3, 4].map((i) => (
               <div key={i}>
-                <PulseBox className="h-3 w-20 bg-gray-200 rounded mb-1" />
-                <PulseBox className="h-4 w-full bg-gray-200 rounded" />
+                <PulseBox className="h-3 w-20 bg-muted rounded mb-1" />
+                <PulseBox className="h-4 w-full bg-muted rounded" />
               </div>
             ))}
           </section>
@@ -120,8 +120,8 @@ export function AccountDetailsSkeleton() {
 
         {/* Action Buttons */}
         <div className="flex gap-3">
-          <PulseBox className="flex-1 h-12 bg-gray-200 rounded-lg" />
-          <PulseBox className="flex-1 h-12 bg-gray-200 rounded-lg" />
+          <PulseBox className="flex-1 h-12 bg-muted rounded-lg" />
+          <PulseBox className="flex-1 h-12 bg-muted rounded-lg" />
         </div>
       </div>
     </div>
@@ -134,22 +134,22 @@ export function AccountDetailsSkeleton() {
  */
 export function TransactionSkeleton() {
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-4">
+    <div className="rounded-lg border border-border bg-white p-4">
       <div className="flex items-center justify-between gap-4">
         {/* Transaction Info */}
         <div className="flex-1 min-w-0 space-y-2">
-          <PulseBox className="h-5 w-3/4 bg-gray-200 rounded" />
-          <PulseBox className="h-4 w-1/2 bg-gray-200 rounded" />
-          <PulseBox className="h-3 w-1/3 bg-gray-200 rounded" />
+          <PulseBox className="h-5 w-3/4 bg-muted rounded" />
+          <PulseBox className="h-4 w-1/2 bg-muted rounded" />
+          <PulseBox className="h-3 w-1/3 bg-muted rounded" />
         </div>
 
         {/* Amount */}
         <div className="text-right space-y-2 flex-shrink-0">
-          <PulseBox className="h-6 w-24 bg-gray-200 rounded" />
+          <PulseBox className="h-6 w-24 bg-muted rounded" />
         </div>
 
         {/* Indicator */}
-        <PulseBox className="w-1 h-12 rounded-full bg-gray-200" />
+        <PulseBox className="w-1 h-12 rounded-full bg-muted" />
       </div>
     </div>
   );

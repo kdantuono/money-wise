@@ -315,8 +315,8 @@ export function CommandPalette() {
         className="fixed inset-x-4 top-[15%] z-50 mx-auto max-w-xl overflow-hidden rounded-xl bg-white shadow-2xl"
       >
         {/* Search Input */}
-        <div className="flex items-center gap-3 border-b border-gray-200 px-4 py-3">
-          <Search className="h-5 w-5 text-gray-400" />
+        <div className="flex items-center gap-3 border-b border-border px-4 py-3">
+          <Search className="h-5 w-5 text-muted-foreground" />
           <input
             ref={inputRef}
             type="text"
@@ -327,11 +327,11 @@ export function CommandPalette() {
             placeholder="Type a command or search..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="flex-1 bg-transparent text-gray-900 placeholder:text-gray-400
+            className="flex-1 bg-transparent text-foreground placeholder:text-muted-foreground
               focus:outline-none text-base"
           />
           <kbd className="hidden sm:inline-flex items-center gap-1 px-2 py-1
-            text-xs font-medium text-gray-500 bg-gray-100 rounded">
+            text-xs font-medium text-muted-foreground bg-muted rounded">
             ESC
           </kbd>
         </div>
@@ -344,14 +344,14 @@ export function CommandPalette() {
           className="max-h-[60vh] overflow-y-auto p-2"
         >
           {filteredCommands.length === 0 ? (
-            <div className="py-8 text-center text-gray-500">
+            <div className="py-8 text-center text-muted-foreground">
               <p>No results found</p>
               <p className="text-sm mt-1">Try a different search term</p>
             </div>
           ) : (
             Object.entries(groupedCommands).map(([group, cmds]) => (
               <div key={group} className="mb-2">
-                <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                <div className="px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                   {group}
                 </div>
                 {cmds.map((cmd) => {
@@ -369,12 +369,12 @@ export function CommandPalette() {
                         transition-colors ${
                           isSelected
                             ? 'bg-blue-50 text-blue-900'
-                            : 'text-gray-700 hover:bg-gray-100'
+                            : 'text-foreground hover:bg-muted'
                         }`}
                     >
                       <div
                         className={`p-1.5 rounded-md ${
-                          isSelected ? 'bg-blue-100' : 'bg-gray-100'
+                          isSelected ? 'bg-blue-100' : 'bg-muted'
                         }`}
                       >
                         {cmd.icon || <ArrowRight className="h-4 w-4" />}
@@ -382,14 +382,14 @@ export function CommandPalette() {
                       <div className="flex-1 min-w-0">
                         <p className="font-medium truncate">{cmd.label}</p>
                         {cmd.description && (
-                          <p className="text-sm text-gray-500 truncate">
+                          <p className="text-sm text-muted-foreground truncate">
                             {cmd.description}
                           </p>
                         )}
                       </div>
                       {isSelected && (
                         <kbd className="hidden sm:inline-flex px-2 py-0.5 text-xs
-                          font-medium text-gray-500 bg-gray-100 rounded">
+                          font-medium text-muted-foreground bg-muted rounded">
                           Enter
                         </kbd>
                       )}
@@ -402,20 +402,20 @@ export function CommandPalette() {
         </div>
 
         {/* Footer */}
-        <div className="border-t border-gray-200 px-4 py-2 flex items-center justify-between text-xs text-gray-500">
+        <div className="border-t border-border px-4 py-2 flex items-center justify-between text-xs text-muted-foreground">
           <div className="flex items-center gap-4">
             <span className="flex items-center gap-1">
-              <kbd className="px-1.5 py-0.5 bg-gray-100 rounded">↑</kbd>
-              <kbd className="px-1.5 py-0.5 bg-gray-100 rounded">↓</kbd>
+              <kbd className="px-1.5 py-0.5 bg-muted rounded">↑</kbd>
+              <kbd className="px-1.5 py-0.5 bg-muted rounded">↓</kbd>
               <span className="ml-1">Navigate</span>
             </span>
             <span className="flex items-center gap-1">
-              <kbd className="px-1.5 py-0.5 bg-gray-100 rounded">Enter</kbd>
+              <kbd className="px-1.5 py-0.5 bg-muted rounded">Enter</kbd>
               <span className="ml-1">Select</span>
             </span>
           </div>
           <span className="flex items-center gap-1">
-            <kbd className="px-1.5 py-0.5 bg-gray-100 rounded">Esc</kbd>
+            <kbd className="px-1.5 py-0.5 bg-muted rounded">Esc</kbd>
             <span className="ml-1">Close</span>
           </span>
         </div>

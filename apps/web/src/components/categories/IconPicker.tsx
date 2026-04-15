@@ -224,13 +224,13 @@ const IconButton = memo(function IconButton({
         transition-all duration-150
         ${isSelected
           ? 'bg-blue-100 ring-2 ring-blue-500 scale-110'
-          : 'bg-white hover:bg-gray-100 hover:scale-105'
+          : 'bg-white hover:bg-muted hover:scale-105'
         }
         ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
         focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1
       `}
     >
-      <IconComponent className="h-5 w-5 text-gray-700" />
+      <IconComponent className="h-5 w-5 text-foreground" />
       {isSelected && (
         <span className="absolute -top-1 -right-1 w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
           <Check className="h-2.5 w-2.5 text-white" />
@@ -294,7 +294,7 @@ export function IconPicker({
       {/* Search Input */}
       <div className="relative">
         <Search
-          className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400"
+          className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground"
           aria-hidden="true"
         />
         <input
@@ -303,9 +303,9 @@ export function IconPicker({
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Search icons..."
           disabled={disabled}
-          className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 rounded-lg
+          className="w-full pl-9 pr-3 py-2 text-sm border border-border rounded-lg
             focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
-            disabled:opacity-50 disabled:bg-gray-100"
+            disabled:opacity-50 disabled:bg-muted"
           aria-label="Search icons"
         />
       </div>
@@ -319,7 +319,7 @@ export function IconPicker({
           className={`px-2.5 py-1 text-xs font-medium rounded-full transition-colors
             ${activeCategory === 'all'
               ? 'bg-blue-600 text-white'
-              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              : 'bg-muted text-muted-foreground hover:bg-muted'
             }
             ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
@@ -334,7 +334,7 @@ export function IconPicker({
             className={`px-2.5 py-1 text-xs font-medium rounded-full transition-colors
               ${activeCategory === cat
                 ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                : 'bg-muted text-muted-foreground hover:bg-muted'
               }
               ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
@@ -345,7 +345,7 @@ export function IconPicker({
 
       {/* Icon Grid */}
       <div
-        className="max-h-64 overflow-y-auto p-2 border border-gray-200 rounded-lg bg-gray-50"
+        className="max-h-64 overflow-y-auto p-2 border border-border rounded-lg bg-muted"
         role="listbox"
         aria-label="Available icons"
       >
@@ -353,7 +353,7 @@ export function IconPicker({
           <div className="space-y-4">
             {categoryNames.map((categoryName) => (
               <div key={categoryName}>
-                <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-1">
+                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-1">
                   {categoryName}
                 </h4>
                 <div className="grid grid-cols-8 gap-1">
@@ -371,7 +371,7 @@ export function IconPicker({
             ))}
           </div>
         ) : filteredIcons.length === 0 ? (
-          <div className="py-8 text-center text-sm text-gray-500">
+          <div className="py-8 text-center text-sm text-muted-foreground">
             No icons found
           </div>
         ) : (
@@ -391,7 +391,7 @@ export function IconPicker({
 
       {/* Selected Icon Preview */}
       {value && SelectedIcon && (
-        <div className="flex items-center gap-2 text-sm text-gray-600 bg-blue-50 px-3 py-2 rounded-lg">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground bg-blue-50 px-3 py-2 rounded-lg">
           <SelectedIcon className="h-5 w-5 text-blue-600" />
           <span>Selected: <span className="font-medium text-blue-700">{formatIconName(value)}</span></span>
         </div>

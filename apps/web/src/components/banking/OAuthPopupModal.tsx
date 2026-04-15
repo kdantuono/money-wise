@@ -228,7 +228,7 @@ export function OAuthPopupModal({
         <button
           onClick={handleCancel}
           aria-label="Close"
-          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600
+          className="absolute top-4 right-4 text-muted-foreground hover:text-muted-foreground
             focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500 rounded"
         >
           <svg
@@ -251,7 +251,7 @@ export function OAuthPopupModal({
         <div className="bg-blue-50 px-6 py-4 border-b border-blue-200 rounded-t-lg">
           <h2
             id="oauth-modal-title"
-            className="text-lg font-bold text-gray-900"
+            className="text-lg font-bold text-foreground"
           >
             {title}
           </h2>
@@ -272,7 +272,7 @@ export function OAuthPopupModal({
                 </div>
               </div>
 
-              <p className="text-gray-600 mb-4">
+              <p className="text-muted-foreground mb-4">
                 {status === 'processing'
                   ? 'Complete the authorization in the popup window...'
                   : 'Opening bank authorization...'}
@@ -307,10 +307,10 @@ export function OAuthPopupModal({
                 </div>
               </div>
 
-              <h3 className="text-xl font-bold text-gray-900 mb-2">
+              <h3 className="text-xl font-bold text-foreground mb-2">
                 Successfully Linked!
               </h3>
-              <p className="text-gray-600 mb-4">
+              <p className="text-muted-foreground mb-4">
                 Your bank account has been connected.
               </p>
 
@@ -331,7 +331,7 @@ export function OAuthPopupModal({
                 </div>
               </div>
 
-              <h3 className="text-xl font-bold text-gray-900 mb-2">
+              <h3 className="text-xl font-bold text-foreground mb-2">
                 Authorization Failed
               </h3>
 
@@ -355,8 +355,8 @@ export function OAuthPopupModal({
                 <button
                   onClick={handleCancel}
                   className="flex-1 inline-flex items-center justify-center px-4 py-2 rounded-lg font-medium
-                    bg-white text-gray-700 border border-gray-300 hover:bg-gray-50
-                    focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-gray-500
+                    bg-white text-foreground border border-border hover:bg-muted
+                    focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-ring
                     transition-colors duration-200"
                 >
                   Cancel
@@ -368,11 +368,11 @@ export function OAuthPopupModal({
 
         {/* Footer for waiting/processing states */}
         {(status === 'waiting' || status === 'processing') && (
-          <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 rounded-b-lg">
+          <div className="px-6 py-4 bg-muted border-t border-border rounded-b-lg">
             <button
               onClick={handleCancel}
-              className="w-full px-4 py-2 rounded-lg font-medium text-gray-700 bg-white border border-gray-300
-                hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500
+              className="w-full px-4 py-2 rounded-lg font-medium text-foreground bg-white border border-border
+                hover:bg-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-ring
                 transition-colors duration-200"
             >
               Cancel
