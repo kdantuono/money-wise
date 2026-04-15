@@ -1,6 +1,11 @@
 'use client';
 
 import { useState, useCallback, useRef, useEffect } from 'react';
+import {
+  initiateLink,
+  BankingApiError,
+  type BankingProvider,
+} from '../../services/banking.client';
 
 /**
  * BankingLinkButton Component
@@ -28,7 +33,7 @@ interface BankingLinkButtonProps {
   /** Optional custom button text */
   children?: React.ReactNode;
   /** Optional provider selection - if multiple providers supported */
-  provider?: 'SALTEDGE' | 'TINK' | 'YAPILY' | 'TRUELAYER';
+  provider?: BankingProvider;
   /** Optional aria-label override */
   ariaLabel?: string;
 }
@@ -121,21 +126,10 @@ export function BankingLinkButton({
       setIsLoading(true);
       setError(null);
 
-      // Call backend to initiate OAuth flow
-      const response = await fetch('/api/banking/initiate-link', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ provider }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(
-          errorData.message || 'Failed to initiate bank linking'
-        );
-      }
-
-      const { redirectUrl, _connectionId } = await response.json();
+      // Call Supabase Edge Function to initiate OAuth flow
+      const { redirectUrl } = await initiateLink(
+        provider as BankingProvider
+      );
 
       if (!redirectUrl) {
         throw new Error('No redirect URL provided');
@@ -168,7 +162,11 @@ export function BankingLinkButton({
       }, 500);
     } catch (err) {
       const errorMessage =
-        err instanceof Error ? err.message : 'Failed to link bank account';
+        err instanceof BankingApiError
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : 'Failed to link bank account';
       setError(errorMessage);
       onError?.(errorMessage);
       setIsLoading(false);

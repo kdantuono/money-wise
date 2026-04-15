@@ -29,7 +29,4 @@ double_confirm_changes = true
 enable_confirmations = false
 
 [functions]
-verify_jwt = true
-
-[functions.banking-webhook]
 verify_jwt = false
