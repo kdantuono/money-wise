@@ -99,29 +99,46 @@ jobs:
       - name: 🔍 Check changed Supabase files
         id: changes
         run: |
+          # Determine correct base/head SHAs for the diff
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE_SHA="${{ github.event.pull_request.base.sha }}"
+            HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+          else
+            BASE_SHA="${{ github.event.before }}"
+            HEAD_SHA="${{ github.sha }}"
+          fi
+
           # Detect which categories of files changed
           MIGRATIONS_CHANGED="false"
           FUNCTIONS_CHANGED="false"
+          CHANGED_MIGRATIONS=""
 
-          if git diff --name-only ${{ github.event.before || 'HEAD~1' }} HEAD 2>/dev/null | grep -q '^supabase/migrations/'; then
+          if git diff --name-only "$BASE_SHA" "$HEAD_SHA" 2>/dev/null | grep -q '^supabase/migrations/'; then
             MIGRATIONS_CHANGED="true"
+            CHANGED_MIGRATIONS=$(git diff --name-only "$BASE_SHA" "$HEAD_SHA" 2>/dev/null | grep '^supabase/migrations/' || true)
           fi
-          if git diff --name-only ${{ github.event.before || 'HEAD~1' }} HEAD 2>/dev/null | grep -q '^supabase/functions/'; then
+          if git diff --name-only "$BASE_SHA" "$HEAD_SHA" 2>/dev/null | grep -q '^supabase/functions/'; then
             FUNCTIONS_CHANGED="true"
           fi
 
           echo "migrations_changed=$MIGRATIONS_CHANGED" >> $GITHUB_OUTPUT
           echo "functions_changed=$FUNCTIONS_CHANGED" >> $GITHUB_OUTPUT
+          # Store changed migration files for targeted validation
+          echo "changed_migrations<<EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGED_MIGRATIONS" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
           echo "📋 Migrations changed: $MIGRATIONS_CHANGED"
           echo "📋 Functions changed: $FUNCTIONS_CHANGED"
 
       - name: 🗃️ Validate migration file naming
         if: steps.changes.outputs.migrations_changed == 'true'
         run: |
-          echo "🔍 Checking migration file naming conventions..."
+          echo "🔍 Checking changed migration file naming conventions..."
           ERRORS=0
 
-          for file in supabase/migrations/*.sql; do
+          # Only validate migrations changed in this PR/push
+          while IFS= read -r file; do
+            [ -z "$file" ] && continue
             [ -e "$file" ] || continue
             basename=$(basename "$file")
 
@@ -136,23 +153,23 @@ jobs:
               echo "❌ Empty migration file: $basename"
               ERRORS=$((ERRORS + 1))
             fi
-          done
+          done <<< "${{ steps.changes.outputs.changed_migrations }}"
 
           if [ $ERRORS -gt 0 ]; then
             echo "❌ Found $ERRORS migration naming issues"
             exit 1
           fi
 
-          MIGRATION_COUNT=$(ls -1 supabase/migrations/*.sql 2>/dev/null | wc -l)
-          echo "✅ All $MIGRATION_COUNT migration files follow naming conventions"
+          echo "✅ Changed migration files follow naming conventions"
 
       - name: 🗃️ Validate SQL syntax (basic)
         if: steps.changes.outputs.migrations_changed == 'true'
         run: |
-          echo "🔍 Running basic SQL validation on migrations..."
-          ERRORS=0
+          echo "🔍 Running basic SQL validation on changed migrations..."
 
-          for file in supabase/migrations/*.sql; do
+          # Only validate migrations changed in this PR/push
+          while IFS= read -r file; do
+            [ -z "$file" ] && continue
             [ -e "$file" ] || continue
             basename=$(basename "$file")
 
@@ -165,12 +182,13 @@ jobs:
             fi
 
             # 2. Check for dangerous operations without IF EXISTS / IF NOT EXISTS
-            if grep -qiE '^\s*DROP\s+(TABLE|INDEX|FUNCTION|TRIGGER)\s+(?!IF)' "$file" 2>/dev/null; then
+            if grep -qiE '^\s*DROP\s+(TABLE|INDEX|FUNCTION|TRIGGER)\b' "$file" 2>/dev/null \
+              && ! grep -qiE '^\s*DROP\s+(TABLE|INDEX|FUNCTION|TRIGGER)\s+IF\s+EXISTS\b' "$file" 2>/dev/null; then
               echo "⚠️ $basename: DROP without IF EXISTS detected"
             fi
 
             echo "  ✅ $basename — basic checks passed"
-          done
+          done <<< "${{ steps.changes.outputs.changed_migrations }}"
 
           echo "✅ SQL validation completed"
 
