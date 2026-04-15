@@ -107,24 +107,24 @@ export function TransactionForm({
 
     // Amount validation
     if (!amount || amount.trim() === '') {
-      newErrors.amount = 'Amount is required';
+      newErrors.amount = 'Importo obbligatorio';
     } else if (isNaN(parsedAmount) || parsedAmount <= 0) {
-      newErrors.amount = 'Amount must be greater than 0';
+      newErrors.amount = 'L\'importo deve essere maggiore di 0';
     }
 
     // Description validation
     if (!description || description.trim() === '') {
-      newErrors.description = 'Description is required';
+      newErrors.description = 'Descrizione obbligatoria';
     }
 
     // Date validation
     if (!date) {
-      newErrors.date = 'Date is required';
+      newErrors.date = 'Data obbligatoria';
     }
 
     // Account validation
     if (!accountId) {
-      newErrors.accountId = 'Please select an account';
+      newErrors.accountId = 'Seleziona un conto';
     }
 
     setErrors(newErrors);
@@ -169,7 +169,7 @@ export function TransactionForm({
       } catch (err) {
         setErrors({
           general:
-            err instanceof Error ? err.message : 'An unexpected error occurred',
+            err instanceof Error ? err.message : 'Si è verificato un errore imprevisto',
         });
       } finally {
         setIsSubmitting(false);
@@ -199,15 +199,15 @@ export function TransactionForm({
     >
       {/* Header */}
       <h3 className="text-lg font-semibold text-foreground">
-        {isEditMode ? 'Edit Transaction' : 'Add Transaction'}
+        {isEditMode ? 'Modifica Transazione' : 'Aggiungi Transazione'}
       </h3>
 
       {/* Linked Transaction Notice */}
       {isLinkedTransaction && (
         <div className="p-3 text-sm text-blue-700 bg-blue-50 border border-blue-200 rounded-lg">
-          <p className="font-medium">Bank-synced transaction</p>
+          <p className="font-medium">Transazione sincronizzata dalla banca</p>
           <p className="mt-1 text-blue-600">
-            Only the category and notes can be edited. Other details are synced from your bank.
+            Solo la categoria e le note possono essere modificate. Gli altri dettagli sono sincronizzati dalla banca.
           </p>
         </div>
       )}
@@ -239,7 +239,7 @@ export function TransactionForm({
               : 'bg-muted text-muted-foreground border-2 border-transparent hover:bg-muted'
           } ${formLoading || isFieldLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
-          Expense
+          Uscita
         </button>
         <button
           type="button"
@@ -252,7 +252,7 @@ export function TransactionForm({
               : 'bg-muted text-muted-foreground border-2 border-transparent hover:bg-muted'
           } ${formLoading || isFieldLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
-          Income
+          Entrata
         </button>
       </div>
 
@@ -262,11 +262,11 @@ export function TransactionForm({
           htmlFor="amount"
           className="block text-sm font-medium text-foreground mb-1"
         >
-          Amount <span className="text-red-500">*</span>
+          Importo <span className="text-red-500">*</span>
         </label>
         <div className="relative">
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-            $
+            €
           </span>
           <input
             id="amount"
@@ -293,14 +293,14 @@ export function TransactionForm({
           htmlFor="description"
           className="block text-sm font-medium text-foreground mb-1"
         >
-          Description <span className="text-red-500">*</span>
+          Descrizione <span className="text-red-500">*</span>
         </label>
         <input
           id="description"
           type="text"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          placeholder="What was this for?"
+          placeholder="A cosa si riferisce?"
           disabled={formLoading || isFieldLocked}
           className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500
             ${errors.description ? 'border-red-300' : 'border-border'}
@@ -317,7 +317,7 @@ export function TransactionForm({
           htmlFor="date"
           className="block text-sm font-medium text-foreground mb-1"
         >
-          Date <span className="text-red-500">*</span>
+          Data <span className="text-red-500">*</span>
         </label>
         <input
           id="date"
@@ -340,7 +340,7 @@ export function TransactionForm({
           htmlFor="account"
           className="block text-sm font-medium text-foreground mb-1"
         >
-          Account <span className="text-red-500">*</span>
+          Conto <span className="text-red-500">*</span>
         </label>
         <select
           id="account"
@@ -351,7 +351,7 @@ export function TransactionForm({
             ${errors.accountId ? 'border-red-300' : 'border-border'}
             ${formLoading || isFieldLocked ? 'bg-muted cursor-not-allowed' : ''}`}
         >
-          <option value="">Select an account</option>
+          <option value="">Seleziona un conto</option>
           {accounts.map((account) => (
             <option key={account.id} value={account.id}>
               {account.name}
@@ -370,8 +370,8 @@ export function TransactionForm({
           onChange={setCategoryId}
           categories={filteredCategories}
           filterType={transactionType === 'DEBIT' ? 'EXPENSE' : 'INCOME'}
-          label="Category"
-          placeholder="Select a category (optional)"
+          label="Categoria"
+          placeholder="Seleziona una categoria (opzionale)"
           disabled={formLoading}
           clearable
           searchable
@@ -384,13 +384,13 @@ export function TransactionForm({
           htmlFor="notes"
           className="block text-sm font-medium text-foreground mb-1"
         >
-          Notes
+          Note
         </label>
         <textarea
           id="notes"
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
-          placeholder="Add any additional notes..."
+          placeholder="Aggiungi note aggiuntive..."
           rows={3}
           disabled={formLoading}
           className={`w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500
@@ -408,7 +408,7 @@ export function TransactionForm({
             hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring
             disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Cancel
+          Annulla
         </button>
         <button
           type="submit"
@@ -419,7 +419,7 @@ export function TransactionForm({
             flex items-center justify-center gap-2"
         >
           {formLoading && <Loader2 className="h-4 w-4 animate-spin" />}
-          {isEditMode ? 'Save Changes' : 'Add Transaction'}
+          {isEditMode ? 'Salva Modifiche' : 'Aggiungi Transazione'}
         </button>
       </div>
     </form>

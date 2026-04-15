@@ -105,7 +105,7 @@ export function TransactionFormModal({
           type="button"
           onClick={onClose}
           className="absolute right-4 top-4 p-1 rounded-full text-muted-foreground hover:text-muted-foreground hover:bg-muted focus:outline-none focus:ring-2 focus:ring-blue-500"
-          aria-label="Close modal"
+          aria-label="Chiudi"
         >
           <X className="h-5 w-5" />
         </button>

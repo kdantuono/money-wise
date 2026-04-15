@@ -144,7 +144,7 @@ export function CategorySelector({
   categories,
   filterType,
   label,
-  placeholder = 'Select a category',
+  placeholder = 'Seleziona una categoria',
   searchable = false,
   clearable = true,
   showGroups = false,
@@ -378,9 +378,9 @@ export function CategorySelector({
   const renderEmptyState = () => (
     <li className="px-3 py-4 text-center text-muted-foreground">
       {categories.length === 0 ? (
-        'No categories available'
+        'Nessuna categoria disponibile'
       ) : (
-        'No results found'
+        'Nessun risultato trovato'
       )}
     </li>
   );
@@ -406,7 +406,7 @@ export function CategorySelector({
         aria-haspopup="listbox"
         aria-disabled={disabled}
         aria-required={required}
-        aria-label={label || 'Select a category'}
+        aria-label={label || 'Seleziona una categoria'}
         aria-controls="category-listbox"
         tabIndex={disabled ? -1 : 0}
         onClick={handleToggle}
@@ -447,7 +447,7 @@ export function CategorySelector({
           </div>
         ) : (
           <span className="text-muted-foreground flex-grow">
-            {isLoading ? 'Loading...' : categories.length === 0 ? 'No categories available' : placeholder}
+            {isLoading ? 'Caricamento...' : categories.length === 0 ? 'Nessuna categoria disponibile' : placeholder}
           </span>
         )}
 
@@ -456,7 +456,7 @@ export function CategorySelector({
           <button
             type="button"
             onClick={handleClear}
-            aria-label="Clear selection"
+            aria-label="Cancella selezione"
             className="p-1 rounded hover:bg-muted focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <X className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
@@ -498,10 +498,10 @@ export function CategorySelector({
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search categories..."
+                  placeholder="Cerca categorie..."
                   className="w-full pl-9 pr-3 py-2 text-sm border border-border rounded-md
                     focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  aria-label="Search categories"
+                  aria-label="Cerca categorie"
                 />
               </div>
             </div>
@@ -512,7 +512,7 @@ export function CategorySelector({
             id="category-listbox"
             ref={listRef}
             role="listbox"
-            aria-label="Categories"
+            aria-label="Categorie"
             className="max-h-60 overflow-y-auto"
           >
             {flatOptions.length === 0 ? (

@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import type { Transaction } from '@/types/dashboard.types';
@@ -201,13 +202,13 @@ function EmptyState() {
         <CardTitle className="text-lg font-semibold">
           Recent Transactions
         </CardTitle>
-        <a
+        <Link
           href="/dashboard/transactions"
           className="text-sm text-primary hover:underline flex items-center gap-1"
         >
           View all
           <ArrowRightIcon />
-        </a>
+        </Link>
       </CardHeader>
       <CardContent className="flex-1 flex flex-col justify-center">
         <div className="flex flex-col items-center justify-center text-center">
@@ -260,13 +261,13 @@ export function RecentTransactions({ transactions, isLoading }: RecentTransactio
         <CardTitle className="text-lg font-semibold">
           Recent Transactions
         </CardTitle>
-        <a
+        <Link
           href="/dashboard/transactions"
           className="text-sm text-primary hover:underline flex items-center gap-1"
         >
           View all
           <ArrowRightIcon />
-        </a>
+        </Link>
       </CardHeader>
       <CardContent className="flex-1">
         <div className="divide-y divide-border">
