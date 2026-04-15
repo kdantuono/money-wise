@@ -21,7 +21,6 @@ import {
   Check,
   AlertCircle,
   Sun,
-  Moon,
   Palette,
   Crown,
   Users,
@@ -72,7 +71,7 @@ type TabKey =
   | 'data';
 
 interface UserPreferences {
-  theme?: 'light' | 'dark' | 'system';
+  theme?: 'system' | 'dracula';
   language?: string;
   notifications?: {
     email?: boolean;
@@ -334,9 +333,8 @@ export default function SettingsPage() {
 
   // Theme descriptions
   const themes: { id: Theme; name: string; icon: typeof Sun; desc: string; preview: string }[] = [
-    { id: 'light', name: 'Chiaro', icon: Sun, desc: 'Tema luminoso classico', preview: 'bg-white border-gray-200' },
-    { id: 'dark', name: 'Scuro', icon: Moon, desc: 'Tema scuro riposante', preview: 'bg-gray-900 border-gray-700' },
-    { id: 'system', name: 'Sistema', icon: Palette, desc: 'Segue le impostazioni di sistema', preview: 'bg-gradient-to-r from-white to-gray-900 border-gray-400' },
+    { id: 'dracula', name: 'Dracula', icon: Palette, desc: 'Tema Dracula con accenti viola', preview: 'bg-[#282a36] border-[#bd93f9]' },
+    { id: 'system', name: 'Sistema', icon: Monitor, desc: 'Si adatta al tema del tuo sistema', preview: 'bg-gradient-to-r from-white to-gray-900 border-gray-400' },
   ];
 
   if (!user) {

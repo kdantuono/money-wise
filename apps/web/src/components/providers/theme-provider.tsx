@@ -25,15 +25,41 @@ export const ThemeContext = createContext<ThemeContextType | undefined>(undefine
 const STORAGE_KEY = 'moneywise-theme';
 
 /**
+ * Dracula theme CSS variable overrides
+ * Applied on top of the dark class to create the Dracula color scheme
+ */
+const DRACULA_VARS: Record<string, string> = {
+  '--background': '#282a36',
+  '--foreground': '#f8f8f2',
+  '--card': '#21222c',
+  '--card-foreground': '#f8f8f2',
+  '--popover': '#21222c',
+  '--popover-foreground': '#f8f8f2',
+  '--primary': '#bd93f9',
+  '--primary-foreground': '#282a36',
+  '--secondary': '#44475a',
+  '--secondary-foreground': '#f8f8f2',
+  '--muted': '#44475a',
+  '--muted-foreground': '#6272a4',
+  '--accent': '#44475a',
+  '--accent-foreground': '#f8f8f2',
+  '--destructive': '#ff5555',
+  '--destructive-foreground': '#f8f8f2',
+  '--border': '#44475a',
+  '--input': '#44475a',
+  '--ring': '#bd93f9',
+};
+
+/**
  * Get system color scheme preference
  */
-function getSystemTheme(): ResolvedTheme {
+function getSystemTheme(): 'light' | 'dark' {
   if (typeof window === 'undefined') return 'light';
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 }
 
 /**
- * Resolve theme to actual light/dark value
+ * Resolve theme to actual applied value
  */
 function resolveTheme(theme: Theme): ResolvedTheme {
   if (theme === 'system') {
@@ -43,17 +69,23 @@ function resolveTheme(theme: Theme): ResolvedTheme {
 }
 
 /**
- * Apply theme class to document element
+ * Apply theme class and CSS variables to document element
  */
 function applyTheme(resolved: ResolvedTheme): void {
   if (typeof window === 'undefined') return;
 
   const root = document.documentElement;
+  root.classList.remove('dark', 'dracula');
+  // Clear dracula custom properties
+  Object.keys(DRACULA_VARS).forEach(k => root.style.removeProperty(k));
+
   if (resolved === 'dark') {
     root.classList.add('dark');
-  } else {
-    root.classList.remove('dark');
+  } else if (resolved === 'dracula') {
+    root.classList.add('dark', 'dracula');
+    Object.entries(DRACULA_VARS).forEach(([k, v]) => root.style.setProperty(k, v));
   }
+  // 'light' = no classes, no custom props
 }
 
 /**
@@ -61,21 +93,17 @@ function applyTheme(resolved: ResolvedTheme): void {
  */
 function getInitialTheme(userPreference?: string | null): Theme {
   // Priority 1: User preference from backend
-  if (userPreference === 'light' || userPreference === 'dark' || userPreference === 'auto') {
-    // Backend uses 'auto', frontend uses 'system'
-    return userPreference === 'auto' ? 'system' : userPreference;
-  }
+  if (userPreference === 'dracula') return 'dracula';
+  if (userPreference === 'auto' || userPreference === 'system') return 'system';
 
   // Priority 2: localStorage
   if (typeof window !== 'undefined') {
     const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored === 'light' || stored === 'dark' || stored === 'system') {
-      return stored;
-    }
+    if (stored === 'system' || stored === 'dracula') return stored;
   }
 
-  // Priority 3: System preference
-  return 'system';
+  // Priority 3: Dracula as default
+  return 'dracula';
 }
 
 interface ThemeProviderProps {
@@ -106,9 +134,10 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
   // Update theme when user preferences change
   useEffect(() => {
     if (user?.preferences?.theme) {
-      const userTheme = user.preferences.theme === 'auto' ? 'system' : user.preferences.theme;
+      const pref = user.preferences.theme as string;
+      const userTheme: Theme = pref === 'system' || pref === 'auto' ? 'system' : pref === 'dracula' ? 'dracula' : 'dracula';
       if (userTheme !== theme) {
-        setThemeState(userTheme as Theme);
+        setThemeState(userTheme);
       }
     }
   }, [user?.preferences?.theme, theme]);
@@ -149,7 +178,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
   const value: ThemeContextType = {
     theme,
     resolvedTheme,
-    isDark: resolvedTheme === 'dark',
+    isDark: resolvedTheme === 'dark' || resolvedTheme === 'dracula',
     setTheme,
   };
 

@@ -110,30 +110,28 @@ describe('useTheme', () => {
     expect(result.current.isDark).toBe(true);
   });
 
-  it('should allow changing theme to light', () => {
+  it('should allow changing theme to dracula', () => {
     const { result } = renderHook(() => useTheme(), { wrapper });
 
     act(() => {
-      result.current.setTheme('light');
+      result.current.setTheme('dracula');
     });
 
-    expect(result.current.theme).toBe('light');
-    expect(result.current.resolvedTheme).toBe('light');
-    expect(result.current.isDark).toBe(false);
-    expect(localStorageMock.setItem).toHaveBeenCalledWith('moneywise-theme', 'light');
+    expect(result.current.theme).toBe('dracula');
+    expect(result.current.resolvedTheme).toBe('dracula');
+    expect(result.current.isDark).toBe(true);
+    expect(localStorageMock.setItem).toHaveBeenCalledWith('moneywise-theme', 'dracula');
   });
 
-  it('should allow changing theme to dark', () => {
+  it('should allow changing theme to system', () => {
     const { result } = renderHook(() => useTheme(), { wrapper });
 
     act(() => {
-      result.current.setTheme('dark');
+      result.current.setTheme('system');
     });
 
-    expect(result.current.theme).toBe('dark');
-    expect(result.current.resolvedTheme).toBe('dark');
-    expect(result.current.isDark).toBe(true);
-    expect(localStorageMock.setItem).toHaveBeenCalledWith('moneywise-theme', 'dark');
+    expect(result.current.theme).toBe('system');
+    expect(localStorageMock.setItem).toHaveBeenCalledWith('moneywise-theme', 'system');
   });
 
   it('should allow changing theme to system', () => {
