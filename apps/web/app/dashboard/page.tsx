@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion } from 'motion/react';
+import { motion } from 'motion';
 import {
   ArrowUpRight,
   ArrowDownRight,
@@ -36,12 +36,12 @@ const COLORS = ['#2dd4a8', '#818cf8', '#f59e0b', '#f472b6', '#a78bfa', '#fb923c'
 // Custom Tooltip — 1:1 from Figma
 // ---------------------------------------------------------------------------
 
-function CustomTooltip({ active, payload, label }: { active?: boolean; payload?: Array<{ name: string; value: number; color: string }>; label?: string }) {
+function CustomTooltip({ active, payload, label }: any) {
   if (!active || !payload) return null;
   return (
     <div className="bg-card border border-border/50 rounded-xl px-3.5 py-2.5 shadow-lg">
       <p className="text-[11px] text-muted-foreground mb-1">{label}</p>
-      {payload.map((p, i: number) => (
+      {payload.map((p: any, i: number) => (
         <p key={i} className="text-[12px] text-foreground" style={{ color: p.color }}>
           {p.name}: €{p.value?.toLocaleString('it-IT')}
         </p>

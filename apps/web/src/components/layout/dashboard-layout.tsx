@@ -22,7 +22,7 @@ import {
   FileText,
   Sparkles,
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'motion';
 import { useAuthStore } from '@/store/auth.store';
 
 // ---------------------------------------------------------------------------

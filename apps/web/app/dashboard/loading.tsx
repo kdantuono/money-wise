@@ -1,6 +1,6 @@
 'use client';
 
-import { motion } from 'motion/react';
+import { motion } from 'motion';
 
 /**
  * Dashboard Loading — Zecca branded, theme-aware
