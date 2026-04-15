@@ -190,14 +190,14 @@ export function LiabilityForm({
       <div className="flex min-h-full items-center justify-center p-4">
         <div className="relative w-full max-w-lg bg-card rounded-xl shadow-xl">
           {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-gray-200">
-            <h2 className="text-xl font-semibold text-gray-900">
+          <div className="flex items-center justify-between p-6 border-b border-border">
+            <h2 className="text-xl font-semibold text-foreground">
               {isEditMode ? 'Edit Liability' : 'Add New Liability'}
             </h2>
             <button
               type="button"
               onClick={onClose}
-              className="p-2 text-gray-400 hover:text-gray-500 rounded-lg hover:bg-gray-100"
+              className="p-2 text-muted-foreground hover:text-muted-foreground rounded-lg hover:bg-muted"
             >
               <X className="h-5 w-5" />
             </button>
@@ -207,7 +207,7 @@ export function LiabilityForm({
           <form onSubmit={handleSubmit} className="p-6 space-y-4">
             {/* Type */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-foreground mb-1">
                 Type *
               </label>
               <select
@@ -215,7 +215,7 @@ export function LiabilityForm({
                 value={formData.type}
                 onChange={handleChange}
                 disabled={isEditMode}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
+                className="w-full border border-border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-muted"
               >
                 <option value="CREDIT_CARD">Credit Card</option>
                 <option value="BNPL">Buy Now Pay Later</option>
@@ -227,7 +227,7 @@ export function LiabilityForm({
 
             {/* Name */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-foreground mb-1">
                 Name *
               </label>
               <input
@@ -237,7 +237,7 @@ export function LiabilityForm({
                 onChange={handleChange}
                 placeholder="e.g., Chase Sapphire Preferred"
                 className={`w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500
-                  ${errors.name ? 'border-red-500' : 'border-gray-300'}`}
+                  ${errors.name ? 'border-red-500' : 'border-border'}`}
               />
               {errors.name && (
                 <p className="mt-1 text-sm text-red-600">{errors.name}</p>
@@ -246,11 +246,11 @@ export function LiabilityForm({
 
             {/* Current Balance */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-foreground mb-1">
                 Current Balance
               </label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
                   $
                 </span>
                 <input
@@ -260,7 +260,7 @@ export function LiabilityForm({
                   onChange={handleChange}
                   placeholder="0.00"
                   className={`w-full border rounded-lg pl-7 pr-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500
-                    ${errors.currentBalance ? 'border-red-500' : 'border-gray-300'}`}
+                    ${errors.currentBalance ? 'border-red-500' : 'border-border'}`}
                 />
               </div>
               {errors.currentBalance && (
@@ -271,11 +271,11 @@ export function LiabilityForm({
             {/* Credit Limit (for credit cards) */}
             {isCreditCard && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-foreground mb-1">
                   Credit Limit
                 </label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
                     $
                   </span>
                   <input
@@ -285,7 +285,7 @@ export function LiabilityForm({
                     onChange={handleChange}
                     placeholder="0.00"
                     className={`w-full border rounded-lg pl-7 pr-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500
-                      ${errors.creditLimit ? 'border-red-500' : 'border-gray-300'}`}
+                      ${errors.creditLimit ? 'border-red-500' : 'border-border'}`}
                   />
                 </div>
               </div>
@@ -294,11 +294,11 @@ export function LiabilityForm({
             {/* Original Amount (for loans/BNPL) */}
             {(isBNPL || isLoan) && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-foreground mb-1">
                   Original Amount
                 </label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
                     $
                   </span>
                   <input
@@ -307,7 +307,7 @@ export function LiabilityForm({
                     value={formData.originalAmount}
                     onChange={handleChange}
                     placeholder="0.00"
-                    className="w-full border border-gray-300 rounded-lg pl-7 pr-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full border border-border rounded-lg pl-7 pr-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
               </div>
@@ -316,7 +316,7 @@ export function LiabilityForm({
             {/* Provider (for BNPL) */}
             {isBNPL && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-foreground mb-1">
                   Provider
                 </label>
                 <input
@@ -325,7 +325,7 @@ export function LiabilityForm({
                   value={formData.provider}
                   onChange={handleChange}
                   placeholder="e.g., Klarna, Afterpay, PayPal"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full border border-border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
             )}
@@ -333,7 +333,7 @@ export function LiabilityForm({
             {/* Interest Rate */}
             {!isBNPL && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-foreground mb-1">
                   Interest Rate (APR %)
                 </label>
                 <div className="relative">
@@ -344,9 +344,9 @@ export function LiabilityForm({
                     onChange={handleChange}
                     placeholder="0.00"
                     className={`w-full border rounded-lg px-3 py-2 pr-8 focus:ring-2 focus:ring-blue-500 focus:border-blue-500
-                      ${errors.interestRate ? 'border-red-500' : 'border-gray-300'}`}
+                      ${errors.interestRate ? 'border-red-500' : 'border-border'}`}
                   />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
                     %
                   </span>
                 </div>
@@ -358,11 +358,11 @@ export function LiabilityForm({
 
             {/* Minimum Payment */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-foreground mb-1">
                 Minimum Payment
               </label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
                   $
                 </span>
                 <input
@@ -371,7 +371,7 @@ export function LiabilityForm({
                   value={formData.minimumPayment}
                   onChange={handleChange}
                   placeholder="0.00"
-                  className="w-full border border-gray-300 rounded-lg pl-7 pr-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full border border-border rounded-lg pl-7 pr-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
             </div>
@@ -380,7 +380,7 @@ export function LiabilityForm({
             {isCreditCard && (
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-foreground mb-1">
                     Billing Cycle Day
                   </label>
                   <input
@@ -390,11 +390,11 @@ export function LiabilityForm({
                     onChange={handleChange}
                     placeholder="1-31"
                     className={`w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500
-                      ${errors.billingCycleDay ? 'border-red-500' : 'border-gray-300'}`}
+                      ${errors.billingCycleDay ? 'border-red-500' : 'border-border'}`}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-foreground mb-1">
                     Payment Due Day
                   </label>
                   <input
@@ -404,7 +404,7 @@ export function LiabilityForm({
                     onChange={handleChange}
                     placeholder="1-31"
                     className={`w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500
-                      ${errors.paymentDueDay ? 'border-red-500' : 'border-gray-300'}`}
+                      ${errors.paymentDueDay ? 'border-red-500' : 'border-border'}`}
                   />
                 </div>
               </div>
@@ -416,7 +416,7 @@ export function LiabilityForm({
                 type="button"
                 onClick={onClose}
                 disabled={isLoading}
-                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                className="px-4 py-2 border border-border rounded-lg text-foreground hover:bg-muted disabled:opacity-50"
               >
                 Cancel
               </button>

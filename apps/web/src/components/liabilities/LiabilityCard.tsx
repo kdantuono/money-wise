@@ -62,7 +62,7 @@ function getTypeColors(type: LiabilityType): { bg: string; text: string; icon: s
     case 'MORTGAGE':
       return { bg: 'bg-green-50', text: 'text-green-700', icon: 'text-green-500' };
     default:
-      return { bg: 'bg-gray-50', text: 'text-gray-700', icon: 'text-gray-500' };
+      return { bg: 'bg-muted', text: 'text-foreground', icon: 'text-muted-foreground' };
   }
 }
 
@@ -163,17 +163,17 @@ export const LiabilityCard = memo(function LiabilityCard({
         onClick={handleClick}
         onKeyDown={onClick ? handleKeyDown : undefined}
         className={`flex items-center gap-3 p-3 rounded-lg border border-border bg-card
-          ${onClick ? 'cursor-pointer hover:border-gray-300 hover:shadow-sm' : ''}`}
+          ${onClick ? 'cursor-pointer hover:border-border hover:shadow-sm' : ''}`}
       >
         <div className={`p-2 rounded-lg ${colors.bg}`}>
           <TypeIcon type={liability.type} className={`h-4 w-4 ${colors.icon}`} />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="font-medium text-gray-900 truncate">{liability.name}</p>
-          <p className="text-sm text-gray-500">{typeLabel}</p>
+          <p className="font-medium text-foreground truncate">{liability.name}</p>
+          <p className="text-sm text-muted-foreground">{typeLabel}</p>
         </div>
         <div className="text-right">
-          <p className="font-semibold text-gray-900">
+          <p className="font-semibold text-foreground">
             {formatCurrency(liability.currentBalance, liability.currency)}
           </p>
         </div>
@@ -188,7 +188,7 @@ export const LiabilityCard = memo(function LiabilityCard({
       onClick={handleClick}
       onKeyDown={onClick ? handleKeyDown : undefined}
       className={`rounded-xl border border-border bg-card p-5 transition-all
-        ${onClick ? 'cursor-pointer hover:border-gray-300 hover:shadow-md' : ''}
+        ${onClick ? 'cursor-pointer hover:border-border hover:shadow-md' : ''}
         focus:outline-none focus:ring-2 focus:ring-blue-500`}
     >
       {/* Header */}
@@ -197,7 +197,7 @@ export const LiabilityCard = memo(function LiabilityCard({
           <TypeIcon type={liability.type} className={`h-6 w-6 ${colors.icon}`} />
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-gray-900 truncate">{liability.name}</h3>
+          <h3 className="font-semibold text-foreground truncate">{liability.name}</h3>
           <div className="flex items-center gap-2 mt-1">
             <span
               className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${colors.bg} ${colors.text}`}
@@ -205,15 +205,15 @@ export const LiabilityCard = memo(function LiabilityCard({
               {typeLabel}
             </span>
             {liability.provider && (
-              <span className="text-xs text-gray-500">{liability.provider}</span>
+              <span className="text-xs text-muted-foreground">{liability.provider}</span>
             )}
           </div>
         </div>
         <div className="text-right">
-          <p className="text-2xl font-bold text-gray-900">
+          <p className="text-2xl font-bold text-foreground">
             {formatCurrency(liability.currentBalance, liability.currency)}
           </p>
-          <p className="text-sm text-gray-500">Current Balance</p>
+          <p className="text-sm text-muted-foreground">Current Balance</p>
         </div>
       </div>
 
@@ -221,18 +221,18 @@ export const LiabilityCard = memo(function LiabilityCard({
       {utilizationPercent !== null && liability.creditLimit && (
         <div className="mt-4">
           <div className="flex justify-between text-sm mb-1">
-            <span className="text-gray-600">Credit Utilization</span>
-            <span className="font-medium text-gray-900">
+            <span className="text-muted-foreground">Credit Utilization</span>
+            <span className="font-medium text-foreground">
               {utilizationPercent.toFixed(0)}%
             </span>
           </div>
-          <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+          <div className="h-2 bg-muted rounded-full overflow-hidden">
             <div
               className={`h-full rounded-full transition-all ${getUtilizationColor(utilizationPercent)}`}
               style={{ width: `${utilizationPercent}%` }}
             />
           </div>
-          <div className="flex justify-between text-xs text-gray-500 mt-1">
+          <div className="flex justify-between text-xs text-muted-foreground mt-1">
             <span>Used: {formatCurrency(liability.currentBalance, liability.currency)}</span>
             <span>Limit: {formatCurrency(liability.creditLimit, liability.currency)}</span>
           </div>
@@ -240,13 +240,13 @@ export const LiabilityCard = memo(function LiabilityCard({
       )}
 
       {/* Details Grid */}
-      <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-gray-100">
+      <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-border">
         {liability.interestRate !== undefined && liability.interestRate > 0 && (
           <div className="flex items-center gap-2">
-            <Percent className="h-4 w-4 text-gray-400" />
+            <Percent className="h-4 w-4 text-muted-foreground" />
             <div>
-              <p className="text-xs text-gray-500">APR</p>
-              <p className="text-sm font-medium text-gray-900">
+              <p className="text-xs text-muted-foreground">APR</p>
+              <p className="text-sm font-medium text-foreground">
                 {liability.interestRate.toFixed(2)}%
               </p>
             </div>
@@ -255,10 +255,10 @@ export const LiabilityCard = memo(function LiabilityCard({
 
         {liability.minimumPayment !== undefined && liability.minimumPayment > 0 && (
           <div className="flex items-center gap-2">
-            <DollarSign className="h-4 w-4 text-gray-400" />
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
             <div>
-              <p className="text-xs text-gray-500">Min Payment</p>
-              <p className="text-sm font-medium text-gray-900">
+              <p className="text-xs text-muted-foreground">Min Payment</p>
+              <p className="text-sm font-medium text-foreground">
                 {formatCurrency(liability.minimumPayment, liability.currency)}
               </p>
             </div>
@@ -267,10 +267,10 @@ export const LiabilityCard = memo(function LiabilityCard({
 
         {liability.nextPaymentDate && (
           <div className="flex items-center gap-2">
-            <Calendar className="h-4 w-4 text-gray-400" />
+            <Calendar className="h-4 w-4 text-muted-foreground" />
             <div>
-              <p className="text-xs text-gray-500">Next Payment</p>
-              <p className="text-sm font-medium text-gray-900">
+              <p className="text-xs text-muted-foreground">Next Payment</p>
+              <p className="text-sm font-medium text-foreground">
                 {formatDate(liability.nextPaymentDate)}
               </p>
             </div>
@@ -279,9 +279,9 @@ export const LiabilityCard = memo(function LiabilityCard({
 
         {liability.availableCredit !== undefined && (
           <div className="flex items-center gap-2">
-            <CreditCard className="h-4 w-4 text-gray-400" />
+            <CreditCard className="h-4 w-4 text-muted-foreground" />
             <div>
-              <p className="text-xs text-gray-500">Available</p>
+              <p className="text-xs text-muted-foreground">Available</p>
               <p className="text-sm font-medium text-green-600">
                 {formatCurrency(liability.availableCredit, liability.currency)}
               </p>
@@ -297,7 +297,7 @@ export const LiabilityCard = memo(function LiabilityCard({
             className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
               ${liability.status === 'PAID_OFF'
                 ? 'bg-green-100 text-green-800'
-                : 'bg-gray-100 text-gray-800'
+                : 'bg-muted text-foreground'
               }`}
           >
             {liability.status === 'PAID_OFF' ? 'Paid Off' : 'Closed'}

@@ -260,14 +260,14 @@ export function TransactionList({
       {/* Filter Controls */}
       <div className="rounded-lg border border-border bg-card p-4">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-semibold text-gray-700">
+          <h2 className="text-sm font-semibold text-foreground">
             Filters & Search
           </h2>
           {/* Page Size Selector */}
           <div className="flex items-center gap-2">
             <label
               htmlFor="page-size"
-              className="text-xs font-medium text-gray-600"
+              className="text-xs font-medium text-muted-foreground"
             >
               Show:
             </label>
@@ -276,7 +276,7 @@ export function TransactionList({
               value={pageSize}
               onChange={handlePageSizeChange}
               aria-label="Number of results per page"
-              className="px-2 py-1 border border-gray-300 rounded text-sm
+              className="px-2 py-1 border border-border rounded text-sm
                 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
             >
               {PAGE_SIZE_OPTIONS.map((size) => (
@@ -285,7 +285,7 @@ export function TransactionList({
                 </option>
               ))}
             </select>
-            <span className="text-xs text-gray-500">per page</span>
+            <span className="text-xs text-muted-foreground">per page</span>
           </div>
         </div>
 
@@ -295,7 +295,7 @@ export function TransactionList({
           <div>
             <label
               htmlFor="transaction-search"
-              className="block text-xs font-medium text-gray-600 mb-1"
+              className="block text-xs font-medium text-muted-foreground mb-1"
             >
               Search Description
             </label>
@@ -306,9 +306,9 @@ export function TransactionList({
               value={filters.searchQuery}
               onChange={handleSearchChange}
               aria-label="Search transactions by description or merchant"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm
+              className="w-full px-3 py-2 border border-border rounded-lg text-sm
                 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500
-                placeholder-gray-400"
+                placeholder-muted-foreground"
             />
           </div>
 
@@ -316,7 +316,7 @@ export function TransactionList({
           <div>
             <label
               htmlFor="transaction-type"
-              className="block text-xs font-medium text-gray-600 mb-1"
+              className="block text-xs font-medium text-muted-foreground mb-1"
             >
               Type
             </label>
@@ -325,7 +325,7 @@ export function TransactionList({
               value={filters.type}
               onChange={handleTypeChange}
               aria-label="Filter by transaction type"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm
+              className="w-full px-3 py-2 border border-border rounded-lg text-sm
                 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
             >
               <option value="ALL">All Types</option>
@@ -338,7 +338,7 @@ export function TransactionList({
           <div>
             <label
               htmlFor="date-from"
-              className="block text-xs font-medium text-gray-600 mb-1"
+              className="block text-xs font-medium text-muted-foreground mb-1"
             >
               From Date
             </label>
@@ -352,7 +352,7 @@ export function TransactionList({
               }
               onChange={handleDateFromChange}
               aria-label="Filter transactions from this date"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm
+              className="w-full px-3 py-2 border border-border rounded-lg text-sm
                 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
             />
           </div>
@@ -361,7 +361,7 @@ export function TransactionList({
           <div>
             <label
               htmlFor="date-to"
-              className="block text-xs font-medium text-gray-600 mb-1"
+              className="block text-xs font-medium text-muted-foreground mb-1"
             >
               To Date
             </label>
@@ -373,7 +373,7 @@ export function TransactionList({
               }
               onChange={handleDateToChange}
               aria-label="Filter transactions to this date"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm
+              className="w-full px-3 py-2 border border-border rounded-lg text-sm
                 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
             />
           </div>
@@ -385,7 +385,7 @@ export function TransactionList({
           <div>
             <label
               htmlFor="amount-min"
-              className="block text-xs font-medium text-gray-600 mb-1"
+              className="block text-xs font-medium text-muted-foreground mb-1"
             >
               Min Amount
             </label>
@@ -398,9 +398,9 @@ export function TransactionList({
               value={filters.amountMin ?? ''}
               onChange={handleAmountMinChange}
               aria-label="Minimum transaction amount"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm
+              className="w-full px-3 py-2 border border-border rounded-lg text-sm
                 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500
-                placeholder-gray-400"
+                placeholder-muted-foreground"
             />
           </div>
 
@@ -408,7 +408,7 @@ export function TransactionList({
           <div>
             <label
               htmlFor="amount-max"
-              className="block text-xs font-medium text-gray-600 mb-1"
+              className="block text-xs font-medium text-muted-foreground mb-1"
             >
               Max Amount
             </label>
@@ -421,15 +421,15 @@ export function TransactionList({
               value={filters.amountMax ?? ''}
               onChange={handleAmountMaxChange}
               aria-label="Maximum transaction amount"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm
+              className="w-full px-3 py-2 border border-border rounded-lg text-sm
                 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500
-                placeholder-gray-400"
+                placeholder-muted-foreground"
             />
           </div>
 
           {/* Sort Options */}
           <div className="md:col-span-2">
-            <label className="block text-xs font-medium text-gray-600 mb-1">
+            <label className="block text-xs font-medium text-muted-foreground mb-1">
               Sort By
             </label>
             <div className="flex gap-2">
@@ -487,7 +487,7 @@ export function TransactionList({
 
       {/* Results Info */}
       {filteredTransactions.length > 0 && (
-        <p className="text-sm text-gray-600">
+        <p className="text-sm text-muted-foreground">
           Showing{' '}
           <span className="font-semibold">
             {displayedTransactions.length}
@@ -503,11 +503,11 @@ export function TransactionList({
       {/* Transactions List */}
       {filteredTransactions.length === 0 ? (
         <div
-          className="rounded-lg border-2 border-dashed border-gray-300 p-8 text-center"
+          className="rounded-lg border-2 border-dashed border-border p-8 text-center"
           role="status"
         >
           <svg
-            className="w-12 h-12 text-gray-400 mx-auto mb-3"
+            className="w-12 h-12 text-muted-foreground mx-auto mb-3"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -520,9 +520,9 @@ export function TransactionList({
               d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
             />
           </svg>
-          <p className="text-gray-600 font-medium">No transactions found</p>
+          <p className="text-muted-foreground font-medium">No transactions found</p>
           {hasActiveFilters && (
-            <p className="text-gray-500 text-sm mt-1">
+            <p className="text-muted-foreground text-sm mt-1">
               Try adjusting your filters
             </p>
           )}
@@ -532,16 +532,16 @@ export function TransactionList({
           {displayedTransactions.map((tx) => (
             <div
               key={tx.id}
-              className="rounded-lg border border-border hover:border-muted-foreground bg-card p-4
+              className="rounded-lg border border-border hover:border-border bg-card p-4
                 transition-all duration-150 hover:shadow focus-within:ring-2 focus-within:ring-blue-500"
             >
               <div className="flex items-center justify-between gap-4">
                 {/* Transaction Info */}
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-medium text-gray-900 truncate">
+                  <h3 className="font-medium text-foreground truncate">
                     {tx.merchant || tx.description}
                   </h3>
-                  <p className="text-sm text-gray-600 truncate">
+                  <p className="text-sm text-muted-foreground truncate">
                     {tx.reference && `Ref: ${tx.reference}`}
                     {tx.status === 'pending' && (
                       <span className="ml-2 inline-block px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
@@ -549,7 +549,7 @@ export function TransactionList({
                       </span>
                     )}
                   </p>
-                  <time className="text-xs text-gray-500">
+                  <time className="text-xs text-muted-foreground">
                     {new Intl.DateTimeFormat('en-US', {
                       dateStyle: 'medium',
                       timeStyle: 'short',
@@ -629,7 +629,7 @@ export function TransactionList({
           aria-busy={isLoadingMore}
           aria-label="Load more transactions"
           className="w-full py-3 px-4 rounded-lg font-medium transition-colors duration-200
-            bg-gray-100 text-gray-900 hover:bg-gray-200 active:bg-gray-300
+            bg-muted text-foreground hover:bg-muted active:bg-secondary
             focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500
             disabled:opacity-50 disabled:cursor-not-allowed"
         >

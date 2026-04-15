@@ -109,7 +109,7 @@ export function RevokeConfirmation({
           onClick={onCancel}
           disabled={isConfirming}
           aria-label="Close dialog"
-          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed
+          className="absolute top-4 right-4 text-muted-foreground hover:text-muted-foreground disabled:opacity-50 disabled:cursor-not-allowed
             focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-red-500 rounded"
         >
           <svg
@@ -140,7 +140,7 @@ export function RevokeConfirmation({
             <div>
               <h2
                 id="revoke-dialog-title"
-                className="text-lg font-bold text-gray-900"
+                className="text-lg font-bold text-foreground"
               >
                 Revoke Account Access
               </h2>
@@ -156,7 +156,7 @@ export function RevokeConfirmation({
           {/* Description */}
           <p
             id="revoke-dialog-description"
-            className="text-sm text-gray-600 mb-4 leading-relaxed"
+            className="text-sm text-muted-foreground mb-4 leading-relaxed"
           >
             You are about to disconnect {account.name} from {account.bankName}.
             After revoking access:
@@ -199,23 +199,23 @@ export function RevokeConfirmation({
           </ul>
 
           {/* Account Summary */}
-          <div className="bg-gray-50 rounded-lg p-3 mb-5 border border-gray-200">
-            <h3 className="font-semibold text-sm text-gray-900 mb-2">
+          <div className="bg-muted rounded-lg p-3 mb-5 border border-border">
+            <h3 className="font-semibold text-sm text-foreground mb-2">
               Account Details
             </h3>
             <dl className="space-y-1">
               <div className="flex justify-between text-sm">
-                <dt className="text-gray-600">Account Name</dt>
-                <dd className="font-medium text-gray-900">{account.name}</dd>
+                <dt className="text-muted-foreground">Account Name</dt>
+                <dd className="font-medium text-foreground">{account.name}</dd>
               </div>
               <div className="flex justify-between text-sm">
-                <dt className="text-gray-600">Bank</dt>
-                <dd className="font-medium text-gray-900">{account.bankName}</dd>
+                <dt className="text-muted-foreground">Bank</dt>
+                <dd className="font-medium text-foreground">{account.bankName}</dd>
               </div>
               {account.balance !== undefined && (
-                <div className="flex justify-between text-sm border-t border-gray-200 pt-1 mt-1">
-                  <dt className="text-gray-600">Current Balance</dt>
-                  <dd className="font-medium text-gray-900">
+                <div className="flex justify-between text-sm border-t border-border pt-1 mt-1">
+                  <dt className="text-muted-foreground">Current Balance</dt>
+                  <dd className="font-medium text-foreground">
                     {new Intl.NumberFormat('en-US', {
                       style: 'currency',
                       currency: account.currency || 'USD',
@@ -249,7 +249,7 @@ export function RevokeConfirmation({
               }}
               disabled={isConfirming}
               aria-label="I understand this action cannot be undone"
-              className="w-5 h-5 mt-0.5 rounded border-gray-300 text-red-600
+              className="w-5 h-5 mt-0.5 rounded border-border text-red-600
                 focus:ring-red-500 focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed
                 cursor-pointer"
             />
@@ -264,14 +264,14 @@ export function RevokeConfirmation({
         </div>
 
         {/* Actions */}
-        <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex gap-3 rounded-b-lg">
+        <div className="px-6 py-4 bg-muted border-t border-border flex gap-3 rounded-b-lg">
           <button
             onClick={onCancel}
             disabled={isConfirming}
             aria-label="Cancel revocation"
             className="flex-1 px-4 py-2 rounded-lg font-medium text-foreground bg-card border border-border
-              hover:bg-gray-50 active:bg-gray-100
-              focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500
+              hover:bg-muted active:bg-muted
+              focus:outline-none focus-visible:ring-2 focus-visible:ring-ring
               disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
           >
             Cancel

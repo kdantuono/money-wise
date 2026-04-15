@@ -45,7 +45,7 @@ function BudgetItem({ budget }: BudgetItemProps) {
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <span className="text-sm font-medium text-gray-900">
+        <span className="text-sm font-medium text-foreground">
           {budget.name}
         </span>
         <span
@@ -90,13 +90,13 @@ function BudgetProgressSkeleton() {
       {[1, 2, 3].map((i) => (
         <div key={i} className="space-y-2 animate-pulse">
           <div className="flex justify-between">
-            <div className="h-4 w-24 bg-gray-200 rounded" />
-            <div className="h-4 w-20 bg-gray-200 rounded" />
+            <div className="h-4 w-24 bg-muted rounded" />
+            <div className="h-4 w-20 bg-muted rounded" />
           </div>
-          <div className="h-2 bg-gray-200 rounded-full" />
+          <div className="h-2 bg-muted rounded-full" />
           <div className="flex justify-between">
-            <div className="h-3 w-16 bg-gray-200 rounded" />
-            <div className="h-3 w-14 bg-gray-200 rounded" />
+            <div className="h-3 w-16 bg-muted rounded" />
+            <div className="h-3 w-14 bg-muted rounded" />
           </div>
         </div>
       ))}

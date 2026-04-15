@@ -82,7 +82,7 @@ const connectionStatusConfig = {
   },
   [BankingConnectionStatus.REVOKED]: {
     label: 'Revoked',
-    color: 'text-gray-600 bg-gray-50',
+    color: 'text-muted-foreground bg-muted',
   },
   [BankingConnectionStatus.EXPIRED]: {
     label: 'Expired',
@@ -145,13 +145,13 @@ export function AccountDetails({
       className={`rounded-lg border border-border bg-card shadow ${className}`}
     >
       {/* Header Section */}
-      <div className="bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 px-6 py-8 border-b border-gray-200">
+      <div className="bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 px-6 py-8 border-b border-border">
         <div className="flex items-start justify-between mb-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-1">
+            <h1 className="text-3xl font-bold text-foreground mb-1">
               {account.name}
             </h1>
-            <p className="text-lg text-gray-600">{account.bankName}</p>
+            <p className="text-lg text-muted-foreground">{account.bankName}</p>
           </div>
           <div
             className={`px-4 py-2 rounded-full font-semibold text-sm ${connectionStatus.color}`}
@@ -164,7 +164,7 @@ export function AccountDetails({
 
         {/* Balance Display */}
         <div className="flex items-baseline gap-2">
-          <span className="text-5xl font-bold text-gray-900">
+          <span className="text-5xl font-bold text-foreground">
             {new Intl.NumberFormat('en-US', {
               style: 'currency',
               currency: account.currency,
@@ -173,7 +173,7 @@ export function AccountDetails({
           </span>
           {account.availableBalance !== undefined &&
             account.availableBalance !== account.balance && (
-              <span className="text-lg text-gray-600">
+              <span className="text-lg text-muted-foreground">
                 (Available:{' '}
                 {new Intl.NumberFormat('en-US', {
                   style: 'currency',
@@ -198,41 +198,41 @@ export function AccountDetails({
         )}
 
         {/* Account Information Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 pb-8 border-b border-gray-200">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 pb-8 border-b border-border">
           {/* Basic Info */}
           <section>
-            <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-4">
               Account Information
             </h2>
             <div className="space-y-3">
               {account.accountHolderName && (
                 <div>
-                  <p className="text-xs text-gray-500">Account Holder</p>
-                  <p className="text-sm font-medium text-gray-900">
+                  <p className="text-xs text-muted-foreground">Account Holder</p>
+                  <p className="text-sm font-medium text-foreground">
                     {account.accountHolderName}
                   </p>
                 </div>
               )}
               {account.accountNumber && (
                 <div>
-                  <p className="text-xs text-gray-500">Account Number</p>
-                  <p className="text-sm font-mono text-gray-900">
+                  <p className="text-xs text-muted-foreground">Account Number</p>
+                  <p className="text-sm font-mono text-foreground">
                     {account.accountNumber}
                   </p>
                 </div>
               )}
               {account.iban && (
                 <div>
-                  <p className="text-xs text-gray-500">IBAN</p>
-                  <p className="text-sm font-mono text-gray-900 break-all">
+                  <p className="text-xs text-muted-foreground">IBAN</p>
+                  <p className="text-sm font-mono text-foreground break-all">
                     {account.iban}
                   </p>
                 </div>
               )}
               {account.accountType && (
                 <div>
-                  <p className="text-xs text-gray-500">Account Type</p>
-                  <p className="text-sm text-gray-900 capitalize">
+                  <p className="text-xs text-muted-foreground">Account Type</p>
+                  <p className="text-sm text-foreground capitalize">
                     {account.accountType}
                   </p>
                 </div>
@@ -242,20 +242,20 @@ export function AccountDetails({
 
           {/* Additional Info */}
           <section>
-            <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-4">
               Connection Details
             </h2>
             <div className="space-y-3">
               {account.country && (
                 <div>
-                  <p className="text-xs text-gray-500">Country</p>
-                  <p className="text-sm text-gray-900">{account.country}</p>
+                  <p className="text-xs text-muted-foreground">Country</p>
+                  <p className="text-sm text-foreground">{account.country}</p>
                 </div>
               )}
               {account.linkedAt && (
                 <div>
-                  <p className="text-xs text-gray-500">Linked Date</p>
-                  <p className="text-sm text-gray-900">
+                  <p className="text-xs text-muted-foreground">Linked Date</p>
+                  <p className="text-sm text-foreground">
                     {new Intl.DateTimeFormat('en-US', {
                       dateStyle: 'medium',
                       timeStyle: 'short',
@@ -265,8 +265,8 @@ export function AccountDetails({
               )}
               {account.lastSyncedAt && (
                 <div>
-                  <p className="text-xs text-gray-500">Last Synced</p>
-                  <p className="text-sm text-gray-900">
+                  <p className="text-xs text-muted-foreground">Last Synced</p>
+                  <p className="text-sm text-foreground">
                     {new Intl.DateTimeFormat('en-US', {
                       dateStyle: 'medium',
                       timeStyle: 'short',
@@ -276,8 +276,8 @@ export function AccountDetails({
               )}
               {account.creditLimit !== undefined && (
                 <div>
-                  <p className="text-xs text-gray-500">Credit Limit</p>
-                  <p className="text-sm font-medium text-gray-900">
+                  <p className="text-xs text-muted-foreground">Credit Limit</p>
+                  <p className="text-sm font-medium text-foreground">
                     {new Intl.NumberFormat('en-US', {
                       style: 'currency',
                       currency: account.currency,
@@ -300,7 +300,7 @@ export function AccountDetails({
               transition-colors duration-200
               ${
                 !canSync || isSyncing
-                  ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                  ? 'bg-muted text-muted-foreground cursor-not-allowed'
                   : 'bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500'
               }"
           >

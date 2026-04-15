@@ -151,7 +151,7 @@ function TreeNode({
         className={`
           group flex items-center gap-2 px-3 py-2 rounded-lg
           transition-colors duration-150
-          ${isSelected ? 'bg-blue-50 border-blue-200' : 'hover:bg-gray-50'}
+          ${isSelected ? 'bg-blue-50 border-blue-200' : 'hover:bg-muted'}
         `}
         style={{ paddingLeft: `${12 + node.level * 16}px` }}
       >
@@ -161,15 +161,15 @@ function TreeNode({
           onClick={handleToggleExpand}
           disabled={!hasChildren}
           className={`w-5 h-5 flex items-center justify-center flex-shrink-0 rounded
-            ${hasChildren ? 'hover:bg-gray-200 cursor-pointer' : 'cursor-default'}
+            ${hasChildren ? 'hover:bg-muted cursor-pointer' : 'cursor-default'}
             focus:outline-none focus:ring-2 focus:ring-blue-500`}
           aria-label={hasChildren ? (isExpanded ? 'Collapse' : 'Expand') : undefined}
         >
           {hasChildren ? (
             isExpanded ? (
-              <ChevronDown className="h-4 w-4 text-gray-500" />
+              <ChevronDown className="h-4 w-4 text-muted-foreground" />
             ) : (
-              <ChevronRight className="h-4 w-4 text-gray-500" />
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
             )
           ) : null}
         </button>
@@ -190,7 +190,7 @@ function TreeNode({
           onClick={handleNavigate}
           className="flex-grow flex items-center gap-2 min-w-0 text-left hover:text-blue-600 transition-colors"
         >
-          <span className="truncate font-medium text-gray-900 group-hover:text-blue-600">{node.name}</span>
+          <span className="truncate font-medium text-foreground group-hover:text-blue-600">{node.name}</span>
           {node.color && (
             <span
               className="w-2 h-2 rounded-full flex-shrink-0"
@@ -201,7 +201,7 @@ function TreeNode({
 
         {/* Transaction count badge (optional) */}
         {showTransactionCount && (
-          <span className="px-2 py-0.5 text-xs font-medium text-gray-500 bg-gray-100 rounded-full">
+          <span className="px-2 py-0.5 text-xs font-medium text-muted-foreground bg-muted rounded-full">
             0
           </span>
         )}
@@ -222,18 +222,18 @@ function TreeNode({
           {/* System lock icon or Edit button */}
           {node.isSystem ? (
             <Lock
-              className="h-4 w-4 text-gray-400"
+              className="h-4 w-4 text-muted-foreground"
               aria-label="System category (cannot be modified)"
             />
           ) : (
             <button
               type="button"
               onClick={handleEdit}
-              className="opacity-0 group-hover:opacity-100 p-1.5 rounded-md hover:bg-gray-200
+              className="opacity-0 group-hover:opacity-100 p-1.5 rounded-md hover:bg-muted
                 transition-opacity duration-150 focus:outline-none focus:ring-2 focus:ring-blue-500"
               aria-label={`Edit ${node.name}`}
             >
-              <Pencil className="h-3.5 w-3.5 text-gray-500" />
+              <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
             </button>
           )}
         </div>
@@ -301,9 +301,9 @@ export function CategoryTree({
             key={i}
             className="flex items-center gap-3 px-3 py-2 animate-pulse"
           >
-            <div className="w-5 h-5 bg-gray-200 rounded" />
-            <div className="w-8 h-8 bg-gray-200 rounded-lg" />
-            <div className="flex-1 h-4 bg-gray-200 rounded" />
+            <div className="w-5 h-5 bg-muted rounded" />
+            <div className="w-8 h-8 bg-muted rounded-lg" />
+            <div className="flex-1 h-4 bg-muted rounded" />
           </div>
         ))}
       </div>
@@ -314,9 +314,9 @@ export function CategoryTree({
   if (tree.length === 0) {
     return (
       <div className={`text-center py-8 ${className}`} data-testid="category-tree-empty">
-        <Folder className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-        <p className="text-gray-500 font-medium">No categories found</p>
-        <p className="text-gray-400 text-sm mt-1">
+        <Folder className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+        <p className="text-muted-foreground font-medium">No categories found</p>
+        <p className="text-muted-foreground text-sm mt-1">
           Create your first custom category to get started
         </p>
       </div>

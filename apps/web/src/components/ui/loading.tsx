@@ -59,7 +59,7 @@ export function LoadingSpinner({
   return (
     <div
       className={cn(
-        'animate-spin rounded-full border-2 border-gray-300 border-t-primary',
+        'animate-spin rounded-full border-2 border-border border-t-primary',
         
         sizeClasses[size],
         className
@@ -99,12 +99,12 @@ export function LoadingScreen({
   size = 'lg'
 }: LoadingScreenProps) {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    <div className="min-h-screen flex items-center justify-center bg-muted">
       <div className="text-center">
         <div className="flex justify-center mb-4">
           <LoadingSpinner size={size} />
         </div>
-        <p className="text-gray-600 text-lg">{message}</p>
+        <p className="text-muted-foreground text-lg">{message}</p>
       </div>
     </div>
   );
@@ -144,7 +144,7 @@ export function LoadingCard({
   return (
     <div className={cn('flex flex-col items-center justify-center p-8', className)}>
       <LoadingSpinner size={size} />
-      <p className="text-gray-600 mt-4">{message}</p>
+      <p className="text-muted-foreground mt-4">{message}</p>
     </div>
   );
 }

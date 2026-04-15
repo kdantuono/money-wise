@@ -68,17 +68,17 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const isPlanningActive = planningItems.some(item => pathname.startsWith(item.href));
   const [planningOpen, setPlanningOpen] = useState(isPlanningActive);
 
-  const handleLogout = async () => {
-    await logout();
+  const handleLogout = () => {
     router.replace('/auth/login');
+    logout();
   };
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex min-h-screen bg-muted">
       {/* Mobile sidebar backdrop */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-foreground/50 z-20 lg:hidden"
+          className="fixed inset-0 bg-gray-600 bg-opacity-75 z-20 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
@@ -95,12 +95,12 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           {/* Logo */}
           <div className="flex items-center justify-between h-16 px-6 border-b border-border">
             <Link href="/dashboard" className="flex items-center space-x-2">
-              <Wallet className="h-8 w-8 text-primary" />
+              <Wallet className="h-8 w-8 text-blue-600" />
               <span className="text-xl font-bold text-foreground">MoneyWise</span>
             </Link>
             <button
               onClick={() => setSidebarOpen(false)}
-              className="lg:hidden text-muted-foreground hover:text-foreground/80"
+              className="lg:hidden text-muted-foreground hover:text-foreground"
             >
               <X className="h-6 w-6" />
             </button>
@@ -117,15 +117,15 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                   href={item.href}
                   className={`flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors group ${
                     isActive
-                      ? 'bg-accent text-primary'
-                      : 'text-foreground/80 hover:bg-accent/50 hover:text-primary'
+                      ? 'bg-blue-100 text-blue-600'
+                      : 'text-foreground hover:bg-blue-50 hover:text-blue-600'
                   }`}
                   data-testid={`nav-${item.name.toLowerCase()}`}
                   aria-current={isActive ? 'page' : undefined}
                 >
                   <item.icon
                     className={`mr-3 h-5 w-5 ${
-                      isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-primary'
+                      isActive ? 'text-blue-600' : 'text-muted-foreground group-hover:text-blue-600'
                     }`}
                   />
                   {item.name}
@@ -139,8 +139,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 onClick={() => setPlanningOpen(!planningOpen)}
                 className={`w-full flex items-center justify-between px-4 py-3 text-sm font-medium rounded-lg transition-colors group ${
                   isPlanningActive
-                    ? 'bg-accent/50 text-primary'
-                    : 'text-foreground/80 hover:bg-accent/50 hover:text-primary'
+                    ? 'bg-blue-50 text-blue-600'
+                    : 'text-foreground hover:bg-blue-50 hover:text-blue-600'
                 }`}
                 data-testid="nav-planning"
                 aria-expanded={planningOpen}
@@ -148,7 +148,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 <div className="flex items-center">
                   <ClipboardList
                     className={`mr-3 h-5 w-5 ${
-                      isPlanningActive ? 'text-primary' : 'text-muted-foreground group-hover:text-primary'
+                      isPlanningActive ? 'text-blue-600' : 'text-muted-foreground group-hover:text-blue-600'
                     }`}
                   />
                   Planning
@@ -156,7 +156,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 <ChevronDown
                   className={`h-4 w-4 transition-transform duration-200 ${
                     planningOpen ? 'rotate-180' : ''
-                  } ${isPlanningActive ? 'text-primary' : 'text-muted-foreground'}`}
+                  } ${isPlanningActive ? 'text-blue-600' : 'text-muted-foreground'}`}
                 />
               </button>
 
@@ -171,15 +171,15 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                         href={item.href}
                         className={`flex items-center px-4 py-2.5 text-sm font-medium rounded-lg transition-colors group ${
                           isActive
-                            ? 'bg-accent text-primary'
-                            : 'text-muted-foreground hover:bg-accent/50 hover:text-primary'
+                            ? 'bg-blue-100 text-blue-600'
+                            : 'text-muted-foreground hover:bg-blue-50 hover:text-blue-600'
                         }`}
                         data-testid={`nav-${item.name.toLowerCase()}`}
                         aria-current={isActive ? 'page' : undefined}
                       >
                         <item.icon
                           className={`mr-3 h-4 w-4 ${
-                            isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-primary'
+                            isActive ? 'text-blue-600' : 'text-muted-foreground group-hover:text-blue-600'
                           }`}
                         />
                         {item.name}
@@ -200,15 +200,15 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                     href={item.href}
                     className={`flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors group ${
                       isActive
-                        ? 'bg-accent text-primary'
-                        : 'text-foreground/80 hover:bg-accent/50 hover:text-primary'
+                        ? 'bg-blue-100 text-blue-600'
+                        : 'text-foreground hover:bg-blue-50 hover:text-blue-600'
                     }`}
                     data-testid={`nav-${item.name.toLowerCase()}`}
                     aria-current={isActive ? 'page' : undefined}
                   >
                     <item.icon
                       className={`mr-3 h-5 w-5 ${
-                        isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-primary'
+                        isActive ? 'text-blue-600' : 'text-muted-foreground group-hover:text-blue-600'
                       }`}
                     />
                     {item.name}
@@ -220,7 +220,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
           {/* User Info */}
           <div className="p-4 border-t border-border">
-            <div className="flex items-center space-x-3 px-4 py-3 rounded-lg bg-background" data-testid="user-menu">
+            <div className="flex items-center space-x-3 px-4 py-3 rounded-lg bg-muted" data-testid="user-menu">
               <div className="flex-shrink-0">
                 <div className="h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center">
                   <User className="h-6 w-6 text-white" />
@@ -247,7 +247,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             {/* Mobile menu button */}
             <button
               onClick={() => setSidebarOpen(true)}
-              className="lg:hidden text-muted-foreground hover:text-foreground/80"
+              className="lg:hidden text-muted-foreground hover:text-foreground"
             >
               <Menu className="h-6 w-6" />
             </button>
@@ -260,7 +260,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 </div>
                 <input
                   type="text"
-                  className="block w-full pl-10 pr-3 py-2 border border-border rounded-lg leading-5 bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:placeholder-muted-foreground focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm"
+                  className="block w-full pl-10 pr-3 py-2 border border-border rounded-lg leading-5 bg-card placeholder-muted-foreground focus:outline-none focus:placeholder-muted-foreground focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                   placeholder="Search transactions, accounts..."
                   data-testid="search-input"
                 />

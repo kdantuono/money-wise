@@ -43,13 +43,13 @@ function BudgetSkeleton() {
       <CardContent className="p-4">
         <div className="space-y-3">
           <div className="flex justify-between">
-            <div className="h-4 w-1/3 bg-gray-200 rounded" />
-            <div className="h-4 w-12 bg-gray-200 rounded" />
+            <div className="h-4 w-1/3 bg-muted rounded" />
+            <div className="h-4 w-12 bg-muted rounded" />
           </div>
-          <div className="h-2.5 bg-gray-200 rounded-full" />
+          <div className="h-2.5 bg-muted rounded-full" />
           <div className="flex justify-between">
-            <div className="h-3 w-20 bg-gray-200 rounded" />
-            <div className="h-3 w-20 bg-gray-200 rounded" />
+            <div className="h-3 w-20 bg-muted rounded" />
+            <div className="h-3 w-20 bg-muted rounded" />
           </div>
         </div>
       </CardContent>
@@ -66,7 +66,7 @@ function EmptyState() {
       className="text-center py-12"
       data-testid="budgets-empty-state"
     >
-      <div className="mx-auto h-12 w-12 text-gray-400">
+      <div className="mx-auto h-12 w-12 text-muted-foreground">
         <svg
           fill="none"
           viewBox="0 0 24 24"
@@ -81,10 +81,10 @@ function EmptyState() {
           />
         </svg>
       </div>
-      <h3 className="mt-4 text-lg font-medium text-gray-900">
+      <h3 className="mt-4 text-lg font-medium text-foreground">
         No budgets yet
       </h3>
-      <p className="mt-2 text-sm text-gray-500">
+      <p className="mt-2 text-sm text-muted-foreground">
         Create your first budget to start tracking your spending.
       </p>
     </div>
@@ -175,9 +175,9 @@ export function BudgetList({
 
               {/* Date range and actions */}
               <div className="mt-4 flex items-center justify-between">
-                <div className="text-xs text-gray-500">
+                <div className="text-xs text-muted-foreground">
                   {formatDate(budget.startDate)} - {formatDate(budget.endDate)}
-                  <span className="ml-2 inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">
+                  <span className="ml-2 inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
                     {budget.period}
                   </span>
                 </div>
@@ -264,7 +264,7 @@ export function BudgetList({
 
               {/* Notes if present */}
               {budget.notes && (
-                <p className="mt-2 text-xs text-gray-500 italic">
+                <p className="mt-2 text-xs text-muted-foreground italic">
                   {budget.notes}
                 </p>
               )}

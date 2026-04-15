@@ -37,7 +37,7 @@ function getIconColor(type: NotificationType, priority: string): string {
       return 'text-blue-500';
     case 'system':
     default:
-      return 'text-gray-500';
+      return 'text-muted-foreground';
   }
 }
 
@@ -90,7 +90,7 @@ export function NotificationItem({
   return (
     <div
       className={cn(
-        'group relative flex items-start gap-3 px-4 py-3 hover:bg-gray-50 cursor-pointer transition-colors',
+        'group relative flex items-start gap-3 px-4 py-3 hover:bg-muted cursor-pointer transition-colors',
         !notification.read && 'bg-blue-50/50'
       )}
       onClick={handleClick}
@@ -99,7 +99,7 @@ export function NotificationItem({
       {/* Icon */}
       <div
         className={cn(
-          'flex-shrink-0 mt-0.5 p-2 rounded-full bg-gray-100',
+          'flex-shrink-0 mt-0.5 p-2 rounded-full bg-muted',
           iconColor
         )}
       >
@@ -111,7 +111,7 @@ export function NotificationItem({
         <div className="flex items-start justify-between gap-2">
           <p
             className={cn(
-              'text-sm font-medium text-gray-900 truncate',
+              'text-sm font-medium text-foreground truncate',
               !notification.read && 'font-semibold'
             )}
           >
@@ -121,10 +121,10 @@ export function NotificationItem({
             <span className="flex-shrink-0 w-2 h-2 mt-1.5 rounded-full bg-blue-500" />
           )}
         </div>
-        <p className="mt-0.5 text-sm text-gray-600 line-clamp-2">
+        <p className="mt-0.5 text-sm text-muted-foreground line-clamp-2">
           {notification.message}
         </p>
-        <p className="mt-1 text-xs text-gray-400">{timeAgo}</p>
+        <p className="mt-1 text-xs text-muted-foreground">{timeAgo}</p>
       </div>
 
       {/* Dismiss button */}
@@ -133,7 +133,7 @@ export function NotificationItem({
           onClick={handleDismiss}
           disabled={isDismissing}
           className={cn(
-            'flex-shrink-0 p-1 rounded-full text-gray-400 opacity-0 group-hover:opacity-100 hover:text-gray-600 hover:bg-gray-200 transition-all',
+            'flex-shrink-0 p-1 rounded-full text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-muted-foreground hover:bg-muted transition-all',
             isDismissing && 'opacity-50 cursor-not-allowed'
           )}
           data-testid={`notification-dismiss-${notification.id}`}

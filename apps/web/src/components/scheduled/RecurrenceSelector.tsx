@@ -113,15 +113,15 @@ export const RecurrenceSelector = memo(function RecurrenceSelector({
           onClick={handleToggleRecurring}
           disabled={disabled}
           className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors
-            ${isRecurring ? 'bg-blue-600' : 'bg-gray-200'}
+            ${isRecurring ? 'bg-blue-600' : 'bg-muted'}
             ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
         >
           <span
-            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform
+            className={`inline-block h-4 w-4 transform rounded-full bg-card transition-transform
               ${isRecurring ? 'translate-x-6' : 'translate-x-1'}`}
           />
         </button>
-        <span className="text-sm font-medium text-gray-700">
+        <span className="text-sm font-medium text-foreground">
           {isRecurring ? 'Recurring transaction' : 'One-time transaction'}
         </span>
       </div>
@@ -130,7 +130,7 @@ export const RecurrenceSelector = memo(function RecurrenceSelector({
         <div className="space-y-4 pl-4 border-l-2 border-blue-100">
           {/* Frequency Selection */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-foreground mb-1">
               Repeat
             </label>
             <div className="flex flex-wrap gap-2">
@@ -156,7 +156,7 @@ export const RecurrenceSelector = memo(function RecurrenceSelector({
           {/* Interval */}
           {frequency !== 'BIWEEKLY' && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-foreground mb-1">
                 Every
               </label>
               <div className="flex items-center gap-2">
@@ -167,9 +167,9 @@ export const RecurrenceSelector = memo(function RecurrenceSelector({
                   value={interval}
                   onChange={(e) => setInterval(Math.max(1, parseInt(e.target.value) || 1))}
                   disabled={disabled}
-                  className="w-20 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-20 px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-blue-500"
                 />
-                <span className="text-sm text-gray-600">
+                <span className="text-sm text-muted-foreground">
                   {frequency === 'DAILY' && (interval === 1 ? 'day' : 'days')}
                   {frequency === 'WEEKLY' && (interval === 1 ? 'week' : 'weeks')}
                   {frequency === 'MONTHLY' && (interval === 1 ? 'month' : 'months')}
@@ -183,7 +183,7 @@ export const RecurrenceSelector = memo(function RecurrenceSelector({
           {/* Day of Week (for weekly) */}
           {frequency === 'WEEKLY' && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-foreground mb-1">
                 On
               </label>
               <select
@@ -192,7 +192,7 @@ export const RecurrenceSelector = memo(function RecurrenceSelector({
                   setDayOfWeek(e.target.value ? parseInt(e.target.value) : undefined)
                 }
                 disabled={disabled}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">Same day each week</option>
                 {DAYS_OF_WEEK.map((day) => (
@@ -209,7 +209,7 @@ export const RecurrenceSelector = memo(function RecurrenceSelector({
             frequency === 'QUARTERLY' ||
             frequency === 'YEARLY') && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-foreground mb-1">
                 On day
               </label>
               <select
@@ -218,7 +218,7 @@ export const RecurrenceSelector = memo(function RecurrenceSelector({
                   setDayOfMonth(e.target.value ? parseInt(e.target.value) : undefined)
                 }
                 disabled={disabled}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">Same day each period</option>
                 {DAYS_OF_MONTH.map((day) => (
@@ -232,7 +232,7 @@ export const RecurrenceSelector = memo(function RecurrenceSelector({
 
           {/* End Condition */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-foreground mb-1">
               Ends
             </label>
             <div className="space-y-2">
@@ -245,7 +245,7 @@ export const RecurrenceSelector = memo(function RecurrenceSelector({
                   disabled={disabled}
                   className="text-blue-600 focus:ring-blue-500"
                 />
-                <span className="text-sm text-gray-700">Never</span>
+                <span className="text-sm text-foreground">Never</span>
               </label>
 
               <label className="flex items-center gap-2">
@@ -257,14 +257,14 @@ export const RecurrenceSelector = memo(function RecurrenceSelector({
                   disabled={disabled}
                   className="text-blue-600 focus:ring-blue-500"
                 />
-                <span className="text-sm text-gray-700">On date</span>
+                <span className="text-sm text-foreground">On date</span>
                 {endType === 'date' && (
                   <input
                     type="date"
                     value={endDate}
                     onChange={(e) => setEndDate(e.target.value)}
                     disabled={disabled}
-                    className="ml-2 px-3 py-1 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="ml-2 px-3 py-1 border border-border rounded-lg focus:ring-2 focus:ring-blue-500"
                   />
                 )}
               </label>
@@ -278,7 +278,7 @@ export const RecurrenceSelector = memo(function RecurrenceSelector({
                   disabled={disabled}
                   className="text-blue-600 focus:ring-blue-500"
                 />
-                <span className="text-sm text-gray-700">After</span>
+                <span className="text-sm text-foreground">After</span>
                 {endType === 'count' && (
                   <>
                     <input
@@ -290,9 +290,9 @@ export const RecurrenceSelector = memo(function RecurrenceSelector({
                         setEndCount(Math.max(1, parseInt(e.target.value) || 1))
                       }
                       disabled={disabled}
-                      className="w-20 px-3 py-1 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      className="w-20 px-3 py-1 border border-border rounded-lg focus:ring-2 focus:ring-blue-500"
                     />
-                    <span className="text-sm text-gray-700">occurrences</span>
+                    <span className="text-sm text-foreground">occurrences</span>
                   </>
                 )}
               </label>

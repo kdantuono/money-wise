@@ -100,13 +100,13 @@ export const DeleteConfirmDialog = memo(function DeleteConfirmDialog({
         {/* Title */}
         <h2
           id="delete-dialog-title"
-          className="text-lg font-semibold text-gray-900 text-center mb-2"
+          className="text-lg font-semibold text-foreground text-center mb-2"
         >
           Delete {count} {transactionText}?
         </h2>
 
         {/* Warning Message */}
-        <p className="text-sm text-gray-600 text-center mb-6">
+        <p className="text-sm text-muted-foreground text-center mb-6">
           This action cannot be undone. The selected {transactionText} will be
           permanently removed from your account.
         </p>
@@ -117,8 +117,8 @@ export const DeleteConfirmDialog = memo(function DeleteConfirmDialog({
             type="button"
             onClick={onCancel}
             disabled={isDeleting}
-            className="flex-1 py-2.5 px-4 border border-gray-300 rounded-lg text-gray-700 font-medium
-              hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500
+            className="flex-1 py-2.5 px-4 border border-border rounded-lg text-foreground font-medium
+              hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring
               disabled:opacity-50 disabled:cursor-not-allowed
               transition-colors duration-150"
           >

@@ -157,9 +157,9 @@ export function ColorPicker({
               className={`
                 relative w-8 h-8 rounded-full
                 transition-transform duration-150
-                ${isSelected ? 'ring-2 ring-offset-2 ring-gray-900 scale-110' : 'hover:scale-110'}
+                ${isSelected ? 'ring-2 ring-offset-2 ring-ring scale-110' : 'hover:scale-110'}
                 ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
-                focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900
+                focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-ring
               `}
               style={{ backgroundColor: color }}
             >
@@ -168,7 +168,7 @@ export function ColorPicker({
                   <Check
                     className={`h-4 w-4 ${
                       ['#EAB308', '#F59E0B', '#84CC16'].includes(color)
-                        ? 'text-gray-900'
+                        ? 'text-foreground'
                         : 'text-white'
                     }`}
                   />
@@ -182,11 +182,11 @@ export function ColorPicker({
       {/* Custom Color Input */}
       {showCustomInput && (
         <div className="flex items-center gap-3">
-          <label className="text-sm font-medium text-gray-700">Custom:</label>
+          <label className="text-sm font-medium text-foreground">Custom:</label>
           <div className="flex items-center gap-2 flex-1">
             {/* Color preview */}
             <div
-              className="w-8 h-8 rounded-full border-2 border-gray-300 flex-shrink-0"
+              className="w-8 h-8 rounded-full border-2 border-border flex-shrink-0"
               style={{
                 backgroundColor: isValidHex(customColor) ? customColor : '#ffffff',
               }}
@@ -202,8 +202,8 @@ export function ColorPicker({
               className={`
                 flex-1 px-3 py-1.5 text-sm border rounded-md
                 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
-                ${customError ? 'border-red-300' : 'border-gray-300'}
-                ${disabled ? 'opacity-50 bg-gray-100' : ''}
+                ${customError ? 'border-red-300' : 'border-border'}
+                ${disabled ? 'opacity-50 bg-muted' : ''}
               `}
               aria-label="Custom hex color"
             />
@@ -218,10 +218,10 @@ export function ColorPicker({
 
       {/* Selected color display */}
       {value && (
-        <div className="flex items-center gap-2 text-sm text-gray-600">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <span>Selected:</span>
           <span
-            className="w-4 h-4 rounded-full border border-gray-300"
+            className="w-4 h-4 rounded-full border border-border"
             style={{ backgroundColor: value }}
           />
           <span className="font-medium">
