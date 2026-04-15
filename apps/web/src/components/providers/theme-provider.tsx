@@ -51,6 +51,32 @@ const DRACULA_VARS: Record<string, string> = {
 };
 
 /**
+ * Italian Style theme CSS variable overrides
+ * Inspired by the Italian tricolor — green accents, red warnings, elegant dark base
+ */
+const ITALIAN_VARS: Record<string, string> = {
+  '--background': '#1a1a2e',
+  '--foreground': '#f0f0f0',
+  '--card': '#16213e',
+  '--card-foreground': '#f0f0f0',
+  '--popover': '#16213e',
+  '--popover-foreground': '#f0f0f0',
+  '--primary': '#009246',
+  '--primary-foreground': '#ffffff',
+  '--secondary': '#1f3050',
+  '--secondary-foreground': '#f0f0f0',
+  '--muted': '#1f3050',
+  '--muted-foreground': '#8899aa',
+  '--accent': '#1f3050',
+  '--accent-foreground': '#f0f0f0',
+  '--destructive': '#CE2B37',
+  '--destructive-foreground': '#ffffff',
+  '--border': '#2a3a5c',
+  '--input': '#1f3050',
+  '--ring': '#009246',
+};
+
+/**
  * Get system color scheme preference
  */
 function getSystemTheme(): 'light' | 'dark' {
@@ -75,15 +101,18 @@ function applyTheme(resolved: ResolvedTheme): void {
   if (typeof window === 'undefined') return;
 
   const root = document.documentElement;
-  root.classList.remove('dark', 'dracula');
-  // Clear dracula custom properties
-  Object.keys(DRACULA_VARS).forEach(k => root.style.removeProperty(k));
+  root.classList.remove('dark', 'dracula', 'italian');
+  // Clear all custom theme properties
+  [...Object.keys(DRACULA_VARS), ...Object.keys(ITALIAN_VARS)].forEach(k => root.style.removeProperty(k));
 
   if (resolved === 'dark') {
     root.classList.add('dark');
   } else if (resolved === 'dracula') {
     root.classList.add('dark', 'dracula');
     Object.entries(DRACULA_VARS).forEach(([k, v]) => root.style.setProperty(k, v));
+  } else if (resolved === 'italian') {
+    root.classList.add('dark', 'italian');
+    Object.entries(ITALIAN_VARS).forEach(([k, v]) => root.style.setProperty(k, v));
   }
   // 'light' = no classes, no custom props
 }
@@ -94,12 +123,13 @@ function applyTheme(resolved: ResolvedTheme): void {
 function getInitialTheme(userPreference?: string | null): Theme {
   // Priority 1: User preference from backend
   if (userPreference === 'dracula') return 'dracula';
+  if (userPreference === 'italian') return 'italian';
   if (userPreference === 'auto' || userPreference === 'system') return 'system';
 
   // Priority 2: localStorage
   if (typeof window !== 'undefined') {
     const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored === 'system' || stored === 'dracula') return stored;
+    if (stored === 'system' || stored === 'dracula' || stored === 'italian') return stored;
   }
 
   // Priority 3: Dracula as default
@@ -135,7 +165,10 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
   useEffect(() => {
     if (user?.preferences?.theme) {
       const pref = user.preferences.theme as string;
-      const userTheme: Theme = pref === 'system' || pref === 'auto' ? 'system' : pref === 'dracula' ? 'dracula' : 'dracula';
+      const userTheme: Theme =
+        pref === 'system' || pref === 'auto' ? 'system' :
+        pref === 'italian' ? 'italian' :
+        'dracula';
       if (userTheme !== theme) {
         setThemeState(userTheme);
       }
@@ -178,7 +211,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
   const value: ThemeContextType = {
     theme,
     resolvedTheme,
-    isDark: resolvedTheme === 'dark' || resolvedTheme === 'dracula',
+    isDark: resolvedTheme === 'dark' || resolvedTheme === 'dracula' || resolvedTheme === 'italian',
     setTheme,
   };
 

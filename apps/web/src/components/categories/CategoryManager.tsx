@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -14,63 +14,74 @@ import {
   Search,
   TrendingDown,
   TrendingUp,
+  Loader2,
 } from 'lucide-react';
+import { categoriesClient, type Category, type CategoryType } from '@/services/categories.client';
 
 // ---------------------------------------------------------------------------
-// Types & demo data
+// Constants
 // ---------------------------------------------------------------------------
-
-interface Category {
-  id: string;
-  name: string;
-  type: 'expense' | 'income';
-  icon: string;
-  color: string;
-  isDefault: boolean;
-}
-
-const DEMO_CATEGORIES: Category[] = [
-  { id: '1', name: 'Spesa Alimentare', type: 'expense', icon: '🛒', color: '#F59E0B', isDefault: true },
-  { id: '2', name: 'Ristorazione', type: 'expense', icon: '🍽️', color: '#EF4444', isDefault: true },
-  { id: '3', name: 'Trasporti', type: 'expense', icon: '🚗', color: '#3B82F6', isDefault: true },
-  { id: '4', name: 'Shopping', type: 'expense', icon: '🛍️', color: '#8B5CF6', isDefault: true },
-  { id: '5', name: 'Bollette', type: 'expense', icon: '⚡', color: '#EF4444', isDefault: true },
-  { id: '6', name: 'Abbonamenti', type: 'expense', icon: '📺', color: '#EC4899', isDefault: true },
-  { id: '7', name: 'Salute', type: 'expense', icon: '💊', color: '#14B8A6', isDefault: true },
-  { id: '8', name: 'Intrattenimento', type: 'expense', icon: '🎬', color: '#A855F7', isDefault: true },
-  { id: '9', name: 'Stipendio', type: 'income', icon: '💼', color: '#22C55E', isDefault: true },
-  { id: '10', name: 'Investimenti', type: 'income', icon: '📈', color: '#3B82F6', isDefault: true },
-  { id: '11', name: 'Freelance', type: 'income', icon: '💻', color: '#8B5CF6', isDefault: true },
-];
 
 const EMOJI_PICKER = ['🛒','🍽️','🚗','🛍️','⚡','📺','💊','🎬','💼','📈','💻','🏠','✈️','🎓','🐾','👶','🏋️','💰','🎁','☕','🔧','📱','🧾','💲'];
-
 const COLORS = ['#F59E0B','#EF4444','#3B82F6','#8B5CF6','#EC4899','#14B8A6','#22C55E','#A855F7','#F97316','#0EA5E9','#6366F1','#78716C'];
 
+function slugify(name: string): string {
+  return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+}
+
 // ---------------------------------------------------------------------------
-// Component
+// CategoryManager — connected to real Supabase data
 // ---------------------------------------------------------------------------
 
 export function CategoryManager() {
-  const [categories, setCategories] = useState(DEMO_CATEGORIES);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [feedback, setFeedback] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
   // Form state
   const [formName, setFormName] = useState('');
-  const [formType, setFormType] = useState<'expense' | 'income'>('expense');
+  const [formType, setFormType] = useState<'EXPENSE' | 'INCOME'>('EXPENSE');
   const [formIcon, setFormIcon] = useState('🛒');
   const [formColor, setFormColor] = useState('#F59E0B');
 
-  const expenseCategories = categories.filter(c => c.type === 'expense' && c.name.toLowerCase().includes(search.toLowerCase()));
-  const incomeCategories = categories.filter(c => c.type === 'income' && c.name.toLowerCase().includes(search.toLowerCase()));
+  const showFeedback = (msg: string) => {
+    setFeedback(msg);
+    setTimeout(() => setFeedback(''), 2500);
+  };
+
+  // Fetch categories
+  const fetchCategories = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const data = await categoriesClient.getAll();
+      setCategories(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Errore nel caricamento delle categorie');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchCategories(); }, [fetchCategories]);
+
+  // Filtered lists
+  const expenseCategories = categories.filter(c =>
+    c.type === 'EXPENSE' && c.name.toLowerCase().includes(search.toLowerCase())
+  );
+  const incomeCategories = categories.filter(c =>
+    c.type === 'INCOME' && c.name.toLowerCase().includes(search.toLowerCase())
+  );
 
   const openCreate = () => {
     setEditingId(null);
     setFormName('');
-    setFormType('expense');
+    setFormType('EXPENSE');
     setFormIcon('🛒');
     setFormColor('#F59E0B');
     setShowModal(true);
@@ -79,38 +90,50 @@ export function CategoryManager() {
   const openEdit = (cat: Category) => {
     setEditingId(cat.id);
     setFormName(cat.name);
-    setFormType(cat.type);
-    setFormIcon(cat.icon);
-    setFormColor(cat.color);
+    setFormType(cat.type as 'EXPENSE' | 'INCOME');
+    setFormIcon(cat.icon || '🛒');
+    setFormColor(cat.color || '#F59E0B');
     setShowModal(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!formName.trim()) return;
-
-    if (editingId) {
-      setCategories(prev => prev.map(c => c.id === editingId ? { ...c, name: formName, type: formType, icon: formIcon, color: formColor } : c));
-      setFeedback('Categoria aggiornata!');
-    } else {
-      const newCat: Category = {
-        id: `new-${Date.now()}`,
-        name: formName.trim(),
-        type: formType,
-        icon: formIcon,
-        color: formColor,
-        isDefault: false,
-      };
-      setCategories(prev => [...prev, newCat]);
-      setFeedback('Categoria creata!');
+    setIsSaving(true);
+    try {
+      if (editingId) {
+        await categoriesClient.update(editingId, {
+          name: formName.trim(),
+          icon: formIcon,
+          color: formColor,
+        });
+        showFeedback('Categoria aggiornata!');
+      } else {
+        await categoriesClient.create({
+          name: formName.trim(),
+          slug: slugify(formName),
+          type: formType as CategoryType,
+          icon: formIcon,
+          color: formColor,
+        });
+        showFeedback('Categoria creata!');
+      }
+      setShowModal(false);
+      await fetchCategories();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Errore nel salvataggio');
+    } finally {
+      setIsSaving(false);
     }
-    setShowModal(false);
-    setTimeout(() => setFeedback(''), 2000);
   };
 
-  const handleDelete = (id: string) => {
-    setCategories(prev => prev.filter(c => c.id !== id));
-    setFeedback('Categoria eliminata');
-    setTimeout(() => setFeedback(''), 2000);
+  const handleDelete = async (id: string) => {
+    try {
+      await categoriesClient.delete(id);
+      showFeedback('Categoria eliminata');
+      await fetchCategories();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Errore nella eliminazione');
+    }
   };
 
   const renderCategoryList = (cats: Category[], title: string, icon: React.ReactNode) => (
@@ -123,21 +146,24 @@ export function CategoryManager() {
       <div className="space-y-2">
         {cats.map(cat => (
           <div key={cat.id} className="group flex items-center gap-3 p-3 rounded-xl hover:bg-muted/30 transition-colors">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center text-[18px]" style={{ backgroundColor: `${cat.color}20` }}>
-              {cat.icon}
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center text-[18px]" style={{ backgroundColor: `${cat.color || '#6b7280'}20` }}>
+              {cat.icon || '📊'}
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-[13px] font-medium text-foreground">{cat.name}</p>
               <div className="flex items-center gap-1.5 mt-0.5">
-                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: cat.color }} />
-                <span className="text-[11px] text-muted-foreground">{cat.isDefault ? 'Predefinita' : 'Personalizzata'}</span>
+                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: cat.color || '#6b7280' }} />
+                <span className="text-[11px] text-muted-foreground">
+                  {cat.isSystem ? 'Sistema' : cat.isDefault ? 'Predefinita' : 'Personalizzata'}
+                  {cat.expenseClass ? ` · ${cat.expenseClass === 'FIXED' ? 'Fissa' : 'Variabile'}` : ''}
+                </span>
               </div>
             </div>
             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
               <button onClick={() => openEdit(cat)} className="p-1.5 rounded-lg text-muted-foreground/40 hover:text-foreground hover:bg-muted/50 transition-colors">
                 <Pencil className="w-3.5 h-3.5" />
               </button>
-              {!cat.isDefault && (
+              {!cat.isSystem && !cat.isDefault && (
                 <button onClick={() => handleDelete(cat.id)} className="p-1.5 rounded-lg text-muted-foreground/40 hover:text-rose-600 hover:bg-rose-500/10 transition-colors">
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
@@ -151,6 +177,14 @@ export function CategoryManager() {
       </div>
     </Card>
   );
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -168,6 +202,14 @@ export function CategoryManager() {
           Nuova Categoria
         </Button>
       </div>
+
+      {/* Error */}
+      {error && (
+        <div className="p-3 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 text-[13px] flex items-center justify-between">
+          <span>{error}</span>
+          <button onClick={() => setError(null)} className="p-1"><X className="w-4 h-4" /></button>
+        </div>
+      )}
 
       {/* Feedback */}
       {feedback && (
@@ -195,44 +237,45 @@ export function CategoryManager() {
 
       {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setShowModal(false)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => !isSaving && setShowModal(false)}>
           <div className="bg-card rounded-2xl shadow-xl w-full max-w-md p-6 mx-4" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-semibold text-foreground">
                 {editingId ? 'Modifica Categoria' : 'Nuova Categoria'}
               </h3>
-              <button onClick={() => setShowModal(false)} className="p-1.5 rounded-lg hover:bg-muted">
+              <button onClick={() => !isSaving && setShowModal(false)} className="p-1.5 rounded-lg hover:bg-muted">
                 <X className="w-5 h-5 text-muted-foreground" />
               </button>
             </div>
 
             <div className="space-y-4">
-              {/* Name */}
               <div>
                 <label className="block text-[11px] uppercase tracking-wide text-muted-foreground/60 font-medium mb-1.5">Nome</label>
-                <Input value={formName} onChange={e => setFormName(e.target.value)} placeholder="Es: Spesa Alimentare" className="rounded-xl border-border/50 bg-background" />
+                <Input value={formName} onChange={e => setFormName(e.target.value)} placeholder="Es: Spesa Alimentare" className="rounded-xl border-border/50 bg-background" disabled={isSaving} />
               </div>
 
-              {/* Type */}
-              <div>
-                <label className="block text-[11px] uppercase tracking-wide text-muted-foreground/60 font-medium mb-1.5">Tipo</label>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setFormType('expense')}
-                    className={`flex-1 py-2 rounded-xl text-[13px] font-medium transition-all ${formType === 'expense' ? 'bg-rose-500/10 text-rose-600 border-2 border-rose-500/30' : 'bg-muted/50 text-muted-foreground border-2 border-transparent'}`}
-                  >
-                    Spesa
-                  </button>
-                  <button
-                    onClick={() => setFormType('income')}
-                    className={`flex-1 py-2 rounded-xl text-[13px] font-medium transition-all ${formType === 'income' ? 'bg-emerald-500/10 text-emerald-600 border-2 border-emerald-500/30' : 'bg-muted/50 text-muted-foreground border-2 border-transparent'}`}
-                  >
-                    Entrata
-                  </button>
+              {!editingId && (
+                <div>
+                  <label className="block text-[11px] uppercase tracking-wide text-muted-foreground/60 font-medium mb-1.5">Tipo</label>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setFormType('EXPENSE')}
+                      disabled={isSaving}
+                      className={`flex-1 py-2 rounded-xl text-[13px] font-medium transition-all ${formType === 'EXPENSE' ? 'bg-rose-500/10 text-rose-600 border-2 border-rose-500/30' : 'bg-muted/50 text-muted-foreground border-2 border-transparent'}`}
+                    >
+                      Spesa
+                    </button>
+                    <button
+                      onClick={() => setFormType('INCOME')}
+                      disabled={isSaving}
+                      className={`flex-1 py-2 rounded-xl text-[13px] font-medium transition-all ${formType === 'INCOME' ? 'bg-emerald-500/10 text-emerald-600 border-2 border-emerald-500/30' : 'bg-muted/50 text-muted-foreground border-2 border-transparent'}`}
+                    >
+                      Entrata
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )}
 
-              {/* Icon picker */}
               <div>
                 <label className="block text-[11px] uppercase tracking-wide text-muted-foreground/60 font-medium mb-1.5">Icona</label>
                 <div className="flex flex-wrap gap-1.5">
@@ -240,6 +283,7 @@ export function CategoryManager() {
                     <button
                       key={emoji}
                       onClick={() => setFormIcon(emoji)}
+                      disabled={isSaving}
                       className={`w-9 h-9 rounded-xl flex items-center justify-center text-[18px] transition-all ${formIcon === emoji ? 'bg-emerald-500/20 ring-2 ring-emerald-500' : 'bg-muted/30 hover:bg-muted/50'}`}
                     >
                       {emoji}
@@ -248,7 +292,6 @@ export function CategoryManager() {
                 </div>
               </div>
 
-              {/* Color picker */}
               <div>
                 <label className="block text-[11px] uppercase tracking-wide text-muted-foreground/60 font-medium mb-1.5">Colore</label>
                 <div className="flex flex-wrap gap-2">
@@ -256,6 +299,7 @@ export function CategoryManager() {
                     <button
                       key={color}
                       onClick={() => setFormColor(color)}
+                      disabled={isSaving}
                       className={`w-8 h-8 rounded-full transition-all ${formColor === color ? 'ring-2 ring-offset-2 ring-emerald-500' : 'hover:scale-110'}`}
                       style={{ backgroundColor: color }}
                     />
@@ -263,7 +307,6 @@ export function CategoryManager() {
                 </div>
               </div>
 
-              {/* Preview */}
               <div className="p-3 rounded-xl bg-muted/30 flex items-center gap-3">
                 <div className="w-9 h-9 rounded-xl flex items-center justify-center text-[18px]" style={{ backgroundColor: `${formColor}20` }}>
                   {formIcon}
@@ -272,20 +315,20 @@ export function CategoryManager() {
                   <p className="text-[13px] font-medium text-foreground">{formName || 'Anteprima'}</p>
                   <div className="flex items-center gap-1.5">
                     <div className="w-2 h-2 rounded-full" style={{ backgroundColor: formColor }} />
-                    <span className="text-[11px] text-muted-foreground">{formType === 'expense' ? 'Spesa' : 'Entrata'}</span>
+                    <span className="text-[11px] text-muted-foreground">{formType === 'EXPENSE' ? 'Spesa' : 'Entrata'}</span>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Actions */}
             <div className="flex gap-3 mt-6">
-              <Button variant="outline" className="flex-1 rounded-xl" onClick={() => setShowModal(false)}>Annulla</Button>
+              <Button variant="outline" className="flex-1 rounded-xl" onClick={() => setShowModal(false)} disabled={isSaving}>Annulla</Button>
               <Button
                 className="flex-1 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white"
                 onClick={handleSave}
-                disabled={!formName.trim()}
+                disabled={!formName.trim() || isSaving}
               >
+                {isSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
                 {editingId ? 'Salva' : 'Crea'}
               </Button>
             </div>

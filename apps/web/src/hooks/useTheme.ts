@@ -10,8 +10,8 @@
 import { useContext } from 'react';
 import { ThemeContext } from '@/components/providers/theme-provider';
 
-export type Theme = 'system' | 'dracula';
-export type ResolvedTheme = 'light' | 'dark' | 'dracula';
+export type Theme = 'system' | 'dracula' | 'italian';
+export type ResolvedTheme = 'light' | 'dark' | 'dracula' | 'italian';
 
 export interface ThemeContextType {
   theme: Theme;

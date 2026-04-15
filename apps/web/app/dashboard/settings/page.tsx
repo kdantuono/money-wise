@@ -71,7 +71,7 @@ type TabKey =
   | 'data';
 
 interface UserPreferences {
-  theme?: 'system' | 'dracula';
+  theme?: 'system' | 'dracula' | 'italian';
   language?: string;
   notifications?: {
     email?: boolean;
@@ -334,6 +334,7 @@ export default function SettingsPage() {
   // Theme descriptions
   const themes: { id: Theme; name: string; icon: typeof Sun; desc: string; preview: string }[] = [
     { id: 'dracula', name: 'Dracula', icon: Palette, desc: 'Tema Dracula con accenti viola', preview: 'bg-[#282a36] border-[#bd93f9]' },
+    { id: 'italian', name: 'Italian Style', icon: Sun, desc: 'Tricolore italiano — verde, bianco, rosso', preview: 'bg-[#1a1a2e] border-[#009246]' },
     { id: 'system', name: 'Sistema', icon: Monitor, desc: 'Si adatta al tema del tuo sistema', preview: 'bg-gradient-to-r from-white to-gray-900 border-gray-400' },
   ];
 
