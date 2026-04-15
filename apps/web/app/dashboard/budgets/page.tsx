@@ -191,7 +191,7 @@ export default function BudgetsPage() {
       )}
 
       {/* Summary Cards — Figma gradient style */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
           <Card className="p-5 rounded-2xl border-0 shadow-sm bg-gradient-to-br from-blue-500/10 to-indigo-500/10 hover:shadow-md hover:scale-[1.02] transition-all group">
             <div className="flex items-center justify-between mb-3">

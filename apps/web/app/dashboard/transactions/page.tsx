@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import {
   Receipt,
   Plus,
-  DollarSign,
+  Calendar,
   TrendingUp,
   Repeat,
   RefreshCw,
@@ -95,6 +95,13 @@ export default function ExpensesPage() {
     return map;
   }, [accounts]);
 
+  // Category expense class map for fixed/variable classification
+  const expenseClassMap = useMemo(() => {
+    const map = new Map<string, 'FIXED' | 'VARIABLE'>();
+    categories.forEach((cat) => { if (cat.expenseClass) map.set(cat.id, cat.expenseClass); });
+    return map;
+  }, [categories]);
+
   // Fetch all data
   const fetchData = useCallback(async (accountId?: string) => {
     try {
@@ -132,17 +139,24 @@ export default function ExpensesPage() {
     [transactions]
   );
 
-  const totalIncome = useMemo(
-    () => transactions.filter(t => t.type === 'CREDIT').reduce((sum, t) => sum + Math.abs(t.amount), 0),
-    [transactions]
-  );
-
   const recurringCount = useMemo(
     () => transactions.filter(t => t.isRecurring).length,
     [transactions]
   );
 
-  const balance = totalIncome - totalExpenses;
+  const totalFixed = useMemo(
+    () => transactions
+      .filter(t => t.type === 'DEBIT' && t.categoryId && expenseClassMap.get(t.categoryId) === 'FIXED')
+      .reduce((sum, t) => sum + Math.abs(t.amount), 0),
+    [transactions, expenseClassMap]
+  );
+
+  const totalVariable = useMemo(
+    () => transactions
+      .filter(t => t.type === 'DEBIT' && t.categoryId && expenseClassMap.get(t.categoryId) === 'VARIABLE')
+      .reduce((sum, t) => sum + Math.abs(t.amount), 0),
+    [transactions, expenseClassMap]
+  );
 
   const pendingReview = useMemo(
     () => transactions.filter(t => !t.categoryId).length,
@@ -252,64 +266,66 @@ export default function ExpensesPage() {
         </div>
       </div>
 
-      {/* Summary Cards — 1:1 Figma sizing + hover */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      {/* Summary Cards — 1:1 Figma: Bilancio + Fissi + Variabili + Ricorrenti */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+        {/* Card 1: Bilancio Mensile — no hover (non navigabile) */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-          <Card className="p-6 rounded-2xl border-0 shadow-sm cursor-pointer hover:shadow-lg hover:scale-[1.02] transition-all">
+          <Card className="p-6 rounded-2xl border-0 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Spese Totali</p>
-                <h3 className="text-2xl font-bold mt-1 text-foreground tabular-nums">€{totalExpenses.toLocaleString('it-IT', { minimumFractionDigits: 2 })}</h3>
+                <h3 className="text-lg lg:text-2xl font-bold mt-1 text-foreground tabular-nums">€{totalExpenses.toLocaleString('it-IT', { minimumFractionDigits: 2 })}</h3>
               </div>
               <div className="p-3 bg-red-100/60 dark:bg-red-900/30 rounded-full">
-                <Receipt className="w-6 h-6 text-red-600 dark:text-red-400" />
+                <Receipt className="w-5 h-5 lg:w-6 lg:h-6 text-red-600 dark:text-red-400" />
               </div>
             </div>
             <p className="text-sm text-muted-foreground mt-2">Questo mese</p>
           </Card>
         </motion.div>
 
+        {/* Card 2: Costi Fissi — navigabile */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
           <Card className="p-6 rounded-2xl border-0 shadow-sm cursor-pointer hover:shadow-lg hover:scale-[1.02] transition-all" onClick={() => router.push('/dashboard/transactions/fixed')}>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Entrate</p>
-                <h3 className="text-2xl font-bold mt-1 text-emerald-600 dark:text-emerald-400 tabular-nums">€{totalIncome.toLocaleString('it-IT', { minimumFractionDigits: 2 })}</h3>
+                <p className="text-sm text-muted-foreground">Costi Fissi</p>
+                <h3 className="text-lg lg:text-2xl font-bold mt-1 text-foreground tabular-nums">€{totalFixed.toLocaleString('it-IT', { minimumFractionDigits: 2 })}</h3>
               </div>
-              <div className="p-3 bg-emerald-100/60 dark:bg-emerald-900/30 rounded-full">
-                <DollarSign className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+              <div className="p-3 bg-blue-100/60 dark:bg-blue-900/30 rounded-full">
+                <Calendar className="w-5 h-5 lg:w-6 lg:h-6 text-blue-600 dark:text-blue-400" />
               </div>
             </div>
-            <p className="text-sm text-muted-foreground mt-2">Questo mese</p>
+            <p className="text-sm text-muted-foreground mt-2">Mensili</p>
           </Card>
         </motion.div>
 
+        {/* Card 3: Costi Variabili — navigabile */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
           <Card className="p-6 rounded-2xl border-0 shadow-sm cursor-pointer hover:shadow-lg hover:scale-[1.02] transition-all" onClick={() => router.push('/dashboard/transactions/variable')}>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Bilancio Mese</p>
-                <h3 className={`text-2xl font-bold mt-1 tabular-nums ${balance >= 0 ? 'text-foreground' : 'text-rose-600 dark:text-rose-400'}`}>
-                  {balance >= 0 ? '+' : '-'}€{Math.abs(balance).toLocaleString('it-IT', { minimumFractionDigits: 2 })}
-                </h3>
+                <p className="text-sm text-muted-foreground">Costi Variabili</p>
+                <h3 className="text-lg lg:text-2xl font-bold mt-1 text-foreground tabular-nums">€{totalVariable.toLocaleString('it-IT', { minimumFractionDigits: 2 })}</h3>
               </div>
-              <div className={`p-3 rounded-full ${balance >= 0 ? 'bg-blue-100/60 dark:bg-blue-900/30' : 'bg-rose-100/60 dark:bg-rose-900/30'}`}>
-                <TrendingUp className={`w-6 h-6 ${balance >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-rose-600 dark:text-rose-400'}`} />
+              <div className="p-3 bg-yellow-100/60 dark:bg-yellow-900/30 rounded-full">
+                <TrendingUp className="w-5 h-5 lg:w-6 lg:h-6 text-yellow-600 dark:text-yellow-400" />
               </div>
             </div>
-            <p className="text-sm text-muted-foreground mt-2">Entrate - Uscite</p>
+            <p className="text-sm text-muted-foreground mt-2">Mensili</p>
           </Card>
         </motion.div>
 
+        {/* Card 4: Ricorrenti — navigabile */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
           <Card className="p-6 rounded-2xl border-0 shadow-sm cursor-pointer hover:shadow-lg hover:scale-[1.02] transition-all" onClick={() => router.push('/dashboard/transactions/recurring')}>
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Ricorrenti</p>
-                <h3 className="text-2xl font-bold mt-1 text-foreground tabular-nums">{recurringCount}</h3>
+                <h3 className="text-lg lg:text-2xl font-bold mt-1 text-foreground tabular-nums">{recurringCount}</h3>
               </div>
               <div className="p-3 bg-purple-100/60 dark:bg-purple-900/30 rounded-full">
-                <Repeat className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+                <Repeat className="w-5 h-5 lg:w-6 lg:h-6 text-purple-600 dark:text-purple-400" />
               </div>
             </div>
             <p className="text-sm text-muted-foreground mt-2">Attive</p>
@@ -321,7 +337,7 @@ export default function ExpensesPage() {
       {chartData.length > 0 && (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
           <Card className="p-6 rounded-2xl border-0 shadow-sm">
-            <h3 className="text-[16px] font-medium text-foreground mb-4">Spese per Categoria</h3>
+            <h3 className="text-lg font-semibold text-foreground mb-4">Spese per Categoria</h3>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={chartData} barCategoryGap="20%">
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border, #e5e7eb)" opacity={0.5} />

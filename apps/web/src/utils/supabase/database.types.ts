@@ -482,6 +482,7 @@ export type Database = {
           created_at: string
           depth: number
           description: string | null
+          expense_class: string | null
           family_id: string
           icon: string | null
           id: string
@@ -502,6 +503,7 @@ export type Database = {
           created_at?: string
           depth?: number
           description?: string | null
+          expense_class?: string | null
           family_id: string
           icon?: string | null
           id?: string
@@ -522,6 +524,7 @@ export type Database = {
           created_at?: string
           depth?: number
           description?: string | null
+          expense_class?: string | null
           family_id?: string
           icon?: string | null
           id?: string

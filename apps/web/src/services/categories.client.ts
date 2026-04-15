@@ -82,6 +82,7 @@ export interface Category {
   metadata: CategoryMetadata | null;
   createdAt: string;
   updatedAt: string;
+  expenseClass: 'FIXED' | 'VARIABLE' | null;
   children?: Category[];
   parent?: Category | null;
 }
@@ -97,6 +98,7 @@ export interface CategoryOption {
   color: string | null;
   parentId: string | null;
   isSystem: boolean;
+  expenseClass: 'FIXED' | 'VARIABLE' | null;
 }
 
 /**
@@ -258,6 +260,7 @@ function rowToCategory(row: CategoryRow): Category {
     status: row.status as CategoryStatus,
     color: row.color,
     icon: row.icon,
+    expenseClass: row.expense_class as 'FIXED' | 'VARIABLE' | null,
     isDefault: row.is_default,
     isSystem: row.is_system,
     sortOrder: row.sort_order,
@@ -393,6 +396,7 @@ export const categoriesClient = {
         icon: cat.icon,
         color: cat.color,
         parentId: cat.parentId,
+        expenseClass: cat.expenseClass,
         isSystem: cat.isSystem,
       }));
   },
