@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '@/store/auth.store';
+import { TopBar } from './top-bar';
 
 // ---------------------------------------------------------------------------
 // Navigation config — mapped to Next.js App Router paths
@@ -279,13 +280,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           Main Content — with page transition
           ================================================================ */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* TopBar placeholder — will be replaced in DS-9 */}
-        <div className="hidden md:flex h-14 bg-card/80 backdrop-blur-xl border-b border-border/50 items-center px-5">
-          <div className="flex-1" />
-          <p className="text-[13px] text-muted-foreground">
-            {userName}
-          </p>
-        </div>
+        <TopBar />
 
         <main className="flex-1 overflow-y-auto pt-13 md:pt-0">
           {children}
