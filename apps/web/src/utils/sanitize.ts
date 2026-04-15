@@ -273,6 +273,8 @@ export function sanitizeUser(data: unknown): User {
     lastName,
     role: sanitizeRole(userData.role),
     status: sanitizeStatus(userData.status),
+    currency: (userData.currency && typeof userData.currency === 'string')
+      ? sanitizeString(userData.currency) : 'EUR',
     createdAt,
     updatedAt,
     fullName: `${firstName} ${lastName}`,
@@ -281,10 +283,6 @@ export function sanitizeUser(data: unknown): User {
   };
 
   // Optional fields
-  if (userData.currency && typeof userData.currency === 'string') {
-    sanitizedUser.currency = sanitizeString(userData.currency);
-  }
-
   if (userData.avatar && typeof userData.avatar === 'string') {
     sanitizedUser.avatar = sanitizeString(userData.avatar);
   }
@@ -303,13 +301,6 @@ export function sanitizeUser(data: unknown): User {
     const lastLoginAt = sanitizeIsoDate(userData.lastLoginAt);
     if (lastLoginAt) {
       sanitizedUser.lastLoginAt = lastLoginAt;
-    }
-  }
-
-  if (userData.emailVerifiedAt) {
-    const emailVerifiedAt = sanitizeIsoDate(userData.emailVerifiedAt);
-    if (emailVerifiedAt) {
-      sanitizedUser.emailVerifiedAt = emailVerifiedAt;
     }
   }
 
