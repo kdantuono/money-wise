@@ -412,7 +412,7 @@ export function CategorySelector({
         onClick={handleToggle}
         className={`
           relative w-full flex items-center gap-2 px-3 py-2 rounded-lg border
-          bg-white text-left cursor-pointer
+          bg-card text-left cursor-pointer
           ${disabled ? 'opacity-50 cursor-not-allowed bg-gray-100' : 'hover:border-gray-400'}
           ${error ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'}
           focus:outline-none focus:ring-2 focus:ring-offset-0
@@ -482,7 +482,7 @@ export function CategorySelector({
       {/* Dropdown */}
       {isOpen && (
         <div
-          className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg overflow-hidden"
+          className="absolute z-50 w-full mt-1 bg-card border border-border rounded-lg shadow-lg overflow-hidden"
           role="presentation"
         >
           {/* Search input */}

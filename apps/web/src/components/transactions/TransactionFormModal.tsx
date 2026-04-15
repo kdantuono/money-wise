@@ -99,7 +99,7 @@ export function TransactionFormModal({
       />
 
       {/* Modal Content */}
-      <div className="relative w-full max-w-lg mx-4 bg-white rounded-xl shadow-xl max-h-[90vh] overflow-y-auto">
+      <div className="relative w-full max-w-lg mx-4 bg-card rounded-xl shadow-xl max-h-[90vh] overflow-y-auto">
         {/* Close button */}
         <button
           type="button"

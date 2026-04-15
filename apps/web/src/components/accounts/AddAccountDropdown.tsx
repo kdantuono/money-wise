@@ -272,7 +272,7 @@ export function AddAccountDropdown({
           onKeyDown={handleKeyDown}
           className="
             absolute right-0 z-50 mt-2 w-72
-            origin-top-right rounded-lg bg-white
+            origin-top-right rounded-lg bg-card
             shadow-lg ring-1 ring-black ring-opacity-5
             focus:outline-none
           "

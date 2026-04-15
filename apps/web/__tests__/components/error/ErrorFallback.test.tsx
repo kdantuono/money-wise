@@ -148,7 +148,7 @@ describe('ErrorFallback Component', () => {
       );
 
       const reportButton = screen.getByRole('button', { name: /report issue/i });
-      expect(reportButton).toHaveClass('bg-white');
+      expect(reportButton).toHaveClass('bg-card');
 
       // Check for MessageSquare icon
       const icon = reportButton.querySelector('svg');
@@ -161,7 +161,7 @@ describe('ErrorFallback Component', () => {
       const homepageButton = screen.getByRole('button', {
         name: /go to homepage/i,
       });
-      expect(homepageButton).toHaveClass('bg-white');
+      expect(homepageButton).toHaveClass('bg-card');
     });
   });
 

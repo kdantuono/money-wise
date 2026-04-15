@@ -33,7 +33,7 @@ export function DashboardFilters({
           className={cn(
             'px-3 py-1.5 text-sm font-medium rounded-md transition-colors',
             period === p.value
-              ? 'bg-white text-gray-900 shadow-sm'
+              ? 'bg-card text-foreground shadow-sm'
               : 'text-gray-600 hover:text-gray-900'
           )}
         >

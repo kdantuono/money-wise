@@ -209,7 +209,7 @@ export function AccountList({
           <div
             key={account.id}
             role="listitem"
-            className={`rounded-xl border bg-white overflow-hidden transition-all duration-200
+            className={`rounded-xl border bg-card overflow-hidden transition-all duration-200
               ${isSelected ? 'border-blue-500 shadow-lg ring-2 ring-blue-100' : `${accentBorder} hover:shadow-md`}
               focus-within:ring-2 focus-within:ring-blue-500`}
             onFocus={() => setSelectedId(account.id)}
@@ -320,7 +320,7 @@ export function AccountList({
                   onClick={() => onView(account.id)}
                   aria-label={`View details for ${account.name}`}
                   className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium
-                    bg-white border border-gray-200 text-gray-700
+                    bg-card border border-border text-foreground
                     hover:bg-gray-50 hover:border-gray-300 active:bg-gray-100
                     focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500
                     transition-colors duration-150"
@@ -336,7 +336,7 @@ export function AccountList({
                 aria-label={`Edit ${account.name}`}
                 data-testid="edit-button"
                 className="p-2 rounded-lg text-gray-500
-                  hover:bg-white hover:text-gray-700 hover:shadow-sm
+                  hover:bg-card hover:text-foreground hover:shadow-sm
                   focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500
                   transition-colors duration-150"
               >

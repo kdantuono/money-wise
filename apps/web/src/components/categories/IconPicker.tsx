@@ -224,7 +224,7 @@ const IconButton = memo(function IconButton({
         transition-all duration-150
         ${isSelected
           ? 'bg-blue-100 ring-2 ring-blue-500 scale-110'
-          : 'bg-white hover:bg-gray-100 hover:scale-105'
+          : 'bg-card hover:bg-muted hover:scale-105'
         }
         ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
         focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1

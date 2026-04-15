@@ -89,7 +89,7 @@ export const DeleteConfirmDialog = memo(function DeleteConfirmDialog({
       />
 
       {/* Dialog Content */}
-      <div className="relative w-full max-w-md mx-4 bg-white rounded-xl shadow-xl p-6">
+      <div className="relative w-full max-w-md mx-4 bg-card rounded-xl shadow-xl p-6">
         {/* Warning Icon */}
         <div className="flex justify-center mb-4">
           <div className="p-3 bg-red-100 rounded-full">

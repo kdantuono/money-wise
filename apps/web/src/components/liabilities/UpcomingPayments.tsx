@@ -207,7 +207,7 @@ export const UpcomingPayments = memo(function UpcomingPayments({
 
   if (upcomingPayments.length === 0) {
     return (
-      <div className="bg-white rounded-xl border border-gray-200 p-6">
+      <div className="bg-card rounded-xl border border-border p-6">
         <div className="flex items-center gap-2 mb-4">
           <Clock className="h-5 w-5 text-gray-400" />
           <h3 className="font-semibold text-gray-900">Upcoming Payments</h3>
@@ -225,7 +225,7 @@ export const UpcomingPayments = memo(function UpcomingPayments({
 
   if (compact) {
     return (
-      <div className="bg-white rounded-xl border border-gray-200 p-4">
+      <div className="bg-card rounded-xl border border-border p-4">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <Clock className="h-4 w-4 text-gray-400" />
@@ -279,7 +279,7 @@ export const UpcomingPayments = memo(function UpcomingPayments({
   }
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-6">
+    <div className="bg-card rounded-xl border border-border p-6">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2">
@@ -326,7 +326,7 @@ export const UpcomingPayments = memo(function UpcomingPayments({
                 ? 'bg-red-50 border-red-200'
                 : payment.isDueSoon
                 ? 'bg-yellow-50 border-yellow-200'
-                : 'bg-white border-gray-200'
+                : 'bg-card border-border'
               }
               ${onPaymentClick ? 'cursor-pointer hover:shadow-md' : ''}`}
           >

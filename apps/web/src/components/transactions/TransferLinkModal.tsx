@@ -172,7 +172,7 @@ export const TransferLinkModal = memo(function TransferLinkModal({
       />
 
       {/* Modal */}
-      <div className="relative bg-white rounded-xl shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-auto">
+      <div className="relative bg-card rounded-xl shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-auto">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
           <div className="flex items-center gap-3">
@@ -252,9 +252,9 @@ export const TransferLinkModal = memo(function TransferLinkModal({
             type="button"
             onClick={onClose}
             disabled={isLinking}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white
-              border border-gray-300 rounded-lg hover:bg-gray-50
-              focus:outline-none focus:ring-2 focus:ring-gray-500
+            className="px-4 py-2 text-sm font-medium text-foreground bg-card
+              border border-border rounded-lg hover:bg-muted
+              focus:outline-none focus:ring-2 focus:ring-ring
               disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Cancel

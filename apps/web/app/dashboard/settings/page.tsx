@@ -243,7 +243,7 @@ export default function SettingsPage() {
   if (!user) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
   }
@@ -252,12 +252,12 @@ export default function SettingsPage() {
     <div className="max-w-3xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <div className="p-2 bg-gray-100 rounded-lg">
-          <SettingsIcon className="h-6 w-6 text-gray-600" />
+        <div className="p-2 bg-muted rounded-lg">
+          <SettingsIcon className="h-6 w-6 text-muted-foreground" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
-          <p className="text-sm text-gray-500">
+          <h1 className="text-2xl font-bold text-foreground">Settings</h1>
+          <p className="text-sm text-muted-foreground">
             Manage your account settings and preferences
           </p>
         </div>
@@ -280,9 +280,9 @@ export default function SettingsPage() {
 
       <form onSubmit={handleSave} className="space-y-6">
         {/* Profile Information */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <User className="h-5 w-5 text-gray-500" />
+        <div className="bg-card rounded-xl border border-border p-6">
+          <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+            <User className="h-5 w-5 text-muted-foreground" />
             Profile Information
           </h2>
 
@@ -290,7 +290,7 @@ export default function SettingsPage() {
             <div>
               <label
                 htmlFor="firstName"
-                className="block text-sm font-medium text-gray-700 mb-1"
+                className="block text-sm font-medium text-foreground mb-1"
               >
                 First Name
               </label>
@@ -300,7 +300,7 @@ export default function SettingsPage() {
                 name="firstName"
                 value={formData.firstName}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-primary focus:border-primary"
                 required
                 minLength={2}
               />
@@ -309,7 +309,7 @@ export default function SettingsPage() {
             <div>
               <label
                 htmlFor="lastName"
-                className="block text-sm font-medium text-gray-700 mb-1"
+                className="block text-sm font-medium text-foreground mb-1"
               >
                 Last Name
               </label>
@@ -319,7 +319,7 @@ export default function SettingsPage() {
                 name="lastName"
                 value={formData.lastName}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-primary focus:border-primary"
                 required
                 minLength={2}
               />
@@ -328,7 +328,7 @@ export default function SettingsPage() {
             <div className="md:col-span-2">
               <label
                 htmlFor="email"
-                className="block text-sm font-medium text-gray-700 mb-1"
+                className="block text-sm font-medium text-foreground mb-1"
               >
                 <Mail className="inline h-4 w-4 mr-1" />
                 Email Address
@@ -339,7 +339,7 @@ export default function SettingsPage() {
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-primary focus:border-primary"
                 required
               />
             </div>
@@ -347,9 +347,9 @@ export default function SettingsPage() {
         </div>
 
         {/* Regional Settings */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <Globe className="h-5 w-5 text-gray-500" />
+        <div className="bg-card rounded-xl border border-border p-6">
+          <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+            <Globe className="h-5 w-5 text-muted-foreground" />
             Regional Settings
           </h2>
 
@@ -357,7 +357,7 @@ export default function SettingsPage() {
             <div>
               <label
                 htmlFor="timezone"
-                className="block text-sm font-medium text-gray-700 mb-1"
+                className="block text-sm font-medium text-foreground mb-1"
               >
                 Timezone
               </label>
@@ -366,7 +366,7 @@ export default function SettingsPage() {
                 name="timezone"
                 value={formData.timezone}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-primary focus:border-primary"
               >
                 {TIMEZONES.map((tz) => (
                   <option key={tz.value} value={tz.value}>
@@ -379,7 +379,7 @@ export default function SettingsPage() {
             <div>
               <label
                 htmlFor="currency"
-                className="block text-sm font-medium text-gray-700 mb-1"
+                className="block text-sm font-medium text-foreground mb-1"
               >
                 <DollarSign className="inline h-4 w-4 mr-1" />
                 Preferred Currency
@@ -389,7 +389,7 @@ export default function SettingsPage() {
                 name="currency"
                 value={formData.currency}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-primary focus:border-primary"
               >
                 {CURRENCIES.map((cur) => (
                   <option key={cur.value} value={cur.value}>
@@ -402,9 +402,9 @@ export default function SettingsPage() {
         </div>
 
         {/* Appearance */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <Monitor className="h-5 w-5 text-gray-500" />
+        <div className="bg-card rounded-xl border border-border p-6">
+          <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+            <Monitor className="h-5 w-5 text-muted-foreground" />
             Appearance
           </h2>
 
@@ -420,8 +420,8 @@ export default function SettingsPage() {
                   flex-1 flex items-center justify-center gap-2 p-4 rounded-lg border-2 cursor-pointer transition-all
                   ${
                     formData.preferences.theme === value
-                      ? 'border-blue-500 bg-blue-50 text-blue-700'
-                      : 'border-gray-200 hover:border-gray-300'
+                      ? 'border-primary bg-primary/10 text-primary'
+                      : 'border-border hover:border-muted-foreground'
                   }
                 `}
               >
@@ -438,15 +438,15 @@ export default function SettingsPage() {
               </label>
             ))}
           </div>
-          <p className="text-xs text-gray-500 mt-2">
+          <p className="text-xs text-muted-foreground mt-2">
             Theme changes apply immediately and are saved to your profile.
           </p>
         </div>
 
         {/* Notifications */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <Bell className="h-5 w-5 text-gray-500" />
+        <div className="bg-card rounded-xl border border-border p-6">
+          <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+            <Bell className="h-5 w-5 text-muted-foreground" />
             Notifications
           </h2>
 
@@ -475,11 +475,11 @@ export default function SettingsPage() {
             ].map(({ key, label, description }) => (
               <label
                 key={key}
-                className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 cursor-pointer"
+                className="flex items-center justify-between p-3 rounded-lg hover:bg-muted cursor-pointer"
               >
                 <div>
-                  <p className="font-medium text-gray-900">{label}</p>
-                  <p className="text-sm text-gray-500">{description}</p>
+                  <p className="font-medium text-foreground">{label}</p>
+                  <p className="text-sm text-muted-foreground">{description}</p>
                 </div>
                 <input
                   type="checkbox"
@@ -490,29 +490,29 @@ export default function SettingsPage() {
                     ] ?? true
                   }
                   onChange={handleChange}
-                  className="h-5 w-5 text-blue-600 rounded focus:ring-blue-500"
+                  className="h-5 w-5 text-primary rounded focus:ring-primary"
                 />
               </label>
             ))}
           </div>
-          <p className="text-xs text-gray-500 mt-2">
+          <p className="text-xs text-muted-foreground mt-2">
             Note: Notification preferences are saved but the feature is coming soon.
           </p>
         </div>
 
         {/* Account Information (Read Only) */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
+        <div className="bg-card rounded-xl border border-border p-6">
+          <h2 className="text-lg font-semibold text-foreground mb-4">
             Account Information
           </h2>
 
           <dl className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
             <div>
-              <dt className="text-gray-500">Account ID</dt>
-              <dd className="font-mono text-gray-900 mt-1">{user.id}</dd>
+              <dt className="text-muted-foreground">Account ID</dt>
+              <dd className="font-mono text-foreground mt-1">{user.id}</dd>
             </div>
             <div>
-              <dt className="text-gray-500">Account Status</dt>
+              <dt className="text-muted-foreground">Account Status</dt>
               <dd className="mt-1">
                 <span
                   className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
@@ -526,8 +526,8 @@ export default function SettingsPage() {
               </dd>
             </div>
             <div>
-              <dt className="text-gray-500">Member Since</dt>
-              <dd className="text-gray-900 mt-1">
+              <dt className="text-muted-foreground">Member Since</dt>
+              <dd className="text-foreground mt-1">
                 {new Date(user.createdAt).toLocaleDateString('en-US', {
                   year: 'numeric',
                   month: 'long',
@@ -536,7 +536,7 @@ export default function SettingsPage() {
               </dd>
             </div>
             <div>
-              <dt className="text-gray-500">Email Verified</dt>
+              <dt className="text-muted-foreground">Email Verified</dt>
               <dd className="mt-1">
                 {user.isEmailVerified ? (
                   <span className="inline-flex items-center text-green-600">

@@ -29,7 +29,7 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
     <html lang="en">
       <body>
         <div className="flex min-h-screen flex-col items-center justify-center p-4">
-          <div className="w-full max-w-md space-y-4 rounded-lg border border-red-200 bg-white p-6 shadow-lg">
+          <div className="w-full max-w-md space-y-4 rounded-lg border border-red-200 bg-card p-6 shadow-lg">
             <div className="space-y-2">
               <h2 className="text-2xl font-bold text-red-600">
                 Something went wrong!
@@ -54,7 +54,7 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
               </button>
               <button
                 onClick={() => (window.location.href = '/')}
-                className="w-full rounded-md border border-gray-300 bg-white px-4 py-2 text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                className="w-full rounded-md border border-border bg-card px-4 py-2 text-foreground hover:bg-muted focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
               >
                 Go to homepage
               </button>

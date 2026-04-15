@@ -694,7 +694,7 @@ export function EnhancedTransactionList({
                   focus:outline-none focus:ring-2 focus:ring-blue-500
                   ${sort.field === 'date'
                     ? 'bg-blue-50 border-blue-300 text-blue-700'
-                    : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                    : 'bg-card border-border text-foreground hover:bg-muted'
                   }`}
               >
                 Date {sort.field === 'date' && (sort.direction === 'desc' ? '↓' : '↑')}
@@ -706,7 +706,7 @@ export function EnhancedTransactionList({
                   focus:outline-none focus:ring-2 focus:ring-blue-500
                   ${sort.field === 'amount'
                     ? 'bg-blue-50 border-blue-300 text-blue-700'
-                    : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                    : 'bg-card border-border text-foreground hover:bg-muted'
                   }`}
               >
                 Amount {sort.field === 'amount' && (sort.direction === 'desc' ? '↓' : '↑')}
@@ -718,7 +718,7 @@ export function EnhancedTransactionList({
                   focus:outline-none focus:ring-2 focus:ring-blue-500
                   ${sort.field === 'description'
                     ? 'bg-blue-50 border-blue-300 text-blue-700'
-                    : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                    : 'bg-card border-border text-foreground hover:bg-muted'
                   }`}
               >
                 A-Z {sort.field === 'description' && (sort.direction === 'desc' ? '↓' : '↑')}
@@ -730,7 +730,7 @@ export function EnhancedTransactionList({
                   focus:outline-none focus:ring-2 focus:ring-blue-500
                   ${sort.field === 'category'
                     ? 'bg-blue-50 border-blue-300 text-blue-700'
-                    : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                    : 'bg-card border-border text-foreground hover:bg-muted'
                   }`}
               >
                 Category {sort.field === 'category' && (sort.direction === 'desc' ? '↓' : '↑')}

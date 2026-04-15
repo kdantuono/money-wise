@@ -191,7 +191,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             </div>
 
             {/* Bottom navigation items (Settings) */}
-            <div className="pt-4 border-t border-gray-100 mt-4">
+            <div className="pt-4 border-t border-border mt-4">
               {bottomNavigation.map((item) => {
                 const isActive = pathname === item.href;
                 return (
@@ -260,7 +260,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 </div>
                 <input
                   type="text"
-                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg leading-5 bg-card placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  className="block w-full pl-10 pr-3 py-2 border border-border rounded-lg leading-5 bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:placeholder-muted-foreground focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm"
                   placeholder="Search transactions, accounts..."
                   data-testid="search-input"
                 />

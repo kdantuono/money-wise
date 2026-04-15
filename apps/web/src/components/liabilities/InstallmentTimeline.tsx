@@ -178,7 +178,7 @@ export const InstallmentTimeline = memo(function InstallmentTimeline({
                     ? 'bg-red-50 border-red-200'
                     : dueSoon
                     ? 'bg-yellow-50 border-yellow-200'
-                    : 'bg-white border-gray-200'
+                    : 'bg-card border-border'
                 }
                 ${onInstallmentClick ? 'cursor-pointer hover:shadow-md' : ''}`}
             >

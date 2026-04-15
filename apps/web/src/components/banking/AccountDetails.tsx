@@ -142,7 +142,7 @@ export function AccountDetails({
 
   return (
     <div
-      className={`rounded-lg border border-gray-200 bg-white shadow ${className}`}
+      className={`rounded-lg border border-border bg-card shadow ${className}`}
     >
       {/* Header Section */}
       <div className="bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 px-6 py-8 border-b border-gray-200">

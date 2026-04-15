@@ -312,7 +312,7 @@ export function CommandPalette() {
         role="dialog"
         aria-modal="true"
         aria-label="Command palette"
-        className="fixed inset-x-4 top-[15%] z-50 mx-auto max-w-xl overflow-hidden rounded-xl bg-white shadow-2xl"
+        className="fixed inset-x-4 top-[15%] z-50 mx-auto max-w-xl overflow-hidden rounded-xl bg-card shadow-2xl"
       >
         {/* Search Input */}
         <div className="flex items-center gap-3 border-b border-gray-200 px-4 py-3">

@@ -37,7 +37,7 @@ export function LinkBankAccountExample() {
 
   return (
     <div className="max-w-md mx-auto py-8">
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-card rounded-lg shadow p-6">
         <h1 className="text-2xl font-bold text-gray-900 mb-2">
           Connect Your Bank
         </h1>

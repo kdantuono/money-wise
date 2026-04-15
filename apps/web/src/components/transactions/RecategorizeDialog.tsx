@@ -138,7 +138,7 @@ export function RecategorizeDialog({
         aria-modal="true"
         aria-labelledby="recategorize-title"
         className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50
-          w-full max-w-md bg-white rounded-xl shadow-xl p-6"
+          w-full max-w-md bg-card rounded-xl shadow-xl p-6"
       >
         {/* Header */}
         <div className="flex items-center justify-between mb-4">

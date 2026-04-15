@@ -103,7 +103,7 @@ export const TransactionRow = memo(function TransactionRow({
 
   return (
     <article
-      className={`rounded-lg border bg-white p-4 transition-all duration-150
+      className={`rounded-lg border bg-card p-4 transition-all duration-150
         ${isSelected ? 'bg-blue-50 border-blue-200' : 'border-gray-200 hover:border-gray-300'}
         ${isUpdating || isDeleting ? 'opacity-75' : ''}
         hover:shadow focus-within:ring-2 focus-within:ring-blue-500`}

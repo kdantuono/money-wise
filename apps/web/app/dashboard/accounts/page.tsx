@@ -608,7 +608,7 @@ export default function AccountsPage() {
               <Wallet className="h-6 w-6 text-blue-600" aria-hidden="true" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Accounts</h1>
+              <h1 className="text-2xl font-bold text-foreground">Accounts</h1>
               <p className="text-sm text-gray-500">
                 Manage your bank accounts and financial connections
               </p>
@@ -624,7 +624,7 @@ export default function AccountsPage() {
               aria-busy={isRefreshing}
               className="inline-flex items-center justify-center px-4 py-2 rounded-lg font-medium
                 transition-colors duration-200 border border-gray-300
-                text-gray-700 bg-white hover:bg-gray-50 active:bg-gray-100
+                text-foreground bg-card hover:bg-muted active:bg-muted/80
                 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500
                 disabled:opacity-50 disabled:cursor-not-allowed"
             >
@@ -666,7 +666,7 @@ export default function AccountsPage() {
         {/* Account Statistics */}
         {!isLoading && allAccounts.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="bg-white rounded-xl border border-gray-200 p-4">
+            <div className="bg-card rounded-xl border border-border p-4">
               <p className="text-sm text-gray-600 font-medium">Total Accounts</p>
               <p className="text-3xl font-bold text-gray-900 mt-2">
                 {activeAccounts.length}
@@ -678,7 +678,7 @@ export default function AccountsPage() {
               )}
             </div>
 
-            <div className="bg-white rounded-xl border border-gray-200 p-4">
+            <div className="bg-card rounded-xl border border-border p-4">
               <p className="text-sm text-gray-600 font-medium">Total Balance</p>
               <p className="text-3xl font-bold text-gray-900 mt-2">
                 {new Intl.NumberFormat('en-US', {
@@ -691,14 +691,14 @@ export default function AccountsPage() {
               </p>
             </div>
 
-            <div className="bg-white rounded-xl border border-gray-200 p-4">
+            <div className="bg-card rounded-xl border border-border p-4">
               <p className="text-sm text-gray-600 font-medium">Manual Accounts</p>
               <p className="text-3xl font-bold text-gray-900 mt-2">
                 {activeAccounts.filter((acc) => acc.isManualAccount).length}
               </p>
             </div>
 
-            <div className="bg-white rounded-xl border border-gray-200 p-4">
+            <div className="bg-card rounded-xl border border-border p-4">
               <p className="text-sm text-gray-600 font-medium">Linked Accounts</p>
               <p className="text-3xl font-bold text-gray-900 mt-2">
                 {activeAccounts.filter((acc) => !acc.isManualAccount).length}
@@ -709,9 +709,9 @@ export default function AccountsPage() {
 
         {/* Account List */}
         {(isLoading || activeAccounts.length > 0) && (
-          <div className="bg-white rounded-xl border border-gray-200">
+          <div className="bg-card rounded-xl border border-border">
             <div className="p-4 border-b border-gray-200">
-              <h2 className="text-lg font-semibold text-gray-900">
+              <h2 className="text-lg font-semibold text-foreground">
                 All Accounts
               </h2>
               <p className="text-sm text-gray-500 mt-1">
@@ -767,7 +767,7 @@ export default function AccountsPage() {
                     <div
                       key={account.id}
                       data-account-id={account.id}
-                      className="flex items-center justify-between p-4 bg-white rounded-lg border border-gray-200"
+                      className="flex items-center justify-between p-4 bg-card rounded-lg border border-border"
                     >
                       <div>
                         <p className="font-medium text-gray-900">{account.name}</p>
@@ -821,7 +821,7 @@ export default function AccountsPage() {
 
         {/* Empty State */}
         {!isLoading && allAccounts.length === 0 && (
-          <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
+          <div className="bg-card rounded-xl border border-border p-12 text-center">
             <Wallet className="h-12 w-12 text-gray-300 mx-auto mb-4" aria-hidden="true" />
             <h2 className="text-lg font-medium text-gray-900 mb-2">
               No accounts yet
@@ -906,8 +906,8 @@ export default function AccountsPage() {
               />
 
               {/* Modal Content */}
-              <div className="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg">
-                <div className="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
+              <div className="relative transform overflow-hidden rounded-lg bg-card text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg">
+                <div className="bg-card px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
                   <div className="sm:flex sm:items-start">
                     <div className="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-amber-100 sm:mx-0 sm:h-10 sm:w-10">
                       <AlertCircle className="h-6 w-6 text-amber-600" aria-hidden="true" />
@@ -951,7 +951,7 @@ export default function AccountsPage() {
                   </button>
                   <button
                     type="button"
-                    className="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto"
+                    className="mt-3 inline-flex w-full justify-center rounded-md bg-card px-3 py-2 text-sm font-semibold text-foreground shadow-sm ring-1 ring-inset ring-border hover:bg-muted sm:mt-0 sm:w-auto"
                     onClick={() => setRelinkPrompt(null)}
                   >
                     Cancel

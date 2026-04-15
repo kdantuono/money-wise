@@ -319,7 +319,7 @@ export function CategorySpendingSummary({
   }, [fetchSpending]);
 
   return (
-    <div className={`bg-white rounded-xl border border-gray-200 p-6 ${className}`}>
+    <div className={`bg-card rounded-xl border border-border p-6 ${className}`}>
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-lg font-semibold text-gray-900">Spending by Category</h2>

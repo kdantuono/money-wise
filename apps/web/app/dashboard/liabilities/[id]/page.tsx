@@ -234,7 +234,7 @@ export default function LiabilityDetailsPage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
         <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
-        <h2 className="text-lg font-semibold text-gray-900 mb-2">
+        <h2 className="text-lg font-semibold text-foreground mb-2">
           {isNotFound ? 'Liability Not Found' : 'Error Loading Liability'}
         </h2>
         <p className="text-gray-600 mb-4">
@@ -286,7 +286,7 @@ export default function LiabilityDetailsPage() {
       </nav>
 
       {/* Liability Header */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6">
+      <div className="bg-card rounded-xl border border-border p-6">
         <div className="flex items-start justify-between">
           {/* Liability Info */}
           <div className="flex items-start gap-4">
@@ -304,7 +304,7 @@ export default function LiabilityDetailsPage() {
               </div>
 
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">{liability.name}</h1>
+                <h1 className="text-2xl font-bold text-foreground">{liability.name}</h1>
                 <div className="flex items-center gap-2 mt-1 text-sm text-gray-500">
                   <span className={`px-2 py-0.5 rounded ${colors.bg} ${colors.text} text-xs font-medium`}>
                     {getTypeLabel(liability.type)}
@@ -398,14 +398,14 @@ export default function LiabilityDetailsPage() {
       {/* Details Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {liability.interestRate !== undefined && liability.interestRate > 0 && (
-          <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <div className="bg-card rounded-xl border border-border p-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-amber-100 rounded-lg">
                 <Percent className="h-5 w-5 text-amber-600" />
               </div>
               <div>
                 <p className="text-sm text-gray-500">APR</p>
-                <p className="text-lg font-semibold text-gray-900">
+                <p className="text-lg font-semibold text-foreground">
                   {liability.interestRate.toFixed(2)}%
                 </p>
               </div>
@@ -414,14 +414,14 @@ export default function LiabilityDetailsPage() {
         )}
 
         {liability.minimumPayment !== undefined && liability.minimumPayment > 0 && (
-          <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <div className="bg-card rounded-xl border border-border p-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-blue-100 rounded-lg">
                 <DollarSign className="h-5 w-5 text-blue-600" />
               </div>
               <div>
                 <p className="text-sm text-gray-500">Minimum Payment</p>
-                <p className="text-lg font-semibold text-gray-900">
+                <p className="text-lg font-semibold text-foreground">
                   {formatCurrency(liability.minimumPayment, liability.currency)}
                 </p>
               </div>
@@ -430,14 +430,14 @@ export default function LiabilityDetailsPage() {
         )}
 
         {liability.nextPaymentDate && (
-          <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <div className="bg-card rounded-xl border border-border p-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-purple-100 rounded-lg">
                 <Calendar className="h-5 w-5 text-purple-600" />
               </div>
               <div>
                 <p className="text-sm text-gray-500">Next Payment</p>
-                <p className="text-lg font-semibold text-gray-900">
+                <p className="text-lg font-semibold text-foreground">
                   {formatDate(liability.nextPaymentDate)}
                 </p>
               </div>
@@ -446,14 +446,14 @@ export default function LiabilityDetailsPage() {
         )}
 
         {liability.originalAmount && (
-          <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <div className="bg-card rounded-xl border border-border p-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-green-100 rounded-lg">
                 <CheckCircle2 className="h-5 w-5 text-green-600" />
               </div>
               <div>
                 <p className="text-sm text-gray-500">Original Amount</p>
-                <p className="text-lg font-semibold text-gray-900">
+                <p className="text-lg font-semibold text-foreground">
                   {formatCurrency(liability.originalAmount, liability.currency)}
                 </p>
               </div>
@@ -464,8 +464,8 @@ export default function LiabilityDetailsPage() {
 
       {/* Installment Plans */}
       {liability.installmentPlans && liability.installmentPlans.length > 0 && (
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Payment Plans</h2>
+        <div className="bg-card rounded-xl border border-border p-6">
+          <h2 className="text-lg font-semibold text-foreground mb-4">Payment Plans</h2>
           <div className="space-y-6">
             {liability.installmentPlans.map((plan) => (
               <div key={plan.id} className="border-t border-gray-100 pt-4 first:border-0 first:pt-0">
@@ -493,8 +493,8 @@ export default function LiabilityDetailsPage() {
       )}
 
       {/* Additional Details */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Details</h2>
+      <div className="bg-card rounded-xl border border-border p-6">
+        <h2 className="text-lg font-semibold text-foreground mb-4">Details</h2>
         <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {liability.billingCycleDay && (
             <div>
@@ -542,7 +542,7 @@ export default function LiabilityDetailsPage() {
             onClick={() => setShowDeleteConfirm(false)}
           />
           <div className="flex min-h-full items-center justify-center p-4">
-            <div className="relative w-full max-w-md bg-white rounded-xl shadow-xl p-6">
+            <div className="relative w-full max-w-md bg-card rounded-xl shadow-xl p-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-2">Delete Liability</h2>
               <p className="text-gray-600 mb-6">
                 Are you sure you want to delete &quot;{liability.name}&quot;? This action cannot be

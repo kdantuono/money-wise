@@ -258,7 +258,7 @@ export function TransactionList({
   return (
     <div className={`space-y-4 ${className}`}>
       {/* Filter Controls */}
-      <div className="rounded-lg border border-gray-200 bg-white p-4">
+      <div className="rounded-lg border border-border bg-card p-4">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-sm font-semibold text-gray-700">
             Filters & Search
@@ -440,7 +440,7 @@ export function TransactionList({
                   focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500
                   ${sort.field === 'date'
                     ? 'bg-blue-50 border-blue-300 text-blue-700'
-                    : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                    : 'bg-card border-border text-foreground hover:bg-muted'
                   }`}
               >
                 Date {sort.field === 'date' && (sort.direction === 'desc' ? '↓' : '↑')}
@@ -452,7 +452,7 @@ export function TransactionList({
                   focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500
                   ${sort.field === 'amount'
                     ? 'bg-blue-50 border-blue-300 text-blue-700'
-                    : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                    : 'bg-card border-border text-foreground hover:bg-muted'
                   }`}
               >
                 Amount {sort.field === 'amount' && (sort.direction === 'desc' ? '↓' : '↑')}
@@ -464,7 +464,7 @@ export function TransactionList({
                   focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500
                   ${sort.field === 'description'
                     ? 'bg-blue-50 border-blue-300 text-blue-700'
-                    : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                    : 'bg-card border-border text-foreground hover:bg-muted'
                   }`}
               >
                 A-Z {sort.field === 'description' && (sort.direction === 'desc' ? '↓' : '↑')}
@@ -532,7 +532,7 @@ export function TransactionList({
           {displayedTransactions.map((tx) => (
             <div
               key={tx.id}
-              className="rounded-lg border border-gray-200 hover:border-gray-300 bg-white p-4
+              className="rounded-lg border border-border hover:border-muted-foreground bg-card p-4
                 transition-all duration-150 hover:shadow focus-within:ring-2 focus-within:ring-blue-500"
             >
               <div className="flex items-center justify-between gap-4">

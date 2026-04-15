@@ -34,7 +34,7 @@ function PulseBox({
  */
 export function AccountSkeleton() {
   return (
-    <div className="rounded-lg border border-gray-200 bg-white shadow overflow-hidden">
+    <div className="rounded-lg border border-border bg-card shadow overflow-hidden">
       {/* Header */}
       <div className="bg-gradient-to-r from-gray-100 to-gray-50 p-4 border-b border-gray-200">
         <div className="flex items-start justify-between mb-2">
@@ -75,7 +75,7 @@ export function AccountSkeleton() {
  */
 export function AccountDetailsSkeleton() {
   return (
-    <div className="rounded-lg border border-gray-200 bg-white shadow">
+    <div className="rounded-lg border border-border bg-card shadow">
       {/* Header Section */}
       <div className="bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 px-6 py-8 border-b border-gray-200">
         <div className="flex items-start justify-between mb-4">
@@ -134,7 +134,7 @@ export function AccountDetailsSkeleton() {
  */
 export function TransactionSkeleton() {
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-4">
+    <div className="rounded-lg border border-border bg-card p-4">
       <div className="flex items-center justify-between gap-4">
         {/* Transaction Info */}
         <div className="flex-1 min-w-0 space-y-2">

@@ -204,7 +204,7 @@ export default function TransactionsPage() {
               <CreditCard className="h-6 w-6 text-green-600" aria-hidden="true" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Transactions</h1>
+              <h1 className="text-2xl font-bold text-foreground">Transactions</h1>
               <p className="text-sm text-gray-500">
                 View and manage your transaction history
               </p>
@@ -219,9 +219,9 @@ export default function TransactionsPage() {
                 value={selectedAccountId}
                 onChange={(e) => handleAccountFilterChange(e.target.value)}
                 aria-label="Filter by account"
-                className="px-3 py-2 border border-gray-300 rounded-lg text-sm
-                  focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500
-                  bg-white"
+                className="px-3 py-2 border border-border rounded-lg text-sm text-foreground
+                  focus:outline-none focus-visible:ring-2 focus-visible:ring-primary
+                  bg-card"
               >
                 <option value="all">All Accounts</option>
                 {accounts.map((account) => (
@@ -241,7 +241,7 @@ export default function TransactionsPage() {
                 aria-busy={isRefreshing}
                 className="inline-flex items-center justify-center px-4 py-2 rounded-lg font-medium
                   transition-colors duration-200 border border-gray-300
-                  text-gray-700 bg-white hover:bg-gray-50 active:bg-gray-100
+                  text-foreground bg-card hover:bg-muted active:bg-muted/80
                   focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500
                   disabled:opacity-50 disabled:cursor-not-allowed"
               >
@@ -285,14 +285,14 @@ export default function TransactionsPage() {
         {/* Transaction Statistics */}
         {transactions.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-white rounded-xl border border-gray-200 p-4">
+            <div className="bg-card rounded-xl border border-border p-4">
               <p className="text-sm text-gray-600 font-medium">Total Transactions</p>
               <p className="text-3xl font-bold text-gray-900 mt-2">
                 {transactions.length}
               </p>
             </div>
 
-            <div className="bg-white rounded-xl border border-gray-200 p-4">
+            <div className="bg-card rounded-xl border border-border p-4">
               <p className="text-sm text-gray-600 font-medium">Total Income</p>
               <p className="text-3xl font-bold text-green-600 mt-2">
                 {new Intl.NumberFormat('en-US', {
@@ -303,7 +303,7 @@ export default function TransactionsPage() {
               </p>
             </div>
 
-            <div className="bg-white rounded-xl border border-gray-200 p-4">
+            <div className="bg-card rounded-xl border border-border p-4">
               <p className="text-sm text-gray-600 font-medium">Total Expenses</p>
               <p className="text-3xl font-bold text-gray-900 mt-2">
                 {new Intl.NumberFormat('en-US', {
@@ -317,7 +317,7 @@ export default function TransactionsPage() {
         )}
 
         {/* Transaction List */}
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
+        <div className="bg-card rounded-xl border border-border p-4">
           <EnhancedTransactionList
             transactions={transactions}
             isLoading={isLoadingTransactions || isLoading}
@@ -329,7 +329,7 @@ export default function TransactionsPage() {
 
         {/* Prompt to connect accounts (shown below transactions if no accounts linked) */}
         {!isLoading && !hasAccounts && transactions.length === 0 && (
-          <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
+          <div className="bg-card rounded-xl border border-border p-8 text-center">
             <Wallet className="h-10 w-10 text-gray-300 mx-auto mb-3" aria-hidden="true" />
             <h2 className="text-md font-medium text-gray-900 mb-2">
               Connect Your Bank

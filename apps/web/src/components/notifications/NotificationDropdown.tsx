@@ -64,7 +64,7 @@ export function NotificationDropdown({
 
   return (
     <div
-      className="w-80 sm:w-96 bg-white rounded-lg shadow-lg ring-1 ring-black ring-opacity-5 overflow-hidden"
+      className="w-80 sm:w-96 bg-card rounded-lg shadow-lg ring-1 ring-black ring-opacity-5 overflow-hidden"
       data-testid="notifications-dropdown"
     >
       {/* Header */}

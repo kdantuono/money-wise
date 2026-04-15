@@ -222,7 +222,7 @@ export const ScheduledTransactionForm = memo(function ScheduledTransactionForm({
 
       {/* Modal */}
       <div className="flex min-h-full items-center justify-center p-4">
-        <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-xl">
+        <div className="relative w-full max-w-2xl bg-card rounded-2xl shadow-xl">
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b border-gray-200">
             <h2 className="text-xl font-semibold text-gray-900">
@@ -507,7 +507,7 @@ export const ScheduledTransactionForm = memo(function ScheduledTransactionForm({
               type="button"
               onClick={onClose}
               disabled={isLoading}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+              className="px-4 py-2 text-sm font-medium text-foreground bg-card border border-border rounded-lg hover:bg-muted"
             >
               Cancel
             </button>

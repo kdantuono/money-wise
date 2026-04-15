@@ -143,7 +143,7 @@ export const RecurrenceSelector = memo(function RecurrenceSelector({
                   className={`px-3 py-1.5 text-sm rounded-lg border transition-colors
                     ${frequency === freq.value
                       ? 'border-blue-500 bg-blue-50 text-blue-700'
-                      : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+                      : 'border-border bg-card text-foreground hover:bg-muted'
                     }
                     ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >

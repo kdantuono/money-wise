@@ -11,14 +11,14 @@ export default function InvestmentsPage() {
           <TrendingUp className="h-6 w-6 text-purple-600" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Investments</h1>
+          <h1 className="text-2xl font-bold text-foreground">Investments</h1>
           <p className="text-sm text-gray-500">
             Track and manage your investment portfolio
           </p>
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
+      <div className="bg-card rounded-xl border border-border p-12 text-center">
         <TrendingUp className="h-12 w-12 text-gray-300 mx-auto mb-4" />
         <h2 className="text-lg font-medium text-gray-900 mb-2">
           No investments tracked

@@ -69,7 +69,7 @@ export const UpcomingScheduled = memo(function UpcomingScheduled({
 
   if (loading) {
     return (
-      <div className="bg-white rounded-xl border border-gray-200 p-6">
+      <div className="bg-card rounded-xl border border-border p-6">
         <div className="flex items-center justify-between mb-4">
           <div className="h-6 w-40 bg-gray-200 rounded animate-pulse" />
           <div className="h-5 w-20 bg-gray-200 rounded animate-pulse" />
@@ -84,7 +84,7 @@ export const UpcomingScheduled = memo(function UpcomingScheduled({
   }
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-6">
+    <div className="bg-card rounded-xl border border-border p-6">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">

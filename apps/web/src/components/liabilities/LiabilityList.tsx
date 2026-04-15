@@ -163,19 +163,19 @@ export function LiabilityList({
     <div className="space-y-6">
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
+        <div className="bg-card rounded-xl border border-border p-4">
           <p className="text-sm text-gray-500">Total Owed</p>
           <p className="text-2xl font-bold text-gray-900">
             {formatCurrency(totals.totalOwed)}
           </p>
         </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
+        <div className="bg-card rounded-xl border border-border p-4">
           <p className="text-sm text-gray-500">Total Credit Limit</p>
           <p className="text-2xl font-bold text-gray-900">
             {formatCurrency(totals.totalCreditLimit)}
           </p>
         </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
+        <div className="bg-card rounded-xl border border-border p-4">
           <p className="text-sm text-gray-500">Active Liabilities</p>
           <p className="text-2xl font-bold text-gray-900">{totals.count}</p>
         </div>

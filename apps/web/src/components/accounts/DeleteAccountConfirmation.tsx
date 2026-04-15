@@ -128,7 +128,7 @@ export function DeleteAccountConfirmation({
       />
 
       {/* Dialog Content */}
-      <div className="relative bg-white rounded-xl shadow-xl max-w-md w-full">
+      <div className="relative bg-card rounded-xl shadow-xl max-w-md w-full">
         {/* Header */}
         <div className="flex items-start gap-4 p-6 border-b border-gray-200">
           <div className="flex-shrink-0 p-2 bg-red-100 rounded-full">
@@ -222,7 +222,7 @@ export function DeleteAccountConfirmation({
                 {eligibility.blockers.map((transfer) => (
                   <div
                     key={transfer.transactionId}
-                    className="flex items-center justify-between p-2 bg-white rounded border border-amber-100"
+                    className="flex items-center justify-between p-2 bg-card rounded border border-amber-100"
                   >
                     <div className="flex items-center gap-2 text-sm">
                       <ArrowRight className="h-4 w-4 text-amber-500" />

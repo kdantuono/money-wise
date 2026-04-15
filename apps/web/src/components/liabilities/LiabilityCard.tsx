@@ -162,7 +162,7 @@ export const LiabilityCard = memo(function LiabilityCard({
         tabIndex={onClick ? 0 : undefined}
         onClick={handleClick}
         onKeyDown={onClick ? handleKeyDown : undefined}
-        className={`flex items-center gap-3 p-3 rounded-lg border border-gray-200 bg-white
+        className={`flex items-center gap-3 p-3 rounded-lg border border-border bg-card
           ${onClick ? 'cursor-pointer hover:border-gray-300 hover:shadow-sm' : ''}`}
       >
         <div className={`p-2 rounded-lg ${colors.bg}`}>
@@ -187,7 +187,7 @@ export const LiabilityCard = memo(function LiabilityCard({
       tabIndex={onClick ? 0 : undefined}
       onClick={handleClick}
       onKeyDown={onClick ? handleKeyDown : undefined}
-      className={`rounded-xl border border-gray-200 bg-white p-5 transition-all
+      className={`rounded-xl border border-border bg-card p-5 transition-all
         ${onClick ? 'cursor-pointer hover:border-gray-300 hover:shadow-md' : ''}
         focus:outline-none focus:ring-2 focus:ring-blue-500`}
     >

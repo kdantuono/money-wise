@@ -129,7 +129,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
       return (
         <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-          <div className="max-w-md w-full bg-white rounded-lg shadow-lg border border-gray-200 p-6">
+          <div className="max-w-md w-full bg-card rounded-lg shadow-lg border border-border p-6">
             {/* Error Icon */}
             <div className="flex items-center justify-center w-12 h-12 rounded-full bg-red-100 mx-auto">
               <AlertCircle className="w-6 h-6 text-red-600" aria-hidden="true" />

@@ -270,7 +270,7 @@ export function CategoryForm({
           role="dialog"
           aria-modal="true"
           aria-labelledby="category-form-title"
-          className="relative w-full max-w-lg bg-white rounded-xl shadow-xl"
+          className="relative w-full max-w-lg bg-card rounded-xl shadow-xl"
         >
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b border-gray-200">

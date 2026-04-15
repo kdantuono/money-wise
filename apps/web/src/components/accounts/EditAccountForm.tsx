@@ -612,7 +612,7 @@ export function EditAccountForm({
 
   if (!isModal) {
     return (
-      <div className="bg-white rounded-xl border border-gray-200 p-6">
+      <div className="bg-card rounded-xl border border-border p-6">
         <h2 id={titleId} className="text-xl font-semibold text-gray-900 mb-6">
           {modalTitle}
         </h2>
@@ -637,7 +637,7 @@ export function EditAccountForm({
       />
 
       {/* Modal Content */}
-      <div className="relative bg-white rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+      <div className="relative bg-card rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <h2 id={titleId} className="text-xl font-semibold text-gray-900">
