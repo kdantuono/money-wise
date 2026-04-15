@@ -264,6 +264,7 @@ export default function LoginPage() {
                       Registrati
                     </button>
                   </div>
+
                 </motion.div>
               )}
 
