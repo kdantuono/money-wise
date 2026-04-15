@@ -1,3 +1,5 @@
+> NOTE: This document references the pre-migration NestJS backend which was replaced by Supabase Edge Functions in Phase 0 (April 2026).
+
 # E2E Testing Summary - Prisma Migration (P.3.5.4)
 
 **Date**: 2025-10-13

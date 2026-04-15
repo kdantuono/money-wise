@@ -1,3 +1,5 @@
+> NOTE: This document references the pre-migration NestJS backend which was replaced by Supabase Edge Functions in Phase 0 (April 2026).
+
 # ADR-002: Tech Stack Consolidation for Milestone 2
 
 **Status**: Proposed

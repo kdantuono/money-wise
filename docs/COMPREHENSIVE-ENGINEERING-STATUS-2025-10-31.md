@@ -1,3 +1,5 @@
+> NOTE: This document references the pre-migration NestJS backend which was replaced by Supabase Edge Functions in Phase 0 (April 2026).
+
 # MoneyWise - Comprehensive Engineering Status Report
 **Generated**: 2025-10-31
 **Analysis Type**: Multi-Agent Deep Scan + Cross-Reference Verification

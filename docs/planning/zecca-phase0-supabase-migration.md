@@ -1,9 +1,28 @@
 # Phase 0 — Supabase Full Migration Plan
 
 > **Created**: April 14, 2026
-> **Status**: Draft — requires approval before execution
+> **Completed**: April 15, 2026
+> **Status**: COMPLETE — all 5 weeks executed successfully
 > **Prerequisite for**: All subsequent Zecca roadmap phases
 > **Estimated effort**: 4-5 weeks (solo dev)
+
+## Completion Summary
+
+Phase 0 migration is **fully complete**. All weeks (1-5) have been executed:
+
+- **Week 1**: Supabase project setup, SQL schema (20 tables, 27 enums), 63 RLS policies, auth triggers
+- **Week 2**: Seed data ported to SQL, DB analytics RPCs, web frontend auth migrated to `@supabase/ssr`
+- **Week 3**: All web data services migrated from axios/API calls to Supabase Client SDK direct queries
+- **Week 4**: 8 Edge Functions deployed (banking, categorization, transfer detection, BNPL), NestJS backend deleted
+- **Week 5**: Auth pattern finalized (`getClaims()` over `getUser()`), documentation and cleanup
+
+The NestJS backend (`apps/backend/`) has been fully removed. All server-side logic now lives in Supabase Edge Functions (`supabase/functions/`). The web app connects directly to Supabase via `@supabase/ssr`.
+
+---
+
+## Original Migration Plan (Reference)
+
+The sections below document the original migration plan as executed. All items have been completed.
 
 ---
 

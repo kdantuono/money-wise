@@ -1,3 +1,5 @@
+> NOTE: This document references the pre-migration NestJS backend which was replaced by Supabase Edge Functions in Phase 0 (April 2026).
+
 # TASK-1.5-P.2.11: TypeORM Account Code Removal - Scope Analysis
 
 **Date**: October 11, 2025

@@ -1,3 +1,5 @@
+> NOTE: This document references the pre-migration NestJS backend which was replaced by Supabase Edge Functions in Phase 0 (April 2026).
+
 # CI/CD Troubleshooting Guide: Local vs CI Environment Mismatches
 
 > **Document Purpose**: This guide documents critical issues where tests pass locally but fail in CI/CD due to environment differences. It covers database schema drift, Playwright browser version mismatches, and provides comprehensive solution patterns.

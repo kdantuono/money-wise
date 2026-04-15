@@ -1,3 +1,5 @@
+> NOTE: This document references the pre-migration NestJS backend which was replaced by Supabase Edge Functions in Phase 0 (April 2026).
+
 # Prisma Schema vs PostgreSQL Database Audit Report
 
 **Date:** 2025-12-08

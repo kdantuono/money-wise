@@ -1,3 +1,5 @@
+> NOTE: This document references the pre-migration NestJS backend which was replaced by Supabase Edge Functions in Phase 0 (April 2026).
+
 # MoneyWise DevOps Roadmap - Q4 2025 / Q1 2026
 
 **Document Type:** Implementation Roadmap
