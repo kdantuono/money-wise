@@ -51,14 +51,9 @@ const sentryWebpackPluginOptions = {
   },
 };
 
-// Sentry is opt-in: only wrap when all three env vars are set
-const useSentry = !!(process.env.SENTRY_ORG && process.env.SENTRY_PROJECT && process.env.SENTRY_AUTH_TOKEN);
-
-const applyWrappers = (/** @type {import('next').NextConfig} */ config) => {
-  const withIntl = withNextIntl(config);
-  return useSentry ? withSentryConfig(withIntl, sentryWebpackPluginOptions) : withIntl;
-};
-
 // Export Next.js config wrapped with bundle analyzer, next-intl, and Sentry
 // Order (innermost first): bundle analyzer → next-intl → Sentry
-export default applyWrappers(withBundleAnalyzer(nextConfig));
+export default withSentryConfig(
+  withNextIntl(withBundleAnalyzer(nextConfig)),
+  sentryWebpackPluginOptions
+);
