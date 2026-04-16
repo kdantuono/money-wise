@@ -403,21 +403,31 @@ jobs:
 
       - name: 🐳 Trivy Filesystem Scan
         if: steps.should-run.outputs.run == 'true'
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@0.35.0
         with:
           scan-type: 'fs'
           scan-ref: '.'
-          format: 'sarif'
-          output: 'trivy-results.sarif'
+          format: 'table'
+          output: 'trivy-results.txt'
           severity: 'CRITICAL,HIGH'
+          exit-code: '0'
 
-      - name: 📤 Upload Trivy Results to GitHub Security
-        if: steps.should-run.outputs.run == 'true' && always()
-        continue-on-error: true
-        uses: github/codeql-action/upload-sarif@v3
+      - name: 📤 Upload Trivy Report as Artifact
+        if: steps.should-run.outputs.run == 'true' && always() && hashFiles('trivy-results.txt') != ''
+        uses: actions/upload-artifact@v4
         with:
-          sarif_file: 'trivy-results.sarif'
-          category: 'trivy-fs'
+          name: trivy-scan-${{ github.run_id }}
+          path: trivy-results.txt
+          retention-days: 30
+
+      - name: 📋 Display Trivy Summary
+        if: steps.should-run.outputs.run == 'true' && always() && hashFiles('trivy-results.txt') != ''
+        run: |
+          echo "### 🐳 Trivy Filesystem Scan Results" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          head -50 trivy-results.txt >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "Full report available as artifact: trivy-scan-${{ github.run_id }}" >> $GITHUB_STEP_SUMMARY
 
       - name: 🐳 Trivy Container Image Scan (if Dockerfiles exist)
         if: steps.should-run.outputs.run == 'true' && needs.foundation.outputs.has_docker == 'true'
