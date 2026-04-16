@@ -402,9 +402,10 @@ export const transactionsClient = {
       include_in_budget: input.includeInBudget ?? true,
     }
 
-    const { data, error } = await supabase
+    // Type-safe insert with explicit casting to avoid Next.js build type inference issues
+    const { data, error } = await (supabase
       .from('transactions')
-      .insert(insert)
+      .insert as any)(insert)
       .select('*, categories(*)')
       .single()
 
@@ -457,9 +458,10 @@ export const transactionsClient = {
     if (input.isHidden !== undefined) update.is_hidden = input.isHidden
     if (input.includeInBudget !== undefined) update.include_in_budget = input.includeInBudget
 
-    const { data, error } = await supabase
+    // Type-safe update with explicit casting to avoid Next.js build type inference issues
+    const { data, error } = await (supabase
       .from('transactions')
-      .update(update)
+      .update as any)(update)
       .eq('id', id)
       .select('*, categories(*)')
       .single()

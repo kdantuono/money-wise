@@ -260,9 +260,10 @@ export const accountsClient = {
     if (input.syncEnabled !== undefined) update.sync_enabled = input.syncEnabled
     if (input.settings !== undefined) update.settings = input.settings
 
-    const { data, error } = await supabase
+    // Type-safe update with explicit casting to avoid Next.js build type inference issues
+    const { data, error } = await (supabase
       .from('accounts')
-      .update(update)
+      .update as any)(update)
       .eq('id', accountId)
       .select()
       .single()

@@ -501,9 +501,10 @@ export const liabilitiesClient = {
       family_id: familyId,
     };
 
-    const { data: created, error } = await supabase
+    // Type-safe insert with explicit casting to avoid Next.js build type inference issues
+    const { data: created, error } = await (supabase
       .from('liabilities')
-      .insert(insert)
+      .insert as any)(insert)
       .select('*, installment_plans(*, installments(*))')
       .single();
 
@@ -535,9 +536,10 @@ export const liabilitiesClient = {
     if (data.status !== undefined) update.status = data.status as Database['public']['Enums']['liability_status'];
     if (data.metadata !== undefined) update.metadata = (data.metadata ?? null) as Json;
 
-    const { data: updated, error } = await supabase
+    // Type-safe update with explicit casting to avoid Next.js build type inference issues
+    const { data: updated, error } = await (supabase
       .from('liabilities')
-      .update(update)
+      .update as any)(update)
       .eq('id', liabilityId)
       .select('*, installment_plans(*, installments(*))')
       .single();
