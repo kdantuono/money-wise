@@ -35,12 +35,12 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
 
       if (!ok) {
         // Set isChecking false before redirect to avoid stale loading state
-        if (!cancelled) setIsChecking(false);
+        setIsChecking(false);
         router.push('/auth/login');
         return;
       }
 
-      if (!cancelled) setIsChecking(false);
+      setIsChecking(false);
     };
 
     run();

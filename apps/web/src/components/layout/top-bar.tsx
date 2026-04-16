@@ -132,6 +132,7 @@ export function TopBar() {
       <div className="flex items-center gap-0.5">
         {/* Diamonds — static "0" */}
         <button
+          type="button"
           onClick={() => router.push('/dashboard/rewards')}
           className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-muted-foreground hover:bg-muted/50 transition-colors"
         >
@@ -141,6 +142,7 @@ export function TopBar() {
 
         {/* Ask AI */}
         <button
+          type="button"
           onClick={() => router.push('/dashboard/ask-ai')}
           className="p-2 rounded-xl text-muted-foreground/60 hover:text-foreground hover:bg-muted/50 transition-colors"
           aria-label="Chiedi all'AI"
@@ -151,6 +153,7 @@ export function TopBar() {
         {/* Notifications */}
         <div ref={notifRef} className="relative">
           <button
+            type="button"
             onClick={() => {
               setShowNotifications(!showNotifications);
               setShowUserMenu(false);
@@ -181,6 +184,7 @@ export function TopBar() {
                     Notifiche <span className="text-muted-foreground ml-1 text-[11px]">({unreadCount})</span>
                   </span>
                   <button
+                    type="button"
                     onClick={() => {
                       setShowNotifications(false);
                       setShowAllNotifications(false);
@@ -219,6 +223,7 @@ export function TopBar() {
                 </div>
                 <div className="p-2.5 border-t border-border/50 text-center">
                   <button
+                    type="button"
                     onClick={() => setShowAllNotifications(!showAllNotifications)}
                     className="text-[11px] text-emerald-500 hover:underline"
                   >
@@ -233,6 +238,7 @@ export function TopBar() {
         {/* User dropdown */}
         <div ref={userRef} className="relative">
           <button
+            type="button"
             onClick={() => {
               setShowUserMenu(!showUserMenu);
               setShowNotifications(false);
@@ -265,6 +271,7 @@ export function TopBar() {
                     { icon: Diamond, label: 'Ricompense', href: '/dashboard/rewards' },
                   ].map((item) => (
                     <button
+                      type="button"
                       key={item.label}
                       onClick={() => {
                         router.push(item.href);
@@ -279,6 +286,7 @@ export function TopBar() {
                 </div>
                 <div className="border-t border-border/50 py-1">
                   <button
+                    type="button"
                     onClick={handleLogout}
                     className="w-full flex items-center gap-2.5 px-3.5 py-2 text-[13px] text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors"
                   >
