@@ -64,9 +64,12 @@ Before any branch can be merged, ALL of the following must PASS:
   - Additional validation rules
   - Custom health checks
 
-- ✅ **codeql** - Security scanning
-  - CodeQL analysis for vulnerabilities
-  - SARIF report generation
+- ⏸️ ~~**codeql** - Security scanning~~ — REMOVED 2026-04-16
+  - CodeQL requires GitHub Advanced Security on private repos (~$49/user/month)
+  - Repo went private, so CodeQL is unavailable on the free tier
+  - SAST coverage now provided by Semgrep (3-tier progressive in `ci-cd.yml`)
+  - The `code_scanning` rule was removed from the develop ruleset
+  - Re-evaluate if/when repo returns to public or GHAS is adopted
 
 - ✅ **release** - Release workflow (main branch only)
   - Automated release generation

@@ -45,6 +45,12 @@ module.exports = {
     // TODO: Track re-enablement in GitHub Issue #230 (create if not exists)
     // Priority: HIGH - Security rules should be re-enabled ASAP
     // Timeline: After ESLint 9 compatibility is verified
+    //
+    // NOTE: This root config applies only to scripts/* and untargeted files.
+    // apps/web has its own .eslintrc.json with "root": true and does NOT
+    // inherit these plugins. To re-enable security linting for apps/web,
+    // install eslint-plugin-security + eslint-plugin-no-secrets as devDeps
+    // of apps/web and extend "plugin:security/recommended" there.
     'security/detect-object-injection': 'off',
     'security/detect-non-literal-regexp': 'off',
     'security/detect-unsafe-regex': 'off',
