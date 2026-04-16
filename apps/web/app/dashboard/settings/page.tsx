@@ -11,6 +11,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { createClient } from '@/utils/supabase/client';
 import { CategoryManager } from '@/components/categories/CategoryManager';
 import {
   User,
@@ -278,28 +279,17 @@ export default function SettingsPage() {
     setIsSaving(true);
     setError(null);
     try {
-      const { createClient } = await import('@/utils/supabase/client');
       const supabase = createClient();
-
-      type ProfileUpdate = {
-        first_name?: string;
-        last_name?: string;
-        timezone?: string | null;
-        currency?: string;
-        preferences?: any;
-      };
-
-      const updateData: ProfileUpdate = {
-        first_name: formData.firstName,
-        last_name: formData.lastName,
-        timezone: formData.timezone,
-        currency: formData.currency,
-        preferences: JSON.parse(JSON.stringify(formData.preferences)),
-      };
 
       const { error: profileError } = await supabase
         .from('profiles')
-        .update(updateData as any)
+        .update({
+          first_name: formData.firstName,
+          last_name: formData.lastName,
+          timezone: formData.timezone,
+          currency: formData.currency,
+          preferences: JSON.parse(JSON.stringify(formData.preferences)),
+        })
         .eq('id', user.id);
       if (profileError) throw new Error(profileError.message || 'Errore aggiornamento profilo');
       setUser({
