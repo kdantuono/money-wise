@@ -1171,35 +1171,35 @@ jobs:
           echo "| 🌱 Foundation | $FOUNDATION_ICON ${{ needs.foundation.result }} |" >> $GITHUB_STEP_SUMMARY
 
           DEV_RESULT="${{ needs.development.result || 'skipped' }}"
-          DEV_ICON="${{ needs.development.result == 'success' && '✅' || needs.development.result == 'failure' && '❌' || '⏭️' }}"
+          DEV_ICON="${{ needs.development.result == 'success' && '✅' || needs.development.result == 'failure' && '❌' || needs.development.result == 'cancelled' && '🚫' || '⏭️' }}"
           echo "| 📦 Development | $DEV_ICON $DEV_RESULT |" >> $GITHUB_STEP_SUMMARY
 
           SEC_LIGHT_RESULT="${{ needs['security-lightweight'].result || 'skipped' }}"
-          SEC_LIGHT_ICON="${{ needs['security-lightweight'].result == 'success' && '✅' || needs['security-lightweight'].result == 'failure' && '❌' || '⏭️' }}"
+          SEC_LIGHT_ICON="${{ needs['security-lightweight'].result == 'success' && '✅' || needs['security-lightweight'].result == 'failure' && '❌' || needs['security-lightweight'].result == 'cancelled' && '🚫' || '⏭️' }}"
           echo "| 🔒 Security (Lightweight) | $SEC_LIGHT_ICON $SEC_LIGHT_RESULT |" >> $GITHUB_STEP_SUMMARY
 
           SEC_ENH_RESULT="${{ needs['security-enhanced'].result || 'skipped' }}"
-          SEC_ENH_ICON="${{ needs['security-enhanced'].result == 'success' && '✅' || needs['security-enhanced'].result == 'failure' && '❌' || '⏭️' }}"
+          SEC_ENH_ICON="${{ needs['security-enhanced'].result == 'success' && '✅' || needs['security-enhanced'].result == 'failure' && '❌' || needs['security-enhanced'].result == 'cancelled' && '🚫' || '⏭️' }}"
           echo "| 🔒 Security (Enhanced) | $SEC_ENH_ICON $SEC_ENH_RESULT |" >> $GITHUB_STEP_SUMMARY
 
           SEC_COMP_RESULT="${{ needs['security-comprehensive'].result || 'skipped' }}"
-          SEC_COMP_ICON="${{ needs['security-comprehensive'].result == 'success' && '✅' || needs['security-comprehensive'].result == 'failure' && '❌' || '⏭️' }}"
+          SEC_COMP_ICON="${{ needs['security-comprehensive'].result == 'success' && '✅' || needs['security-comprehensive'].result == 'failure' && '❌' || needs['security-comprehensive'].result == 'cancelled' && '🚫' || '⏭️' }}"
           echo "| 🔒 Security (Comprehensive) | $SEC_COMP_ICON $SEC_COMP_RESULT |" >> $GITHUB_STEP_SUMMARY
 
           TEST_RESULT="${{ needs.testing.result || 'skipped' }}"
-          TEST_ICON="${{ needs.testing.result == 'success' && '✅' || needs.testing.result == 'failure' && '❌' || '⏭️' }}"
+          TEST_ICON="${{ needs.testing.result == 'success' && '✅' || needs.testing.result == 'failure' && '❌' || needs.testing.result == 'cancelled' && '🚫' || '⏭️' }}"
           echo "| 🧪 Testing | $TEST_ICON $TEST_RESULT |" >> $GITHUB_STEP_SUMMARY
 
           BUILD_RESULT="${{ needs.build.result || 'skipped' }}"
-          BUILD_ICON="${{ needs.build.result == 'success' && '✅' || needs.build.result == 'failure' && '❌' || '⏭️' }}"
+          BUILD_ICON="${{ needs.build.result == 'success' && '✅' || needs.build.result == 'failure' && '❌' || needs.build.result == 'cancelled' && '🚫' || '⏭️' }}"
           echo "| 🏗️ Build | $BUILD_ICON $BUILD_RESULT |" >> $GITHUB_STEP_SUMMARY
 
           E2E_RESULT="${{ needs['e2e-tests'].result || 'skipped' }}"
-          E2E_ICON="${{ needs['e2e-tests'].result == 'success' && '✅' || needs['e2e-tests'].result == 'failure' && '❌' || '⏭️' }}"
+          E2E_ICON="${{ needs['e2e-tests'].result == 'success' && '✅' || needs['e2e-tests'].result == 'failure' && '❌' || needs['e2e-tests'].result == 'cancelled' && '🚫' || '⏭️' }}"
           echo "| 🧪 E2E Tests | $E2E_ICON $E2E_RESULT |" >> $GITHUB_STEP_SUMMARY
 
           BUNDLE_RESULT="${{ needs['bundle-size'].result || 'skipped' }}"
-          BUNDLE_ICON="${{ needs['bundle-size'].result == 'success' && '✅' || needs['bundle-size'].result == 'failure' && '❌' || '⏭️' }}"
+          BUNDLE_ICON="${{ needs['bundle-size'].result == 'success' && '✅' || needs['bundle-size'].result == 'failure' && '❌' || needs['bundle-size'].result == 'cancelled' && '🚫' || '⏭️' }}"
           echo "| 📦 Bundle Size | $BUNDLE_ICON $BUNDLE_RESULT |" >> $GITHUB_STEP_SUMMARY
 
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -1223,10 +1223,17 @@ jobs:
       - name: 🚨 Fail if any critical job failed
         # Required-status-check gate: the summary job is the required check on
         # protected branches (main). To have correct semantics, fail here when
-        # any of the critical jobs in `needs:` has result=='failure'.
+        # any of the critical jobs in `needs:` did NOT reach a clean outcome.
         #
-        # A job being 'skipped' (via path-filter or branch condition) does NOT
-        # count as failure — it means the job wasn't relevant for this change.
+        # A result is "clean" when it is 'success' or 'skipped':
+        #   - 'success'  → job ran and passed
+        #   - 'skipped'  → job wasn't relevant for this change (path-filter /
+        #                  branch condition). Explicitly allowed.
+        # Anything else must trip the gate:
+        #   - 'failure'    → job ran and failed
+        #   - 'cancelled'  → job was cancelled (incl. timeouts). Means we do
+        #                    NOT have a signal for this job → treat as failure
+        #                    to prevent merges with incomplete critical checks.
         #
         # NOTE: hyphenated job IDs (e.g. `e2e-tests`) must use bracket notation
         # in `needs[...]` expressions. Dot-notation `needs.e2e-tests` is parsed
@@ -1235,14 +1242,14 @@ jobs:
         # Runs AFTER the summary markdown step so reviewers see the result
         # table even when this gate trips (previously the summary was skipped).
         if: |
-          needs.foundation.result == 'failure' ||
-          needs.development.result == 'failure' ||
-          needs.testing.result == 'failure' ||
-          needs.build.result == 'failure' ||
-          needs['e2e-tests'].result == 'failure' ||
-          needs['security-lightweight'].result == 'failure' ||
-          needs['security-enhanced'].result == 'failure' ||
-          needs['security-comprehensive'].result == 'failure'
+          (needs.foundation.result != 'success' && needs.foundation.result != 'skipped') ||
+          (needs.development.result != 'success' && needs.development.result != 'skipped') ||
+          (needs.testing.result != 'success' && needs.testing.result != 'skipped') ||
+          (needs.build.result != 'success' && needs.build.result != 'skipped') ||
+          (needs['e2e-tests'].result != 'success' && needs['e2e-tests'].result != 'skipped') ||
+          (needs['security-lightweight'].result != 'success' && needs['security-lightweight'].result != 'skipped') ||
+          (needs['security-enhanced'].result != 'success' && needs['security-enhanced'].result != 'skipped') ||
+          (needs['security-comprehensive'].result != 'success' && needs['security-comprehensive'].result != 'skipped')
         run: |
           echo "::error::One or more critical CI jobs failed. See the Pipeline Summary above for the result table."
           exit 1

@@ -499,11 +499,11 @@ jobs:
           echo "| 📦 Sentry Release | $SENTRY_ICON ${{ needs['sentry-release'].result }} |" >> $GITHUB_STEP_SUMMARY
 
           GITHUB_RESULT="${{ needs['github-release'].result || 'skipped' }}"
-          GITHUB_ICON="${{ needs['github-release'].result == 'success' && '✅' || needs['github-release'].result == 'failure' && '❌' || '⏭️' }}"
+          GITHUB_ICON="${{ needs['github-release'].result == 'success' && '✅' || needs['github-release'].result == 'failure' && '❌' || needs['github-release'].result == 'cancelled' && '🚫' || '⏭️' }}"
           echo "| 🚀 GitHub Release | $GITHUB_ICON $GITHUB_RESULT |" >> $GITHUB_STEP_SUMMARY
 
           DOCKER_RESULT="${{ needs['docker-release'].result || 'skipped' }}"
-          DOCKER_ICON="${{ needs['docker-release'].result == 'success' && '✅' || needs['docker-release'].result == 'failure' && '❌' || '⏭️' }}"
+          DOCKER_ICON="${{ needs['docker-release'].result == 'success' && '✅' || needs['docker-release'].result == 'failure' && '❌' || needs['docker-release'].result == 'cancelled' && '🚫' || '⏭️' }}"
           echo "| 🐳 Docker Images | $DOCKER_ICON $DOCKER_RESULT |" >> $GITHUB_STEP_SUMMARY
 
           DEPLOY_ICON="${{ needs['deploy-notification'].result == 'success' && '✅' || '❌' }}"
