@@ -2,7 +2,8 @@
  * useTheme Hook Unit Tests
  *
  * Tests for the theme management hook and ThemeProvider.
- * Uses Vitest with mocked localStorage and matchMedia.
+ * Theme type is now 'system' | 'dracula' | 'italian' (no raw 'light'/'dark').
+ * Default theme is 'dracula'.
  *
  * @module hooks/__tests__/useTheme.test
  */
@@ -61,7 +62,7 @@ describe('useTheme', () => {
     localStorageMock.clear();
     vi.clearAllMocks();
 
-    // Default auth store mock
+    // Default auth store mock — no user
     mockUseAuthStore.mockReturnValue({
       user: null,
       isAuthenticated: false,
@@ -82,7 +83,6 @@ describe('useTheme', () => {
   );
 
   it('should throw error when used outside ThemeProvider', () => {
-    // Suppress console.error for this test
     const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
     expect(() => {
@@ -92,12 +92,25 @@ describe('useTheme', () => {
     consoleErrorSpy.mockRestore();
   });
 
-  it('should initialize with system theme by default', () => {
+  it('should default to dracula theme when no user and no localStorage', () => {
     const { result } = renderHook(() => useTheme(), { wrapper });
 
+    expect(result.current.theme).toBe('dracula');
+    expect(result.current.resolvedTheme).toBe('dracula');
+    expect(result.current.isDark).toBe(true);
+  });
+
+  it('should allow changing theme to system', () => {
+    const { result } = renderHook(() => useTheme(), { wrapper });
+
+    act(() => {
+      result.current.setTheme('system');
+    });
+
     expect(result.current.theme).toBe('system');
-    expect(result.current.resolvedTheme).toBe('light');
+    expect(result.current.resolvedTheme).toBe('light'); // matchMedia mocked to false
     expect(result.current.isDark).toBe(false);
+    expect(localStorageMock.setItem).toHaveBeenCalledWith('moneywise-theme', 'system');
   });
 
   it('should resolve system theme to dark when system prefers dark', () => {
@@ -105,14 +118,35 @@ describe('useTheme', () => {
 
     const { result } = renderHook(() => useTheme(), { wrapper });
 
+    act(() => {
+      result.current.setTheme('system');
+    });
+
     expect(result.current.theme).toBe('system');
     expect(result.current.resolvedTheme).toBe('dark');
     expect(result.current.isDark).toBe(true);
   });
 
-  it('should allow changing theme to dracula', () => {
+  it('should allow changing theme to italian', () => {
     const { result } = renderHook(() => useTheme(), { wrapper });
 
+    act(() => {
+      result.current.setTheme('italian');
+    });
+
+    expect(result.current.theme).toBe('italian');
+    expect(result.current.resolvedTheme).toBe('italian');
+    expect(result.current.isDark).toBe(true);
+    expect(localStorageMock.setItem).toHaveBeenCalledWith('moneywise-theme', 'italian');
+  });
+
+  it('should allow changing theme to dracula', () => {
+    // First switch away, then switch to dracula
+    const { result } = renderHook(() => useTheme(), { wrapper });
+
+    act(() => {
+      result.current.setTheme('system');
+    });
     act(() => {
       result.current.setTheme('dracula');
     });
@@ -123,40 +157,14 @@ describe('useTheme', () => {
     expect(localStorageMock.setItem).toHaveBeenCalledWith('moneywise-theme', 'dracula');
   });
 
-  it('should allow changing theme to system', () => {
-    const { result } = renderHook(() => useTheme(), { wrapper });
-
-    act(() => {
-      result.current.setTheme('system');
-    });
-
-    expect(result.current.theme).toBe('system');
-    expect(localStorageMock.setItem).toHaveBeenCalledWith('moneywise-theme', 'system');
-  });
-
-  it('should allow changing theme to system', () => {
-    const { result } = renderHook(() => useTheme(), { wrapper });
-
-    act(() => {
-      result.current.setTheme('system');
-    });
-
-    expect(result.current.theme).toBe('system');
-    expect(result.current.resolvedTheme).toBe('light');
-    expect(result.current.isDark).toBe(false);
-    expect(localStorageMock.setItem).toHaveBeenCalledWith('moneywise-theme', 'system');
-  });
-
-  it('should read theme from user preferences', () => {
+  it('should read dracula theme from user preferences', () => {
     mockUseAuthStore.mockReturnValue({
       user: {
         id: '1',
         email: 'test@example.com',
         firstName: 'Test',
         lastName: 'User',
-        preferences: {
-          theme: 'dark',
-        },
+        preferences: { theme: 'dracula' },
       },
       isAuthenticated: true,
       isLoading: false,
@@ -165,8 +173,29 @@ describe('useTheme', () => {
 
     const { result } = renderHook(() => useTheme(), { wrapper });
 
-    expect(result.current.theme).toBe('dark');
-    expect(result.current.resolvedTheme).toBe('dark');
+    expect(result.current.theme).toBe('dracula');
+    expect(result.current.resolvedTheme).toBe('dracula');
+    expect(result.current.isDark).toBe(true);
+  });
+
+  it('should read italian theme from user preferences', () => {
+    mockUseAuthStore.mockReturnValue({
+      user: {
+        id: '1',
+        email: 'test@example.com',
+        firstName: 'Test',
+        lastName: 'User',
+        preferences: { theme: 'italian' },
+      },
+      isAuthenticated: true,
+      isLoading: false,
+      error: null,
+    });
+
+    const { result } = renderHook(() => useTheme(), { wrapper });
+
+    expect(result.current.theme).toBe('italian');
+    expect(result.current.resolvedTheme).toBe('italian');
     expect(result.current.isDark).toBe(true);
   });
 
@@ -177,9 +206,7 @@ describe('useTheme', () => {
         email: 'test@example.com',
         firstName: 'Test',
         lastName: 'User',
-        preferences: {
-          theme: 'auto',
-        },
+        preferences: { theme: 'auto' },
       },
       isAuthenticated: true,
       isLoading: false,
@@ -192,25 +219,32 @@ describe('useTheme', () => {
   });
 
   it('should read theme from localStorage if no user preference', () => {
-    localStorageMock.setItem('moneywise-theme', 'dark');
+    // localStorage must have a valid theme value
+    localStorageMock.getItem.mockImplementation((key: string) => {
+      if (key === 'moneywise-theme') return 'italian';
+      return null;
+    });
 
     const { result } = renderHook(() => useTheme(), { wrapper });
 
-    expect(result.current.theme).toBe('dark');
-    expect(result.current.resolvedTheme).toBe('dark');
+    expect(result.current.theme).toBe('italian');
+    expect(result.current.resolvedTheme).toBe('italian');
   });
 
   it('should prioritize user preferences over localStorage', () => {
-    localStorageMock.setItem('moneywise-theme', 'dark');
+    // localStorage says italian, user pref says dracula
+    localStorageMock.getItem.mockImplementation((key: string) => {
+      if (key === 'moneywise-theme') return 'italian';
+      return null;
+    });
+
     mockUseAuthStore.mockReturnValue({
       user: {
         id: '1',
         email: 'test@example.com',
         firstName: 'Test',
         lastName: 'User',
-        preferences: {
-          theme: 'light',
-        },
+        preferences: { theme: 'dracula' },
       },
       isAuthenticated: true,
       isLoading: false,
@@ -219,6 +253,19 @@ describe('useTheme', () => {
 
     const { result } = renderHook(() => useTheme(), { wrapper });
 
-    expect(result.current.theme).toBe('light');
+    expect(result.current.theme).toBe('dracula');
+  });
+
+  it('isDark is true for dracula and italian, false for light', () => {
+    const { result } = renderHook(() => useTheme(), { wrapper });
+
+    // Default is dracula => isDark = true
+    expect(result.current.isDark).toBe(true);
+
+    // Switch to system with light preference
+    act(() => {
+      result.current.setTheme('system');
+    });
+    expect(result.current.isDark).toBe(false); // matchMedia = false => light
   });
 });

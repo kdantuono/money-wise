@@ -69,17 +69,17 @@ describe('BulkActionsBar', () => {
   describe('Selection Display', () => {
     it('should display the number of selected items', () => {
       renderBar({ selectedCount: 5 });
-      expect(screen.getByText(/5.*selected/i)).toBeInTheDocument();
+      expect(screen.getByText(/5.*elementi.*selezionati/i)).toBeInTheDocument();
     });
 
     it('should display singular "item" for 1 selected', () => {
       renderBar({ selectedCount: 1 });
-      expect(screen.getByText(/1.*item.*selected/i)).toBeInTheDocument();
+      expect(screen.getByText(/1.*elemento.*selezionati/i)).toBeInTheDocument();
     });
 
     it('should display plural "items" for multiple selected', () => {
       renderBar({ selectedCount: 3 });
-      expect(screen.getByText(/3.*items.*selected/i)).toBeInTheDocument();
+      expect(screen.getByText(/3.*elementi.*selezionati/i)).toBeInTheDocument();
     });
   });
 
@@ -91,26 +91,26 @@ describe('BulkActionsBar', () => {
     it('should show "Select All" button when not all selected', () => {
       renderBar({ selectedCount: 3, totalCount: 10, isAllSelected: false });
       expect(
-        screen.getByRole('button', { name: /select all/i })
+        screen.getByRole('button', { name: /seleziona tutto/i })
       ).toBeInTheDocument();
     });
 
     it('should show "Deselect All" button when all selected', () => {
       renderBar({ selectedCount: 10, totalCount: 10, isAllSelected: true });
       expect(
-        screen.getByRole('button', { name: /deselect all/i })
+        screen.getByRole('button', { name: /deseleziona tutto/i })
       ).toBeInTheDocument();
     });
 
     it('should call onSelectAll when "Select All" is clicked', async () => {
       const { user } = renderBar({ isAllSelected: false });
-      await user.click(screen.getByRole('button', { name: /select all/i }));
+      await user.click(screen.getByRole('button', { name: /seleziona tutto/i }));
       expect(mockOnSelectAll).toHaveBeenCalled();
     });
 
     it('should call onClearSelection when "Deselect All" is clicked', async () => {
       const { user } = renderBar({ isAllSelected: true, selectedCount: 10, totalCount: 10 });
-      await user.click(screen.getByRole('button', { name: /deselect all/i }));
+      await user.click(screen.getByRole('button', { name: /deseleziona tutto/i }));
       expect(mockOnClearSelection).toHaveBeenCalled();
     });
   });
@@ -123,40 +123,40 @@ describe('BulkActionsBar', () => {
     it('should render categorize button', () => {
       renderBar();
       expect(
-        screen.getByRole('button', { name: /categorize/i })
+        screen.getByRole('button', { name: /categorizza/i })
       ).toBeInTheDocument();
     });
 
     it('should render delete button', () => {
       renderBar();
       expect(
-        screen.getByRole('button', { name: /delete/i })
+        screen.getByRole('button', { name: /elimina/i })
       ).toBeInTheDocument();
     });
 
     it('should call onCategorize when categorize button is clicked', async () => {
       const { user } = renderBar();
-      await user.click(screen.getByRole('button', { name: /categorize/i }));
+      await user.click(screen.getByRole('button', { name: /categorizza/i }));
       expect(mockOnCategorize).toHaveBeenCalled();
     });
 
     it('should call onDelete when delete button is clicked', async () => {
       const { user } = renderBar();
-      await user.click(screen.getByRole('button', { name: /delete/i }));
+      await user.click(screen.getByRole('button', { name: /elimina/i }));
       expect(mockOnDelete).toHaveBeenCalled();
     });
 
     it('should show clear selection button', () => {
       renderBar();
       expect(
-        screen.getByRole('button', { name: /clear.*selection|cancel/i })
+        screen.getByRole('button', { name: /cancella selezione/i })
       ).toBeInTheDocument();
     });
 
     it('should call onClearSelection when clear button is clicked', async () => {
       const { user } = renderBar();
       await user.click(
-        screen.getByRole('button', { name: /clear.*selection|cancel/i })
+        screen.getByRole('button', { name: /cancella selezione/i })
       );
       expect(mockOnClearSelection).toHaveBeenCalled();
     });
@@ -170,9 +170,9 @@ describe('BulkActionsBar', () => {
     it('should disable all action buttons while processing', () => {
       renderBar({ isProcessing: true });
       expect(
-        screen.getByRole('button', { name: /categorize/i })
+        screen.getByRole('button', { name: /categorizza/i })
       ).toBeDisabled();
-      expect(screen.getByRole('button', { name: /delete/i })).toBeDisabled();
+      expect(screen.getByRole('button', { name: /elimina/i })).toBeDisabled();
     });
 
     it('should show loading indicator while processing', () => {
@@ -182,7 +182,7 @@ describe('BulkActionsBar', () => {
 
     it('should show processing text', () => {
       renderBar({ isProcessing: true });
-      expect(screen.getByText(/processing/i)).toBeInTheDocument();
+      expect(screen.getByText(/elaborazione/i)).toBeInTheDocument();
     });
   });
 
@@ -199,14 +199,14 @@ describe('BulkActionsBar', () => {
     it('should have accessible label for toolbar', () => {
       renderBar();
       expect(
-        screen.getByRole('toolbar', { name: /bulk actions/i })
+        screen.getByRole('toolbar', { name: /azioni collettive/i })
       ).toBeInTheDocument();
     });
 
     it('should announce selected count to screen readers', () => {
       renderBar({ selectedCount: 5 });
       const announcement = screen.getByRole('status');
-      expect(announcement).toHaveTextContent(/5.*selected/i);
+      expect(announcement).toHaveTextContent(/5.*elementi.*selezionati/i);
     });
   });
 

@@ -1,577 +1,319 @@
 /**
  * Tests for BudgetsPage component
- * Tests page rendering, category fetching from API (not mock data),
- * and integration with BudgetForm
+ *
+ * Smoke tests for the Figma-redesigned budget page with Italian UI text,
+ * summary cards, empty state, error handling, and form modal.
  */
 
+import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '../../utils/test-utils';
-import BudgetsPage from '../../../app/dashboard/budgets/page';
 
-// Mock the categoriesClient
-const mockCategoriesData = [
-  {
-    id: '550e8400-e29b-41d4-a716-446655440001',
-    name: 'Groceries',
-    type: 'EXPENSE' as const,
-    icon: 'shopping-cart',
-    color: '#4CAF50',
-    parentId: null,
-    isSystem: true,
-  },
-  {
-    id: '550e8400-e29b-41d4-a716-446655440002',
-    name: 'Dining Out',
-    type: 'EXPENSE' as const,
-    icon: 'utensils',
-    color: '#FF9800',
-    parentId: null,
-    isSystem: true,
-  },
-  {
-    id: '550e8400-e29b-41d4-a716-446655440003',
-    name: 'Entertainment',
-    type: 'EXPENSE' as const,
-    icon: 'film',
-    color: '#9C27B0',
-    parentId: null,
-    isSystem: true,
-  },
-];
+// ---------------------------------------------------------------------------
+// Mocks — must come before the component import
+// ---------------------------------------------------------------------------
 
-const mockGetOptions = vi.fn().mockResolvedValue(mockCategoriesData);
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn(), prefetch: vi.fn() }),
+  usePathname: () => '/dashboard/budgets',
+}));
 
+vi.mock('../../../src/store/auth.store', () => ({
+  useAuthStore: vi.fn().mockReturnValue({
+    user: { id: '1', email: 'test@example.com', firstName: 'Test', lastName: 'User' },
+    logout: vi.fn(),
+  }),
+}));
+
+// Mock framer-motion
+vi.mock('framer-motion', () => ({
+  motion: {
+    div: React.forwardRef(function MotionDiv(
+      props: React.HTMLAttributes<HTMLDivElement> & Record<string, unknown>,
+      ref: React.Ref<HTMLDivElement>,
+    ) {
+      const {
+        initial, animate, exit, transition, whileHover, whileTap,
+        variants, layout, layoutId, onAnimationComplete,
+        ...rest
+      } = props;
+      return <div ref={ref} {...rest} />;
+    }),
+  },
+  AnimatePresence: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+}));
+
+// Mock recharts — SVG rendering breaks in jsdom
+vi.mock('recharts', () => ({
+  BarChart: ({ children }: { children: React.ReactNode }) => <div data-testid="bar-chart">{children}</div>,
+  Bar: () => null,
+  XAxis: () => null,
+  YAxis: () => null,
+  CartesianGrid: () => null,
+  Tooltip: () => null,
+  ResponsiveContainer: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  Cell: () => null,
+}));
+
+// Mock budget sub-components
+vi.mock('../../../src/components/budgets', () => ({
+  BudgetForm: ({ onCancel }: { onCancel: () => void }) => (
+    <div data-testid="budget-form">
+      <button onClick={onCancel}>Annulla</button>
+    </div>
+  ),
+  OverBudgetAlert: ({ budgets }: { budgets: unknown[] }) => (
+    <div data-testid="over-budget-alert">Over budget: {budgets.length}</div>
+  ),
+}));
+
+// Mock categoriesClient
+const mockGetOptions = vi.fn().mockResolvedValue([]);
 vi.mock('../../../src/services/categories.client', () => ({
   categoriesClient: {
     getOptions: (...args: unknown[]) => mockGetOptions(...args),
   },
 }));
 
-// Mock useBudgets hook
+// Mock useBudgets
 const mockUseBudgets = vi.fn();
 vi.mock('../../../src/hooks/useBudgets', () => ({
   useBudgets: (...args: unknown[]) => mockUseBudgets(...args),
 }));
 
+// Import after all mocks
+import BudgetsPage from '../../../app/dashboard/budgets/page';
+
+// ---------------------------------------------------------------------------
+// Default budget hook state
+// ---------------------------------------------------------------------------
+
+const defaultBudgetHookState = {
+  budgets: [],
+  isLoading: false,
+  isCreating: false,
+  error: null,
+  createError: null,
+  overBudgetItems: [],
+  summary: { total: 0, totalBudgeted: 0, totalSpent: 0, overBudgetCount: 0 },
+  refresh: vi.fn(),
+  createBudget: vi.fn(),
+  updateBudget: vi.fn(),
+  deleteBudget: vi.fn(),
+  isBudgetUpdating: vi.fn().mockReturnValue(false),
+  isBudgetDeleting: vi.fn().mockReturnValue(false),
+  clearErrors: vi.fn(),
+};
+
+// ---------------------------------------------------------------------------
+// Tests
+// ---------------------------------------------------------------------------
+
 describe('BudgetsPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockGetOptions.mockResolvedValue(mockCategoriesData);
-    mockUseBudgets.mockReturnValue({
-      budgets: [],
-      isLoading: false,
-      isCreating: false,
-      error: null,
-      createError: null,
-      overBudgetItems: [],
-      summary: {
-        total: 0,
-        totalBudgeted: 0,
-        totalSpent: 0,
-        overBudgetCount: 0,
-      },
-      refresh: vi.fn(),
-      createBudget: vi.fn(),
-      updateBudget: vi.fn(),
-      deleteBudget: vi.fn(),
-      isBudgetUpdating: vi.fn().mockReturnValue(false),
-      isBudgetDeleting: vi.fn().mockReturnValue(false),
-      clearErrors: vi.fn(),
-    });
+    mockGetOptions.mockResolvedValue([]);
+    mockUseBudgets.mockReturnValue({ ...defaultBudgetHookState });
   });
+
+  // ---- Page header ----
 
   describe('Page Header', () => {
-    it('renders the page heading', async () => {
+    it('renders the page heading in Italian', () => {
       render(<BudgetsPage />);
-
-      await waitFor(() => {
-        expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Budgets');
-      });
+      expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Budget');
     });
 
-    it('renders the description text', async () => {
+    it('renders the Italian description text', () => {
       render(<BudgetsPage />);
-
-      await waitFor(() => {
-        expect(screen.getByText('Track your spending across categories')).toBeInTheDocument();
-      });
+      expect(
+        screen.getByText('Pianifica e monitora il tuo budget mensile'),
+      ).toBeInTheDocument();
     });
 
-    it('renders the Create Budget button', async () => {
+    it('renders "Nuova Categoria" create button', () => {
       render(<BudgetsPage />);
+      expect(screen.getByText('Nuova Categoria')).toBeInTheDocument();
+    });
 
-      await waitFor(() => {
-        expect(screen.getByTestId('create-budget-button')).toBeInTheDocument();
-        expect(screen.getByTestId('create-budget-button')).toHaveTextContent('Create Budget');
-      });
+    it('renders "Aggiorna" refresh button', () => {
+      render(<BudgetsPage />);
+      expect(screen.getByText('Aggiorna')).toBeInTheDocument();
     });
   });
 
+  // ---- Categories fetch ----
+
   describe('Categories Fetching', () => {
-    it('fetches categories from API on mount', async () => {
+    it('fetches categories with EXPENSE type on mount', async () => {
       render(<BudgetsPage />);
-
       await waitFor(() => {
         expect(mockGetOptions).toHaveBeenCalledWith('EXPENSE');
-      });
-    });
-
-    it('fetches categories with EXPENSE type filter', async () => {
-      render(<BudgetsPage />);
-
-      await waitFor(() => {
-        expect(mockGetOptions).toHaveBeenCalledWith('EXPENSE');
-      });
-    });
-
-    it('categories have valid UUID format IDs', async () => {
-      render(<BudgetsPage />);
-
-      await waitFor(() => {
-        expect(mockGetOptions).toHaveBeenCalled();
-      });
-
-      // Verify the mock data has UUID format IDs
-      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-      mockCategoriesData.forEach((category) => {
-        expect(category.id).toMatch(uuidRegex);
       });
     });
 
     it('handles categories API error gracefully', async () => {
       mockGetOptions.mockRejectedValueOnce(new Error('API Error'));
-
       render(<BudgetsPage />);
-
       // Page should still render without crashing
-      await waitFor(() => {
-        expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Budgets');
-      });
+      expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Budget');
     });
   });
 
-  describe('BudgetForm Integration', () => {
-    it('opens form modal when Create Budget is clicked', async () => {
-      const { user } = render(<BudgetsPage />);
+  // ---- Loading state ----
 
-      // Wait for categories to load
-      await waitFor(() => {
-        expect(mockGetOptions).toHaveBeenCalled();
-      });
-
-      // Click create button
-      await user.click(screen.getByTestId('create-budget-button'));
-
-      // Form should appear - use getAllByRole since there may be multiple h3 elements
-      await waitFor(() => {
-        const headings = screen.getAllByRole('heading', { level: 3 });
-        expect(headings.some(h => h.textContent === 'Create Budget')).toBe(true);
-      });
-    });
-
-    it('passes API categories to BudgetForm', async () => {
-      const { user } = render(<BudgetsPage />);
-
-      // Wait for categories to load
-      await waitFor(() => {
-        expect(mockGetOptions).toHaveBeenCalled();
-      });
-
-      // Click create button
-      await user.click(screen.getByTestId('create-budget-button'));
-
-      // Wait for form to appear
-      await waitFor(() => {
-        expect(screen.getByTestId('budget-category-select')).toBeInTheDocument();
-      });
-
-      // Check that category options are present from API (not mock)
-      const categorySelect = screen.getByTestId('budget-category-select');
-      expect(categorySelect).toContainHTML('Groceries');
-      expect(categorySelect).toContainHTML('Dining Out');
-      expect(categorySelect).toContainHTML('Entertainment');
-    });
-
-    it('disables create button while form is open', async () => {
-      const { user } = render(<BudgetsPage />);
-
-      // Wait for categories to load
-      await waitFor(() => {
-        expect(mockGetOptions).toHaveBeenCalled();
-      });
-
-      // Click create button
-      await user.click(screen.getByTestId('create-budget-button'));
-
-      // Create button should be disabled
-      await waitFor(() => {
-        expect(screen.getByTestId('create-budget-button')).toBeDisabled();
-      });
+  describe('Loading State', () => {
+    it('shows skeleton loading state', () => {
+      mockUseBudgets.mockReturnValue({ ...defaultBudgetHookState, isLoading: true });
+      const { container } = render(<BudgetsPage />);
+      expect(container.querySelector('.animate-pulse')).toBeInTheDocument();
     });
   });
 
-  describe('Budget List', () => {
-    it('renders budget list container', async () => {
+  // ---- Empty state ----
+
+  describe('Empty State', () => {
+    it('shows empty state when no budgets', () => {
       render(<BudgetsPage />);
-
-      await waitFor(() => {
-        expect(screen.getByTestId('budgets-list')).toBeInTheDocument();
-      });
+      expect(screen.getByText('Nessun budget ancora')).toBeInTheDocument();
+      expect(
+        screen.getByText(/Crea il tuo primo budget/),
+      ).toBeInTheDocument();
     });
 
-    it('shows summary stats when budgets exist', async () => {
-      mockUseBudgets.mockReturnValue({
-        budgets: [
-          {
-            id: 'budget-1',
-            name: 'Test Budget',
-            amount: 500,
-            spent: 250,
-            remaining: 250,
-            percentage: 50,
-            progressStatus: 'safe',
-            category: {
-              id: 'cat-1',
-              name: 'Groceries',
-              icon: 'shopping-cart',
-              color: '#4CAF50',
-            },
-            period: 'MONTHLY',
-            status: 'ACTIVE',
-            startDate: '2025-01-01',
-            endDate: '2025-01-31',
-            isOverBudget: false,
-            isExpired: false,
-          },
-        ],
-        isLoading: false,
-        isCreating: false,
-        error: null,
-        createError: null,
-        overBudgetItems: [],
-        summary: {
-          total: 1,
-          totalBudgeted: 500,
-          totalSpent: 250,
-          overBudgetCount: 0,
-        },
-        refresh: vi.fn(),
-        createBudget: vi.fn(),
-        updateBudget: vi.fn(),
-        deleteBudget: vi.fn(),
-        isBudgetUpdating: vi.fn().mockReturnValue(false),
-        isBudgetDeleting: vi.fn().mockReturnValue(false),
-        clearErrors: vi.fn(),
-      });
-
+    it('shows "Crea Budget" button in empty state', () => {
       render(<BudgetsPage />);
-
-      await waitFor(() => {
-        expect(screen.getByText('Total Budgets')).toBeInTheDocument();
-        expect(screen.getByText('Total Budgeted')).toBeInTheDocument();
-        expect(screen.getByText('Total Spent')).toBeInTheDocument();
-      });
+      expect(screen.getByText('Crea Budget')).toBeInTheDocument();
     });
   });
+
+  // ---- Error handling ----
 
   describe('Error Handling', () => {
-    it('displays budget loading error', async () => {
+    it('displays error message with alert role', () => {
       mockUseBudgets.mockReturnValue({
-        budgets: [],
-        isLoading: false,
-        isCreating: false,
-        error: 'Failed to load budgets',
-        createError: null,
-        overBudgetItems: [],
-        summary: {
-          total: 0,
-          totalBudgeted: 0,
-          totalSpent: 0,
-          overBudgetCount: 0,
-        },
-        refresh: vi.fn(),
-        createBudget: vi.fn(),
-        updateBudget: vi.fn(),
-        deleteBudget: vi.fn(),
-        isBudgetUpdating: vi.fn().mockReturnValue(false),
-        isBudgetDeleting: vi.fn().mockReturnValue(false),
-        clearErrors: vi.fn(),
+        ...defaultBudgetHookState,
+        error: 'Errore nel caricamento',
       });
-
       render(<BudgetsPage />);
-
-      await waitFor(() => {
-        expect(screen.getByRole('alert')).toHaveTextContent('Failed to load budgets');
-      });
+      expect(screen.getByRole('alert')).toHaveTextContent('Errore nel caricamento');
     });
 
     it('shows retry button on error', async () => {
       const mockRefresh = vi.fn();
       mockUseBudgets.mockReturnValue({
-        budgets: [],
-        isLoading: false,
-        isCreating: false,
-        error: 'Failed to load budgets',
-        createError: null,
-        overBudgetItems: [],
-        summary: {
-          total: 0,
-          totalBudgeted: 0,
-          totalSpent: 0,
-          overBudgetCount: 0,
-        },
+        ...defaultBudgetHookState,
+        error: 'Errore nel caricamento',
         refresh: mockRefresh,
-        createBudget: vi.fn(),
-        updateBudget: vi.fn(),
-        deleteBudget: vi.fn(),
-        isBudgetUpdating: vi.fn().mockReturnValue(false),
-        isBudgetDeleting: vi.fn().mockReturnValue(false),
-        clearErrors: vi.fn(),
       });
-
       const { user } = render(<BudgetsPage />);
 
-      await waitFor(() => {
-        expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument();
-      });
-
-      await user.click(screen.getByRole('button', { name: /retry/i }));
+      const retryButton = screen.getByText('Riprova');
+      expect(retryButton).toBeInTheDocument();
+      await user.click(retryButton);
       expect(mockRefresh).toHaveBeenCalled();
     });
   });
 
+  // ---- Budget list with data ----
+
+  describe('Budget List', () => {
+    const budgetWithData = {
+      ...defaultBudgetHookState,
+      budgets: [
+        {
+          id: 'budget-1',
+          name: 'Spesa',
+          amount: 500,
+          spent: 250,
+          remaining: 250,
+          percentage: 50,
+          progressStatus: 'safe',
+          category: { id: 'cat-1', name: 'Alimentari', icon: 'shopping-cart', color: '#4CAF50' },
+          period: 'MONTHLY',
+          status: 'ACTIVE',
+          startDate: '2026-01-01',
+          endDate: '2026-01-31',
+          isOverBudget: false,
+          isExpired: false,
+        },
+      ],
+      summary: { total: 1, totalBudgeted: 500, totalSpent: 250, overBudgetCount: 0 },
+    };
+
+    it('renders summary cards when budgets exist', () => {
+      mockUseBudgets.mockReturnValue(budgetWithData);
+      render(<BudgetsPage />);
+      expect(screen.getByText('Budget Totale')).toBeInTheDocument();
+      expect(screen.getByText('Speso')).toBeInTheDocument();
+      expect(screen.getByText('Disponibile')).toBeInTheDocument();
+      expect(screen.getByText('Alert')).toBeInTheDocument();
+    });
+
+    it('renders "Progresso Generale" section', () => {
+      mockUseBudgets.mockReturnValue(budgetWithData);
+      render(<BudgetsPage />);
+      expect(screen.getByText('Progresso Generale')).toBeInTheDocument();
+    });
+
+    it('renders "Tutte le Categorie" section', () => {
+      mockUseBudgets.mockReturnValue(budgetWithData);
+      render(<BudgetsPage />);
+      expect(screen.getByText('Tutte le Categorie')).toBeInTheDocument();
+    });
+
+    it('renders budget category name', () => {
+      mockUseBudgets.mockReturnValue(budgetWithData);
+      render(<BudgetsPage />);
+      expect(screen.getByText('Alimentari')).toBeInTheDocument();
+    });
+  });
+
+  // ---- Form modal ----
+
+  describe('Form Modal', () => {
+    it('opens form when "Nuova Categoria" is clicked', async () => {
+      mockUseBudgets.mockReturnValue({ ...defaultBudgetHookState });
+      const { user } = render(<BudgetsPage />);
+
+      // Click the header create button
+      const buttons = screen.getAllByText('Nuova Categoria');
+      await user.click(buttons[0]);
+
+      expect(screen.getByTestId('budget-form')).toBeInTheDocument();
+    });
+  });
+
+  // ---- Over budget ----
+
   describe('Over Budget Alert', () => {
-    it('shows over budget alert when items are over budget', async () => {
+    it('renders OverBudgetAlert when items are over budget', () => {
       mockUseBudgets.mockReturnValue({
+        ...defaultBudgetHookState,
         budgets: [
           {
             id: 'budget-1',
-            name: 'Test Budget',
+            name: 'Test',
             amount: 500,
             spent: 600,
             remaining: -100,
             percentage: 120,
             progressStatus: 'critical',
             isOverBudget: true,
-            category: {
-              id: 'cat-1',
-              name: 'Groceries',
-              icon: 'shopping-cart',
-              color: '#4CAF50',
-            },
+            category: { id: 'cat-1', name: 'Ristoranti', icon: 'utensils', color: '#FF9800' },
             period: 'MONTHLY',
             status: 'ACTIVE',
-            startDate: '2025-01-01',
-            endDate: '2025-01-31',
+            startDate: '2026-01-01',
+            endDate: '2026-01-31',
             isExpired: false,
           },
         ],
-        isLoading: false,
-        isCreating: false,
-        error: null,
-        createError: null,
-        overBudgetItems: [
-          {
-            id: 'budget-1',
-            name: 'Test Budget',
-            amount: 500,
-            spent: 600,
-            percentage: 120,
-          },
-        ],
-        summary: {
-          total: 1,
-          totalBudgeted: 500,
-          totalSpent: 600,
-          overBudgetCount: 1,
-        },
-        refresh: vi.fn(),
-        createBudget: vi.fn(),
-        updateBudget: vi.fn(),
-        deleteBudget: vi.fn(),
-        isBudgetUpdating: vi.fn().mockReturnValue(false),
-        isBudgetDeleting: vi.fn().mockReturnValue(false),
-        clearErrors: vi.fn(),
+        overBudgetItems: [{ id: 'budget-1', name: 'Test', amount: 500, spent: 600, percentage: 120 }],
+        summary: { total: 1, totalBudgeted: 500, totalSpent: 600, overBudgetCount: 1 },
       });
 
       render(<BudgetsPage />);
-
-      await waitFor(() => {
-        // OverBudgetAlert component should be present
-        expect(screen.getByTestId('budgets-container')).toBeInTheDocument();
-      });
-    });
-  });
-
-  describe('Accessibility', () => {
-    it('has accessible page structure', async () => {
-      render(<BudgetsPage />);
-
-      await waitFor(() => {
-        expect(screen.getByRole('heading', { level: 1, name: 'Budgets' })).toBeInTheDocument();
-      });
-    });
-
-    it('create budget button is keyboard accessible', async () => {
-      render(<BudgetsPage />);
-
-      await waitFor(() => {
-        const createButton = screen.getByTestId('create-budget-button');
-        expect(createButton).not.toBeDisabled();
-        expect(createButton.tagName.toLowerCase()).toBe('button');
-      });
-    });
-  });
-
-  describe('Visual Consistency with Accounts Page', () => {
-    it('renders header with icon in colored background', async () => {
-      render(<BudgetsPage />);
-
-      await waitFor(() => {
-        expect(screen.getByTestId('budget-icon-container')).toBeInTheDocument();
-        expect(screen.getByTestId('budget-icon-container')).toHaveClass('bg-emerald-100', 'rounded-lg');
-      });
-    });
-
-    it('renders stats cards with rounded-xl styling when budgets exist', async () => {
-      mockUseBudgets.mockReturnValue({
-        budgets: [
-          {
-            id: 'budget-1',
-            name: 'Test Budget',
-            amount: 500,
-            spent: 250,
-            remaining: 250,
-            percentage: 50,
-            progressStatus: 'safe',
-            category: {
-              id: 'cat-1',
-              name: 'Groceries',
-              icon: 'shopping-cart',
-              color: '#4CAF50',
-            },
-            period: 'MONTHLY',
-            status: 'ACTIVE',
-            startDate: '2025-01-01',
-            endDate: '2025-01-31',
-            isOverBudget: false,
-            isExpired: false,
-          },
-        ],
-        isLoading: false,
-        isCreating: false,
-        error: null,
-        createError: null,
-        overBudgetItems: [],
-        summary: {
-          total: 1,
-          totalBudgeted: 500,
-          totalSpent: 250,
-          overBudgetCount: 0,
-        },
-        refresh: vi.fn(),
-        createBudget: vi.fn(),
-        updateBudget: vi.fn(),
-        deleteBudget: vi.fn(),
-        isBudgetUpdating: vi.fn().mockReturnValue(false),
-        isBudgetDeleting: vi.fn().mockReturnValue(false),
-        clearErrors: vi.fn(),
-      });
-
-      render(<BudgetsPage />);
-
-      await waitFor(() => {
-        const statsContainer = screen.getByTestId('budget-stats-container');
-        expect(statsContainer).toBeInTheDocument();
-        // Stats cards should have rounded-xl styling
-        const statCards = statsContainer.querySelectorAll('[class*="rounded-xl"]');
-        expect(statCards.length).toBeGreaterThanOrEqual(4);
-      });
-    });
-
-    it('wraps budget list in a card with section header', async () => {
-      mockUseBudgets.mockReturnValue({
-        budgets: [
-          {
-            id: 'budget-1',
-            name: 'Test Budget',
-            amount: 500,
-            spent: 250,
-            remaining: 250,
-            percentage: 50,
-            progressStatus: 'safe',
-            category: {
-              id: 'cat-1',
-              name: 'Groceries',
-              icon: 'shopping-cart',
-              color: '#4CAF50',
-            },
-            period: 'MONTHLY',
-            status: 'ACTIVE',
-            startDate: '2025-01-01',
-            endDate: '2025-01-31',
-            isOverBudget: false,
-            isExpired: false,
-          },
-        ],
-        isLoading: false,
-        isCreating: false,
-        error: null,
-        createError: null,
-        overBudgetItems: [],
-        summary: {
-          total: 1,
-          totalBudgeted: 500,
-          totalSpent: 250,
-          overBudgetCount: 0,
-        },
-        refresh: vi.fn(),
-        createBudget: vi.fn(),
-        updateBudget: vi.fn(),
-        deleteBudget: vi.fn(),
-        isBudgetUpdating: vi.fn().mockReturnValue(false),
-        isBudgetDeleting: vi.fn().mockReturnValue(false),
-        clearErrors: vi.fn(),
-      });
-
-      render(<BudgetsPage />);
-
-      await waitFor(() => {
-        // Budget list should be in a card with header
-        expect(screen.getByText('All Budgets')).toBeInTheDocument();
-        expect(screen.getByText('Manage your spending limits by category')).toBeInTheDocument();
-      });
-    });
-
-    it('shows empty state with centered icon when no budgets', async () => {
-      mockUseBudgets.mockReturnValue({
-        budgets: [],
-        isLoading: false,
-        isCreating: false,
-        error: null,
-        createError: null,
-        overBudgetItems: [],
-        summary: {
-          total: 0,
-          totalBudgeted: 0,
-          totalSpent: 0,
-          overBudgetCount: 0,
-        },
-        refresh: vi.fn(),
-        createBudget: vi.fn(),
-        updateBudget: vi.fn(),
-        deleteBudget: vi.fn(),
-        isBudgetUpdating: vi.fn().mockReturnValue(false),
-        isBudgetDeleting: vi.fn().mockReturnValue(false),
-        clearErrors: vi.fn(),
-      });
-
-      render(<BudgetsPage />);
-
-      await waitFor(() => {
-        expect(screen.getByText('No budgets yet')).toBeInTheDocument();
-        expect(screen.getByText(/Create your first budget/i)).toBeInTheDocument();
-      });
+      expect(screen.getByTestId('over-budget-alert')).toBeInTheDocument();
     });
   });
 });

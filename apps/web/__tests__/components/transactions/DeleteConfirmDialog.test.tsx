@@ -58,21 +58,21 @@ describe('DeleteConfirmDialog', () => {
     it('should display singular message for 1 transaction', () => {
       renderDialog({ count: 1 });
       expect(
-        screen.getByText(/delete.*1.*transaction/i)
+        screen.getByText(/eliminare.*1.*transazione/i)
       ).toBeInTheDocument();
     });
 
     it('should display plural message for multiple transactions', () => {
       renderDialog({ count: 5 });
       expect(
-        screen.getByText(/delete.*5.*transactions/i)
+        screen.getByText(/eliminare.*5.*transazioni/i)
       ).toBeInTheDocument();
     });
 
     it('should show warning about irreversible action', () => {
       renderDialog();
       expect(
-        screen.getByText(/cannot be undone|irreversible|permanent/i)
+        screen.getByText(/non può essere annullata/i)
       ).toBeInTheDocument();
     });
   });
@@ -85,35 +85,35 @@ describe('DeleteConfirmDialog', () => {
     it('should render confirm button', () => {
       renderDialog();
       expect(
-        screen.getByRole('button', { name: /delete|confirm/i })
+        screen.getByRole('button', { name: /elimina/i })
       ).toBeInTheDocument();
     });
 
     it('should render cancel button', () => {
       renderDialog();
       expect(
-        screen.getByRole('button', { name: /cancel/i })
+        screen.getByRole('button', { name: /annulla/i })
       ).toBeInTheDocument();
     });
 
     it('should call onConfirm when confirm button is clicked', async () => {
       const { user } = renderDialog();
-      await user.click(screen.getByRole('button', { name: /delete|confirm/i }));
+      await user.click(screen.getByRole('button', { name: /^elimina$/i }));
       expect(mockOnConfirm).toHaveBeenCalled();
     });
 
     it('should call onCancel when cancel button is clicked', async () => {
       const { user } = renderDialog();
-      await user.click(screen.getByRole('button', { name: /cancel/i }));
+      await user.click(screen.getByRole('button', { name: /annulla/i }));
       expect(mockOnCancel).toHaveBeenCalled();
     });
 
     it('should disable buttons while deleting', () => {
       renderDialog({ isDeleting: true });
       expect(
-        screen.getByRole('button', { name: /delete|confirm|deleting/i })
+        screen.getByRole('button', { name: /elimina|eliminazione/i })
       ).toBeDisabled();
-      expect(screen.getByRole('button', { name: /cancel/i })).toBeDisabled();
+      expect(screen.getByRole('button', { name: /annulla/i })).toBeDisabled();
     });
   });
 
@@ -127,9 +127,9 @@ describe('DeleteConfirmDialog', () => {
       expect(screen.getByTestId('delete-spinner')).toBeInTheDocument();
     });
 
-    it('should show "Deleting..." text while deleting', () => {
+    it('should show "Eliminazione..." text while deleting', () => {
       renderDialog({ isDeleting: true });
-      expect(screen.getByText(/deleting/i)).toBeInTheDocument();
+      expect(screen.getByText(/eliminazione/i)).toBeInTheDocument();
     });
   });
 
@@ -146,7 +146,7 @@ describe('DeleteConfirmDialog', () => {
     it('should have accessible title', () => {
       renderDialog();
       expect(
-        screen.getByRole('heading', { name: /delete/i })
+        screen.getByRole('heading', { name: /eliminare/i })
       ).toBeInTheDocument();
     });
 

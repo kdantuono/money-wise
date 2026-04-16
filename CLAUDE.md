@@ -4,11 +4,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-MoneyWise is a personal finance management application. Monorepo using pnpm workspaces + Turborepo.
+MoneyWise (brand: **Zecca**) is a personal finance management application. Monorepo using pnpm workspaces + Turborepo. All UI text is in Italian (hardcoded now, i18n via next-intl planned).
 
 **Stack**: Next.js 15 (web) + Supabase (PostgreSQL, Auth, Edge Functions) + Expo/React Native (mobile)
+**UI**: Tailwind v4 + Radix UI + Framer Motion. Design from Figma Make (reference at `~/dev/figma-reference/`)
 **Package manager**: pnpm 10+ (Node 22+)
 **Database**: Supabase-hosted PostgreSQL with RLS policies (schema in `supabase/migrations/`)
+**No custom backend** — all server logic lives in Supabase Edge Functions (Deno). No NestJS, no Express.
 
 ## Monorepo Structure
 
@@ -18,7 +20,7 @@ apps/
   mobile/     - Expo/React Native (NativeWind, Expo Router)
 packages/
   types/      - Shared TypeScript type definitions
-  ui/         - Shared React components (Radix + Tailwind + CVA, built with tsup)
+  ui/         - 46 Figma-derived shadcn components (Radix + Tailwind + CVA, built with tsup)
   utils/      - Shared utility functions (placeholder)
   test-utils/ - Shared testing helpers (Testing Library, currently excluded from workspace)
 supabase/
@@ -81,30 +83,28 @@ supabase functions deploy     # Deploy all Edge Functions
 ## Architecture
 
 ### Web (`apps/web/src/`)
-Next.js 15 App Router with standalone output mode.
+Next.js 15 App Router with standalone output mode. UI follows Figma 1:1 (Design Sprint v2 completed).
 
-- `app/` - Next.js App Router pages and layouts
-- `components/` - Feature-grouped components + `ui/` base components + `providers/`
-- `services/` - Supabase client layer (per-domain: accounts, transactions, budgets, etc.)
+- `app/` - Next.js App Router pages and layouts (all dashboard pages are Figma-derived)
+- `components/` - Feature-grouped: `ui/` (shadcn base), `layout/` (sidebar + topbar), `transactions/`, `categories/`, `accounts/`, `banking/`, `budgets/`, `onboarding/`, `notifications/`, `providers/`
+- `services/` - Supabase client layer (per-domain: accounts, transactions, budgets, categories, banking, etc.)
 - `hooks/` - Custom hooks (query wrappers, theme, dashboard)
 - `store/` + `stores/` - Zustand stores (banking, budgets, transactions, auth)
 - `lib/` - Auth service (Supabase Auth), performance utilities
 - `utils/` - CSV export, sanitization, budget helpers, Supabase client setup
 
-Forms: react-hook-form + Zod. Charts: recharts. Icons: lucide-react.
+Forms: react-hook-form + Zod. Charts: recharts. Icons: lucide-react. Animations: framer-motion.
 Auth: Supabase Auth via `@supabase/ssr` (cookie-based sessions, middleware refresh).
+i18n: next-intl (framework setup, messages in `messages/it.json` and `messages/en.json`).
 
 ### Supabase (`supabase/`)
-- `migrations/` - SQL schema (20 tables, 27 enums, 63 RLS policies, 4 analytics RPCs)
+- `migrations/` - SQL schema (20+ tables, 27 enums, 63 RLS policies, 4 analytics RPCs)
+  - Rich financial model: `transaction_type` (DEBIT/CREDIT), `flow_type` (EXPENSE/INCOME/TRANSFER/LIABILITY_PAYMENT/REFUND), `liability_type` (CREDIT_CARD/BNPL/LOAN/MORTGAGE), `expense_class` (FIXED/VARIABLE on categories), `scheduled_transactions` + `recurrence_rules` + `installments`
 - `functions/` - Deno Edge Functions:
   - `categorize-transaction` - 5-strategy categorization cascade
   - `detect-transfers` - Scoring algorithm for transfer pair detection
   - `detect-bnpl` - 10 BNPL provider pattern matching
-  - `banking-initiate-link` - SaltEdge OAuth flow start
-  - `banking-complete-link` - OAuth completion + account storage
-  - `banking-sync` - Transaction sync from SaltEdge
-  - `banking-webhook` - SaltEdge webhook handler (public, signature verification pending — audit B19)
-  - `banking-revoke` - Connection revocation
+  - `banking-*` - SaltEdge integration (DISABLED — provider decision pending, see banking note below)
   - `_shared/` - Shared utilities (CORS, Supabase client, SaltEdge client, responses)
 - `config.toml` - Project config (project ID: `qhsrkuucldwklkdzbkuw`)
 
@@ -127,6 +127,10 @@ Auth: Supabase Auth via `@supabase/ssr` (cookie-based sessions, middleware refre
 - Pre-push validation: `./.claude/scripts/validate-ci.sh 10` (all 10 levels must pass)
 - Protected branches: main, develop, gh-pages, safety/*
 - After push: verify CI with `gh run list --branch [branch] --limit 1`
+
+## Banking Integration (status: DISABLED)
+
+Banking sync via SaltEdge is implemented but **disabled by default** (`BANKING_INTEGRATION_ENABLED=false`). Provider decision pending — SaltEdge requires certification for production, Nordigen/GoCardless closed to new customers (09/2025). For beta: CSV Import is the bridge. DB schema supports multi-provider (SaltEdge, Tink, Yapily, Plaid columns).
 
 ## Testing Patterns
 

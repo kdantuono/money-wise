@@ -1,43 +1,26 @@
 /**
  * Tests for HomePage component
+ *
+ * The home page now redirects to /dashboard via Next.js redirect().
+ * In Next.js 15, redirect() throws a NEXT_REDIRECT error.
  */
 
-import { describe, it, expect } from 'vitest';
-import { render, screen } from '../utils/test-utils';
+import { describe, it, expect, vi } from 'vitest';
+
+// Mock next/navigation — redirect throws in Next.js 15
+const mockRedirect = vi.fn();
+vi.mock('next/navigation', () => ({
+  redirect: (...args: unknown[]) => {
+    mockRedirect(...args);
+    throw new Error('NEXT_REDIRECT');
+  },
+}));
+
 import HomePage from '../../app/page';
 
 describe('HomePage', () => {
-  it('renders the main heading', () => {
-    render(<HomePage />);
-
-    const heading = screen.getByRole('heading', { level: 1 });
-    expect(heading).toBeInTheDocument();
-    expect(heading).toHaveTextContent('MoneyWise');
-  });
-
-  it('renders the subtitle', () => {
-    render(<HomePage />);
-
-    const subtitle = screen.getByText('AI-powered Personal Finance Management');
-    expect(subtitle).toBeInTheDocument();
-  });
-
-  it('has correct CSS classes for layout', () => {
-    render(<HomePage />);
-
-    const container = screen.getByRole('heading').closest('div');
-    expect(container).toHaveClass('text-center');
-  });
-
-  it('renders with accessibility-friendly structure', () => {
-    render(<HomePage />);
-
-    // Check for heading hierarchy
-    const heading = screen.getByRole('heading', { level: 1 });
-    expect(heading).toBeInTheDocument();
-
-    // Check for descriptive text
-    const description = screen.getByText(/AI-powered Personal Finance Management/i);
-    expect(description).toBeInTheDocument();
+  it('redirects to /dashboard', () => {
+    expect(() => HomePage()).toThrow('NEXT_REDIRECT');
+    expect(mockRedirect).toHaveBeenCalledWith('/dashboard');
   });
 });

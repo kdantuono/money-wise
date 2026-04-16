@@ -102,7 +102,7 @@ describe('RecategorizeDialog', () => {
         />
       );
 
-      expect(screen.getByText(/categorize 3 transactions/i)).toBeInTheDocument();
+      expect(screen.getByText(/categorizza 3 transazioni/i)).toBeInTheDocument();
     });
 
     it('should display singular when only one transaction', () => {
@@ -116,7 +116,7 @@ describe('RecategorizeDialog', () => {
         />
       );
 
-      expect(screen.getByText(/categorize 1 transaction/i)).toBeInTheDocument();
+      expect(screen.getByText(/categorizza 1 transazione/i)).toBeInTheDocument();
     });
 
     it('should render category selector', () => {
@@ -130,7 +130,7 @@ describe('RecategorizeDialog', () => {
         />
       );
 
-      expect(screen.getByRole('combobox', { name: /category/i })).toBeInTheDocument();
+      expect(screen.getByRole('combobox', { name: /categoria/i })).toBeInTheDocument();
     });
 
     it('should render cancel and confirm buttons', () => {
@@ -144,8 +144,8 @@ describe('RecategorizeDialog', () => {
         />
       );
 
-      expect(screen.getByRole('button', { name: /cancel/i })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /apply/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /annulla/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /applica/i })).toBeInTheDocument();
     });
   });
 
@@ -165,7 +165,7 @@ describe('RecategorizeDialog', () => {
         />
       );
 
-      const categoryCombobox = screen.getByRole('combobox', { name: /category/i });
+      const categoryCombobox = screen.getByRole('combobox', { name: /categoria/i });
       await user.click(categoryCombobox);
 
       await waitFor(() => {
@@ -175,7 +175,7 @@ describe('RecategorizeDialog', () => {
       await user.click(screen.getByText('Groceries'));
 
       // Apply button should be enabled after selection
-      expect(screen.getByRole('button', { name: /apply/i })).not.toBeDisabled();
+      expect(screen.getByRole('button', { name: /applica/i })).not.toBeDisabled();
     });
 
     it('should disable apply button when no category selected', () => {
@@ -189,7 +189,7 @@ describe('RecategorizeDialog', () => {
         />
       );
 
-      expect(screen.getByRole('button', { name: /apply/i })).toBeDisabled();
+      expect(screen.getByRole('button', { name: /applica/i })).toBeDisabled();
     });
   });
 
@@ -209,7 +209,7 @@ describe('RecategorizeDialog', () => {
         />
       );
 
-      await user.click(screen.getByRole('button', { name: /cancel/i }));
+      await user.click(screen.getByRole('button', { name: /annulla/i }));
 
       expect(mockOnCancel).toHaveBeenCalled();
     });
@@ -226,7 +226,7 @@ describe('RecategorizeDialog', () => {
       );
 
       // Select category
-      const categoryCombobox = screen.getByRole('combobox', { name: /category/i });
+      const categoryCombobox = screen.getByRole('combobox', { name: /categoria/i });
       await user.click(categoryCombobox);
       await waitFor(() => {
         expect(screen.getByText('Groceries')).toBeInTheDocument();
@@ -234,7 +234,7 @@ describe('RecategorizeDialog', () => {
       await user.click(screen.getByText('Groceries'));
 
       // Click apply
-      await user.click(screen.getByRole('button', { name: /apply/i }));
+      await user.click(screen.getByRole('button', { name: /applica/i }));
 
       await waitFor(() => {
         expect(mockOnConfirm).toHaveBeenCalledWith('cat-1');
@@ -276,8 +276,8 @@ describe('RecategorizeDialog', () => {
       );
 
       expect(screen.getByTestId('processing-spinner')).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /apply/i })).toBeDisabled();
-      expect(screen.getByRole('button', { name: /cancel/i })).toBeDisabled();
+      expect(screen.getByRole('button', { name: /applica/i })).toBeDisabled();
+      expect(screen.getByRole('button', { name: /annulla/i })).toBeDisabled();
     });
   });
 

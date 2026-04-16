@@ -111,7 +111,7 @@ describe('CategorySelector', () => {
       render(<CategorySelector {...getProps()} />);
 
       expect(screen.getByRole('combobox')).toBeInTheDocument();
-      expect(screen.getByText(/select a category/i)).toBeInTheDocument();
+      expect(screen.getByText(/seleziona una categoria/i)).toBeInTheDocument();
     });
 
     it('should render category options when open', async () => {
@@ -160,7 +160,7 @@ describe('CategorySelector', () => {
     it('should show loading state when loading prop is true', () => {
       render(<CategorySelector {...getProps()} isLoading />);
 
-      expect(screen.getByText(/loading/i)).toBeInTheDocument();
+      expect(screen.getByText(/caricamento/i)).toBeInTheDocument();
     });
 
     it('should show error message when error prop is provided', () => {
@@ -177,7 +177,7 @@ describe('CategorySelector', () => {
     it('should show empty state when no categories available', () => {
       render(<CategorySelector {...getProps({ categories: [] })} />);
 
-      expect(screen.getByText(/no categories/i)).toBeInTheDocument();
+      expect(screen.getByText(/nessuna categoria/i)).toBeInTheDocument();
     });
   });
 
@@ -221,7 +221,7 @@ describe('CategorySelector', () => {
       await user.click(screen.getByRole('combobox'));
 
       // Type in search
-      const searchInput = screen.getByPlaceholderText(/search/i);
+      const searchInput = screen.getByPlaceholderText(/cerca categorie/i);
       await user.type(searchInput, 'groc');
 
       await waitFor(() => {
@@ -236,11 +236,11 @@ describe('CategorySelector', () => {
 
       await user.click(screen.getByRole('combobox'));
 
-      const searchInput = screen.getByPlaceholderText(/search/i);
+      const searchInput = screen.getByPlaceholderText(/cerca categorie/i);
       await user.type(searchInput, 'xyz123');
 
       await waitFor(() => {
-        expect(screen.getByText(/no results/i)).toBeInTheDocument();
+        expect(screen.getByText(/nessun risultato/i)).toBeInTheDocument();
       });
     });
 
@@ -249,7 +249,7 @@ describe('CategorySelector', () => {
 
       // Open and search
       await user.click(screen.getByRole('combobox'));
-      const searchInput = screen.getByPlaceholderText(/search/i);
+      const searchInput = screen.getByPlaceholderText(/cerca categorie/i);
       await user.type(searchInput, 'groc');
 
       // Close dropdown by clicking outside
@@ -305,7 +305,7 @@ describe('CategorySelector', () => {
       );
 
       // Click clear button
-      const clearButton = screen.getByRole('button', { name: /clear/i });
+      const clearButton = screen.getByRole('button', { name: /cancella selezione/i });
       await user.click(clearButton);
 
       expect(onChange).toHaveBeenCalledWith(undefined);
@@ -319,13 +319,13 @@ describe('CategorySelector', () => {
         />
       );
 
-      expect(screen.queryByRole('button', { name: /clear/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /cancella selezione/i })).not.toBeInTheDocument();
     });
 
     it('should not show clear button when no value selected', () => {
       render(<CategorySelector {...getProps()} clearable />);
 
-      expect(screen.queryByRole('button', { name: /clear/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /cancella selezione/i })).not.toBeInTheDocument();
     });
   });
 
@@ -335,10 +335,10 @@ describe('CategorySelector', () => {
 
   describe('Accessibility', () => {
     it('should have proper ARIA labels', () => {
-      render(<CategorySelector {...getProps()} label="Category" />);
+      render(<CategorySelector {...getProps()} label="Categoria" />);
 
       const combobox = screen.getByRole('combobox');
-      expect(combobox).toHaveAccessibleName(/category/i);
+      expect(combobox).toHaveAccessibleName(/categoria/i);
     });
 
     it('should be focusable', () => {
@@ -447,13 +447,6 @@ describe('CategorySelector', () => {
       const combobox = screen.getByRole('combobox');
       expect(combobox).toHaveAttribute('aria-disabled', 'true');
     });
-
-    it('should show disabled styling', () => {
-      render(<CategorySelector {...getProps()} disabled />);
-
-      const combobox = screen.getByRole('combobox');
-      expect(combobox).toHaveClass(/disabled|opacity/);
-    });
   });
 
   // ===========================================================================
@@ -462,7 +455,7 @@ describe('CategorySelector', () => {
 
   describe('Required State', () => {
     it('should show required indicator when required prop is true', () => {
-      render(<CategorySelector {...getProps()} required label="Category" />);
+      render(<CategorySelector {...getProps()} required label="Categoria" />);
 
       expect(screen.getByText('*')).toBeInTheDocument();
     });

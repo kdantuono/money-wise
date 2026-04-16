@@ -75,7 +75,7 @@ describe('Loading Components', () => {
     it('renders loading screen with default message', () => {
       render(<LoadingScreen />);
 
-      expect(screen.getByText('Loading...')).toBeInTheDocument();
+      expect(screen.getByText('Caricamento...')).toBeInTheDocument();
     });
 
     it('renders with custom message', () => {
@@ -84,15 +84,11 @@ describe('Loading Components', () => {
       expect(screen.getByText('Please wait while we process your request')).toBeInTheDocument();
     });
 
-    it('includes loading spinner', () => {
-      render(<LoadingScreen />);
+    it('includes animated pulse dots', () => {
+      const { container } = render(<LoadingScreen />);
 
-      const container = screen.getByText('Loading...').parentElement;
-      expect(container).toBeInTheDocument();
-
-      // Check for spinner by looking for animation classes
-      const spinner = container?.querySelector('.animate-spin');
-      expect(spinner).toBeInTheDocument();
+      const pulseDots = container.querySelectorAll('.animate-pulse');
+      expect(pulseDots.length).toBe(3);
     });
 
     it('applies full-screen layout classes', () => {
@@ -102,21 +98,22 @@ describe('Loading Components', () => {
       expect(loadingScreen).toHaveClass('min-h-screen', 'flex', 'items-center', 'justify-center');
     });
 
-    it('renders with different spinner sizes', () => {
-      const { container: containerSm } = render(<LoadingScreen size="sm" />);
-      const spinnerSm = containerSm.querySelector('.h-4.w-4');
-      expect(spinnerSm).toBeInTheDocument();
-
-      const { container: containerXl } = render(<LoadingScreen size="xl" />);
-      const spinnerXl = containerXl.querySelector('.h-16.w-16');
-      expect(spinnerXl).toBeInTheDocument();
-    });
-
-    it('uses large spinner by default', () => {
+    it('renders three dots with staggered animation delays', () => {
       const { container } = render(<LoadingScreen />);
 
-      const spinner = container.querySelector('.h-12.w-12');
-      expect(spinner).toBeInTheDocument();
+      const dots = container.querySelectorAll('.animate-pulse');
+      expect(dots.length).toBe(3);
+      expect(dots[0]).toHaveStyle({ animationDelay: '0ms' });
+      expect(dots[1]).toHaveStyle({ animationDelay: '200ms' });
+      expect(dots[2]).toHaveStyle({ animationDelay: '400ms' });
+    });
+
+    it('renders message text below dots', () => {
+      render(<LoadingScreen />);
+
+      const message = screen.getByText('Caricamento...');
+      expect(message).toBeInTheDocument();
+      expect(message.tagName).toBe('P');
     });
   });
 
