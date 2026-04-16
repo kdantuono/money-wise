@@ -128,7 +128,11 @@ export function AICategorization() {
                       {tx.amount < 0 ? '-' : '+'}€{Math.abs(tx.amount).toFixed(2)}
                     </span>
                   </div>
-                  <p className="text-[11px] text-muted-foreground">{new Date(tx.date).toLocaleDateString('it-IT')}</p>
+                  <p className="text-[11px] text-muted-foreground">{(() => {
+                    // Parse YYYY-MM-DD as local-midnight to avoid timezone drift
+                    const [y, m, d] = tx.date.slice(0, 10).split('-').map(Number);
+                    return new Date(y, (m || 1) - 1, d || 1).toLocaleDateString('it-IT');
+                  })()}</p>
 
                   {/* AI suggestion */}
                   <div className="mt-3 flex items-center gap-3">

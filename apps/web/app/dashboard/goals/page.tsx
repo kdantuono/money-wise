@@ -132,7 +132,11 @@ export default function GoalsPage() {
           const pct = (goal.current / goal.target) * 100;
           const colors = getColorClasses(goal.color);
           const remaining = goal.target - goal.current;
-          const daysLeft = Math.max(0, Math.ceil((new Date(goal.deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24)));
+          // Parse YYYY-MM-DD as local-midnight to avoid timezone drift in daysLeft
+          const [dy, dm, dd] = goal.deadline.slice(0, 10).split('-').map(Number);
+          const deadlineLocal = new Date(dy, (dm || 1) - 1, dd || 1).getTime();
+          const todayLocal = new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate()).getTime();
+          const daysLeft = Math.max(0, Math.ceil((deadlineLocal - todayLocal) / (1000 * 60 * 60 * 24)));
           const monthlyNeeded = remaining / Math.max(1, daysLeft / 30);
 
           return (
