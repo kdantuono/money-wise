@@ -1,12 +1,14 @@
 /**
  * Date Filter Logic Tests
  *
- * Tests the date filtering logic used in EnhancedTransactionList.
+ * Tests the fixed date filtering logic now used in EnhancedTransactionList
+ * and preserves the previous buggy logic for regression documentation.
  * Ensures dates are compared correctly regardless of timezone.
  */
 import { describe, it, expect } from 'vitest';
 
-// Replicate the CURRENT (buggy) filter logic from EnhancedTransactionList
+// Replicate the PREVIOUS (buggy) filter logic formerly used in
+// EnhancedTransactionList, kept here for regression documentation.
 function filterByDateBuggy(
   txDate: string,
   dateFrom: string | '',
