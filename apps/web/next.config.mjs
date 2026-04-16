@@ -75,7 +75,10 @@ const sentryWebpackPluginOptions = {
 
 // Export Next.js config wrapped with bundle analyzer, next-intl, and Sentry
 // Order (innermost first): bundle analyzer → next-intl → Sentry
-export default withSentryConfig(
-  withNextIntl(withBundleAnalyzer(nextConfig)),
-  sentryWebpackPluginOptions
-);
+// Sentry wrapping is conditional: only apply when auth token is provided
+// (otherwise missing credentials can cause build issues in CI environments)
+const baseConfig = withNextIntl(withBundleAnalyzer(nextConfig));
+
+export default process.env.SENTRY_AUTH_TOKEN
+  ? withSentryConfig(baseConfig, sentryWebpackPluginOptions)
+  : baseConfig;
