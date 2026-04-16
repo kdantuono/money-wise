@@ -144,7 +144,7 @@ jobs:
         if: steps.check-artifacts.outputs.exists == 'false'
         run: |
           echo "🏗️ Rebuilding web..."
-          pnpm --filter @money-wise/web build
+          pnpm build:web
         env:
           SENTRY_RELEASE: ${{ needs.validate-release.outputs.version }}
           SENTRY_ORG: ${{ env.SENTRY_ORG }}

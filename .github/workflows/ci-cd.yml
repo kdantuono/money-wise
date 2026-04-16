@@ -744,7 +744,7 @@ jobs:
         run: |
           echo "🏗️ Building ${{ matrix.app }}..."
           if [[ "${{ matrix.app }}" == "web" ]]; then
-            pnpm --filter @money-wise/web build
+            pnpm build:web
           elif [[ "${{ matrix.app }}" == "mobile" ]]; then
             echo "📱 Mobile build not yet configured"
           fi
