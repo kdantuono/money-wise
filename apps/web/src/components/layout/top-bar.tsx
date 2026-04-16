@@ -185,6 +185,7 @@ export function TopBar() {
                       setShowAllNotifications(false);
                     }}
                     className="text-[11px] text-muted-foreground/60 hover:text-muted-foreground transition-colors"
+                    aria-label="Chiudi notifiche"
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
