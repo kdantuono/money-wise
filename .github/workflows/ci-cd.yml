@@ -413,7 +413,7 @@ jobs:
           exit-code: '0'
 
       - name: 📤 Upload Trivy Report as Artifact
-        if: steps.should-run.outputs.run == 'true' && always()
+        if: steps.should-run.outputs.run == 'true' && always() && hashFiles('trivy-results.txt') != ''
         uses: actions/upload-artifact@v4
         with:
           name: trivy-scan-${{ github.run_id }}
@@ -421,15 +421,13 @@ jobs:
           retention-days: 30
 
       - name: 📋 Display Trivy Summary
-        if: steps.should-run.outputs.run == 'true' && always()
+        if: steps.should-run.outputs.run == 'true' && always() && hashFiles('trivy-results.txt') != ''
         run: |
-          if [ -f trivy-results.txt ]; then
-            echo "### 🐳 Trivy Filesystem Scan Results" >> $GITHUB_STEP_SUMMARY
-            echo '```' >> $GITHUB_STEP_SUMMARY
-            head -50 trivy-results.txt >> $GITHUB_STEP_SUMMARY
-            echo '```' >> $GITHUB_STEP_SUMMARY
-            echo "Full report available as artifact: trivy-scan-${{ github.run_id }}" >> $GITHUB_STEP_SUMMARY
-          fi
+          echo "### 🐳 Trivy Filesystem Scan Results" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          head -50 trivy-results.txt >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "Full report available as artifact: trivy-scan-${{ github.run_id }}" >> $GITHUB_STEP_SUMMARY
 
       - name: 🐳 Trivy Container Image Scan (if Dockerfiles exist)
         if: steps.should-run.outputs.run == 'true' && needs.foundation.outputs.has_docker == 'true'

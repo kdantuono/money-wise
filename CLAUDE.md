@@ -163,7 +163,7 @@ Files allowed in root: README.md, CHANGELOG.md, CONTRIBUTING.md, FRONTEND_HANDOF
 Shared knowledge lives at `~/vault/moneywise/` — plain Markdown, Obsidian-compatible, outside the repo for privacy. It is the **single source of truth** for long-lived knowledge (memories, planning, postmortems, ADR, research).
 
 **Two access paths, same files**:
-- `~/.claude/projects/-home-deck-dev-money-wise/memory/` is now a **symlink** to `~/vault/moneywise/memory/`. Claude's auto-memory system writes there transparently.
+- `~/.claude/projects/<project-id>/memory/` is a **symlink** to `~/vault/moneywise/memory/`. Claude's auto-memory system writes there transparently. `<project-id>` is machine-specific (derived by Claude Code from the absolute repo path, e.g. `-home-deck-dev-money-wise` when the repo lives at `/home/deck/dev/money-wise`). To discover the correct directory on a fresh machine: `ls ~/.claude/projects/ | grep money-wise`.
 - `~/vault/moneywise/` exposes the full vault (planning, postmortems, decisions, research, references).
 
 **Entry points**: `README.md` (conventions) + `index.md` (navigation) + `memory/MEMORY.md` (auto-memory index).
