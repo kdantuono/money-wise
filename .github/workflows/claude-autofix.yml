@@ -106,6 +106,17 @@ jobs:
             echo "skip=false" >> $GITHUB_OUTPUT
           fi
 
+      # Configure git committer identity before fix-agent attempts any commit.
+      # GitHub-hosted runners have no default user.name/user.email — without
+      # these, `git commit` fails. We use the github-actions[bot] identity so
+      # the commits appear authored by automation (and are correctly matched
+      # by the loop-prevention regex on subsequent runs).
+      - name: ⚙️ Configure git committer identity
+        if: steps.loop-check.outputs.skip != 'true'
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email '41898282+github-actions[bot]@users.noreply.github.com'
+
       # =======================================================================
       # FIX AGENT — Sonnet 4.6, max 50 turns
       # Does the heavy lifting: wait for Copilot, apply fixes, monitor CI
@@ -126,7 +137,7 @@ jobs:
           claude_args: >-
             --model claude-sonnet-4-6
             --max-turns 50
-            --allowed-tools "Bash(gh pr:*),Bash(gh api:*),Bash(gh run:*),Bash(gh label:*),Bash(git add:*),Bash(git commit:*),Bash(git push:*),Bash(git diff:*),Bash(git log:*),Bash(git status:*),Bash(git fetch:*),Bash(sleep:*),Bash(echo:*),Bash(grep:*),Bash(jq:*),Bash(cat:*),Bash(head:*),Bash(tail:*),Bash(wc:*),Bash(seq:*),Bash(pnpm:*)"
+            --allowed-tools "Bash(gh pr:*),Bash(gh api:*),Bash(gh run:*),Bash(gh label:*),Bash(git add:*),Bash(git commit:*),Bash(git push:*),Bash(git diff:*),Bash(git log:*),Bash(git status:*),Bash(git fetch:*),Bash(git config:*),Bash(sleep:*),Bash(echo:*),Bash(grep:*),Bash(jq:*),Bash(cat:*),Bash(head:*),Bash(tail:*),Bash(wc:*),Bash(seq:*),Bash(pnpm:*)"
           additional_permissions: |
             actions: read
           prompt: |
