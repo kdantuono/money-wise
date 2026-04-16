@@ -68,6 +68,108 @@ jobs:
       # The steps below are kept as reference but removed from execution
 
   # ===================================================================
+  # 🔍 CHANGES: Path-based change detection
+  # Determines which parts of the repo changed. Downstream jobs use
+  # these outputs to skip expensive work (tests, E2E, build) when
+  # irrelevant (e.g., docs-only PRs skip heavy pipelines entirely).
+  # ===================================================================
+
+  changes:
+    name: 🔍 Detect Changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read  # required by dorny/paths-filter for PR events
+    outputs:
+      web: ${{ steps.filter.outputs.web }}
+      mobile: ${{ steps.filter.outputs.mobile }}
+      functions: ${{ steps.filter.outputs.functions }}
+      db: ${{ steps.filter.outputs.db }}
+      tests: ${{ steps.filter.outputs.tests }}
+      workflows: ${{ steps.filter.outputs.workflows }}
+      docs: ${{ steps.filter.outputs.docs }}
+      root_config: ${{ steps.filter.outputs.root_config }}
+      docs_only: ${{ steps.calculate.outputs.docs_only }}
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: 🔍 Filter changed paths
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            web:
+              - 'apps/web/**'
+              - 'packages/ui/**'
+              - 'packages/types/**'
+              - 'packages/utils/**'
+            mobile:
+              - 'apps/mobile/**'
+              - 'packages/types/**'
+            functions:
+              - 'supabase/functions/**'
+            db:
+              - 'supabase/migrations/**'
+              - 'supabase/config.toml'
+            tests:
+              - 'apps/web/__tests__/**'
+              - 'apps/web/**/*.test.ts'
+              - 'apps/web/**/*.test.tsx'
+              - 'apps/web/e2e/**'
+            workflows:
+              - '.github/workflows/**'
+            docs:
+              - '**/*.md'
+              - 'docs/**'
+              - '.github/ISSUE_TEMPLATE/**'
+              - '.github/PULL_REQUEST_TEMPLATE.md'
+            root_config:
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
+              - 'turbo.json'
+              - 'tsconfig*.json'
+              - '.eslintrc*'
+              - '.prettierrc*'
+              - '.npmrc'
+              - '.nvmrc'
+              - 'vitest.config.*'
+              - 'jest.config.*'
+              - 'playwright.config.*'
+              - 'docker-compose*.yml'
+              - 'docker-compose*.yaml'
+
+      - name: 🧮 Calculate docs_only flag
+        id: calculate
+        run: |
+          DOCS_ONLY="false"
+          if [[ "${{ steps.filter.outputs.docs }}" == "true" && \
+                "${{ steps.filter.outputs.web }}" == "false" && \
+                "${{ steps.filter.outputs.mobile }}" == "false" && \
+                "${{ steps.filter.outputs.functions }}" == "false" && \
+                "${{ steps.filter.outputs.db }}" == "false" && \
+                "${{ steps.filter.outputs.tests }}" == "false" && \
+                "${{ steps.filter.outputs.workflows }}" == "false" && \
+                "${{ steps.filter.outputs.root_config }}" == "false" ]]; then
+            DOCS_ONLY="true"
+          fi
+          echo "docs_only=$DOCS_ONLY" >> $GITHUB_OUTPUT
+          echo "📊 Change detection summary:"
+          echo "  web:          ${{ steps.filter.outputs.web }}"
+          echo "  mobile:       ${{ steps.filter.outputs.mobile }}"
+          echo "  functions:    ${{ steps.filter.outputs.functions }}"
+          echo "  db:           ${{ steps.filter.outputs.db }}"
+          echo "  tests:        ${{ steps.filter.outputs.tests }}"
+          echo "  workflows:    ${{ steps.filter.outputs.workflows }}"
+          echo "  docs:         ${{ steps.filter.outputs.docs }}"
+          echo "  root_config:  ${{ steps.filter.outputs.root_config }}"
+          echo "  docs_only:    $DOCS_ONLY"
+
+  # ===================================================================
   # 📦 DEVELOPMENT: Code quality checks
   # ===================================================================
 
@@ -585,8 +687,22 @@ jobs:
   testing:
     name: 🧪 Testing Pipeline
     runs-on: ubuntu-latest
-    needs: [foundation, development]
-    if: needs.foundation.outputs.has_tests == 'true' || github.event.inputs.force_full_pipeline == 'true'
+    needs: [foundation, development, changes]
+    # Gate on prerequisite jobs actually succeeding (foundation + development),
+    # then fail-open for `changes` (if detection fails or relevant paths changed,
+    # protected branch, or force flag → run).
+    if: |
+      always() &&
+      needs.foundation.result == 'success' &&
+      needs.development.result == 'success' && (
+        needs.changes.result != 'success' ||
+        needs.changes.outputs.web == 'true' ||
+        needs.changes.outputs.tests == 'true' ||
+        needs.changes.outputs.root_config == 'true' ||
+        github.ref == 'refs/heads/main' ||
+        github.ref == 'refs/heads/develop' ||
+        github.event.inputs.force_full_pipeline == 'true'
+      )
     timeout-minutes: 35
 
     permissions:
@@ -711,8 +827,20 @@ jobs:
   build:
     name: 🏗️ Build Pipeline
     runs-on: ubuntu-latest
-    needs: [foundation, development]
-    if: needs.foundation.outputs.has_apps == 'true' || github.event.inputs.force_full_pipeline == 'true'
+    needs: [foundation, development, changes]
+    # Gate on prerequisites succeeding, then fail-open for `changes`.
+    if: |
+      always() &&
+      needs.foundation.result == 'success' &&
+      needs.development.result == 'success' && (
+        needs.changes.result != 'success' ||
+        needs.changes.outputs.web == 'true' ||
+        needs.changes.outputs.mobile == 'true' ||
+        needs.changes.outputs.root_config == 'true' ||
+        github.ref == 'refs/heads/main' ||
+        github.ref == 'refs/heads/develop' ||
+        github.event.inputs.force_full_pipeline == 'true'
+      )
     timeout-minutes: 20
 
     strategy:
@@ -777,14 +905,24 @@ jobs:
     name: 🧪 E2E Tests
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    needs: [foundation, development, testing]
-    # Run E2E tests on:
-    # - Push to main/develop/hotfix branches
-    # - Pull requests from hotfix branches (to ensure E2E before merge to main)
-    # - PR ready_for_review event
+    needs: [foundation, development, testing, changes]
+    # Gate on prerequisites succeeding (foundation, development, testing) AND
+    # trigger conditions met AND relevant code changed. Fail-open for `changes`.
     if: |
-      (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/heads/hotfix/'))) ||
-      (github.event_name == 'pull_request' && (github.event.action == 'ready_for_review' || startsWith(github.head_ref, 'hotfix/')))
+      always() &&
+      needs.foundation.result == 'success' &&
+      needs.development.result == 'success' &&
+      needs.testing.result == 'success' && (
+        (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/heads/hotfix/'))) ||
+        (github.event_name == 'pull_request' && (github.event.action == 'ready_for_review' || startsWith(github.head_ref, 'hotfix/')))
+      ) && (
+        needs.changes.result != 'success' ||
+        needs.changes.outputs.web == 'true' ||
+        needs.changes.outputs.db == 'true' ||
+        needs.changes.outputs.functions == 'true' ||
+        needs.changes.outputs.root_config == 'true' ||
+        github.event.inputs.force_full_pipeline == 'true'
+      )
 
     steps:
       - name: 📥 Checkout Repository
@@ -850,8 +988,18 @@ jobs:
     name: 📦 Bundle Size Check
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    needs: [foundation, development]
-    if: github.event_name == 'pull_request'
+    needs: [foundation, development, changes]
+    # PR-only. Gate on prerequisites, then fail-open for `changes`.
+    if: |
+      always() &&
+      needs.foundation.result == 'success' &&
+      needs.development.result == 'success' &&
+      github.event_name == 'pull_request' && (
+        needs.changes.result != 'success' ||
+        needs.changes.outputs.web == 'true' ||
+        needs.changes.outputs.root_config == 'true' ||
+        github.event.inputs.force_full_pipeline == 'true'
+      )
 
     permissions:
       contents: read
