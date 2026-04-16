@@ -143,7 +143,7 @@ export function RecategorizeDialog({
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <h2 id="recategorize-title" className="text-lg font-semibold text-foreground">
-            Categorize {transactionCount} {transactionCount === 1 ? 'transaction' : 'transactions'}
+            Categorizza {transactionCount} {transactionCount === 1 ? 'transazione' : 'transazioni'}
           </h2>
           <button
             ref={firstFocusableRef}
@@ -153,7 +153,7 @@ export function RecategorizeDialog({
             className="p-1 rounded-lg text-muted-foreground hover:text-muted-foreground hover:bg-muted
               focus:outline-none focus:ring-2 focus:ring-blue-500
               disabled:opacity-50 disabled:cursor-not-allowed"
-            aria-label="Close"
+            aria-label="Chiudi"
           >
             <X className="h-5 w-5" />
           </button>
@@ -165,8 +165,8 @@ export function RecategorizeDialog({
             value={selectedCategoryId}
             onChange={setSelectedCategoryId}
             categories={categories}
-            label="Category"
-            placeholder="Select a category"
+            label="Categoria"
+            placeholder="Seleziona una categoria"
             searchable
             disabled={isProcessing}
           />
@@ -176,7 +176,7 @@ export function RecategorizeDialog({
         {isProcessing && (
           <div className="flex items-center gap-2 mb-4 text-sm text-blue-600">
             <Loader2 className="h-4 w-4 animate-spin" data-testid="processing-spinner" />
-            <span>Updating transactions...</span>
+            <span>Aggiornamento transazioni...</span>
           </div>
         )}
 
@@ -190,7 +190,7 @@ export function RecategorizeDialog({
               hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring
               disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Cancel
+            Annulla
           </button>
           <button
             type="button"
@@ -202,7 +202,7 @@ export function RecategorizeDialog({
               flex items-center justify-center gap-2"
           >
             {isProcessing && <Loader2 className="h-4 w-4 animate-spin" />}
-            Apply
+            Applica
           </button>
         </div>
       </div>

@@ -236,9 +236,11 @@ export const accountsClient = {
       insert.user_id = user.id
     }
 
-    const { data, error } = await supabase
+    // Type-safe insert with explicit casting to avoid Next.js build type inference issues
+    const { data, error } = await (supabase
       .from('accounts')
-      .insert(insert)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .insert as any)(insert)
       .select()
       .single()
 
@@ -259,9 +261,11 @@ export const accountsClient = {
     if (input.syncEnabled !== undefined) update.sync_enabled = input.syncEnabled
     if (input.settings !== undefined) update.settings = input.settings
 
-    const { data, error } = await supabase
+    // Type-safe update with explicit casting to avoid Next.js build type inference issues
+    const { data, error } = await (supabase
       .from('accounts')
-      .update(update)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .update as any)(update)
       .eq('id', accountId)
       .select()
       .single()

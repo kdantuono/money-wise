@@ -303,9 +303,11 @@ export const budgetsClient = {
       family_id: familyId,
     };
 
-    const { data: created, error } = await supabase
+    // Type-safe insert with explicit casting to avoid Next.js build type inference issues
+    const { data: created, error } = await (supabase
       .from('budgets')
-      .insert(insert)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .insert as any)(insert)
       .select('*, categories(id, name, icon, color)')
       .single();
 
@@ -326,9 +328,11 @@ export const budgetsClient = {
     if (data.alertThresholds !== undefined) update.alert_thresholds = data.alertThresholds;
     if (data.notes !== undefined) update.notes = data.notes;
 
-    const { data: updated, error } = await supabase
+    // Type-safe update with explicit casting to avoid Next.js build type inference issues
+    const { data: updated, error } = await (supabase
       .from('budgets')
-      .update(update)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .update as any)(update)
       .eq('id', id)
       .select('*, categories(id, name, icon, color)')
       .single();

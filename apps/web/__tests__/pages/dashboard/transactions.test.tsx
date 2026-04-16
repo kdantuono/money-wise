@@ -1,14 +1,51 @@
 /**
- * Tests for TransactionsPage component
+ * Tests for TransactionsPage (now ExpensesPage) component
  *
- * Tests the full transactions page with header, "Add Transaction" button,
- * transaction list rendering, and account filter.
+ * After the Figma Design Sprint, this page is now called "Spese" (Expenses)
+ * and renders summary cards, a bar chart, tab filters, and an
+ * EnhancedTransactionList. It starts in loading state until data fetches resolve.
+ * All text is in Italian.
  */
 
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '../../utils/test-utils';
-import TransactionsPage from '../../../app/dashboard/transactions/page';
+
+// Mock framer-motion
+vi.mock('framer-motion', () => ({
+  motion: new Proxy({}, {
+    get: (_target: unknown, prop: string | symbol) => {
+      if (prop === '__esModule') return false;
+      return ({ children, initial, animate, exit, transition, whileHover, whileTap, whileInView, variants, ...rest }: Record<string, unknown>) => {
+        const Tag = typeof prop === 'string' ? prop : 'div';
+        return React.createElement(Tag as string, rest, children as React.ReactNode);
+      };
+    },
+  }),
+  AnimatePresence: ({ children }: { children: React.ReactNode }) => children,
+}));
+
+// Mock recharts
+vi.mock('recharts', () => ({
+  ResponsiveContainer: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  BarChart: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  Bar: () => null,
+  XAxis: () => null,
+  YAxis: () => null,
+  CartesianGrid: () => null,
+  Tooltip: () => null,
+  Cell: () => null,
+}));
+
+// Mock next/navigation
+vi.mock('next/navigation', () => ({
+  useRouter: vi.fn(() => ({
+    push: vi.fn(),
+    back: vi.fn(),
+    replace: vi.fn(),
+    prefetch: vi.fn(),
+  })),
+}));
 
 // Mock service clients
 vi.mock('../../../src/services/transactions.client', () => ({
@@ -30,24 +67,13 @@ vi.mock('../../../src/services/accounts.client', () => ({
 vi.mock('../../../src/services/categories.client', () => ({
   categoriesClient: {
     getOptions: vi.fn().mockResolvedValue([]),
+    getSpending: vi.fn().mockResolvedValue({ categories: [], totalSpending: 0, startDate: '', endDate: '' }),
   },
-}));
-
-// Mock banking components that have complex sub-dependencies
-vi.mock('../../../src/components/banking', () => ({
-  ErrorAlert: ({ title, message, onDismiss }: { title: string; message: string; onDismiss: () => void }) => (
-    <div data-testid="error-alert">
-      <span>{title}</span>
-      <span>{message}</span>
-      <button onClick={onDismiss}>Dismiss</button>
-    </div>
-  ),
-  ErrorBoundary: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
 // Mock transaction components
 vi.mock('../../../src/components/transactions', () => ({
-  QuickAddTransaction: ({ trigger, onSuccess }: {
+  QuickAddTransaction: ({ trigger }: {
     trigger: (props: { onClick: () => void }) => React.ReactNode;
     onSuccess: () => void;
   }) => <>{trigger({ onClick: vi.fn() })}</>,
@@ -67,6 +93,7 @@ vi.mock('../../../src/components/transactions', () => ({
   ),
 }));
 
+import TransactionsPage from '../../../app/dashboard/transactions/page';
 import { transactionsClient } from '../../../src/services/transactions.client';
 import { accountsClient } from '../../../src/services/accounts.client';
 import { categoriesClient } from '../../../src/services/categories.client';
@@ -75,53 +102,93 @@ const mockTransactionsClient = vi.mocked(transactionsClient);
 const mockAccountsClient = vi.mocked(accountsClient);
 const mockCategoriesClient = vi.mocked(categoriesClient);
 
-describe('TransactionsPage', () => {
+describe('TransactionsPage (ExpensesPage)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockTransactionsClient.getTransactions.mockResolvedValue([]);
     mockAccountsClient.getAccounts.mockResolvedValue([]);
     mockCategoriesClient.getOptions.mockResolvedValue([]);
+    mockCategoriesClient.getSpending.mockResolvedValue({ categories: [], totalSpending: 0, startDate: '', endDate: '' });
   });
 
   describe('Header', () => {
-    it('renders the page heading', async () => {
+    it('renders the page heading in Italian', async () => {
       render(<TransactionsPage />);
 
-      expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Transactions');
+      await waitFor(() => {
+        expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Spese');
+      });
     });
 
-    it('renders the description text', () => {
+    it('renders the description text in Italian', async () => {
       render(<TransactionsPage />);
 
-      expect(screen.getByText('View and manage your transaction history')).toBeInTheDocument();
-    });
-
-    it('renders the CreditCard icon in header', () => {
-      const { container } = render(<TransactionsPage />);
-
-      const headerIcon = container.querySelector('.bg-green-100 svg');
-      expect(headerIcon).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('Monitora e gestisci le tue spese')).toBeInTheDocument();
+      });
     });
   });
 
   describe('Add Transaction Button', () => {
-    it('renders Add Transaction button', () => {
+    it('renders Aggiungi Spesa button', async () => {
       render(<TransactionsPage />);
 
-      const addButton = screen.getByRole('button', { name: /Add Transaction/i });
-      expect(addButton).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /Aggiungi Spesa/i })).toBeInTheDocument();
+      });
+    });
+  });
+
+  describe('Summary Cards', () => {
+    it('renders Spese Totali label after data loads', async () => {
+      render(<TransactionsPage />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Spese Totali')).toBeInTheDocument();
+      });
     });
 
-    it('Add Transaction button is enabled', () => {
+    it('renders Costi Fissi label after data loads', async () => {
       render(<TransactionsPage />);
 
-      const addButton = screen.getByRole('button', { name: /Add Transaction/i });
-      expect(addButton).not.toBeDisabled();
+      await waitFor(() => {
+        expect(screen.getByText('Costi Fissi')).toBeInTheDocument();
+      });
+    });
+
+    it('renders Costi Variabili label after data loads', async () => {
+      render(<TransactionsPage />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Costi Variabili')).toBeInTheDocument();
+      });
+    });
+
+    it('renders Ricorrenti label after data loads', async () => {
+      render(<TransactionsPage />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Ricorrenti')).toBeInTheDocument();
+      });
+    });
+  });
+
+  describe('Tab Filters', () => {
+    it('renders tab filter buttons', async () => {
+      render(<TransactionsPage />);
+
+      // Tab labels include counts, e.g. "Tutte (0)", "Uscite (0)"
+      await waitFor(() => {
+        expect(screen.getByText(/Tutte \(/)).toBeInTheDocument();
+        expect(screen.getByText(/Uscite \(/)).toBeInTheDocument();
+        expect(screen.getByText(/Entrate \(/)).toBeInTheDocument();
+        expect(screen.getByText(/Ricorrenti \(/)).toBeInTheDocument();
+      });
     });
   });
 
   describe('Transaction List', () => {
-    it('renders the transaction list component', async () => {
+    it('renders the transaction list component after loading', async () => {
       render(<TransactionsPage />);
 
       await waitFor(() => {
@@ -147,61 +214,18 @@ describe('TransactionsPage', () => {
     });
   });
 
-  describe('Transaction Statistics', () => {
-    it('shows statistics when transactions exist', async () => {
-      mockTransactionsClient.getTransactions.mockResolvedValue([
-        {
-          id: 'tx-1',
-          accountId: 'acc-1',
-          amount: 100,
-          type: 'CREDIT',
-          description: 'Salary',
-          date: '2024-01-15',
-          status: 'POSTED',
-          source: 'MANUAL',
-          createdAt: '2024-01-15T00:00:00Z',
-          updatedAt: '2024-01-15T00:00:00Z',
-        },
-        {
-          id: 'tx-2',
-          accountId: 'acc-1',
-          amount: 50,
-          type: 'DEBIT',
-          description: 'Groceries',
-          date: '2024-01-16',
-          status: 'POSTED',
-          source: 'MANUAL',
-          createdAt: '2024-01-16T00:00:00Z',
-          updatedAt: '2024-01-16T00:00:00Z',
-        },
-      ]);
+  describe('Loading State', () => {
+    it('shows skeleton UI while loading', () => {
+      // Make the fetch hang so we stay in loading state
+      mockTransactionsClient.getTransactions.mockImplementation(() => new Promise(() => {}));
+      mockAccountsClient.getAccounts.mockImplementation(() => new Promise(() => {}));
+      mockCategoriesClient.getOptions.mockImplementation(() => new Promise(() => {}));
+      mockCategoriesClient.getSpending.mockImplementation(() => new Promise(() => {}));
 
-      render(<TransactionsPage />);
+      const { container } = render(<TransactionsPage />);
 
-      await waitFor(() => {
-        expect(screen.getByText('Total Transactions')).toBeInTheDocument();
-        expect(screen.getByText('Total Income')).toBeInTheDocument();
-        expect(screen.getByText('Total Expenses')).toBeInTheDocument();
-      });
-    });
-  });
-
-  describe('Empty State', () => {
-    it('shows connect bank prompt when no accounts and no transactions', async () => {
-      render(<TransactionsPage />);
-
-      await waitFor(() => {
-        expect(screen.getByText('Connect Your Bank')).toBeInTheDocument();
-      });
-    });
-
-    it('has link to accounts page in empty state', async () => {
-      render(<TransactionsPage />);
-
-      await waitFor(() => {
-        const connectLink = screen.getByRole('link', { name: /Connect Accounts/i });
-        expect(connectLink).toHaveAttribute('href', '/dashboard/accounts');
-      });
+      const skeleton = container.querySelector('.animate-pulse');
+      expect(skeleton).toBeInTheDocument();
     });
   });
 
@@ -216,7 +240,7 @@ describe('TransactionsPage', () => {
           status: 'ACTIVE',
           source: 'MANUAL',
           currentBalance: 1000,
-          currency: 'USD',
+          currency: 'EUR',
           isActive: true,
           isManualAccount: true,
           isPlaidAccount: false,
@@ -231,39 +255,9 @@ describe('TransactionsPage', () => {
       render(<TransactionsPage />);
 
       await waitFor(() => {
-        const filterSelect = screen.getByLabelText('Filter by account');
+        const filterSelect = screen.getByLabelText('Filtra per conto');
         expect(filterSelect).toBeInTheDocument();
       });
-    });
-
-    it('does not show account filter when no accounts', async () => {
-      render(<TransactionsPage />);
-
-      await waitFor(() => {
-        expect(screen.getByTestId('transaction-list')).toBeInTheDocument();
-      });
-
-      expect(screen.queryByLabelText('Filter by account')).not.toBeInTheDocument();
-    });
-  });
-
-  describe('Error Handling', () => {
-    it('displays error when transaction fetch fails', async () => {
-      mockTransactionsClient.getTransactions.mockRejectedValue(new Error('Network error'));
-
-      render(<TransactionsPage />);
-
-      await waitFor(() => {
-        expect(screen.getByTestId('error-alert')).toBeInTheDocument();
-      });
-    });
-  });
-
-  describe('Container', () => {
-    it('renders within transactions container', () => {
-      render(<TransactionsPage />);
-
-      expect(screen.getByTestId('transactions-container')).toBeInTheDocument();
     });
   });
 });

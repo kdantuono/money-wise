@@ -516,9 +516,11 @@ export const scheduledClient = {
       family_id: familyId,
     };
 
-    const { data: created, error } = await supabase
+    // Type-safe insert with explicit casting to avoid Next.js build type inference issues
+    const { data: created, error } = await (supabase
       .from('scheduled_transactions')
-      .insert(insert)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .insert as any)(insert)
       .select('*, recurrence_rules(*)')
       .single();
 

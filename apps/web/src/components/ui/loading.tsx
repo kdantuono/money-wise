@@ -79,8 +79,6 @@ export function LoadingSpinner({
 interface LoadingScreenProps {
   /** Loading message to display */
   message?: string;
-  /** Size of the spinner */
-  size?: LoadingSize;
 }
 
 /**
@@ -95,16 +93,21 @@ interface LoadingScreenProps {
  * ```
  */
 export function LoadingScreen({
-  message = 'Loading...',
-  size = 'lg'
+  message = 'Caricamento...',
 }: LoadingScreenProps) {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted">
+    <div className="min-h-screen flex items-center justify-center bg-background">
       <div className="text-center">
-        <div className="flex justify-center mb-4">
-          <LoadingSpinner size={size} />
+        <div className="flex items-center justify-center gap-2 mb-5">
+          {[0, 1, 2].map((i) => (
+            <div
+              key={i}
+              className="w-2.5 h-2.5 rounded-full bg-gradient-to-br from-emerald-500 to-teal-500 animate-pulse"
+              style={{ animationDelay: `${i * 200}ms` }}
+            />
+          ))}
         </div>
-        <p className="text-muted-foreground text-lg">{message}</p>
+        <p className="text-[13px] text-muted-foreground">{message}</p>
       </div>
     </div>
   );

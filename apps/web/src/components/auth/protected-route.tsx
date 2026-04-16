@@ -31,12 +31,16 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
       }
 
       const ok = await validateSession();
-      if (!ok && !cancelled) {
+      if (cancelled) return;
+
+      if (!ok) {
+        // Set isChecking false before redirect to avoid stale loading state
+        setIsChecking(false);
         router.push('/auth/login');
         return;
       }
 
-      if (!cancelled) setIsChecking(false);
+      setIsChecking(false);
     };
 
     run();

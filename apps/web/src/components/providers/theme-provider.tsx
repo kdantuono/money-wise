@@ -25,15 +25,67 @@ export const ThemeContext = createContext<ThemeContextType | undefined>(undefine
 const STORAGE_KEY = 'moneywise-theme';
 
 /**
+ * Dracula theme CSS variable overrides
+ * Applied on top of the dark class to create the Dracula color scheme
+ */
+const DRACULA_VARS: Record<string, string> = {
+  '--background': '#282a36',
+  '--foreground': '#f8f8f2',
+  '--card': '#21222c',
+  '--card-foreground': '#f8f8f2',
+  '--popover': '#21222c',
+  '--popover-foreground': '#f8f8f2',
+  '--primary': '#bd93f9',
+  '--primary-foreground': '#282a36',
+  '--secondary': '#44475a',
+  '--secondary-foreground': '#f8f8f2',
+  '--muted': '#44475a',
+  '--muted-foreground': '#6272a4',
+  '--accent': '#44475a',
+  '--accent-foreground': '#f8f8f2',
+  '--destructive': '#ff5555',
+  '--destructive-foreground': '#f8f8f2',
+  '--border': '#44475a',
+  '--input': '#44475a',
+  '--ring': '#bd93f9',
+};
+
+/**
+ * Italian Style theme CSS variable overrides
+ * Inspired by the Italian tricolor — green accents, red warnings, elegant dark base
+ */
+const ITALIAN_VARS: Record<string, string> = {
+  '--background': '#1a1a2e',
+  '--foreground': '#f0f0f0',
+  '--card': '#16213e',
+  '--card-foreground': '#f0f0f0',
+  '--popover': '#16213e',
+  '--popover-foreground': '#f0f0f0',
+  '--primary': '#009246',
+  '--primary-foreground': '#ffffff',
+  '--secondary': '#1f3050',
+  '--secondary-foreground': '#f0f0f0',
+  '--muted': '#1f3050',
+  '--muted-foreground': '#8899aa',
+  '--accent': '#1f3050',
+  '--accent-foreground': '#f0f0f0',
+  '--destructive': '#CE2B37',
+  '--destructive-foreground': '#ffffff',
+  '--border': '#2a3a5c',
+  '--input': '#1f3050',
+  '--ring': '#009246',
+};
+
+/**
  * Get system color scheme preference
  */
-function getSystemTheme(): ResolvedTheme {
+function getSystemTheme(): 'light' | 'dark' {
   if (typeof window === 'undefined') return 'light';
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 }
 
 /**
- * Resolve theme to actual light/dark value
+ * Resolve theme to actual applied value
  */
 function resolveTheme(theme: Theme): ResolvedTheme {
   if (theme === 'system') {
@@ -43,39 +95,52 @@ function resolveTheme(theme: Theme): ResolvedTheme {
 }
 
 /**
- * Apply theme class to document element
+ * Apply theme class and CSS variables to document element
  */
 function applyTheme(resolved: ResolvedTheme): void {
   if (typeof window === 'undefined') return;
 
   const root = document.documentElement;
+  root.classList.remove('dark', 'dracula', 'italian');
+  // Clear all custom theme properties
+  [...Object.keys(DRACULA_VARS), ...Object.keys(ITALIAN_VARS)].forEach(k => root.style.removeProperty(k));
+
   if (resolved === 'dark') {
     root.classList.add('dark');
-  } else {
-    root.classList.remove('dark');
+  } else if (resolved === 'dracula') {
+    root.classList.add('dark', 'dracula');
+    Object.entries(DRACULA_VARS).forEach(([k, v]) => root.style.setProperty(k, v));
+  } else if (resolved === 'italian') {
+    root.classList.add('dark', 'italian');
+    Object.entries(ITALIAN_VARS).forEach(([k, v]) => root.style.setProperty(k, v));
   }
+  // 'light' = no classes, no custom props
 }
 
 /**
  * Get initial theme from user preferences, localStorage, or system
  */
 function getInitialTheme(userPreference?: string | null): Theme {
-  // Priority 1: User preference from backend
-  if (userPreference === 'light' || userPreference === 'dark' || userPreference === 'auto') {
-    // Backend uses 'auto', frontend uses 'system'
-    return userPreference === 'auto' ? 'system' : userPreference;
-  }
+  // Priority 1: User preference from backend (with legacy support)
+  if (userPreference === 'dracula') return 'dracula';
+  if (userPreference === 'italian') return 'italian';
+  if (userPreference === 'auto' || userPreference === 'system') return 'system';
+  // Legacy support: 'light' maps to 'system' (will use OS preference)
+  if (userPreference === 'light') return 'system';
+  // Legacy support: 'dark' maps to 'dracula' (our default dark theme)
+  if (userPreference === 'dark') return 'dracula';
 
-  // Priority 2: localStorage
+  // Priority 2: localStorage (with legacy support)
   if (typeof window !== 'undefined') {
     const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored === 'light' || stored === 'dark' || stored === 'system') {
-      return stored;
-    }
+    if (stored === 'system' || stored === 'dracula' || stored === 'italian') return stored;
+    // Legacy support in localStorage
+    if (stored === 'light') return 'system';
+    if (stored === 'dark') return 'dracula';
   }
 
-  // Priority 3: System preference
-  return 'system';
+  // Priority 3: Dracula as default
+  return 'dracula';
 }
 
 interface ThemeProviderProps {
@@ -106,9 +171,9 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
   // Update theme when user preferences change
   useEffect(() => {
     if (user?.preferences?.theme) {
-      const userTheme = user.preferences.theme === 'auto' ? 'system' : user.preferences.theme;
+      const userTheme = getInitialTheme(user.preferences.theme as string | undefined);
       if (userTheme !== theme) {
-        setThemeState(userTheme as Theme);
+        setThemeState(userTheme);
       }
     }
   }, [user?.preferences?.theme, theme]);
@@ -149,7 +214,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
   const value: ThemeContextType = {
     theme,
     resolvedTheme,
-    isDark: resolvedTheme === 'dark',
+    isDark: resolvedTheme === 'dark' || resolvedTheme === 'dracula' || resolvedTheme === 'italian',
     setTheme,
   };
 

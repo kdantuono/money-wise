@@ -1,294 +1,288 @@
-/**
- * Dashboard Layout Component
- *
- * Provides consistent layout structure for dashboard pages.
- * Includes sidebar navigation and main content area.
- */
-
 'use client';
 
 import { ReactNode, useState } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { useAuthStore } from '@/store/auth.store';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard,
   Wallet,
-  CreditCard,
   TrendingUp,
-  Target,
-  Settings,
-  LogOut,
+  Receipt,
+  PiggyBank,
+  Brain,
+  Settings as SettingsIcon,
   Menu,
   X,
-  User,
-  Search,
-  PiggyBank,
-  ChevronDown,
-  ClipboardList,
-  Tags,
-  Calendar,
-  Clock,
-  Receipt,
+  Plus,
+  Diamond,
+  MessageSquareText,
+  Target,
+  Upload,
+  LogOut,
+  FileText,
+  Sparkles,
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { NotificationBell } from '@/components/notifications';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useAuthStore } from '@/store/auth.store';
+import { TopBar } from './top-bar';
+
+// ---------------------------------------------------------------------------
+// Navigation config — mapped to Next.js App Router paths
+// ---------------------------------------------------------------------------
+
+const mainNav = [
+  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+  { name: 'Conti', href: '/dashboard/accounts', icon: Wallet },
+  { name: 'Investimenti', href: '/dashboard/investments', icon: TrendingUp },
+  { name: 'Spese', href: '/dashboard/transactions', icon: Receipt },
+  { name: 'Budget', href: '/dashboard/budgets', icon: PiggyBank },
+];
+
+const toolsNav = [
+  { name: 'Categorizzazione AI', href: '/dashboard/categories', icon: Sparkles },
+  { name: 'Obiettivi', href: '/dashboard/goals', icon: Target },
+  { name: 'Analisi AI', href: '/dashboard/analysis', icon: Brain },
+  { name: 'AskAI', href: '/dashboard/ask-ai', icon: MessageSquareText },
+];
+
+const moreNav = [
+  { name: 'Import/Export', href: '/dashboard/import-export', icon: Upload },
+  { name: 'Report AI', href: '/dashboard/reports', icon: FileText },
+  { name: 'Ricompense', href: '/dashboard/rewards', icon: Diamond },
+  { name: 'Impostazioni', href: '/dashboard/settings', icon: SettingsIcon },
+];
+
+const allNav = [...mainNav, ...toolsNav, ...moreNav];
+
+// ---------------------------------------------------------------------------
+// Sub-components
+// ---------------------------------------------------------------------------
+
+function NavLink({
+  item,
+  pathname,
+  onClick,
+}: {
+  item: (typeof mainNav)[0];
+  pathname: string;
+  onClick?: () => void;
+}) {
+  const Icon = item.icon;
+  const active =
+    item.href === '/dashboard'
+      ? pathname === '/dashboard'
+      : pathname.startsWith(item.href);
+
+  return (
+    <Link
+      href={item.href}
+      onClick={onClick}
+      className={`flex items-center justify-between px-3 py-2 rounded-xl transition-all duration-200 text-[13px] ${
+        active
+          ? 'bg-foreground/[0.06] text-foreground'
+          : 'text-muted-foreground hover:text-foreground hover:bg-foreground/[0.03]'
+      }`}
+    >
+      <div className="flex items-center gap-3">
+        <Icon
+          className={`w-[18px] h-[18px] ${active ? 'text-emerald-500' : ''}`}
+          strokeWidth={active ? 2 : 1.5}
+        />
+        <span className={active ? 'tracking-[-0.01em]' : ''}>{item.name}</span>
+      </div>
+    </Link>
+  );
+}
+
+function NavSection({
+  label,
+  items,
+  pathname,
+}: {
+  label: string;
+  items: typeof mainNav;
+  pathname: string;
+}) {
+  return (
+    <div className="mb-1">
+      <p className="px-3 py-2 text-[10px] tracking-[0.08em] uppercase text-muted-foreground/60">
+        {label}
+      </p>
+      <div className="space-y-0.5">
+        {items.map((item) => (
+          <NavLink key={item.name} item={item} pathname={pathname} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Main layout
+// ---------------------------------------------------------------------------
 
 interface DashboardLayoutProps {
   children: ReactNode;
 }
 
-const navigation = [
-  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { name: 'Accounts', href: '/dashboard/accounts', icon: Wallet },
-  { name: 'Transactions', href: '/dashboard/transactions', icon: CreditCard },
-  { name: 'Categories', href: '/dashboard/categories', icon: Tags },
-  { name: 'Liabilities', href: '/dashboard/liabilities', icon: Receipt },
-  { name: 'Investments', href: '/dashboard/investments', icon: TrendingUp },
-];
-
-const planningItems = [
-  { name: 'Budgets', href: '/dashboard/budgets', icon: PiggyBank },
-  { name: 'Goals', href: '/dashboard/goals', icon: Target },
-  { name: 'Scheduled', href: '/dashboard/scheduled', icon: Clock },
-  { name: 'Calendar', href: '/dashboard/calendar', icon: Calendar },
-];
-
-const bottomNavigation = [
-  { name: 'Settings', href: '/dashboard/settings', icon: Settings },
-];
-
 export function DashboardLayout({ children }: DashboardLayoutProps) {
-  const router = useRouter();
   const pathname = usePathname();
+  const router = useRouter();
   const { user, logout } = useAuthStore();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Check if any planning route is active to auto-expand the dropdown
-  const isPlanningActive = planningItems.some(item => pathname.startsWith(item.href));
-  const [planningOpen, setPlanningOpen] = useState(isPlanningActive);
-
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await logout();
     router.replace('/auth/login');
-    logout();
   };
 
+  const userInitials = user
+    ? `${(user.firstName?.[0] ?? '').toUpperCase()}${(user.lastName?.[0] ?? '').toUpperCase()}`
+    : '?';
+  const userName = user ? `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() : '';
+  const userEmail = user?.email ?? '';
+
   return (
-    <div className="flex min-h-screen bg-muted">
-      {/* Mobile sidebar backdrop */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 bg-gray-600 bg-opacity-75 z-20 lg:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
+    <div className="flex h-screen bg-background">
+      {/* ================================================================
+          Desktop Sidebar — 1:1 from Figma Root.tsx
+          ================================================================ */}
+      <aside className="hidden md:flex md:flex-col md:w-60 bg-card flex-shrink-0 border-r border-border/50">
+        {/* Logo */}
+        <div className="flex items-center h-14 px-5">
+          <Link href="/dashboard" className="text-[15px] tracking-[-0.03em] text-foreground">
+            <span className="text-emerald-500">●</span>{' '}
+            <span className="opacity-90">Zecca</span>
+          </Link>
+        </div>
 
-      {/* Sidebar Navigation */}
-      <aside
-        className={`
-          fixed inset-y-0 left-0 z-30 w-64 bg-card border-r border-border transform transition-transform duration-300 ease-in-out
-          lg:translate-x-0 lg:static lg:inset-0
-          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-        `}
-      >
-        <div className="flex flex-col h-full">
-          {/* Logo */}
-          <div className="flex items-center justify-between h-16 px-6 border-b border-border">
-            <Link href="/dashboard" className="flex items-center space-x-2">
-              <Wallet className="h-8 w-8 text-blue-600" />
-              <span className="text-xl font-bold text-foreground">MoneyWise</span>
-            </Link>
+        {/* Navigation */}
+        <nav className="flex-1 px-3 py-2 overflow-y-auto">
+          <NavSection label="Finanze" items={mainNav} pathname={pathname} />
+          <NavSection label="Strumenti" items={toolsNav} pathname={pathname} />
+          <NavSection label="Altro" items={moreNav} pathname={pathname} />
+        </nav>
+
+        {/* User + CTA */}
+        <div className="p-3 space-y-3">
+          <button
+            onClick={() => router.push('/dashboard/transactions?action=new')}
+            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-foreground text-background text-[13px] hover:opacity-90 transition-opacity"
+          >
+            <Plus className="w-4 h-4" />
+            Nuova Transazione
+          </button>
+          <div className="flex items-center gap-2.5 px-2 py-2">
+            <div className="w-7 h-7 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-600 text-[11px]">
+              {userInitials}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[12px] text-foreground truncate">{userName}</p>
+              <p className="text-[10px] text-muted-foreground truncate">{userEmail}</p>
+            </div>
             <button
-              onClick={() => setSidebarOpen(false)}
-              className="lg:hidden text-muted-foreground hover:text-foreground"
+              onClick={handleLogout}
+              className="p-1 rounded-lg hover:bg-muted text-muted-foreground transition-colors"
+              title="Logout"
+              data-testid="logout-button"
             >
-              <X className="h-6 w-6" />
+              <LogOut className="w-3.5 h-3.5" />
             </button>
-          </div>
-
-          {/* Navigation Links */}
-          <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
-            {/* Main navigation items */}
-            {navigation.map((item) => {
-              const isActive = pathname === item.href;
-              return (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className={`flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors group ${
-                    isActive
-                      ? 'bg-blue-100 text-blue-600'
-                      : 'text-foreground hover:bg-blue-50 hover:text-blue-600'
-                  }`}
-                  data-testid={`nav-${item.name.toLowerCase()}`}
-                  aria-current={isActive ? 'page' : undefined}
-                >
-                  <item.icon
-                    className={`mr-3 h-5 w-5 ${
-                      isActive ? 'text-blue-600' : 'text-muted-foreground group-hover:text-blue-600'
-                    }`}
-                  />
-                  {item.name}
-                </Link>
-              );
-            })}
-
-            {/* Planning dropdown section */}
-            <div className="pt-2">
-              <button
-                onClick={() => setPlanningOpen(!planningOpen)}
-                className={`w-full flex items-center justify-between px-4 py-3 text-sm font-medium rounded-lg transition-colors group ${
-                  isPlanningActive
-                    ? 'bg-blue-50 text-blue-600'
-                    : 'text-foreground hover:bg-blue-50 hover:text-blue-600'
-                }`}
-                data-testid="nav-planning"
-                aria-expanded={planningOpen}
-              >
-                <div className="flex items-center">
-                  <ClipboardList
-                    className={`mr-3 h-5 w-5 ${
-                      isPlanningActive ? 'text-blue-600' : 'text-muted-foreground group-hover:text-blue-600'
-                    }`}
-                  />
-                  Planning
-                </div>
-                <ChevronDown
-                  className={`h-4 w-4 transition-transform duration-200 ${
-                    planningOpen ? 'rotate-180' : ''
-                  } ${isPlanningActive ? 'text-blue-600' : 'text-muted-foreground'}`}
-                />
-              </button>
-
-              {/* Planning sub-items */}
-              {planningOpen && (
-                <div className="mt-1 ml-4 space-y-1">
-                  {planningItems.map((item) => {
-                    const isActive = pathname === item.href;
-                    return (
-                      <Link
-                        key={item.name}
-                        href={item.href}
-                        className={`flex items-center px-4 py-2.5 text-sm font-medium rounded-lg transition-colors group ${
-                          isActive
-                            ? 'bg-blue-100 text-blue-600'
-                            : 'text-muted-foreground hover:bg-blue-50 hover:text-blue-600'
-                        }`}
-                        data-testid={`nav-${item.name.toLowerCase()}`}
-                        aria-current={isActive ? 'page' : undefined}
-                      >
-                        <item.icon
-                          className={`mr-3 h-4 w-4 ${
-                            isActive ? 'text-blue-600' : 'text-muted-foreground group-hover:text-blue-600'
-                          }`}
-                        />
-                        {item.name}
-                      </Link>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-
-            {/* Bottom navigation items (Settings) */}
-            <div className="pt-4 border-t border-border mt-4">
-              {bottomNavigation.map((item) => {
-                const isActive = pathname === item.href;
-                return (
-                  <Link
-                    key={item.name}
-                    href={item.href}
-                    className={`flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors group ${
-                      isActive
-                        ? 'bg-blue-100 text-blue-600'
-                        : 'text-foreground hover:bg-blue-50 hover:text-blue-600'
-                    }`}
-                    data-testid={`nav-${item.name.toLowerCase()}`}
-                    aria-current={isActive ? 'page' : undefined}
-                  >
-                    <item.icon
-                      className={`mr-3 h-5 w-5 ${
-                        isActive ? 'text-blue-600' : 'text-muted-foreground group-hover:text-blue-600'
-                      }`}
-                    />
-                    {item.name}
-                  </Link>
-                );
-              })}
-            </div>
-          </nav>
-
-          {/* User Info */}
-          <div className="p-4 border-t border-border">
-            <div className="flex items-center space-x-3 px-4 py-3 rounded-lg bg-muted" data-testid="user-menu">
-              <div className="flex-shrink-0">
-                <div className="h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center">
-                  <User className="h-6 w-6 text-white" />
-                </div>
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-foreground truncate">
-                  {user?.firstName} {user?.lastName}
-                </p>
-                <p className="text-xs text-muted-foreground truncate">
-                  {user?.email}
-                </p>
-              </div>
-            </div>
           </div>
         </div>
       </aside>
 
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col">
-        {/* Top Header Bar */}
-        <header className="bg-card border-b border-border sticky top-0 z-10">
-          <div className="flex items-center justify-between h-16 px-4 sm:px-6 lg:px-8">
-            {/* Mobile menu button */}
+      {/* ================================================================
+          Mobile Header — fixed top bar
+          ================================================================ */}
+      <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-card/80 backdrop-blur-xl border-b border-border/50">
+        <div className="flex items-center justify-between h-13 px-4">
+          <div className="flex items-center gap-3">
             <button
-              onClick={() => setSidebarOpen(true)}
-              className="lg:hidden text-muted-foreground hover:text-foreground"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="p-2 rounded-lg text-muted-foreground"
             >
-              <Menu className="h-6 w-6" />
+              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
-
-            {/* Search bar (desktop) */}
-            <div className="hidden lg:flex flex-1 max-w-lg">
-              <div className="relative w-full">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Search className="h-5 w-5 text-muted-foreground" />
-                </div>
-                <input
-                  type="text"
-                  className="block w-full pl-10 pr-3 py-2 border border-border rounded-lg leading-5 bg-card placeholder-muted-foreground focus:outline-none focus:placeholder-muted-foreground focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  placeholder="Search transactions, accounts..."
-                  data-testid="search-input"
-                />
-              </div>
-            </div>
-
-            {/* Right side actions */}
-            <div className="flex items-center space-x-4">
-              {/* Notifications */}
-              <NotificationBell />
-
-              {/* Logout Button */}
-              <Button
-                onClick={handleLogout}
-                variant="outline"
-                size="sm"
-                className="flex items-center space-x-2"
-                data-testid="logout-button"
-              >
-                <LogOut className="h-4 w-4" />
-                <span className="hidden sm:inline">Logout</span>
-              </Button>
-            </div>
+            <span className="text-[15px] text-foreground">
+              <span className="text-emerald-500">●</span> Zecca
+            </span>
           </div>
-        </header>
+          <button
+            onClick={() => router.push('/dashboard/transactions?action=new')}
+            className="p-2 rounded-xl bg-foreground text-background"
+          >
+            <Plus className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
 
-        {/* Page Content */}
-        <main className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8">
+      {/* ================================================================
+          Mobile Menu — animated slide drawer
+          ================================================================ */}
+      <AnimatePresence>
+        {mobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="md:hidden fixed inset-0 z-40 bg-black/30 backdrop-blur-sm"
+            onClick={() => setMobileMenuOpen(false)}
+          >
+            <motion.div
+              initial={{ x: -280 }}
+              animate={{ x: 0 }}
+              exit={{ x: -280 }}
+              transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+              className="absolute top-0 left-0 bottom-0 w-64 bg-card shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center h-13 px-5 border-b border-border/50">
+                <span className="text-[15px] text-foreground">
+                  <span className="text-emerald-500">●</span> Zecca
+                </span>
+              </div>
+              <nav
+                className="px-3 py-3 space-y-0.5 overflow-y-auto"
+                style={{ maxHeight: 'calc(100vh - 120px)' }}
+              >
+                {allNav.map((item) => (
+                  <NavLink
+                    key={item.name}
+                    item={item}
+                    pathname={pathname}
+                    onClick={() => setMobileMenuOpen(false)}
+                  />
+                ))}
+              </nav>
+              <div className="absolute bottom-0 left-0 right-0 p-3 border-t border-border/50 bg-card">
+                <div className="flex items-center gap-2.5 px-2 py-1">
+                  <div className="w-7 h-7 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-600 text-[11px]">
+                    {userInitials}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[12px] text-foreground truncate">{userName}</p>
+                  </div>
+                  <button
+                    onClick={handleLogout}
+                    className="p-1 rounded-lg hover:bg-muted text-muted-foreground"
+                  >
+                    <LogOut className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ================================================================
+          Main Content — with page transition
+          ================================================================ */}
+      <div className="flex-1 flex flex-col min-w-0">
+        <TopBar />
+
+        <main className="flex-1 overflow-y-auto pt-13 md:pt-0">
           {children}
         </main>
       </div>

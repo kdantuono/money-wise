@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import type { Transaction } from '@/types/dashboard.types';
@@ -26,17 +27,7 @@ function getCategoryIcon(category: string): React.ReactNode {
     case 'food & groceries':
     case 'food & dining':
       return (
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2" />
           <path d="M7 2v20" />
           <path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7" />
@@ -44,50 +35,20 @@ function getCategoryIcon(category: string): React.ReactNode {
       );
     case 'utilities':
       return (
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z" />
         </svg>
       );
     case 'income':
       return (
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <line x1="12" y1="1" x2="12" y2="23" />
           <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
         </svg>
       );
     default:
       return (
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <circle cx="12" cy="12" r="10" />
           <path d="M12 6v6l4 2" />
         </svg>
@@ -141,17 +102,7 @@ function TransactionItem({ transaction }: TransactionItemProps) {
 
 function ArrowRightIcon() {
   return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M5 12h14" />
       <path d="m12 5 7 7-7 7" />
     </svg>
@@ -199,40 +150,29 @@ function EmptyState() {
     <Card className="min-h-[340px] flex flex-col" data-testid="recent-transactions">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle className="text-lg font-semibold">
-          Recent Transactions
+          Transazioni Recenti
         </CardTitle>
-        <a
+        <Link
           href="/dashboard/transactions"
           className="text-sm text-primary hover:underline flex items-center gap-1"
         >
-          View all
+          Vedi tutte
           <ArrowRightIcon />
-        </a>
+        </Link>
       </CardHeader>
       <CardContent className="flex-1 flex flex-col justify-center">
         <div className="flex flex-col items-center justify-center text-center">
           <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="text-muted-foreground"
-            >
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground">
               <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
               <line x1="16" y1="2" x2="16" y2="6" />
               <line x1="8" y1="2" x2="8" y2="6" />
               <line x1="3" y1="10" x2="21" y2="10" />
             </svg>
           </div>
-          <p className="text-muted-foreground font-medium">No transactions yet</p>
+          <p className="text-muted-foreground font-medium">Nessuna transazione</p>
           <p className="text-sm text-muted-foreground mt-1">
-            Link a bank account or add transactions manually
+            Collega un conto bancario o aggiungi transazioni manualmente
           </p>
         </div>
       </CardContent>
@@ -258,15 +198,15 @@ export function RecentTransactions({ transactions, isLoading }: RecentTransactio
     <Card className="min-h-[340px] flex flex-col" data-testid="recent-transactions">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle className="text-lg font-semibold">
-          Recent Transactions
+          Transazioni Recenti
         </CardTitle>
-        <a
+        <Link
           href="/dashboard/transactions"
           className="text-sm text-primary hover:underline flex items-center gap-1"
         >
-          View all
+          Vedi tutte
           <ArrowRightIcon />
-        </a>
+        </Link>
       </CardHeader>
       <CardContent className="flex-1">
         <div className="divide-y divide-border">

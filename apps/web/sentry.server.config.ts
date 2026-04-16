@@ -17,7 +17,9 @@
  */
 
 import * as Sentry from '@sentry/nextjs';
-import { nodeProfilingIntegration } from '@sentry/profiling-node';
+// Note: Profiling integration removed due to version incompatibility with @sentry/nextjs@9.x
+// To re-enable: upgrade @sentry/nextjs to ^10.28.0 to match @sentry/profiling-node
+// import { nodeProfilingIntegration } from '@sentry/profiling-node';
 
 const SENTRY_DSN = process.env.SENTRY_DSN || process.env.NEXT_PUBLIC_SENTRY_DSN;
 const NODE_ENV = process.env.NODE_ENV || 'development';
@@ -50,11 +52,10 @@ if (SENTRY_DSN) {
     // Performance Monitoring (environment-aware sampling)
     tracesSampleRate: traces,
 
-    // Profiling (environment-aware sampling)
-    profilesSampleRate: profiles,
-    integrations: [
-      ...(profiles > 0 ? [nodeProfilingIntegration()] : []),
-    ],
+    // Note: Profiling disabled due to @sentry/profiling-node version incompatibility
+    // To re-enable: upgrade @sentry/nextjs to ^10.28.0, then uncomment:
+    // profilesSampleRate: profiles,
+    // integrations: [...(profiles > 0 ? [nodeProfilingIntegration()] : [])],
 
     // Release tracking (optional - for deploy tracking)
     release: process.env.SENTRY_RELEASE || process.env.NEXT_PUBLIC_SENTRY_RELEASE,

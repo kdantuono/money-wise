@@ -57,10 +57,12 @@
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.0.0",
     "date-fns": "^4.1.0",
+    "framer-motion": "^12.38.0",
     "immer": "^10.2.0",
     "isomorphic-dompurify": "^3.7.1",
     "lucide-react": "^0.555.0",
     "next": "15.5.15",
+    "next-intl": "^4.9.1",
     "postcss": "^8.4.32",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
@@ -99,7 +101,9 @@
     "jsdom": "^27.3.0",
     "msw": "^2.12.14",
     "typescript": "^5.9.3",
-    "vitest": "^4.0.0"
+    "vitest": "^4.0.0",
+    "@tailwindcss/postcss": "^4.0.0",
+    "tailwindcss-animate": "^1.0.7"
   },
   "msw": {
     "workerDirectory": [

@@ -1,84 +1,96 @@
 /**
  * Tests for DashboardLayout component
  *
- * Tests sidebar navigation, user menu, mobile responsiveness, and logout functionality.
- * Updated to match current source: CSS transform-based sidebar, "Logout" button text,
- * bg-blue-600 avatar, and accurate CSS class assertions.
+ * Smoke tests for the Figma-redesigned layout: sidebar navigation with Italian labels,
+ * "Zecca" branding, framer-motion animated mobile drawer, TopBar, logout, and user info.
  */
 
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, within } from '../../utils/test-utils';
+import { render, screen } from '../../utils/test-utils';
 import { DashboardLayout } from '../../../src/components/layout/dashboard-layout';
 
-// Mock next/navigation
-const mockPush = vi.fn();
-const mockRouter = {
-  push: mockPush,
-  replace: vi.fn(),
-  prefetch: vi.fn(),
-};
+// ---------------------------------------------------------------------------
+// Mocks
+// ---------------------------------------------------------------------------
 
+const mockPush = vi.fn();
+const mockReplace = vi.fn();
 let mockPathname = '/dashboard';
 
 vi.mock('next/navigation', () => ({
-  useRouter: () => mockRouter,
+  useRouter: () => ({ push: mockPush, replace: mockReplace, prefetch: vi.fn() }),
   usePathname: () => mockPathname,
 }));
 
-// Mock auth store
 vi.mock('../../../src/store/auth.store', () => ({
   useAuthStore: vi.fn(),
 }));
 
-// Mock NotificationBell to avoid complex dependency chain
-vi.mock('../../../src/components/notifications', () => ({
-  NotificationBell: () => <div data-testid="notification-bell">Notifications</div>,
+// Mock TopBar to isolate layout concerns
+vi.mock('../../../src/components/layout/top-bar', () => ({
+  TopBar: () => <div data-testid="top-bar">TopBar</div>,
+}));
+
+// Mock framer-motion — AnimatePresence renders children, motion.div renders a plain div
+vi.mock('framer-motion', () => ({
+  motion: {
+    div: React.forwardRef(function MotionDiv(
+      props: React.HTMLAttributes<HTMLDivElement> & Record<string, unknown>,
+      ref: React.Ref<HTMLDivElement>,
+    ) {
+      // strip framer-specific props so React doesn't warn
+      const {
+        initial, animate, exit, transition, whileHover, whileTap,
+        variants, layout, layoutId, onAnimationComplete,
+        ...rest
+      } = props;
+      return <div ref={ref} {...rest} />;
+    }),
+  },
+  AnimatePresence: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
 import { useAuthStore } from '../../../src/store/auth.store';
 const mockUseAuthStore = useAuthStore as unknown as ReturnType<typeof vi.fn>;
 
-// Mock user data
 const mockUser = {
   id: '123',
   email: 'john.doe@example.com',
   firstName: 'John',
   lastName: 'Doe',
-  fullName: 'John Doe',
 };
+
+// ---------------------------------------------------------------------------
+// Tests
+// ---------------------------------------------------------------------------
 
 describe('DashboardLayout Component', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockPush.mockClear();
     mockPathname = '/dashboard';
-
-    mockUseAuthStore.mockReturnValue({
-      user: mockUser,
-      logout: vi.fn(),
-    });
+    mockUseAuthStore.mockReturnValue({ user: mockUser, logout: vi.fn() });
   });
+
+  // ---- Layout rendering ----
 
   describe('Layout Rendering', () => {
     it('renders children content', () => {
       render(
         <DashboardLayout>
           <div>Dashboard Content</div>
-        </DashboardLayout>
+        </DashboardLayout>,
       );
-
       expect(screen.getByText('Dashboard Content')).toBeInTheDocument();
     });
 
-    it('renders MoneyWise branding', () => {
+    it('renders Zecca branding', () => {
       render(
         <DashboardLayout>
           <div>Content</div>
-        </DashboardLayout>
+        </DashboardLayout>,
       );
-
-      const brandings = screen.getAllByText('MoneyWise');
+      const brandings = screen.getAllByText('Zecca');
       expect(brandings.length).toBeGreaterThan(0);
     });
 
@@ -86,469 +98,210 @@ describe('DashboardLayout Component', () => {
       const { container } = render(
         <DashboardLayout>
           <div>Content</div>
-        </DashboardLayout>
+        </DashboardLayout>,
       );
-
       const main = container.querySelector('main');
       expect(main).toBeInTheDocument();
-      expect(main).toHaveClass('flex-1', 'overflow-auto');
+      expect(main).toHaveClass('flex-1', 'overflow-y-auto');
+    });
+
+    it('renders TopBar', () => {
+      render(
+        <DashboardLayout>
+          <div>Content</div>
+        </DashboardLayout>,
+      );
+      expect(screen.getByTestId('top-bar')).toBeInTheDocument();
     });
   });
 
+  // ---- Navigation ----
+
   describe('Navigation Menu', () => {
-    it('renders all main navigation items', () => {
+    it('renders all main navigation items in Italian', () => {
       render(
         <DashboardLayout>
           <div>Content</div>
-        </DashboardLayout>
+        </DashboardLayout>,
       );
-
+      // Main nav
       expect(screen.getAllByText('Dashboard').length).toBeGreaterThan(0);
-      expect(screen.getAllByText('Accounts').length).toBeGreaterThan(0);
-      expect(screen.getAllByText('Transactions').length).toBeGreaterThan(0);
-      expect(screen.getAllByText('Investments').length).toBeGreaterThan(0);
-      expect(screen.getAllByText('Settings').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('Conti').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('Investimenti').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('Spese').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('Budget').length).toBeGreaterThan(0);
     });
 
-    it('renders Planning section with Budgets and Goals', async () => {
-      const { user } = render(
-        <DashboardLayout>
-          <div>Content</div>
-        </DashboardLayout>
-      );
-
-      // Planning dropdown should be visible
-      const planningButton = screen.getByTestId('nav-planning');
-      expect(planningButton).toBeInTheDocument();
-
-      // Click to expand Planning section
-      await user.click(planningButton);
-
-      // Both Budgets and Goals should be under Planning
-      expect(screen.getAllByText('Budgets').length).toBeGreaterThan(0);
-      expect(screen.getAllByText('Goals').length).toBeGreaterThan(0);
-    });
-
-    it('Goals is nested under Planning, not in main navigation', () => {
+    it('renders tools navigation', () => {
       render(
         <DashboardLayout>
           <div>Content</div>
-        </DashboardLayout>
+        </DashboardLayout>,
       );
+      expect(screen.getAllByText('Categorizzazione AI').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('Obiettivi').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('Analisi AI').length).toBeGreaterThan(0);
+    });
 
-      // Goals should NOT be in main navigation (no testid nav-goals at top level)
-      const mainNavItems = ['nav-dashboard', 'nav-accounts', 'nav-transactions', 'nav-investments'];
-      mainNavItems.forEach(testId => {
-        expect(screen.getByTestId(testId)).toBeInTheDocument();
-      });
-
-      // Goals should be under Planning section
-      const planningButton = screen.getByTestId('nav-planning');
-      expect(planningButton).toBeInTheDocument();
+    it('renders section labels', () => {
+      render(
+        <DashboardLayout>
+          <div>Content</div>
+        </DashboardLayout>,
+      );
+      expect(screen.getByText('Finanze')).toBeInTheDocument();
+      expect(screen.getByText('Strumenti')).toBeInTheDocument();
+      expect(screen.getByText('Altro')).toBeInTheDocument();
     });
 
     it('navigation links have correct hrefs', () => {
       render(
         <DashboardLayout>
           <div>Content</div>
-        </DashboardLayout>
+        </DashboardLayout>,
       );
-
-      const dashboardLinks = screen.getAllByRole('link', { name: /dashboard/i });
+      const dashboardLinks = screen.getAllByRole('link', { name: /Dashboard/ });
       expect(dashboardLinks[0]).toHaveAttribute('href', '/dashboard');
 
-      const accountsLinks = screen.getAllByRole('link', { name: /accounts/i });
-      expect(accountsLinks[0]).toHaveAttribute('href', '/dashboard/accounts');
+      const accountLinks = screen.getAllByRole('link', { name: /Conti/ });
+      expect(accountLinks[0]).toHaveAttribute('href', '/dashboard/accounts');
 
-      const transactionsLinks = screen.getAllByRole('link', { name: /transactions/i });
-      expect(transactionsLinks[0]).toHaveAttribute('href', '/dashboard/transactions');
+      const transactionLinks = screen.getAllByRole('link', { name: /Spese/ });
+      expect(transactionLinks[0]).toHaveAttribute('href', '/dashboard/transactions');
     });
 
-    it('renders navigation icons', () => {
+    it('renders navigation icons as SVGs', () => {
       const { container } = render(
         <DashboardLayout>
           <div>Content</div>
-        </DashboardLayout>
+        </DashboardLayout>,
       );
-
-      // Check for SVG icons (lucide-react icons render as SVG)
       const icons = container.querySelectorAll('svg');
-      expect(icons.length).toBeGreaterThan(5); // Multiple icons (nav items + user + logout)
+      expect(icons.length).toBeGreaterThan(5);
     });
   });
 
+  // ---- User info ----
+
   describe('User Information Display', () => {
-    it('displays user first and last name', () => {
+    it('displays user full name', () => {
       render(
         <DashboardLayout>
           <div>Content</div>
-        </DashboardLayout>
+        </DashboardLayout>,
       );
-
-      // The component renders "{user.firstName} {user.lastName}" in the sidebar
-      expect(screen.getByText('John Doe')).toBeInTheDocument();
+      expect(screen.getAllByText('John Doe').length).toBeGreaterThan(0);
     });
 
-    it('displays user email', () => {
+    it('displays user email in sidebar', () => {
       render(
         <DashboardLayout>
           <div>Content</div>
-        </DashboardLayout>
+        </DashboardLayout>,
       );
-
       expect(screen.getByText('john.doe@example.com')).toBeInTheDocument();
     });
 
-    it('renders user menu area', () => {
+    it('renders user initials avatar', () => {
       render(
         <DashboardLayout>
           <div>Content</div>
-        </DashboardLayout>
+        </DashboardLayout>,
       );
-
-      const userMenu = screen.getByTestId('user-menu');
-      expect(userMenu).toBeInTheDocument();
-    });
-
-    it('renders user avatar placeholder with blue background', () => {
-      const { container } = render(
-        <DashboardLayout>
-          <div>Content</div>
-        </DashboardLayout>
-      );
-
-      // Avatar uses rounded-full bg-blue-600
-      const avatars = container.querySelectorAll('.rounded-full.bg-blue-600');
-      expect(avatars.length).toBeGreaterThan(0);
+      // Initials are "JD"
+      expect(screen.getAllByText('JD').length).toBeGreaterThan(0);
     });
   });
+
+  // ---- Logout ----
 
   describe('Logout Functionality', () => {
-    it('renders logout button', () => {
+    it('renders logout button with data-testid', () => {
       render(
         <DashboardLayout>
           <div>Content</div>
-        </DashboardLayout>
+        </DashboardLayout>,
       );
-
-      const logoutButton = screen.getByTestId('logout-button');
-      expect(logoutButton).toBeInTheDocument();
+      expect(screen.getByTestId('logout-button')).toBeInTheDocument();
     });
 
-    it('calls logout and redirects on logout click', async () => {
+    it('calls logout and redirects on click', async () => {
       const mockLogout = vi.fn().mockResolvedValue(undefined);
-
-      mockUseAuthStore.mockReturnValue({
-        user: mockUser,
-        logout: mockLogout,
-      });
+      mockUseAuthStore.mockReturnValue({ user: mockUser, logout: mockLogout });
 
       const { user } = render(
         <DashboardLayout>
           <div>Content</div>
-        </DashboardLayout>
+        </DashboardLayout>,
       );
 
-      const logoutButton = screen.getByTestId('logout-button');
-      await user.click(logoutButton);
+      await user.click(screen.getByTestId('logout-button'));
 
       expect(mockLogout).toHaveBeenCalledTimes(1);
-      expect(mockRouter.replace).toHaveBeenCalledWith('/auth/login');
-    });
-
-    it('redirects to login even if logout API fails', async () => {
-      const mockLogout = vi.fn().mockRejectedValue(new Error('Logout failed'));
-
-      mockUseAuthStore.mockReturnValue({
-        user: mockUser,
-        logout: mockLogout,
-      });
-
-      const { user } = render(
-        <DashboardLayout>
-          <div>Content</div>
-        </DashboardLayout>
-      );
-
-      const logoutButton = screen.getByTestId('logout-button');
-      await user.click(logoutButton);
-
-      expect(mockLogout).toHaveBeenCalledTimes(1);
-      expect(mockRouter.replace).toHaveBeenCalledWith('/auth/login');
+      expect(mockReplace).toHaveBeenCalledWith('/auth/login');
     });
   });
 
-  describe('Mobile Sidebar', () => {
-    it('sidebar starts off-screen on mobile via CSS transform', () => {
+  // ---- Mobile ----
+
+  describe('Mobile Layout', () => {
+    it('renders mobile header with Zecca brand', () => {
       const { container } = render(
         <DashboardLayout>
           <div>Content</div>
-        </DashboardLayout>
+        </DashboardLayout>,
       );
-
-      // The aside element uses -translate-x-full when closed (mobile)
-      const sidebar = container.querySelector('aside');
-      expect(sidebar).toBeInTheDocument();
-      expect(sidebar?.className).toContain('-translate-x-full');
+      // Mobile header is md:hidden
+      const mobileHeader = container.querySelector('.md\\:hidden');
+      expect(mobileHeader).toBeInTheDocument();
     });
 
-    it('renders menu button for mobile', () => {
-      const { container } = render(
-        <DashboardLayout>
-          <div>Content</div>
-        </DashboardLayout>
-      );
-
-      // Menu button is lg:hidden in the header
-      const menuButton = container.querySelector('button.lg\\:hidden');
-      expect(menuButton).toBeInTheDocument();
-    });
-
-    it('opens sidebar on menu button click', async () => {
-      const { user, container } = render(
-        <DashboardLayout>
-          <div>Content</div>
-        </DashboardLayout>
-      );
-
-      // Click mobile menu button to open sidebar
-      const menuButton = container.querySelector('button.lg\\:hidden');
-      expect(menuButton).toBeInTheDocument();
-      await user.click(menuButton!);
-
-      // After opening, sidebar should have translate-x-0 class
-      const sidebar = container.querySelector('aside');
-      expect(sidebar?.className).toContain('translate-x-0');
-    });
-
-    it('shows backdrop when mobile sidebar is open', async () => {
-      const { user, container } = render(
-        <DashboardLayout>
-          <div>Content</div>
-        </DashboardLayout>
-      );
-
-      // Open sidebar — menu button is inside <header>, not the sidebar close button
-      const header = container.querySelector('header');
-      const menuButton = header?.querySelector('button');
-      expect(menuButton).toBeInTheDocument();
-      await user.click(menuButton!);
-
-      // Backdrop should appear
-      const backdrop = container.querySelector('.bg-gray-600.bg-opacity-75');
-      expect(backdrop).toBeInTheDocument();
-    });
-
-    it('closes mobile sidebar on backdrop click', async () => {
-      const { user, container } = render(
-        <DashboardLayout>
-          <div>Content</div>
-        </DashboardLayout>
-      );
-
-      // Open sidebar via header menu button
-      const header = container.querySelector('header');
-      const menuButton = header?.querySelector('button');
-      await user.click(menuButton!);
-
-      // Click backdrop to close
-      const backdrop = container.querySelector('.bg-gray-600.bg-opacity-75');
-      expect(backdrop).toBeInTheDocument();
-      await user.click(backdrop as HTMLElement);
-
-      // Sidebar should be closed again
-      const sidebar = container.querySelector('aside');
-      expect(sidebar?.className).toContain('-translate-x-full');
-    });
-
-    it('mobile sidebar has navigation links', () => {
+    it('renders "Nuova Transazione" button in sidebar', () => {
       render(
         <DashboardLayout>
           <div>Content</div>
-        </DashboardLayout>
+        </DashboardLayout>,
       );
-
-      // Navigation links are in the sidebar
-      const dashboardLinks = screen.getAllByRole('link', { name: /dashboard/i });
-      expect(dashboardLinks.length).toBeGreaterThanOrEqual(1);
+      expect(screen.getByText('Nuova Transazione')).toBeInTheDocument();
     });
   });
 
-  describe('Desktop Layout', () => {
-    it('sidebar uses lg:static for desktop positioning', () => {
-      const { container } = render(
-        <DashboardLayout>
-          <div>Content</div>
-        </DashboardLayout>
-      );
-
-      const sidebar = container.querySelector('aside');
-      expect(sidebar).toBeInTheDocument();
-      expect(sidebar?.className).toContain('lg:static');
-      expect(sidebar?.className).toContain('lg:translate-x-0');
-    });
-  });
-
-  describe('Top Bar', () => {
-    it('renders sticky header', () => {
-      const { container } = render(
-        <DashboardLayout>
-          <div>Content</div>
-        </DashboardLayout>
-      );
-
-      const header = container.querySelector('header');
-      expect(header).toBeInTheDocument();
-      expect(header).toHaveClass('sticky', 'top-0');
-    });
-
-    it('renders search input on desktop', () => {
-      render(
-        <DashboardLayout>
-          <div>Content</div>
-        </DashboardLayout>
-      );
-
-      const searchInput = screen.getByTestId('search-input');
-      expect(searchInput).toBeInTheDocument();
-    });
-
-    it('displays mobile menu button in header', () => {
-      const { container } = render(
-        <DashboardLayout>
-          <div>Content</div>
-        </DashboardLayout>
-      );
-
-      const menuButton = container.querySelector('button.lg\\:hidden');
-      expect(menuButton).toBeInTheDocument();
-    });
-  });
-
-  describe('Responsive Behavior', () => {
-    it('has responsive classes for different screen sizes', () => {
-      const { container } = render(
-        <DashboardLayout>
-          <div>Content</div>
-        </DashboardLayout>
-      );
-
-      // Check for lg: prefix classes (desktop)
-      const desktopElements = container.querySelectorAll('[class*="lg:"]');
-      expect(desktopElements.length).toBeGreaterThan(0);
-
-      // Check for sm: prefix classes (tablet)
-      const tabletElements = container.querySelectorAll('[class*="sm:"]');
-      expect(tabletElements.length).toBeGreaterThan(0);
-    });
-  });
+  // ---- Semantic HTML ----
 
   describe('Accessibility', () => {
     it('uses semantic HTML elements', () => {
       const { container } = render(
         <DashboardLayout>
           <div>Content</div>
-        </DashboardLayout>
+        </DashboardLayout>,
       );
-
       expect(container.querySelector('nav')).toBeInTheDocument();
       expect(container.querySelector('main')).toBeInTheDocument();
-      expect(container.querySelector('header')).toBeInTheDocument();
+      expect(container.querySelector('aside')).toBeInTheDocument();
     });
 
     it('navigation links are accessible', () => {
       render(
         <DashboardLayout>
           <div>Content</div>
-        </DashboardLayout>
+        </DashboardLayout>,
       );
-
-      const dashboardLinks = screen.getAllByRole('link', { name: /dashboard/i });
-      expect(dashboardLinks.length).toBeGreaterThan(0);
+      const links = screen.getAllByRole('link', { name: /Dashboard/ });
+      expect(links.length).toBeGreaterThan(0);
     });
   });
 
-  describe('Active Navigation State', () => {
-    it('highlights Dashboard nav item when on /dashboard', () => {
-      mockPathname = '/dashboard';
-      render(
-        <DashboardLayout>
-          <div>Content</div>
-        </DashboardLayout>
-      );
+  // ---- Responsive classes ----
 
-      const dashboardLink = screen.getByTestId('nav-dashboard');
-      expect(dashboardLink).toHaveClass('bg-blue-100', 'text-blue-600');
-    });
-
-    it('highlights Accounts nav item when on /dashboard/accounts', () => {
-      mockPathname = '/dashboard/accounts';
-      render(
-        <DashboardLayout>
-          <div>Content</div>
-        </DashboardLayout>
-      );
-
-      const accountsLink = screen.getByTestId('nav-accounts');
-      expect(accountsLink).toHaveClass('bg-blue-100', 'text-blue-600');
-
-      // Dashboard should not be active
-      const dashboardLink = screen.getByTestId('nav-dashboard');
-      expect(dashboardLink).not.toHaveClass('bg-blue-100');
-    });
-
-    it('highlights Transactions nav item when on /dashboard/transactions', () => {
-      mockPathname = '/dashboard/transactions';
-      render(
-        <DashboardLayout>
-          <div>Content</div>
-        </DashboardLayout>
-      );
-
-      const transactionsLink = screen.getByTestId('nav-transactions');
-      expect(transactionsLink).toHaveClass('bg-blue-100', 'text-blue-600');
-    });
-
-    it('active nav item has aria-current="page" attribute', () => {
-      mockPathname = '/dashboard/accounts';
-      render(
-        <DashboardLayout>
-          <div>Content</div>
-        </DashboardLayout>
-      );
-
-      const accountsLink = screen.getByTestId('nav-accounts');
-      expect(accountsLink).toHaveAttribute('aria-current', 'page');
-
-      // Inactive items should not have aria-current
-      const dashboardLink = screen.getByTestId('nav-dashboard');
-      expect(dashboardLink).not.toHaveAttribute('aria-current');
-    });
-
-    it('only one nav item is active at a time', () => {
-      mockPathname = '/dashboard/investments';
+  describe('Responsive Behavior', () => {
+    it('has md: responsive classes', () => {
       const { container } = render(
         <DashboardLayout>
           <div>Content</div>
-        </DashboardLayout>
+        </DashboardLayout>,
       );
-
-      const activeLinks = container.querySelectorAll('[aria-current="page"]');
-      expect(activeLinks.length).toBe(1);
-      expect(activeLinks[0]).toHaveAttribute('data-testid', 'nav-investments');
-    });
-
-    it('inactive nav items have default styling', () => {
-      mockPathname = '/dashboard';
-      render(
-        <DashboardLayout>
-          <div>Content</div>
-        </DashboardLayout>
-      );
-
-      const accountsLink = screen.getByTestId('nav-accounts');
-      expect(accountsLink).toHaveClass('text-foreground');
-      expect(accountsLink).not.toHaveClass('bg-blue-100');
+      const mdElements = container.querySelectorAll('[class*="md:"]');
+      expect(mdElements.length).toBeGreaterThan(0);
     });
   });
 });

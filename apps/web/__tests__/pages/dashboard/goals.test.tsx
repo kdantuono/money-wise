@@ -1,80 +1,117 @@
 /**
  * Tests for GoalsPage component
- * Tests empty state placeholder with CTA
+ *
+ * After the Figma Design Sprint, this page renders a full goals
+ * dashboard with hardcoded goal data, progress bars, AI suggestions,
+ * and a modal for adding new goals. All text is in Italian.
  */
 
-import { describe, it, expect } from 'vitest';
+import React from 'react';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '../../utils/test-utils';
+
+// Mock framer-motion
+vi.mock('framer-motion', () => ({
+  motion: new Proxy({}, {
+    get: (_target: unknown, prop: string | symbol) => {
+      if (prop === '__esModule') return false;
+      return ({ children, initial, animate, exit, transition, whileHover, whileTap, whileInView, variants, ...rest }: Record<string, unknown>) => {
+        const Tag = typeof prop === 'string' ? prop : 'div';
+        return React.createElement(Tag as string, rest, children as React.ReactNode);
+      };
+    },
+  }),
+  AnimatePresence: ({ children }: { children: React.ReactNode }) => children,
+}));
+
 import GoalsPage from '../../../app/dashboard/goals/page';
 
 describe('GoalsPage', () => {
   describe('Header', () => {
-    it('renders the page heading', () => {
+    it('renders the page heading in Italian', () => {
       render(<GoalsPage />);
 
-      expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Goals');
+      expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Obiettivi');
     });
 
-    it('renders the description text', () => {
+    it('renders the description text in Italian', () => {
       render(<GoalsPage />);
 
-      expect(screen.getByText('Set and track your financial goals')).toBeInTheDocument();
-    });
-
-    it('renders the Target icon in header', () => {
-      const { container } = render(<GoalsPage />);
-
-      const headerIcon = container.querySelector('.bg-orange-100 svg');
-      expect(headerIcon).toBeInTheDocument();
+      expect(screen.getByText('Monitora i tuoi obiettivi di risparmio')).toBeInTheDocument();
     });
   });
 
-  describe('Empty State', () => {
-    it('renders empty state title', () => {
+  describe('Add Goal Button', () => {
+    it('renders Nuovo Obiettivo button', () => {
       render(<GoalsPage />);
 
-      expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('No goals set');
-    });
-
-    it('renders empty state description', () => {
-      render(<GoalsPage />);
-
-      expect(screen.getByText(/Create savings goals, debt payoff targets/)).toBeInTheDocument();
-    });
-
-    it('renders large icon in empty state', () => {
-      const { container } = render(<GoalsPage />);
-
-      const emptyStateIcon = container.querySelector('.h-12.w-12.text-gray-300');
-      expect(emptyStateIcon).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Nuovo Obiettivo/i })).toBeInTheDocument();
     });
   });
 
-  describe('CTA Button', () => {
-    it('renders Create Goal button', () => {
+  describe('Overall Progress', () => {
+    it('renders Progresso Complessivo label', () => {
       render(<GoalsPage />);
 
-      expect(screen.getByRole('button', { name: /Create Goal/i })).toBeInTheDocument();
+      expect(screen.getByText('Progresso Complessivo')).toBeInTheDocument();
     });
 
-    it('button is disabled', () => {
+    it('renders the count of active goals', () => {
       render(<GoalsPage />);
 
-      const button = screen.getByRole('button', { name: /Create Goal/i });
-      expect(button).toBeDisabled();
+      expect(screen.getByText('5 obiettivi attivi')).toBeInTheDocument();
+    });
+  });
+
+  describe('Goal Cards', () => {
+    it('renders goal names', () => {
+      render(<GoalsPage />);
+
+      expect(screen.getByText('Fondo Emergenza')).toBeInTheDocument();
+      expect(screen.getByText('Vacanza Estate')).toBeInTheDocument();
+      expect(screen.getByText('Anticipo Casa')).toBeInTheDocument();
+      expect(screen.getByText('Auto Nuova')).toBeInTheDocument();
+      expect(screen.getByText('Corso MBA')).toBeInTheDocument();
     });
 
-    it('button has Coming soon title attribute', () => {
+    it('renders priority badges', () => {
       render(<GoalsPage />);
 
-      const button = screen.getByRole('button', { name: /Create Goal/i });
-      expect(button).toHaveAttribute('title', 'Coming soon');
+      const badges = screen.getAllByText(/priorit/i);
+      expect(badges.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('AI Suggestion', () => {
+    it('renders AI suggestion section', () => {
+      render(<GoalsPage />);
+
+      expect(screen.getByText('Suggerimento AI')).toBeInTheDocument();
+    });
+  });
+
+  describe('Add Goal Modal', () => {
+    it('opens the modal when Nuovo Obiettivo is clicked', async () => {
+      const { user } = render(<GoalsPage />);
+
+      const addButton = screen.getByRole('button', { name: /Nuovo Obiettivo/i });
+      await user.click(addButton);
+
+      // Modal should show form labels
+      expect(screen.getByText('Nome Obiettivo')).toBeInTheDocument();
+      expect(screen.getByText(/Importo Obiettivo/)).toBeInTheDocument();
+      // "Scadenza" label exists in both modal and goal cards, so use getAllByText
+      const scadenzaLabels = screen.getAllByText('Scadenza');
+      expect(scadenzaLabels.length).toBeGreaterThanOrEqual(1);
     });
 
-    it('renders Coming soon text below button', () => {
-      render(<GoalsPage />);
+    it('has Crea Obiettivo button in modal', async () => {
+      const { user } = render(<GoalsPage />);
 
-      expect(screen.getByText('Coming soon')).toBeInTheDocument();
+      const addButton = screen.getByRole('button', { name: /Nuovo Obiettivo/i });
+      await user.click(addButton);
+
+      expect(screen.getByRole('button', { name: /Crea Obiettivo/i })).toBeInTheDocument();
     });
   });
 });

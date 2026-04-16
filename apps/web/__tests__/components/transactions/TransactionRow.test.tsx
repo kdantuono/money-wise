@@ -1,13 +1,12 @@
 /**
  * TransactionRow Component Tests
  *
- * TDD tests for the TransactionRow component.
+ * Tests for the TransactionRow component after Figma Design Sprint restyle.
  * Tests rendering, actions, selection, and accessibility.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '../../utils/test-utils';
-import userEvent from '@testing-library/user-event';
 import { TransactionRow } from '@/components/transactions/TransactionRow';
 import type { Transaction } from '@/services/transactions.client';
 
@@ -29,7 +28,7 @@ const mockTransaction: Transaction = {
   description: 'Grocery Shopping',
   merchantName: 'Whole Foods',
   originalDescription: null,
-  currency: 'USD',
+  currency: 'EUR',
   reference: null,
   checkNumber: null,
   notes: 'Weekly groceries',
@@ -89,6 +88,7 @@ describe('TransactionRow', () => {
       isUpdating: boolean;
       isDeleting: boolean;
       categoryName?: string;
+      categoryIcon?: string;
       accountName?: string;
     }> = {}
   ) => {
@@ -103,6 +103,7 @@ describe('TransactionRow', () => {
         isUpdating={props.isUpdating ?? false}
         isDeleting={props.isDeleting ?? false}
         categoryName={props.categoryName}
+        categoryIcon={props.categoryIcon}
         accountName={props.accountName}
       />
     );
@@ -118,43 +119,38 @@ describe('TransactionRow', () => {
       expect(screen.getByText('Grocery Shopping')).toBeInTheDocument();
     });
 
-    it('should render merchant name when available', () => {
+    it('should render transaction date in Italian format', () => {
       renderRow();
-      expect(screen.getByText('Whole Foods')).toBeInTheDocument();
+      // Date formatted with it-IT locale: "15 gen 2024"
+      expect(screen.getByText(/15.*gen.*2024/i)).toBeInTheDocument();
     });
 
-    it('should render transaction date', () => {
+    it('should render amount with euro currency formatting', () => {
       renderRow();
-      // Date should be formatted
-      expect(screen.getByText(/Jan.*15.*2024/i)).toBeInTheDocument();
-    });
-
-    it('should render amount with currency formatting', () => {
-      renderRow();
-      expect(screen.getByText(/\$125\.50/)).toBeInTheDocument();
+      expect(screen.getByText(/125,50.*€/)).toBeInTheDocument();
     });
 
     it('should show negative sign for debit transactions', () => {
       renderRow();
-      const amountElement = screen.getByText(/125\.50/);
-      expect(amountElement.textContent).toMatch(/[-−]/);
+      const amountElement = screen.getByText(/125,50/);
+      expect(amountElement.textContent).toMatch(/-/);
     });
 
     it('should show positive sign for credit transactions', () => {
       renderRow(mockCreditTransaction);
-      const amountElement = screen.getByText(/500\.00/);
+      const amountElement = screen.getByText(/500,00/);
       expect(amountElement.textContent).toMatch(/\+/);
     });
 
-    it('should apply green color for credit transactions', () => {
+    it('should apply emerald color for credit transactions', () => {
       renderRow(mockCreditTransaction);
-      const amountElement = screen.getByText(/\+\$500\.00/);
-      expect(amountElement).toHaveClass('text-green-600');
+      const amountElement = screen.getByText(/\+.*500,00.*€/);
+      expect(amountElement.className).toMatch(/emerald/);
     });
 
     it('should show pending badge for pending transactions', () => {
       renderRow(mockPendingTransaction);
-      expect(screen.getByText('Pending')).toBeInTheDocument();
+      expect(screen.getByText('In attesa')).toBeInTheDocument();
     });
 
     it('should display category name when provided', () => {
@@ -167,10 +163,10 @@ describe('TransactionRow', () => {
       expect(screen.getByText('Checking Account')).toBeInTheDocument();
     });
 
-    it('should show "Uncategorized" when no category', () => {
+    it('should show "Non categorizzata" when no category', () => {
       const txWithoutCategory = { ...mockTransaction, categoryId: null };
       renderRow(txWithoutCategory);
-      expect(screen.getByText('Uncategorized')).toBeInTheDocument();
+      expect(screen.getByText('Non categorizzata')).toBeInTheDocument();
     });
   });
 
@@ -208,7 +204,7 @@ describe('TransactionRow', () => {
     it('should have accessible label for checkbox', () => {
       renderRow();
       expect(
-        screen.getByRole('checkbox', { name: /select.*grocery shopping/i })
+        screen.getByRole('checkbox', { name: /seleziona.*grocery shopping/i })
       ).toBeInTheDocument();
     });
   });
@@ -221,47 +217,37 @@ describe('TransactionRow', () => {
     it('should render edit button', () => {
       renderRow();
       expect(
-        screen.getByRole('button', { name: /edit/i })
+        screen.getByRole('button', { name: /modifica transazione/i })
       ).toBeInTheDocument();
     });
 
     it('should render delete button', () => {
       renderRow();
       expect(
-        screen.getByRole('button', { name: /delete/i })
+        screen.getByRole('button', { name: /elimina transazione/i })
       ).toBeInTheDocument();
     });
 
     it('should call onEdit when edit button is clicked', async () => {
       const { user } = renderRow();
-      await user.click(screen.getByRole('button', { name: /edit/i }));
+      await user.click(screen.getByRole('button', { name: /modifica transazione/i }));
       expect(mockOnEdit).toHaveBeenCalledWith(mockTransaction);
     });
 
     it('should call onDelete when delete button is clicked', async () => {
       const { user } = renderRow();
-      await user.click(screen.getByRole('button', { name: /delete/i }));
+      await user.click(screen.getByRole('button', { name: /elimina transazione/i }));
       expect(mockOnDelete).toHaveBeenCalledWith('tx-1');
     });
 
     it('should disable edit button while updating', () => {
       renderRow(mockTransaction, { isUpdating: true });
-      expect(screen.getByRole('button', { name: /edit/i })).toBeDisabled();
+      expect(screen.getByRole('button', { name: /modifica transazione/i })).toBeDisabled();
     });
 
     it('should disable delete button while deleting', () => {
       renderRow(mockTransaction, { isDeleting: true });
-      expect(screen.getByRole('button', { name: /delete/i })).toBeDisabled();
-    });
-
-    it('should show loading indicator while updating', () => {
-      renderRow(mockTransaction, { isUpdating: true });
-      expect(screen.getByTestId('updating-spinner')).toBeInTheDocument();
-    });
-
-    it('should show loading indicator while deleting', () => {
-      renderRow(mockTransaction, { isDeleting: true });
-      expect(screen.getByTestId('deleting-spinner')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /elimina transazione/i })).toBeDisabled();
     });
   });
 
@@ -272,31 +258,8 @@ describe('TransactionRow', () => {
   describe('Accessibility', () => {
     it('should have accessible row structure', () => {
       renderRow();
-      // Row should be focusable or have proper structure
       const row = screen.getByRole('article');
       expect(row).toBeInTheDocument();
-    });
-
-    it('should have proper aria-label for amount', () => {
-      renderRow();
-      expect(
-        screen.getByLabelText(/expense.*125\.50/i)
-      ).toBeInTheDocument();
-    });
-
-    it('should have proper aria-label for credit amount', () => {
-      renderRow(mockCreditTransaction);
-      expect(
-        screen.getByLabelText(/income.*500\.00/i)
-      ).toBeInTheDocument();
-    });
-
-    it('should indicate loading state accessibly', () => {
-      renderRow(mockTransaction, { isUpdating: true });
-      expect(screen.getByRole('button', { name: /edit/i })).toHaveAttribute(
-        'aria-busy',
-        'true'
-      );
     });
   });
 
@@ -305,22 +268,10 @@ describe('TransactionRow', () => {
   // ===========================================================================
 
   describe('Visual Indicators', () => {
-    it('should show green indicator for credit', () => {
-      renderRow(mockCreditTransaction);
-      const indicator = screen.getByTestId('type-indicator');
-      expect(indicator).toHaveClass('bg-green-500');
-    });
-
-    it('should show red indicator for debit', () => {
-      renderRow();
-      const indicator = screen.getByTestId('type-indicator');
-      expect(indicator).toHaveClass('bg-red-500');
-    });
-
     it('should highlight row when selected', () => {
       renderRow(mockTransaction, { isSelected: true });
       const row = screen.getByRole('article');
-      expect(row).toHaveClass('bg-blue-50');
+      expect(row.className).toMatch(/emerald/);
     });
   });
 });

@@ -107,24 +107,24 @@ export function TransactionForm({
 
     // Amount validation
     if (!amount || amount.trim() === '') {
-      newErrors.amount = 'Amount is required';
+      newErrors.amount = 'Importo obbligatorio';
     } else if (isNaN(parsedAmount) || parsedAmount <= 0) {
-      newErrors.amount = 'Amount must be greater than 0';
+      newErrors.amount = 'L\'importo deve essere maggiore di 0';
     }
 
     // Description validation
     if (!description || description.trim() === '') {
-      newErrors.description = 'Description is required';
+      newErrors.description = 'Descrizione obbligatoria';
     }
 
     // Date validation
     if (!date) {
-      newErrors.date = 'Date is required';
+      newErrors.date = 'Data obbligatoria';
     }
 
     // Account validation
     if (!accountId) {
-      newErrors.accountId = 'Please select an account';
+      newErrors.accountId = 'Seleziona un conto';
     }
 
     setErrors(newErrors);
@@ -169,7 +169,7 @@ export function TransactionForm({
       } catch (err) {
         setErrors({
           general:
-            err instanceof Error ? err.message : 'An unexpected error occurred',
+            err instanceof Error ? err.message : 'Si è verificato un errore imprevisto',
         });
       } finally {
         setIsSubmitting(false);
@@ -199,15 +199,15 @@ export function TransactionForm({
     >
       {/* Header */}
       <h3 className="text-lg font-semibold text-foreground">
-        {isEditMode ? 'Edit Transaction' : 'Add Transaction'}
+        {isEditMode ? 'Modifica Transazione' : 'Aggiungi Transazione'}
       </h3>
 
       {/* Linked Transaction Notice */}
       {isLinkedTransaction && (
-        <div className="p-3 text-sm text-blue-700 bg-blue-50 border border-blue-200 rounded-lg">
-          <p className="font-medium">Bank-synced transaction</p>
-          <p className="mt-1 text-blue-600">
-            Only the category and notes can be edited. Other details are synced from your bank.
+        <div className="p-4 text-sm rounded-xl bg-amber-500/10 border border-amber-500/20">
+          <p className="font-medium text-amber-600 dark:text-amber-400">Transazione sincronizzata dalla banca</p>
+          <p className="mt-1 text-muted-foreground">
+            Solo la categoria e le note possono essere modificate. Gli altri campi sono sincronizzati dalla banca.
           </p>
         </div>
       )}
@@ -235,11 +235,11 @@ export function TransactionForm({
           disabled={formLoading || isFieldLocked}
           className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-colors ${
             transactionType === 'DEBIT'
-              ? 'bg-red-100 text-red-700 border-2 border-red-500'
-              : 'bg-muted text-muted-foreground border-2 border-transparent hover:bg-muted'
-          } ${formLoading || isFieldLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
+              ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-2 border-rose-500/30'
+              : 'bg-muted/50 text-muted-foreground border-2 border-transparent hover:bg-muted'
+          } ${formLoading || isFieldLocked ? 'opacity-40 cursor-not-allowed' : ''}`}
         >
-          Expense
+          Uscita
         </button>
         <button
           type="button"
@@ -248,11 +248,11 @@ export function TransactionForm({
           disabled={formLoading || isFieldLocked}
           className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-colors ${
             transactionType === 'CREDIT'
-              ? 'bg-green-100 text-green-700 border-2 border-green-500'
-              : 'bg-muted text-muted-foreground border-2 border-transparent hover:bg-muted'
-          } ${formLoading || isFieldLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
+              ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-2 border-emerald-500/30'
+              : 'bg-muted/50 text-muted-foreground border-2 border-transparent hover:bg-muted'
+          } ${formLoading || isFieldLocked ? 'opacity-40 cursor-not-allowed' : ''}`}
         >
-          Income
+          Entrata
         </button>
       </div>
 
@@ -262,11 +262,11 @@ export function TransactionForm({
           htmlFor="amount"
           className="block text-sm font-medium text-foreground mb-1"
         >
-          Amount <span className="text-red-500">*</span>
+          Importo <span className="text-red-500">*</span>
         </label>
         <div className="relative">
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-            $
+            €
           </span>
           <input
             id="amount"
@@ -277,9 +277,9 @@ export function TransactionForm({
             onChange={(e) => setAmount(e.target.value)}
             placeholder="0.00"
             disabled={formLoading || isFieldLocked}
-            className={`w-full pl-8 pr-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500
-              ${errors.amount ? 'border-red-300' : 'border-border'}
-              ${formLoading || isFieldLocked ? 'bg-muted cursor-not-allowed' : ''}`}
+            className={`w-full pl-8 pr-3 py-2 border rounded-xl bg-background focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500/50
+              ${errors.amount ? 'border-rose-500/50' : 'border-border/50'}
+              ${formLoading || isFieldLocked ? 'bg-muted/30 cursor-not-allowed opacity-50 text-muted-foreground' : ''}`}
           />
         </div>
         {errors.amount && (
@@ -293,18 +293,18 @@ export function TransactionForm({
           htmlFor="description"
           className="block text-sm font-medium text-foreground mb-1"
         >
-          Description <span className="text-red-500">*</span>
+          Descrizione <span className="text-red-500">*</span>
         </label>
         <input
           id="description"
           type="text"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          placeholder="What was this for?"
+          placeholder="A cosa si riferisce?"
           disabled={formLoading || isFieldLocked}
-          className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500
-            ${errors.description ? 'border-red-300' : 'border-border'}
-            ${formLoading || isFieldLocked ? 'bg-muted cursor-not-allowed' : ''}`}
+          className={`w-full px-3 py-2 border rounded-xl bg-background focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500/50
+            ${errors.description ? 'border-rose-500/50' : 'border-border/50'}
+            ${formLoading || isFieldLocked ? 'bg-muted/30 cursor-not-allowed opacity-50 text-muted-foreground' : ''}`}
         />
         {errors.description && (
           <p className="mt-1 text-sm text-red-600">{errors.description}</p>
@@ -317,7 +317,7 @@ export function TransactionForm({
           htmlFor="date"
           className="block text-sm font-medium text-foreground mb-1"
         >
-          Date <span className="text-red-500">*</span>
+          Data <span className="text-red-500">*</span>
         </label>
         <input
           id="date"
@@ -325,9 +325,9 @@ export function TransactionForm({
           value={date}
           onChange={(e) => setDate(e.target.value)}
           disabled={formLoading || isFieldLocked}
-          className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500
-            ${errors.date ? 'border-red-300' : 'border-border'}
-            ${formLoading || isFieldLocked ? 'bg-muted cursor-not-allowed' : ''}`}
+          className={`w-full px-3 py-2 border rounded-xl bg-background focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500/50
+            ${errors.date ? 'border-rose-500/50' : 'border-border/50'}
+            ${formLoading || isFieldLocked ? 'bg-muted/30 cursor-not-allowed opacity-50 text-muted-foreground' : ''}`}
         />
         {errors.date && (
           <p className="mt-1 text-sm text-red-600">{errors.date}</p>
@@ -340,18 +340,18 @@ export function TransactionForm({
           htmlFor="account"
           className="block text-sm font-medium text-foreground mb-1"
         >
-          Account <span className="text-red-500">*</span>
+          Conto <span className="text-red-500">*</span>
         </label>
         <select
           id="account"
           value={accountId}
           onChange={(e) => setAccountId(e.target.value)}
           disabled={formLoading || isFieldLocked}
-          className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500
-            ${errors.accountId ? 'border-red-300' : 'border-border'}
-            ${formLoading || isFieldLocked ? 'bg-muted cursor-not-allowed' : ''}`}
+          className={`w-full px-3 py-2 border rounded-xl bg-background focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500/50
+            ${errors.accountId ? 'border-rose-500/50' : 'border-border/50'}
+            ${formLoading || isFieldLocked ? 'bg-muted/30 cursor-not-allowed opacity-50 text-muted-foreground' : ''}`}
         >
-          <option value="">Select an account</option>
+          <option value="">Seleziona un conto</option>
           {accounts.map((account) => (
             <option key={account.id} value={account.id}>
               {account.name}
@@ -370,8 +370,8 @@ export function TransactionForm({
           onChange={setCategoryId}
           categories={filteredCategories}
           filterType={transactionType === 'DEBIT' ? 'EXPENSE' : 'INCOME'}
-          label="Category"
-          placeholder="Select a category (optional)"
+          label="Categoria"
+          placeholder="Seleziona una categoria (opzionale)"
           disabled={formLoading}
           clearable
           searchable
@@ -384,16 +384,16 @@ export function TransactionForm({
           htmlFor="notes"
           className="block text-sm font-medium text-foreground mb-1"
         >
-          Notes
+          Note
         </label>
         <textarea
           id="notes"
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
-          placeholder="Add any additional notes..."
+          placeholder="Aggiungi note aggiuntive..."
           rows={3}
           disabled={formLoading}
-          className={`w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500
+          className={`w-full px-3 py-2 border border-border rounded-xl bg-background focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500/50
             ${formLoading ? 'bg-muted cursor-not-allowed' : ''}`}
         />
       </div>
@@ -404,22 +404,22 @@ export function TransactionForm({
           type="button"
           onClick={onCancel}
           disabled={formLoading}
-          className="flex-1 py-2.5 px-4 border border-border rounded-lg text-foreground font-medium
+          className="flex-1 py-2.5 px-4 border border-border rounded-xl bg-background text-foreground font-medium
             hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring
             disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Cancel
+          Annulla
         </button>
         <button
           type="submit"
           disabled={formLoading}
-          className="flex-1 py-2.5 px-4 bg-blue-600 text-white rounded-lg font-medium
-            hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500
+          className="flex-1 py-2.5 px-4 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white rounded-xl font-medium shadow-lg shadow-emerald-500/20
+            focus:outline-none focus:ring-2 focus:ring-emerald-500/30
             disabled:opacity-50 disabled:cursor-not-allowed
             flex items-center justify-center gap-2"
         >
           {formLoading && <Loader2 className="h-4 w-4 animate-spin" />}
-          {isEditMode ? 'Save Changes' : 'Add Transaction'}
+          {isEditMode ? 'Salva Modifiche' : 'Aggiungi Transazione'}
         </button>
       </div>
     </form>

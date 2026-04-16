@@ -1,8 +1,8 @@
 /**
  * EnhancedTransactionList Component Tests
  *
- * TDD tests for the EnhancedTransactionList component.
- * Tests edit flow, update handling, and accountId stripping behavior.
+ * Tests for the EnhancedTransactionList component after Figma Design Sprint restyle.
+ * Tests edit flow, update handling, accountId stripping, filtering, and sorting.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -40,6 +40,11 @@ vi.mock('@/services/categories.client', () => ({
     getOptions: vi.fn(),
   },
   CategoryOption: {},
+}));
+
+// Mock csv-export
+vi.mock('@/utils/csv-export', () => ({
+  downloadTransactionsCSV: vi.fn(),
 }));
 
 // =============================================================================
@@ -109,16 +114,13 @@ describe('EnhancedTransactionList', () => {
   const mockUpdateTransaction = vi.fn();
   const mockDeleteTransaction = vi.fn();
   const mockDeleteTransactions = vi.fn();
-  const mockToggleSelection = vi.fn();
-  const mockSelectAll = vi.fn();
-  const mockDeselectAll = vi.fn();
-  const mockBulkCategorize = vi.fn();
+  const mockBulkUpdateCategory = vi.fn();
   const mockOnRefresh = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
 
-    // Setup store mock
+    // Setup store mock with correct method names
     vi.mocked(transactionsStore.useTransactionsStore).mockReturnValue({
       selectedIds: new Set<string>(),
       isUpdating: {},
@@ -126,10 +128,7 @@ describe('EnhancedTransactionList', () => {
       updateTransaction: mockUpdateTransaction,
       deleteTransaction: mockDeleteTransaction,
       deleteTransactions: mockDeleteTransactions,
-      toggleSelection: mockToggleSelection,
-      selectAll: mockSelectAll,
-      deselectAll: mockDeselectAll,
-      bulkCategorize: mockBulkCategorize,
+      bulkUpdateCategory: mockBulkUpdateCategory,
     });
 
     // Setup API client mocks
@@ -157,7 +156,7 @@ describe('EnhancedTransactionList', () => {
         />
       );
 
-      expect(screen.getByText('No transactions found')).toBeInTheDocument();
+      expect(screen.getByText('Nessuna transazione trovata')).toBeInTheDocument();
     });
 
     it('should render loading state', () => {
@@ -169,7 +168,7 @@ describe('EnhancedTransactionList', () => {
         />
       );
 
-      // Loading state shows a spinner (svg with aria-hidden)
+      // Loading state shows a spinner (svg with animate-spin class)
       const spinner = document.querySelector('.animate-spin');
       expect(spinner).toBeInTheDocument();
     });
@@ -189,8 +188,8 @@ describe('EnhancedTransactionList', () => {
         />
       );
 
-      // Find and click the edit button
-      const editButton = screen.getByRole('button', { name: /edit/i });
+      // Find and click the edit button (Italian label)
+      const editButton = screen.getByRole('button', { name: /modifica transazione/i });
       await user.click(editButton);
 
       // Wait for the form to appear
@@ -198,8 +197,8 @@ describe('EnhancedTransactionList', () => {
         expect(screen.getByRole('dialog')).toBeInTheDocument();
       });
 
-      // The form should be pre-filled - find and click submit
-      const submitButton = screen.getByRole('button', { name: /save/i });
+      // The form should be pre-filled - find and click submit (Italian)
+      const submitButton = screen.getByRole('button', { name: /salva/i });
       await user.click(submitButton);
 
       // Verify updateTransaction was called
@@ -235,7 +234,7 @@ describe('EnhancedTransactionList', () => {
       );
 
       // Click edit button
-      const editButton = screen.getByRole('button', { name: /edit/i });
+      const editButton = screen.getByRole('button', { name: /modifica transazione/i });
       await user.click(editButton);
 
       // Wait for form and submit
@@ -243,7 +242,7 @@ describe('EnhancedTransactionList', () => {
         expect(screen.getByRole('dialog')).toBeInTheDocument();
       });
 
-      const submitButton = screen.getByRole('button', { name: /save/i });
+      const submitButton = screen.getByRole('button', { name: /salva/i });
       await user.click(submitButton);
 
       // Verify onRefresh was called after update
@@ -266,14 +265,14 @@ describe('EnhancedTransactionList', () => {
         />
       );
 
-      const editButton = screen.getByRole('button', { name: /edit/i });
+      const editButton = screen.getByRole('button', { name: /modifica transazione/i });
       await user.click(editButton);
 
       await waitFor(() => {
         expect(screen.getByRole('dialog')).toBeInTheDocument();
       });
 
-      const submitButton = screen.getByRole('button', { name: /save/i });
+      const submitButton = screen.getByRole('button', { name: /salva/i });
       await user.click(submitButton);
 
       await waitFor(() => {
@@ -283,7 +282,6 @@ describe('EnhancedTransactionList', () => {
       const [, updateData] = mockUpdateTransaction.mock.calls[0];
 
       // List of fields that SHOULD NOT be in update data
-      // (because they're immutable or not part of UpdateTransactionDto)
       const forbiddenFields = ['accountId', 'plaidTransactionId', 'id'];
 
       for (const field of forbiddenFields) {
@@ -351,7 +349,7 @@ describe('EnhancedTransactionList', () => {
           />
         );
 
-        const searchInput = screen.getByPlaceholderText(/search transactions/i);
+        const searchInput = screen.getByPlaceholderText(/cerca transazioni/i);
         await user.type(searchInput, 'Grocery');
 
         // Should show matching transaction
@@ -371,7 +369,7 @@ describe('EnhancedTransactionList', () => {
           />
         );
 
-        const searchInput = screen.getByPlaceholderText(/search transactions/i);
+        const searchInput = screen.getByPlaceholderText(/cerca transazioni/i);
         await user.type(searchInput, 'Starbucks');
 
         expect(screen.getByText('Coffee Shop')).toBeInTheDocument();
@@ -388,7 +386,7 @@ describe('EnhancedTransactionList', () => {
           />
         );
 
-        const searchInput = screen.getByPlaceholderText(/search transactions/i);
+        const searchInput = screen.getByPlaceholderText(/cerca transazioni/i);
         await user.type(searchInput, 'GROCERY');
 
         expect(screen.getByText('Grocery Shopping')).toBeInTheDocument();
@@ -407,11 +405,11 @@ describe('EnhancedTransactionList', () => {
         );
 
         // Open filters
-        const filterButton = screen.getByRole('button', { name: /filters/i });
+        const filterButton = screen.getByRole('button', { name: /filtri/i });
         await user.click(filterButton);
 
-        // Select DEBIT type
-        const typeSelect = screen.getByLabelText(/type/i);
+        // Select DEBIT type (Italian labels: "Tipo" label, "Uscite" option)
+        const typeSelect = screen.getByLabelText(/tipo/i);
         await user.selectOptions(typeSelect, 'DEBIT');
 
         // Should show DEBIT transactions
@@ -431,10 +429,10 @@ describe('EnhancedTransactionList', () => {
           />
         );
 
-        const filterButton = screen.getByRole('button', { name: /filters/i });
+        const filterButton = screen.getByRole('button', { name: /filtri/i });
         await user.click(filterButton);
 
-        const typeSelect = screen.getByLabelText(/type/i);
+        const typeSelect = screen.getByLabelText(/tipo/i);
         await user.selectOptions(typeSelect, 'CREDIT');
 
         expect(screen.getByText('Salary Deposit')).toBeInTheDocument();
@@ -459,15 +457,15 @@ describe('EnhancedTransactionList', () => {
           />
         );
 
-        const filterButton = screen.getByRole('button', { name: /filters/i });
+        const filterButton = screen.getByRole('button', { name: /filtri/i });
         await user.click(filterButton);
 
         // Wait for categories to load
         await waitFor(() => {
-          expect(screen.getByLabelText(/category/i)).toBeInTheDocument();
+          expect(screen.getByLabelText(/categoria/i)).toBeInTheDocument();
         });
 
-        const categorySelect = screen.getByLabelText(/category/i);
+        const categorySelect = screen.getByLabelText(/categoria/i);
         await user.selectOptions(categorySelect, 'cat-1');
 
         // Should show transactions with cat-1
@@ -488,14 +486,14 @@ describe('EnhancedTransactionList', () => {
           />
         );
 
-        const filterButton = screen.getByRole('button', { name: /filters/i });
+        const filterButton = screen.getByRole('button', { name: /filtri/i });
         await user.click(filterButton);
 
         await waitFor(() => {
-          expect(screen.getByLabelText(/category/i)).toBeInTheDocument();
+          expect(screen.getByLabelText(/categoria/i)).toBeInTheDocument();
         });
 
-        const categorySelect = screen.getByLabelText(/category/i);
+        const categorySelect = screen.getByLabelText(/categoria/i);
         await user.selectOptions(categorySelect, 'uncategorized');
 
         // Should show only uncategorized transaction
@@ -515,10 +513,10 @@ describe('EnhancedTransactionList', () => {
           />
         );
 
-        const filterButton = screen.getByRole('button', { name: /filters/i });
+        const filterButton = screen.getByRole('button', { name: /filtri/i });
         await user.click(filterButton);
 
-        const minAmountInput = screen.getByLabelText(/min amount/i);
+        const minAmountInput = screen.getByLabelText(/importo min/i);
         await user.type(minAmountInput, '100');
 
         // Should show transactions >= 100
@@ -539,10 +537,10 @@ describe('EnhancedTransactionList', () => {
           />
         );
 
-        const filterButton = screen.getByRole('button', { name: /filters/i });
+        const filterButton = screen.getByRole('button', { name: /filtri/i });
         await user.click(filterButton);
 
-        const maxAmountInput = screen.getByLabelText(/max amount/i);
+        const maxAmountInput = screen.getByLabelText(/importo max/i);
         await user.type(maxAmountInput, '100');
 
         // Should show transactions <= 100
@@ -563,11 +561,11 @@ describe('EnhancedTransactionList', () => {
           />
         );
 
-        const filterButton = screen.getByRole('button', { name: /filters/i });
+        const filterButton = screen.getByRole('button', { name: /filtri/i });
         await user.click(filterButton);
 
-        const minAmountInput = screen.getByLabelText(/min amount/i);
-        const maxAmountInput = screen.getByLabelText(/max amount/i);
+        const minAmountInput = screen.getByLabelText(/importo min/i);
+        const maxAmountInput = screen.getByLabelText(/importo max/i);
         await user.type(minAmountInput, '50');
         await user.type(maxAmountInput, '150');
 
@@ -592,29 +590,26 @@ describe('EnhancedTransactionList', () => {
         );
 
         // Search filter
-        const searchInput = screen.getByPlaceholderText(/search transactions/i);
+        const searchInput = screen.getByPlaceholderText(/cerca transazioni/i);
         await user.type(searchInput, 'o'); // matches "Grocery", "Coffee", "Salary" (Corp)
 
         // Open filters
-        const filterButton = screen.getByRole('button', { name: /filters/i });
+        const filterButton = screen.getByRole('button', { name: /filtri/i });
         await user.click(filterButton);
 
         // Type filter
-        const typeSelect = screen.getByLabelText(/type/i);
+        const typeSelect = screen.getByLabelText(/tipo/i);
         await user.selectOptions(typeSelect, 'DEBIT');
 
         // Min amount filter
-        const minAmountInput = screen.getByLabelText(/min amount/i);
+        const minAmountInput = screen.getByLabelText(/importo min/i);
         await user.type(minAmountInput, '10');
 
         // Should only show transactions matching ALL filters
-        // - Contains 'o' in description/merchant
-        // - Type is DEBIT
-        // - Amount >= 10
-        expect(screen.getByText('Grocery Shopping')).toBeInTheDocument(); // matches all: has 'o', DEBIT, >= 10
-        expect(screen.queryByText('Restaurant Dinner')).not.toBeInTheDocument(); // no 'o' in desc/merchant
-        expect(screen.queryByText('Coffee Shop')).not.toBeInTheDocument(); // amount < 10
-        expect(screen.queryByText('Salary Deposit')).not.toBeInTheDocument(); // CREDIT type
+        expect(screen.getByText('Grocery Shopping')).toBeInTheDocument();
+        expect(screen.queryByText('Restaurant Dinner')).not.toBeInTheDocument();
+        expect(screen.queryByText('Coffee Shop')).not.toBeInTheDocument();
+        expect(screen.queryByText('Salary Deposit')).not.toBeInTheDocument();
       });
     });
 
@@ -630,7 +625,7 @@ describe('EnhancedTransactionList', () => {
         );
 
         // Apply search filter
-        const searchInput = screen.getByPlaceholderText(/search transactions/i);
+        const searchInput = screen.getByPlaceholderText(/cerca transazioni/i);
         await user.type(searchInput, 'Grocery');
 
         // Only one transaction should be visible
@@ -638,11 +633,11 @@ describe('EnhancedTransactionList', () => {
         expect(screen.queryByText('Salary Deposit')).not.toBeInTheDocument();
 
         // Open filters
-        const filterButton = screen.getByRole('button', { name: /filters/i });
+        const filterButton = screen.getByRole('button', { name: /filtri/i });
         await user.click(filterButton);
 
         // Clear filters
-        const clearButton = screen.getByRole('button', { name: /clear all filters/i });
+        const clearButton = screen.getByRole('button', { name: /cancella tutti i filtri/i });
         await user.click(clearButton);
 
         // All transactions should be visible again
@@ -725,11 +720,11 @@ describe('EnhancedTransactionList', () => {
       );
 
       // Open filters to access sort buttons
-      const filterButton = screen.getByRole('button', { name: /filters/i });
+      const filterButton = screen.getByRole('button', { name: /filtri/i });
       await user.click(filterButton);
 
-      // Click date sort button to toggle to ascending
-      const dateSortButton = screen.getByRole('button', { name: /date/i });
+      // Click date sort button to toggle to ascending (Italian: "Data")
+      const dateSortButton = screen.getByRole('button', { name: /data/i });
       await user.click(dateSortButton);
 
       // Now should be ascending (oldest first)
@@ -752,10 +747,11 @@ describe('EnhancedTransactionList', () => {
         />
       );
 
-      const filterButton = screen.getByRole('button', { name: /filters/i });
+      const filterButton = screen.getByRole('button', { name: /filtri/i });
       await user.click(filterButton);
 
-      const amountSortButton = screen.getByRole('button', { name: /amount/i });
+      // Italian: "Importo"
+      const amountSortButton = screen.getByRole('button', { name: /importo/i });
       await user.click(amountSortButton);
 
       const descriptions = screen.getAllByText(/Transaction$/);
@@ -778,7 +774,7 @@ describe('EnhancedTransactionList', () => {
         />
       );
 
-      const filterButton = screen.getByRole('button', { name: /filters/i });
+      const filterButton = screen.getByRole('button', { name: /filtri/i });
       await user.click(filterButton);
 
       const descSortButton = screen.getByRole('button', { name: /a-z/i });
@@ -787,7 +783,6 @@ describe('EnhancedTransactionList', () => {
       const descriptions = screen.getAllByText(/Transaction$/);
       const descTexts = descriptions.map((el) => el.textContent);
 
-      // A-Z ascending (default on first click for alphabetical sort)
       expect(descTexts[0]).toBe('Alpha Transaction');
       expect(descTexts[1]).toBe('Beta Transaction');
       expect(descTexts[2]).toBe('Gamma Transaction');
@@ -804,10 +799,11 @@ describe('EnhancedTransactionList', () => {
         />
       );
 
-      const filterButton = screen.getByRole('button', { name: /filters/i });
+      const filterButton = screen.getByRole('button', { name: /filtri/i });
       await user.click(filterButton);
 
-      const categorySortButton = screen.getByRole('button', { name: /category/i });
+      // Italian: "Categoria"
+      const categorySortButton = screen.getByRole('button', { name: /categoria/i });
       await user.click(categorySortButton);
 
       const descriptions = screen.getAllByText(/Transaction$/);
@@ -836,15 +832,15 @@ describe('EnhancedTransactionList', () => {
       );
 
       // Open filters
-      const filterButton = screen.getByRole('button', { name: /filters/i });
+      const filterButton = screen.getByRole('button', { name: /filtri/i });
       await user.click(filterButton);
 
       // Apply type filter
-      const typeSelect = screen.getByLabelText(/type/i);
+      const typeSelect = screen.getByLabelText(/tipo/i);
       await user.selectOptions(typeSelect, 'DEBIT');
 
       // Apply min amount filter
-      const minAmountInput = screen.getByLabelText(/min amount/i);
+      const minAmountInput = screen.getByLabelText(/importo min/i);
       await user.type(minAmountInput, '10');
 
       // Badge should show 2 active filters
@@ -874,21 +870,21 @@ describe('EnhancedTransactionList', () => {
         />
       );
 
-      // Initially shows all
-      expect(screen.getByText(/showing/i)).toHaveTextContent('3');
-      expect(screen.getByText(/of/i)).toHaveTextContent('3');
+      // Initially shows all: "3 di 3 transazioni"
+      expect(screen.getByText(/3 di/)).toBeInTheDocument();
+      expect(screen.getByText(/transazioni/)).toBeInTheDocument();
 
       // Open filters
-      const filterButton = screen.getByRole('button', { name: /filters/i });
+      const filterButton = screen.getByRole('button', { name: /filtri/i });
       await user.click(filterButton);
 
       // Apply DEBIT filter
-      const typeSelect = screen.getByLabelText(/type/i);
+      const typeSelect = screen.getByLabelText(/tipo/i);
       await user.selectOptions(typeSelect, 'DEBIT');
 
       // Should now show 2 of 3
       await waitFor(() => {
-        expect(screen.getByText('2')).toBeInTheDocument();
+        expect(screen.getByText(/2 di/)).toBeInTheDocument();
       });
     });
   });

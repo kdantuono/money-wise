@@ -1,14 +1,29 @@
 /**
  * Tests for SettingsPage component
  *
- * Tests the full settings form including profile fields, theme selection,
- * notification preferences, and save functionality.
+ * After the Figma Design Sprint, the settings page has a 9-tab layout:
+ * Profilo, Aspetto, Categorie, API Keys, Piano, Notifiche, Integrazioni, Sicurezza, Dati.
+ * Default tab is "profile" showing Informazioni Profilo.
+ * All text is in Italian.
  */
 
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '../../utils/test-utils';
-import SettingsPage from '../../../app/dashboard/settings/page';
+
+// Mock framer-motion
+vi.mock('framer-motion', () => ({
+  motion: new Proxy({}, {
+    get: (_target: unknown, prop: string | symbol) => {
+      if (prop === '__esModule') return false;
+      return ({ children, initial, animate, exit, transition, whileHover, whileTap, whileInView, variants, ...rest }: Record<string, unknown>) => {
+        const Tag = typeof prop === 'string' ? prop : 'div';
+        return React.createElement(Tag as string, rest, children as React.ReactNode);
+      };
+    },
+  }),
+  AnimatePresence: ({ children }: { children: React.ReactNode }) => children,
+}));
 
 // Mock auth store
 vi.mock('../../../src/store/auth.store', () => ({
@@ -18,18 +33,28 @@ vi.mock('../../../src/store/auth.store', () => ({
 // Mock useTheme hook
 vi.mock('../../../src/hooks/useTheme', () => ({
   useTheme: vi.fn(() => ({
-    theme: 'light',
-    resolvedTheme: 'light',
-    isDark: false,
+    theme: 'dracula',
     setTheme: vi.fn(),
   })),
 }));
 
-// Mock CSRF utility
-vi.mock('../../../src/utils/csrf', () => ({
-  getCsrfToken: vi.fn(() => 'mock-csrf-token'),
+// Mock CategoryManager (complex sub-dependency)
+vi.mock('../../../src/components/categories/CategoryManager', () => ({
+  CategoryManager: () => <div data-testid="category-manager">CategoryManager</div>,
 }));
 
+// Mock Supabase client (used by handleSaveProfile dynamic import)
+vi.mock('../../../src/utils/supabase/client', () => ({
+  createClient: vi.fn(() => ({
+    from: vi.fn(() => ({
+      update: vi.fn(() => ({
+        eq: vi.fn().mockResolvedValue({ error: null }),
+      })),
+    })),
+  })),
+}));
+
+import SettingsPage from '../../../app/dashboard/settings/page';
 import { useAuthStore } from '../../../src/store/auth.store';
 const mockUseAuthStore = useAuthStore as unknown as ReturnType<typeof vi.fn>;
 
@@ -41,11 +66,11 @@ const mockUser = {
   lastName: 'Doe',
   role: 'USER',
   status: 'ACTIVE',
-  timezone: 'America/New_York',
-  currency: 'USD',
+  timezone: 'Europe/Rome',
+  currency: 'EUR',
   preferences: {
-    theme: 'light',
-    language: 'en',
+    theme: 'dracula',
+    language: 'it',
     notifications: {
       email: true,
       push: true,
@@ -70,148 +95,76 @@ describe('SettingsPage', () => {
   });
 
   describe('Header', () => {
-    it('renders the page heading', () => {
+    it('renders the page heading in Italian', () => {
       render(<SettingsPage />);
 
-      expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Settings');
+      expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Impostazioni');
     });
 
-    it('renders the description text', () => {
+    it('renders the description text in Italian', () => {
       render(<SettingsPage />);
 
-      expect(screen.getByText('Manage your account settings and preferences')).toBeInTheDocument();
-    });
-
-    it('renders the Settings icon in header', () => {
-      const { container } = render(<SettingsPage />);
-
-      const headerIcon = container.querySelector('.bg-muted svg');
-      expect(headerIcon).toBeInTheDocument();
+      expect(screen.getByText('Gestisci il tuo profilo e le preferenze')).toBeInTheDocument();
     });
   });
 
-  describe('Profile Information Form', () => {
-    it('renders Profile Information section heading', () => {
+  describe('Tab Navigation', () => {
+    it('renders all 9 tab labels', () => {
       render(<SettingsPage />);
 
-      expect(screen.getByText('Profile Information')).toBeInTheDocument();
+      expect(screen.getByText('Profilo')).toBeInTheDocument();
+      expect(screen.getByText('Aspetto')).toBeInTheDocument();
+      expect(screen.getByText('Categorie')).toBeInTheDocument();
+      expect(screen.getByText('API Keys')).toBeInTheDocument();
+      expect(screen.getByText('Piano')).toBeInTheDocument();
+      expect(screen.getByText('Notifiche')).toBeInTheDocument();
+      expect(screen.getByText('Integrazioni')).toBeInTheDocument();
+      expect(screen.getByText('Sicurezza')).toBeInTheDocument();
+      expect(screen.getByText('Dati')).toBeInTheDocument();
+    });
+  });
+
+  describe('Profile Tab (default)', () => {
+    it('renders Informazioni Profilo section heading', () => {
+      render(<SettingsPage />);
+
+      expect(screen.getByText('Informazioni Profilo')).toBeInTheDocument();
     });
 
-    it('renders first name input with user value', () => {
+    it('renders Nome label and input with user value', () => {
       render(<SettingsPage />);
 
-      const firstNameInput = screen.getByLabelText('First Name');
-      expect(firstNameInput).toBeInTheDocument();
-      expect(firstNameInput).toHaveValue('John');
+      const nameInput = screen.getByLabelText('Nome');
+      expect(nameInput).toBeInTheDocument();
+      expect(nameInput).toHaveValue('John');
     });
 
-    it('renders last name input with user value', () => {
+    it('renders Cognome label and input with user value', () => {
       render(<SettingsPage />);
 
-      const lastNameInput = screen.getByLabelText('Last Name');
+      const lastNameInput = screen.getByLabelText('Cognome');
       expect(lastNameInput).toBeInTheDocument();
       expect(lastNameInput).toHaveValue('Doe');
     });
 
-    it('renders email input with user value', () => {
+    it('renders Email input with user value', () => {
       render(<SettingsPage />);
 
-      const emailInput = screen.getByLabelText(/Email Address/i);
+      const emailInput = screen.getByLabelText('Email');
       expect(emailInput).toBeInTheDocument();
       expect(emailInput).toHaveValue('john@example.com');
     });
-  });
 
-  describe('Regional Settings', () => {
-    it('renders Regional Settings section heading', () => {
+    it('renders Salva Modifiche button', () => {
       render(<SettingsPage />);
 
-      expect(screen.getByText('Regional Settings')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Salva Modifiche/i })).toBeInTheDocument();
     });
 
-    it('renders timezone select', () => {
+    it('renders Cambia Immagine button', () => {
       render(<SettingsPage />);
 
-      const timezoneSelect = screen.getByLabelText('Timezone');
-      expect(timezoneSelect).toBeInTheDocument();
-    });
-
-    it('renders currency select', () => {
-      render(<SettingsPage />);
-
-      const currencySelect = screen.getByLabelText(/Preferred Currency/i);
-      expect(currencySelect).toBeInTheDocument();
-    });
-  });
-
-  describe('Appearance', () => {
-    it('renders Appearance section heading', () => {
-      render(<SettingsPage />);
-
-      expect(screen.getByText('Appearance')).toBeInTheDocument();
-    });
-
-    it('renders theme options: Light, Dark, System', () => {
-      render(<SettingsPage />);
-
-      expect(screen.getByText('Light')).toBeInTheDocument();
-      expect(screen.getByText('Dark')).toBeInTheDocument();
-      expect(screen.getByText('System')).toBeInTheDocument();
-    });
-  });
-
-  describe('Notifications', () => {
-    it('renders Notifications section heading', () => {
-      render(<SettingsPage />);
-
-      expect(screen.getByText('Notifications')).toBeInTheDocument();
-    });
-
-    it('renders notification toggle options', () => {
-      render(<SettingsPage />);
-
-      expect(screen.getByText('Email Notifications')).toBeInTheDocument();
-      expect(screen.getByText('Push Notifications')).toBeInTheDocument();
-      expect(screen.getByText('Budget Alerts')).toBeInTheDocument();
-      expect(screen.getByText('Category Insights')).toBeInTheDocument();
-    });
-  });
-
-  describe('Account Information', () => {
-    it('renders Account Information section', () => {
-      render(<SettingsPage />);
-
-      expect(screen.getByText('Account Information')).toBeInTheDocument();
-    });
-
-    it('displays user account status', () => {
-      render(<SettingsPage />);
-
-      expect(screen.getByText('Account Status')).toBeInTheDocument();
-      expect(screen.getByText('ACTIVE')).toBeInTheDocument();
-    });
-  });
-
-  describe('Save Button', () => {
-    it('renders Save Changes button', () => {
-      render(<SettingsPage />);
-
-      const saveButton = screen.getByRole('button', { name: /Save Changes/i });
-      expect(saveButton).toBeInTheDocument();
-    });
-
-    it('Save Changes button is enabled by default', () => {
-      render(<SettingsPage />);
-
-      const saveButton = screen.getByRole('button', { name: /Save Changes/i });
-      expect(saveButton).not.toBeDisabled();
-    });
-
-    it('Save Changes button is a submit button', () => {
-      render(<SettingsPage />);
-
-      const saveButton = screen.getByRole('button', { name: /Save Changes/i });
-      expect(saveButton).toHaveAttribute('type', 'submit');
+      expect(screen.getByRole('button', { name: /Cambia Immagine/i })).toBeInTheDocument();
     });
   });
 
@@ -237,7 +190,8 @@ describe('SettingsPage', () => {
 
       render(<SettingsPage />);
 
-      expect(screen.queryByRole('button', { name: /Save Changes/i })).not.toBeInTheDocument();
+      expect(screen.queryByText('Informazioni Profilo')).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /Salva Modifiche/i })).not.toBeInTheDocument();
     });
   });
 });

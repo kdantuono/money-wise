@@ -1,7 +1,7 @@
 /**
  * TransactionForm Component Tests
  *
- * TDD tests for the TransactionForm component.
+ * Tests for the TransactionForm component after Figma Design Sprint restyle.
  * Tests cover rendering, validation, type auto-detection, and submission.
  *
  * @module __tests__/components/transactions/TransactionForm
@@ -164,39 +164,39 @@ describe('TransactionForm', () => {
     it('should render all required form fields', () => {
       render(<TransactionForm {...getProps()} />);
 
-      // Check all fields are present
-      expect(screen.getByLabelText(/amount/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/description/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/date/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/account/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/category/i)).toBeInTheDocument();
+      // Check all fields are present (Italian labels)
+      expect(screen.getByLabelText(/importo/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/descrizione/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/data/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/conto/i)).toBeInTheDocument();
+      expect(screen.getByRole('combobox', { name: /categoria/i })).toBeInTheDocument();
     });
 
-    it('should render type toggle (Expense/Income)', () => {
+    it('should render type toggle (Uscita/Entrata)', () => {
       render(<TransactionForm {...getProps()} />);
 
       expect(
-        screen.getByRole('button', { name: /expense/i })
+        screen.getByRole('button', { name: /uscita/i })
       ).toBeInTheDocument();
       expect(
-        screen.getByRole('button', { name: /income/i })
+        screen.getByRole('button', { name: /entrata/i })
       ).toBeInTheDocument();
     });
 
     it('should render notes field as optional', () => {
       render(<TransactionForm {...getProps()} />);
 
-      expect(screen.getByLabelText(/notes/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/note/i)).toBeInTheDocument();
     });
 
     it('should render submit and cancel buttons', () => {
       render(<TransactionForm {...getProps()} />);
 
       expect(
-        screen.getByRole('button', { name: /add transaction/i })
+        screen.getByRole('button', { name: /aggiungi transazione/i })
       ).toBeInTheDocument();
       expect(
-        screen.getByRole('button', { name: /cancel/i })
+        screen.getByRole('button', { name: /annulla/i })
       ).toBeInTheDocument();
     });
 
@@ -204,7 +204,7 @@ describe('TransactionForm', () => {
       render(<TransactionForm {...getProps()} />);
 
       expect(
-        screen.getByRole('heading', { name: /add transaction/i })
+        screen.getByRole('heading', { name: /aggiungi transazione/i })
       ).toBeInTheDocument();
     });
 
@@ -213,10 +213,10 @@ describe('TransactionForm', () => {
       render(<TransactionForm {...getProps()} transaction={transaction} />);
 
       expect(
-        screen.getByRole('heading', { name: /edit transaction/i })
+        screen.getByRole('heading', { name: /modifica transazione/i })
       ).toBeInTheDocument();
       expect(
-        screen.getByRole('button', { name: /save changes/i })
+        screen.getByRole('button', { name: /salva modifiche/i })
       ).toBeInTheDocument();
     });
 
@@ -229,16 +229,15 @@ describe('TransactionForm', () => {
 
       render(<TransactionForm {...getProps()} transaction={transaction} />);
 
-      expect(screen.getByLabelText(/amount/i)).toHaveValue(250.75);
-      expect(screen.getByLabelText(/description/i)).toHaveValue('Test Purchase');
-      expect(screen.getByLabelText(/notes/i)).toHaveValue('Some notes');
+      expect(screen.getByLabelText(/importo/i)).toHaveValue(250.75);
+      expect(screen.getByLabelText(/descrizione/i)).toHaveValue('Test Purchase');
+      expect(screen.getByLabelText(/note/i)).toHaveValue('Some notes');
     });
 
     it('should show account options in dropdown', () => {
       render(<TransactionForm {...getProps()} />);
 
-      const accountSelect = screen.getByLabelText(/account/i);
-      // Check that all account options are present in the select
+      const accountSelect = screen.getByLabelText(/conto/i);
       expect(accountSelect).toContainHTML('Checking Account');
       expect(accountSelect).toContainHTML('Savings Account');
       expect(accountSelect).toContainHTML('Credit Card');
@@ -248,7 +247,7 @@ describe('TransactionForm', () => {
       render(<TransactionForm {...getProps()} />);
 
       const today = new Date().toISOString().split('T')[0];
-      expect(screen.getByLabelText(/date/i)).toHaveValue(today);
+      expect(screen.getByLabelText(/data/i)).toHaveValue(today);
     });
   });
 
@@ -257,21 +256,21 @@ describe('TransactionForm', () => {
   // ===========================================================================
 
   describe('Type Auto-Detection', () => {
-    it('should default to Expense (DEBIT) type', () => {
+    it('should default to Uscita (DEBIT) type', () => {
       render(<TransactionForm {...getProps()} />);
 
-      const expenseButton = screen.getByRole('button', { name: /expense/i });
+      const expenseButton = screen.getByRole('button', { name: /uscita/i });
       expect(expenseButton).toHaveAttribute('aria-pressed', 'true');
     });
 
-    it('should allow manual toggle to Income', async () => {
+    it('should allow manual toggle to Entrata', async () => {
       const { user } = render(<TransactionForm {...getProps()} />);
 
-      const incomeButton = screen.getByRole('button', { name: /income/i });
+      const incomeButton = screen.getByRole('button', { name: /entrata/i });
       await user.click(incomeButton);
 
       expect(incomeButton).toHaveAttribute('aria-pressed', 'true');
-      const expenseButton = screen.getByRole('button', { name: /expense/i });
+      const expenseButton = screen.getByRole('button', { name: /uscita/i });
       expect(expenseButton).toHaveAttribute('aria-pressed', 'false');
     });
 
@@ -279,8 +278,7 @@ describe('TransactionForm', () => {
       const { user } = render(<TransactionForm {...getProps()} />);
 
       // Default is expense - should show expense categories
-      // The CategorySelector uses a combobox role
-      const categoryCombobox = screen.getByRole('combobox', { name: /category/i });
+      const categoryCombobox = screen.getByRole('combobox', { name: /categoria/i });
       await user.click(categoryCombobox);
 
       await waitFor(() => {
@@ -292,7 +290,7 @@ describe('TransactionForm', () => {
       await user.click(document.body);
 
       // Switch to income
-      const incomeButton = screen.getByRole('button', { name: /income/i });
+      const incomeButton = screen.getByRole('button', { name: /entrata/i });
       await user.click(incomeButton);
 
       // Open dropdown again to see income categories
@@ -308,7 +306,7 @@ describe('TransactionForm', () => {
       const transaction = createMockTransaction({ type: 'DEBIT' });
       render(<TransactionForm {...getProps()} transaction={transaction} />);
 
-      const expenseButton = screen.getByRole('button', { name: /expense/i });
+      const expenseButton = screen.getByRole('button', { name: /uscita/i });
       expect(expenseButton).toHaveAttribute('aria-pressed', 'true');
     });
 
@@ -319,7 +317,7 @@ describe('TransactionForm', () => {
       });
       render(<TransactionForm {...getProps()} transaction={transaction} />);
 
-      const incomeButton = screen.getByRole('button', { name: /income/i });
+      const incomeButton = screen.getByRole('button', { name: /entrata/i });
       expect(incomeButton).toHaveAttribute('aria-pressed', 'true');
     });
   });
@@ -333,24 +331,24 @@ describe('TransactionForm', () => {
       const { user } = render(<TransactionForm {...getProps()} />);
 
       // Fill other fields but leave amount empty
-      await user.type(screen.getByLabelText(/description/i), 'Test Purchase');
-      await user.click(screen.getByRole('button', { name: /add transaction/i }));
+      await user.type(screen.getByLabelText(/descrizione/i), 'Test Purchase');
+      await user.click(screen.getByRole('button', { name: /aggiungi transazione/i }));
 
       await waitFor(() => {
-        expect(screen.getByText(/amount is required/i)).toBeInTheDocument();
+        expect(screen.getByText(/importo obbligatorio/i)).toBeInTheDocument();
       });
     });
 
     it('should show error when amount is zero', async () => {
       const { user } = render(<TransactionForm {...getProps()} />);
 
-      await user.type(screen.getByLabelText(/amount/i), '0');
-      await user.type(screen.getByLabelText(/description/i), 'Test');
-      await user.click(screen.getByRole('button', { name: /add transaction/i }));
+      await user.type(screen.getByLabelText(/importo/i), '0');
+      await user.type(screen.getByLabelText(/descrizione/i), 'Test');
+      await user.click(screen.getByRole('button', { name: /aggiungi transazione/i }));
 
       await waitFor(() => {
         expect(
-          screen.getByText(/amount must be greater than 0/i)
+          screen.getByText(/importo deve essere maggiore di 0/i)
         ).toBeInTheDocument();
       });
     });
@@ -358,13 +356,13 @@ describe('TransactionForm', () => {
     it('should show error when amount is negative', async () => {
       const { user } = render(<TransactionForm {...getProps()} />);
 
-      await user.type(screen.getByLabelText(/amount/i), '-50');
-      await user.type(screen.getByLabelText(/description/i), 'Test');
-      await user.click(screen.getByRole('button', { name: /add transaction/i }));
+      await user.type(screen.getByLabelText(/importo/i), '-50');
+      await user.type(screen.getByLabelText(/descrizione/i), 'Test');
+      await user.click(screen.getByRole('button', { name: /aggiungi transazione/i }));
 
       await waitFor(() => {
         expect(
-          screen.getByText(/amount must be greater than 0/i)
+          screen.getByText(/importo deve essere maggiore di 0/i)
         ).toBeInTheDocument();
       });
     });
@@ -372,25 +370,26 @@ describe('TransactionForm', () => {
     it('should show error when description is empty', async () => {
       const { user } = render(<TransactionForm {...getProps()} />);
 
-      await user.type(screen.getByLabelText(/amount/i), '50');
-      await user.click(screen.getByRole('button', { name: /add transaction/i }));
+      await user.type(screen.getByLabelText(/importo/i), '50');
+      await user.click(screen.getByRole('button', { name: /aggiungi transazione/i }));
 
       await waitFor(() => {
-        expect(screen.getByText(/description is required/i)).toBeInTheDocument();
+        expect(screen.getByText(/descrizione obbligatoria/i)).toBeInTheDocument();
       });
     });
 
     it('should show error when account is not selected', async () => {
       const { user } = render(<TransactionForm {...getProps()} />);
 
-      await user.type(screen.getByLabelText(/amount/i), '50');
-      await user.type(screen.getByLabelText(/description/i), 'Test');
-      await user.click(screen.getByRole('button', { name: /add transaction/i }));
+      await user.type(screen.getByLabelText(/importo/i), '50');
+      await user.type(screen.getByLabelText(/descrizione/i), 'Test');
+      await user.click(screen.getByRole('button', { name: /aggiungi transazione/i }));
 
       await waitFor(() => {
-        expect(
-          screen.getByText(/please select an account/i)
-        ).toBeInTheDocument();
+        // The error message appears in a <p> element with text-red-600
+        const errorElements = screen.getAllByText(/seleziona un conto/i);
+        // Should have both the select option placeholder and the error message
+        expect(errorElements.length).toBeGreaterThanOrEqual(2);
       });
     });
 
@@ -399,21 +398,18 @@ describe('TransactionForm', () => {
       const { user } = render(<TransactionForm {...getProps({ onSuccess })} />);
 
       // Fill required fields
-      await user.type(screen.getByLabelText(/amount/i), '50');
-      await user.type(screen.getByLabelText(/description/i), 'Test Purchase');
+      await user.type(screen.getByLabelText(/importo/i), '50');
+      await user.type(screen.getByLabelText(/descrizione/i), 'Test Purchase');
 
       // Select account using selectOptions
-      await user.selectOptions(screen.getByLabelText(/account/i), 'acc-1');
+      await user.selectOptions(screen.getByLabelText(/conto/i), 'acc-1');
 
       // Don't select category - it should be optional
-      await user.click(screen.getByRole('button', { name: /add transaction/i }));
+      await user.click(screen.getByRole('button', { name: /aggiungi transazione/i }));
 
       // Should succeed without category error and call onSuccess
       await waitFor(() => {
         expect(onSuccess).toHaveBeenCalled();
-        expect(
-          screen.queryByText(/please select a category/i)
-        ).not.toBeInTheDocument();
       });
     });
 
@@ -421,15 +417,15 @@ describe('TransactionForm', () => {
       const { user } = render(<TransactionForm {...getProps()} />);
 
       // Clear the date field
-      const dateInput = screen.getByLabelText(/date/i);
+      const dateInput = screen.getByLabelText(/data/i);
       await user.clear(dateInput);
 
-      await user.type(screen.getByLabelText(/amount/i), '50');
-      await user.type(screen.getByLabelText(/description/i), 'Test');
-      await user.click(screen.getByRole('button', { name: /add transaction/i }));
+      await user.type(screen.getByLabelText(/importo/i), '50');
+      await user.type(screen.getByLabelText(/descrizione/i), 'Test');
+      await user.click(screen.getByRole('button', { name: /aggiungi transazione/i }));
 
       await waitFor(() => {
-        expect(screen.getByText(/date is required/i)).toBeInTheDocument();
+        expect(screen.getByText(/data obbligatoria/i)).toBeInTheDocument();
       });
     });
   });
@@ -444,46 +440,28 @@ describe('TransactionForm', () => {
       const { user } = render(<TransactionForm {...getProps({ onSuccess })} />);
 
       // Fill all required fields
-      await user.type(screen.getByLabelText(/amount/i), '125.50');
+      await user.type(screen.getByLabelText(/importo/i), '125.50');
       await user.type(
-        screen.getByLabelText(/description/i),
+        screen.getByLabelText(/descrizione/i),
         'Groceries at Whole Foods'
       );
 
       // Select account using selectOptions for native select
-      await user.selectOptions(screen.getByLabelText(/account/i), 'acc-1');
+      await user.selectOptions(screen.getByLabelText(/conto/i), 'acc-1');
 
       // Submit
-      await user.click(screen.getByRole('button', { name: /add transaction/i }));
+      await user.click(screen.getByRole('button', { name: /aggiungi transazione/i }));
 
       await waitFor(() => {
         expect(onSuccess).toHaveBeenCalled();
       });
     });
 
-    it('should show loading state during submission', async () => {
-      const { user } = render(<TransactionForm {...getProps()} />);
-
-      // Fill required fields
-      await user.type(screen.getByLabelText(/amount/i), '50');
-      await user.type(screen.getByLabelText(/description/i), 'Test');
-
-      // Select account using selectOptions
-      await user.selectOptions(screen.getByLabelText(/account/i), 'acc-1');
-
-      // Submit
-      await user.click(screen.getByRole('button', { name: /add transaction/i }));
-
-      // Note: Loading state is brief since onSuccess is sync
-      // This test verifies the button can be disabled
-      // Full loading test would need async mock
-    });
-
     it('should call onCancel when cancel button clicked', async () => {
       const onCancel = vi.fn();
       const { user } = render(<TransactionForm {...getProps({ onCancel })} />);
 
-      await user.click(screen.getByRole('button', { name: /cancel/i }));
+      await user.click(screen.getByRole('button', { name: /annulla/i }));
 
       expect(onCancel).toHaveBeenCalled();
     });
@@ -492,15 +470,15 @@ describe('TransactionForm', () => {
       const onSuccess = vi.fn();
       const { user } = render(<TransactionForm {...getProps({ onSuccess })} />);
 
-      await user.type(screen.getByLabelText(/amount/i), '50');
+      await user.type(screen.getByLabelText(/importo/i), '50');
       await user.type(
-        screen.getByLabelText(/description/i),
+        screen.getByLabelText(/descrizione/i),
         '  Groceries  '
       );
 
-      await user.selectOptions(screen.getByLabelText(/account/i), 'acc-1');
+      await user.selectOptions(screen.getByLabelText(/conto/i), 'acc-1');
 
-      await user.click(screen.getByRole('button', { name: /add transaction/i }));
+      await user.click(screen.getByRole('button', { name: /aggiungi transazione/i }));
 
       await waitFor(() => {
         expect(onSuccess).toHaveBeenCalled();
@@ -513,13 +491,13 @@ describe('TransactionForm', () => {
       const onSuccess = vi.fn();
       const { user } = render(<TransactionForm {...getProps({ onSuccess })} />);
 
-      await user.type(screen.getByLabelText(/amount/i), '50');
-      await user.type(screen.getByLabelText(/description/i), 'Test');
-      await user.type(screen.getByLabelText(/notes/i), 'Some extra notes');
+      await user.type(screen.getByLabelText(/importo/i), '50');
+      await user.type(screen.getByLabelText(/descrizione/i), 'Test');
+      await user.type(screen.getByLabelText(/note/i), 'Some extra notes');
 
-      await user.selectOptions(screen.getByLabelText(/account/i), 'acc-1');
+      await user.selectOptions(screen.getByLabelText(/conto/i), 'acc-1');
 
-      await user.click(screen.getByRole('button', { name: /add transaction/i }));
+      await user.click(screen.getByRole('button', { name: /aggiungi transazione/i }));
 
       await waitFor(() => {
         expect(onSuccess).toHaveBeenCalled();
@@ -532,12 +510,12 @@ describe('TransactionForm', () => {
       const onSuccess = vi.fn();
       const { user } = render(<TransactionForm {...getProps({ onSuccess })} />);
 
-      await user.type(screen.getByLabelText(/amount/i), '50');
-      await user.type(screen.getByLabelText(/description/i), 'Test');
+      await user.type(screen.getByLabelText(/importo/i), '50');
+      await user.type(screen.getByLabelText(/descrizione/i), 'Test');
 
-      await user.selectOptions(screen.getByLabelText(/account/i), 'acc-1');
+      await user.selectOptions(screen.getByLabelText(/conto/i), 'acc-1');
 
-      await user.click(screen.getByRole('button', { name: /add transaction/i }));
+      await user.click(screen.getByRole('button', { name: /aggiungi transazione/i }));
 
       await waitFor(() => {
         expect(onSuccess).toHaveBeenCalled();
@@ -550,12 +528,12 @@ describe('TransactionForm', () => {
       const onSuccess = vi.fn();
       const { user } = render(<TransactionForm {...getProps({ onSuccess })} />);
 
-      await user.type(screen.getByLabelText(/amount/i), '50');
-      await user.type(screen.getByLabelText(/description/i), 'Test');
+      await user.type(screen.getByLabelText(/importo/i), '50');
+      await user.type(screen.getByLabelText(/descrizione/i), 'Test');
 
-      await user.selectOptions(screen.getByLabelText(/account/i), 'acc-1');
+      await user.selectOptions(screen.getByLabelText(/conto/i), 'acc-1');
 
-      await user.click(screen.getByRole('button', { name: /add transaction/i }));
+      await user.click(screen.getByRole('button', { name: /aggiungi transazione/i }));
 
       await waitFor(() => {
         expect(onSuccess).toHaveBeenCalled();
@@ -569,14 +547,14 @@ describe('TransactionForm', () => {
       const { user } = render(<TransactionForm {...getProps({ onSuccess })} />);
 
       // Switch to income
-      await user.click(screen.getByRole('button', { name: /income/i }));
+      await user.click(screen.getByRole('button', { name: /entrata/i }));
 
-      await user.type(screen.getByLabelText(/amount/i), '50');
-      await user.type(screen.getByLabelText(/description/i), 'Test');
+      await user.type(screen.getByLabelText(/importo/i), '50');
+      await user.type(screen.getByLabelText(/descrizione/i), 'Test');
 
-      await user.selectOptions(screen.getByLabelText(/account/i), 'acc-1');
+      await user.selectOptions(screen.getByLabelText(/conto/i), 'acc-1');
 
-      await user.click(screen.getByRole('button', { name: /add transaction/i }));
+      await user.click(screen.getByRole('button', { name: /aggiungi transazione/i }));
 
       await waitFor(() => {
         expect(onSuccess).toHaveBeenCalled();
@@ -614,26 +592,26 @@ describe('TransactionForm', () => {
       render(<TransactionForm {...getProps()} />);
 
       // All inputs should have associated labels
-      expect(screen.getByLabelText(/amount/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/description/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/date/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/account/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/category/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/importo/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/descrizione/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/data/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/conto/i)).toBeInTheDocument();
+      expect(screen.getByRole('combobox', { name: /categoria/i })).toBeInTheDocument();
     });
 
     it('should mark required fields', () => {
       render(<TransactionForm {...getProps()} />);
 
-      // Required fields should have visual indicator
-      const amountLabel = screen.getByText(/amount/i);
+      // Required fields should have visual indicator (*)
+      const amountLabel = screen.getByText(/importo/i);
       expect(amountLabel.closest('label')?.textContent).toMatch(/\*/);
     });
 
     it('should have type toggle as button group', () => {
       render(<TransactionForm {...getProps()} />);
 
-      const expenseButton = screen.getByRole('button', { name: /expense/i });
-      const incomeButton = screen.getByRole('button', { name: /income/i });
+      const expenseButton = screen.getByRole('button', { name: /uscita/i });
+      const incomeButton = screen.getByRole('button', { name: /entrata/i });
 
       expect(expenseButton).toHaveAttribute('aria-pressed');
       expect(incomeButton).toHaveAttribute('aria-pressed');
@@ -648,17 +626,17 @@ describe('TransactionForm', () => {
     it('should disable form fields when isLoading prop is true', () => {
       render(<TransactionForm {...getProps()} isLoading={true} />);
 
-      expect(screen.getByLabelText(/amount/i)).toBeDisabled();
-      expect(screen.getByLabelText(/description/i)).toBeDisabled();
-      expect(screen.getByLabelText(/date/i)).toBeDisabled();
-      expect(screen.getByLabelText(/account/i)).toBeDisabled();
+      expect(screen.getByLabelText(/importo/i)).toBeDisabled();
+      expect(screen.getByLabelText(/descrizione/i)).toBeDisabled();
+      expect(screen.getByLabelText(/data/i)).toBeDisabled();
+      expect(screen.getByLabelText(/conto/i)).toBeDisabled();
     });
 
     it('should disable submit button when isLoading prop is true', () => {
       render(<TransactionForm {...getProps()} isLoading={true} />);
 
       expect(
-        screen.getByRole('button', { name: /add transaction/i })
+        screen.getByRole('button', { name: /aggiungi transazione/i })
       ).toBeDisabled();
     });
   });
@@ -677,8 +655,8 @@ describe('TransactionForm', () => {
         <TransactionForm {...getProps()} transaction={linkedTransaction} />
       );
 
-      expect(screen.getByText(/bank-synced transaction/i)).toBeInTheDocument();
-      expect(screen.getByText(/only the category and notes can be edited/i)).toBeInTheDocument();
+      expect(screen.getByText(/transazione sincronizzata dalla banca/i)).toBeInTheDocument();
+      expect(screen.getByText(/solo la categoria e le note/i)).toBeInTheDocument();
     });
 
     it('should lock non-editable fields for linked transactions', () => {
@@ -691,14 +669,14 @@ describe('TransactionForm', () => {
       );
 
       // Amount, description, date, account should be disabled
-      expect(screen.getByLabelText(/amount/i)).toBeDisabled();
-      expect(screen.getByLabelText(/description/i)).toBeDisabled();
-      expect(screen.getByLabelText(/date/i)).toBeDisabled();
-      expect(screen.getByLabelText(/account/i)).toBeDisabled();
+      expect(screen.getByLabelText(/importo/i)).toBeDisabled();
+      expect(screen.getByLabelText(/descrizione/i)).toBeDisabled();
+      expect(screen.getByLabelText(/data/i)).toBeDisabled();
+      expect(screen.getByLabelText(/conto/i)).toBeDisabled();
 
       // Type toggle should be disabled
-      expect(screen.getByRole('button', { name: /expense/i })).toBeDisabled();
-      expect(screen.getByRole('button', { name: /income/i })).toBeDisabled();
+      expect(screen.getByRole('button', { name: /uscita/i })).toBeDisabled();
+      expect(screen.getByRole('button', { name: /entrata/i })).toBeDisabled();
     });
 
     it('should allow editing category for linked transactions', async () => {
@@ -712,7 +690,7 @@ describe('TransactionForm', () => {
       );
 
       // Category dropdown should NOT be disabled
-      const categoryCombobox = screen.getByRole('combobox', { name: /category/i });
+      const categoryCombobox = screen.getByRole('combobox', { name: /categoria/i });
       expect(categoryCombobox).not.toBeDisabled();
 
       // Should be able to open and select
@@ -732,7 +710,7 @@ describe('TransactionForm', () => {
       );
 
       // Notes should NOT be disabled
-      expect(screen.getByLabelText(/notes/i)).not.toBeDisabled();
+      expect(screen.getByLabelText(/note/i)).not.toBeDisabled();
     });
 
     it('should only submit categoryId and notes for linked transactions', async () => {
@@ -750,7 +728,7 @@ describe('TransactionForm', () => {
       );
 
       // Change category by opening dropdown and selecting new category
-      const categoryCombobox = screen.getByRole('combobox', { name: /category/i });
+      const categoryCombobox = screen.getByRole('combobox', { name: /categoria/i });
       await user.click(categoryCombobox);
       await waitFor(() => {
         expect(screen.getByText('Restaurants')).toBeInTheDocument();
@@ -758,11 +736,11 @@ describe('TransactionForm', () => {
       await user.click(screen.getByText('Restaurants'));
 
       // Add notes
-      await user.clear(screen.getByLabelText(/notes/i));
-      await user.type(screen.getByLabelText(/notes/i), 'Updated notes');
+      await user.clear(screen.getByLabelText(/note/i));
+      await user.type(screen.getByLabelText(/note/i), 'Updated notes');
 
       // Submit
-      await user.click(screen.getByRole('button', { name: /save changes/i }));
+      await user.click(screen.getByRole('button', { name: /salva modifiche/i }));
 
       await waitFor(() => {
         expect(onSuccess).toHaveBeenCalled();
@@ -800,10 +778,10 @@ describe('TransactionForm', () => {
       );
 
       // Only add notes, don't change category
-      await user.type(screen.getByLabelText(/notes/i), 'Just adding notes');
+      await user.type(screen.getByLabelText(/note/i), 'Just adding notes');
 
       // Submit
-      await user.click(screen.getByRole('button', { name: /save changes/i }));
+      await user.click(screen.getByRole('button', { name: /salva modifiche/i }));
 
       await waitFor(() => {
         expect(onSuccess).toHaveBeenCalled();

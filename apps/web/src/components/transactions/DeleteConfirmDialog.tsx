@@ -72,7 +72,7 @@ export const DeleteConfirmDialog = memo(function DeleteConfirmDialog({
 
   if (!isOpen) return null;
 
-  const transactionText = count === 1 ? 'transaction' : 'transactions';
+  const transactionText = count === 1 ? 'transazione' : 'transazioni';
 
   return (
     <div
@@ -81,54 +81,47 @@ export const DeleteConfirmDialog = memo(function DeleteConfirmDialog({
       aria-modal="true"
       aria-labelledby="delete-dialog-title"
     >
-      {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/50 backdrop-blur-sm"
         onClick={handleBackdropClick}
         aria-hidden="true"
       />
 
-      {/* Dialog Content */}
-      <div className="relative w-full max-w-md mx-4 bg-card rounded-xl shadow-xl p-6">
-        {/* Warning Icon */}
+      <div className="relative w-full max-w-md mx-4 bg-card rounded-2xl shadow-xl p-6">
         <div className="flex justify-center mb-4">
-          <div className="p-3 bg-red-100 rounded-full">
-            <AlertTriangle className="h-6 w-6 text-red-600" />
+          <div className="p-3 bg-red-100 dark:bg-red-900/30 rounded-full">
+            <AlertTriangle className="h-6 w-6 text-red-600 dark:text-red-400" />
           </div>
         </div>
 
-        {/* Title */}
         <h2
           id="delete-dialog-title"
           className="text-lg font-semibold text-foreground text-center mb-2"
         >
-          Delete {count} {transactionText}?
+          Eliminare {count} {transactionText}?
         </h2>
 
-        {/* Warning Message */}
         <p className="text-sm text-muted-foreground text-center mb-6">
-          This action cannot be undone. The selected {transactionText} will be
-          permanently removed from your account.
+          Questa azione non può essere annullata. {count === 1 ? 'La transazione selezionata verrà eliminata' : 'Le transazioni selezionate verranno eliminate'} permanentemente.
         </p>
 
-        {/* Action Buttons */}
         <div className="flex gap-3">
           <button
             type="button"
             onClick={onCancel}
             disabled={isDeleting}
-            className="flex-1 py-2.5 px-4 border border-border rounded-lg text-foreground font-medium
+            className="flex-1 py-2.5 px-4 border border-border/50 rounded-xl text-foreground font-medium
               hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring
               disabled:opacity-50 disabled:cursor-not-allowed
               transition-colors duration-150"
           >
-            Cancel
+            Annulla
           </button>
           <button
             type="button"
             onClick={onConfirm}
             disabled={isDeleting}
-            className="flex-1 py-2.5 px-4 bg-red-600 text-white rounded-lg font-medium
+            className="flex-1 py-2.5 px-4 bg-red-600 text-white rounded-xl font-medium
               hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500
               disabled:opacity-50 disabled:cursor-not-allowed
               flex items-center justify-center gap-2
@@ -140,10 +133,10 @@ export const DeleteConfirmDialog = memo(function DeleteConfirmDialog({
                   data-testid="delete-spinner"
                   className="h-4 w-4 animate-spin"
                 />
-                Deleting...
+                Eliminazione...
               </>
             ) : (
-              'Delete'
+              'Elimina'
             )}
           </button>
         </div>

@@ -2,7 +2,7 @@
  * Tests for RecentTransactions component
  *
  * Tests the dashboard widget that displays recent transactions
- * and the "View All" navigation link.
+ * and the "Vedi tutte" navigation link.
  */
 
 import { describe, it, expect } from 'vitest';
@@ -42,7 +42,7 @@ describe('RecentTransactions', () => {
     it('renders the component title', () => {
       render(<RecentTransactions transactions={mockTransactions} />);
 
-      expect(screen.getByText('Recent Transactions')).toBeInTheDocument();
+      expect(screen.getByText('Transazioni Recenti')).toBeInTheDocument();
     });
 
     it('renders transactions list when transactions provided', () => {
@@ -62,14 +62,14 @@ describe('RecentTransactions', () => {
     it('renders empty state when no transactions', () => {
       render(<RecentTransactions transactions={[]} />);
 
-      expect(screen.getByText('No transactions yet')).toBeInTheDocument();
-      expect(screen.getByText('Link a bank account or add transactions manually')).toBeInTheDocument();
+      expect(screen.getByText('Nessuna transazione')).toBeInTheDocument();
+      expect(screen.getByText('Collega un conto bancario o aggiungi transazioni manualmente')).toBeInTheDocument();
     });
 
     it('renders empty state when transactions is undefined', () => {
       render(<RecentTransactions />);
 
-      expect(screen.getByText('No transactions yet')).toBeInTheDocument();
+      expect(screen.getByText('Nessuna transazione')).toBeInTheDocument();
     });
   });
 
@@ -77,28 +77,28 @@ describe('RecentTransactions', () => {
     it('renders View all link', () => {
       render(<RecentTransactions transactions={mockTransactions} />);
 
-      const viewAllLink = screen.getByRole('link', { name: /view all/i });
+      const viewAllLink = screen.getByRole('link', { name: /vedi tutte/i });
       expect(viewAllLink).toBeInTheDocument();
     });
 
     it('View all link points to /dashboard/transactions', () => {
       render(<RecentTransactions transactions={mockTransactions} />);
 
-      const viewAllLink = screen.getByRole('link', { name: /view all/i });
+      const viewAllLink = screen.getByRole('link', { name: /vedi tutte/i });
       expect(viewAllLink).toHaveAttribute('href', '/dashboard/transactions');
     });
 
     it('View all link is present in empty state', () => {
       render(<RecentTransactions transactions={[]} />);
 
-      const viewAllLink = screen.getByRole('link', { name: /view all/i });
+      const viewAllLink = screen.getByRole('link', { name: /vedi tutte/i });
       expect(viewAllLink).toHaveAttribute('href', '/dashboard/transactions');
     });
 
     it('View all link does NOT point to /transactions (regression test)', () => {
       render(<RecentTransactions transactions={mockTransactions} />);
 
-      const viewAllLink = screen.getByRole('link', { name: /view all/i });
+      const viewAllLink = screen.getByRole('link', { name: /vedi tutte/i });
       // Ensure the bug where link pointed to /transactions is not reintroduced
       expect(viewAllLink.getAttribute('href')).not.toBe('/transactions');
     });
@@ -145,7 +145,7 @@ describe('RecentTransactions', () => {
       render(<RecentTransactions transactions={mockTransactions} />);
 
       // Title should be rendered (via CardTitle which uses semantic heading)
-      expect(screen.getByText('Recent Transactions')).toBeInTheDocument();
+      expect(screen.getByText('Transazioni Recenti')).toBeInTheDocument();
     });
 
     it('transactions container has data-testid', () => {

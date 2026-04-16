@@ -58,12 +58,13 @@ export const BulkActionsBar = memo(function BulkActionsBar({
     return null;
   }
 
-  const itemText = selectedCount === 1 ? 'item' : 'items';
+  const itemText = selectedCount === 1 ? 'elemento' : 'elementi';
+  const selectedText = selectedCount === 1 ? 'selezionato' : 'selezionati';
 
   return (
     <div
       role="toolbar"
-      aria-label="Bulk actions"
+      aria-label="Azioni collettive"
       className="fixed bottom-0 left-0 right-0 z-40 bg-card border-t border-border shadow-lg"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -80,10 +81,10 @@ export const BulkActionsBar = memo(function BulkActionsBar({
               )}
               <span className="text-sm font-medium text-foreground">
                 {isProcessing ? (
-                  'Processing...'
+                  'Elaborazione...'
                 ) : (
                   <>
-                    {selectedCount} {itemText} selected
+                    {selectedCount} {itemText} {selectedText}
                   </>
                 )}
               </span>
@@ -103,12 +104,12 @@ export const BulkActionsBar = memo(function BulkActionsBar({
               {isAllSelected ? (
                 <>
                   <Square className="h-4 w-4" />
-                  Deselect All
+                  Deseleziona tutto
                 </>
               ) : (
                 <>
                   <CheckSquare className="h-4 w-4" />
-                  Select All ({totalCount})
+                  Seleziona tutto ({totalCount})
                 </>
               )}
             </button>
@@ -129,7 +130,7 @@ export const BulkActionsBar = memo(function BulkActionsBar({
                 transition-colors duration-150"
             >
               <Tag className="h-4 w-4" />
-              Categorize
+              Categorizza
             </button>
 
             {/* Link as Transfer Button - only visible when exactly 2 items selected */}
@@ -146,7 +147,7 @@ export const BulkActionsBar = memo(function BulkActionsBar({
                   transition-colors duration-150"
               >
                 <ArrowLeftRight className="h-4 w-4" />
-                Link as Transfer
+                Collega come trasferimento
               </button>
             )}
 
@@ -164,7 +165,7 @@ export const BulkActionsBar = memo(function BulkActionsBar({
                   transition-colors duration-150"
               >
                 <Download className="h-4 w-4" />
-                Export
+                Esporta
               </button>
             )}
 
@@ -181,7 +182,7 @@ export const BulkActionsBar = memo(function BulkActionsBar({
                 transition-colors duration-150"
             >
               <Trash2 className="h-4 w-4" />
-              Delete
+              Elimina
             </button>
 
             {/* Cancel / Clear Selection Button */}
@@ -189,7 +190,7 @@ export const BulkActionsBar = memo(function BulkActionsBar({
               type="button"
               onClick={onClearSelection}
               disabled={isProcessing}
-              aria-label="Clear selection"
+              aria-label="Cancella selezione"
               className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg
                 focus:outline-none focus:ring-2 focus:ring-ring
                 disabled:opacity-50 disabled:cursor-not-allowed
