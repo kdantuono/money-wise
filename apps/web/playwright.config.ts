@@ -93,10 +93,10 @@ export default defineConfig({
   webServer: process.env.SKIP_WEBSERVER
     ? undefined
     : {
-        command: process.env.CI ? 'pnpm start' : 'pnpm dev',
+        command: process.env.CI ? 'pnpm -w build:web && pnpm start' : 'pnpm dev',
         url: 'http://localhost:3000',
         reuseExistingServer: !process.env.CI,
-        timeout: 120 * 1000,
+        timeout: process.env.CI ? 300 * 1000 : 120 * 1000,
       },
 
   /* Global test setup and teardown */
