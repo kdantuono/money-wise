@@ -87,9 +87,14 @@ export default defineConfig({
     // },
   ],
 
-  /* Run your local dev server before starting the tests */
-  /* Post-Supabase migration: only the web dev server is needed.
-     The frontend connects directly to Supabase (no backend service). */
+  /* Run the web server before the test suite.
+     - Local: `pnpm dev` (Next.js dev mode, HMR, fast startup ~10s)
+     - CI:    `pnpm -w build:web && pnpm start` (production build + `next start`).
+              Uses workspace-root `build:web` script so turbo handles the
+              @money-wise/ui dependency graph. CI timeout bumped to 5 min to
+              accommodate the build step.
+     Post-Supabase migration: only the web server is needed — the frontend
+     connects directly to Supabase (no separate backend service). */
   webServer: process.env.SKIP_WEBSERVER
     ? undefined
     : {
