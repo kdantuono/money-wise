@@ -299,7 +299,7 @@ export default function SettingsPage() {
 
       const { error: profileError } = await supabase
         .from('profiles')
-        .update(updateData)
+        .update(updateData as any)
         .eq('id', user.id);
       if (profileError) throw new Error(profileError.message || 'Errore aggiornamento profilo');
       setUser({
