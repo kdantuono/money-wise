@@ -1099,7 +1099,7 @@ jobs:
             // Access job results from needs context
             const devResult = '${{ needs.development.result }}';
             const testResult = '${{ needs.testing.result }}';
-            const e2eResult = '${{ needs.e2e-tests.result }}';
+            const e2eResult = '${{ needs['e2e-tests'].result }}';
 
             const failed = [devResult, testResult, e2eResult].filter(r => r === 'failure').length;
             const emoji = failed === 0 ? '✅' : '❌';
@@ -1223,7 +1223,7 @@ jobs:
       - name: 🚨 Fail if any critical job failed
         # Required-status-check gate: the summary job is the required check on
         # protected branches (main). To have correct semantics, fail here when
-        # any of the critical jobs in `needs:` has conclusion=='failure'.
+        # any of the critical jobs in `needs:` has result=='failure'.
         #
         # A job being 'skipped' (via path-filter or branch condition) does NOT
         # count as failure — it means the job wasn't relevant for this change.
