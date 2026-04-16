@@ -280,15 +280,26 @@ export default function SettingsPage() {
     try {
       const { createClient } = await import('@/utils/supabase/client');
       const supabase = createClient();
+
+      type ProfileUpdate = {
+        first_name?: string;
+        last_name?: string;
+        timezone?: string | null;
+        currency?: string;
+        preferences?: any;
+      };
+
+      const updateData: ProfileUpdate = {
+        first_name: formData.firstName,
+        last_name: formData.lastName,
+        timezone: formData.timezone,
+        currency: formData.currency,
+        preferences: JSON.parse(JSON.stringify(formData.preferences)),
+      };
+
       const { error: profileError } = await supabase
         .from('profiles')
-        .update({
-          first_name: formData.firstName,
-          last_name: formData.lastName,
-          timezone: formData.timezone,
-          currency: formData.currency,
-          preferences: JSON.parse(JSON.stringify(formData.preferences)),
-        })
+        .update(updateData)
         .eq('id', user.id);
       if (profileError) throw new Error(profileError.message || 'Errore aggiornamento profilo');
       setUser({
