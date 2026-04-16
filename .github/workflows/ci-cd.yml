@@ -817,6 +817,11 @@ jobs:
           pnpm exec playwright install-deps chromium
           echo "✅ System deps installed, browsers from cache"
 
+      - name: 🏗️ Build web app for production
+        run: |
+          echo "🏗️ Building web app (required for 'pnpm start' in CI)"
+          pnpm build:web
+
       - name: 🧪 Run E2E tests
         env:
           CI: true
