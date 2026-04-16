@@ -163,9 +163,12 @@ export const TransactionRow = memo(function TransactionRow({
 
       {/* Amount + date */}
       <div className="text-right flex-shrink-0">
-        <p className={`text-[13px] font-semibold tabular-nums ${
-          isCredit ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
-        }`}>
+        <p
+          aria-label={`${isCredit ? 'Entrata' : 'Uscita'} di ${formatCurrency(transaction.amount, transaction.currency)}`}
+          className={`text-[13px] font-semibold tabular-nums ${
+            isCredit ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
+          }`}
+        >
           {amountPrefix}{formatCurrency(transaction.amount, transaction.currency)}
         </p>
         <time className="text-[10px] text-muted-foreground/60 mt-0.5 block">
