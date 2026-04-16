@@ -1174,16 +1174,16 @@ jobs:
           DEV_ICON="${{ needs.development.result == 'success' && '✅' || needs.development.result == 'failure' && '❌' || '⏭️' }}"
           echo "| 📦 Development | $DEV_ICON $DEV_RESULT |" >> $GITHUB_STEP_SUMMARY
 
-          SEC_LIGHT_RESULT="${{ needs.security-lightweight.result || 'skipped' }}"
-          SEC_LIGHT_ICON="${{ needs.security-lightweight.result == 'success' && '✅' || needs.security-lightweight.result == 'failure' && '❌' || '⏭️' }}"
+          SEC_LIGHT_RESULT="${{ needs['security-lightweight'].result || 'skipped' }}"
+          SEC_LIGHT_ICON="${{ needs['security-lightweight'].result == 'success' && '✅' || needs['security-lightweight'].result == 'failure' && '❌' || '⏭️' }}"
           echo "| 🔒 Security (Lightweight) | $SEC_LIGHT_ICON $SEC_LIGHT_RESULT |" >> $GITHUB_STEP_SUMMARY
 
-          SEC_ENH_RESULT="${{ needs.security-enhanced.result || 'skipped' }}"
-          SEC_ENH_ICON="${{ needs.security-enhanced.result == 'success' && '✅' || needs.security-enhanced.result == 'failure' && '❌' || '⏭️' }}"
+          SEC_ENH_RESULT="${{ needs['security-enhanced'].result || 'skipped' }}"
+          SEC_ENH_ICON="${{ needs['security-enhanced'].result == 'success' && '✅' || needs['security-enhanced'].result == 'failure' && '❌' || '⏭️' }}"
           echo "| 🔒 Security (Enhanced) | $SEC_ENH_ICON $SEC_ENH_RESULT |" >> $GITHUB_STEP_SUMMARY
 
-          SEC_COMP_RESULT="${{ needs.security-comprehensive.result || 'skipped' }}"
-          SEC_COMP_ICON="${{ needs.security-comprehensive.result == 'success' && '✅' || needs.security-comprehensive.result == 'failure' && '❌' || '⏭️' }}"
+          SEC_COMP_RESULT="${{ needs['security-comprehensive'].result || 'skipped' }}"
+          SEC_COMP_ICON="${{ needs['security-comprehensive'].result == 'success' && '✅' || needs['security-comprehensive'].result == 'failure' && '❌' || '⏭️' }}"
           echo "| 🔒 Security (Comprehensive) | $SEC_COMP_ICON $SEC_COMP_RESULT |" >> $GITHUB_STEP_SUMMARY
 
           TEST_RESULT="${{ needs.testing.result || 'skipped' }}"
@@ -1194,12 +1194,12 @@ jobs:
           BUILD_ICON="${{ needs.build.result == 'success' && '✅' || needs.build.result == 'failure' && '❌' || '⏭️' }}"
           echo "| 🏗️ Build | $BUILD_ICON $BUILD_RESULT |" >> $GITHUB_STEP_SUMMARY
 
-          E2E_RESULT="${{ needs.e2e-tests.result || 'skipped' }}"
-          E2E_ICON="${{ needs.e2e-tests.result == 'success' && '✅' || needs.e2e-tests.result == 'failure' && '❌' || '⏭️' }}"
+          E2E_RESULT="${{ needs['e2e-tests'].result || 'skipped' }}"
+          E2E_ICON="${{ needs['e2e-tests'].result == 'success' && '✅' || needs['e2e-tests'].result == 'failure' && '❌' || '⏭️' }}"
           echo "| 🧪 E2E Tests | $E2E_ICON $E2E_RESULT |" >> $GITHUB_STEP_SUMMARY
 
-          BUNDLE_RESULT="${{ needs.bundle-size.result || 'skipped' }}"
-          BUNDLE_ICON="${{ needs.bundle-size.result == 'success' && '✅' || needs.bundle-size.result == 'failure' && '❌' || '⏭️' }}"
+          BUNDLE_RESULT="${{ needs['bundle-size'].result || 'skipped' }}"
+          BUNDLE_ICON="${{ needs['bundle-size'].result == 'success' && '✅' || needs['bundle-size'].result == 'failure' && '❌' || '⏭️' }}"
           echo "| 📦 Bundle Size | $BUNDLE_ICON $BUNDLE_RESULT |" >> $GITHUB_STEP_SUMMARY
 
           echo "" >> $GITHUB_STEP_SUMMARY

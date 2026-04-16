@@ -246,12 +246,12 @@ jobs:
           echo "| Gate | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|------|--------|" >> $GITHUB_STEP_SUMMARY
 
-          DOCKER_ICON="${{ needs.dockerfile-security.result == 'success' && '✅' || needs.dockerfile-security.result == 'failure' && '❌' || '⏭️' }}"
-          DOCKER_RESULT="${{ needs.dockerfile-security.result || 'skipped' }}"
+          DOCKER_ICON="${{ needs['dockerfile-security'].result == 'success' && '✅' || needs['dockerfile-security'].result == 'failure' && '❌' || '⏭️' }}"
+          DOCKER_RESULT="${{ needs['dockerfile-security'].result || 'skipped' }}"
           echo "| 🐳 Dockerfile Security | $DOCKER_ICON $DOCKER_RESULT |" >> $GITHUB_STEP_SUMMARY
 
-          SUPABASE_ICON="${{ needs.supabase-validation.result == 'success' && '✅' || needs.supabase-validation.result == 'failure' && '❌' || '⏭️' }}"
-          SUPABASE_RESULT="${{ needs.supabase-validation.result || 'skipped' }}"
+          SUPABASE_ICON="${{ needs['supabase-validation'].result == 'success' && '✅' || needs['supabase-validation'].result == 'failure' && '❌' || '⏭️' }}"
+          SUPABASE_RESULT="${{ needs['supabase-validation'].result || 'skipped' }}"
           echo "| 🗃️ Supabase Schema | $SUPABASE_ICON $SUPABASE_RESULT |" >> $GITHUB_STEP_SUMMARY
 
           echo "" >> $GITHUB_STEP_SUMMARY

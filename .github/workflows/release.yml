@@ -146,7 +146,7 @@ jobs:
           echo "🏗️ Rebuilding web..."
           pnpm build:web
         env:
-          SENTRY_RELEASE: ${{ needs.validate-release.outputs.version }}
+          SENTRY_RELEASE: ${{ needs['validate-release'].outputs.version }}
           SENTRY_ORG: ${{ env.SENTRY_ORG }}
           SENTRY_AUTH_TOKEN: ${{ env.SENTRY_AUTH_TOKEN }}
 
@@ -155,7 +155,7 @@ jobs:
 
       - name: 📦 Create Sentry Release
         run: |
-          VERSION="${{ needs.validate-release.outputs.version }}"
+          VERSION="${{ needs['validate-release'].outputs.version }}"
 
           sentry-cli releases new -p $SENTRY_PROJECT_WEB $VERSION
           sentry-cli releases set-commits --auto $VERSION
@@ -165,7 +165,7 @@ jobs:
       - name: 📤 Upload Source Maps (Web)
         if: hashFiles('apps/web/.next/**/*.map') != ''
         run: |
-          VERSION="${{ needs.validate-release.outputs.version }}"
+          VERSION="${{ needs['validate-release'].outputs.version }}"
           sentry-cli sourcemaps upload \
             --release=$VERSION \
             --project=$SENTRY_PROJECT_WEB \
@@ -173,7 +173,7 @@ jobs:
 
       - name: ✅ Finalize Sentry Release
         run: |
-          VERSION="${{ needs.validate-release.outputs.version }}"
+          VERSION="${{ needs['validate-release'].outputs.version }}"
 
           sentry-cli releases finalize -p $SENTRY_PROJECT_WEB $VERSION
           echo "✅ Finalized Sentry release: $VERSION"
@@ -200,7 +200,7 @@ jobs:
 
       - name: 📱 Create Mobile Sentry Release
         run: |
-          VERSION="${{ needs.validate-release.outputs.version }}"
+          VERSION="${{ needs['validate-release'].outputs.version }}"
 
           sentry-cli releases new -p $SENTRY_PROJECT_MOBILE $VERSION
           sentry-cli releases set-commits --auto $VERSION
@@ -231,7 +231,7 @@ jobs:
       - name: 📝 Generate changelog
         id: changelog
         run: |
-          VERSION="${{ needs.validate-release.outputs.version }}"
+          VERSION="${{ needs['validate-release'].outputs.version }}"
           PREVIOUS_TAG=$(git tag -l --sort=-version:refname | grep -v "^$VERSION$" | head -n1)
 
           if [ -n "$PREVIOUS_TAG" ]; then
@@ -306,10 +306,10 @@ jobs:
 
           cat > version-info.json << EOF
           {
-            "version": "${{ needs.validate-release.outputs.version }}",
+            "version": "${{ needs['validate-release'].outputs.version }}",
             "commit": "${{ github.sha }}",
             "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-            "is_prerelease": ${{ needs.validate-release.outputs.is_prerelease }},
+            "is_prerelease": ${{ needs['validate-release'].outputs.is_prerelease }},
             "build_number": "${{ github.run_number }}"
           }
           EOF
@@ -319,10 +319,10 @@ jobs:
       - name: 🚀 Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ needs.validate-release.outputs.version }}
-          name: Release ${{ needs.validate-release.outputs.version }}
+          tag_name: ${{ needs['validate-release'].outputs.version }}
+          name: Release ${{ needs['validate-release'].outputs.version }}
           body_path: changelog.md
-          prerelease: ${{ needs.validate-release.outputs.is_prerelease }}
+          prerelease: ${{ needs['validate-release'].outputs.is_prerelease }}
           files: |
             version-info.json
         env:
@@ -381,8 +381,8 @@ jobs:
         with:
           images: ghcr.io/${{ github.repository }}/${{ matrix.app }}
           tags: |
-            type=semver,pattern={{version}},value=${{ needs.validate-release.outputs.version }}
-            type=semver,pattern={{major}}.{{minor}},value=${{ needs.validate-release.outputs.version }}
+            type=semver,pattern={{version}},value=${{ needs['validate-release'].outputs.version }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ needs['validate-release'].outputs.version }}
             type=raw,value=latest,enable={{is_default_branch}}
 
       - name: 🏗️ Build and push Docker image
@@ -406,7 +406,7 @@ jobs:
     name: 📢 Deployment Notification
     runs-on: ubuntu-latest
     needs: [validate-release, sentry-release, sentry-mobile, github-release, docker-release]
-    if: always() && needs.validate-release.result == 'success'
+    if: always() && needs['validate-release'].result == 'success'
     timeout-minutes: 8
 
     steps:
@@ -415,7 +415,7 @@ jobs:
 
       - name: 📢 Create Sentry Deployment
         run: |
-          VERSION="${{ needs.validate-release.outputs.version }}"
+          VERSION="${{ needs['validate-release'].outputs.version }}"
           ENVIRONMENT=$([ "${{ github.ref }}" = "refs/heads/main" ] && echo "production" || echo "staging")
 
           sentry-cli releases deploys $VERSION new -e $ENVIRONMENT -p $SENTRY_PROJECT_WEB || true
@@ -425,14 +425,14 @@ jobs:
 
       - name: 📢 Deployment Summary
         run: |
-          echo "📢 Release ${{ needs.validate-release.outputs.version }} deployed!"
+          echo "📢 Release ${{ needs['validate-release'].outputs.version }} deployed!"
           echo "📋 Status Summary:"
-          echo "  - Sentry Releases: ${{ needs.sentry-release.result }}"
-          echo "  - GitHub Release: ${{ needs.github-release.result || 'skipped' }}"
-          echo "  - Docker Images: ${{ needs.docker-release.result || 'skipped' }}"
+          echo "  - Sentry Releases: ${{ needs['sentry-release'].result }}"
+          echo "  - GitHub Release: ${{ needs['github-release'].result || 'skipped' }}"
+          echo "  - Docker Images: ${{ needs['docker-release'].result || 'skipped' }}"
           echo ""
 
-          if [[ "${{ needs.sentry-release.result }}" == "success" ]]; then
+          if [[ "${{ needs['sentry-release'].result }}" == "success" ]]; then
             echo "✅ Sentry releases created successfully"
           fi
 
@@ -444,7 +444,7 @@ jobs:
     name: 🏥 Monitor Deployment Health
     runs-on: ubuntu-latest
     needs: [validate-release, deploy-notification]
-    if: always() && needs.validate-release.result == 'success' && github.ref == 'refs/heads/main'
+    if: always() && needs['validate-release'].result == 'success' && github.ref == 'refs/heads/main'
     timeout-minutes: 15
 
     steps:
@@ -455,7 +455,7 @@ jobs:
 
       - name: 🏥 Health Check
         run: |
-          VERSION="${{ needs.validate-release.outputs.version }}"
+          VERSION="${{ needs['validate-release'].outputs.version }}"
           ENVIRONMENT="production"
 
           echo "🏥 Monitoring release health for version: $VERSION"
@@ -485,8 +485,8 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Property | Value |" >> $GITHUB_STEP_SUMMARY
           echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Version | **${{ needs.validate-release.outputs.version }}** |" >> $GITHUB_STEP_SUMMARY
-          echo "| Pre-release | ${{ needs.validate-release.outputs.is_prerelease }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Version | **${{ needs['validate-release'].outputs.version }}** |" >> $GITHUB_STEP_SUMMARY
+          echo "| Pre-release | ${{ needs['validate-release'].outputs.is_prerelease }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Trigger | ${{ github.event_name }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
@@ -495,19 +495,19 @@ jobs:
           echo "| Stage | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
 
-          SENTRY_ICON="${{ needs.sentry-release.result == 'success' && '✅' || '❌' }}"
-          echo "| 📦 Sentry Release | $SENTRY_ICON ${{ needs.sentry-release.result }} |" >> $GITHUB_STEP_SUMMARY
+          SENTRY_ICON="${{ needs['sentry-release'].result == 'success' && '✅' || '❌' }}"
+          echo "| 📦 Sentry Release | $SENTRY_ICON ${{ needs['sentry-release'].result }} |" >> $GITHUB_STEP_SUMMARY
 
-          GITHUB_RESULT="${{ needs.github-release.result || 'skipped' }}"
-          GITHUB_ICON="${{ needs.github-release.result == 'success' && '✅' || needs.github-release.result == 'failure' && '❌' || '⏭️' }}"
+          GITHUB_RESULT="${{ needs['github-release'].result || 'skipped' }}"
+          GITHUB_ICON="${{ needs['github-release'].result == 'success' && '✅' || needs['github-release'].result == 'failure' && '❌' || '⏭️' }}"
           echo "| 🚀 GitHub Release | $GITHUB_ICON $GITHUB_RESULT |" >> $GITHUB_STEP_SUMMARY
 
-          DOCKER_RESULT="${{ needs.docker-release.result || 'skipped' }}"
-          DOCKER_ICON="${{ needs.docker-release.result == 'success' && '✅' || needs.docker-release.result == 'failure' && '❌' || '⏭️' }}"
+          DOCKER_RESULT="${{ needs['docker-release'].result || 'skipped' }}"
+          DOCKER_ICON="${{ needs['docker-release'].result == 'success' && '✅' || needs['docker-release'].result == 'failure' && '❌' || '⏭️' }}"
           echo "| 🐳 Docker Images | $DOCKER_ICON $DOCKER_RESULT |" >> $GITHUB_STEP_SUMMARY
 
-          DEPLOY_ICON="${{ needs.deploy-notification.result == 'success' && '✅' || '❌' }}"
-          echo "| 📢 Deployment | $DEPLOY_ICON ${{ needs.deploy-notification.result }} |" >> $GITHUB_STEP_SUMMARY
+          DEPLOY_ICON="${{ needs['deploy-notification'].result == 'success' && '✅' || '❌' }}"
+          echo "| 📢 Deployment | $DEPLOY_ICON ${{ needs['deploy-notification'].result }} |" >> $GITHUB_STEP_SUMMARY
 
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "---" >> $GITHUB_STEP_SUMMARY
