@@ -12,7 +12,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { createClient } from '@/utils/supabase/client';
-import type { Database } from '@/utils/supabase/database.types';
 import { CategoryManager } from '@/components/categories/CategoryManager';
 import {
   User,
@@ -293,6 +292,7 @@ export default function SettingsPage() {
 
       const { error: profileError } = await (supabase
         .from('profiles')
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .update as any)(updateData)
         .eq('id', user.id);
       if (profileError) throw new Error(profileError.message || 'Errore aggiornamento profilo');
