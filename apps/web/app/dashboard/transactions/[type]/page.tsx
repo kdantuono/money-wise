@@ -1,6 +1,6 @@
 'use client';
 
-import { useParams } from 'next/navigation';
+import { useParams, notFound } from 'next/navigation';
 import Link from 'next/link';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -41,7 +41,7 @@ const recurringExpenses: RecurringExpense[] = [
 ];
 
 const fixedDetailData = {
-  aiAnalysis: "I tuoi costi fissi rappresentano il 45% delle uscite mensili, leggermente sopra la media consigliata (40%). L'affitto pesa per il 73% dei costi fissi. Consiglio: valuta di rinegoziare l'assicurazione auto o cercare pacchetti internet+streaming combinati per risparmiare circa €20/mese.",
+  aiAnalysis: "I tuoi costi fissi rappresentano il 45% delle uscite mensili, leggermente sopra la media consigliata (40%). L'affitto pesa per il 73% dei costi fissi. Consiglio: valuta di rinegoziare l'assicurazione auto o cercare pacchetti internet+streaming combinati per risparmiare circa \u20AC20/mese.",
   trend: [
     { month: 'Ott', total: 1130 },
     { month: 'Nov', total: 1135 },
@@ -88,7 +88,7 @@ function CustomTooltip({ active, payload, label }: { active?: boolean; payload?:
   return (
     <div className="bg-card border border-border rounded-xl p-3 shadow-lg text-sm">
       <p className="font-semibold text-foreground mb-1">{label}</p>
-      <p className="text-muted-foreground">Totale: <span className="font-medium text-foreground">€{payload[0]?.value?.toFixed(2)}</span></p>
+      <p className="text-muted-foreground">Totale: <span className="font-medium text-foreground">\u20AC{payload[0]?.value?.toFixed(2)}</span></p>
     </div>
   );
 }
@@ -100,6 +100,11 @@ function CustomTooltip({ active, payload, label }: { active?: boolean; payload?:
 export default function ExpenseDetailPage() {
   const params = useParams<{ type: string }>();
   const type = params.type;
+
+  const validTypes = ['fixed', 'variable', 'recurring'];
+  if (!validTypes.includes(type)) {
+    notFound();
+  }
 
   const isFixed = type === 'fixed';
   const isVariable = type === 'variable';
@@ -129,7 +134,7 @@ export default function ExpenseDetailPage() {
       <div>
         <h1 className="text-[32px] tracking-[-0.03em] text-foreground">{title}</h1>
         <p className="text-[13px] text-muted-foreground mt-1.5">
-          Totale mensile: <span className="font-semibold text-foreground">€{total.toFixed(2)}</span>
+          Totale mensile: <span className="font-semibold text-foreground">\u20AC{total.toFixed(2)}</span>
         </p>
       </div>
 
@@ -144,7 +149,7 @@ export default function ExpenseDetailPage() {
               <h3 className="font-semibold text-foreground mb-1">Analisi AI</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">
                 {isRecurring
-                  ? "Hai 3 impegni ricorrenti attivi per un totale di €753,33/mese. Il finanziamento auto rappresenta il costo maggiore (50%). Completando prima il prestito personale (8 rate rimanenti) risparmierai €333,33/mese."
+                  ? "Hai 3 impegni ricorrenti attivi per un totale di \u20AC753,33/mese. Il finanziamento auto rappresenta il costo maggiore (50%). Completando prima il prestito personale (8 rate rimanenti) risparmierai \u20AC333,33/mese."
                   : detail.aiAnalysis}
               </p>
             </div>
@@ -152,7 +157,7 @@ export default function ExpenseDetailPage() {
         </Card>
       </motion.div>
 
-      {/* Recurring Detail — progress bars */}
+      {/* Recurring Detail \u2014 progress bars */}
       {isRecurring ? (
         <div className="space-y-4">
           {recurringDetailItems.map((item, i) => {
@@ -193,8 +198,8 @@ export default function ExpenseDetailPage() {
                           />
                         </div>
                         <div className="flex justify-between text-xs text-muted-foreground">
-                          <span>Pagato: €{item.paidAmount.toLocaleString('it-IT')}</span>
-                          <span>Restante: €{remaining.toLocaleString('it-IT')}</span>
+                          <span>Pagato: \u20AC{item.paidAmount.toLocaleString('it-IT')}</span>
+                          <span>Restante: \u20AC{remaining.toLocaleString('it-IT')}</span>
                         </div>
                       </div>
                     </div>
@@ -203,7 +208,7 @@ export default function ExpenseDetailPage() {
                     <div className="grid grid-cols-2 gap-3 md:w-64">
                       <div className="bg-muted/50 rounded-xl p-3">
                         <p className="text-xs text-muted-foreground">Rata Mensile</p>
-                        <p className="font-bold text-foreground">€{item.monthlyRate.toFixed(2)}</p>
+                        <p className="font-bold text-foreground">\u20AC{item.monthlyRate.toFixed(2)}</p>
                       </div>
                       <div className="bg-muted/50 rounded-xl p-3">
                         <p className="text-xs text-muted-foreground">Prossima Rata</p>
@@ -215,7 +220,7 @@ export default function ExpenseDetailPage() {
                       </div>
                       <div className="bg-muted/50 rounded-xl p-3">
                         <p className="text-xs text-muted-foreground">Totale</p>
-                        <p className="font-bold text-foreground">€{item.totalAmount.toLocaleString('it-IT')}</p>
+                        <p className="font-bold text-foreground">\u20AC{item.totalAmount.toLocaleString('it-IT')}</p>
                       </div>
                     </div>
                   </div>
@@ -234,9 +239,9 @@ export default function ExpenseDetailPage() {
                 <BarChart data={detail.trend}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border, #e5e7eb)" opacity={0.5} />
                   <XAxis dataKey="month" tick={{ fontSize: 12, fill: 'var(--color-muted-foreground, #6b7280)' }} />
-                  <YAxis tick={{ fontSize: 12, fill: 'var(--color-muted-foreground, #6b7280)' }} tickFormatter={(v) => `€${v}`} />
+                  <YAxis tick={{ fontSize: 12, fill: 'var(--color-muted-foreground, #6b7280)' }} tickFormatter={(v) => `\u20AC${v}`} />
                   <Tooltip content={<CustomTooltip />} cursor={{ fill: 'var(--color-muted, #f3f4f6)', opacity: 0.3 }} />
-                  <Bar dataKey="total" fill={isFixed ? '#3b82f6' : '#eab308'} name="Totale (€)" radius={[6, 6, 0, 0]} />
+                  <Bar dataKey="total" fill={isFixed ? '#3b82f6' : '#eab308'} name="Totale (\u20AC)" radius={[6, 6, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </Card>
@@ -271,7 +276,7 @@ export default function ExpenseDetailPage() {
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="font-bold text-foreground">€{exp.amount.toFixed(2)}</p>
+                      <p className="font-bold text-foreground">\u20AC{exp.amount.toFixed(2)}</p>
                       <Badge variant="outline" className="text-xs mt-1">{exp.frequency}</Badge>
                     </div>
                   </motion.div>
