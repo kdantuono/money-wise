@@ -68,6 +68,98 @@ jobs:
       # The steps below are kept as reference but removed from execution
 
   # ===================================================================
+  # 🔍 CHANGES: Path-based change detection
+  # Determines which parts of the repo changed. Downstream jobs use
+  # these outputs to skip expensive work (tests, E2E, build) when
+  # irrelevant (e.g., docs-only PRs skip heavy pipelines entirely).
+  # ===================================================================
+
+  changes:
+    name: 🔍 Detect Changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      web: ${{ steps.filter.outputs.web }}
+      mobile: ${{ steps.filter.outputs.mobile }}
+      functions: ${{ steps.filter.outputs.functions }}
+      db: ${{ steps.filter.outputs.db }}
+      tests: ${{ steps.filter.outputs.tests }}
+      workflows: ${{ steps.filter.outputs.workflows }}
+      docs: ${{ steps.filter.outputs.docs }}
+      root_config: ${{ steps.filter.outputs.root_config }}
+      docs_only: ${{ steps.calculate.outputs.docs_only }}
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: 🔍 Filter changed paths
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            web:
+              - 'apps/web/**'
+              - 'packages/ui/**'
+              - 'packages/types/**'
+              - 'packages/utils/**'
+            mobile:
+              - 'apps/mobile/**'
+              - 'packages/types/**'
+            functions:
+              - 'supabase/functions/**'
+            db:
+              - 'supabase/migrations/**'
+              - 'supabase/config.toml'
+            tests:
+              - 'apps/web/__tests__/**'
+              - 'apps/web/**/*.test.ts'
+              - 'apps/web/**/*.test.tsx'
+              - 'apps/web/e2e/**'
+            workflows:
+              - '.github/workflows/**'
+            docs:
+              - '**.md'
+              - 'docs/**'
+              - '.github/ISSUE_TEMPLATE/**'
+              - '.github/PULL_REQUEST_TEMPLATE.md'
+            root_config:
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+              - 'turbo.json'
+              - 'tsconfig*.json'
+              - '.eslintrc*'
+              - '.prettierrc*'
+              - 'vitest.config.*'
+
+      - name: 🧮 Calculate docs_only flag
+        id: calculate
+        run: |
+          DOCS_ONLY="false"
+          if [[ "${{ steps.filter.outputs.docs }}" == "true" && \
+                "${{ steps.filter.outputs.web }}" == "false" && \
+                "${{ steps.filter.outputs.mobile }}" == "false" && \
+                "${{ steps.filter.outputs.functions }}" == "false" && \
+                "${{ steps.filter.outputs.db }}" == "false" && \
+                "${{ steps.filter.outputs.tests }}" == "false" && \
+                "${{ steps.filter.outputs.workflows }}" == "false" && \
+                "${{ steps.filter.outputs.root_config }}" == "false" ]]; then
+            DOCS_ONLY="true"
+          fi
+          echo "docs_only=$DOCS_ONLY" >> $GITHUB_OUTPUT
+          echo "📊 Change detection summary:"
+          echo "  web:          ${{ steps.filter.outputs.web }}"
+          echo "  mobile:       ${{ steps.filter.outputs.mobile }}"
+          echo "  functions:    ${{ steps.filter.outputs.functions }}"
+          echo "  db:           ${{ steps.filter.outputs.db }}"
+          echo "  tests:        ${{ steps.filter.outputs.tests }}"
+          echo "  workflows:    ${{ steps.filter.outputs.workflows }}"
+          echo "  docs:         ${{ steps.filter.outputs.docs }}"
+          echo "  root_config:  ${{ steps.filter.outputs.root_config }}"
+          echo "  docs_only:    $DOCS_ONLY"
+
+  # ===================================================================
   # 📦 DEVELOPMENT: Code quality checks
   # ===================================================================
 
