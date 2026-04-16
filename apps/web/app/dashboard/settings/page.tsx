@@ -12,8 +12,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { createClient } from '@/utils/supabase/client';
-import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '@/utils/supabase/database.types';
 import { CategoryManager } from '@/components/categories/CategoryManager';
 import {
   User,
@@ -281,7 +279,7 @@ export default function SettingsPage() {
     setIsSaving(true);
     setError(null);
     try {
-      const supabase: SupabaseClient<Database> = createClient();
+      const supabase = createClient();
 
       const { error: profileError } = await supabase
         .from('profiles')
