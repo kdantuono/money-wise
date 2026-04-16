@@ -11,7 +11,7 @@ name: Claude Auto-Fix on Review
 # Why single-agent instead of dual (Sonnet + Opus)?
 # - Copilot is already the reviewer. A second Opus "review" agent is redundant.
 # - Event-driven on review submission removes the need to poll for Copilot.
-# - Simpler prompt, tighter scope, fewer failure modes. ~80 lines vs. ~290.
+# - Simpler prompt, tighter scope, fewer failure modes than the dual-agent approach.
 #
 # Why event-driven on pull_request_review instead of pull_request?
 # - No polling for Copilot needed — the trigger IS the Copilot review event.
@@ -42,7 +42,10 @@ jobs:
   autofix-on-review:
     name: 🤖 Auto-Fix from Review
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # 30 min total budget: 10 min CI wait + ~15 min Sonnet agent + 5 min slack
+    # for git ops, gh calls, diagnosing. If this keeps tripping, tighten the
+    # inner waits before raising this ceiling again.
+    timeout-minutes: 30
     # Fire only when:
     # - Event is a real review submission from Copilot (not APPROVED)
     # - PR is NOT from a fork (secrets unavailable from forks)
@@ -85,6 +88,11 @@ jobs:
             # For manual dispatch, use the latest Copilot review on the PR
             LATEST_COPILOT_REVIEW=$(gh api "repos/${{ github.repository }}/pulls/$PR_NUMBER/reviews" \
               --jq '[.[] | select(.user.login == "copilot-pull-request-reviewer")] | max_by(.submitted_at) | .id // ""')
+            if [ -z "$LATEST_COPILOT_REVIEW" ]; then
+              echo "::error::workflow_dispatch path: PR #$PR_NUMBER has no Copilot review yet."
+              echo "::error::Nothing to auto-fix. Wait for Copilot to review, or retry after."
+              exit 1
+            fi
             echo "number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
             echo "head_ref=$HEAD_REF" >> "$GITHUB_OUTPUT"
             echo "review_id=$LATEST_COPILOT_REVIEW" >> "$GITHUB_OUTPUT"
@@ -169,18 +177,34 @@ jobs:
             - Body: bullet list of changes with one-line rationale each
             - Push to PR branch
 
-            ### 4. Wait for CI to settle (max 10 min), then decide merge
+            ### 4. Wait for CI to settle (max 10 min), then check STATUS (not just completion)
+
+            IMPORTANT: "all checks settled" ≠ "all checks passed". Verify explicitly.
+
             ```bash
+            # Wait for all checks to settle (no IN_PROGRESS)
             for i in $(seq 1 20); do
               IN_PROGRESS=$(gh pr view ${{ steps.pr.outputs.number }} --json statusCheckRollup \
-                --jq '[.statusCheckRollup[] | select(.status == "IN_PROGRESS")] | length')
+                --jq '[.statusCheckRollup[] | select(.status == "IN_PROGRESS" or .status == "QUEUED")] | length')
               [ "$IN_PROGRESS" -eq 0 ] && break
               sleep 30
             done
+
+            # Verify ALL required checks are SUCCESS (not just non-in-progress)
+            # Treat FAILURE, CANCELLED, TIMED_OUT as non-mergeable
+            FAILED=$(gh pr view ${{ steps.pr.outputs.number }} --json statusCheckRollup \
+              --jq '[.statusCheckRollup[] | select(.conclusion == "FAILURE" or .conclusion == "CANCELLED" or .conclusion == "TIMED_OUT")] | length')
+
+            # Also check mergeStateStatus (GitHub's own computed merge readiness)
+            MERGE_STATE=$(gh pr view ${{ steps.pr.outputs.number }} --json mergeStateStatus --jq '.mergeStateStatus')
             ```
-            - If CI green and mergeable: `gh pr merge ${{ steps.pr.outputs.number }} --auto --merge`
-              (the `--auto` flag means GitHub will actually merge when all required checks pass; you are NOT bypassing CI)
-            - If CI failing or blocked: do NOT merge. Leave a comment explaining the blocker. Stop.
+
+            Decision matrix:
+            - **FAILED == 0 AND MERGE_STATE in {CLEAN, UNSTABLE}** → safe to auto-merge:
+              `gh pr merge ${{ steps.pr.outputs.number }} --auto --merge`
+              (the `--auto` flag means GitHub enforces required checks server-side; you are NOT bypassing CI)
+            - **FAILED > 0** → do NOT merge. Post a PR comment listing failed checks. Stop.
+            - **MERGE_STATE in {BLOCKED, BEHIND, DIRTY}** → do NOT merge. Post a PR comment with the reason. Stop.
 
             ### 5. Post final summary as PR comment
             Format:
