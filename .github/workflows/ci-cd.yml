@@ -78,6 +78,9 @@ jobs:
     name: 🔍 Detect Changes
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read  # required by dorny/paths-filter for PR events
     outputs:
       web: ${{ steps.filter.outputs.web }}
       mobile: ${{ steps.filter.outputs.mobile }}
@@ -120,18 +123,25 @@ jobs:
             workflows:
               - '.github/workflows/**'
             docs:
-              - '**.md'
+              - '**/*.md'
               - 'docs/**'
               - '.github/ISSUE_TEMPLATE/**'
               - '.github/PULL_REQUEST_TEMPLATE.md'
             root_config:
               - 'package.json'
               - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
               - 'turbo.json'
               - 'tsconfig*.json'
               - '.eslintrc*'
               - '.prettierrc*'
+              - '.npmrc'
+              - '.nvmrc'
               - 'vitest.config.*'
+              - 'jest.config.*'
+              - 'playwright.config.*'
+              - 'docker-compose*.yml'
+              - 'docker-compose*.yaml'
 
       - name: 🧮 Calculate docs_only flag
         id: calculate
@@ -678,10 +688,13 @@ jobs:
     name: 🧪 Testing Pipeline
     runs-on: ubuntu-latest
     needs: [foundation, development, changes]
-    # Fail-open: runs if changes detection failed/skipped, or if relevant paths
-    # changed, or on protected branches, or if force flag set.
+    # Gate on prerequisite jobs actually succeeding (foundation + development),
+    # then fail-open for `changes` (if detection fails or relevant paths changed,
+    # protected branch, or force flag → run).
     if: |
-      always() && needs.foundation.result == 'success' && (
+      always() &&
+      needs.foundation.result == 'success' &&
+      needs.development.result == 'success' && (
         needs.changes.result != 'success' ||
         needs.changes.outputs.web == 'true' ||
         needs.changes.outputs.tests == 'true' ||
@@ -815,10 +828,11 @@ jobs:
     name: 🏗️ Build Pipeline
     runs-on: ubuntu-latest
     needs: [foundation, development, changes]
-    # Fail-open: runs if changes detection failed/skipped, or if app code
-    # or shared packages or root config changed, or on protected branches.
+    # Gate on prerequisites succeeding, then fail-open for `changes`.
     if: |
-      always() && needs.foundation.result == 'success' && (
+      always() &&
+      needs.foundation.result == 'success' &&
+      needs.development.result == 'success' && (
         needs.changes.result != 'success' ||
         needs.changes.outputs.web == 'true' ||
         needs.changes.outputs.mobile == 'true' ||
@@ -892,18 +906,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     needs: [foundation, development, testing, changes]
-    # Run E2E tests only when trigger conditions met AND relevant code changed.
-    # Triggers:
-    #   - Push to main/develop/hotfix branches
-    #   - PR ready_for_review event
-    #   - PR from hotfix branch
-    # Paths (fail-open — always runs if changes detection failed):
-    #   - apps/web, packages/ui/types/utils (web output)
-    #   - supabase/migrations, supabase/config.toml (db output)
-    #   - supabase/functions (functions output)
-    #   - root config files
+    # Gate on prerequisites succeeding (foundation, development, testing) AND
+    # trigger conditions met AND relevant code changed. Fail-open for `changes`.
     if: |
-      always() && (
+      always() &&
+      needs.foundation.result == 'success' &&
+      needs.development.result == 'success' &&
+      needs.testing.result == 'success' && (
         (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/heads/hotfix/'))) ||
         (github.event_name == 'pull_request' && (github.event.action == 'ready_for_review' || startsWith(github.head_ref, 'hotfix/')))
       ) && (
@@ -980,9 +989,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     needs: [foundation, development, changes]
-    # PR-only, and only when web app or shared packages / root config changed.
+    # PR-only. Gate on prerequisites, then fail-open for `changes`.
     if: |
-      always() && github.event_name == 'pull_request' && (
+      always() &&
+      needs.foundation.result == 'success' &&
+      needs.development.result == 'success' &&
+      github.event_name == 'pull_request' && (
         needs.changes.result != 'success' ||
         needs.changes.outputs.web == 'true' ||
         needs.changes.outputs.root_config == 'true' ||
