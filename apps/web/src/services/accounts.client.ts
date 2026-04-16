@@ -239,6 +239,7 @@ export const accountsClient = {
     // Type-safe insert with explicit casting to avoid Next.js build type inference issues
     const { data, error } = await (supabase
       .from('accounts')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .insert as any)(insert)
       .select()
       .single()
