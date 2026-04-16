@@ -866,9 +866,9 @@ jobs:
 
       - name: Build and analyze bundle
         run: |
-          cd apps/web
-          pnpm build
-          pnpm analyze
+          # Use the build-clean.sh wrapper (unsets NODE_ENV to prevent Next.js
+          # 15+ "non-standard NODE_ENV" build failures in CI)
+          pnpm build:web
 
       - name: Check bundle size
         run: |
