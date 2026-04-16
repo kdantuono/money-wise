@@ -73,9 +73,9 @@ export function AppSidebar() {
   const router = useRouter();
   const { user, logout } = useAuthStore();
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await logout();
     router.replace('/auth/login');
-    logout();
   };
 
   const userInitials = user

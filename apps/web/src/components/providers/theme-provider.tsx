@@ -121,15 +121,22 @@ function applyTheme(resolved: ResolvedTheme): void {
  * Get initial theme from user preferences, localStorage, or system
  */
 function getInitialTheme(userPreference?: string | null): Theme {
-  // Priority 1: User preference from backend
+  // Priority 1: User preference from backend (with legacy support)
   if (userPreference === 'dracula') return 'dracula';
   if (userPreference === 'italian') return 'italian';
   if (userPreference === 'auto' || userPreference === 'system') return 'system';
+  // Legacy support: 'light' maps to 'system' (will use OS preference)
+  if (userPreference === 'light') return 'system';
+  // Legacy support: 'dark' maps to 'dracula' (our default dark theme)
+  if (userPreference === 'dark') return 'dracula';
 
-  // Priority 2: localStorage
+  // Priority 2: localStorage (with legacy support)
   if (typeof window !== 'undefined') {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored === 'system' || stored === 'dracula' || stored === 'italian') return stored;
+    // Legacy support in localStorage
+    if (stored === 'light') return 'system';
+    if (stored === 'dark') return 'dracula';
   }
 
   // Priority 3: Dracula as default

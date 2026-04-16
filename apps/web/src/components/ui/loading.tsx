@@ -79,8 +79,6 @@ export function LoadingSpinner({
 interface LoadingScreenProps {
   /** Loading message to display */
   message?: string;
-  /** Size of the spinner */
-  size?: LoadingSize;
 }
 
 /**

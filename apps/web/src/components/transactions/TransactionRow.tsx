@@ -34,8 +34,19 @@ function formatDate(dateString: string): string {
   });
 }
 
-function formatCurrency(amount: number): string {
-  return `€${Math.abs(amount).toLocaleString('it-IT', { minimumFractionDigits: 2 })}`;
+function formatCurrency(amount: number, currency = 'EUR'): string {
+  try {
+    return new Intl.NumberFormat('it-IT', {
+      style: 'currency',
+      currency: currency,
+    }).format(Math.abs(amount));
+  } catch {
+    // Fallback to EUR if currency code is invalid
+    return new Intl.NumberFormat('it-IT', {
+      style: 'currency',
+      currency: 'EUR',
+    }).format(Math.abs(amount));
+  }
 }
 
 // =============================================================================
@@ -155,21 +166,21 @@ export const TransactionRow = memo(function TransactionRow({
         <p className={`text-[13px] font-semibold tabular-nums ${
           isCredit ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
         }`}>
-          {amountPrefix}{formatCurrency(transaction.amount)}
+          {amountPrefix}{formatCurrency(transaction.amount, transaction.currency)}
         </p>
         <time className="text-[10px] text-muted-foreground/60 mt-0.5 block">
           {formatDate(transaction.date)}
         </time>
       </div>
 
-      {/* Actions — visible on hover */}
-      <div className="flex-shrink-0 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+      {/* Actions — visible on hover and keyboard focus */}
+      <div className="flex-shrink-0 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
         <button
           type="button"
           onClick={handleEdit}
           disabled={isUpdating || isDeleting}
           aria-label="Modifica transazione"
-          className="p-1.5 rounded-lg text-muted-foreground/40 hover:text-foreground hover:bg-muted/50 disabled:opacity-50 transition-colors"
+          className="p-1.5 rounded-lg text-muted-foreground/40 hover:text-foreground hover:bg-muted/50 focus-visible:text-foreground focus-visible:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50 transition-colors"
         >
           {isUpdating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Pencil className="w-3.5 h-3.5" />}
         </button>
@@ -178,7 +189,7 @@ export const TransactionRow = memo(function TransactionRow({
           onClick={handleDelete}
           disabled={isUpdating || isDeleting}
           aria-label="Elimina transazione"
-          className="p-1.5 rounded-lg text-muted-foreground/40 hover:text-rose-600 hover:bg-rose-500/10 disabled:opacity-50 transition-colors"
+          className="p-1.5 rounded-lg text-muted-foreground/40 hover:text-rose-600 hover:bg-rose-500/10 focus-visible:text-rose-600 focus-visible:bg-rose-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50 transition-colors"
         >
           {isDeleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
         </button>

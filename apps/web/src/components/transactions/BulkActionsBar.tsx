@@ -59,6 +59,7 @@ export const BulkActionsBar = memo(function BulkActionsBar({
   }
 
   const itemText = selectedCount === 1 ? 'elemento' : 'elementi';
+  const selectedText = selectedCount === 1 ? 'selezionato' : 'selezionati';
 
   return (
     <div
@@ -83,7 +84,7 @@ export const BulkActionsBar = memo(function BulkActionsBar({
                   'Elaborazione...'
                 ) : (
                   <>
-                    {selectedCount} {itemText} selezionati
+                    {selectedCount} {itemText} {selectedText}
                   </>
                 )}
               </span>
