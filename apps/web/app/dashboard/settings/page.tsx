@@ -282,15 +282,18 @@ export default function SettingsPage() {
     try {
       const supabase = createClient();
 
-      const { error: profileError } = await supabase
+      // Type-safe update with explicit casting to avoid Next.js build type inference issues
+      const updateData = {
+        first_name: formData.firstName,
+        last_name: formData.lastName,
+        timezone: formData.timezone,
+        currency: formData.currency,
+        preferences: JSON.parse(JSON.stringify(formData.preferences)),
+      };
+
+      const { error: profileError } = await (supabase
         .from('profiles')
-        .update({
-          first_name: formData.firstName,
-          last_name: formData.lastName,
-          timezone: formData.timezone,
-          currency: formData.currency,
-          preferences: JSON.parse(JSON.stringify(formData.preferences)),
-        } as Database['public']['Tables']['profiles']['Update'])
+        .update as any)(updateData)
         .eq('id', user.id);
       if (profileError) throw new Error(profileError.message || 'Errore aggiornamento profilo');
       setUser({
