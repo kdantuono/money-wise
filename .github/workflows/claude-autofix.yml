@@ -119,7 +119,14 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          claude_args: "--model claude-sonnet-4-6 --max-turns 50"
+          # --allowed-tools is REQUIRED for destructive Bash commands.
+          # Without it, Claude Code Action sandbox silently denies gh/git writes
+          # (visible as permission_denials_count in run logs). Keep the list
+          # tight: only what fix-agent actually needs to work.
+          claude_args: >-
+            --model claude-sonnet-4-6
+            --max-turns 50
+            --allowed-tools "Bash(gh pr:*),Bash(gh api:*),Bash(gh run:*),Bash(gh label:*),Bash(git add:*),Bash(git commit:*),Bash(git push:*),Bash(git diff:*),Bash(git log:*),Bash(git status:*),Bash(git fetch:*),Bash(sleep:*),Bash(echo:*),Bash(grep:*),Bash(jq:*),Bash(cat:*),Bash(head:*),Bash(tail:*),Bash(wc:*),Bash(seq:*),Bash(pnpm:*)"
           additional_permissions: |
             actions: read
           prompt: |
@@ -227,7 +234,13 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          claude_args: "--model claude-opus-4-6 --max-turns 20"
+          # --allowed-tools: review-agent posts reviews and enables auto-merge.
+          # No git/push/commit needed — it reviews, never commits. Tighter
+          # whitelist than fix-agent.
+          claude_args: >-
+            --model claude-opus-4-6
+            --max-turns 20
+            --allowed-tools "Bash(gh pr:*),Bash(gh api:*),Bash(gh run:*),Bash(sleep:*),Bash(echo:*),Bash(grep:*),Bash(jq:*),Bash(cat:*),Bash(head:*),Bash(tail:*),Bash(wc:*),Bash(seq:*)"
           additional_permissions: |
             actions: read
           prompt: |
