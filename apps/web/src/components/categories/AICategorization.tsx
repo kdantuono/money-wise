@@ -156,6 +156,12 @@ export function AICategorization() {
                         <button
                           key={cat.name}
                           onClick={() => {
+                            // Apply the chosen category to the transaction, then accept
+                            setPending(prev => prev.map(t =>
+                              t.id === tx.id
+                                ? { ...t, aiSuggestedCategory: cat.name, aiSuggestedIcon: cat.icon, aiConfidence: 100 }
+                                : t
+                            ));
                             handleAccept(tx.id);
                             setChangingCategory(null);
                           }}

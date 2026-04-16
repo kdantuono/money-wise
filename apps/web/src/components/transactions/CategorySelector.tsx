@@ -441,7 +441,11 @@ export function CategorySelector({
           relative w-full flex items-center gap-2 px-3 py-2.5 rounded-xl border
           bg-background text-left cursor-pointer
           ${disabled ? 'opacity-50 cursor-not-allowed bg-muted/30' : 'hover:border-border'}
-          ${error ? 'border-rose-500/50' : 'border-border/50 focus:ring-emerald-500/30 focus:border-emerald-500/50'}
+          ${
+            error
+              ? 'border-rose-500/50 focus:ring-rose-500/30 focus:border-rose-500/50'
+              : 'border-border/50 focus:ring-emerald-500/30 focus:border-emerald-500/50'
+          }
           focus:outline-none focus:ring-2 focus:ring-offset-0
           transition-colors duration-150
         `}

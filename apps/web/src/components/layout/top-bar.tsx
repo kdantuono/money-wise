@@ -282,7 +282,7 @@ export function TopBar() {
                     className="w-full flex items-center gap-2.5 px-3.5 py-2 text-[13px] text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors"
                   >
                     <LogOut className="w-3.5 h-3.5" />
-                    Logout
+                    Esci
                   </button>
                 </div>
               </motion.div>
