@@ -74,7 +74,7 @@ describe('BulkActionsBar', () => {
 
     it('should display singular "item" for 1 selected', () => {
       renderBar({ selectedCount: 1 });
-      expect(screen.getByText(/1.*elemento.*selezionati/i)).toBeInTheDocument();
+      expect(screen.getByText(/1.*elemento.*selezionato/i)).toBeInTheDocument();
     });
 
     it('should display plural "items" for multiple selected', () => {

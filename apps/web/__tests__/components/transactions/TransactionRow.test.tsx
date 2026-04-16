@@ -28,7 +28,7 @@ const mockTransaction: Transaction = {
   description: 'Grocery Shopping',
   merchantName: 'Whole Foods',
   originalDescription: null,
-  currency: 'USD',
+  currency: 'EUR',
   reference: null,
   checkNumber: null,
   notes: 'Weekly groceries',
@@ -127,7 +127,7 @@ describe('TransactionRow', () => {
 
     it('should render amount with euro currency formatting', () => {
       renderRow();
-      expect(screen.getByText(/€125,50/)).toBeInTheDocument();
+      expect(screen.getByText(/125,50.*€/)).toBeInTheDocument();
     });
 
     it('should show negative sign for debit transactions', () => {
@@ -144,7 +144,7 @@ describe('TransactionRow', () => {
 
     it('should apply emerald color for credit transactions', () => {
       renderRow(mockCreditTransaction);
-      const amountElement = screen.getByText(/\+€500,00/);
+      const amountElement = screen.getByText(/\+.*500,00.*€/);
       expect(amountElement.className).toMatch(/emerald/);
     });
 
