@@ -42,11 +42,14 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     # Skip conditions:
+    # - Fork PR (secrets not available, would fail noisily on every sync)
     # - PR authored by a bot (prevent self-trigger loop)
     # - `no-autofix` label present
     # - Draft PR (wait for ready_for_review)
     if: |
       github.event_name == 'workflow_dispatch' || (
+        github.event_name == 'pull_request' &&
+        github.event.pull_request.head.repo.full_name == github.repository &&
         github.event.pull_request.user.login != 'claude[bot]' &&
         github.event.pull_request.user.login != 'app/anthropic-code-agent' &&
         !contains(github.event.pull_request.labels.*.name, 'no-autofix') &&
@@ -61,11 +64,26 @@ jobs:
       actions: read          # fix-agent checks CI status
 
     steps:
+      - name: 🔎 Resolve PR context
+        id: pr
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "number=${{ github.event.pull_request.number }}" >> "$GITHUB_OUTPUT"
+            echo "head_ref=${{ github.event.pull_request.head.ref }}" >> "$GITHUB_OUTPUT"
+          else
+            PR_NUMBER="${{ github.event.inputs.pr_number }}"
+            HEAD_REF=$(gh api "repos/${{ github.repository }}/pulls/$PR_NUMBER" --jq '.head.ref')
+            echo "number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
+            echo "head_ref=$HEAD_REF" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: 📥 Checkout PR branch
         uses: actions/checkout@v5
         with:
           fetch-depth: 0
-          ref: ${{ github.event.pull_request.head.ref }}
+          ref: ${{ steps.pr.outputs.head_ref }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: 🔍 Skip if last commit is from autofix bot (loop prevention)
@@ -75,8 +93,12 @@ jobs:
           LAST_AUTHOR_NAME=$(git log -1 --pretty=format:'%an')
           echo "Last commit author: $LAST_AUTHOR_NAME <$LAST_AUTHOR_EMAIL>"
 
-          # Emails to skip: claude[bot], anthropic-code-agent, github-actions[bot]
-          if echo "$LAST_AUTHOR_EMAIL" | grep -qiE 'claude|anthropic'; then
+          # Emails/names to skip: claude[bot], anthropic-code-agent, github-actions[bot]
+          # Match against both email and name since bots commit with varying identities:
+          # - claude[bot] uses noreply emails containing 'claude'
+          # - anthropic-code-agent uses 'anthropic' in identity
+          # - github-actions[bot] uses 41898282+github-actions[bot]@users.noreply.github.com
+          if echo "$LAST_AUTHOR_EMAIL $LAST_AUTHOR_NAME" | grep -qiE 'claude|anthropic|github-actions'; then
             echo "⏭️  Skipping — last commit was by autofix bot (loop prevention)"
             echo "skip=true" >> $GITHUB_OUTPUT
           else
@@ -93,13 +115,15 @@ jobs:
         id: fix-agent
         uses: anthropics/claude-code-action@v1
         continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           claude_args: "--model claude-sonnet-4-6 --max-turns 50"
           additional_permissions: |
             actions: read
           prompt: |
-            You are the **fix-agent** for PR #${{ github.event.pull_request.number }} in ${{ github.repository }}.
+            You are the **fix-agent** for PR #${{ steps.pr.outputs.number }} in ${{ github.repository }}.
 
             **Your role**: apply validated fixes. You do NOT merge — the review-agent (Opus) handles that decision.
 
@@ -111,7 +135,7 @@ jobs:
 
             ```bash
             for i in $(seq 1 16); do
-              COUNT=$(gh api repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/reviews \
+              COUNT=$(gh api repos/${{ github.repository }}/pulls/${{ steps.pr.outputs.number }}/reviews \
                 --jq '[.[] | select(.user.login == "copilot-pull-request-reviewer")] | length')
               if [ "$COUNT" -ge 1 ]; then
                 echo "✅ Copilot review found (attempt $i)"
@@ -138,7 +162,7 @@ jobs:
 
             ### 3. Apply fixes as ONE atomic commit
 
-            - Commit message: `fix: apply review feedback on PR #${{ github.event.pull_request.number }}`
+            - Commit message: `fix: apply review feedback on PR #${{ steps.pr.outputs.number }}`
             - Body includes bullet list with rationale per fix
             - Push to the PR branch
 
@@ -147,7 +171,7 @@ jobs:
             After each push, wait up to 10 min for CI to settle:
             ```bash
             for i in $(seq 1 20); do
-              STATUS=$(gh pr view ${{ github.event.pull_request.number }} --json statusCheckRollup \
+              STATUS=$(gh pr view ${{ steps.pr.outputs.number }} --json statusCheckRollup \
                 --jq '[.statusCheckRollup[] | select(.status == "IN_PROGRESS")] | length')
               [ "$STATUS" -eq 0 ] && break
               sleep 30
@@ -179,7 +203,7 @@ jobs:
         if: steps.loop-check.outputs.skip != 'true'
         run: |
           for i in $(seq 1 20); do
-            IN_PROGRESS=$(gh pr view ${{ github.event.pull_request.number }} \
+            IN_PROGRESS=$(gh pr view ${{ steps.pr.outputs.number }} \
               --json statusCheckRollup \
               --jq '[.statusCheckRollup[] | select(.status == "IN_PROGRESS")] | length' 2>/dev/null || echo "0")
             if [ "$IN_PROGRESS" -eq 0 ]; then
@@ -199,13 +223,15 @@ jobs:
       - name: 🎓 Review Agent (Opus 4.6)
         if: steps.loop-check.outputs.skip != 'true'
         uses: anthropics/claude-code-action@v1
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           claude_args: "--model claude-opus-4-6 --max-turns 20"
           additional_permissions: |
             actions: read
           prompt: |
-            You are the **review-agent** for PR #${{ github.event.pull_request.number }} in ${{ github.repository }}.
+            You are the **review-agent** for PR #${{ steps.pr.outputs.number }} in ${{ github.repository }}.
 
             **Your authority**: FINAL GATE. You decide APPROVE or REQUEST_CHANGES. Your decision stands over the fix-agent's work.
 
@@ -231,12 +257,12 @@ jobs:
             Before posting REQUEST_CHANGES, check your prior reviews on this PR:
 
             ```bash
-            PRIOR_BLOCKS=$(gh api repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/reviews \
+            PRIOR_BLOCKS=$(gh api repos/${{ github.repository }}/pulls/${{ steps.pr.outputs.number }}/reviews \
               --jq '[.[] | select(.user.login == "claude[bot]" or .user.login == "app/anthropic-code-agent") | select(.state == "CHANGES_REQUESTED")] | length')
 
             if [ "$PRIOR_BLOCKS" -ge 3 ]; then
               # Do NOT post another REQUEST_CHANGES. Escalate.
-              gh pr review ${{ github.event.pull_request.number }} --comment \
+              gh pr review ${{ steps.pr.outputs.number }} --comment \
                 --body "⚠️ **Autofix loop detected** — 3+ REQUEST_CHANGES cycles without convergence.
                 Human review needed. @kdantuono please look at the disagreement.
                 Last issue I identified: [describe here]"
@@ -248,19 +274,19 @@ jobs:
 
             **If clean** (no blocking issues):
             ```bash
-            gh pr review ${{ github.event.pull_request.number }} --approve \
+            gh pr review ${{ steps.pr.outputs.number }} --approve \
               --body "✅ **Independent review** (Opus 4.6): changes look correct.
               - Correctness: ok
               - Safety: ok
               - Coherence with project decisions: ok
               - [any minor observations as non-blocking nit]"
 
-            gh pr merge ${{ github.event.pull_request.number }} --auto --merge
+            gh pr merge ${{ steps.pr.outputs.number }} --auto --merge
             ```
 
             **If blocking issues found**:
             ```bash
-            gh pr review ${{ github.event.pull_request.number }} --request-changes \
+            gh pr review ${{ steps.pr.outputs.number }} --request-changes \
               --body "🚫 **Independent review** (Opus 4.6): blocking issues found.
 
               ## Issues (must address)
