@@ -54,9 +54,9 @@ const financeItems = [
 
 const toolsItems = [
   { name: 'Calendario', href: '/dashboard/calendar', icon: Calendar, testId: 'nav-calendar' },
-  { name: 'Scheduled', href: '/dashboard/scheduled', icon: Clock, testId: 'nav-scheduled' },
-  { name: 'Liabilities', href: '/dashboard/liabilities', icon: CreditCard, testId: 'nav-liabilities' },
-  { name: 'Goals', href: '/dashboard/goals', icon: Target, testId: 'nav-goals' },
+  { name: 'Programmati', href: '/dashboard/scheduled', icon: Clock, testId: 'nav-scheduled' },
+  { name: 'Debiti', href: '/dashboard/liabilities', icon: CreditCard, testId: 'nav-liabilities' },
+  { name: 'Obiettivi', href: '/dashboard/goals', icon: Target, testId: 'nav-goals' },
 ];
 
 const otherItems = [

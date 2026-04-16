@@ -5,7 +5,7 @@ import { AICategorization } from '@/components/categories/AICategorization';
 /**
  * AI Categorization Page
  *
- * Accessible from sidebar "Categorizzazione AI".
+ * Accessible from sidebar "Categorie".
  * Reviews uncategorized transactions with AI suggestions.
  * Category CRUD management is in Settings → Categorie tab.
  */

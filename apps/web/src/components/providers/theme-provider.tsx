@@ -171,11 +171,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
   // Update theme when user preferences change
   useEffect(() => {
     if (user?.preferences?.theme) {
-      const pref = user.preferences.theme as string;
-      const userTheme: Theme =
-        pref === 'system' || pref === 'auto' ? 'system' :
-        pref === 'italian' ? 'italian' :
-        'dracula';
+      const userTheme = getInitialTheme(user.preferences.theme as string | undefined);
       if (userTheme !== theme) {
         setThemeState(userTheme);
       }
