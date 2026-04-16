@@ -176,8 +176,8 @@ export const TransactionRow = memo(function TransactionRow({
         </time>
       </div>
 
-      {/* Actions — visible on hover and keyboard focus */}
-      <div className="flex-shrink-0 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
+      {/* Actions — always visible on small screens, visible on hover/focus on larger screens */}
+      <div className="flex-shrink-0 flex items-center gap-0.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 transition-opacity">
         <button
           type="button"
           onClick={handleEdit}
