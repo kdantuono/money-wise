@@ -12,6 +12,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { createClient } from '@/utils/supabase/client';
+import type { Database } from '@/utils/supabase/database.types';
 import { CategoryManager } from '@/components/categories/CategoryManager';
 import {
   User,
@@ -289,7 +290,7 @@ export default function SettingsPage() {
           timezone: formData.timezone,
           currency: formData.currency,
           preferences: JSON.parse(JSON.stringify(formData.preferences)),
-        })
+        } as Database['public']['Tables']['profiles']['Update'])
         .eq('id', user.id);
       if (profileError) throw new Error(profileError.message || 'Errore aggiornamento profilo');
       setUser({
