@@ -1148,6 +1148,26 @@ jobs:
     timeout-minutes: 3
 
     steps:
+      - name: 🚨 Fail if any critical job failed
+        # Pre-flight gate: the summary check is used as required status check
+        # on protected branches (main). To have correct semantics, fail the
+        # summary job when any of the critical jobs in `needs:` has failed.
+        # A job being 'skipped' (via path-filter or branch condition) does NOT
+        # count as failure — it means the job wasn't relevant for this change.
+        if: |
+          needs.foundation.result == 'failure' ||
+          needs.development.result == 'failure' ||
+          needs.testing.result == 'failure' ||
+          needs.build.result == 'failure' ||
+          needs.e2e-tests.result == 'failure' ||
+          needs.security-lightweight.result == 'failure' ||
+          needs.security-enhanced.result == 'failure' ||
+          needs.security-comprehensive.result == 'failure'
+        run: |
+          echo "::error::One or more critical CI jobs failed. Review the Pipeline Summary below for details."
+          echo "Failed jobs will be listed in the summary table."
+          exit 1
+
       - name: 📊 Comprehensive Pipeline Summary
         run: |
           echo "# 🚀 CI/CD Pipeline - Complete Report" >> $GITHUB_STEP_SUMMARY

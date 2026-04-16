@@ -53,12 +53,14 @@
 Before any branch can be merged, ALL of the following must PASS:
 
 ### CI/CD Pipeline (GitHub Actions)
-- ✅ **ci-cd** - Main continuous integration workflow
+- ✅ **✅ Pipeline Summary** (aggregator job from `ci-cd.yml`) - the required status check
   - Linting (ESLint, TypeScript)
   - Type checking
   - Unit tests
   - Integration tests
   - Build verification
+  - Fails explicitly when any critical job in the pipeline failed (see `summary` job in `.github/workflows/ci-cd.yml`)
+  - Updated 2026-04-16: replaced ghost `CI/CD Pipeline` context (which was never produced because it's the workflow name, not a check name)
 
 - ✅ **specialized-gates** - Quality gates workflow
   - Additional validation rules

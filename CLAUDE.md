@@ -120,7 +120,8 @@ i18n: next-intl (framework setup, messages in `messages/it.json` and `messages/e
 
 ## Git Workflow
 
-- **Never work directly on main** - always use feature branches
+- **Default branch: `develop`** (from 2026-04-16). Source of truth for ongoing work. `main` = release branch, updated bi-weekly via deliberate `develop` → `main` PR. See ADR-002 in vault.
+- **Never work directly on develop or main** - always use feature/fix/chore branches
 - Commit format: `type(scope): description` (commitlint enforced)
 - Types: fix, feat, refactor, test, docs, chore, ci, perf, style
 - Pre-commit hooks (Husky): doc governance, actionlint (if workflows staged), lint, typecheck, unit tests
