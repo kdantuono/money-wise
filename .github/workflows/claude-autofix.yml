@@ -1,0 +1,291 @@
+name: Claude Dual-Agent Autofix
+
+# Event-driven auto-fix + double validation pattern.
+# See: ~/vault/moneywise/decisions/adr-003-dual-agent-autofix.md
+#
+# Flow:
+#   1. PR opened/sync → Fix Agent (Sonnet 4.6, max 50 turns):
+#      - Waits for Copilot review (poll, 8 min max)
+#      - Applies Copilot suggestions + previous Opus REQUEST_CHANGES + proactive fixes
+#      - Commits atomically, monitors CI, fixes failures (max 3 iterations)
+#      - Does NOT merge
+#   2. Wait for CI to settle (max 10 min)
+#   3. Review Agent (Opus 4.6, max 20 turns):
+#      - Reads PR fresh, validates fix-agent's work
+#      - APPROVE → enable auto-merge
+#      - REQUEST_CHANGES → block merge, feedback for next Sonnet cycle
+#   4. Opus wins on disagreement — its decision is authoritative
+#
+# Loop prevention:
+#   - concurrency cancel-in-progress per PR number
+#   - Skip if last commit author is claude[bot] / anthropic-code-agent
+#   - Skip if `no-autofix` label present
+#   - Skip for draft PRs
+#   - Opus pings @kdantuono after 3+ REQUEST_CHANGES cycles without convergence
+
+on:
+  pull_request:
+    types: [opened, synchronize, ready_for_review]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'PR number to autofix'
+        required: true
+
+concurrency:
+  group: claude-autofix-pr-${{ github.event.pull_request.number || github.event.inputs.pr_number }}
+  cancel-in-progress: true
+
+jobs:
+  autofix-and-review:
+    name: 🤖 Fix + Independent Review
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    # Skip conditions:
+    # - PR authored by a bot (prevent self-trigger loop)
+    # - `no-autofix` label present
+    # - Draft PR (wait for ready_for_review)
+    if: |
+      github.event_name == 'workflow_dispatch' || (
+        github.event.pull_request.user.login != 'claude[bot]' &&
+        github.event.pull_request.user.login != 'app/anthropic-code-agent' &&
+        !contains(github.event.pull_request.labels.*.name, 'no-autofix') &&
+        !github.event.pull_request.draft
+      )
+
+    permissions:
+      contents: write        # fix-agent commits to PR branch
+      pull-requests: write   # review-agent posts reviews + enables auto-merge
+      issues: write          # comment on PR
+      id-token: write        # Claude Code Action identity
+      actions: read          # fix-agent checks CI status
+
+    steps:
+      - name: 📥 Checkout PR branch
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 🔍 Skip if last commit is from autofix bot (loop prevention)
+        id: loop-check
+        run: |
+          LAST_AUTHOR_EMAIL=$(git log -1 --pretty=format:'%ae')
+          LAST_AUTHOR_NAME=$(git log -1 --pretty=format:'%an')
+          echo "Last commit author: $LAST_AUTHOR_NAME <$LAST_AUTHOR_EMAIL>"
+
+          # Emails to skip: claude[bot], anthropic-code-agent, github-actions[bot]
+          if echo "$LAST_AUTHOR_EMAIL" | grep -qiE 'claude|anthropic'; then
+            echo "⏭️  Skipping — last commit was by autofix bot (loop prevention)"
+            echo "skip=true" >> $GITHUB_OUTPUT
+          else
+            echo "✅ Proceeding — last commit by human"
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+
+      # =======================================================================
+      # FIX AGENT — Sonnet 4.6, max 50 turns
+      # Does the heavy lifting: wait for Copilot, apply fixes, monitor CI
+      # =======================================================================
+      - name: 🔧 Fix Agent (Sonnet 4.6)
+        if: steps.loop-check.outputs.skip != 'true'
+        id: fix-agent
+        uses: anthropics/claude-code-action@v1
+        continue-on-error: true
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          claude_args: "--model claude-sonnet-4-6 --max-turns 50"
+          additional_permissions: |
+            actions: read
+          prompt: |
+            You are the **fix-agent** for PR #${{ github.event.pull_request.number }} in ${{ github.repository }}.
+
+            **Your role**: apply validated fixes. You do NOT merge — the review-agent (Opus) handles that decision.
+
+            ## Workflow (execute all steps in order)
+
+            ### 1. Wait for Copilot review (critical — do not skip this step)
+
+            Copilot typically reviews within 2-5 minutes of push. Poll every 30s, max 16 iterations (8 min total):
+
+            ```bash
+            for i in $(seq 1 16); do
+              COUNT=$(gh api repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/reviews \
+                --jq '[.[] | select(.user.login == "copilot-pull-request-reviewer")] | length')
+              if [ "$COUNT" -ge 1 ]; then
+                echo "✅ Copilot review found (attempt $i)"
+                break
+              fi
+              echo "⏳ Waiting for Copilot review (attempt $i/16)..."
+              sleep 30
+            done
+            ```
+
+            If timeout (no Copilot review after 8 min): log and proceed with proactive-only analysis.
+
+            ### 2. Consolidate inputs
+
+            Read and categorize:
+            - **Copilot review**: body + inline comments. Apply valid ones. For each suggestion, decide valid vs. noise.
+            - **Previous Opus reviews with state=REQUEST_CHANGES**: Opus is your authoritative reviewer. Treat its feedback as mandatory to address.
+            - **Your proactive analysis of the diff** for known issues:
+              * GitHub Actions expression syntax (hyphenated job IDs need `needs['id']` bracket notation)
+              * Missing gates, overly permissive permissions
+              * Stale comments that no longer reflect new code
+              * Obvious security: hardcoded secrets, unsafe regex patterns, path traversal
+              * Linting/type errors visible in the diff
+
+            ### 3. Apply fixes as ONE atomic commit
+
+            - Commit message: `fix: apply review feedback on PR #${{ github.event.pull_request.number }}`
+            - Body includes bullet list with rationale per fix
+            - Push to the PR branch
+
+            ### 4. Monitor CI (max 3 fix iterations)
+
+            After each push, wait up to 10 min for CI to settle:
+            ```bash
+            for i in $(seq 1 20); do
+              STATUS=$(gh pr view ${{ github.event.pull_request.number }} --json statusCheckRollup \
+                --jq '[.statusCheckRollup[] | select(.status == "IN_PROGRESS")] | length')
+              [ "$STATUS" -eq 0 ] && break
+              sleep 30
+            done
+            ```
+            If CI is failing, diagnose via logs (`gh run view --log-failed`) and fix. Max 3 fix iterations total. If still failing, post a comment explaining the blocker and stop.
+
+            ### 5. Final summary
+
+            Post a PR comment:
+            ```
+            🔧 **fix-agent done** (Sonnet 4.6)
+            - [bullet list of fixes applied with reasoning]
+            - CI status: [passing / failing + reason]
+            - Handing off to review-agent (Opus)
+            ```
+
+            ## CRITICAL RULES (do NOT violate)
+
+            - **Never merge the PR**. That is the review-agent's exclusive responsibility.
+            - **Never dismiss Copilot or Opus reviews.** They are inputs, not noise.
+            - **If a Copilot suggestion is wrong**, explain why in your summary comment — do not silently ignore.
+            - **Do not create new PRs** — only commit to the existing PR branch.
+
+      # =======================================================================
+      # Wait for CI to settle before review
+      # =======================================================================
+      - name: ⏳ Wait for CI to settle (max 10 min)
+        if: steps.loop-check.outputs.skip != 'true'
+        run: |
+          for i in $(seq 1 20); do
+            IN_PROGRESS=$(gh pr view ${{ github.event.pull_request.number }} \
+              --json statusCheckRollup \
+              --jq '[.statusCheckRollup[] | select(.status == "IN_PROGRESS")] | length' 2>/dev/null || echo "0")
+            if [ "$IN_PROGRESS" -eq 0 ]; then
+              echo "✅ All CI checks settled (iteration $i)"
+              break
+            fi
+            echo "⏳ $IN_PROGRESS checks still running (iteration $i/20)..."
+            sleep 30
+          done
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # =======================================================================
+      # REVIEW AGENT — Opus 4.6, max 20 turns
+      # Independent second-look. Authority over fix-agent.
+      # =======================================================================
+      - name: 🎓 Review Agent (Opus 4.6)
+        if: steps.loop-check.outputs.skip != 'true'
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          claude_args: "--model claude-opus-4-6 --max-turns 20"
+          additional_permissions: |
+            actions: read
+          prompt: |
+            You are the **review-agent** for PR #${{ github.event.pull_request.number }} in ${{ github.repository }}.
+
+            **Your authority**: FINAL GATE. You decide APPROVE or REQUEST_CHANGES. Your decision stands over the fix-agent's work.
+
+            ## Workflow
+
+            ### 1. Read the PR from scratch
+
+            Do NOT trust the fix-agent's summary comment. Read:
+            - The full diff (latest state, not incremental)
+            - All prior reviews (Copilot, your own prior reviews, fix-agent's summary)
+            - The CI status
+
+            ### 2. Analyze deeply
+
+            Check for:
+            - **Correctness**: logic, syntax, semantics. Does the code actually do what the PR claims?
+            - **Safety**: security issues, auth bypass, secrets leaked, unsafe patterns
+            - **Coherence**: does this align with project-level decisions? Check for ADRs or memos that may apply.
+            - **Missing pieces**: tests for new code, docs for new APIs, migrations for DB changes, lockfile updates for new deps
+
+            ### 3. LOOP PREVENTION (critical — prevents cost runaway)
+
+            Before posting REQUEST_CHANGES, check your prior reviews on this PR:
+
+            ```bash
+            PRIOR_BLOCKS=$(gh api repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/reviews \
+              --jq '[.[] | select(.user.login == "claude[bot]" or .user.login == "app/anthropic-code-agent") | select(.state == "CHANGES_REQUESTED")] | length')
+
+            if [ "$PRIOR_BLOCKS" -ge 3 ]; then
+              # Do NOT post another REQUEST_CHANGES. Escalate.
+              gh pr review ${{ github.event.pull_request.number }} --comment \
+                --body "⚠️ **Autofix loop detected** — 3+ REQUEST_CHANGES cycles without convergence.
+                Human review needed. @kdantuono please look at the disagreement.
+                Last issue I identified: [describe here]"
+              exit 0
+            fi
+            ```
+
+            ### 4. Decision
+
+            **If clean** (no blocking issues):
+            ```bash
+            gh pr review ${{ github.event.pull_request.number }} --approve \
+              --body "✅ **Independent review** (Opus 4.6): changes look correct.
+              - Correctness: ok
+              - Safety: ok
+              - Coherence with project decisions: ok
+              - [any minor observations as non-blocking nit]"
+
+            gh pr merge ${{ github.event.pull_request.number }} --auto --merge
+            ```
+
+            **If blocking issues found**:
+            ```bash
+            gh pr review ${{ github.event.pull_request.number }} --request-changes \
+              --body "🚫 **Independent review** (Opus 4.6): blocking issues found.
+
+              ## Issues (must address)
+              1. [specific, actionable feedback]
+              2. ...
+
+              The fix-agent will pick up these comments on the next trigger.
+
+              ## Why (rationale)
+              [explain the why for each issue so fix-agent understands intent]"
+            ```
+
+            ## CRITICAL RULES
+
+            - You are **independent** from the fix-agent. Don't trust its summary — read the code.
+            - **Document the 'why'** for each issue. fix-agent will use your rationale as input to its next fix.
+            - **You DO NOT fix code yourself**. Review + decision only.
+            - **You have authority** — if you disagree with fix-agent, your decision stands.
+            - When in doubt, prefer REQUEST_CHANGES and let the human see your reasoning.
+
+            ## Override escape-hatch
+
+            The user (kdantuono) can override your REQUEST_CHANGES by:
+            - Dismissing your review via UI or `gh api`
+            - Merging with `gh pr merge --admin`
+            - Adding the `no-autofix` label (disables this workflow for the PR)
+
+            This is intentional — you are advisory, not dictatorial.
