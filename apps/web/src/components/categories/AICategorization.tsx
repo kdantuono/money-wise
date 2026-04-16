@@ -155,7 +155,10 @@ export function AICategorization() {
                       {ALL_CATEGORIES.map(cat => (
                         <button
                           key={cat.name}
-                          onClick={() => handleReject(tx.id)}
+                          onClick={() => {
+                            handleAccept(tx.id);
+                            setChangingCategory(null);
+                          }}
                           className="flex items-center gap-1 px-2 py-1 rounded-lg bg-muted/50 hover:bg-muted text-[11px] text-foreground transition-colors"
                         >
                           <span>{cat.icon}</span> {cat.name}
