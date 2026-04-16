@@ -236,9 +236,10 @@ export const accountsClient = {
       insert.user_id = user.id
     }
 
-    const { data, error } = await supabase
+    // Type-safe insert with explicit casting to avoid Next.js build type inference issues
+    const { data, error } = await (supabase
       .from('accounts')
-      .insert(insert)
+      .insert as any)(insert)
       .select()
       .single()
 
