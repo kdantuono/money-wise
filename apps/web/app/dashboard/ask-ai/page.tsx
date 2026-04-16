@@ -119,10 +119,21 @@ export default function AskAIPage() {
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
+
+  // Cancel any pending AI response timeout when unmounting or switching agents
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+        typingTimeoutRef.current = null;
+      }
+    };
+  }, []);
 
   const selectAgent = (topic: AgentTopic) => {
     setSelectedAgent(topic);
@@ -149,7 +160,11 @@ export default function AskAIPage() {
     setInput('');
     setIsTyping(true);
 
-    setTimeout(() => {
+    // Cancel any previous pending response
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+    typingTimeoutRef.current = setTimeout(() => {
       const responses = mockResponses[selectedAgent];
       const response = responses[Math.floor(Math.random() * responses.length)];
       const aiMsg: Message = {
@@ -160,6 +175,7 @@ export default function AskAIPage() {
       };
       setMessages((prev) => [...prev, aiMsg]);
       setIsTyping(false);
+      typingTimeoutRef.current = null;
     }, 1200 + Math.random() * 800);
   };
 

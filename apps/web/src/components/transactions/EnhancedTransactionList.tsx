@@ -637,7 +637,7 @@ export function EnhancedTransactionList({
                 <option value="all">Tutte le categorie</option>
                 <option value="uncategorized">Non categorizzate</option>
                 {categories.map((cat) => {
-                  const icon = getCategoryIcon(cat.icon);
+                  const icon = categoryIconMap.get(cat.id);
                   return (
                     <option key={cat.id} value={cat.id}>
                       {icon ? `${icon} ` : ''}{cat.name}
