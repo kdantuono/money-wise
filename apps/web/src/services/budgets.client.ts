@@ -306,6 +306,7 @@ export const budgetsClient = {
     // Type-safe insert with explicit casting to avoid Next.js build type inference issues
     const { data: created, error } = await (supabase
       .from('budgets')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .insert as any)(insert)
       .select('*, categories(id, name, icon, color)')
       .single();
@@ -330,6 +331,7 @@ export const budgetsClient = {
     // Type-safe update with explicit casting to avoid Next.js build type inference issues
     const { data: updated, error } = await (supabase
       .from('budgets')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .update as any)(update)
       .eq('id', id)
       .select('*, categories(id, name, icon, color)')

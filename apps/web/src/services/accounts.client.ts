@@ -264,6 +264,7 @@ export const accountsClient = {
     // Type-safe update with explicit casting to avoid Next.js build type inference issues
     const { data, error } = await (supabase
       .from('accounts')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .update as any)(update)
       .eq('id', accountId)
       .select()
