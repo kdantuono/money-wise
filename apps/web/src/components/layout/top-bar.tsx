@@ -22,12 +22,12 @@ import { useAuthStore } from '@/store/auth.store';
 
 const ALL_NOTIFICATIONS = [
   { id: '1', title: 'Budget Ristorazione al 83%', desc: 'Stai avvicinandoti al limite', time: '5 min fa', type: 'warning' as const },
-  { id: '2', title: 'Stipendio accreditato', desc: '+\u20AC3.500,00 su Conto Principale', time: '2 ore fa', type: 'success' as const },
+  { id: '2', title: 'Stipendio accreditato', desc: '+€3.500,00 su Conto Principale', time: '2 ore fa', type: 'success' as const },
   { id: '3', title: 'Bitcoin +5.2% oggi', desc: 'Il tuo portafoglio crypto sale', time: '3 ore fa', type: 'info' as const },
   { id: '4', title: 'Nuova rata disponibile', desc: 'Finanziamento auto - rata 8/48', time: '1 giorno fa', type: 'info' as const },
-  { id: '5', title: 'Obiettivo Fondo Emergenza al 82%', desc: 'Ancora \u20AC2.660 per completarlo!', time: '1 giorno fa', type: 'success' as const },
-  { id: '6', title: 'Report Marzo disponibile', desc: 'Il tuo report AI mensile \u00E8 pronto', time: '2 giorni fa', type: 'info' as const },
-  { id: '7', title: 'Abbonamento Netflix rinnovato', desc: '-\u20AC15,99 da Carta di Credito', time: '3 giorni fa', type: 'warning' as const },
+  { id: '5', title: 'Obiettivo Fondo Emergenza al 82%', desc: 'Ancora €2.660 per completarlo!', time: '1 giorno fa', type: 'success' as const },
+  { id: '6', title: 'Report Marzo disponibile', desc: 'Il tuo report AI mensile è pronto', time: '2 giorni fa', type: 'info' as const },
+  { id: '7', title: 'Abbonamento Netflix rinnovato', desc: '-€15,99 da Carta di Credito', time: '3 giorni fa', type: 'warning' as const },
   { id: '8', title: 'Streak 7 giorni!', desc: 'Hai guadagnato +50 diamanti bonus', time: '5 giorni fa', type: 'success' as const },
 ];
 
@@ -142,7 +142,7 @@ export function TopBar() {
         <button
           onClick={() => router.push('/dashboard/ask-ai')}
           className="p-2 rounded-xl text-muted-foreground/60 hover:text-foreground hover:bg-muted/50 transition-colors"
-          title="AskAI"
+          aria-label="Chiedi all'AI"
         >
           <MessageSquareText className="w-[18px] h-[18px]" />
         </button>
@@ -155,6 +155,8 @@ export function TopBar() {
               setShowUserMenu(false);
             }}
             className="p-2 rounded-xl text-muted-foreground/60 hover:text-foreground hover:bg-muted/50 transition-colors relative"
+            aria-label="Notifiche"
+            aria-expanded={showNotifications}
           >
             <Bell className="w-[18px] h-[18px]" />
             {unreadCount > 0 && (
