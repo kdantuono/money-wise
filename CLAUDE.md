@@ -157,3 +157,22 @@ Files allowed in root: README.md, CHANGELOG.md, CONTRIBUTING.md, FRONTEND_HANDOF
 - Architecture decisions: `.claude/knowledge/architecture.md`
 - MVP planning: `docs/planning/README.md`
 - Development setup: `docs/development/setup.md`
+
+## Knowledge Vault (Obsidian)
+
+Shared knowledge lives at `~/vault/moneywise/` — plain Markdown, Obsidian-compatible, outside the repo for privacy. It is the **single source of truth** for long-lived knowledge (memories, planning, postmortems, ADR, research).
+
+**Two access paths, same files**:
+- `~/.claude/projects/-home-deck-dev-money-wise/memory/` is now a **symlink** to `~/vault/moneywise/memory/`. Claude's auto-memory system writes there transparently.
+- `~/vault/moneywise/` exposes the full vault (planning, postmortems, decisions, research, references).
+
+**Entry points**: `README.md` (conventions) + `index.md` (navigation) + `memory/MEMORY.md` (auto-memory index).
+
+**MCP integration**: `obsidian-mcp-server` is configured in `~/.claude.json`. When Obsidian is running with Local REST API plugin active, Claude can use `mcp__obsidian__*` tools for semantic search, tag queries, and frontmatter-aware ops. **Fallback**: filesystem Read/Write works always, even with Obsidian closed.
+
+**When to write where**:
+- New memory (feedback/project/reference/user) → `memory/` via auto-memory system
+- ADR (architectural decision) → `decisions/<name>.md` in vault
+- Incident/postmortem → `postmortems/<name>.md` in vault
+- Research note → `research/<name>.md` in vault
+- Active plan → `planning/<name>.md` in vault
