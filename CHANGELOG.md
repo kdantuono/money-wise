@@ -7,7 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-_Next: Candidate 6 (Auth Hardening), cleanup pass, develop→main sync._
+_Next: Sprint 1 (cartonato→reale), then Sprint 2-4 toward private beta. See vault planning for details._
+
+### 2026-04-16 — Sprint 0.5: Consolidation + Branch Strategy + Automation
+
+Infrastructure consolidation sprint preparing for Sprint 1 feature work. All PRs merged to `develop`.
+
+#### Added
+
+- **Obsidian knowledge vault** (Sprint 0.1) — `~/vault/moneywise/` as source of truth for long-lived knowledge. Filesystem-first + optional MCP layer. Symlink from `~/.claude/projects/.../memory/` for transparent access. See ADR-001 in vault.
+- **Path-based CI change detection** (Sprint 0.3, PR #428) — `dorny/paths-filter@v3` integrated as `changes` job. Heavy jobs (testing, build, e2e-tests, bundle-size) now conditional on relevant path changes with fail-open semantics. Docs-only PRs skip ~70 min of heavy pipelines.
+- **Dual-agent autofix workflow** (Sprint 0.5, PR #434) — `.github/workflows/claude-autofix.yml` implements event-driven automation equivalent to `/autofix-pr`:
+  - Sonnet 4.6 fix-agent waits for Copilot review, consolidates feedback, applies atomic commit, monitors CI
+  - Opus 4.6 review-agent validates independently and approves or blocks
+  - Loop prevention via concurrency cancel, bot commit detection, 3-cycle escalation
+  - `no-autofix` label for per-PR opt-out
+- **ADR-002 Branch Strategy** — Modified GitFlow: `develop` as default branch, `main` as release-only (bi-weekly cadence). Restores bot auto-targeting efficacy.
+- **ADR-003 Dual-Agent Autofix** — design rationale for Sonnet-fixes / Opus-reviews pattern.
+
+#### Changed
+
+- **Default branch: `main` → `develop`** (ADR-002). All bots (Claude Code Action, Copilot, Dependabot) now auto-target develop without manual override.
+- **Required status check on `main`** (PR #432) — renamed context from ghost `CI/CD Pipeline` (workflow name, never produced as check run) to real `✅ Pipeline Summary` aggregator job. The summary job was updated to actually fail when critical upstream jobs fail (previously cosmetic-only).
+- **CI summary job semantics** (PR #433) — the `✅ Pipeline Summary` gate now correctly handles `cancelled`, `timed_out`, and failure states. Previously these were misrendered as "skipped" and silently passed the required check.
+- **Trivy scan output** (PR #427) — replaced SARIF upload to Code Scanning (not available on private repos without GHAS) with artifact upload + step summary preview. Action version pinned to `v0.35.0` (was `@master`).
+
+#### Fixed
+
+- **Critical: hyphenated job IDs in GitHub Actions expressions** (PR #433) — 32+ instances across `ci-cd.yml`, `release.yml`, `specialized-gates.yml` where `needs.job-name.result` was parsed as arithmetic subtraction (returning empty). Replaced with bracket notation `needs['job-name'].result`. This was silently breaking the release workflow's version tagging and multiple summary tables.
+- **CI build in PR** (PR #427) — `pnpm --filter @money-wise/web build` bypassed turbo's dependency graph, so `packages/ui` was never built in CI. Switched to `pnpm build:web` (the documented wrapper using turbo).
+- **E2E CI failure** (PR #431) — Playwright webServer was running `pnpm start` without a prior build. Changed webServer command to `pnpm -w build:web && pnpm start` in CI. Timeout extended to 5 min to accommodate the build step.
+- **CodeQL ruleset blocker** — removed `code_scanning` rule from develop ruleset. CodeQL requires GitHub Advanced Security (~$49/user/month) on private repos and is unavailable on the free tier. SAST coverage now entirely via Semgrep (3-tier progressive).
 
 ---
 
