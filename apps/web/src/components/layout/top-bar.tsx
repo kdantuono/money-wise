@@ -99,6 +99,7 @@ export function TopBar() {
         >
           <Search className="w-4 h-4 text-muted-foreground/60" />
           <input
+            aria-label="Cerca transazioni"
             className="bg-transparent outline-none flex-1 text-[13px] text-foreground placeholder:text-muted-foreground/50"
             placeholder="Cerca transazioni..."
             value={searchQuery}

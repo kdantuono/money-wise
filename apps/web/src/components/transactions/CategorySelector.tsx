@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback, useMemo, KeyboardEvent } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo, useId, KeyboardEvent } from 'react';
 import { ChevronDown, X, Search, Check, Loader2 } from 'lucide-react';
 import type { CategoryOption, CategoryType } from '@/services/categories.client';
 
@@ -185,6 +185,10 @@ export function CategorySelector({
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
+
+  // Unique id for listbox (avoids duplicate IDs when multiple selectors render on same page)
+  const reactId = useId();
+  const listboxId = `category-listbox-${reactId}`;
 
   // Refs
   const containerRef = useRef<HTMLDivElement>(null);
@@ -434,7 +438,7 @@ export function CategorySelector({
         aria-disabled={disabled}
         aria-required={required}
         aria-label={label || 'Seleziona una categoria'}
-        aria-controls="category-listbox"
+        aria-controls={listboxId}
         tabIndex={disabled ? -1 : 0}
         onClick={handleToggle}
         className={`
@@ -540,7 +544,7 @@ export function CategorySelector({
 
           {/* Options list */}
           <ul
-            id="category-listbox"
+            id={listboxId}
             ref={listRef}
             role="listbox"
             aria-label="Categorie"
