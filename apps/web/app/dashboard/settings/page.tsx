@@ -15,6 +15,7 @@ import { createClient } from '@/utils/supabase/client';
 import { CategoryManager } from '@/components/categories/CategoryManager';
 import { NotificationsTab } from '@/components/settings/NotificationsTab';
 import { SecurityTab } from '@/components/settings/SecurityTab';
+import { DataTab } from '@/components/settings/DataTab';
 import {
   User,
   CreditCard,
@@ -30,11 +31,9 @@ import {
   Building2,
   CheckCircle2,
   X as XIcon,
-  Download,
   FileSpreadsheet,
   Zap,
   RefreshCw,
-  Trash2,
   Key,
   Monitor,
   TrendingUp,
@@ -218,8 +217,6 @@ export default function SettingsPage() {
   const [apiKeys, setApiKeys] = useState({ openai: '', anthropic: '', gemini: '', coinbase: '', plaid: '' });
   const [apiKeyFeedback, setApiKeyFeedback] = useState<string | null>(null);
 
-  // Data state
-  const [dataFeedback, setDataFeedback] = useState<string | null>(null);
 
   // Initialize form with user data
   useEffect(() => {
@@ -985,78 +982,7 @@ export default function SettingsPage() {
       {/* ================================================================= */}
       {/* Data Tab */}
       {/* ================================================================= */}
-      {activeTab === 'data' && (
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-          <Card className="p-6 rounded-2xl border-0 shadow-sm">
-            <h3 className="text-lg font-semibold text-foreground mb-6">Gestione Dati</h3>
-            {dataFeedback && (
-              <div className="mb-4 flex items-center gap-2 p-3 bg-emerald-500/10 rounded-xl">
-                <Check className="w-4 h-4 text-emerald-600" />
-                <span className="text-[13px] text-emerald-600">{dataFeedback}</span>
-              </div>
-            )}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between p-4 bg-muted/30 rounded-xl">
-                <div className="flex items-center gap-3">
-                  <Download className="w-5 h-5 text-blue-600" />
-                  <div>
-                    <p className="font-medium text-foreground">Esporta Tutti i Dati</p>
-                    <p className="text-sm text-muted-foreground">Scarica un backup completo in JSON</p>
-                  </div>
-                </div>
-                <Button
-                  variant="outline"
-                  onClick={() => showFeedback(setDataFeedback, 'Export completato! File scaricato.')}
-                >
-                  <Download className="w-4 h-4 mr-2" /> Esporta
-                </Button>
-              </div>
-              <div className="flex items-center justify-between p-4 bg-muted/30 rounded-xl">
-                <div className="flex items-center gap-3">
-                  <FileSpreadsheet className="w-5 h-5 text-green-600" />
-                  <div>
-                    <p className="font-medium text-foreground">Export Mensile Automatico</p>
-                    <p className="text-sm text-muted-foreground">Ricevi un report CSV ogni primo del mese</p>
-                  </div>
-                </div>
-                <input type="checkbox" className={TOGGLE_CLASS} />
-              </div>
-            </div>
-          </Card>
-
-          <Card className="p-6 rounded-2xl border-red-200 dark:border-red-800">
-            <h3 className="text-lg font-semibold text-red-600 mb-4">Zona Pericolosa</h3>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between p-4 bg-red-50 dark:bg-red-950/20 rounded-xl">
-                <div>
-                  <p className="font-medium text-foreground">Reset Dati Demo</p>
-                  <p className="text-sm text-muted-foreground">Ripristina tutti i dati ai valori iniziali</p>
-                </div>
-                <Button
-                  variant="outline"
-                  className="text-red-600 border-red-300 hover:bg-red-50"
-                  onClick={() => showFeedback(setDataFeedback, 'Dati resettati ai valori demo')}
-                >
-                  <RefreshCw className="w-4 h-4 mr-2" /> Reset
-                </Button>
-              </div>
-              <div className="flex items-center justify-between p-4 bg-red-50 dark:bg-red-950/20 rounded-xl">
-                <div>
-                  <p className="font-medium text-foreground">Elimina Account</p>
-                  <p className="text-sm text-muted-foreground">Cancella permanentemente tutti i dati</p>
-                </div>
-                <Button
-                  variant="outline"
-                  className="text-red-600 border-red-300 hover:bg-red-50"
-                  onClick={() => showFeedback(setDataFeedback, 'Funzione disabilitata nella demo')}
-                >
-                  <Trash2 className="w-4 h-4 mr-2" /> Elimina
-                </Button>
-              </div>
-            </div>
-          </Card>
-        </motion.div>
-      )}
+      {activeTab === 'data' && <DataTab />}
     </div>
   );
 }
