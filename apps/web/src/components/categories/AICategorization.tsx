@@ -1,6 +1,17 @@
 'use client';
 
-import { useState } from 'react';
+/**
+ * AICategorization — review flow for AI-suggested categories.
+ *
+ * Fetches uncategorized transactions + all categories, asks the
+ * `categorize-transaction` edge function for each one, and lets the user
+ * accept / change / skip the suggestion. Accept and change persist via
+ * UPDATE on `transactions.category_id`.
+ *
+ * @module components/categories/AICategorization
+ */
+
+import { useCallback, useEffect, useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -12,46 +23,19 @@ import {
   ChevronRight,
   Sparkles,
   AlertCircle,
+  Loader2,
 } from 'lucide-react';
+import {
+  categorizationClient,
+  CategorizationApiError,
+} from '@/services/categorization.client';
+import type {
+  CategoryRow,
+  PendingTransactionWithSuggestion,
+} from '@/types/categorization';
 
 // ---------------------------------------------------------------------------
-// Demo data
-// ---------------------------------------------------------------------------
-
-interface Transaction {
-  id: string;
-  description: string;
-  amount: number;
-  type: 'expense' | 'income';
-  date: string;
-  aiSuggestedCategory: string;
-  aiSuggestedIcon: string;
-  aiConfidence: number;
-}
-
-const PENDING_TRANSACTIONS: Transaction[] = [
-  { id: '1', description: 'CARD PAYMENT TO JOHN LEWIS', amount: -19.95, type: 'expense', date: '2026-04-15', aiSuggestedCategory: 'Shopping', aiSuggestedIcon: '🛍️', aiConfidence: 92 },
-  { id: '2', description: 'Pagamento Esselunga', amount: -67.30, type: 'expense', date: '2026-04-14', aiSuggestedCategory: 'Spesa Alimentare', aiSuggestedIcon: '🛒', aiConfidence: 97 },
-  { id: '3', description: 'Netflix Monthly', amount: -15.99, type: 'expense', date: '2026-04-13', aiSuggestedCategory: 'Abbonamenti', aiSuggestedIcon: '📺', aiConfidence: 99 },
-  { id: '4', description: 'BOOTS 773 LONDON', amount: -3.24, type: 'expense', date: '2026-04-15', aiSuggestedCategory: 'Salute', aiSuggestedIcon: '💊', aiConfidence: 78 },
-  { id: '5', description: 'Bonifico DA Mario Rossi', amount: 500, type: 'income', date: '2026-04-12', aiSuggestedCategory: 'Trasferimenti', aiSuggestedIcon: '↔️', aiConfidence: 65 },
-];
-
-const ALL_CATEGORIES = [
-  { name: 'Spesa Alimentare', icon: '🛒' },
-  { name: 'Shopping', icon: '🛍️' },
-  { name: 'Abbonamenti', icon: '📺' },
-  { name: 'Salute', icon: '💊' },
-  { name: 'Trasporti', icon: '🚗' },
-  { name: 'Ristorazione', icon: '🍽️' },
-  { name: 'Bollette', icon: '⚡' },
-  { name: 'Trasferimenti', icon: '↔️' },
-  { name: 'Stipendio', icon: '💼' },
-  { name: 'Intrattenimento', icon: '🎬' },
-];
-
-// ---------------------------------------------------------------------------
-// Component
+// Helpers
 // ---------------------------------------------------------------------------
 
 function getConfidenceColor(confidence: number) {
@@ -66,31 +50,188 @@ function getConfidenceBg(confidence: number) {
   return 'bg-red-500/10';
 }
 
+function formatItDate(iso: string): string {
+  const [y, m, d] = iso.slice(0, 10).split('-').map(Number);
+  return new Date(y, (m || 1) - 1, d || 1).toLocaleDateString('it-IT');
+}
+
+/**
+ * Locale-aware currency formatter — aligned with TransactionRow / other
+ * consumers in this codebase. Falls back to EUR on bad currency codes.
+ */
+function formatCurrency(amount: number, currency = 'EUR'): string {
+  try {
+    return new Intl.NumberFormat('it-IT', {
+      style: 'currency',
+      currency,
+    }).format(amount);
+  } catch {
+    return new Intl.NumberFormat('it-IT', {
+      style: 'currency',
+      currency: 'EUR',
+    }).format(amount);
+  }
+}
+
+/**
+ * Regex that heuristically detects whether a string starts with an emoji
+ * (symbol / pictograph / extended pictographic) as opposed to a lucide
+ * icon NAME like "ShoppingCart". We don't ship a Name→Component mapper
+ * in this module — rendering by name would display literal text
+ * "ShoppingCart". When the icon isn't an emoji, fall back to a neutral
+ * glyph so the UI stays consistent.
+ */
+const EMOJI_LEADING_RE = /^\p{Extended_Pictographic}/u;
+const FALLBACK_ICON_GLYPH = '❓';
+
+function renderCategoryIcon(icon: string | null | undefined): string {
+  if (!icon) return FALLBACK_ICON_GLYPH;
+  return EMOJI_LEADING_RE.test(icon) ? icon : FALLBACK_ICON_GLYPH;
+}
+
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
+
 export function AICategorization() {
-  const [pending, setPending] = useState(PENDING_TRANSACTIONS);
+  const [pending, setPending] = useState<PendingTransactionWithSuggestion[]>([]);
+  const [categories, setCategories] = useState<CategoryRow[]>([]);
   const [reviewedCount, setReviewedCount] = useState(0);
+  const [totalToReview, setTotalToReview] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [busyTx, setBusyTx] = useState<string | null>(null);
   const [changingCategory, setChangingCategory] = useState<string | null>(null);
+  const [rowError, setRowError] = useState<Record<string, string>>({});
 
-  const totalToReview = PENDING_TRANSACTIONS.length;
-  const progress = totalToReview > 0 ? (reviewedCount / totalToReview) * 100 : 0;
+  const load = useCallback(async () => {
+    setLoading(true);
+    setLoadError(null);
+    try {
+      const { items, categories: cats } =
+        await categorizationClient.loadPendingWithSuggestions();
+      setPending(items);
+      setCategories(cats);
+      setTotalToReview(items.length);
+      setReviewedCount(0);
+    } catch (err) {
+      setLoadError(
+        err instanceof CategorizationApiError
+          ? err.message
+          : 'Impossibile caricare le transazioni da categorizzare'
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-  const handleAccept = (id: string) => {
-    setPending(prev => prev.filter(t => t.id !== id));
-    setReviewedCount(prev => prev + 1);
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const markReviewed = (txId: string) => {
+    setPending((prev) => prev.filter((t) => t.id !== txId));
+    setReviewedCount((c) => c + 1);
+    setRowError((prev) => {
+      const { [txId]: _drop, ...rest } = prev;
+      return rest;
+    });
   };
 
-  const handleReject = (id: string) => {
-    setPending(prev => prev.filter(t => t.id !== id));
-    setReviewedCount(prev => prev + 1);
+  const applyCategoryAndAccept = async (
+    txId: string,
+    categoryId: string | null
+  ) => {
+    if (!categoryId) {
+      setRowError((prev) => ({
+        ...prev,
+        [txId]: 'Nessuna categoria da applicare',
+      }));
+      return;
+    }
+    setBusyTx(txId);
+    try {
+      await categorizationClient.applyCategory(txId, categoryId);
+      markReviewed(txId);
+      setChangingCategory(null);
+    } catch (err) {
+      setRowError((prev) => ({
+        ...prev,
+        [txId]:
+          err instanceof CategorizationApiError
+            ? err.message
+            : 'Impossibile applicare la categoria',
+      }));
+    } finally {
+      setBusyTx(null);
+    }
+  };
+
+  const handleAccept = (tx: PendingTransactionWithSuggestion) =>
+    applyCategoryAndAccept(tx.id, tx.suggestedCategoryId);
+
+  const handleChoose = (tx: PendingTransactionWithSuggestion, cat: CategoryRow) =>
+    applyCategoryAndAccept(tx.id, cat.id);
+
+  const handleSkip = (tx: PendingTransactionWithSuggestion) => {
+    // User-initiated skip: remove from the review queue without persisting.
+    // Category remains NULL on the transaction.
+    markReviewed(tx.id);
     setChangingCategory(null);
   };
+
+  const progress =
+    totalToReview > 0 ? (reviewedCount / totalToReview) * 100 : 0;
+
+  // -----------------------------------------------------------------------
+  // Render
+  // -----------------------------------------------------------------------
+
+  if (loading) {
+    return (
+      <Card className="p-12 rounded-2xl border-0 shadow-sm text-center">
+        <Loader2 className="w-8 h-8 text-muted-foreground animate-spin mx-auto mb-3" />
+        <p className="text-[13px] text-muted-foreground">
+          L&apos;AI sta analizzando le tue transazioni...
+        </p>
+      </Card>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <Card className="p-8 rounded-2xl border-0 shadow-sm">
+        <div
+          role="alert"
+          className="flex items-start gap-3 p-4 bg-red-500/10 rounded-xl"
+        >
+          <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <p className="text-[14px] font-medium text-red-700 dark:text-red-300">
+              {loadError}
+            </p>
+            <Button
+              size="sm"
+              variant="outline"
+              className="mt-3 rounded-xl"
+              onClick={load}
+            >
+              Riprova
+            </Button>
+          </div>
+        </div>
+      </Card>
+    );
+  }
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-[20px] font-semibold text-foreground">Categorizzazione AI</h2>
+          <h2 className="text-[20px] font-semibold text-foreground">
+            Categorizzazione AI
+          </h2>
           <p className="text-[13px] text-muted-foreground mt-1">
             {pending.length > 0
               ? `${pending.length} transazioni da revisionare`
@@ -106,74 +247,107 @@ export function AICategorization() {
       </div>
 
       {/* Progress */}
-      <Card className="p-5 rounded-2xl border-0 shadow-sm">
-        <div className="flex items-center justify-between mb-3">
-          <p className="text-sm text-muted-foreground">Progresso revisione</p>
-          <span className="text-sm font-semibold text-foreground">{reviewedCount}/{totalToReview}</span>
-        </div>
-        <Progress value={progress} className="h-2" />
-      </Card>
+      {totalToReview > 0 && (
+        <Card className="p-5 rounded-2xl border-0 shadow-sm">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-sm text-muted-foreground">Progresso revisione</p>
+            <span className="text-sm font-semibold text-foreground">
+              {reviewedCount}/{totalToReview}
+            </span>
+          </div>
+          <Progress value={progress} className="h-2" />
+        </Card>
+      )}
 
-      {/* Pending list */}
+      {/* Pending list or empty state */}
       {pending.length > 0 ? (
         <div className="space-y-3">
           {pending.map((tx) => (
-            <Card key={tx.id} className="p-5 rounded-2xl border-0 shadow-sm">
+            <Card
+              key={tx.id}
+              className="p-5 rounded-2xl border-0 shadow-sm"
+              data-testid={`tx-card-${tx.id}`}
+            >
               <div className="flex items-start gap-4">
                 {/* Transaction info */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <p className="text-[14px] font-medium text-foreground truncate">{tx.description}</p>
-                    <span className={`text-[13px] font-semibold tabular-nums ${tx.amount < 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
-                      {tx.amount < 0 ? '-' : '+'}€{Math.abs(tx.amount).toFixed(2)}
+                    <p className="text-[14px] font-medium text-foreground truncate">
+                      {tx.description}
+                    </p>
+                    <span
+                      className={`text-[13px] font-semibold tabular-nums ${
+                        tx.amount < 0 ? 'text-rose-600' : 'text-emerald-600'
+                      }`}
+                    >
+                      {tx.amount >= 0 ? '+' : ''}
+                      {formatCurrency(tx.amount)}
                     </span>
                   </div>
-                  <p className="text-[11px] text-muted-foreground">{(() => {
-                    // Parse YYYY-MM-DD as local-midnight to avoid timezone drift
-                    const [y, m, d] = tx.date.slice(0, 10).split('-').map(Number);
-                    return new Date(y, (m || 1) - 1, d || 1).toLocaleDateString('it-IT');
-                  })()}</p>
+                  <p className="text-[11px] text-muted-foreground">
+                    {formatItDate(tx.date)}
+                  </p>
 
                   {/* AI suggestion */}
                   <div className="mt-3 flex items-center gap-3">
-                    <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl ${getConfidenceBg(tx.aiConfidence)}`}>
-                      <span className="text-[16px]">{tx.aiSuggestedIcon}</span>
-                      <span className="text-[13px] font-medium text-foreground">{tx.aiSuggestedCategory}</span>
-                      <span className={`text-[11px] font-semibold ${getConfidenceColor(tx.aiConfidence)}`}>
-                        {tx.aiConfidence}%
+                    <div
+                      className={`flex items-center gap-2 px-3 py-1.5 rounded-xl ${getConfidenceBg(tx.confidence)}`}
+                    >
+                      <span className="text-[16px]" aria-hidden="true">
+                        {renderCategoryIcon(tx.suggestedCategoryIcon)}
+                      </span>
+                      <span className="text-[13px] font-medium text-foreground">
+                        {tx.suggestedCategoryName}
+                      </span>
+                      <span
+                        className={`text-[11px] font-semibold ${getConfidenceColor(tx.confidence)}`}
+                      >
+                        {Math.round(tx.confidence)}%
                       </span>
                     </div>
-                    {tx.aiConfidence < 80 && (
+                    {tx.confidence < 80 && (
                       <div className="flex items-center gap-1 text-amber-500">
                         <AlertCircle className="w-3.5 h-3.5" />
                         <span className="text-[11px]">Bassa confidenza</span>
                       </div>
                     )}
                   </div>
+
+                  {rowError[tx.id] && (
+                    <p
+                      className="mt-2 text-[11px] text-red-600"
+                      role="alert"
+                    >
+                      {rowError[tx.id]}
+                    </p>
+                  )}
                 </div>
 
                 {/* Actions */}
                 <div className="flex items-center gap-2 flex-shrink-0">
                   {changingCategory === tx.id ? (
-                    <div className="flex flex-wrap gap-1.5 max-w-[200px]">
-                      {ALL_CATEGORIES.map(cat => (
+                    <div className="flex flex-wrap gap-1.5 max-w-[240px]">
+                      {categories.map((cat) => (
                         <button
-                          key={cat.name}
-                          onClick={() => {
-                            // Apply the chosen category to the transaction, then accept
-                            setPending(prev => prev.map(t =>
-                              t.id === tx.id
-                                ? { ...t, aiSuggestedCategory: cat.name, aiSuggestedIcon: cat.icon, aiConfidence: 100 }
-                                : t
-                            ));
-                            handleAccept(tx.id);
-                            setChangingCategory(null);
-                          }}
-                          className="flex items-center gap-1 px-2 py-1 rounded-lg bg-muted/50 hover:bg-muted text-[11px] text-foreground transition-colors"
+                          key={cat.id}
+                          type="button"
+                          onClick={() => handleChoose(tx, cat)}
+                          disabled={busyTx === tx.id}
+                          className="flex items-center gap-1 px-2 py-1 rounded-lg bg-muted/50 hover:bg-muted text-[11px] text-foreground transition-colors disabled:opacity-50"
                         >
-                          <span>{cat.icon}</span> {cat.name}
+                          <span aria-hidden="true">
+                            {renderCategoryIcon(cat.icon)}
+                          </span>{' '}
+                          {cat.name}
                         </button>
                       ))}
+                      <button
+                        type="button"
+                        onClick={() => setChangingCategory(null)}
+                        className="flex items-center gap-1 px-2 py-1 rounded-lg bg-muted/50 hover:bg-muted text-[11px] text-muted-foreground transition-colors"
+                      >
+                        Annulla
+                      </button>
                     </div>
                   ) : (
                     <>
@@ -182,25 +356,41 @@ export function AICategorization() {
                         variant="outline"
                         className="rounded-xl text-[12px] border-border/50"
                         onClick={() => setChangingCategory(tx.id)}
+                        disabled={busyTx === tx.id}
                       >
                         <ChevronRight className="w-3 h-3 mr-1" />
                         Cambia
                       </Button>
                       <Button
                         size="sm"
-                        className="rounded-xl text-[12px] bg-emerald-500 hover:bg-emerald-600 text-white"
-                        onClick={() => handleAccept(tx.id)}
+                        className="rounded-xl text-[12px] bg-emerald-500 hover:bg-emerald-600 text-white disabled:opacity-60"
+                        onClick={() => handleAccept(tx)}
+                        disabled={
+                          busyTx === tx.id || !tx.suggestedCategoryId
+                        }
+                        title={
+                          !tx.suggestedCategoryId
+                            ? 'Nessun suggerimento AI — usa "Cambia"'
+                            : undefined
+                        }
                       >
-                        <Check className="w-3 h-3 mr-1" />
+                        {busyTx === tx.id ? (
+                          <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                        ) : (
+                          <Check className="w-3 h-3 mr-1" />
+                        )}
                         Accetta
                       </Button>
                       <Button
                         size="sm"
                         variant="outline"
                         className="rounded-xl text-[12px] text-rose-500 border-rose-200 dark:border-rose-800 hover:bg-rose-50 dark:hover:bg-rose-500/10"
-                        onClick={() => handleReject(tx.id)}
+                        onClick={() => handleSkip(tx)}
+                        disabled={busyTx === tx.id}
+                        aria-label="Salta — nessuna categoria applicata"
+                        title="Salta — nessuna categoria applicata"
                       >
-                        <X className="w-3 h-3" />
+                        <X className="w-3 h-3" aria-hidden="true" />
                       </Button>
                     </>
                   )}
@@ -212,9 +402,13 @@ export function AICategorization() {
       ) : (
         <Card className="p-12 rounded-2xl border-0 shadow-sm text-center">
           <Sparkles className="w-12 h-12 text-emerald-500 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-foreground mb-2">Tutto categorizzato!</h3>
+          <h3 className="text-lg font-semibold text-foreground mb-2">
+            Tutto categorizzato!
+          </h3>
           <p className="text-[13px] text-muted-foreground">
-            Hai revisionato {reviewedCount} transazioni. L'AI imparerà dalle tue scelte per migliorare le prossime classificazioni.
+            {totalToReview > 0
+              ? `Hai revisionato ${reviewedCount} transazioni. L'AI imparerà dalle tue scelte.`
+              : 'Nessuna transazione da categorizzare al momento.'}
           </p>
         </Card>
       )}
