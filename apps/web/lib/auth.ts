@@ -23,6 +23,7 @@ export interface User {
   timezone?: string | null
   currency: string
   preferences?: Record<string, unknown> | null
+  onboarded: boolean
   lastLoginAt?: string | null
   createdAt: string
   updatedAt: string
@@ -55,6 +56,7 @@ function profileToUser(profile: ProfileRow, email: string, emailConfirmedAt?: st
     timezone: profile.timezone,
     currency: profile.currency,
     preferences: profile.preferences as Record<string, unknown> | null,
+    onboarded: profile.onboarded,
     lastLoginAt: profile.last_login_at,
     createdAt: profile.created_at,
     updatedAt: profile.updated_at,
@@ -115,6 +117,7 @@ export const authService = {
           role: 'ADMIN',
           status: 'ACTIVE',
           currency: 'EUR',
+          onboarded: false,
           createdAt: data.user.created_at,
           updatedAt: data.user.created_at,
           fullName: `${credentials.firstName} ${credentials.lastName}`,

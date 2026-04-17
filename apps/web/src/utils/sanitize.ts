@@ -275,6 +275,7 @@ export function sanitizeUser(data: unknown): User {
     status: sanitizeStatus(userData.status),
     currency: (userData.currency && typeof userData.currency === 'string')
       ? sanitizeString(userData.currency) : 'EUR',
+    onboarded: userData.onboarded === true,
     createdAt,
     updatedAt,
     fullName: `${firstName} ${lastName}`,
