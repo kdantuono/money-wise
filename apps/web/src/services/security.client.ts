@@ -79,9 +79,19 @@ export const securityClient = {
   /**
    * Change the current user's password.
    *
-   * @throws {SecurityApiError} with `code='current_password_mismatch'` if the
-   *  current password re-verification fails, or `code='update_failed'` if the
-   *  new password is rejected by Supabase Auth.
+   * Error routing guidance for callers:
+   * - `missing_email` (400) → session is unusable; prompt re-login.
+   * - `current_password_mismatch` (401) → FIELD-LEVEL error on
+   *   `currentPassword`. The user typed the wrong current password.
+   * - `reverify_failed` (typically 429 / 400 / 500) → TOP-LEVEL alert.
+   *   Supabase returned an auth error that is NOT wrong-password
+   *   (rate limit, email not confirmed, network/server hiccup). Misrouting
+   *   these to the currentPassword field misleads the user.
+   * - `update_failed` (typically 500) → TOP-LEVEL alert. The current
+   *   password was accepted but the new one was rejected server-side
+   *   (e.g. breach-list match, weak policy).
+   *
+   * @throws {SecurityApiError} with one of the codes above.
    */
   async changePassword(params: {
     email: string;
