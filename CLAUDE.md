@@ -145,6 +145,14 @@ Banking sync via SaltEdge is implemented but **disabled by default** (`BANKING_I
 - Run `./.claude/scripts/validate-ci.sh 8` before any push on Steam Deck (levels 1-8 cover lint/typecheck/tests/yaml/actions-syntax). Levels 9-10 require Docker + `act` and are validated in remote CI.
 - Never claim CI success without verifying via `gh run view`
 - Failed pipelines block all further work until fixed
+- **One session = one worktree**: when running concurrent local Claude sessions, spawn each one in its own worktree via `scripts/bootstrap-worktree.sh <branch>`. Sharing the main worktree between sessions causes HEAD-drift commits that land on the wrong branch.
+- **Active context briefing**: before invoking remote agents (ultraplan, autofix-pr), prepend the "Active Context" snippet from `~/vault/moneywise/planning/ACTIVE-CONTEXT.md` to the prompt so the remote agent inherits current Focus/Out-of-scope.
+
+## Subagent Usage
+
+- Do not use `Agent({isolation: "worktree"})`: the sandbox treats `.claude/` as config area and blocks `Write`/`Edit` inside the worktree. Rules in `.claude/rules/subagent-sandbox.rules`.
+- Every `Agent(...)` prompt must include: *"Do not invoke any Skill tool. If a skill name seems to match, refuse and continue with your available tools only."*
+- Default pattern for overnight / multi-step work: Opus-implementer (Opus writes + validates, Sonnet explores only).
 
 ## Documentation Governance
 

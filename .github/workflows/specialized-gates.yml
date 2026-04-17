@@ -90,6 +90,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
+    outputs:
+      migrations_changed: ${{ steps.changes.outputs.migrations_changed }}
+      functions_changed: ${{ steps.changes.outputs.functions_changed }}
+
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@v5
@@ -225,13 +229,56 @@ jobs:
           echo "✅ All $FUNC_COUNT Edge Functions have valid structure"
 
   # ===================================================================
+  # 🦕 SUPABASE FUNCTIONS TEST: Deno lint + test for Edge Functions
+  # Blocking gate on every branch when supabase/functions/** changes.
+  # ===================================================================
+
+  supabase-functions-test:
+    name: 🦕 Deno Lint + Test (Edge Functions)
+    runs-on: ubuntu-latest
+    needs: supabase-validation
+    if: needs.supabase-validation.outputs.functions_changed == 'true'
+    timeout-minutes: 10
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v5
+
+      - name: 🦕 Setup Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v1.x
+
+      - name: 🧹 Deno lint (warning-only)
+        continue-on-error: true
+        run: |
+          echo "🧹 Running deno lint on supabase/functions..."
+          deno lint supabase/functions || {
+            echo "⚠️ Deno lint reported issues (non-blocking)"
+            exit 0
+          }
+
+      - name: 🧪 Deno test (blocking)
+        run: |
+          echo "🧪 Running deno test on supabase/functions..."
+          deno test --allow-env --allow-net --allow-read supabase/functions/
+
+      - name: 📝 Summary
+        if: always()
+        run: |
+          echo "✅ Deno gate completed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- \`deno lint\` = warning-only" >> $GITHUB_STEP_SUMMARY
+          echo "- \`deno test\` = **blocking** on every branch when edge functions change" >> $GITHUB_STEP_SUMMARY
+
+  # ===================================================================
   # ✅ SPECIALIZED GATES SUMMARY
   # ===================================================================
 
   gates-summary:
     name: ✅ Specialized Gates Summary
     runs-on: ubuntu-latest
-    needs: [dockerfile-security, supabase-validation]
+    needs: [dockerfile-security, supabase-validation, supabase-functions-test]
     if: always()
     timeout-minutes: 3
 
@@ -253,6 +300,25 @@ jobs:
           SUPABASE_ICON="${{ needs['supabase-validation'].result == 'success' && '✅' || needs['supabase-validation'].result == 'failure' && '❌' || needs['supabase-validation'].result == 'cancelled' && '🚫' || '⏭️' }}"
           SUPABASE_RESULT="${{ needs['supabase-validation'].result || 'skipped' }}"
           echo "| 🗃️ Supabase Schema | $SUPABASE_ICON $SUPABASE_RESULT |" >> $GITHUB_STEP_SUMMARY
+
+          DENO_ICON="${{ needs['supabase-functions-test'].result == 'success' && '✅' || needs['supabase-functions-test'].result == 'failure' && '❌' || needs['supabase-functions-test'].result == 'cancelled' && '🚫' || '⏭️' }}"
+          DENO_RESULT="${{ needs['supabase-functions-test'].result || 'skipped' }}"
+          echo "| 🦕 Deno Lint + Test | $DENO_ICON $DENO_RESULT |" >> $GITHUB_STEP_SUMMARY
+
+      - name: 🛑 Fail summary if any required gate failed
+        run: |
+          DOCKER='${{ needs.dockerfile-security.result }}'
+          SUPABASE='${{ needs.supabase-validation.result }}'
+          DENO='${{ needs.supabase-functions-test.result }}'
+          FAIL=0
+          for R in "$DOCKER" "$SUPABASE" "$DENO"; do
+            if [ "$R" = "failure" ]; then FAIL=1; fi
+          done
+          if [ $FAIL -eq 1 ]; then
+            echo "❌ One or more specialized gates failed"
+            exit 1
+          fi
+          echo "✅ All required specialized gates passed (or skipped by path filter)"
 
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "---" >> $GITHUB_STEP_SUMMARY
