@@ -1,0 +1,103 @@
+name: Auto-merge (label-gated)
+
+# Enables auto-merge (squash) on PRs targeting develop when they carry the
+# `auto-merge` label. Disabled on PRs with `wip` or `needs-review` labels, and
+# on schema-touching PRs (`supabase/migrations/**`) — those require human
+# review per CLAUDE.md governance.
+
+on:
+  pull_request:
+    types: [labeled, unlabeled, opened, synchronize, reopened, ready_for_review]
+    branches: [develop]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  gate:
+    name: Check eligibility
+    runs-on: ubuntu-latest
+    outputs:
+      eligible: ${{ steps.check.outputs.eligible }}
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: 🔍 Evaluate labels + scope
+        id: check
+        env:
+          LABELS: ${{ toJson(github.event.pull_request.labels.*.name) }}
+          TITLE: ${{ github.event.pull_request.title }}
+          DRAFT: ${{ github.event.pull_request.draft }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          echo "Labels: $LABELS"
+          echo "Title: $TITLE"
+          echo "Draft: $DRAFT"
+
+          ELIGIBLE="true"
+
+          if [ "$DRAFT" = "true" ]; then
+            echo "❌ PR is draft"
+            ELIGIBLE="false"
+          fi
+
+          if echo "$TITLE" | grep -qiE '^(wip|draft)[:\s]'; then
+            echo "❌ PR title indicates WIP"
+            ELIGIBLE="false"
+          fi
+
+          if echo "$LABELS" | grep -q '"auto-merge"'; then
+            echo "✅ auto-merge label present"
+          else
+            echo "❌ auto-merge label missing"
+            ELIGIBLE="false"
+          fi
+
+          if echo "$LABELS" | grep -qE '"(wip|needs-review|do-not-merge)"'; then
+            echo "❌ blocking label present (wip/needs-review/do-not-merge)"
+            ELIGIBLE="false"
+          fi
+
+          if git diff --name-only "$BASE_SHA" "$HEAD_SHA" 2>/dev/null | grep -q '^supabase/migrations/'; then
+            echo "❌ PR touches supabase/migrations — schema changes require human review"
+            ELIGIBLE="false"
+          fi
+
+          echo "eligible=$ELIGIBLE" >> "$GITHUB_OUTPUT"
+
+  enable:
+    name: Enable auto-merge
+    needs: gate
+    if: needs.gate.outputs.eligible == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🔄 Enable auto-merge (squash)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          gh pr merge "$PR_NUMBER" \
+            --repo "${{ github.repository }}" \
+            --auto \
+            --squash \
+            --delete-branch
+
+  disable:
+    name: Disable auto-merge (ineligible)
+    needs: gate
+    if: needs.gate.outputs.eligible == 'false' && github.event.pull_request.auto_merge != null
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🛑 Disable auto-merge
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          gh pr merge "$PR_NUMBER" \
+            --repo "${{ github.repository }}" \
+            --disable-auto || true

@@ -1,5 +1,6 @@
-# MoneyWise pre-commit hook
-# Runs essential checks before allowing commit
+# MoneyWise pre-commit hook — scope-aware
+# Runs only the checks relevant to the staged scope, so Supabase/SQL-only
+# commits don't need node_modules and Deno-only work isn't gated by jsdom.
 
 # Load nvm if available (fixes PATH for pnpm in non-interactive shells)
 export NVM_DIR="$HOME/.nvm"
@@ -7,23 +8,21 @@ export NVM_DIR="$HOME/.nvm"
 
 echo "🔍 Running pre-commit checks..."
 
-# Documentation governance (auto-fix)
+STAGED=$(git diff --cached --name-only)
+
+# Always: documentation governance (auto-fix)
 echo "  📋 Documentation governance..."
 ./.claude/scripts/auto-fix-doc-governance.sh || {
   echo "❌ Documentation governance check failed."
   exit 1
 }
 
-# Check GitHub Actions workflows if any are staged
+# Actionlint on staged workflows
 echo "  🔍 Checking GitHub Actions workflows..."
-if git diff --cached --name-only | grep -q "^\.github/workflows/"; then
+if echo "$STAGED" | grep -q "^\.github/workflows/"; then
   echo "    📋 Workflow files detected in this commit"
-
-  # Try to validate with actionlint
   ACTIONLINT_PATH="./.claude/tools/actionlint"
-
   if [ -x "$ACTIONLINT_PATH" ]; then
-    echo "    📍 Validating with actionlint..."
     if "$ACTIONLINT_PATH" -color .github/workflows/*.yml > /dev/null 2>&1; then
       echo "    ✅ GitHub Actions workflows are valid"
     else
@@ -43,31 +42,59 @@ fi
 
 echo ""
 
-# Run linting
-echo "  ✨ Linting..."
-pnpm lint || {
-  echo "❌ Linting failed. Please fix errors and try again."
-  exit 1
-}
+# Scope detection
+NEEDS_PNPM=false
+if echo "$STAGED" | grep -qE '^(apps/web|packages)/'; then
+  NEEDS_PNPM=true
+fi
 
-# Run type checking
-echo "  🔍 Type checking..."
-pnpm typecheck || {
-  echo "❌ Type checking failed. Please fix errors and try again."
-  exit 1
-}
+TOUCHES_FUNCTIONS=false
+if echo "$STAGED" | grep -q '^supabase/functions/'; then
+  TOUCHES_FUNCTIONS=true
+fi
 
-# Run unit tests (fast)
-# Node 24+ breaks vitest+jsdom (React is not defined). CI validates web tests.
-NODE_MAJOR=$(node -p 'process.versions.node.split(".")[0]')
-if [ "$NODE_MAJOR" -le "22" ]; then
-  echo "  🧪 Running unit tests..."
-  pnpm test:unit || {
-    echo "❌ Unit tests failed. Please fix failing tests and try again."
+if [ "$NEEDS_PNPM" = "true" ]; then
+  if [ ! -d node_modules ]; then
+    echo "❌ node_modules missing in this worktree. Run: pnpm install"
+    exit 1
+  fi
+
+  echo "  ✨ Linting..."
+  pnpm lint || {
+    echo "❌ Linting failed. Please fix errors and try again."
     exit 1
   }
+
+  echo "  🔍 Type checking..."
+  pnpm typecheck || {
+    echo "❌ Type checking failed. Please fix errors and try again."
+    exit 1
+  }
+
+  # Node 24+ breaks vitest+jsdom (React is not defined). CI validates web tests.
+  NODE_MAJOR=$(node -p 'process.versions.node.split(".")[0]')
+  if [ "$NODE_MAJOR" -le "22" ]; then
+    echo "  🧪 Running unit tests..."
+    pnpm test:unit || {
+      echo "❌ Unit tests failed. Please fix failing tests and try again."
+      exit 1
+    }
+  else
+    echo "  ⏭️  Skipping jsdom tests (Node $NODE_MAJOR incompatible). CI validates."
+  fi
 else
-  echo "  ⏭️  Skipping jsdom tests (Node $NODE_MAJOR incompatible). CI validates."
+  echo "  ⏭️  No web/packages changes — skipping pnpm lint/typecheck/test"
+fi
+
+if [ "$TOUCHES_FUNCTIONS" = "true" ]; then
+  if command -v deno >/dev/null 2>&1; then
+    echo "  🦕 Deno lint (supabase/functions)..."
+    deno lint supabase/functions || {
+      echo "⚠️ deno lint reported issues (CI is the blocking gate)"
+    }
+  else
+    echo "  ⚠️  deno not installed locally — CI will run the blocking deno test gate"
+  fi
 fi
 
 echo "✅ Pre-commit checks passed!"

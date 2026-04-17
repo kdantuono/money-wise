@@ -1,0 +1,68 @@
+# Subagent Sandbox Rules
+
+## Status
+
+Claude Code's sandbox treats any path under `.claude/` as read-only config area. This means `Agent({isolation: "worktree"})` — which creates worktrees under `.claude/worktrees/` — blocks `Write`/`Edit` calls inside the subagent even when the parent session runs in `don't-ask` mode.
+
+Observed impact: two Sonnet subagents (referenced internally as 1.5 and 1.8) failed to persist work during overnight execution. Fallback to Opus-implementer (Opus writes + validates, Sonnet explores only) succeeded but cost significantly more tokens.
+
+## MANDATORY rules
+
+### 1. Never use `isolation: "worktree"` on subagents
+
+While the sandbox gates `.claude/`, the worktree isolation mode is unusable. Do not write:
+
+```ts
+Agent({ isolation: "worktree", subagent_type: "...", prompt: "..." })
+```
+
+Instead, either:
+- Spawn the subagent without isolation (it shares the parent worktree's HEAD), or
+- Create a manual worktree in `~/dev/money-wise-<feature>/` via `scripts/bootstrap-worktree.sh` and drive it from a separate session.
+
+### 2. Forbid Skill invocation inside subagent prompts
+
+Subagent prompts that contain keywords matching a Skill description can trigger unintended auto-invocation (observed: `less-permission-prompts` firing on an onboarding prompt).
+
+Every `Agent(...)` prompt MUST include the following clause verbatim, near the top:
+
+> Do not invoke any Skill tool. If a skill name seems to match, refuse and continue with your available tools only.
+
+The project-level `.claude/settings.json` already denies the known-problematic skills (`less-permission-prompts`, `loop`). The prompt-level clause is defense-in-depth against new skills or matchers.
+
+### 3. Prefer Opus-implementer pattern for overnight work
+
+For multi-step work with dependencies (e.g., "explore → design → implement → test"), the default is:
+
+- **Opus** in the main session: writes code, validates, commits.
+- **Sonnet subagents**: exploration and reporting only (`Explore` subagent_type or `general-purpose` with explicit "research only, do not write files" framing).
+
+This costs more tokens than full Sonnet delegation but eliminates the class of failures caused by the sandbox block.
+
+### 4. One session = one worktree
+
+Running multiple local Claude sessions against the same worktree causes shared-HEAD races: a commit from one session can land on another session's branch. When starting a new concurrent session, use `scripts/bootstrap-worktree.sh <branch>` to get an isolated workspace in `~/dev/money-wise-<branch>/`.
+
+## Permissions cheat sheet
+
+`/.claude/settings.json` currently declares:
+
+```json
+"allow": [
+  "Write(/home/*/dev/money-wise-*/**)",
+  "Edit(/home/*/dev/money-wise-*/**)",
+  "Bash(git worktree:*)",
+  "Bash(pnpm:*)",
+  "Bash(deno:*)"
+],
+"deny": [
+  "Skill(less-permission-prompts)",
+  "Skill(loop)"
+]
+```
+
+Extend `allow` when onboarding a new external worktree convention. Extend `deny` as soon as a new skill is observed auto-firing during subagent runs.
+
+## When this rule can be relaxed
+
+If a future Claude Code release exposes `.claude/worktrees/` as a writable subagent area (watch the changelog for "subagent worktree permissions"), revisit rule §1 and update this file.

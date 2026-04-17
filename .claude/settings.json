@@ -1,5 +1,18 @@
 {
   "env": {
     "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+  },
+  "permissions": {
+    "allow": [
+      "Write(/home/*/dev/money-wise-*/**)",
+      "Edit(/home/*/dev/money-wise-*/**)",
+      "Bash(git worktree:*)",
+      "Bash(pnpm:*)",
+      "Bash(deno:*)"
+    ],
+    "deny": [
+      "Skill(less-permission-prompts)",
+      "Skill(loop)"
+    ]
   }
 }
