@@ -14,12 +14,12 @@ import { motion } from 'framer-motion';
 import { createClient } from '@/utils/supabase/client';
 import { CategoryManager } from '@/components/categories/CategoryManager';
 import { NotificationsTab } from '@/components/settings/NotificationsTab';
+import { SecurityTab } from '@/components/settings/SecurityTab';
 import {
   User,
   CreditCard,
   Shield,
   Globe,
-  Smartphone,
   Link as LinkIcon,
   Check,
   AlertCircle,
@@ -37,7 +37,6 @@ import {
   Trash2,
   Key,
   Monitor,
-  Mail,
   TrendingUp,
   Wallet,
   Sparkles,
@@ -218,9 +217,6 @@ export default function SettingsPage() {
   const [showApiKeys, setShowApiKeys] = useState<Record<string, boolean>>({});
   const [apiKeys, setApiKeys] = useState({ openai: '', anthropic: '', gemini: '', coinbase: '', plaid: '' });
   const [apiKeyFeedback, setApiKeyFeedback] = useState<string | null>(null);
-
-  // Security state
-  const [securityFeedback, setSecurityFeedback] = useState<string | null>(null);
 
   // Data state
   const [dataFeedback, setDataFeedback] = useState<string | null>(null);
@@ -984,110 +980,7 @@ export default function SettingsPage() {
         </motion.div>
       )}
 
-      {/* ================================================================= */}
-      {/* Security Tab */}
-      {/* ================================================================= */}
-      {activeTab === 'security' && (
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-          <Card className="p-6 rounded-2xl border-0 shadow-sm">
-            <h3 className="text-lg font-semibold text-foreground mb-6">Sicurezza Account</h3>
-            <div className="space-y-6">
-              {/* Change Password */}
-              <div>
-                <h4 className="font-medium text-foreground mb-4">Cambia Password</h4>
-                <div className="space-y-4 max-w-md">
-                  <div className="space-y-2">
-                    <Label htmlFor="currentPassword">Password Attuale</Label>
-                    <Input id="currentPassword" type="password" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="newPassword">Nuova Password</Label>
-                    <Input id="newPassword" type="password" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="confirmPassword">Conferma Password</Label>
-                    <Input id="confirmPassword" type="password" />
-                  </div>
-                  {securityFeedback ? (
-                    <span className="flex items-center gap-2 text-[13px] text-emerald-600">
-                      <Check className="w-4 h-4" /> {securityFeedback}
-                    </span>
-                  ) : (
-                    <Button
-                      onClick={() => showFeedback(setSecurityFeedback, 'Password aggiornata!')}
-                      className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white border-0"
-                    >
-                      Aggiorna Password
-                    </Button>
-                  )}
-                </div>
-              </div>
-
-              {/* 2FA */}
-              <div className="border-t border-border pt-6">
-                <h4 className="font-medium text-foreground mb-4">Autenticazione a Due Fattori</h4>
-                <div className="space-y-3">
-                  {[
-                    { icon: Smartphone, title: '2FA con SMS', desc: 'Codice via SMS al tuo telefono' },
-                    { icon: Key, title: 'Authenticator App', desc: 'Google Authenticator o simili' },
-                    { icon: Mail, title: '2FA via Email', desc: 'Codice di verifica via email' },
-                  ].map((item) => (
-                    <div key={item.title} className="flex items-center justify-between p-4 bg-muted/50 rounded-xl">
-                      <div className="flex items-center gap-3">
-                        <item.icon className="w-5 h-5 text-muted-foreground" />
-                        <div>
-                          <p className="font-medium text-foreground">{item.title}</p>
-                          <p className="text-sm text-muted-foreground">{item.desc}</p>
-                        </div>
-                      </div>
-                      <input type="checkbox" className={TOGGLE_CLASS} />
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Active Sessions */}
-              <div className="border-t border-border pt-6">
-                <h4 className="font-medium text-foreground mb-4">Sessioni Attive</h4>
-                <div className="space-y-3">
-                  <div className="p-4 bg-muted/50 rounded-xl">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <Monitor className="w-5 h-5 text-muted-foreground" />
-                        <div>
-                          <p className="font-medium text-foreground">Chrome su Linux</p>
-                          <p className="text-sm text-muted-foreground">Attiva ora</p>
-                        </div>
-                      </div>
-                      <Badge className="bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">Corrente</Badge>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Activity Log */}
-              <div className="border-t border-border pt-6">
-                <h4 className="font-medium text-foreground mb-4">Log Attività</h4>
-                <div className="space-y-2">
-                  {[
-                    { action: 'Login effettuato', time: 'Oggi, 10:30', device: 'Chrome - Linux' },
-                    { action: 'Password modificata', time: '3 giorni fa', device: 'Safari - iPhone' },
-                    { action: 'Integrazione PayPal connessa', time: '1 settimana fa', device: 'Chrome - Linux' },
-                  ].map((log, i) => (
-                    <div key={i} className="flex items-center justify-between py-2 text-sm">
-                      <span className="text-foreground">{log.action}</span>
-                      <div className="text-right">
-                        <p className="text-muted-foreground">{log.time}</p>
-                        <p className="text-xs text-muted-foreground">{log.device}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </Card>
-        </motion.div>
-      )}
+      {activeTab === 'security' && <SecurityTab />}
 
       {/* ================================================================= */}
       {/* Data Tab */}
