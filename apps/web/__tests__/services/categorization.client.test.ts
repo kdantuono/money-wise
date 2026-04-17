@@ -49,9 +49,11 @@ function categoriesChain(result: {
   data: CategoryRow[] | null;
   error: { message: string } | null;
 }) {
+  const terminal = { order: vi.fn().mockResolvedValue(result) };
   return {
     select: vi.fn().mockReturnValue({
-      order: vi.fn().mockResolvedValue(result),
+      eq: vi.fn().mockReturnValue(terminal),
+      order: vi.fn(),
       is: vi.fn(),
     }),
     update: vi.fn(),

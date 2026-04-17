@@ -55,6 +55,40 @@ function formatItDate(iso: string): string {
   return new Date(y, (m || 1) - 1, d || 1).toLocaleDateString('it-IT');
 }
 
+/**
+ * Locale-aware currency formatter — aligned with TransactionRow / other
+ * consumers in this codebase. Falls back to EUR on bad currency codes.
+ */
+function formatCurrency(amount: number, currency = 'EUR'): string {
+  try {
+    return new Intl.NumberFormat('it-IT', {
+      style: 'currency',
+      currency,
+    }).format(amount);
+  } catch {
+    return new Intl.NumberFormat('it-IT', {
+      style: 'currency',
+      currency: 'EUR',
+    }).format(amount);
+  }
+}
+
+/**
+ * Regex that heuristically detects whether a string starts with an emoji
+ * (symbol / pictograph / extended pictographic) as opposed to a lucide
+ * icon NAME like "ShoppingCart". We don't ship a Name→Component mapper
+ * in this module — rendering by name would display literal text
+ * "ShoppingCart". When the icon isn't an emoji, fall back to a neutral
+ * glyph so the UI stays consistent.
+ */
+const EMOJI_LEADING_RE = /^\p{Extended_Pictographic}/u;
+const FALLBACK_ICON_GLYPH = '❓';
+
+function renderCategoryIcon(icon: string | null | undefined): string {
+  if (!icon) return FALLBACK_ICON_GLYPH;
+  return EMOJI_LEADING_RE.test(icon) ? icon : FALLBACK_ICON_GLYPH;
+}
+
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
@@ -246,7 +280,8 @@ export function AICategorization() {
                         tx.amount < 0 ? 'text-rose-600' : 'text-emerald-600'
                       }`}
                     >
-                      {tx.amount < 0 ? '-' : '+'}€{Math.abs(tx.amount).toFixed(2)}
+                      {tx.amount >= 0 ? '+' : ''}
+                      {formatCurrency(tx.amount)}
                     </span>
                   </div>
                   <p className="text-[11px] text-muted-foreground">
@@ -258,8 +293,8 @@ export function AICategorization() {
                     <div
                       className={`flex items-center gap-2 px-3 py-1.5 rounded-xl ${getConfidenceBg(tx.confidence)}`}
                     >
-                      <span className="text-[16px]">
-                        {tx.suggestedCategoryIcon}
+                      <span className="text-[16px]" aria-hidden="true">
+                        {renderCategoryIcon(tx.suggestedCategoryIcon)}
                       </span>
                       <span className="text-[13px] font-medium text-foreground">
                         {tx.suggestedCategoryName}
@@ -300,7 +335,10 @@ export function AICategorization() {
                           disabled={busyTx === tx.id}
                           className="flex items-center gap-1 px-2 py-1 rounded-lg bg-muted/50 hover:bg-muted text-[11px] text-foreground transition-colors disabled:opacity-50"
                         >
-                          <span>{cat.icon || '❓'}</span> {cat.name}
+                          <span aria-hidden="true">
+                            {renderCategoryIcon(cat.icon)}
+                          </span>{' '}
+                          {cat.name}
                         </button>
                       ))}
                       <button
@@ -349,9 +387,10 @@ export function AICategorization() {
                         className="rounded-xl text-[12px] text-rose-500 border-rose-200 dark:border-rose-800 hover:bg-rose-50 dark:hover:bg-rose-500/10"
                         onClick={() => handleSkip(tx)}
                         disabled={busyTx === tx.id}
+                        aria-label="Salta — nessuna categoria applicata"
                         title="Salta — nessuna categoria applicata"
                       >
-                        <X className="w-3 h-3" />
+                        <X className="w-3 h-3" aria-hidden="true" />
                       </Button>
                     </>
                   )}

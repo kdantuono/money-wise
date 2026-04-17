@@ -11,6 +11,7 @@
  * @module services/categorization.client
  */
 
+import { FunctionsHttpError } from '@supabase/supabase-js';
 import { createClient } from '@/utils/supabase/client';
 import type {
   CategorizeResult,
@@ -18,6 +19,38 @@ import type {
   PendingTransactionRow,
   PendingTransactionWithSuggestion,
 } from '@/types/categorization';
+
+/**
+ * Parse a supabase.functions.invoke() error into (message, status).
+ * FunctionsHttpError carries the real body in `context`; read it to recover
+ * the server-side `{error: "..."}` message. Aligned with gdpr.client /
+ * banking.client pattern in this repo.
+ */
+async function parseInvokeError(error: unknown): Promise<{
+  serverMsg: string;
+  httpStatus: number | undefined;
+}> {
+  if (error instanceof FunctionsHttpError) {
+    const status = error.context?.status;
+    try {
+      const body = (await error.context.json()) as
+        | { error?: string; message?: string }
+        | null;
+      const serverMsg = body?.error || body?.message || error.message || '';
+      return { serverMsg, httpStatus: status };
+    } catch {
+      return { serverMsg: error.message || '', httpStatus: status };
+    }
+  }
+  if (error && typeof error === 'object') {
+    const e = error as { message?: unknown; context?: { status?: number } };
+    const m = typeof e.message === 'string' ? e.message : '';
+    const status =
+      typeof e.context?.status === 'number' ? e.context.status : undefined;
+    return { serverMsg: m, httpStatus: status };
+  }
+  return { serverMsg: '', httpStatus: undefined };
+}
 
 // =============================================================================
 // Error class
@@ -61,6 +94,12 @@ type SupabaseLike = {
           }>;
         };
       };
+      eq: (col: string, val: string) => {
+        order: (col: string, opts: { ascending: boolean }) => Promise<{
+          data: CategoryRow[] | null;
+          error: { message: string } | null;
+        }>;
+      };
       order: (col: string, opts: { ascending: boolean }) => Promise<{
         data: CategoryRow[] | null;
         error: { message: string } | null;
@@ -70,7 +109,10 @@ type SupabaseLike = {
       eq: (
         col: string,
         val: string
-      ) => Promise<{ error: { message: string } | null }>;
+      ) => Promise<{
+        error: { message: string } | null;
+        count?: number | null;
+      }>;
     };
   };
   functions: {
@@ -119,13 +161,16 @@ export const categorizationClient = {
   },
 
   /**
-   * Fetch all active categories in the user's family (RLS-scoped).
+   * Fetch all ACTIVE categories in the user's family (RLS-scoped).
+   * Inactive/archived categories are filtered out — they'd confuse the
+   * suggestion display and picker.
    */
   async fetchCategories(): Promise<CategoryRow[]> {
     const supabase = createClient() as unknown as SupabaseLike;
     const { data, error } = await supabase
       .from('categories')
       .select('id, name, icon, type')
+      .eq('status', 'ACTIVE')
       .order('sort_order', { ascending: true });
     if (error) {
       throw new CategorizationApiError(
@@ -155,9 +200,10 @@ export const categorizationClient = {
       }
     );
     if (error) {
+      const { serverMsg, httpStatus } = await parseInvokeError(error);
       throw new CategorizationApiError(
-        'Impossibile ottenere suggerimento AI',
-        500,
+        serverMsg || 'Impossibile ottenere suggerimento AI',
+        httpStatus || 500,
         'suggest_failed',
         error
       );
@@ -223,6 +269,12 @@ export const categorizationClient = {
 
   /**
    * Persist a category choice on a transaction.
+   *
+   * Returns the count of affected rows if the driver exposes it: 0 means
+   * the tx either no longer exists, was already categorized, or is hidden
+   * by RLS. Without this check a no-op UPDATE returns `error: null` and
+   * the UI would drop the transaction as "reviewed" even though nothing
+   * was persisted.
    */
   async applyCategory(txId: string, categoryId: string): Promise<void> {
     if (!txId || !categoryId) {
@@ -233,7 +285,7 @@ export const categorizationClient = {
       );
     }
     const supabase = createClient() as unknown as SupabaseLike;
-    const { error } = await supabase
+    const { error, count } = await supabase
       .from('transactions')
       .update({ category_id: categoryId })
       .eq('id', txId);
@@ -243,6 +295,15 @@ export const categorizationClient = {
         500,
         'apply_failed',
         error
+      );
+    }
+    // When the driver provides a row count, a 0 means the filter matched
+    // nothing — surface as a not-found so the UI can retry / refresh.
+    if (typeof count === 'number' && count === 0) {
+      throw new CategorizationApiError(
+        'Transazione non trovata (potrebbe essere già categorizzata o rimossa)',
+        404,
+        'apply_failed'
       );
     }
   },
