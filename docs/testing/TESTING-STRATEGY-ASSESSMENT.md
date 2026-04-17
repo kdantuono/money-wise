@@ -459,7 +459,8 @@ Level 1-8:  Linting, types, tests, integration
 Level 9-10: Workflow simulation with `act` (requires Docker)
 
 # Usage:
-./.claude/scripts/validate-ci.sh 10
+./.claude/scripts/validate-ci.sh 8    # Without Docker (e.g. Steam Deck)
+./.claude/scripts/validate-ci.sh 10   # Full (requires Docker + act)
 ```
 
 **Git Hooks**:

@@ -309,7 +309,7 @@ describe('Auth API (Integration)', () => {
 | Port 3000 already in use | Kill process: `lsof -ti:3000 \| xargs kill -9` |
 | TypeScript errors after pull | Clean and reinstall: `rm -rf node_modules && pnpm install` |
 | Tests fail locally but pass in CI | Check Node version matches CI (22.x): `node --version` |
-| Git pre-commit hook fails | Run validation manually: `./.claude/scripts/validate-ci.sh 10` |
+| Git pre-commit hook fails | Run validation manually: `./.claude/scripts/validate-ci.sh 8` (or `10` if Docker + `act` are installed) |
 
 ### Development Workflow Issues
 

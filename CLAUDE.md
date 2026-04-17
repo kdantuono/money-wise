@@ -125,7 +125,7 @@ i18n: next-intl (framework setup, messages in `messages/it.json` and `messages/e
 - Commit format: `type(scope): description` (commitlint enforced)
 - Types: fix, feat, refactor, test, docs, chore, ci, perf, style
 - Pre-commit hooks (Husky): doc governance, actionlint (if workflows staged), lint, typecheck, unit tests
-- Pre-push validation: `./.claude/scripts/validate-ci.sh 10` (all 10 levels must pass)
+- Pre-push validation: `./.claude/scripts/validate-ci.sh 8` on Steam Deck (no Docker → levels 9-10 can't run locally). Use `10` only on machines with Docker + `act` installed. Remote GitHub Actions is the authoritative gate.
 - Protected branches: main, develop, gh-pages, safety/*
 - After push: verify CI with `gh run list --branch [branch] --limit 1`
 
@@ -142,7 +142,7 @@ Banking sync via SaltEdge is implemented but **disabled by default** (`BANKING_I
 
 - Run `/resume-work` at session start to restore previous context
 - Run `./.claude/scripts/init-session.sh` to verify environment
-- Run `./.claude/scripts/validate-ci.sh 10` before any push (all levels must pass)
+- Run `./.claude/scripts/validate-ci.sh 8` before any push on Steam Deck (levels 1-8 cover lint/typecheck/tests/yaml/actions-syntax). Levels 9-10 require Docker + `act` and are validated in remote CI.
 - Never claim CI success without verifying via `gh run view`
 - Failed pipelines block all further work until fixed
 

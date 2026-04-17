@@ -194,7 +194,7 @@ A partire da Phase 1, il sistema epic aggiunge valore reale:
 1. **Diff-first**: `git diff --stat` poi `git diff` dopo ogni sessione. Più efficiente che leggere file interi
 2. **RLS è il confine di sicurezza**: Ogni policy DEVE avere un test esplicito: "User A può vedere dati di User B?" → scrivi come asserzioni SQL via `execute_sql`. Non fidarti senza test
 3. **Esegui l'app**: Dopo ogni service file migrato → `pnpm dev:web` → click-through manuale della feature. I test unitari verificano correttezza del codice, non correttezza della feature
-4. **Sfrutta la CI**: esegui spesso `./.claude/scripts/validate-ci.sh 8` (controllo rapido, senza Docker) dopo ogni 2-3 sessioni, ma **prima di ogni push** esegui sempre `./.claude/scripts/validate-ci.sh 10`
+4. **Sfrutta la CI**: esegui spesso `./.claude/scripts/validate-ci.sh 8` (controllo rapido, senza Docker) dopo ogni 2-3 sessioni. Su Steam Deck (senza Docker) fermati al livello 8 e lascia che la CI remota validi i livelli 9-10; su macchine con Docker + `act` installati usa `./.claude/scripts/validate-ci.sh 10` prima di ogni push
 
 ### Plan mode vs esecuzione diretta
 
