@@ -160,6 +160,29 @@ describe('SecurityTab', () => {
     expect(alert).toHaveTextContent(/server rejected policy/i);
   });
 
+  it('shows a top-level alert for reverify_failed (rate limit / network) — NOT a field error', async () => {
+    mocks.changePassword.mockRejectedValueOnce(
+      new SecurityApiError(
+        'For security purposes, you can only request this after 60 seconds.',
+        429,
+        'reverify_failed'
+      )
+    );
+    render(<SecurityTab />);
+
+    await userEvent.type(screen.getByLabelText('Password Attuale'), 'OldSecure1');
+    await userEvent.type(screen.getByLabelText('Nuova Password'), 'NewSecure22');
+    await userEvent.type(screen.getByLabelText('Conferma Password'), 'NewSecure22');
+    await userEvent.click(screen.getByRole('button', { name: /Aggiorna Password/i }));
+
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent(/60 seconds/i);
+    // Must NOT be routed to the currentPassword field
+    expect(
+      screen.queryByText('La password attuale non è corretta')
+    ).not.toBeInTheDocument();
+  });
+
   it('shows generic error message for non-SecurityApiError failures', async () => {
     mocks.changePassword.mockRejectedValueOnce(new Error('network down'));
     render(<SecurityTab />);

@@ -46,6 +46,17 @@ export type PasswordChangeInput = z.infer<typeof passwordChangeSchema>;
 // Result shape
 // =============================================================================
 
+/**
+ * Returned by `securityClient.changePassword` on success.
+ * Used as the public return type so callers + tests share a single
+ * definition.
+ */
 export interface PasswordChangeResult {
+  /**
+   * ISO-8601 timestamp of when the client confirmed the password change
+   * succeeded (i.e. Supabase `updateUser` returned without error).
+   * Client-generated; Supabase does not expose a dedicated server timestamp
+   * for password updates.
+   */
   changedAt: string;
 }

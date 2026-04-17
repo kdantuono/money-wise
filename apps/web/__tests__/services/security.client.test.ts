@@ -69,9 +69,9 @@ describe('securityClient.changePassword', () => {
     expect(new Date(result.changedAt).toString()).not.toBe('Invalid Date');
   });
 
-  it('throws current_password_mismatch when re-verification fails', async () => {
+  it('throws current_password_mismatch when reverify returns invalid_credentials code', async () => {
     mocks.signInWithPassword.mockResolvedValueOnce({
-      error: { message: 'invalid login' },
+      error: { message: 'whatever', code: 'invalid_credentials', status: 400 },
     });
 
     await expect(
@@ -86,6 +86,84 @@ describe('securityClient.changePassword', () => {
       code: 'current_password_mismatch',
     });
     expect(mocks.updateUser).not.toHaveBeenCalled();
+  });
+
+  it('throws current_password_mismatch on legacy "Invalid login credentials" message without code', async () => {
+    mocks.signInWithPassword.mockResolvedValueOnce({
+      error: { message: 'Invalid login credentials' },
+    });
+
+    await expect(
+      securityClient.changePassword({
+        email: EMAIL,
+        currentPassword: CURR,
+        newPassword: NEW,
+      })
+    ).rejects.toMatchObject({
+      code: 'current_password_mismatch',
+    });
+  });
+
+  it('throws reverify_failed (NOT mismatch) on rate-limit errors', async () => {
+    mocks.signInWithPassword.mockResolvedValueOnce({
+      error: {
+        message: 'For security purposes, you can only request this after 60 seconds.',
+        status: 429,
+      },
+    });
+
+    await expect(
+      securityClient.changePassword({
+        email: EMAIL,
+        currentPassword: CURR,
+        newPassword: NEW,
+      })
+    ).rejects.toMatchObject({
+      name: 'SecurityApiError',
+      statusCode: 429,
+      code: 'reverify_failed',
+      message: expect.stringContaining('60 seconds'),
+    });
+    expect(mocks.updateUser).not.toHaveBeenCalled();
+  });
+
+  it('throws reverify_failed on email-not-confirmed error', async () => {
+    mocks.signInWithPassword.mockResolvedValueOnce({
+      error: {
+        message: 'Email not confirmed',
+        code: 'email_not_confirmed',
+        status: 400,
+      },
+    });
+
+    await expect(
+      securityClient.changePassword({
+        email: EMAIL,
+        currentPassword: CURR,
+        newPassword: NEW,
+      })
+    ).rejects.toMatchObject({
+      code: 'reverify_failed',
+      statusCode: 400,
+    });
+  });
+
+  it('throws reverify_failed with fallback message when reverify error has no message', async () => {
+    mocks.signInWithPassword.mockResolvedValueOnce({
+      error: { message: '' } as { message: string },
+    });
+
+    await expect(
+      securityClient.changePassword({
+        email: EMAIL,
+        currentPassword: CURR,
+        newPassword: NEW,
+      })
+    ).rejects.toMatchObject({
+      code: 'reverify_failed',
+      statusCode: 500,
+      message: expect.stringContaining('Impossibile verificare'),
+    });
   });
 
   it('throws update_failed when updateUser rejects', async () => {
