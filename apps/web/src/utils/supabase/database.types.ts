@@ -844,6 +844,7 @@ export type Database = {
           id: string
           last_login_at: string | null
           last_name: string
+          onboarded: boolean
           preferences: Json | null
           role: Database["public"]["Enums"]["user_role"]
           status: Database["public"]["Enums"]["user_status"]
@@ -859,6 +860,7 @@ export type Database = {
           id: string
           last_login_at?: string | null
           last_name: string
+          onboarded?: boolean
           preferences?: Json | null
           role?: Database["public"]["Enums"]["user_role"]
           status?: Database["public"]["Enums"]["user_status"]
@@ -874,6 +876,7 @@ export type Database = {
           id?: string
           last_login_at?: string | null
           last_name?: string
+          onboarded?: boolean
           preferences?: Json | null
           role?: Database["public"]["Enums"]["user_role"]
           status?: Database["public"]["Enums"]["user_status"]
