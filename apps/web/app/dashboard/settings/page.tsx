@@ -13,6 +13,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { createClient } from '@/utils/supabase/client';
 import { CategoryManager } from '@/components/categories/CategoryManager';
+import { NotificationsTab } from '@/components/settings/NotificationsTab';
 import {
   User,
   CreditCard,
@@ -36,9 +37,7 @@ import {
   Trash2,
   Key,
   Monitor,
-  Clock,
   Mail,
-  MessageSquare,
   TrendingUp,
   Wallet,
   Sparkles,
@@ -71,15 +70,12 @@ type TabKey =
   | 'security'
   | 'data';
 
-interface UserPreferences {
+// Profile-form-owned slice of preferences. Notifications are owned and
+// persisted by <NotificationsTab /> — don't add them here or handleSaveProfile
+// will clobber the nested notifications schema.
+interface ProfileFormPreferences {
   theme?: 'system' | 'dracula' | 'italian';
   language?: string;
-  notifications?: {
-    email?: boolean;
-    push?: boolean;
-    categories?: boolean;
-    budgets?: boolean;
-  };
 }
 
 interface FormData {
@@ -90,7 +86,7 @@ interface FormData {
   bio: string;
   timezone: string;
   currency: string;
-  preferences: UserPreferences;
+  preferences: ProfileFormPreferences;
 }
 
 const TABS: { key: TabKey; label: string }[] = [
@@ -207,7 +203,6 @@ export default function SettingsPage() {
     preferences: {
       theme: 'system',
       language: 'it',
-      notifications: { email: true, push: true, categories: true, budgets: true },
     },
   });
 
@@ -224,9 +219,6 @@ export default function SettingsPage() {
   const [apiKeys, setApiKeys] = useState({ openai: '', anthropic: '', gemini: '', coinbase: '', plaid: '' });
   const [apiKeyFeedback, setApiKeyFeedback] = useState<string | null>(null);
 
-  // Notification state
-  const [notifFeedback, setNotifFeedback] = useState<string | null>(null);
-
   // Security state
   const [securityFeedback, setSecurityFeedback] = useState<string | null>(null);
 
@@ -237,7 +229,6 @@ export default function SettingsPage() {
   useEffect(() => {
     if (user) {
       const prefs = user.preferences as Record<string, unknown> | null;
-      const notif = prefs?.notifications as Record<string, boolean> | undefined;
       setFormData({
         firstName: user.firstName || '',
         lastName: user.lastName || '',
@@ -249,12 +240,6 @@ export default function SettingsPage() {
         preferences: {
           theme: (prefs?.theme as Theme) || 'system',
           language: (prefs?.language as string) || 'it',
-          notifications: {
-            email: notif?.email ?? true,
-            push: notif?.push ?? true,
-            categories: notif?.categories ?? true,
-            budgets: notif?.budgets ?? true,
-          },
         },
       });
     }
@@ -281,13 +266,22 @@ export default function SettingsPage() {
     try {
       const supabase = createClient();
 
+      // Merge profile-form prefs with the existing stored preferences so we
+      // preserve keys owned by other tabs (e.g. `notifications` from <NotificationsTab />).
+      const existingPrefs =
+        (user.preferences as Record<string, unknown> | null) ?? {};
+      const mergedPreferences = {
+        ...existingPrefs,
+        ...formData.preferences,
+      };
+
       // Type-safe update with explicit casting to avoid Next.js build type inference issues
       const updateData = {
         first_name: formData.firstName,
         last_name: formData.lastName,
         timezone: formData.timezone,
         currency: formData.currency,
-        preferences: JSON.parse(JSON.stringify(formData.preferences)),
+        preferences: JSON.parse(JSON.stringify(mergedPreferences)),
       };
 
       const { error: profileError } = await (supabase
@@ -302,7 +296,7 @@ export default function SettingsPage() {
         lastName: formData.lastName,
         timezone: formData.timezone,
         currency: formData.currency,
-        preferences: formData.preferences as Record<string, unknown>,
+        preferences: mergedPreferences,
         fullName: `${formData.firstName} ${formData.lastName}`,
       });
       setProfileSaved(true);
@@ -885,88 +879,9 @@ export default function SettingsPage() {
       )}
 
       {/* ================================================================= */}
-      {/* Notifications Tab */}
+      {/* Notifications Tab — real persistence to profiles.preferences.notifications */}
       {/* ================================================================= */}
-      {activeTab === 'notifications' && (
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-          <Card className="p-6 rounded-2xl border-0 shadow-sm">
-            <h3 className="text-lg font-semibold text-foreground mb-6">Canali di Notifica</h3>
-            <div className="space-y-6">
-              {[
-                { icon: Mail, title: 'Notifiche Email', desc: 'Ricevi aggiornamenti via email', defaultOn: true },
-                { icon: Smartphone, title: 'Notifiche Push', desc: 'Ricevi notifiche sul dispositivo', defaultOn: true },
-                { icon: MessageSquare, title: 'Notifiche In-App', desc: "Badge e popup nell'applicazione", defaultOn: true },
-              ].map((item) => (
-                <div key={item.title} className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <item.icon className="w-5 h-5 text-muted-foreground" />
-                    <div>
-                      <p className="font-medium text-foreground">{item.title}</p>
-                      <p className="text-sm text-muted-foreground">{item.desc}</p>
-                    </div>
-                  </div>
-                  <input type="checkbox" defaultChecked={item.defaultOn} className={TOGGLE_CLASS} />
-                </div>
-              ))}
-
-              <div className="border-t border-border pt-6">
-                <h4 className="font-medium text-foreground mb-4">Tipologia Notifiche</h4>
-                <div className="space-y-4">
-                  {[
-                    { label: 'Rapporto Mensile AI', desc: 'Analisi mensile delle tue finanze', defaultOn: true },
-                    { label: 'Alert Budget', desc: "Quando superi l'80% di un budget", defaultOn: true },
-                    { label: 'Consigli AI Personalizzati', desc: 'Suggerimenti per ottimizzare', defaultOn: true },
-                    { label: 'Aggiornamenti Investimenti', desc: 'Variazioni significative del portafoglio', defaultOn: true },
-                    { label: 'Scadenze Ricorrenti', desc: 'Promemoria pagamenti in scadenza', defaultOn: true },
-                    { label: 'Obiettivi Raggiunti', desc: 'Celebra i tuoi traguardi', defaultOn: true },
-                    { label: 'Nuove Funzionalità', desc: "Scopri le novità dell'app", defaultOn: false },
-                    { label: 'Promozioni e Offerte', desc: 'Offerte speciali e sconti', defaultOn: false },
-                  ].map((item) => (
-                    <div key={item.label} className="flex items-center justify-between">
-                      <div>
-                        <p className="font-medium text-sm text-foreground">{item.label}</p>
-                        <p className="text-xs text-muted-foreground">{item.desc}</p>
-                      </div>
-                      <input type="checkbox" defaultChecked={item.defaultOn} className={TOGGLE_CLASS} />
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="border-t border-border pt-6">
-                <h4 className="font-medium text-foreground mb-4">Orario Silenziamento</h4>
-                <div className="flex items-center gap-4 flex-wrap">
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-muted-foreground" />
-                    <Label>Dalle</Label>
-                    <Input type="time" defaultValue="22:00" className="w-32" />
-                  </div>
-                  <span className="text-muted-foreground">&mdash;</span>
-                  <div className="flex items-center gap-2">
-                    <Label>Alle</Label>
-                    <Input type="time" defaultValue="08:00" className="w-32" />
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex justify-end">
-                {notifFeedback ? (
-                  <span className="flex items-center gap-2 text-[13px] text-emerald-600">
-                    <Check className="w-4 h-4" /> {notifFeedback}
-                  </span>
-                ) : (
-                  <Button
-                    onClick={() => showFeedback(setNotifFeedback, 'Preferenze notifiche salvate!')}
-                    className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white border-0"
-                  >
-                    Salva Preferenze
-                  </Button>
-                )}
-              </div>
-            </div>
-          </Card>
-        </motion.div>
-      )}
+      {activeTab === 'notifications' && <NotificationsTab />}
 
       {/* ================================================================= */}
       {/* Integrations Tab */}
