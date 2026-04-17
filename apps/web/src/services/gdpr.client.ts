@@ -8,6 +8,7 @@
  * @module services/gdpr.client
  */
 
+import { FunctionsHttpError } from '@supabase/supabase-js';
 import { createClient } from '@/utils/supabase/client';
 import type { DeleteAccountResult } from '@/types/gdpr';
 
@@ -32,6 +33,9 @@ export class GdprApiError extends Error {
   ) {
     super(message);
     this.name = 'GdprApiError';
+    // Preserve `instanceof` across transpilation targets — aligned with
+    // other error classes in this repo (e.g. BankingApiError).
+    Object.setPrototypeOf(this, GdprApiError.prototype);
   }
 }
 
@@ -44,12 +48,7 @@ type SupabaseLike = {
     invoke: <T = unknown>(
       name: string,
       opts: { body: unknown }
-    ) => Promise<{
-      data: T | null;
-      error:
-        | { message?: string; context?: { status?: number } }
-        | null;
-    }>;
+    ) => Promise<{ data: T | null; error: unknown }>;
   };
 };
 
@@ -66,6 +65,42 @@ function mapErrorCode(
   }
   if (httpStatus && httpStatus >= 500) return 'delete_failed';
   return 'unknown';
+}
+
+/**
+ * Parse a supabase.functions.invoke() error into (message, httpStatus).
+ *
+ * `FunctionsHttpError` carries the real response body in `error.context`.
+ * Edge functions in this repo return `{ error: "<message>" }` on non-2xx,
+ * so we must read the body to recover the server-side error message —
+ * otherwise `error.message` is a generic HTTP description.
+ *
+ * Non-HTTP errors (network, relay) fall through to the `.message` field.
+ */
+async function parseInvokeError(error: unknown): Promise<{
+  serverMsg: string;
+  httpStatus: number | undefined;
+}> {
+  if (error instanceof FunctionsHttpError) {
+    const status = error.context?.status;
+    try {
+      const body = (await error.context.json()) as
+        | { error?: string; message?: string }
+        | null;
+      const serverMsg =
+        body?.error || body?.message || error.message || '';
+      return { serverMsg, httpStatus: status };
+    } catch {
+      return { serverMsg: error.message || '', httpStatus: status };
+    }
+  }
+  if (error && typeof error === 'object') {
+    const e = error as { message?: unknown; context?: { status?: number } };
+    const m = typeof e.message === 'string' ? e.message : '';
+    const status = typeof e.context?.status === 'number' ? e.context.status : undefined;
+    return { serverMsg: m, httpStatus: status };
+  }
+  return { serverMsg: '', httpStatus: undefined };
 }
 
 // =============================================================================
@@ -96,9 +131,7 @@ export const gdprClient = {
 
     type InvokeResponse = {
       data: DeleteAccountResult | null;
-      error:
-        | { message?: string; context?: { status?: number } }
-        | null;
+      error: unknown;
     };
     let response: InvokeResponse;
     try {
@@ -117,10 +150,8 @@ export const gdprClient = {
 
     const { data, error } = response;
     if (error) {
-      const status = error.context?.status;
-      // Edge function returns { error: "<code_or_message>" } on non-2xx
-      const serverMsg = error.message || '';
-      const code = mapErrorCode(serverMsg, status);
+      const { serverMsg, httpStatus } = await parseInvokeError(error);
+      const code = mapErrorCode(serverMsg, httpStatus);
       const humanMessage =
         code === 'password_mismatch'
           ? 'La password non è corretta'
@@ -131,7 +162,7 @@ export const gdprClient = {
               : code === 'delete_failed'
                 ? 'Eliminazione fallita. Riprova più tardi.'
                 : serverMsg || 'Errore imprevisto durante l\'eliminazione.';
-      throw new GdprApiError(humanMessage, status || 500, code, error);
+      throw new GdprApiError(humanMessage, httpStatus || 500, code, error);
     }
 
     if (!data || data.success !== true) {

@@ -17,7 +17,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import {
@@ -143,7 +143,7 @@ function DeleteAccountForm({ onCancel }: { onCancel: () => void }) {
     if (serverError) setServerError(null);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (submitting) return;
 
