@@ -84,7 +84,7 @@ export function defaultNotificationPreferences(): NotificationPreferences {
 // Parse / migration helpers
 // =============================================================================
 
-const TIME_REGEX = /^([01]\d|2[0-3]):[0-5]\d$/;
+export const TIME_REGEX = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 function parseBool(value: unknown, fallback: boolean): boolean {
   return typeof value === 'boolean' ? value : fallback;
@@ -92,6 +92,21 @@ function parseBool(value: unknown, fallback: boolean): boolean {
 
 function parseTime(value: unknown, fallback: string): string {
   return typeof value === 'string' && TIME_REGEX.test(value) ? value : fallback;
+}
+
+// Use own-property checks to avoid prototype-pollution influencing parsing.
+function hasOwn(obj: Record<string, unknown>, key: string): boolean {
+  return Object.prototype.hasOwnProperty.call(obj, key);
+}
+
+function getOwn(obj: Record<string, unknown>, key: string): unknown {
+  return hasOwn(obj, key) ? obj[key] : undefined;
+}
+
+function asOwnObject(value: unknown): Record<string, unknown> {
+  return value && typeof value === 'object'
+    ? (value as Record<string, unknown>)
+    : {};
 }
 
 /**
@@ -112,69 +127,90 @@ export function parseNotificationPreferences(
   }
   const source = raw as Record<string, unknown>;
 
-  // Detect legacy flat shape: has `email`/`push` at top-level, no `channels` nested
+  // Detect legacy flat shape: has any documented legacy top-level key, no `channels` nested
   const isLegacyFlat =
-    !('channels' in source) &&
-    ('email' in source || 'push' in source || 'budgets' in source);
+    !hasOwn(source, 'channels') &&
+    (hasOwn(source, 'email') ||
+      hasOwn(source, 'push') ||
+      hasOwn(source, 'categories') ||
+      hasOwn(source, 'budgets'));
 
   if (isLegacyFlat) {
     return {
       channels: {
-        email: parseBool(source.email, defaults.channels.email),
-        push: parseBool(source.push, defaults.channels.push),
+        email: parseBool(getOwn(source, 'email'), defaults.channels.email),
+        push: parseBool(getOwn(source, 'push'), defaults.channels.push),
         inApp: defaults.channels.inApp,
       },
       types: {
         ...defaults.types,
         // map legacy `budgets` → budgetAlerts
-        budgetAlerts: parseBool(source.budgets, defaults.types.budgetAlerts),
+        budgetAlerts: parseBool(
+          getOwn(source, 'budgets'),
+          defaults.types.budgetAlerts
+        ),
       },
       quietHours: defaults.quietHours,
     };
   }
 
-  const channelsSource = (source.channels ?? {}) as Record<string, unknown>;
-  const typesSource = (source.types ?? {}) as Record<string, unknown>;
-  const quietSource = (source.quietHours ?? {}) as Record<string, unknown>;
+  const channelsSource = asOwnObject(getOwn(source, 'channels'));
+  const typesSource = asOwnObject(getOwn(source, 'types'));
+  const quietSource = asOwnObject(getOwn(source, 'quietHours'));
 
   return {
     channels: {
-      email: parseBool(channelsSource.email, defaults.channels.email),
-      push: parseBool(channelsSource.push, defaults.channels.push),
-      inApp: parseBool(channelsSource.inApp, defaults.channels.inApp),
+      email: parseBool(
+        getOwn(channelsSource, 'email'),
+        defaults.channels.email
+      ),
+      push: parseBool(getOwn(channelsSource, 'push'), defaults.channels.push),
+      inApp: parseBool(
+        getOwn(channelsSource, 'inApp'),
+        defaults.channels.inApp
+      ),
     },
     types: {
       monthlyReport: parseBool(
-        typesSource.monthlyReport,
+        getOwn(typesSource, 'monthlyReport'),
         defaults.types.monthlyReport
       ),
       budgetAlerts: parseBool(
-        typesSource.budgetAlerts,
+        getOwn(typesSource, 'budgetAlerts'),
         defaults.types.budgetAlerts
       ),
-      aiAdvice: parseBool(typesSource.aiAdvice, defaults.types.aiAdvice),
+      aiAdvice: parseBool(
+        getOwn(typesSource, 'aiAdvice'),
+        defaults.types.aiAdvice
+      ),
       investmentUpdates: parseBool(
-        typesSource.investmentUpdates,
+        getOwn(typesSource, 'investmentUpdates'),
         defaults.types.investmentUpdates
       ),
       recurringDeadlines: parseBool(
-        typesSource.recurringDeadlines,
+        getOwn(typesSource, 'recurringDeadlines'),
         defaults.types.recurringDeadlines
       ),
       goalsAchieved: parseBool(
-        typesSource.goalsAchieved,
+        getOwn(typesSource, 'goalsAchieved'),
         defaults.types.goalsAchieved
       ),
       newFeatures: parseBool(
-        typesSource.newFeatures,
+        getOwn(typesSource, 'newFeatures'),
         defaults.types.newFeatures
       ),
-      promotions: parseBool(typesSource.promotions, defaults.types.promotions),
+      promotions: parseBool(
+        getOwn(typesSource, 'promotions'),
+        defaults.types.promotions
+      ),
     },
     quietHours: {
-      enabled: parseBool(quietSource.enabled, defaults.quietHours.enabled),
-      from: parseTime(quietSource.from, defaults.quietHours.from),
-      to: parseTime(quietSource.to, defaults.quietHours.to),
+      enabled: parseBool(
+        getOwn(quietSource, 'enabled'),
+        defaults.quietHours.enabled
+      ),
+      from: parseTime(getOwn(quietSource, 'from'), defaults.quietHours.from),
+      to: parseTime(getOwn(quietSource, 'to'), defaults.quietHours.to),
     },
   };
 }

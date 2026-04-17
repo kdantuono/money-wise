@@ -70,15 +70,12 @@ type TabKey =
   | 'security'
   | 'data';
 
-interface UserPreferences {
+// Profile-form-owned slice of preferences. Notifications are owned and
+// persisted by <NotificationsTab /> — don't add them here or handleSaveProfile
+// will clobber the nested notifications schema.
+interface ProfileFormPreferences {
   theme?: 'system' | 'dracula' | 'italian';
   language?: string;
-  notifications?: {
-    email?: boolean;
-    push?: boolean;
-    categories?: boolean;
-    budgets?: boolean;
-  };
 }
 
 interface FormData {
@@ -89,7 +86,7 @@ interface FormData {
   bio: string;
   timezone: string;
   currency: string;
-  preferences: UserPreferences;
+  preferences: ProfileFormPreferences;
 }
 
 const TABS: { key: TabKey; label: string }[] = [
@@ -206,7 +203,6 @@ export default function SettingsPage() {
     preferences: {
       theme: 'system',
       language: 'it',
-      notifications: { email: true, push: true, categories: true, budgets: true },
     },
   });
 
@@ -233,7 +229,6 @@ export default function SettingsPage() {
   useEffect(() => {
     if (user) {
       const prefs = user.preferences as Record<string, unknown> | null;
-      const notif = prefs?.notifications as Record<string, boolean> | undefined;
       setFormData({
         firstName: user.firstName || '',
         lastName: user.lastName || '',
@@ -245,12 +240,6 @@ export default function SettingsPage() {
         preferences: {
           theme: (prefs?.theme as Theme) || 'system',
           language: (prefs?.language as string) || 'it',
-          notifications: {
-            email: notif?.email ?? true,
-            push: notif?.push ?? true,
-            categories: notif?.categories ?? true,
-            budgets: notif?.budgets ?? true,
-          },
         },
       });
     }
@@ -277,13 +266,22 @@ export default function SettingsPage() {
     try {
       const supabase = createClient();
 
+      // Merge profile-form prefs with the existing stored preferences so we
+      // preserve keys owned by other tabs (e.g. `notifications` from <NotificationsTab />).
+      const existingPrefs =
+        (user.preferences as Record<string, unknown> | null) ?? {};
+      const mergedPreferences = {
+        ...existingPrefs,
+        ...formData.preferences,
+      };
+
       // Type-safe update with explicit casting to avoid Next.js build type inference issues
       const updateData = {
         first_name: formData.firstName,
         last_name: formData.lastName,
         timezone: formData.timezone,
         currency: formData.currency,
-        preferences: JSON.parse(JSON.stringify(formData.preferences)),
+        preferences: JSON.parse(JSON.stringify(mergedPreferences)),
       };
 
       const { error: profileError } = await (supabase
@@ -298,7 +296,7 @@ export default function SettingsPage() {
         lastName: formData.lastName,
         timezone: formData.timezone,
         currency: formData.currency,
-        preferences: formData.preferences as Record<string, unknown>,
+        preferences: mergedPreferences,
         fullName: `${formData.firstName} ${formData.lastName}`,
       });
       setProfileSaved(true);

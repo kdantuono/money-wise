@@ -9,7 +9,7 @@
 
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   AlertCircle,
@@ -29,6 +29,7 @@ import { userPreferencesClient } from '@/services/user-preferences.client';
 import {
   defaultNotificationPreferences,
   parseNotificationPreferences,
+  TIME_REGEX,
   type NotificationChannels,
   type NotificationPreferences,
   type NotificationTypes,
@@ -146,6 +147,7 @@ export function NotificationsTab() {
   const [isSaving, setIsSaving] = useState(false);
   const [savedAt, setSavedAt] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const savedResetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Re-hydrate when the auth user object changes (e.g. session refresh)
   useEffect(() => {
@@ -153,6 +155,16 @@ export function NotificationsTab() {
     setTypes(initial.types);
     setQuietHours(initial.quietHours);
   }, [initial]);
+
+  // Clear any pending "Salvato!" reset timer on unmount
+  useEffect(() => {
+    return () => {
+      if (savedResetTimer.current) {
+        clearTimeout(savedResetTimer.current);
+        savedResetTimer.current = null;
+      }
+    };
+  }, []);
 
   const handleChannelToggle = (key: keyof NotificationChannels) => {
     setChannels((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -175,6 +187,17 @@ export function NotificationsTab() {
       setError('Utente non trovato. Effettua nuovamente il login.');
       return;
     }
+    // Guard against malformed time values before persisting. `<input type="time">`
+    // can emit an empty string, and quietHours could be set programmatically.
+    if (
+      quietHours.enabled &&
+      (!TIME_REGEX.test(quietHours.from) || !TIME_REGEX.test(quietHours.to))
+    ) {
+      setError(
+        'Orari di silenziamento non validi. Usa il formato HH:MM (es. 22:00).'
+      );
+      return;
+    }
     setIsSaving(true);
     setError(null);
     try {
@@ -193,7 +216,13 @@ export function NotificationsTab() {
         preferences: mergedPreferences as unknown as Record<string, unknown>,
       });
       setSavedAt(Date.now());
-      setTimeout(() => setSavedAt(null), 2500);
+      if (savedResetTimer.current) {
+        clearTimeout(savedResetTimer.current);
+      }
+      savedResetTimer.current = setTimeout(() => {
+        setSavedAt(null);
+        savedResetTimer.current = null;
+      }, 2500);
     } catch (err) {
       console.error('Failed to save notification preferences:', err);
       setError(

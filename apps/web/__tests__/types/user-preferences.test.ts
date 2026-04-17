@@ -107,6 +107,35 @@ describe('parseNotificationPreferences — legacy flat shape', () => {
     expect(parsed.channels.push).toBe(true);
     expect(parsed.types).toEqual(defaultNotificationTypes());
   });
+
+  it('recognizes legacy shape when only `categories` key is present', () => {
+    // Regression: a legacy payload with only `categories` must not be
+    // misclassified and fall back to full defaults.
+    const parsed = parseNotificationPreferences({ categories: true });
+    // Detected as legacy flat → channels defaulted, quietHours defaulted
+    expect(parsed.channels).toEqual(defaultNotificationChannels());
+    expect(parsed.quietHours).toEqual(defaultQuietHours());
+  });
+});
+
+describe('parseNotificationPreferences — prototype safety', () => {
+  it('ignores inherited `channels` properties (prototype pollution guard)', () => {
+    const polluted = Object.create({
+      channels: { email: false, push: false, inApp: false },
+    });
+    const parsed = parseNotificationPreferences(polluted);
+    // The inherited `channels` must not be treated as a nested shape marker
+    // (own keys absent → defaults returned).
+    expect(parsed).toEqual(defaultNotificationPreferences());
+  });
+
+  it('ignores inherited legacy keys (prototype pollution guard)', () => {
+    const polluted = Object.create({ email: false, budgets: false });
+    const parsed = parseNotificationPreferences(polluted);
+    // Inherited `email`/`budgets` shouldn't flip the shape into legacy mode.
+    expect(parsed.channels.email).toBe(true);
+    expect(parsed.types.budgetAlerts).toBe(true);
+  });
 });
 
 describe('parseNotificationPreferences — nested (current) shape', () => {

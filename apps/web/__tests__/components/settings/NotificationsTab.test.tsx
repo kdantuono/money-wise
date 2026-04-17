@@ -316,6 +316,31 @@ describe('<NotificationsTab />', () => {
       );
     });
 
+    it('blocks save and shows an error when quiet hours are enabled with invalid time values', async () => {
+      mockUseAuthStore.mockReturnValue({
+        user: mockUser({
+          notifications: {
+            channels: { email: true, push: true, inApp: true },
+            types: {},
+            // Seed a valid payload; we'll make it invalid via the UI below.
+            quietHours: { enabled: true, from: '22:00', to: '08:00' },
+          },
+        }),
+        setUser: setUserMock,
+      });
+      render(<NotificationsTab />);
+      // Clear `from` — <input type="time"> can emit an empty string.
+      fireEvent.change(screen.getByLabelText('Dalle'), {
+        target: { value: '' },
+      });
+      fireEvent.click(
+        screen.getByRole('button', { name: /Salva Preferenze/i })
+      );
+      const alert = await screen.findByRole('alert');
+      expect(alert).toHaveTextContent(/Orari di silenziamento non validi/i);
+      expect(updateNotificationsMock).not.toHaveBeenCalled();
+    });
+
     it('shows error and skips service call when user is missing id', async () => {
       mockUseAuthStore.mockReturnValue({
         user: { ...mockUser(), id: '' },
