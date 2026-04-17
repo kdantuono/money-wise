@@ -193,17 +193,16 @@ Active code owners review all changes to their respective areas:
 All developers must run ZERO TOLERANCE validation before pushing:
 
 ```bash
-# Automatic: git push will run this pre-push hook
-# Manual: for testing/validation
+# On machines with Docker + act:
 ./.claude/scripts/validate-ci.sh 10
+
+# On machines without Docker (e.g. Steam Deck):
+./.claude/scripts/validate-ci.sh 8
 ```
 
 **Levels 1-10 Status:**
-- Levels 1-8: Blocking (pre-push)
-- Levels 9-10: Blocking (comprehensive - NEW)
-- Requirements:
-  - act installed (for workflow simulation)
-  - Docker running (for act execution)
+- Levels 1-8: Always run locally (lint, typecheck, tests, yaml/actions syntax)
+- Levels 9-10: Require Docker + `act` — skip locally when unavailable; remote GitHub Actions is the authoritative gate for workflow simulation.
 
 ---
 
@@ -217,8 +216,9 @@ git checkout -b feature/your-feature develop
 
 ### Before Pushing
 ```bash
-# Run ZERO TOLERANCE validation (levels 1-10)
-./.claude/scripts/validate-ci.sh 10
+# Run validation (levels 1-8 always, 9-10 if Docker + act available)
+./.claude/scripts/validate-ci.sh 8    # Steam Deck / no-Docker
+./.claude/scripts/validate-ci.sh 10   # Full simulation
 
 # If all levels pass, safe to push
 git push origin feature/your-feature
