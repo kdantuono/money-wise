@@ -46,6 +46,12 @@ export type PasswordChangeInput = z.infer<typeof passwordChangeSchema>;
 // Result shape
 // =============================================================================
 
+/**
+ * Returned by `securityClient.changePassword` on success.
+ * Used as the public return type so callers + tests share a single
+ * definition.
+ */
 export interface PasswordChangeResult {
+  /** ISO-8601 timestamp of when the server confirmed the update. */
   changedAt: string;
 }

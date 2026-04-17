@@ -12,6 +12,7 @@
  */
 
 import { createClient } from '@/utils/supabase/client';
+import type { PasswordChangeResult } from '@/types/security';
 
 // =============================================================================
 // Error class
@@ -20,6 +21,7 @@ import { createClient } from '@/utils/supabase/client';
 export type SecurityErrorCode =
   | 'missing_email'
   | 'current_password_mismatch'
+  | 'reverify_failed'
   | 'update_failed'
   | 'unknown';
 
@@ -39,17 +41,39 @@ export class SecurityApiError extends Error {
 // Client
 // =============================================================================
 
+type SupabaseAuthError = {
+  message: string;
+  status?: number;
+  code?: string;
+  name?: string;
+};
+
 type SupabaseLike = {
   auth: {
     signInWithPassword: (creds: {
       email: string;
       password: string;
-    }) => Promise<{ error: { message: string } | null }>;
+    }) => Promise<{ error: SupabaseAuthError | null }>;
     updateUser: (attrs: {
       password: string;
-    }) => Promise<{ error: { message: string } | null }>;
+    }) => Promise<{ error: SupabaseAuthError | null }>;
   };
 };
+
+/**
+ * Distinguish a genuine wrong-password from other Supabase auth failures
+ * (rate limit, email not confirmed, network, server error). Only the first
+ * should be routed to the currentPassword field as a validation error;
+ * everything else belongs in the top-level alert.
+ *
+ * Supabase >= 2.43 returns `error.code = 'invalid_credentials'` on wrong
+ * password. Older versions only expose `message: "Invalid login credentials"`.
+ * We accept both.
+ */
+function isWrongPassword(err: SupabaseAuthError): boolean {
+  if (err.code === 'invalid_credentials') return true;
+  return /invalid\s*(login|credentials)/i.test(err.message || '');
+}
 
 export const securityClient = {
   /**
@@ -63,7 +87,7 @@ export const securityClient = {
     email: string;
     currentPassword: string;
     newPassword: string;
-  }): Promise<{ changedAt: string }> {
+  }): Promise<PasswordChangeResult> {
     const { email, currentPassword, newPassword } = params;
 
     if (!email) {
@@ -84,11 +108,23 @@ export const securityClient = {
       password: currentPassword,
     });
     if (reverify.error) {
+      const err = reverify.error;
+      if (isWrongPassword(err)) {
+        throw new SecurityApiError(
+          'La password attuale non è corretta',
+          401,
+          'current_password_mismatch',
+          err
+        );
+      }
+      // Rate limit, email not confirmed, network, server error: surface
+      // as a top-level banner, not a field error.
       throw new SecurityApiError(
-        'La password attuale non è corretta',
-        401,
-        'current_password_mismatch',
-        reverify.error
+        err.message ||
+          'Impossibile verificare la password attuale. Riprova più tardi.',
+        err.status || 500,
+        'reverify_failed',
+        err
       );
     }
 
@@ -98,7 +134,7 @@ export const securityClient = {
       throw new SecurityApiError(
         update.error.message ||
           'Impossibile aggiornare la password. Riprova più tardi.',
-        500,
+        update.error.status || 500,
         'update_failed',
         update.error
       );
