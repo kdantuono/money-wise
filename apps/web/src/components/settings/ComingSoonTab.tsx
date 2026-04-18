@@ -51,8 +51,9 @@ export function ComingSoonTab({
         <div className="flex items-start gap-4">
           <div
             className={`w-12 h-12 rounded-xl bg-gradient-to-br ${iconGradient} flex items-center justify-center shadow-lg flex-shrink-0`}
+            aria-hidden="true"
           >
-            <Icon className="w-6 h-6 text-white" />
+            <Icon className="w-6 h-6 text-white" aria-hidden="true" />
           </div>
           <div className="flex-1">
             <div className="flex items-center gap-2 flex-wrap">
@@ -74,9 +75,12 @@ export function ComingSoonTab({
             Cosa potrai fare
           </h4>
           <ul className="space-y-2">
-            {previewFeatures.map((feature) => (
+            {previewFeatures.map((feature, index) => (
               <li
-                key={feature}
+                // Index-based key — feature strings are not guaranteed unique
+                // (callers may pass duplicate labels) and the list is static
+                // per render so index is stable.
+                key={`${index}-${feature}`}
                 className="flex items-start gap-2 text-[13px] text-muted-foreground"
               >
                 <span
