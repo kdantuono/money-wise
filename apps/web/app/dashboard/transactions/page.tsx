@@ -47,12 +47,12 @@ function CustomTooltip({ active, payload, label }: { active?: boolean; payload?:
 // Tab types
 // ---------------------------------------------------------------------------
 
-type TabKey = 'all' | 'expenses' | 'income' | 'recurring';
+type TabKey = 'all' | 'fixed' | 'variable' | 'recurring';
 
 const TABS: { key: TabKey; label: string }[] = [
   { key: 'all', label: 'Tutte' },
-  { key: 'expenses', label: 'Uscite' },
-  { key: 'income', label: 'Entrate' },
+  { key: 'fixed', label: 'Fisse' },
+  { key: 'variable', label: 'Variabili' },
   { key: 'recurring', label: 'Ricorrenti' },
 ];
 
@@ -176,23 +176,50 @@ export default function ExpensesPage() {
     [categorySpending]
   );
 
-  // Filter transactions by tab
+  // Filter transactions by tab — "Spese" view is expense-class oriented:
+  // Fisse / Variabili partition the DEBIT universe, with Ricorrenti as an
+  // orthogonal slice. Income transactions are not shown under these tabs;
+  // use /dashboard/transactions for full list with Entrate view.
   const filteredTransactions = useMemo(() => {
     switch (activeTab) {
-      case 'expenses': return transactions.filter(t => t.type === 'DEBIT');
-      case 'income': return transactions.filter(t => t.type === 'CREDIT');
-      case 'recurring': return transactions.filter(t => t.isRecurring);
-      default: return transactions;
+      case 'fixed':
+        return transactions.filter(
+          (t) =>
+            t.type === 'DEBIT' &&
+            t.categoryId &&
+            expenseClassMap.get(t.categoryId) === 'FIXED'
+        );
+      case 'variable':
+        return transactions.filter(
+          (t) =>
+            t.type === 'DEBIT' &&
+            t.categoryId &&
+            expenseClassMap.get(t.categoryId) === 'VARIABLE'
+        );
+      case 'recurring':
+        return transactions.filter((t) => t.isRecurring);
+      default:
+        return transactions;
     }
-  }, [transactions, activeTab]);
+  }, [transactions, activeTab, expenseClassMap]);
 
   // Tab counts
   const tabCounts: Record<TabKey, number> = useMemo(() => ({
     all: transactions.length,
-    expenses: transactions.filter(t => t.type === 'DEBIT').length,
-    income: transactions.filter(t => t.type === 'CREDIT').length,
-    recurring: transactions.filter(t => t.isRecurring).length,
-  }), [transactions]);
+    fixed: transactions.filter(
+      (t) =>
+        t.type === 'DEBIT' &&
+        t.categoryId &&
+        expenseClassMap.get(t.categoryId) === 'FIXED'
+    ).length,
+    variable: transactions.filter(
+      (t) =>
+        t.type === 'DEBIT' &&
+        t.categoryId &&
+        expenseClassMap.get(t.categoryId) === 'VARIABLE'
+    ).length,
+    recurring: transactions.filter((t) => t.isRecurring).length,
+  }), [transactions, expenseClassMap]);
 
   if (isLoading) {
     return (

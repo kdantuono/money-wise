@@ -177,11 +177,13 @@ describe('TransactionsPage (ExpensesPage)', () => {
     it('renders tab filter buttons', async () => {
       render(<TransactionsPage />);
 
-      // Tab labels include counts, e.g. "Tutte (0)", "Uscite (0)"
+      // Tab labels include counts, e.g. "Tutte (0)", "Fisse (0)"
+      // Sprint 1.7: tabs reorganized around expense_class (Fisse/Variabili)
+      // instead of transaction type (Uscite/Entrate).
       await waitFor(() => {
         expect(screen.getByText(/Tutte \(/)).toBeInTheDocument();
-        expect(screen.getByText(/Uscite \(/)).toBeInTheDocument();
-        expect(screen.getByText(/Entrate \(/)).toBeInTheDocument();
+        expect(screen.getByText(/Fisse \(/)).toBeInTheDocument();
+        expect(screen.getByText(/Variabili \(/)).toBeInTheDocument();
         expect(screen.getByText(/Ricorrenti \(/)).toBeInTheDocument();
       });
     });
