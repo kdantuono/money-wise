@@ -64,11 +64,11 @@ function updateChain(
   errorResult: { message: string } | null,
   count: number | null = 1
 ) {
+  const eq = vi.fn().mockResolvedValue({ error: errorResult, count });
   return {
-    update: vi.fn().mockReturnValue({
-      eq: vi.fn().mockResolvedValue({ error: errorResult, count }),
-    }),
+    update: vi.fn().mockReturnValue({ eq }),
     select: vi.fn(),
+    eq,
   };
 }
 
@@ -187,7 +187,7 @@ describe('categorizationClient.suggestCategory', () => {
 describe('categorizationClient.applyCategory', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it('sends UPDATE with category_id and txId', async () => {
+  it('sends UPDATE with category_id and filters by txId via .eq("id", txId)', async () => {
     const chain = updateChain(null);
     mocks.fromSpy.mockReturnValueOnce(chain);
     await categorizationClient.applyCategory('tx-1', 'cat-food');
@@ -195,6 +195,9 @@ describe('categorizationClient.applyCategory', () => {
     // (checked separately — see "passes { count: 'exact' }" test).
     const callArgs = chain.update.mock.calls[0];
     expect(callArgs[0]).toEqual({ category_id: 'cat-food' });
+    // Regression guard: a refactor that drops/changes the filter would
+    // broadcast the UPDATE to every row in the user's scope.
+    expect(chain.eq).toHaveBeenCalledWith('id', 'tx-1');
   });
 
   // ⚠️ Contract test — bug observed post-deploy 2026-04-18.
