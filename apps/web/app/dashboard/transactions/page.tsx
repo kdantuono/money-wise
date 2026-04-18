@@ -176,50 +176,46 @@ export default function ExpensesPage() {
     [categorySpending]
   );
 
-  // Filter transactions by tab — "Spese" view is expense-class oriented:
-  // Fisse / Variabili partition the DEBIT universe, with Ricorrenti as an
-  // orthogonal slice. Income transactions are not shown under these tabs;
-  // use /dashboard/transactions for full list with Entrate view.
+  // This page is "Spese" — income (CREDIT) is out of scope here. We pre-filter
+  // to the expense universe so every tab (incluso 'all' and 'recurring')
+  // shows only DEBIT tx, consistent with the page title and the summary
+  // cards (Costi Fissi / Costi Variabili) that already compute on DEBIT.
+  const expenseTransactions = useMemo(
+    () => transactions.filter((t) => t.type === 'DEBIT'),
+    [transactions]
+  );
+
+  // Tab filters partition `expenseTransactions`: Fisse / Variabili split by
+  // category.expense_class; Ricorrenti is an orthogonal slice.
   const filteredTransactions = useMemo(() => {
     switch (activeTab) {
       case 'fixed':
-        return transactions.filter(
-          (t) =>
-            t.type === 'DEBIT' &&
-            t.categoryId &&
-            expenseClassMap.get(t.categoryId) === 'FIXED'
+        return expenseTransactions.filter(
+          (t) => t.categoryId && expenseClassMap.get(t.categoryId) === 'FIXED'
         );
       case 'variable':
-        return transactions.filter(
-          (t) =>
-            t.type === 'DEBIT' &&
-            t.categoryId &&
-            expenseClassMap.get(t.categoryId) === 'VARIABLE'
+        return expenseTransactions.filter(
+          (t) => t.categoryId && expenseClassMap.get(t.categoryId) === 'VARIABLE'
         );
       case 'recurring':
-        return transactions.filter((t) => t.isRecurring);
+        return expenseTransactions.filter((t) => t.isRecurring);
       default:
-        return transactions;
+        return expenseTransactions;
     }
-  }, [transactions, activeTab, expenseClassMap]);
+  }, [expenseTransactions, activeTab, expenseClassMap]);
 
-  // Tab counts
+  // Tab counts — aligned with filteredTransactions so the badges match the
+  // list below 1:1.
   const tabCounts: Record<TabKey, number> = useMemo(() => ({
-    all: transactions.length,
-    fixed: transactions.filter(
-      (t) =>
-        t.type === 'DEBIT' &&
-        t.categoryId &&
-        expenseClassMap.get(t.categoryId) === 'FIXED'
+    all: expenseTransactions.length,
+    fixed: expenseTransactions.filter(
+      (t) => t.categoryId && expenseClassMap.get(t.categoryId) === 'FIXED'
     ).length,
-    variable: transactions.filter(
-      (t) =>
-        t.type === 'DEBIT' &&
-        t.categoryId &&
-        expenseClassMap.get(t.categoryId) === 'VARIABLE'
+    variable: expenseTransactions.filter(
+      (t) => t.categoryId && expenseClassMap.get(t.categoryId) === 'VARIABLE'
     ).length,
-    recurring: transactions.filter((t) => t.isRecurring).length,
-  }), [transactions, expenseClassMap]);
+    recurring: expenseTransactions.filter((t) => t.isRecurring).length,
+  }), [expenseTransactions, expenseClassMap]);
 
   if (isLoading) {
     return (

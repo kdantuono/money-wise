@@ -187,6 +187,39 @@ describe('TransactionsPage (ExpensesPage)', () => {
         expect(screen.getByText(/Ricorrenti \(/)).toBeInTheDocument();
       });
     });
+
+    // Sprint 1.7 semantic check: the page is "Spese" so CREDIT rows should
+    // never be counted in any tab — all tabs partition the DEBIT universe.
+    it('excludes CREDIT (income) transactions from all tab counts', async () => {
+      const mixed = [
+        // 3 DEBIT expenses, 2 CREDIT income
+        { id: 't1', type: 'DEBIT', amount: -10, categoryId: 'cat-fixed', isRecurring: false, date: '2026-04-01', description: 'x', merchantName: null, accountId: 'a', status: 'POSTED' },
+        { id: 't2', type: 'DEBIT', amount: -20, categoryId: 'cat-var', isRecurring: true, date: '2026-04-02', description: 'y', merchantName: null, accountId: 'a', status: 'POSTED' },
+        { id: 't3', type: 'DEBIT', amount: -30, categoryId: null, isRecurring: false, date: '2026-04-03', description: 'z', merchantName: null, accountId: 'a', status: 'POSTED' },
+        { id: 't4', type: 'CREDIT', amount: 500, categoryId: 'cat-income', isRecurring: false, date: '2026-04-04', description: 'salary', merchantName: null, accountId: 'a', status: 'POSTED' },
+        { id: 't5', type: 'CREDIT', amount: 100, categoryId: 'cat-income', isRecurring: true, date: '2026-04-05', description: 'dividend', merchantName: null, accountId: 'a', status: 'POSTED' },
+      ];
+      mockTransactionsClient.getTransactions.mockResolvedValue(
+        mixed as unknown as Awaited<ReturnType<typeof mockTransactionsClient.getTransactions>>
+      );
+      mockCategoriesClient.getOptions.mockResolvedValue([
+        { id: 'cat-fixed', name: 'Rent', slug: 'rent', type: 'EXPENSE', expenseClass: 'FIXED' },
+        { id: 'cat-var', name: 'Food', slug: 'food', type: 'EXPENSE', expenseClass: 'VARIABLE' },
+        { id: 'cat-income', name: 'Salary', slug: 'salary', type: 'INCOME', expenseClass: null },
+        // deno-lint-ignore no-explicit-any
+      ] as unknown as any);
+
+      render(<TransactionsPage />);
+
+      // Tutte = 3 (DEBITs only, CREDITs excluded)
+      await waitFor(() => {
+        expect(screen.getByText(/Tutte \(3\)/)).toBeInTheDocument();
+      });
+      // Fisse = 1 (t1), Variabili = 1 (t2), Ricorrenti = 1 (t2 only; t5 is CREDIT)
+      expect(screen.getByText(/Fisse \(1\)/)).toBeInTheDocument();
+      expect(screen.getByText(/Variabili \(1\)/)).toBeInTheDocument();
+      expect(screen.getByText(/Ricorrenti \(1\)/)).toBeInTheDocument();
+    });
   });
 
   describe('Transaction List', () => {
