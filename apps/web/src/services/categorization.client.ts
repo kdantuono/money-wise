@@ -107,14 +107,14 @@ type SupabaseLike = {
     };
     update: (
       payload: Record<string, unknown>,
-      opts?: { count?: 'exact' | 'planned' | 'estimated' }
+      opts: { count: 'exact' }
     ) => {
       eq: (
         col: string,
         val: string
       ) => Promise<{
         error: { message: string } | null;
-        count?: number | null;
+        count: number | null;
       }>;
     };
   };
