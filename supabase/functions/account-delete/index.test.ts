@@ -67,18 +67,29 @@ Deno.test('parseInput: accepts valid input with exportDataFirst=false explicit',
 // Table allow-lists
 // ---------------------------------------------------------------------------
 
-Deno.test('USER_SCOPED_TABLES: covers every user-owned table from initial schema', () => {
+Deno.test('USER_SCOPED_TABLES: covers every table with a user_id FK to profiles', () => {
+  // Post-deploy fix (2026-04-18): `banking_sync_logs` is NOT in this list
+  // despite touching user activity — it has `account_id`, not `user_id`.
+  // See the accompanying comment in index.ts for the full rationale and
+  // the post-beta remediation options.
   const expected = [
     'audit_logs',
     'banking_customers',
     'banking_connections',
-    'banking_sync_logs',
     'user_preferences',
     'notifications',
     'push_subscriptions',
     'user_achievements',
   ]
   assertEquals([...USER_SCOPED_TABLES].sort(), expected.sort())
+})
+
+Deno.test('USER_SCOPED_TABLES: does NOT include banking_sync_logs (no user_id column)', () => {
+  // Regression guard: including banking_sync_logs makes the export query
+  // `.eq('user_id', userId)` fail silently, producing an incomplete
+  // JSON export for users who opt into exportDataFirst.
+  const user = new Set<string>(USER_SCOPED_TABLES)
+  assertEquals(user.has('banking_sync_logs'), false)
 })
 
 Deno.test('FAMILY_SCOPED_TABLES: covers every family-owned table from initial schema', () => {

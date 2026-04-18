@@ -105,13 +105,16 @@ type SupabaseLike = {
         error: { message: string } | null;
       }>;
     };
-    update: (payload: Record<string, unknown>) => {
+    update: (
+      payload: Record<string, unknown>,
+      opts: { count: 'exact' }
+    ) => {
       eq: (
         col: string,
         val: string
       ) => Promise<{
         error: { message: string } | null;
-        count?: number | null;
+        count: number | null;
       }>;
     };
   };
@@ -270,11 +273,13 @@ export const categorizationClient = {
   /**
    * Persist a category choice on a transaction.
    *
-   * Returns the count of affected rows if the driver exposes it: 0 means
-   * the tx either no longer exists, was already categorized, or is hidden
-   * by RLS. Without this check a no-op UPDATE returns `error: null` and
-   * the UI would drop the transaction as "reviewed" even though nothing
-   * was persisted.
+   * We pass `{ count: 'exact' }` to `.update()` so PostgREST returns the
+   * number of rows actually affected. Without this option, `count` is
+   * always `null` and a no-op UPDATE (tx no longer exists, already
+   * categorized concurrently, or hidden by RLS) would pass as success —
+   * making the UI drop the transaction as "reviewed" without anything
+   * persisted. `count === 0` is therefore surfaced as a 404 so the UI
+   * can retry or refresh.
    */
   async applyCategory(txId: string, categoryId: string): Promise<void> {
     if (!txId || !categoryId) {
@@ -287,7 +292,7 @@ export const categorizationClient = {
     const supabase = createClient() as unknown as SupabaseLike;
     const { error, count } = await supabase
       .from('transactions')
-      .update({ category_id: categoryId })
+      .update({ category_id: categoryId }, { count: 'exact' })
       .eq('id', txId);
     if (error) {
       throw new CategorizationApiError(
@@ -297,9 +302,7 @@ export const categorizationClient = {
         error
       );
     }
-    // When the driver provides a row count, a 0 means the filter matched
-    // nothing — surface as a not-found so the UI can retry / refresh.
-    if (typeof count === 'number' && count === 0) {
+    if (count === 0) {
       throw new CategorizationApiError(
         'Transazione non trovata (potrebbe essere già categorizzata o rimossa)',
         404,

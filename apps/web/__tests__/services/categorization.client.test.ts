@@ -60,12 +60,15 @@ function categoriesChain(result: {
   };
 }
 
-function updateChain(errorResult: { message: string } | null) {
+function updateChain(
+  errorResult: { message: string } | null,
+  count: number | null = 1
+) {
+  const eq = vi.fn().mockResolvedValue({ error: errorResult, count });
   return {
-    update: vi.fn().mockReturnValue({
-      eq: vi.fn().mockResolvedValue({ error: errorResult }),
-    }),
+    update: vi.fn().mockReturnValue({ eq }),
     select: vi.fn(),
+    eq,
   };
 }
 
@@ -184,11 +187,54 @@ describe('categorizationClient.suggestCategory', () => {
 describe('categorizationClient.applyCategory', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it('sends UPDATE with category_id and txId', async () => {
+  it('sends UPDATE with category_id and filters by txId via .eq("id", txId)', async () => {
     const chain = updateChain(null);
     mocks.fromSpy.mockReturnValueOnce(chain);
     await categorizationClient.applyCategory('tx-1', 'cat-food');
-    expect(chain.update).toHaveBeenCalledWith({ category_id: 'cat-food' });
+    // The payload is the first arg; the second arg is the count option
+    // (checked separately — see "passes { count: 'exact' }" test).
+    const callArgs = chain.update.mock.calls[0];
+    expect(callArgs[0]).toEqual({ category_id: 'cat-food' });
+    // Regression guard: a refactor that drops/changes the filter would
+    // broadcast the UPDATE to every row in the user's scope.
+    expect(chain.eq).toHaveBeenCalledWith('id', 'tx-1');
+  });
+
+  // ⚠️ Contract test — bug observed post-deploy 2026-04-18.
+  // Without `{ count: 'exact' }` passed to .update(), PostgREST returns
+  // `count: null` and the count === 0 branch below never fires — the UI
+  // would drop transactions as "reviewed" on no-op UPDATEs. This test
+  // pins the contract so future refactors can't silently disable the
+  // safety net.
+  it('passes { count: "exact" } as the second argument to update()', async () => {
+    const chain = updateChain(null);
+    mocks.fromSpy.mockReturnValueOnce(chain);
+    await categorizationClient.applyCategory('tx-1', 'cat-food');
+    expect(chain.update).toHaveBeenCalledWith(
+      { category_id: 'cat-food' },
+      { count: 'exact' }
+    );
+  });
+
+  // Integration test for the count-based safety net: when the driver
+  // reports zero rows affected (tx already categorized, removed, or
+  // RLS-blocked), we surface a 404 instead of silently succeeding.
+  it('throws apply_failed (404) when UPDATE affected zero rows', async () => {
+    mocks.fromSpy.mockReturnValueOnce(updateChain(null, 0));
+    await expect(
+      categorizationClient.applyCategory('tx-1', 'cat-food')
+    ).rejects.toMatchObject({
+      name: 'CategorizationApiError',
+      code: 'apply_failed',
+      statusCode: 404,
+    });
+  });
+
+  it('succeeds when UPDATE affected one row', async () => {
+    mocks.fromSpy.mockReturnValueOnce(updateChain(null, 1));
+    await expect(
+      categorizationClient.applyCategory('tx-1', 'cat-food')
+    ).resolves.toBeUndefined();
   });
 
   it('rejects empty txId / categoryId without touching DB', async () => {

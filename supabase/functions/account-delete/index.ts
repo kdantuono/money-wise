@@ -80,12 +80,22 @@ function createAdminClient() {
 // Data export
 // ---------------------------------------------------------------------------
 
-// Tables owned by the user via profiles.id
+// Tables owned by the user via profiles.id (schema invariant: they all
+// carry a `user_id UUID REFERENCES profiles(id) ON DELETE CASCADE` column).
+//
+// ⚠️ `banking_sync_logs` is NOT here despite touching user data: it has
+// `account_id` (FK to accounts) but NO `user_id` column. Including it would
+// cause the export query below to fail silently (PostgREST rejects the
+// `.eq('user_id', ...)` filter) and leave sync-log rows out of the JSON
+// export. For the common sole-member case, those rows cascade via
+// families → accounts and are still deleted server-side; for multi-member
+// families, the sync logs survive the user delete (known limitation, see
+// migration 20260417020000 header comment). Post-beta: either add user_id
+// to the table or join via accounts.family_id.
 const USER_SCOPED_TABLES = [
   'audit_logs',
   'banking_customers',
   'banking_connections',
-  'banking_sync_logs',
   'user_preferences',
   'notifications',
   'push_subscriptions',
