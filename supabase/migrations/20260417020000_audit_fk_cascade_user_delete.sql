@@ -15,6 +15,25 @@
 -- If an audit check here FAILS (raising an exception), the account-delete
 -- edge function MUST NOT be deployed until the missing cascade is added,
 -- because orphan rows would leak personal data.
+--
+-- KNOWN LIMITATION — banking_sync_logs: this table has `account_id` (FK to
+-- accounts) but NO `user_id` column. The cascade chain, in delete order, is:
+-- deleting a `families` row cascades to `accounts` (via accounts.family_id
+-- ON DELETE CASCADE), which in turn cascades to `banking_sync_logs` (via
+-- banking_sync_logs.account_id ON DELETE CASCADE).
+--
+-- If a user is deleted but the family survives (multi-member scenario), the
+-- family row is NOT removed, so the accounts and their sync logs remain —
+-- including sync events triggered by the departed user. This is a minor
+-- GDPR leak (metadata only: provider, status, timestamps; no PII, no
+-- financial content).
+--
+-- Tracked for remediation — options are:
+--   (a) add `user_id` to banking_sync_logs and cascade it on user delete, or
+--   (b) in the account-delete edge function, scrub banking_sync_logs for the
+--       departing user *before* calling `auth.admin.deleteUser` when the
+--       family has other members.
+-- Post-beta hardening.
 -- ============================================================================
 
 DO $$
@@ -26,7 +45,8 @@ DECLARE
     'audit_logs_user_id_fkey',
     'banking_customers_user_id_fkey',
     'banking_connections_user_id_fkey',
-    'banking_sync_logs_user_id_fkey',
+    -- banking_sync_logs has no user_id; cascades via accounts (family)
+    'banking_sync_logs_account_id_fkey',
     'user_preferences_user_id_fkey',
     'notifications_user_id_fkey',
     'push_subscriptions_user_id_fkey',
