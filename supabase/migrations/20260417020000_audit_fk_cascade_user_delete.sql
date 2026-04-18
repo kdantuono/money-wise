@@ -17,14 +17,23 @@
 -- because orphan rows would leak personal data.
 --
 -- KNOWN LIMITATION — banking_sync_logs: this table has `account_id` (FK to
--- accounts) but NO `user_id` column. Its only FK cascades via accounts →
--- family. If a user is deleted but the family survives (multi-member), the
--- sync logs for that user's past actions remain attached to the family's
--- accounts. This is a minor GDPR leak (metadata: provider/status/timestamps,
--- no financial content). Tracked for remediation — options are (a) add
--- user_id to banking_sync_logs and cascade on user delete, (b) scrub the
--- table in the account-delete edge function before calling auth.admin
--- .deleteUser when the family has other members. Post-beta hardening.
+-- accounts) but NO `user_id` column. The cascade chain, in delete order, is:
+-- deleting a `families` row cascades to `accounts` (via accounts.family_id
+-- ON DELETE CASCADE), which in turn cascades to `banking_sync_logs` (via
+-- banking_sync_logs.account_id ON DELETE CASCADE).
+--
+-- If a user is deleted but the family survives (multi-member scenario), the
+-- family row is NOT removed, so the accounts and their sync logs remain —
+-- including sync events triggered by the departed user. This is a minor
+-- GDPR leak (metadata only: provider, status, timestamps; no PII, no
+-- financial content).
+--
+-- Tracked for remediation — options are:
+--   (a) add `user_id` to banking_sync_logs and cascade it on user delete, or
+--   (b) in the account-delete edge function, scrub banking_sync_logs for the
+--       departing user *before* calling `auth.admin.deleteUser` when the
+--       family has other members.
+-- Post-beta hardening.
 -- ============================================================================
 
 DO $$
