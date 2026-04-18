@@ -5,8 +5,7 @@
   "private": true,
   "workspaces": [
     "apps/*",
-    "packages/*",
-    "test-utils"
+    "packages/*"
   ],
   "overrides": {
     "ip": "npm:@webpod/ip@^0.6.1"
