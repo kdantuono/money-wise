@@ -40,6 +40,16 @@ export function WizardPianoGenerato() {
   // Submission is gated on having a user + valid allocation preview + at least 1 goal.
   const canSubmit = !!userId && !!allocationPreview && step3.goals.length > 0 && !isPersisting;
 
+  // Diagnostic reason shown to user at Step 5 when canSubmit is false — so they
+  // know WHY the button is disabled (not a mysterious stuck state).
+  const disabledReason = !userId
+    ? 'Sessione utente non rilevata — ricarica la pagina.'
+    : step3.goals.length === 0
+      ? 'Aggiungi almeno un obiettivo allo Step 3.'
+      : !allocationPreview
+        ? 'Piano non ancora calcolato — torna allo Step 4 per rigenerarlo.'
+        : null;
+
   const handleSubmit = async () => {
     if (!userId) {
       setSubmitError('Utente non autenticato. Riaccedi e riprova.');
@@ -125,6 +135,17 @@ export function WizardPianoGenerato() {
             role="alert"
           >
             <p className="text-sm text-red-700 dark:text-red-300">{submitError}</p>
+          </div>
+        )}
+
+        {isLastStep && disabledReason && !submitError && (
+          <div
+            className="mt-4 p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800"
+            role="status"
+          >
+            <p className="text-sm text-amber-700 dark:text-amber-300">
+              ⚠️ Conferma disabilitata: {disabledReason}
+            </p>
           </div>
         )}
 
