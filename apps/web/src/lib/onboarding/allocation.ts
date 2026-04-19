@@ -182,31 +182,13 @@ export function computeAllocation(input: AllocationInput): AllocationResult {
 
   // ── Identify emergency goal (first match wins) ──────────────────────────
   const emergencyIndex = goals.findIndex((g) => _isEmergencyGoal(g, now));
-  const emergencyGoal: AllocationGoalInput | null =
-    emergencyIndex >= 0 ? goals[emergencyIndex]! : null;
 
-  // ── Compute emergency override amount ──────────────────────────────────
-  let emergencyOverrideAmount = 0;
-  if (emergencyGoal !== null && emergencyGoal.target > 0) {
-    const emergencyNeed = Math.max(0, emergencyGoal.target - emergencyGoal.current);
-    if (emergencyNeed > 0) {
-      const rawOverride = _round2(savingsPool * _EMERGENCY_OVERRIDE_FRACTION);
-      // Do not allocate more than the remaining need
-      emergencyOverrideAmount = _round2(Math.min(rawOverride, emergencyNeed));
-    }
-    // If current >= target: emergencyNeed=0, override stays 0
-  }
-
-  // ── Remaining pool for non-emergency goals ─────────────────────────────
-  const remainingPool = _round2(savingsPool - emergencyOverrideAmount);
-
-  // ── Priority-weighted distribution for non-emergency goals ────────────
-  // Collect non-emergency goals that have a positive target
-  const nonEmergencyGoals = goals
+  // ── Priority-weighted distribution including emergency goal ─────────────
+  // Emergency is NOT excluded from the pool — instead it gets max(priority-share, 40% floor)
+  // capped at remaining need. If floor applies, other goals are scaled down pro-rata.
+  const eligibleForPool = goals
     .map((g, idx) => ({ g, idx }))
-    .filter(({ idx }) => idx !== emergencyIndex);
-
-  const eligibleForPool = nonEmergencyGoals.filter(({ g }) => g.target > 0);
+    .filter(({ g }) => g.target > 0);
 
   // Compute effective weights
   const weightMap = new Map<number, number>(); // index → weight
@@ -217,20 +199,65 @@ export function computeAllocation(input: AllocationInput): AllocationResult {
     totalWeight += w;
   }
 
-  // Raw allocations (before rounding residual fix)
-  const rawAllocations = new Map<number, number>(); // index → amount
-  let rawTotal = 0;
+  // Raw priority-weighted shares (includes emergency)
+  const rawShares = new Map<number, number>(); // index → amount
   for (const { idx } of eligibleForPool) {
     const w = weightMap.get(idx) ?? 0;
-    const raw = totalWeight > 0 ? _round2((w / totalWeight) * remainingPool) : 0;
-    rawAllocations.set(idx, raw);
-    rawTotal += raw;
+    const share = totalWeight > 0 ? savingsPool * (w / totalWeight) : 0;
+    rawShares.set(idx, share);
   }
 
-  // Fix rounding residual: assign to highest-priority eligible goal (first in input order)
-  const roundingResidual = _round2(remainingPool - rawTotal);
+  // Emergency override: if priority-share < 40% floor, bump emergency up and scale
+  // other goals down proportionally to preserve sum = savingsPool.
+  if (emergencyIndex >= 0 && goals[emergencyIndex]!.target > 0) {
+    const emergencyGoal = goals[emergencyIndex]!;
+    const emergencyNeed = Math.max(0, emergencyGoal.target - emergencyGoal.current);
+    const emergencyFloor = savingsPool * _EMERGENCY_OVERRIDE_FRACTION;
+    const prioShare = rawShares.get(emergencyIndex) ?? 0;
+    // Target: max(priority-share, 40% floor), capped at remaining need
+    const desired = Math.min(Math.max(prioShare, emergencyFloor), emergencyNeed);
+
+    if (desired > prioShare) {
+      // Bump emergency, scale others pro-rata down
+      const deficit = desired - prioShare;
+      const othersTotal = savingsPool - prioShare;
+      if (othersTotal > 0) {
+        const scaleFactor = 1 - deficit / othersTotal;
+        for (const { idx } of eligibleForPool) {
+          if (idx === emergencyIndex) continue;
+          const s = rawShares.get(idx) ?? 0;
+          rawShares.set(idx, Math.max(0, s * scaleFactor));
+        }
+      }
+      rawShares.set(emergencyIndex, desired);
+    } else if (desired < prioShare) {
+      // Priority share > need: cap at need, redistribute surplus to others pro-rata
+      const surplus = prioShare - desired;
+      const othersTotal = savingsPool - prioShare;
+      if (othersTotal > 0) {
+        const scaleFactor = 1 + surplus / othersTotal;
+        for (const { idx } of eligibleForPool) {
+          if (idx === emergencyIndex) continue;
+          const s = rawShares.get(idx) ?? 0;
+          rawShares.set(idx, s * scaleFactor);
+        }
+      }
+      rawShares.set(emergencyIndex, desired);
+    }
+  }
+
+  // Round all shares and compute residual
+  const rawAllocations = new Map<number, number>();
+  let rawTotal = 0;
+  for (const { idx } of eligibleForPool) {
+    const rounded = _round2(rawShares.get(idx) ?? 0);
+    rawAllocations.set(idx, rounded);
+    rawTotal += rounded;
+  }
+
+  // Fix rounding residual: assign to highest-priority eligible goal (stable input order)
+  const roundingResidual = _round2(savingsPool - rawTotal);
   if (roundingResidual !== 0 && eligibleForPool.length > 0) {
-    // Highest priority = lowest priority number; stable order = first in input
     const highestPriorityEntry = eligibleForPool.reduce((best, curr) =>
       curr.g.priority < best.g.priority ? curr : best,
     );
@@ -259,12 +286,7 @@ export function computeAllocation(input: AllocationInput): AllocationResult {
     }
 
     // ── Compute monthlyAmount ─────────────────────────────────────────
-    let monthlyAmount: number;
-    if (isEmergency) {
-      monthlyAmount = emergencyOverrideAmount;
-    } else {
-      monthlyAmount = rawAllocations.get(i) ?? 0;
-    }
+    const monthlyAmount: number = rawAllocations.get(i) ?? 0;
 
     // ── Deadline feasibility ──────────────────────────────────────────
     const deadlineDate = _parseDeadline(goal.deadline);

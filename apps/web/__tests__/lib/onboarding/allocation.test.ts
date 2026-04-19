@@ -71,7 +71,7 @@ function makeInput(partial: Partial<AllocationInput>): AllocationInput {
   return {
     monthlyIncome: partial.monthlyIncome ?? 2500,
     monthlySavingsTarget: partial.monthlySavingsTarget ?? 500,
-    essentialsPct: partial.essentialsPct ?? 0.5,
+    essentialsPct: partial.essentialsPct ?? 50,
     goals: partial.goals ?? [],
     emergencyFundMonths: partial.emergencyFundMonths,
   };
@@ -98,7 +98,7 @@ describe('computeAllocation (Stream B algorithm contract)', () => {
       const input = makeInput({
         monthlyIncome: 2500,
         monthlySavingsTarget: 500,
-        essentialsPct: 0.5,
+        essentialsPct: 50,
         goals: [
           makeGoal({
             id: 'g-high',
@@ -127,7 +127,7 @@ describe('computeAllocation (Stream B algorithm contract)', () => {
       const result = computeAllocation(input);
 
       expect(result.items).toHaveLength(3);
-      // income 2500 * 0.5 essentials = 1250 available → 500 target fits.
+      // income 2500 × 50% essentials = 1250 available → 500 savings target fits.
       expect(result.incomeAfterEssentials).toBeCloseTo(1250, 2);
       // totalAllocated must not exceed the requested savings target.
       expect(result.totalAllocated).toBeLessThanOrEqual(500 + EPS);
@@ -207,7 +207,7 @@ describe('computeAllocation (Stream B algorithm contract)', () => {
       expect(item.warnings.length).toBeGreaterThan(0);
       expect(
         item.warnings.some((w) =>
-          /deadline|scadut|passat|passed/i.test(w),
+          /deadline|scadenz|scadut|trascors|passat|passed/i.test(w),
         ),
       ).toBe(true);
     });
@@ -255,7 +255,7 @@ describe('computeAllocation (Stream B algorithm contract)', () => {
       const input = makeInput({
         monthlyIncome: 3000,
         monthlySavingsTarget: savings,
-        essentialsPct: 0.5,
+        essentialsPct: 50,
         goals: [
           makeGoal({
             id: 'g-emergency',
@@ -296,7 +296,7 @@ describe('computeAllocation (Stream B algorithm contract)', () => {
       const input = makeInput({
         monthlyIncome: 2500,
         monthlySavingsTarget: 400,
-        essentialsPct: 0.5,
+        essentialsPct: 50,
         goals: [
           makeGoal({
             id: 'g-soon',
@@ -333,7 +333,7 @@ describe('computeAllocation (Stream B algorithm contract)', () => {
       // income 2000, essentials 80% → 400 available → target 800 impossible.
       const input = makeInput({
         monthlyIncome: 2000,
-        essentialsPct: 0.8,
+        essentialsPct: 80,
         monthlySavingsTarget: 800,
         goals: [
           makeGoal({
@@ -392,7 +392,7 @@ describe('computeAllocation (Stream B algorithm contract)', () => {
       const input = makeInput({
         monthlyIncome: 2500,
         monthlySavingsTarget: 500,
-        essentialsPct: 0.5,
+        essentialsPct: 50,
         goals: [
           makeGoal({ id: 'a', target: 1000, priority: 1 }),
           makeGoal({ id: 'b', target: 1000, priority: 2 }),
