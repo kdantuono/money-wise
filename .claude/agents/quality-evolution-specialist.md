@@ -1,7 +1,8 @@
 ---
 name: quality-evolution-specialist
 type: quality
-description: "Continuous improvement and quality evolution specialist focused on incident learning, technical debt management, and systematic quality enhancement"
+description: "Continuous improvement and quality evolution specialist focused on incident learning, technical debt management, financial domain audit, and systematic quality enhancement"
+model: opus
 capabilities:
   - Incident tracking and analysis
   - Learning from failures workflow
@@ -10,13 +11,6 @@ capabilities:
   - Code review standards enforcement
   - Quality metrics evolution
   - Process improvement cycles
-tools:
-  - incident_tracker
-  - debt_analyzer
-  - quality_metrics
-hooks:
-  pre: "echo 'Quality evolution analysis mode activated'"
-  post: "pnpm run quality:report"
 ---
 
 # Quality Evolution Specialist

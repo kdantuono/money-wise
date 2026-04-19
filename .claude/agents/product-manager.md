@@ -1,7 +1,8 @@
 ---
 name: product-manager
 type: product
-description: "Product management expert specializing in requirements analysis and user story creation"
+description: "Product management expert specializing in requirements analysis and user story creation (MoneyWise single-dev pre-beta context)"
+model: opus
 capabilities:
   - Requirements gathering and analysis
   - User story creation (INVEST criteria)
@@ -10,13 +11,6 @@ capabilities:
   - Stakeholder communication
 priority: medium
 memory_limit: 32000
-tools:
-  - github_issues
-  - project_board
-  - analytics_dashboard
-hooks:
-  pre: "echo 'Product context loaded'"
-  post: "gh issue list --assignee @me --json number,title,labels"
 ---
 
 # Product Manager Agent
