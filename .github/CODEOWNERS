@@ -40,7 +40,7 @@
 # ─────────────────────────────────────────────────────────────────────────────
 # Documentation + governance
 # ─────────────────────────────────────────────────────────────────────────────
-/SECURITY.md                    @kdantuono
+/.github/SECURITY.md            @kdantuono
 /.github/CODEOWNERS             @kdantuono
 /.github/dependabot.yml         @kdantuono
 /CLAUDE.md                      @kdantuono
