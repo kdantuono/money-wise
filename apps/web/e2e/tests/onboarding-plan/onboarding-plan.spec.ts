@@ -21,9 +21,20 @@
  *   "Users delete own plans" / "Users delete own goals" policies allow it.
  *   DELETE plan cascades to goal_allocations via ON DELETE CASCADE.
  *   Goals are deleted separately (FK points to profiles, not plans).
+ * - `profiles.onboarded` is reset to false in cleanup so each run starts
+ *   from an un-onboarded state and the auto-redirect can be verified freshly.
+ *   `profiles.family_id` is NOT NULL (schema constraint), so the profiles
+ *   UPDATE RLS policy (WITH CHECK family_id = get_my_family_id()) always
+ *   evaluates to TRUE for a valid user — the reset is safe via anon client.
+ *
+ * Routing tested
+ * --------------
+ * - A1 fix (Sprint 1.5.1): after login, a non-onboarded user is automatically
+ *   redirected by OnboardingGate to /onboarding/plan (no explicit goto needed).
+ * - After persistPlan success, router.push('/dashboard') lands on dashboard.
  *
  * Pattern source: apps/web/e2e/tests/dashboard/dashboard.spec.ts (same login
- * flow, waits on /api/auth/login BFF proxy, then asserts /dashboard URL).
+ * flow, waits on /api/auth/login BFF proxy).
  *
  * @module e2e/tests/onboarding-plan
  */
@@ -56,10 +67,13 @@ function futureDeadline(): string {
 }
 
 /**
- * UI login pattern — mirrors dashboard.spec.ts exactly.
+ * UI login pattern — mirrors dashboard.spec.ts but waits for /onboarding/plan
+ * instead of /dashboard, because shard-7 is not onboarded and OnboardingGate
+ * auto-redirects non-onboarded users to the wizard (A1 routing fix).
+ *
  * Waits for the /api/auth/login BFF proxy response before asserting URL.
  */
-async function login(page: Page): Promise<void> {
+async function loginAndExpectWizard(page: Page): Promise<void> {
   await page.goto(ROUTES.AUTH.LOGIN);
   await page.waitForSelector(TEST_IDS.AUTH.LOGIN_FORM, { state: 'visible' });
   await page.fill(TEST_IDS.AUTH.EMAIL_INPUT, TEST_EMAIL);
@@ -68,11 +82,12 @@ async function login(page: Page): Promise<void> {
     page.waitForResponse((r) => r.url().includes('/api/auth/login')),
     page.click(TEST_IDS.AUTH.LOGIN_BUTTON),
   ]);
-  await expect(page).toHaveURL(ROUTES.DASHBOARD);
+  // Non-onboarded user: OnboardingGate redirects to wizard automatically.
+  await expect(page).toHaveURL(/\/onboarding\/plan/, { timeout: 10_000 });
 }
 
 /**
- * Cleanup test user's plan + goals via Supabase Auth.
+ * Cleanup test user's plan + goals + onboarded flag via Supabase Auth.
  * Called from beforeEach (defensive: prior run leftover) and afterEach.
  *
  * Strategy:
@@ -80,6 +95,9 @@ async function login(page: Page): Promise<void> {
  *  - DELETE from plans WHERE user_id = self → cascades to goal_allocations.
  *  - DELETE from goals WHERE user_id = self → required separately (FK points
  *    to profiles, not plans).
+ *  - UPDATE profiles SET onboarded = false — resets gate so next run triggers
+ *    the auto-redirect again. Safe via anon client: profiles.family_id is NOT
+ *    NULL per schema, so the WITH CHECK RLS condition always evaluates to TRUE.
  *
  * Silent on failures: cleanup is best-effort; RLS guarantees we only touch
  * data we own, so worst case a leftover row surfaces on the next run where
@@ -87,8 +105,6 @@ async function login(page: Page): Promise<void> {
  */
 async function cleanupTestUserData(): Promise<void> {
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-    // Global setup already asserts these exist; this is a defense-in-depth
-    // guard so the teardown never throws on misconfigured local runs.
     return;
   }
   const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -97,8 +113,6 @@ async function cleanupTestUserData(): Promise<void> {
     password: TEST_PASSWORD,
   });
   if (signInErr || !authData.user) {
-    // Can't clean if we can't authenticate — global-setup normally
-    // pre-creates the user, so this should not fire in CI.
     return;
   }
   const userId = authData.user.id;
@@ -106,26 +120,35 @@ async function cleanupTestUserData(): Promise<void> {
   await client.from('plans').delete().eq('user_id', userId);
   // goals must be deleted explicitly (FK to profiles, not plans)
   await client.from('goals').delete().eq('user_id', userId);
+  // Reset onboarded so the gate triggers the redirect on next test run.
+  // profiles.family_id IS NOT NULL guarantees the WITH CHECK RLS passes.
+  await client.from('profiles').update({ onboarded: false }).eq('id', userId);
   await client.auth.signOut();
 }
 
 test.describe('Onboarding — Piano Generato wizard', () => {
   test.beforeEach(async ({ page }) => {
-    // Defensive cleanup: prior run may have left a plan on this user.
-    // `plans.user_id` is UNIQUE — leftover rows break the persist INSERT.
+    // Defensive cleanup: prior run may have left a plan + onboarded=true.
     await cleanupTestUserData();
-    await login(page);
+    // Login — for a non-onboarded user OnboardingGate auto-redirects to wizard.
+    await loginAndExpectWizard(page);
   });
 
   test.afterEach(async () => {
     await cleanupTestUserData();
   });
 
+  test('auto-redirects non-onboarded user to /onboarding/plan after login', async ({ page }) => {
+    // loginAndExpectWizard in beforeEach already asserts the redirect.
+    // This test makes it explicit and verifiable on its own.
+    await expect(page).toHaveURL(/\/onboarding\/plan/);
+    await expect(page.locator('h1')).toContainText('Piano Finanziario');
+    await expect(page.getByText('Passo 1 di 5')).toBeVisible();
+  });
+
   test('completes 5-step wizard and persists goal to /dashboard/goals', async ({ page }) => {
-    // -------------------------------------------------------------------------
-    // Navigate to wizard
-    // -------------------------------------------------------------------------
-    await page.goto('/onboarding/plan');
+    // No explicit page.goto('/onboarding/plan') needed: loginAndExpectWizard
+    // already landed us on the wizard via the OnboardingGate auto-redirect.
     await expect(page.locator('h1')).toContainText('Piano Finanziario');
     await expect(page.getByText('Passo 1 di 5')).toBeVisible();
 
@@ -144,13 +167,18 @@ test.describe('Onboarding — Piano Generato wizard', () => {
     await expect(page.getByText('Passo 3 di 5')).toBeVisible();
 
     // -------------------------------------------------------------------------
-    // Step 3 — Goals (open form, fill, confirm "Aggiungi", verify list)
+    // Step 3 — Goals
+    // Empty state is shown before opening the form (preset cards + manual btn).
+    // We use "Aggiungi manualmente" to open the form (not a preset).
+    // TEST_GOAL_NAME is intentionally different from any preset name to avoid
+    // selector collisions with the preset card text ("Fondo Emergenza" etc.).
     // -------------------------------------------------------------------------
-    // Empty state copy is visible before opening the form.
-    await expect(page.getByText('Nessun obiettivo ancora. Aggiungi il primo.')).toBeVisible();
+    await expect(
+      page.getByText('Nessun obiettivo ancora. Scegli un preset sopra o aggiungi manualmente.')
+    ).toBeVisible();
 
-    // "Aggiungi obiettivo" opens the inline form.
-    await page.getByRole('button', { name: 'Aggiungi obiettivo' }).click();
+    // "Aggiungi manualmente" opens the inline form.
+    await page.getByRole('button', { name: 'Aggiungi manualmente' }).click();
 
     // Form fields (inline — not a modal).
     await page.fill('#goal-name', TEST_GOAL_NAME);
@@ -158,8 +186,7 @@ test.describe('Onboarding — Piano Generato wizard', () => {
     await page.fill('#goal-deadline', futureDeadline());
     await page.selectOption('#goal-priority', '1'); // Alta
 
-    // "Aggiungi" (exact) confirms the goal — `exact: true` prevents matching
-    // the outer "Aggiungi obiettivo" button.
+    // "Aggiungi" (exact) confirms the goal.
     await page.getByRole('button', { name: 'Aggiungi', exact: true }).click();
 
     // Goal appears in the list.
@@ -210,5 +237,25 @@ test.describe('Onboarding — Piano Generato wizard', () => {
     await expect(page.locator('h1')).toContainText('Obiettivi');
     // Goal card rendered from DB (not from client store) — confirms persistence.
     await expect(page.getByText(TEST_GOAL_NAME)).toBeVisible({ timeout: 10_000 });
+  });
+
+  test('preset card click populates form with defaults', async ({ page }) => {
+    // Navigate to step 3 — fill steps 1 and 2 first.
+    await page.fill('#monthly-income', '2500');
+    await page.getByRole('button', { name: 'Avanti' }).click();
+    await expect(page.getByText('Passo 2 di 5')).toBeVisible();
+    await page.fill('#savings-target', '500');
+    await page.getByRole('button', { name: 'Avanti' }).click();
+    await expect(page.getByText('Passo 3 di 5')).toBeVisible();
+
+    // Click the "Fondo Emergenza" preset card.
+    await page.getByRole('button', { name: /Aggiungi preset: Fondo Emergenza/ }).click();
+
+    // Form should be pre-filled with preset defaults.
+    await expect(page.locator('#goal-name')).toHaveValue('Fondo Emergenza');
+    await expect(page.locator('#goal-target')).toHaveValue('5000');
+    // Deadline is set to ~12 months from today — just assert it's non-empty.
+    const deadlineValue = await page.locator('#goal-deadline').inputValue();
+    expect(deadlineValue).not.toBe('');
   });
 });

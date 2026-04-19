@@ -116,6 +116,7 @@ function makeChain() {
 let plansChain: ReturnType<typeof makeChain>;
 let goalsChain: ReturnType<typeof makeChain>;
 let allocChain: ReturnType<typeof makeChain>;
+let profilesChain: ReturnType<typeof makeChain>;
 
 const fromMock = vi.fn();
 
@@ -165,11 +166,27 @@ beforeEach(() => {
   plansChain = makeChain();
   goalsChain = makeChain();
   allocChain = makeChain();
+  // profiles: used for UPDATE profiles SET onboarded=true after plan persisted.
+  // Pattern: .update({...}).eq('id', userId) — same shape as delete chain.
+  profilesChain = makeChain();
+  // Default profilesChain update to succeed (no-error) for happy-path tests.
+  // Tests that need to override can queue their own via profilesChain.__queueDelete.
+  profilesChain.update = vi.fn(() => {
+    const queued = profilesChain._defaultUpdateResult ?? { data: null, error: null };
+    const thenable: any = {
+      eq: vi.fn(() => ({
+        then: (onFulfilled: any, onRejected?: any) =>
+          Promise.resolve(queued).then(onFulfilled, onRejected),
+      })),
+    };
+    return thenable;
+  });
   fromMock.mockReset();
   fromMock.mockImplementation((table: string) => {
     if (table === 'plans') return plansChain;
     if (table === 'goals') return goalsChain;
     if (table === 'goal_allocations') return allocChain;
+    if (table === 'profiles') return profilesChain;
     throw new Error(`Unexpected table: ${table}`);
   });
 });

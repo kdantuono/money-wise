@@ -161,3 +161,6 @@ update-*.sh
 docs-backup-*/
 apps/web/e2e/.auth/*.png
 apps/backend/performance-results.json
+
+# Orchestration runtime state (ephemeral)
+.claude/orchestration/state/bugs-active.json

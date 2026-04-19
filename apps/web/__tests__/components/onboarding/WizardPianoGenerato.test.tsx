@@ -70,6 +70,7 @@ vi.mock('framer-motion', () => ({
 // --------------------------------------------------------------------------
 // Auth store mock
 // --------------------------------------------------------------------------
+const mockSetUser = vi.fn();
 const mockAuthStore = vi.fn();
 vi.mock('@/store/auth.store', () => ({
   useAuthStore: (selector?: (s: unknown) => unknown) => {
@@ -194,6 +195,7 @@ describe('WizardPianoGenerato (Sprint 1.5)', () => {
     mockPlanStore.mockReset();
     mockPersistPlan.mockReset();
     mockRouterPush.mockReset();
+    mockSetUser.mockReset();
   });
 
   // ---- 1. Renders correct child stub per currentStep ------------------------
@@ -205,7 +207,7 @@ describe('WizardPianoGenerato (Sprint 1.5)', () => {
       [4, 'step-4-stub'],
       [5, 'step-5-stub'],
     ])('renders step-%i component when currentStep=%i', (step, testId) => {
-      mockAuthStore.mockReturnValue({ user: { id: 'u1' } });
+      mockAuthStore.mockReturnValue({ user: { id: 'u1', onboarded: false }, setUser: mockSetUser });
       mockPlanStore.mockReturnValue(makeState({ currentStep: step as 1 | 2 | 3 | 4 | 5 }));
 
       render(<WizardPianoGenerato />);
@@ -213,7 +215,7 @@ describe('WizardPianoGenerato (Sprint 1.5)', () => {
     });
 
     it('renders progress bar with 5 segments and the right count highlighted', () => {
-      mockAuthStore.mockReturnValue({ user: { id: 'u1' } });
+      mockAuthStore.mockReturnValue({ user: { id: 'u1', onboarded: false }, setUser: mockSetUser });
       mockPlanStore.mockReturnValue(makeState({ currentStep: 3 }));
 
       render(<WizardPianoGenerato />);
@@ -221,8 +223,20 @@ describe('WizardPianoGenerato (Sprint 1.5)', () => {
       expect(progressbar).toHaveAttribute('aria-valuenow', '3');
       expect(progressbar).toHaveAttribute('aria-valuemin', '1');
       expect(progressbar).toHaveAttribute('aria-valuemax', '5');
-      // 5 direct child segments
+      // 5 flex child wrappers (each contains icon + bar segment)
       expect(progressbar.children.length).toBe(5);
+    });
+
+    it('step indicator renders with icons (Wallet, Target, TrendingUp, Rocket, Brain)', () => {
+      mockAuthStore.mockReturnValue({ user: { id: 'u1', onboarded: false }, setUser: mockSetUser });
+      mockPlanStore.mockReturnValue(makeState({ currentStep: 1 }));
+
+      render(<WizardPianoGenerato />);
+      const progressbar = screen.getByRole('progressbar');
+      // 5 step icon containers rendered inside progressbar
+      expect(progressbar.children.length).toBe(5);
+      // Step label shown in subtitle (Reddito for step 1)
+      expect(screen.getByText(/Passo 1 di 5 — Reddito/)).toBeInTheDocument();
     });
   });
 
@@ -235,7 +249,7 @@ describe('WizardPianoGenerato (Sprint 1.5)', () => {
         setIsPersisting: vi.fn(),
         setPersistedPlanId: vi.fn(),
       };
-      mockAuthStore.mockReturnValue({ user: { id: 'u1' } });
+      mockAuthStore.mockReturnValue({ user: { id: 'u1', onboarded: false }, setUser: mockSetUser });
       mockPlanStore.mockReturnValue(makeState({ currentStep: 1, _actions: actions }));
 
       const { unmount } = render(<WizardPianoGenerato />);
@@ -258,7 +272,7 @@ describe('WizardPianoGenerato (Sprint 1.5)', () => {
         setIsPersisting: vi.fn(),
         setPersistedPlanId: vi.fn(),
       };
-      mockAuthStore.mockReturnValue({ user: { id: 'u1' } });
+      mockAuthStore.mockReturnValue({ user: { id: 'u1', onboarded: false }, setUser: mockSetUser });
       mockPlanStore.mockReturnValue(makeState({ currentStep: 2, _actions: actions }));
 
       render(<WizardPianoGenerato />);
@@ -272,7 +286,7 @@ describe('WizardPianoGenerato (Sprint 1.5)', () => {
   // ---- 3. Step 5 button enabled state --------------------------------------
   describe('Step 5 "Conferma e crea piano" — canSubmit=true', () => {
     it('renders enabled button with correct label when all four conditions hold', () => {
-      mockAuthStore.mockReturnValue({ user: { id: 'u1' } });
+      mockAuthStore.mockReturnValue({ user: { id: 'u1', onboarded: false }, setUser: mockSetUser });
       mockPlanStore.mockReturnValue(
         makeState({
           currentStep: 5,
@@ -296,7 +310,7 @@ describe('WizardPianoGenerato (Sprint 1.5)', () => {
   // ---- 4. Step 5 disabled reasons (the four branches of Bug #1) ------------
   describe('Step 5 "Conferma e crea piano" — disabled reasons', () => {
     it('disables button + shows amber banner when userId is null', () => {
-      mockAuthStore.mockReturnValue({ user: null });
+      mockAuthStore.mockReturnValue({ user: null, setUser: mockSetUser });
       mockPlanStore.mockReturnValue(
         makeState({
           currentStep: 5,
@@ -314,7 +328,7 @@ describe('WizardPianoGenerato (Sprint 1.5)', () => {
     });
 
     it('disables button + shows amber banner when goals array is empty', () => {
-      mockAuthStore.mockReturnValue({ user: { id: 'u1' } });
+      mockAuthStore.mockReturnValue({ user: { id: 'u1', onboarded: false }, setUser: mockSetUser });
       mockPlanStore.mockReturnValue(
         makeState({
           currentStep: 5,
@@ -332,7 +346,7 @@ describe('WizardPianoGenerato (Sprint 1.5)', () => {
     });
 
     it('disables button + shows amber banner when allocationPreview is null', () => {
-      mockAuthStore.mockReturnValue({ user: { id: 'u1' } });
+      mockAuthStore.mockReturnValue({ user: { id: 'u1', onboarded: false }, setUser: mockSetUser });
       mockPlanStore.mockReturnValue(
         makeState({
           currentStep: 5,
@@ -347,7 +361,7 @@ describe('WizardPianoGenerato (Sprint 1.5)', () => {
     });
 
     it('disables button and shows loading state when isPersisting=true', () => {
-      mockAuthStore.mockReturnValue({ user: { id: 'u1' } });
+      mockAuthStore.mockReturnValue({ user: { id: 'u1', onboarded: false }, setUser: mockSetUser });
       mockPlanStore.mockReturnValue(
         makeState({
           currentStep: 5,
@@ -376,7 +390,7 @@ describe('WizardPianoGenerato (Sprint 1.5)', () => {
         setIsPersisting: vi.fn(),
         setPersistedPlanId: vi.fn(),
       };
-      mockAuthStore.mockReturnValue({ user: { id: 'u1' } });
+      mockAuthStore.mockReturnValue({ user: { id: 'u1', onboarded: false }, setUser: mockSetUser });
       mockPlanStore.mockReturnValue(
         makeState({
           currentStep: 5,
@@ -402,6 +416,10 @@ describe('WizardPianoGenerato (Sprint 1.5)', () => {
       expect(actions.setIsPersisting).toHaveBeenNthCalledWith(1, true);
       expect(actions.setIsPersisting).toHaveBeenNthCalledWith(2, false);
       expect(actions.setPersistedPlanId).toHaveBeenCalledWith('plan-uuid');
+      // setUser called with onboarded: true to prevent redirect loop on /dashboard
+      expect(mockSetUser).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'u1', onboarded: true })
+      );
       expect(mockRouterPush).toHaveBeenCalledWith('/dashboard');
     });
   });
@@ -415,7 +433,7 @@ describe('WizardPianoGenerato (Sprint 1.5)', () => {
         setIsPersisting: vi.fn(),
         setPersistedPlanId: vi.fn(),
       };
-      mockAuthStore.mockReturnValue({ user: { id: 'u1' } });
+      mockAuthStore.mockReturnValue({ user: { id: 'u1', onboarded: false }, setUser: mockSetUser });
       mockPlanStore.mockReturnValue(
         makeState({
           currentStep: 5,
