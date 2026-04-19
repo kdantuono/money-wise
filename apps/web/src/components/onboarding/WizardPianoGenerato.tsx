@@ -3,7 +3,10 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
-import { useOnboardingPlanStore } from '@/store/onboarding-plan.store';
+import {
+  useOnboardingPlanStore,
+  selectCanAdvanceFromStep1,
+} from '@/store/onboarding-plan.store';
 import { useAuthStore } from '@/store/auth.store';
 import { onboardingPlanClient, OnboardingPlanApiError } from '@/services/onboarding-plan.client';
 import { StepIncome } from './steps/StepIncome';
@@ -40,9 +43,15 @@ export function WizardPianoGenerato() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [prevStepRef, setPrevStepRef] = useState(currentStep);
 
+  // Step 1 gate: income must be within bounds to advance -- fixes #457
+  const canAdvanceStep1 = useOnboardingPlanStore(selectCanAdvanceFromStep1);
+
   const isLastStep = currentStep === 5;
   // Submission is gated on having a user + valid allocation preview + at least 1 goal.
   const canSubmit = !!userId && !!allocationPreview && step3.goals.length > 0 && !isPersisting;
+
+  /** True when the current step allows advancing to the next one. */
+  const canAdvance = currentStep === 1 ? canAdvanceStep1 : true;
 
   // Diagnostic reason shown to user at Step 5 when canSubmit is false — so they
   // know WHY the button is disabled (not a mysterious stuck state).
@@ -243,7 +252,7 @@ export function WizardPianoGenerato() {
               )}
             </Button>
           ) : (
-            <Button onClick={handleNext}>
+            <Button onClick={handleNext} disabled={!canAdvance}>
               Avanti
               <ChevronRight className="w-4 h-4 ml-2" />
             </Button>
