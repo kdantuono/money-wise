@@ -198,4 +198,88 @@ describe('StepSavingsTarget (Sprint 1.5)', () => {
 
     expect(updateSavingsTarget).toHaveBeenCalledWith(500, 65);
   });
+
+  it('slider step is 1 (granularity fix #465)', () => {
+    mockPlanStore.mockReturnValue(makeState());
+    render(<StepSavingsTarget />);
+
+    const slider = screen.getByLabelText(/Quota spese essenziali/i);
+    expect(slider).toHaveAttribute('step', '1');
+  });
+
+  it('slider accepts non-multiple-of-5 values (e.g. 47%)', () => {
+    const updateSavingsTarget = vi.fn();
+    mockPlanStore.mockReturnValue(
+      makeState({
+        step2: { monthlySavingsTarget: 500, essentialsPct: 50 },
+        updateSavingsTarget,
+      })
+    );
+    render(<StepSavingsTarget />);
+
+    const slider = screen.getByLabelText(/Quota spese essenziali/i);
+    fireEvent.change(slider, { target: { value: '47' } });
+
+    expect(updateSavingsTarget).toHaveBeenCalledWith(500, 47);
+  });
+
+  it('"+5" button increases essentialsPct by 5', () => {
+    const updateSavingsTarget = vi.fn();
+    mockPlanStore.mockReturnValue(
+      makeState({
+        step2: { monthlySavingsTarget: 500, essentialsPct: 50 },
+        updateSavingsTarget,
+      })
+    );
+    render(<StepSavingsTarget />);
+
+    fireEvent.click(screen.getByRole('button', { name: /Aumenta di 5%/i }));
+
+    expect(updateSavingsTarget).toHaveBeenCalledWith(500, 55);
+  });
+
+  it('"−5" button decreases essentialsPct by 5', () => {
+    const updateSavingsTarget = vi.fn();
+    mockPlanStore.mockReturnValue(
+      makeState({
+        step2: { monthlySavingsTarget: 500, essentialsPct: 50 },
+        updateSavingsTarget,
+      })
+    );
+    render(<StepSavingsTarget />);
+
+    fireEvent.click(screen.getByRole('button', { name: /Diminuisci di 5%/i }));
+
+    expect(updateSavingsTarget).toHaveBeenCalledWith(500, 45);
+  });
+
+  it('"+5" button clamps at max 80', () => {
+    const updateSavingsTarget = vi.fn();
+    mockPlanStore.mockReturnValue(
+      makeState({
+        step2: { monthlySavingsTarget: 500, essentialsPct: 78 },
+        updateSavingsTarget,
+      })
+    );
+    render(<StepSavingsTarget />);
+
+    fireEvent.click(screen.getByRole('button', { name: /Aumenta di 5%/i }));
+
+    expect(updateSavingsTarget).toHaveBeenCalledWith(500, 80);
+  });
+
+  it('"−5" button clamps at min 20', () => {
+    const updateSavingsTarget = vi.fn();
+    mockPlanStore.mockReturnValue(
+      makeState({
+        step2: { monthlySavingsTarget: 500, essentialsPct: 22 },
+        updateSavingsTarget,
+      })
+    );
+    render(<StepSavingsTarget />);
+
+    fireEvent.click(screen.getByRole('button', { name: /Diminuisci di 5%/i }));
+
+    expect(updateSavingsTarget).toHaveBeenCalledWith(500, 20);
+  });
 });

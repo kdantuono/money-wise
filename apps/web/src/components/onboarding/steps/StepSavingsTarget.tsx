@@ -111,19 +111,47 @@ export function StepSavingsTarget() {
           </div>
         )}
 
-        <input
-          id="essentials-pct"
-          type="range"
-          min={20}
-          max={80}
-          step={5}
-          value={step2.essentialsPct}
-          onChange={(e) =>
-            updateSavingsTarget(step2.monthlySavingsTarget, Number(e.target.value))
-          }
-          className="w-full accent-blue-600"
-          suppressHydrationWarning
-        />
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            aria-label="Diminuisci di 5%"
+            onClick={() =>
+              updateSavingsTarget(
+                step2.monthlySavingsTarget,
+                Math.max(20, step2.essentialsPct - 5)
+              )
+            }
+            className="shrink-0 w-9 h-9 rounded-lg border border-border bg-muted/50 text-sm font-semibold text-foreground hover:bg-muted active:scale-95 transition-all select-none"
+          >
+            −5
+          </button>
+          <input
+            id="essentials-pct"
+            type="range"
+            min={20}
+            max={80}
+            step={1}
+            value={step2.essentialsPct}
+            onChange={(e) =>
+              updateSavingsTarget(step2.monthlySavingsTarget, Number(e.target.value))
+            }
+            className="w-full accent-blue-600"
+            suppressHydrationWarning
+          />
+          <button
+            type="button"
+            aria-label="Aumenta di 5%"
+            onClick={() =>
+              updateSavingsTarget(
+                step2.monthlySavingsTarget,
+                Math.min(80, step2.essentialsPct + 5)
+              )
+            }
+            className="shrink-0 w-9 h-9 rounded-lg border border-border bg-muted/50 text-sm font-semibold text-foreground hover:bg-muted active:scale-95 transition-all select-none"
+          >
+            +5
+          </button>
+        </div>
         <p className="text-xs text-muted-foreground mt-1">
           Affitto, bollette, alimentari, trasporti — le spese che non puoi evitare.
           {income > 0 && (
