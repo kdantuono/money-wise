@@ -69,7 +69,17 @@ export interface PersistPlanResult {
 
 export const onboardingPlanClient = {
   /**
-   * Persist a full onboarding plan atomically (best-effort transaction).
+   * Persist a full onboarding plan (replace-on-exist semantics).
+   *
+   * Behavior:
+   * 1. If user already has a plan, delete it first (cascades goal_allocations
+   *    via FK) + cleanup orphan goals by user_id. This supports the "Modifica
+   *    piano" flow: user re-runs wizard, previous plan is replaced.
+   * 2. Insert new plan → get plan.id.
+   * 3. Insert goals sequentially, capturing each returned id explicitly (avoids
+   *    PostgREST bulk-insert order-guarantee assumptions — Copilot review PR #455).
+   * 4. Insert goal_allocations bulk with properly-matched goal_id per-item.
+   * 5. Best-effort rollback on any failure.
    *
    * @throws {OnboardingPlanApiError} on validation or Supabase failure.
    */
@@ -82,6 +92,25 @@ export const onboardingPlanClient = {
     }
 
     const supabase = createClient();
+
+    // 0. Replace-on-exist: delete prior plan (cascades allocations) + orphan goals.
+    // `plans.user_id` is UNIQUE so at most one plan per user; this gives "Modifica piano" semantics.
+    const { data: existingPlan, error: existingErr } = await supabase
+      .from('plans')
+      .select('id')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (existingErr) {
+      throw new OnboardingPlanApiError(existingErr.message, 500, existingErr);
+    }
+
+    if (existingPlan) {
+      // Cascade: plan.delete → goal_allocations deleted (FK ON DELETE CASCADE)
+      await supabase.from('plans').delete().eq('id', existingPlan.id);
+      // Orphan goals cleanup (goals FK is to profiles, not plans)
+      await supabase.from('goals').delete().eq('user_id', userId);
+    }
 
     // 1. Insert plan
     const { data: plan, error: planErr } = await supabase
@@ -104,37 +133,46 @@ export const onboardingPlanClient = {
       );
     }
 
-    // 2. Insert goals bulk (order preserved per PostgREST guarantee)
-    const goalRows = input.goals.map((g) => ({
-      user_id: userId,
-      name: g.name,
-      target: g.target,
-      current: 0,
-      deadline: g.deadline,
-      priority: g.priority,
-      monthly_allocation: g.monthlyAllocation,
-      status: 'ACTIVE' as const,
-    }));
+    // 2. Insert goals SEQUENTIALLY — capture each returned id explicitly.
+    // Bulk .insert([arr]).select() response order is not part of PostgREST's
+    // public guarantee; sequential insert + explicit id capture is the safe path.
+    const insertedGoalIds: string[] = [];
+    for (let i = 0; i < input.goals.length; i++) {
+      const g = input.goals[i]!;
+      const { data: goalRow, error: goalErr } = await supabase
+        .from('goals')
+        .insert({
+          user_id: userId,
+          name: g.name,
+          target: g.target,
+          current: 0,
+          deadline: g.deadline,
+          priority: g.priority,
+          monthly_allocation: g.monthlyAllocation,
+          status: 'ACTIVE' as const,
+        })
+        .select('id')
+        .single();
 
-    const { data: insertedGoals, error: goalsErr } = await supabase
-      .from('goals')
-      .insert(goalRows)
-      .select('id');
-
-    if (goalsErr || !insertedGoals || insertedGoals.length !== input.goals.length) {
-      // Rollback plan (cascades via FK ON DELETE CASCADE to goal_allocations, but none yet)
-      await supabase.from('plans').delete().eq('id', plan.id);
-      throw new OnboardingPlanApiError(
-        goalsErr?.message || 'Failed to insert goals (count mismatch)',
-        500,
-        goalsErr,
-      );
+      if (goalErr || !goalRow) {
+        // Rollback: delete plan + any goals inserted so far
+        await supabase.from('plans').delete().eq('id', plan.id);
+        if (insertedGoalIds.length > 0) {
+          await supabase.from('goals').delete().in('id', insertedGoalIds);
+        }
+        throw new OnboardingPlanApiError(
+          goalErr?.message || `Failed to insert goal at index ${i}`,
+          500,
+          goalErr,
+        );
+      }
+      insertedGoalIds.push(goalRow.id);
     }
 
-    // 3. Insert goal_allocations bulk
+    // 3. Insert goal_allocations bulk with explicitly-matched goal ids
     const allocRows = input.goals.map((g, idx) => ({
       plan_id: plan.id,
-      goal_id: insertedGoals[idx]!.id,
+      goal_id: insertedGoalIds[idx]!,
       monthly_amount: g.allocation.monthlyAmount,
       deadline_feasible: g.allocation.deadlineFeasible,
       reasoning: g.allocation.reasoning,
@@ -143,8 +181,7 @@ export const onboardingPlanClient = {
     const { error: allocErr } = await supabase.from('goal_allocations').insert(allocRows);
 
     if (allocErr) {
-      // Rollback: delete plan (cascades any partial allocations) + delete inserted goals
-      const insertedGoalIds = insertedGoals.map((g) => g.id);
+      // Rollback: delete plan (cascades partial allocations) + inserted goals
       await supabase.from('plans').delete().eq('id', plan.id);
       await supabase.from('goals').delete().in('id', insertedGoalIds);
       throw new OnboardingPlanApiError(
@@ -156,7 +193,7 @@ export const onboardingPlanClient = {
 
     return {
       planId: plan.id,
-      goalIds: insertedGoals.map((g) => g.id),
+      goalIds: insertedGoalIds,
     };
   },
 

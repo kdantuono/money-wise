@@ -76,9 +76,21 @@ export function StepPlanReview() {
         </div>
       </div>
 
-      {!allocationPreview && (
+      {!allocationPreview && step3.goals.length === 0 && (
         <div className="p-4 rounded-xl border border-dashed border-border text-sm text-muted-foreground">
-          ⏳ Calcolo allocation in corso (modulo <code>lib/onboarding/allocation.ts</code> wiring Day 4)
+          Aggiungi almeno un obiettivo allo Step 3 per vedere il piano proposto.
+        </div>
+      )}
+
+      {!allocationPreview && step3.goals.length > 0 && step1.monthlyIncome <= 0 && (
+        <div className="p-4 rounded-xl border border-dashed border-border text-sm text-muted-foreground">
+          Inserisci il reddito mensile allo Step 1 per calcolare il piano.
+        </div>
+      )}
+
+      {!allocationPreview && step3.goals.length > 0 && step1.monthlyIncome > 0 && (
+        <div className="p-4 rounded-xl border border-dashed border-border text-sm text-muted-foreground">
+          ⏳ Calcolo allocation in corso...
         </div>
       )}
 

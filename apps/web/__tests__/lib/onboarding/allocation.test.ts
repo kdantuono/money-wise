@@ -21,7 +21,7 @@
  * once Stream B merges.
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { computeAllocation } from '@/lib/onboarding/allocation';
 import type {
   AllocationGoalInput,
@@ -90,6 +90,19 @@ const EPS = 0.01;
 // ─────────────────────────────────────────────────────────────────────────
 
 describe('computeAllocation (Stream B algorithm contract)', () => {
+  // Freeze system time to TODAY so deadline/urgency calculations in the
+  // algorithm (which internally uses `new Date()`) are deterministic across
+  // CI runs and local execution. Addresses Copilot review on PR #455.
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(TODAY);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+
   // ───────────────────────────────────────────────────────────────────────
   // 1. Happy path
   // ───────────────────────────────────────────────────────────────────────

@@ -50,18 +50,39 @@ function _monthsDiff(from: Date, to: Date): number {
 }
 
 /**
- * Parses `deadline` string (ISO date or YYYY-MM-DD) to a Date.
+ * Parses `deadline` string (YYYY-MM-DD or ISO) to a LOCAL Date at midnight.
  * Returns null when the string is falsy or unparseable.
+ *
+ * Timezone-safe: `new Date('YYYY-MM-DD')` is parsed as UTC midnight, which
+ * when read back via local getters (getMonth/getDate) can shift by one day
+ * in non-UTC timezones. We parse explicitly as local-midnight instead to
+ * align with `_monthsDiff`'s local-accessor usage. (Copilot review PR #455)
  */
 function _parseDeadline(deadline: string | null): Date | null {
   if (!deadline) return null;
-  const d = new Date(deadline);
-  return isNaN(d.getTime()) ? null : d;
+  const datePart = deadline.slice(0, 10);
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(datePart);
+  if (!match) {
+    // Fallback: non-date-only string, try generic parse (may be full ISO)
+    const fallback = new Date(deadline);
+    return isNaN(fallback.getTime()) ? null : fallback;
+  }
+  const [, y, m, d] = match;
+  const year = Number(y);
+  const month = Number(m);
+  const day = Number(d);
+  if (!year || !month || !day) return null;
+  return new Date(year, month - 1, day);
 }
 
 /**
  * Returns true when the goal qualifies as the emergency fund goal.
- * Condition: name matches the emergency pattern OR (priority=1 AND deadline ≤ 12 months).
+ * Condition: name matches the emergency pattern OR
+ * (priority=1 AND deadline is in the future AND ≤ 12 months away).
+ *
+ * Past deadlines (negative months) are explicitly excluded — a priority=1
+ * goal with a deadline already passed should NOT trigger emergency override
+ * (it'd steal budget from other actionable goals). (Copilot review PR #455)
  */
 function _isEmergencyGoal(goal: AllocationGoalInput, now: Date): boolean {
   if (_EMERGENCY_NAME_PATTERN.test(goal.name)) return true;
@@ -69,7 +90,7 @@ function _isEmergencyGoal(goal: AllocationGoalInput, now: Date): boolean {
     const deadlineDate = _parseDeadline(goal.deadline);
     if (deadlineDate !== null) {
       const months = _monthsDiff(now, deadlineDate);
-      if (months <= _URGENCY_MONTHS) return true;
+      if (months >= 0 && months <= _URGENCY_MONTHS) return true;
     }
   }
   return false;
