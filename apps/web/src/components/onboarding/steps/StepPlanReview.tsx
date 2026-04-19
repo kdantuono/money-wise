@@ -1,20 +1,48 @@
 'use client';
 
+import { useEffect } from 'react';
 import { useOnboardingPlanStore } from '@/store/onboarding-plan.store';
 import { PRIORITY_LABEL_IT } from '@/types/onboarding-plan';
+import { computeAllocation } from '@/lib/onboarding/allocation';
 
 export function StepPlanReview() {
   const step1 = useOnboardingPlanStore((s) => s.step1);
   const step2 = useOnboardingPlanStore((s) => s.step2);
   const step3 = useOnboardingPlanStore((s) => s.step3);
   const allocationPreview = useOnboardingPlanStore((s) => s.step4.allocationPreview);
+  const setAllocationPreview = useOnboardingPlanStore((s) => s.setAllocationPreview);
 
   const incomeAfterEssentials =
     step1.monthlyIncome * (1 - step2.essentialsPct / 100);
   const savingsTarget = Math.min(step2.monthlySavingsTarget, incomeAfterEssentials);
 
-  // TODO Sprint 1.5 Day 4 wiring: invoke computeAllocation() from lib/onboarding/allocation.ts
-  // and call setAllocationPreview() on mount. Until Stream B merges, show placeholder.
+  // Compute allocation on mount + whenever inputs change.
+  useEffect(() => {
+    if (step1.monthlyIncome <= 0 || step3.goals.length === 0) {
+      setAllocationPreview(null);
+      return;
+    }
+    const result = computeAllocation({
+      monthlyIncome: step1.monthlyIncome,
+      monthlySavingsTarget: step2.monthlySavingsTarget,
+      essentialsPct: step2.essentialsPct,
+      goals: step3.goals.map((g) => ({
+        id: g.tempId,
+        name: g.name,
+        target: g.target,
+        current: 0,
+        deadline: g.deadline,
+        priority: g.priority,
+      })),
+    });
+    setAllocationPreview(result);
+  }, [
+    step1.monthlyIncome,
+    step2.monthlySavingsTarget,
+    step2.essentialsPct,
+    step3.goals,
+    setAllocationPreview,
+  ]);
 
   return (
     <div className="space-y-4">
@@ -52,6 +80,16 @@ export function StepPlanReview() {
         <div className="p-4 rounded-xl border border-dashed border-border text-sm text-muted-foreground">
           ⏳ Calcolo allocation in corso (modulo <code>lib/onboarding/allocation.ts</code> wiring Day 4)
         </div>
+      )}
+
+      {allocationPreview && allocationPreview.warnings.length > 0 && (
+        <ul className="space-y-1">
+          {allocationPreview.warnings.map((w, idx) => (
+            <li key={idx} className="text-xs text-amber-700 dark:text-amber-400 flex gap-2">
+              <span>⚠️</span><span>{w}</span>
+            </li>
+          ))}
+        </ul>
       )}
 
       {allocationPreview && (

@@ -1,13 +1,17 @@
 'use client';
 
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useOnboardingPlanStore } from '@/store/onboarding-plan.store';
+import { useAuthStore } from '@/store/auth.store';
+import { onboardingPlanClient, OnboardingPlanApiError } from '@/services/onboarding-plan.client';
 import { StepIncome } from './steps/StepIncome';
 import { StepSavingsTarget } from './steps/StepSavingsTarget';
 import { StepGoals } from './steps/StepGoals';
 import { StepPlanReview } from './steps/StepPlanReview';
 import { StepAiPrefs } from './steps/StepAiPrefs';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Check, Loader2 } from 'lucide-react';
 
 const STEP_LABELS: Record<number, string> = {
   1: 'Reddito',
@@ -18,9 +22,74 @@ const STEP_LABELS: Record<number, string> = {
 };
 
 export function WizardPianoGenerato() {
+  const router = useRouter();
   const currentStep = useOnboardingPlanStore((s) => s.currentStep);
   const nextStep = useOnboardingPlanStore((s) => s.nextStep);
   const prevStep = useOnboardingPlanStore((s) => s.prevStep);
+  const step1 = useOnboardingPlanStore((s) => s.step1);
+  const step2 = useOnboardingPlanStore((s) => s.step2);
+  const step3 = useOnboardingPlanStore((s) => s.step3);
+  const allocationPreview = useOnboardingPlanStore((s) => s.step4.allocationPreview);
+  const setIsPersisting = useOnboardingPlanStore((s) => s.setIsPersisting);
+  const setPersistedPlanId = useOnboardingPlanStore((s) => s.setPersistedPlanId);
+  const isPersisting = useOnboardingPlanStore((s) => s.isPersisting);
+  const userId = useAuthStore((s) => s.user?.id);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  const isLastStep = currentStep === 5;
+  // Submission is gated on having a user + valid allocation preview + at least 1 goal.
+  const canSubmit = !!userId && !!allocationPreview && step3.goals.length > 0 && !isPersisting;
+
+  const handleSubmit = async () => {
+    if (!userId) {
+      setSubmitError('Utente non autenticato. Riaccedi e riprova.');
+      return;
+    }
+    if (!allocationPreview) {
+      setSubmitError('Il piano non è ancora stato calcolato.');
+      return;
+    }
+    setSubmitError(null);
+    setIsPersisting(true);
+    try {
+      const incomeAfterEssentials = step1.monthlyIncome * (1 - step2.essentialsPct / 100);
+      const { planId } = await onboardingPlanClient.persistPlan(userId, {
+        plan: {
+          monthlyIncome: step1.monthlyIncome,
+          monthlySavingsTarget: step2.monthlySavingsTarget,
+          essentialsPct: step2.essentialsPct,
+          incomeAfterEssentials,
+        },
+        goals: step3.goals.map((g) => {
+          const item = allocationPreview.items.find((it) => it.goalId === g.tempId);
+          return {
+            name: g.name,
+            target: g.target,
+            deadline: g.deadline,
+            priority: g.priority,
+            monthlyAllocation: item?.monthlyAmount ?? 0,
+            allocation: {
+              monthlyAmount: item?.monthlyAmount ?? 0,
+              deadlineFeasible: item?.deadlineFeasible ?? true,
+              reasoning: item?.reasoning ?? '',
+            },
+          };
+        }),
+      });
+      setPersistedPlanId(planId);
+      router.push('/dashboard');
+    } catch (err) {
+      const msg =
+        err instanceof OnboardingPlanApiError
+          ? `Errore ${err.statusCode}: ${err.message}`
+          : err instanceof Error
+            ? err.message
+            : 'Errore sconosciuto';
+      setSubmitError(msg);
+    } finally {
+      setIsPersisting(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background p-6 flex flex-col">
@@ -50,22 +119,48 @@ export function WizardPianoGenerato() {
           {currentStep === 5 && <StepAiPrefs />}
         </main>
 
+        {submitError && (
+          <div
+            className="mt-4 p-3 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800"
+            role="alert"
+          >
+            <p className="text-sm text-red-700 dark:text-red-300">{submitError}</p>
+          </div>
+        )}
+
         <footer className="flex justify-between pt-6 border-t border-border">
           <Button
             variant="outline"
-            disabled={currentStep === 1}
+            disabled={currentStep === 1 || isPersisting}
             onClick={prevStep}
           >
             <ChevronLeft className="w-4 h-4 mr-2" />
             Indietro
           </Button>
-          <Button
-            disabled={currentStep === 5}
-            onClick={nextStep}
-          >
-            Avanti
-            <ChevronRight className="w-4 h-4 ml-2" />
-          </Button>
+          {isLastStep ? (
+            <Button
+              disabled={!canSubmit}
+              onClick={handleSubmit}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              {isPersisting ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Creazione piano...
+                </>
+              ) : (
+                <>
+                  <Check className="w-4 h-4 mr-2" />
+                  Conferma e crea piano
+                </>
+              )}
+            </Button>
+          ) : (
+            <Button onClick={nextStep}>
+              Avanti
+              <ChevronRight className="w-4 h-4 ml-2" />
+            </Button>
+          )}
         </footer>
       </div>
     </div>
