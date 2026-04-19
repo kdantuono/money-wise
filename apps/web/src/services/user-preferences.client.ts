@@ -10,6 +10,7 @@
 import { createClient } from '@/utils/supabase/client';
 import type {
   NotificationPreferences,
+  ThemePreference,
   UserPreferences,
 } from '@/types/user-preferences';
 
@@ -99,6 +100,23 @@ export const userPreferencesClient = {
     };
     await persistPreferences(userId, merged);
     return merged;
+  },
+
+  /**
+   * Convenience: update just the theme, preserving all other preference keys.
+   * Caller passes the current in-memory preferences to avoid a read round-trip.
+   * Fire-and-forget safe — caller should catch and surface an error on failure.
+   */
+  async updateTheme(
+    userId: string,
+    currentPreferences: UserPreferences | null | undefined,
+    theme: ThemePreference
+  ): Promise<void> {
+    const merged: UserPreferences = {
+      ...(currentPreferences ?? {}),
+      theme,
+    };
+    await persistPreferences(userId, merged);
   },
 };
 

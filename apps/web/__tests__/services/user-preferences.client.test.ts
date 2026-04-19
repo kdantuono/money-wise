@@ -201,6 +201,83 @@ describe('userPreferencesClient.updateNotifications', () => {
   });
 });
 
+describe('userPreferencesClient.updateTheme', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    chain.update.mockReset().mockReturnValue(chain);
+    chain.eq.mockReset().mockResolvedValue(makeEqResolver(null));
+  });
+
+  it('persists theme merged with existing preferences', async () => {
+    const current: UserPreferences = {
+      theme: 'dracula',
+      language: 'it',
+    };
+
+    await userPreferencesClient.updateTheme(USER_ID, current, 'italian');
+
+    expect(fromMock).toHaveBeenCalledWith('profiles');
+    expect(chain.update).toHaveBeenCalledTimes(1);
+    const payload = chain.update.mock.calls[0][0].preferences;
+    expect(payload.theme).toBe('italian');
+    // Other keys must be preserved
+    expect(payload.language).toBe('it');
+    expect(chain.eq).toHaveBeenCalledWith('id', USER_ID);
+  });
+
+  it('handles null existing preferences (first-time write)', async () => {
+    await userPreferencesClient.updateTheme(USER_ID, null, 'dracula');
+
+    const payload = chain.update.mock.calls[0][0].preferences;
+    expect(payload.theme).toBe('dracula');
+  });
+
+  it('handles undefined existing preferences', async () => {
+    await userPreferencesClient.updateTheme(USER_ID, undefined, 'system');
+
+    const payload = chain.update.mock.calls[0][0].preferences;
+    expect(payload.theme).toBe('system');
+  });
+
+  it('preserves notifications when updating theme', async () => {
+    const current: UserPreferences = {
+      theme: 'system',
+      notifications: {
+        channels: { email: false, push: true, inApp: true },
+        types: defaultNotificationPreferences().types,
+        quietHours: defaultNotificationPreferences().quietHours,
+      },
+    };
+
+    await userPreferencesClient.updateTheme(USER_ID, current, 'dracula');
+
+    const payload = chain.update.mock.calls[0][0].preferences;
+    expect(payload.theme).toBe('dracula');
+    expect(payload.notifications).toBeDefined();
+    expect(payload.notifications.channels.email).toBe(false);
+  });
+
+  it('throws UserPreferencesApiError when userId is empty', async () => {
+    await expect(
+      userPreferencesClient.updateTheme('', null, 'italian')
+    ).rejects.toBeInstanceOf(UserPreferencesApiError);
+  });
+
+  it('throws UserPreferencesApiError when Supabase returns an error', async () => {
+    chain.eq.mockResolvedValueOnce(
+      makeEqResolver({ message: 'RLS violation' })
+    );
+
+    await expect(
+      userPreferencesClient.updateTheme(USER_ID, {}, 'dracula')
+    ).rejects.toMatchObject({
+      name: 'UserPreferencesApiError',
+      statusCode: 500,
+      message: expect.stringContaining('RLS violation'),
+    });
+  });
+});
+
 describe('UserPreferencesApiError', () => {
   it('carries statusCode and optional details', () => {
     const err = new UserPreferencesApiError('boom', 418, { x: 1 });
