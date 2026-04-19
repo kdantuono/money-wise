@@ -15,6 +15,24 @@ import type {
   AllocationResult,
 } from '@/types/onboarding-plan';
 
+// -------------------------------------------------------------------------
+// Validation bounds (exported for selectCanAdvanceFromStep1 + tests)
+// -------------------------------------------------------------------------
+
+/** Minimum monthly income accepted in Step 1 (EUR/month). */
+export const INCOME_MIN = 100;
+/** Maximum monthly income accepted in Step 1 (EUR/month). */
+export const INCOME_MAX = 100_000;
+
+/**
+ * Returns true when Step 1 income value is within accepted bounds.
+ * 0 = not yet entered (initial state) or skipped -> false.
+ */
+export const selectCanAdvanceFromStep1 = (s: WizardState): boolean => {
+  const income = s.step1.monthlyIncome;
+  return income >= INCOME_MIN && income <= INCOME_MAX;
+};
+
 interface Actions {
   setStep: (step: WizardStep) => void;
   nextStep: () => void;
