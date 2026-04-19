@@ -11,17 +11,22 @@
 #   bash .claude/scripts/bootstrap-dev.sh [options]
 #
 # Options:
-#   --help, -h       Show this help message
-#   --env-only       Install system tools only, skip project setup
-#   --skip-claude    Skip Claude Code installation
-#   --skip-node      Skip Node.js/pnpm installation (if managed externally)
-#   --dry-run        Show what would be installed without making changes
+#   --help, -h                Show this help message
+#   --env-only                Install system tools only, skip project setup
+#   --skip-claude             Skip Claude Code installation
+#   --skip-node               Skip Node.js/pnpm installation (if managed externally)
+#   --runtime-manager=MODE    Node/pnpm install strategy: mise | apt
+#                             Default is env-conditional: mise for WSL/plain Linux,
+#                             apt for distrobox/SteamOS (preserves existing setups).
+#   --dry-run                 Show what would be installed without making changes
 #
 # Examples:
-#   bash .claude/scripts/bootstrap-dev.sh                # Full setup
-#   bash .claude/scripts/bootstrap-dev.sh --env-only     # System tools only
-#   bash .claude/scripts/bootstrap-dev.sh --dry-run      # Preview changes
-#   bash .claude/scripts/bootstrap-dev.sh --skip-claude  # Skip Claude Code
+#   bash .claude/scripts/bootstrap-dev.sh                            # Full setup (default)
+#   bash .claude/scripts/bootstrap-dev.sh --runtime-manager=mise     # Force mise (reads mise.toml)
+#   bash .claude/scripts/bootstrap-dev.sh --runtime-manager=apt      # Force apt/nodesource
+#   bash .claude/scripts/bootstrap-dev.sh --env-only                 # System tools only
+#   bash .claude/scripts/bootstrap-dev.sh --dry-run                  # Preview changes
+#   bash .claude/scripts/bootstrap-dev.sh --skip-claude              # Skip Claude Code
 #
 # Environment Detection:
 #   1. /run/.containerenv exists        -> distrobox (Steam Deck / immutable OS)
@@ -53,6 +58,7 @@ ENV_ONLY=false
 SKIP_CLAUDE=false
 SKIP_NODE=false
 DRY_RUN=false
+RUNTIME_MANAGER=""
 
 for arg in "$@"; do
     case "$arg" in
@@ -64,6 +70,13 @@ for arg in "$@"; do
         --skip-claude) SKIP_CLAUDE=true ;;
         --skip-node)  SKIP_NODE=true ;;
         --dry-run)    DRY_RUN=true ;;
+        --runtime-manager=mise) RUNTIME_MANAGER="mise" ;;
+        --runtime-manager=apt)  RUNTIME_MANAGER="apt"  ;;
+        --runtime-manager=*)
+            echo "Invalid --runtime-manager value: ${arg#--runtime-manager=}" >&2
+            echo "Accepted: mise | apt" >&2
+            exit 1
+            ;;
         *)
             echo "Unknown option: $arg" >&2
             echo "Run '$0 --help' for usage." >&2
@@ -138,7 +151,7 @@ install_system_packages() {
     apt_install_if_missing tmux git build-essential curl unzip
 }
 
-# ── Step 2: Node.js ─────────────────────────────────────────────────────────
+# ── Step 2: Node.js (dispatcher mise|apt) ───────────────────────────────────
 
 install_node() {
     if [[ "$SKIP_NODE" == "true" ]]; then
@@ -148,6 +161,17 @@ install_node() {
 
     step "Checking Node.js"
 
+    case "$RUNTIME_MANAGER" in
+        mise) install_node_via_mise ;;
+        apt)  install_node_via_apt  ;;
+        *)
+            error "RUNTIME_MANAGER unset (expected mise|apt). This is a bug — main() should set it after detect_environment."
+            return 1
+            ;;
+    esac
+}
+
+install_node_via_apt() {
     if command -v node &>/dev/null; then
         local current_major
         current_major=$(node --version | sed 's/v\([0-9]*\).*/\1/')
@@ -188,6 +212,85 @@ install_node() {
     sudo apt-get install -y -qq nodejs
     corepack enable
     success "Node.js $(node --version) installed with corepack"
+}
+
+install_node_via_mise() {
+    # 1. Install mise binary if absent (single-user, ~/.local/bin)
+    if ! command -v mise &>/dev/null; then
+        info "Installing mise (version manager) via https://mise.run..."
+        if [[ "$DRY_RUN" == "true" ]]; then
+            info "[DRY RUN] Would run: curl -fsSL https://mise.run | sh"
+        else
+            local _mise_installer
+            _mise_installer="$(mktemp -t mise-install-XXXXXX.sh)"
+            if ! curl -fsSL "https://mise.run" -o "$_mise_installer"; then
+                error "Failed to download mise installer"
+                rm -f "$_mise_installer"
+                return 1
+            fi
+            sh "$_mise_installer"
+            rm -f "$_mise_installer"
+            # mise installs to ~/.local/bin by default — extend PATH for current shell
+            export PATH="$HOME/.local/bin:$PATH"
+        fi
+        success "mise binary installed"
+    else
+        success "mise $(mise --version 2>/dev/null || echo installed) already present"
+    fi
+
+    # 2. Persist shell activation in ~/.bashrc (idempotent check)
+    local activation_line='eval "$(mise activate bash)"'
+    if ! grep -qF 'mise activate bash' "$HOME/.bashrc" 2>/dev/null; then
+        if [[ "$DRY_RUN" == "true" ]]; then
+            info "[DRY RUN] Would append mise activation to ~/.bashrc"
+        else
+            echo "$activation_line" >> "$HOME/.bashrc"
+            success "Added mise activation to ~/.bashrc (applies to new shells)"
+        fi
+    else
+        success "mise activation already present in ~/.bashrc"
+    fi
+
+    # 3. Install toolchain declared in mise.toml
+    if [[ ! -f "$PROJECT_ROOT/mise.toml" ]]; then
+        warn "mise.toml missing at $PROJECT_ROOT — nothing to install declaratively"
+        return 0
+    fi
+
+    info "Installing toolchain from $PROJECT_ROOT/mise.toml..."
+    if [[ "$DRY_RUN" == "true" ]]; then
+        info "[DRY RUN] Would run: mise trust $PROJECT_ROOT/mise.toml && (cd $PROJECT_ROOT && mise install)"
+        return 0
+    fi
+
+    # mise security model requires explicit trust for each mise.toml (first-run protection)
+    mise trust "$PROJECT_ROOT/mise.toml"
+    (cd "$PROJECT_ROOT" && mise install)
+
+    # 4. Activate mise in current shell so subsequent steps see mise-managed bins
+    eval "$(mise activate bash)" 2>/dev/null || true
+
+    # 5. PATH precedence check (advisor gotcha #2 — invisible apt/mise conflict)
+    if command -v node &>/dev/null; then
+        local node_path
+        node_path="$(command -v node)"
+        if [[ "$node_path" == *"/mise/"* ]] || [[ "$node_path" == *"/.local/share/mise/"* ]]; then
+            success "PATH precedence OK — mise shim wins: $node_path"
+        else
+            warn "Node resolved via non-mise path: $node_path"
+            warn "Expected mise shim (~/.local/share/mise/shims/). Open a fresh shell or run 'source ~/.bashrc' for activation to take effect."
+        fi
+        success "Node.js $(node --version) ready via mise"
+    else
+        warn "node command not found after mise install — check mise.toml [tools] entries"
+    fi
+
+    # 6. Verify pnpm
+    if command -v pnpm &>/dev/null; then
+        success "pnpm $(pnpm --version) ready via mise"
+    else
+        warn "pnpm not found after mise install — ensure mise.toml includes 'pnpm' under [tools]"
+    fi
 }
 
 # ── Step 3: Claude Code ─────────────────────────────────────────────────────
@@ -365,11 +468,12 @@ print_summary() {
     echo -e "${CYAN}  MoneyWise Development Environment — Setup Complete${NC}"
     echo -e "${GREEN}================================================================${NC}"
     echo ""
-    echo -e "  Environment:  ${BLUE}$ENV_TYPE${NC}"
-    echo -e "  Node.js:      $(node --version 2>/dev/null || echo 'not installed')"
-    echo -e "  pnpm:         $(pnpm --version 2>/dev/null || echo 'not installed')"
-    echo -e "  Claude Code:  $(claude --version 2>/dev/null || echo 'not installed')"
-    echo -e "  tmux:         $(tmux -V 2>/dev/null || echo 'not installed')"
+    echo -e "  Environment:    ${BLUE}$ENV_TYPE${NC}"
+    echo -e "  Runtime mgr:    ${BLUE}$RUNTIME_MANAGER${NC}"
+    echo -e "  Node.js:        $(node --version 2>/dev/null || echo 'not installed')"
+    echo -e "  pnpm:           $(pnpm --version 2>/dev/null || echo 'not installed')"
+    echo -e "  Claude Code:    $(claude --version 2>/dev/null || echo 'not installed')"
+    echo -e "  tmux:           $(tmux -V 2>/dev/null || echo 'not installed')"
     echo ""
     echo "  Quick start:"
     echo "    pnpm infra:start     # Start TimescaleDB + Redis"
@@ -390,6 +494,17 @@ main() {
 
     detect_environment
     info "Detected environment: $ENV_TYPE"
+
+    # Resolve RUNTIME_MANAGER default from ENV_TYPE if user didn't pass --runtime-manager
+    local runtime_source="explicit"
+    if [[ -z "$RUNTIME_MANAGER" ]]; then
+        runtime_source="env default"
+        case "$ENV_TYPE" in
+            distrobox) RUNTIME_MANAGER="apt"  ;;  # SteamOS compat — preserves existing apt-installed toolchains
+            wsl|linux) RUNTIME_MANAGER="mise" ;;  # Modern default, reads mise.toml for version pinning
+        esac
+    fi
+    info "Runtime manager: $RUNTIME_MANAGER ($runtime_source)"
 
     if [[ "$DRY_RUN" == "true" ]]; then
         warn "DRY RUN mode — no changes will be made"
