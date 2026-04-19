@@ -151,7 +151,7 @@ Retrofit (writing daily end-of-session) is **accepted only at first-introduction
 
 ## Session & CI Discipline
 
-- Run `/resume-work` at session start to restore previous context
+- Run `/resume-work` at session start — restores todos AND reads `daily/<today>.md` + `<yesterday>.md` with reconciliation verdict (see `.claude/commands/resume-work.md` Step 2.5). Daily is single source of truth for session transfer; todo is fallback.
 - Run `./.claude/scripts/init-session.sh` to verify environment
 - Run `./.claude/scripts/validate-ci.sh 8` before any push on Steam Deck (levels 1-8 cover lint/typecheck/tests/yaml/actions-syntax). Levels 9-10 require Docker + `act` and are validated in remote CI.
 - Never claim CI success without verifying via `gh run view`

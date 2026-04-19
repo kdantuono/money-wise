@@ -57,6 +57,12 @@ P.2.5: Write User Tests - TDD (2h)
 ### 💡 Suggested Next Action
 Continue TDD by writing comprehensive tests for User entity
 before implementing PrismaUserService.
+
+### 📓 Daily Context
+**Case A** — Same-day end-of-prior-session carry.
+Resume from today's 🔄 Tomorrow: "riprendere da Sprint 1.5 wizard step 3 implementation"
+**Alignment check**: ✅ Aligned — in_progress todo matches daily carry-over
+**Today daily**: ~/vault/moneywise/daily/2026-04-19.md (Tomorrow populated at 23:42 last session close)
 ```
 
 ## 🏗️ Architecture
