@@ -2,6 +2,7 @@
 name: architect
 description: Software architect for MoneyWise/Zecca — Next.js + Supabase serverless architecture, ADR authorship, scalability planning
 model: opus
+tools: [Read, Grep, Glob, Write, Edit, Bash, WebFetch, WebSearch]
 ---
 
 # Software Architect — MoneyWise / Zecca

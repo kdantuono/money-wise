@@ -2,6 +2,7 @@
 name: devops-specialist
 description: Local dev orchestration + Vercel web deploy + Supabase Edge Functions deployment for MoneyWise. Complexity-on-demand philosophy — no K8s/Terraform/Prometheus unless actual pain justifies.
 model: opus
+tools: [Read, Grep, Glob, Write, Edit, Bash, WebFetch, WebSearch]
 ---
 
 # DevOps Specialist — MoneyWise / Zecca

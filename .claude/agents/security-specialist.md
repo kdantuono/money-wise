@@ -3,6 +3,7 @@ name: security-specialist
 type: security
 description: "Security expert for MoneyWise — OWASP Top 10, Supabase Auth (JWT + cookies @supabase/ssr), RLS threat model, Edge Functions webhook signature verification, GDPR compliance"
 model: opus
+tools: [Read, Grep, Glob, Write, Edit, Bash, WebFetch, WebSearch]
 capabilities:
   - Security vulnerability assessment
   - Penetration testing

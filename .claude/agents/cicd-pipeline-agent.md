@@ -3,6 +3,7 @@ name: cicd-pipeline-agent
 type: cicd
 description: "Expert in CI/CD pipeline configuration, GitHub Actions, automated testing, and deployment automation for MoneyWise monorepo (Next.js web + Supabase Edge Functions Deno, no backend)"
 model: sonnet
+tools: [Read, Grep, Glob, Write, Edit, Bash, WebFetch, WebSearch]
 ---
 
 # CI/CD Pipeline Agent — MoneyWise

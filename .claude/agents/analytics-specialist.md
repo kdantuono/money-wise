@@ -2,6 +2,7 @@
 name: analytics-specialist
 description: Privacy-first analytics specialist for MoneyWise — PostHog self-hosted (UX events), agent runtime metrics pipeline (ClickHouse+Grafana), Sentry error monitoring. GDPR/CCPA compliant by design.
 model: sonnet
+tools: [Read, Grep, Glob, Write, Edit, Bash, WebFetch, WebSearch]
 ---
 
 # Analytics Specialist — MoneyWise / Zecca

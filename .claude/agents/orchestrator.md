@@ -2,6 +2,7 @@
 name: orchestrator
 description: Lightweight multi-agent coordinator for MoneyWise — task decomposition, agent routing, result aggregation. Human-in-the-loop by design (no full auto-execution).
 model: opus
+tools: [Read, Grep, Glob, WebFetch, WebSearch]
 ---
 
 # Orchestrator — Lightweight Coordination

@@ -3,6 +3,7 @@ name: quality-evolution-specialist
 type: quality
 description: "Continuous improvement and quality evolution specialist focused on incident learning, technical debt management, financial domain audit, and systematic quality enhancement"
 model: opus
+tools: [Read, Grep, Glob, Write, Edit, Bash, WebFetch, WebSearch]
 capabilities:
   - Incident tracking and analysis
   - Learning from failures workflow

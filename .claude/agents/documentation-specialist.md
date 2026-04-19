@@ -3,6 +3,7 @@ name: documentation-specialist
 type: documentation
 description: "Documentation automation and maintenance specialist focused on newcomer accessibility, auto-generation, and consistency standards"
 model: sonnet
+tools: [Read, Grep, Glob, Write, Edit, Bash, WebFetch, WebSearch]
 capabilities:
   - Auto-documentation generation from code
   - README/CHANGELOG/SETUP.md maintenance

@@ -3,6 +3,7 @@ name: product-manager
 type: product
 description: "Product management expert specializing in requirements analysis and user story creation (MoneyWise single-dev pre-beta context)"
 model: opus
+tools: [Read, Grep, Glob, Write, Edit, Bash, WebFetch, WebSearch]
 capabilities:
   - Requirements gathering and analysis
   - User story creation (INVEST criteria)

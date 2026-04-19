@@ -3,6 +3,7 @@ name: frontend-specialist
 type: frontend
 description: "Expert in React/Next.js 15 development, UI/UX implementation, and modern frontend practices (Tailwind v4 + Radix + Zustand + TanStack Query)"
 model: sonnet
+tools: [Read, Grep, Glob, Write, Edit, Bash, WebFetch, WebSearch]
 ---
 
 # Frontend Development Specialist

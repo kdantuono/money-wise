@@ -3,6 +3,7 @@ name: test-specialist
 type: quality-assurance
 description: "Testing expert for MoneyWise — Vitest (web unit) + Jest legacy + Playwright (E2E) + test strategy audit. Critical per audit #7 RICE 50 (test credibility blocker pre-Sprint-2)"
 model: opus
+tools: [Read, Grep, Glob, Write, Edit, Bash, WebFetch, WebSearch]
 capabilities:
   - Test strategy design
   - Test automation frameworks

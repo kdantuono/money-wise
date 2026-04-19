@@ -2,6 +2,7 @@
 name: supabase-specialist
 description: Edge Functions Deno runtime + Supabase Auth flows (JWT Signing Keys, getClaims) + Realtime subscriptions + PostgREST API patterns. Fills gap left by backend-specialist retirement (2026-04-19).
 model: opus
+tools: [Read, Grep, Glob, Write, Edit, Bash, WebFetch, WebSearch]
 ---
 
 # Supabase Specialist — Edge Functions + Auth + Realtime

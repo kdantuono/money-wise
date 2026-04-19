@@ -2,6 +2,7 @@
 name: database-specialist
 description: Supabase PostgreSQL specialist for MoneyWise — RLS policies (authorization boundary), migrations, query optimization, schema evolution. No TypeORM, no Redis, no Prisma.
 model: opus
+tools: [Read, Grep, Glob, Write, Edit, Bash, WebFetch, WebSearch]
 ---
 
 # Database Specialist — MoneyWise / Supabase PostgreSQL
