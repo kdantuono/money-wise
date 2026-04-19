@@ -228,7 +228,11 @@ install_node_via_mise() {
                 rm -f "$_mise_installer"
                 return 1
             fi
-            sh "$_mise_installer"
+            if ! sh "$_mise_installer"; then
+                error "mise installer exited non-zero — check network, disk space, or permissions"
+                rm -f "$_mise_installer"
+                return 1
+            fi
             rm -f "$_mise_installer"
             # mise installs to ~/.local/bin by default — extend PATH for current shell
             export PATH="$HOME/.local/bin:$PATH"
@@ -238,17 +242,46 @@ install_node_via_mise() {
         success "mise $(mise --version 2>/dev/null || echo installed) already present"
     fi
 
-    # 2. Persist shell activation in ~/.bashrc (idempotent check)
-    local activation_line='eval "$(mise activate bash)"'
-    if ! grep -qF 'mise activate bash' "$HOME/.bashrc" 2>/dev/null; then
-        if [[ "$DRY_RUN" == "true" ]]; then
-            info "[DRY RUN] Would append mise activation to ~/.bashrc"
+    # 2. Persist shell activation — explicit cases for bash/zsh/fish, warn+skip for others.
+    # Writing wrong syntax to wrong rc file would silently break activation, so unknown
+    # shells get a manual-setup pointer instead of a best-guess fallback.
+    local shell_name shell_rc activation_line
+    local skip_rc_write=false
+    case "${SHELL:-/bin/bash}" in
+        */zsh)
+            shell_name="zsh"
+            shell_rc="$HOME/.zshrc"
+            activation_line='eval "$(mise activate zsh)"'
+            ;;
+        */bash)
+            shell_name="bash"
+            shell_rc="$HOME/.bashrc"
+            activation_line='eval "$(mise activate bash)"'
+            ;;
+        */fish)
+            shell_name="fish"
+            shell_rc="$HOME/.config/fish/config.fish"
+            activation_line='mise activate fish | source'
+            ;;
+        *)
+            warn "Unsupported shell detected (\$SHELL=${SHELL:-unknown}) — skipping rc-file activation"
+            warn "Manually add mise activation per https://mise.jdx.dev/installing-mise.html#activate-mise"
+            skip_rc_write=true
+            ;;
+    esac
+
+    if [[ "$skip_rc_write" != "true" ]]; then
+        if ! grep -qF "mise activate $shell_name" "$shell_rc" 2>/dev/null; then
+            if [[ "$DRY_RUN" == "true" ]]; then
+                info "[DRY RUN] Would append mise activation to $shell_rc"
+            else
+                mkdir -p "$(dirname "$shell_rc")"
+                echo "$activation_line" >> "$shell_rc"
+                success "Added mise activation to $shell_rc (applies to new shells)"
+            fi
         else
-            echo "$activation_line" >> "$HOME/.bashrc"
-            success "Added mise activation to ~/.bashrc (applies to new shells)"
+            success "mise activation already present in $shell_rc"
         fi
-    else
-        success "mise activation already present in ~/.bashrc"
     fi
 
     # 3. Install toolchain declared in mise.toml
@@ -268,6 +301,8 @@ install_node_via_mise() {
     (cd "$PROJECT_ROOT" && mise install)
 
     # 4. Activate mise in current shell so subsequent steps see mise-managed bins
+    # Note: always use bash activation here because this script has #!/bin/bash shebang,
+    # regardless of the user's login shell (which governs step 2's rc-file choice).
     eval "$(mise activate bash)" 2>/dev/null || true
 
     # 5. PATH precedence: mise shims must win over apt/nvm-installed nodes.
@@ -483,6 +518,13 @@ print_summary() {
     echo "    pnpm dev:ready       # Full interactive dev setup"
     echo "    pnpm dev             # Start all dev servers"
     echo ""
+    if [[ "$RUNTIME_MANAGER" == "mise" ]] && [[ -d "$PROJECT_ROOT/node_modules" ]] && [[ "$DRY_RUN" != "true" ]]; then
+        echo -e "  ${YELLOW}Note:${NC} Node version is now managed by mise (from mise.toml)."
+        echo "  If node_modules was previously installed with a different Node major,"
+        echo "  native binaries (@parcel/watcher, @swc/core) may have ABI mismatches."
+        echo -e "  Rebuild to be safe: ${BLUE}rm -rf node_modules && pnpm install${NC}"
+        echo ""
+    fi
     if [[ "$DRY_RUN" == "true" ]]; then
         echo -e "  ${YELLOW}This was a dry run — no changes were made.${NC}"
         echo ""
