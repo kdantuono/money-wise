@@ -80,8 +80,8 @@ export function StepGoals() {
       )}
 
       {showAdd && (
-        <div className="space-y-3 rounded-xl border border-border bg-card p-4">
-          <div>
+        <div className="space-y-3 rounded-xl border border-border bg-card p-4" suppressHydrationWarning>
+          <div suppressHydrationWarning>
             <label htmlFor="goal-name" className="text-sm font-medium text-foreground block mb-1">
               Nome
             </label>
@@ -92,10 +92,11 @@ export function StepGoals() {
               onChange={(e) => setDraft({ ...draft, name: e.target.value })}
               className="w-full bg-muted/50 border border-border rounded-xl px-3 py-2 text-sm text-foreground"
               placeholder="es. Fondo Emergenza"
+              suppressHydrationWarning
             />
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <div>
+            <div suppressHydrationWarning>
               <label htmlFor="goal-target" className="text-sm font-medium text-foreground block mb-1">
                 Target (€)
               </label>
@@ -107,9 +108,10 @@ export function StepGoals() {
                 onChange={(e) => setDraft({ ...draft, target: e.target.value })}
                 className="w-full bg-muted/50 border border-border rounded-xl px-3 py-2 text-sm text-foreground"
                 placeholder="15000"
+                suppressHydrationWarning
               />
             </div>
-            <div>
+            <div suppressHydrationWarning>
               <label htmlFor="goal-deadline" className="text-sm font-medium text-foreground block mb-1">
                 Scadenza (opzionale)
               </label>
@@ -119,10 +121,11 @@ export function StepGoals() {
                 value={draft.deadline}
                 onChange={(e) => setDraft({ ...draft, deadline: e.target.value })}
                 className="w-full bg-muted/50 border border-border rounded-xl px-3 py-2 text-sm text-foreground"
+                suppressHydrationWarning
               />
             </div>
           </div>
-          <div>
+          <div suppressHydrationWarning>
             <label htmlFor="goal-priority" className="text-sm font-medium text-foreground block mb-1">
               Priorità
             </label>
@@ -131,6 +134,7 @@ export function StepGoals() {
               value={draft.priority}
               onChange={(e) => setDraft({ ...draft, priority: Number(e.target.value) as PriorityRank })}
               className="w-full bg-muted/50 border border-border rounded-xl px-3 py-2 text-sm text-foreground"
+              suppressHydrationWarning
             >
               <option value={1}>Alta</option>
               <option value={2}>Media</option>

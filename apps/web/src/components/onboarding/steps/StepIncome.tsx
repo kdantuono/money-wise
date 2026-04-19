@@ -12,7 +12,7 @@ export function StepIncome() {
       <p className="text-sm text-muted-foreground">
         Quanto percepisci in media al mese, dopo le tasse? Questo è il punto di partenza del tuo piano.
       </p>
-      <div>
+      <div suppressHydrationWarning>
         <label htmlFor="monthly-income" className="text-sm font-medium text-foreground block mb-1">
           Reddito netto mensile (€)
         </label>
@@ -25,6 +25,7 @@ export function StepIncome() {
           onChange={(e) => updateIncome(Number(e.target.value) || 0)}
           className="w-full bg-muted/50 border border-border rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 text-foreground"
           placeholder="es. 2500"
+          suppressHydrationWarning
         />
       </div>
     </div>

@@ -23,7 +23,7 @@ export function StepSavingsTarget() {
         )}
       </p>
 
-      <div>
+      <div suppressHydrationWarning>
         <label htmlFor="savings-target" className="text-sm font-medium text-foreground block mb-1">
           Risparmio mensile target (€)
         </label>
@@ -38,10 +38,11 @@ export function StepSavingsTarget() {
           }
           className="w-full bg-muted/50 border border-border rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 text-foreground"
           placeholder="es. 500"
+          suppressHydrationWarning
         />
       </div>
 
-      <div>
+      <div suppressHydrationWarning>
         <label htmlFor="essentials-pct" className="text-sm font-medium text-foreground block mb-1">
           Quota spese essenziali (% del reddito): {step2.essentialsPct}%
         </label>
@@ -56,6 +57,7 @@ export function StepSavingsTarget() {
             updateSavingsTarget(step2.monthlySavingsTarget, Number(e.target.value))
           }
           className="w-full accent-blue-600"
+          suppressHydrationWarning
         />
         <p className="text-xs text-muted-foreground mt-1">
           Affitto, bollette, alimentari, trasporti — le spese che non puoi evitare.
