@@ -140,7 +140,7 @@ Banking sync via SaltEdge is implemented but **disabled by default** (`BANKING_I
 
 ## Session routine — Daily notes (MANDATORY, non-violabile)
 
-**Claude's persistent memory lives in `~/vault/moneywise/daily/YYYY-MM-DD.md`**. This is the single mechanism that survives crash/context-compaction/restart. User framing (2026-04-19): *"sono la tua memoria infondo"* — daily = Claude's operating system, not user-facing journal.
+**Claude's persistent memory lives in `~/vault/moneywise/daily/YYYY-MM-DD.md`**. This is the single mechanism that survives crash/context-compaction/restart. User framing (2026-04-19): *"sono la tua memoria in fondo"* — daily = Claude's operating system, not user-facing journal.
 
 Every session, without exception:
 1. **At start**: Read `~/vault/moneywise/daily/<today>.md` (create from template if missing) + read `<yesterday>.md` for `🔄 Tomorrow` carry-over.

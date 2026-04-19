@@ -47,8 +47,16 @@ today_path="$HOME/vault/moneywise/daily/${today}.md"
 
 if [[ -f "$today_path" ]]; then
   today_exists=true
-  # Check if 🔄 Tomorrow section has content (not just header)
-  tomorrow_lines=$(sed -n '/^## 🔄 Tomorrow/,/^## /p' "$today_path" | sed '1d;$d' | grep -c '^-')
+  # Check if 🔄 Tomorrow section has content (not just header).
+  # Use awk to capture lines AFTER "## 🔄 Tomorrow" up to (but not including)
+  # the next "## " header OR EOF. This correctly handles the case where
+  # 🔄 Tomorrow is the LAST section (no closing header) — sed '1d;$d' would
+  # wrongly drop a real content line in that scenario.
+  tomorrow_lines=$(awk '
+    /^## 🔄 Tomorrow[[:space:]]*$/ { flag=1; next }
+    /^## / { flag=0 }
+    flag && /^-/ { print }
+  ' "$today_path" | wc -l)
   today_has_tomorrow=$([[ $tomorrow_lines -gt 0 ]] && echo true || echo false)
 else
   today_exists=false
@@ -62,7 +70,12 @@ fi
 yesterday_path="$HOME/vault/moneywise/daily/${yesterday}.md"
 
 if [[ -f "$yesterday_path" ]]; then
-  yesterday_tomorrow=$(sed -n '/^## 🔄 Tomorrow/,/^## /p' "$yesterday_path" | sed '1d;$d')
+  # Same awk-based extraction: handles "🔄 Tomorrow is last section" correctly.
+  yesterday_tomorrow=$(awk '
+    /^## 🔄 Tomorrow[[:space:]]*$/ { flag=1; next }
+    /^## / { flag=0 }
+    flag { print }
+  ' "$yesterday_path")
 else
   yesterday_tomorrow=""
 fi
