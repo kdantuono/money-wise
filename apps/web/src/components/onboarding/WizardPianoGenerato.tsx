@@ -31,6 +31,7 @@ export function WizardPianoGenerato() {
   const step2 = useOnboardingPlanStore((s) => s.step2);
   const step3 = useOnboardingPlanStore((s) => s.step3);
   const allocationPreview = useOnboardingPlanStore((s) => s.step4.allocationPreview);
+  const step5 = useOnboardingPlanStore((s) => s.step5);
   const setIsPersisting = useOnboardingPlanStore((s) => s.setIsPersisting);
   const setPersistedPlanId = useOnboardingPlanStore((s) => s.setPersistedPlanId);
   const isPersisting = useOnboardingPlanStore((s) => s.isPersisting);
@@ -103,12 +104,16 @@ export function WizardPianoGenerato() {
             },
           };
         }),
+        aiPreferences: {
+          enableAiCategorization: step5.enableAiCategorization,
+          enableAiInsights: step5.enableAiInsights,
+        },
       });
       setPersistedPlanId(planId);
       // Update in-memory auth store so OnboardingGate does not redirect again
-      // when the user lands on /dashboard (profiles.onboarded is already true in DB).
+      // when the user lands on /dashboard/goals (profiles.onboarded is already true in DB).
       setUser({ ...user, onboarded: true });
-      router.push('/dashboard');
+      router.push('/dashboard/goals');
     } catch (err) {
       const msg =
         err instanceof OnboardingPlanApiError
