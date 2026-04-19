@@ -1,24 +1,8 @@
 /**
- * Sprint 1.5 — Onboarding Piano Generato / Stream C (test-specialist)
+ * Sprint 1.5.1 - Issue #458: beta+gamma waterfall algorithm
  *
- * TDD test suite for the allocation algorithm owned by Stream B
- * (`apps/web/src/lib/onboarding/allocation.ts`). Written AGAINST the
- * type contract at `apps/web/src/types/onboarding-plan.ts`.
- *
- * Coverage matrix (≥6 mandatory edge cases + 2 bonus):
- *   1. Happy path — 3 goals varied priority, savings 500, income 2500.
- *   2. target=0 skip — goal with target 0 → monthlyAmount 0 + reasoning hint.
- *   3. Deadline passed — deadline < today → deadlineFeasible false + warning.
- *   4. Priority duplicate order preserved — stable sort vs input order.
- *   5. Emergency fund override — priority 1 "Fondo Emergenza" gets ≥40%.
- *   6. Deadline <12mo urgency boost — closer deadline wins more monthly.
- *   7. (Bonus) savings target > income_after_essentials → global warning.
- *   8. (Bonus) empty goals array → items [] + unallocated full + warning.
- *
- * NOTE: If Stream B has not yet committed
- * `apps/web/src/lib/onboarding/allocation.ts`, this suite pre-fails at
- * import resolution. That is the expected TDD handshake and resolves
- * once Stream B merges.
+ * Full rewrite. Previous proportional-distribution tests INTENTIONALLY deleted.
+ * Test count: 21 cases.
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
@@ -30,35 +14,30 @@ import type {
   PriorityRank,
 } from '@/types/onboarding-plan';
 
-// ─────────────────────────────────────────────────────────────────────────
-// Test fixtures / helpers
-// ─────────────────────────────────────────────────────────────────────────
+const TODAY = new Date('2026-04-19T00:00:00.000Z');
 
-/** Deterministic "today" reference to build deadline fixtures around. */
-const TODAY = new Date('2026-04-19T00:00:00Z');
-
-/** Format a Date as ISO date-only string (YYYY-MM-DD), as stored in DB. */
+/** UTC-safe ISO date string (avoids local-timezone ±1 day drift). */
 function isoDate(date: Date): string {
   return date.toISOString().slice(0, 10);
 }
 
-/** Offset "today" by N months (UTC). */
 function monthsFromToday(n: number): string {
   const d = new Date(TODAY);
   d.setUTCMonth(d.getUTCMonth() + n);
   return isoDate(d);
 }
 
-/** Offset "today" by N days (UTC). */
 function daysFromToday(n: number): string {
   const d = new Date(TODAY);
   d.setUTCDate(d.getUTCDate() + n);
   return isoDate(d);
 }
 
+/** Deterministic ID counter — avoids Math.random() nondeterminism in the suite. */
+let _goalIdCounter = 0;
 function makeGoal(partial: Partial<AllocationGoalInput>): AllocationGoalInput {
   return {
-    id: partial.id ?? `goal-${Math.random().toString(36).slice(2, 10)}`,
+    id: partial.id ?? `goal-${++_goalIdCounter}`,
     name: partial.name ?? 'Generic Goal',
     target: partial.target ?? 1000,
     current: partial.current ?? 0,
@@ -73,368 +52,318 @@ function makeInput(partial: Partial<AllocationInput>): AllocationInput {
     monthlySavingsTarget: partial.monthlySavingsTarget ?? 500,
     essentialsPct: partial.essentialsPct ?? 50,
     goals: partial.goals ?? [],
-    emergencyFundMonths: partial.emergencyFundMonths,
   };
 }
 
-/** Sum of per-goal monthlyAmount. */
 function sumAllocated(result: AllocationResult): number {
-  return result.items.reduce((acc, it) => acc + it.monthlyAmount, 0);
+  return Math.round(result.items.reduce((acc, it) => acc + it.monthlyAmount, 0) * 100) / 100;
 }
 
-// Floating-point-safe comparison tolerance for currency sums.
-const EPS = 0.01;
+const EPS = 0.02;
 
-// ─────────────────────────────────────────────────────────────────────────
-// Test suite
-// ─────────────────────────────────────────────────────────────────────────
-
-describe('computeAllocation (Stream B algorithm contract)', () => {
-  // Freeze system time to TODAY so deadline/urgency calculations in the
-  // algorithm (which internally uses `new Date()`) are deterministic across
-  // CI runs and local execution. Addresses Copilot review on PR #455.
+describe('computeAllocation -- beta+gamma waterfall (issue #458)', () => {
   beforeEach(() => {
+    _goalIdCounter = 0;
     vi.useFakeTimers();
     vi.setSystemTime(TODAY);
   });
+  afterEach(() => { vi.useRealTimers(); });
 
-  afterEach(() => {
-    vi.useRealTimers();
+  it('single ALTA goal with deadline 24mo consumes entire pool', () => {
+    const input = makeInput({
+      monthlyIncome: 2000, essentialsPct: 50, monthlySavingsTarget: 500,
+      goals: [makeGoal({ id: 'g-alta', name: 'Acconto Casa', target: 12000, current: 0, deadline: monthsFromToday(24), priority: 1 })],
+    });
+    const result = computeAllocation(input);
+    expect(result.items).toHaveLength(1);
+    expect(result.items[0].goalId).toBe('g-alta');
+    expect(result.items[0].monthlyAmount).toBeCloseTo(500, 2);
+    expect(result.items[0].deadlineFeasible).toBe(true);
+    expect(result.totalAllocated).toBeCloseTo(500, 2);
+    expect(result.unallocated).toBeCloseTo(0, 2);
   });
 
-
-  // ───────────────────────────────────────────────────────────────────────
-  // 1. Happy path
-  // ───────────────────────────────────────────────────────────────────────
-  describe('happy path', () => {
-    it('distributes savings target across 3 varied-priority goals', () => {
-      const input = makeInput({
-        monthlyIncome: 2500,
-        monthlySavingsTarget: 500,
-        essentialsPct: 50,
-        goals: [
-          makeGoal({
-            id: 'g-high',
-            name: 'Acconto Casa',
-            target: 20000,
-            priority: 1,
-            deadline: monthsFromToday(36),
-          }),
-          makeGoal({
-            id: 'g-mid',
-            name: 'Auto',
-            target: 8000,
-            priority: 2,
-            deadline: monthsFromToday(24),
-          }),
-          makeGoal({
-            id: 'g-low',
-            name: 'Viaggio',
-            target: 2000,
-            priority: 3,
-            deadline: monthsFromToday(18),
-          }),
-        ],
-      });
-
-      const result = computeAllocation(input);
-
-      expect(result.items).toHaveLength(3);
-      // income 2500 × 50% essentials = 1250 available → 500 savings target fits.
-      expect(result.incomeAfterEssentials).toBeCloseTo(1250, 2);
-      // totalAllocated must not exceed the requested savings target.
-      expect(result.totalAllocated).toBeLessThanOrEqual(500 + EPS);
-      // Sum consistency with items.
-      expect(sumAllocated(result)).toBeCloseTo(result.totalAllocated, 2);
-      // unallocated = savingsTarget - totalAllocated (non-negative).
-      expect(result.unallocated).toBeGreaterThanOrEqual(0);
-      expect(result.unallocated).toBeCloseTo(500 - result.totalAllocated, 2);
-      // Every goal must receive positive allocation in happy path.
-      for (const item of result.items) {
-        expect(item.monthlyAmount).toBeGreaterThan(0);
-        expect(typeof item.reasoning).toBe('string');
-        expect(item.reasoning.length).toBeGreaterThan(0);
-        expect(Array.isArray(item.warnings)).toBe(true);
-      }
-      // No global warning under these nominal conditions.
-      expect(Array.isArray(result.warnings)).toBe(true);
+  it('2 goals ALTA+MEDIA sufficient budget -- both fully funded', () => {
+    const input = makeInput({
+      monthlyIncome: 2500, essentialsPct: 50, monthlySavingsTarget: 500,
+      goals: [
+        makeGoal({ id: 'g-alta', name: 'Risparmio Alta', target: 4800, current: 0, deadline: monthsFromToday(24), priority: 1 }),
+        makeGoal({ id: 'g-media', name: 'Risparmio Media', target: 3000, current: 0, deadline: monthsFromToday(20), priority: 2 }),
+      ],
     });
+    const result = computeAllocation(input);
+    const alta = result.items.find((it) => it.goalId === 'g-alta');
+    const media = result.items.find((it) => it.goalId === 'g-media');
+    expect(alta!.monthlyAmount).toBeCloseTo(200, 2);
+    expect(alta!.deadlineFeasible).toBe(true);
+    expect(media!.monthlyAmount).toBeCloseTo(150, 2);
+    expect(media!.deadlineFeasible).toBe(true);
+    expect(result.totalAllocated).toBeLessThanOrEqual(500 + EPS);
   });
 
-  // ───────────────────────────────────────────────────────────────────────
-  // 2. target=0 skip
-  // ───────────────────────────────────────────────────────────────────────
-  describe('target=0 skip', () => {
-    it('allocates 0 to a goal with target=0 and adds reasoning', () => {
-      const input = makeInput({
-        monthlySavingsTarget: 300,
-        goals: [
-          makeGoal({
-            id: 'g-zero',
-            name: 'Placeholder',
-            target: 0,
-            priority: 2,
-          }),
-        ],
-      });
-
-      const result = computeAllocation(input);
-      expect(result.items).toHaveLength(1);
-      const [item] = result.items;
-      expect(item.goalId).toBe('g-zero');
-      expect(item.monthlyAmount).toBe(0);
-      // Reasoning must explicitly flag missing target.
-      expect(item.reasoning.toLowerCase()).toMatch(
-        /target|nessun.*importo|non specificato|obiettivo vuoto/,
-      );
-      // Because nothing was allocated, unallocated must equal savings target.
-      expect(result.unallocated).toBeCloseTo(300, 2);
-      expect(result.totalAllocated).toBeCloseTo(0, 2);
+  it('2 goals insufficient pool -- ALTA partial, MEDIA 0 + warning', () => {
+    const input = makeInput({
+      monthlyIncome: 2500, essentialsPct: 50, monthlySavingsTarget: 500,
+      goals: [
+        makeGoal({ id: 'g-alta', name: 'Investimento casa', target: 18000, current: 0, deadline: monthsFromToday(30), priority: 1 }),
+        makeGoal({ id: 'g-media', name: 'Vacanza MEDIA', target: 6000, current: 0, deadline: monthsFromToday(30), priority: 2 }),
+      ],
     });
+    const result = computeAllocation(input);
+    const alta = result.items.find((it) => it.goalId === 'g-alta');
+    const media = result.items.find((it) => it.goalId === 'g-media');
+    expect(alta!.monthlyAmount).toBeCloseTo(500, 2);
+    expect(alta!.deadlineFeasible).toBe(false);
+    expect(alta!.warnings.some((w) => /insufficiente|necessari|budget/i.test(w))).toBe(true);
+    expect(media!.monthlyAmount).toBeCloseTo(0, 2);
+    expect(media!.deadlineFeasible).toBe(false);
+    expect(media!.warnings.length).toBeGreaterThan(0);
   });
 
-  // ───────────────────────────────────────────────────────────────────────
-  // 3. Deadline passed flag
-  // ───────────────────────────────────────────────────────────────────────
-  describe('deadline passed', () => {
-    it('marks deadlineFeasible=false and adds warning when deadline < today', () => {
-      const input = makeInput({
-        monthlySavingsTarget: 400,
-        goals: [
-          makeGoal({
-            id: 'g-past',
-            name: 'Obiettivo Scaduto',
-            target: 1000,
-            priority: 2,
-            // 30 days in the past.
-            deadline: daysFromToday(-30),
-          }),
-        ],
-      });
-
-      const result = computeAllocation(input);
-      expect(result.items).toHaveLength(1);
-      const [item] = result.items;
-      expect(item.deadlineFeasible).toBe(false);
-      // At least one warning must mention the deadline.
-      expect(item.warnings.length).toBeGreaterThan(0);
-      expect(
-        item.warnings.some((w) =>
-          /deadline|scadenz|scadut|trascors|passat|passed/i.test(w),
-        ),
-      ).toBe(true);
+  it('3 goals ALTA+ALTA+MEDIA -- items in INPUT order', () => {
+    const input = makeInput({
+      monthlyIncome: 2500, essentialsPct: 50, monthlySavingsTarget: 300,
+      goals: [
+        makeGoal({ id: 'g-a1', name: 'Goal A ALTA', target: 4500, current: 0, deadline: monthsFromToday(30), priority: 1 }),
+        makeGoal({ id: 'g-a2', name: 'Goal B ALTA', target: 4500, current: 0, deadline: monthsFromToday(30), priority: 1 }),
+        makeGoal({ id: 'g-media', name: 'Goal C MEDIA', target: 6000, current: 0, deadline: monthsFromToday(30), priority: 2 }),
+      ],
     });
+    const result = computeAllocation(input);
+    expect(result.items[0].goalId).toBe('g-a1');
+    expect(result.items[1].goalId).toBe('g-a2');
+    expect(result.items[2].goalId).toBe('g-media');
+    expect(result.items[0].monthlyAmount).toBeCloseTo(150, 2);
+    expect(result.items[1].monthlyAmount).toBeCloseTo(150, 2);
+    expect(result.items[2].monthlyAmount).toBeCloseTo(0, 2);
   });
 
-  // ───────────────────────────────────────────────────────────────────────
-  // 4. Priority duplicate — stable order preserved
-  // ───────────────────────────────────────────────────────────────────────
-  describe('priority duplicate stable order', () => {
-    it('preserves input order when two goals share the same priority', () => {
-      const input = makeInput({
-        monthlySavingsTarget: 200,
-        goals: [
-          makeGoal({
-            id: 'g-first',
-            name: 'Primo',
-            target: 1000,
-            priority: 2,
-            deadline: monthsFromToday(12),
-          }),
-          makeGoal({
-            id: 'g-second',
-            name: 'Secondo',
-            target: 1000,
-            priority: 2,
-            deadline: monthsFromToday(12),
-          }),
-        ],
-      });
-
-      const result = computeAllocation(input);
-      expect(result.items).toHaveLength(2);
-      // Stable sort: identical priority + deadline + target → input order wins.
-      expect(result.items[0].goalId).toBe('g-first');
-      expect(result.items[1].goalId).toBe('g-second');
+  it('350e pool: emerg floor 140 + debt 210 + gamma warning (issue #458 scenario)', () => {
+    const input = makeInput({
+      monthlyIncome: 3000, essentialsPct: 50, monthlySavingsTarget: 350,
+      goals: [
+        makeGoal({ id: 'g-debt', name: 'Estinzione debito', target: 7000, current: 0, deadline: monthsFromToday(20), priority: 1 }),
+        makeGoal({ id: 'g-emerg', name: 'Fondo Emergenza', target: 1000, current: 0, deadline: null, priority: 2 }),
+      ],
     });
+    const result = computeAllocation(input);
+    const debt = result.items.find((it) => it.goalId === 'g-debt');
+    const emerg = result.items.find((it) => it.goalId === 'g-emerg');
+    expect(emerg!.monthlyAmount).toBeCloseTo(140, 2);
+    expect(debt!.monthlyAmount).toBeCloseTo(210, 2);
+    expect(debt!.deadlineFeasible).toBe(false);
+    expect(debt!.warnings.some((w) => /insufficiente|necessari|budget/i.test(w))).toBe(true);
+    expect(result.warnings.some((w) => /waterfall puro|senza protezione/i.test(w))).toBe(true);
+    expect(result.totalAllocated).toBeCloseTo(350, 2);
+    expect(result.unallocated).toBeCloseTo(0, 2);
   });
 
-  // ───────────────────────────────────────────────────────────────────────
-  // 5. Emergency fund override (priority 1 + name "Fondo Emergenza")
-  // ───────────────────────────────────────────────────────────────────────
-  describe('emergency fund override', () => {
-    it('allocates ≥40% of savings target to "Fondo Emergenza" priority 1', () => {
-      const savings = 500;
-      const input = makeInput({
-        monthlyIncome: 3000,
-        monthlySavingsTarget: savings,
-        essentialsPct: 50,
-        goals: [
-          makeGoal({
-            id: 'g-emergency',
-            name: 'Fondo Emergenza',
-            target: 15000,
-            priority: 1,
-            deadline: monthsFromToday(36),
-          }),
-          makeGoal({
-            id: 'g-vacation',
-            name: 'Vacanza',
-            target: 2000,
-            priority: 3,
-            deadline: monthsFromToday(18),
-          }),
-        ],
-      });
-
-      const result = computeAllocation(input);
-      expect(result.items).toHaveLength(2);
-      const emergency = result.items.find((it) => it.goalId === 'g-emergency');
-      const vacation = result.items.find((it) => it.goalId === 'g-vacation');
-      expect(emergency).toBeDefined();
-      expect(vacation).toBeDefined();
-
-      // Emergency gets at least 40% of the savings target.
-      expect(emergency!.monthlyAmount / savings).toBeGreaterThanOrEqual(0.4);
-      // And must be strictly greater than the low-priority vacation goal.
-      expect(emergency!.monthlyAmount).toBeGreaterThan(vacation!.monthlyAmount);
+  it('"Fondo Emergenza" priority BASSA still gets emergency floor (name trumps priority)', () => {
+    const pool = 500;
+    const input = makeInput({
+      monthlyIncome: 2500, essentialsPct: 50, monthlySavingsTarget: pool,
+      goals: [
+        makeGoal({ id: 'g-alta', name: 'Casa', target: 15000, current: 0, deadline: monthsFromToday(30), priority: 1 }),
+        makeGoal({ id: 'g-emerg', name: 'Fondo Emergenza', target: 3000, current: 0, deadline: null, priority: 3 }),
+      ],
     });
+    const result = computeAllocation(input);
+    expect(result.items.find((it) => it.goalId === 'g-emerg')!.monthlyAmount).toBeGreaterThanOrEqual(pool * 0.4 - EPS);
   });
 
-  // ───────────────────────────────────────────────────────────────────────
-  // 6. Deadline <12mo urgency boost
-  // ───────────────────────────────────────────────────────────────────────
-  describe('deadline urgency boost', () => {
-    it('allocates more monthly to a closer-deadline twin of the same goal', () => {
-      const input = makeInput({
-        monthlyIncome: 2500,
-        monthlySavingsTarget: 400,
-        essentialsPct: 50,
-        goals: [
-          makeGoal({
-            id: 'g-soon',
-            name: 'Viaggio Breve',
-            target: 1500,
-            priority: 2,
-            deadline: monthsFromToday(6), // <12mo → urgency boost expected
-          }),
-          makeGoal({
-            id: 'g-later',
-            name: 'Viaggio Breve',
-            target: 1500,
-            priority: 2,
-            deadline: monthsFromToday(36), // 3 years away → no boost
-          }),
-        ],
-      });
-
-      const result = computeAllocation(input);
-      const soon = result.items.find((it) => it.goalId === 'g-soon');
-      const later = result.items.find((it) => it.goalId === 'g-later');
-      expect(soon).toBeDefined();
-      expect(later).toBeDefined();
-      // The urgent one must win strictly more monthly allocation.
-      expect(soon!.monthlyAmount).toBeGreaterThan(later!.monthlyAmount);
-    });
+  it('empty goals -> items=[], full unallocated, warning', () => {
+    const result = computeAllocation(makeInput({ monthlySavingsTarget: 250, goals: [] }));
+    expect(result.items).toEqual([]);
+    expect(result.totalAllocated).toBeCloseTo(0, 2);
+    expect(result.unallocated).toBeCloseTo(250, 2);
+    expect(result.warnings.some((w) => /nessun.*obiettivo|no goals|vuot/i.test(w))).toBe(true);
   });
 
-  // ───────────────────────────────────────────────────────────────────────
-  // 7. (Bonus) savings target > income_after_essentials → global warning
-  // ───────────────────────────────────────────────────────────────────────
-  describe('savings target exceeds income after essentials', () => {
-    it('surfaces a global warning when savings target > income_after_essentials', () => {
-      // income 2000, essentials 80% → 400 available → target 800 impossible.
-      const input = makeInput({
-        monthlyIncome: 2000,
-        essentialsPct: 80,
-        monthlySavingsTarget: 800,
-        goals: [
-          makeGoal({
-            id: 'g-any',
-            name: 'Qualsiasi',
-            target: 1000,
-            priority: 2,
-            deadline: monthsFromToday(12),
-          }),
-        ],
-      });
-
-      const result = computeAllocation(input);
-      expect(result.incomeAfterEssentials).toBeCloseTo(400, 2);
-      expect(result.warnings.length).toBeGreaterThan(0);
-      expect(
-        result.warnings.some((w) =>
-          /savings|obiettivo di risparmio|eccede|exceed|reddito|income/i.test(
-            w,
-          ),
-        ),
-      ).toBe(true);
-      // totalAllocated cannot exceed incomeAfterEssentials.
-      expect(result.totalAllocated).toBeLessThanOrEqual(400 + EPS);
+  it('goal with target=0 -> monthlyAmount=0, deadlineFeasible=true', () => {
+    const input = makeInput({
+      monthlySavingsTarget: 300,
+      goals: [makeGoal({ id: 'g-zero', name: 'Placeholder', target: 0, priority: 2 })],
     });
+    const result = computeAllocation(input);
+    expect(result.items[0].monthlyAmount).toBe(0);
+    expect(result.items[0].deadlineFeasible).toBe(true);
+    expect(result.items[0].reasoning.toLowerCase()).toMatch(/target|non specificato/);
   });
 
-  // ───────────────────────────────────────────────────────────────────────
-  // 8. (Bonus) empty goals array
-  // ───────────────────────────────────────────────────────────────────────
-  describe('empty goals array', () => {
-    it('returns items=[], full unallocated, and a "no goals" warning', () => {
-      const input = makeInput({
-        monthlySavingsTarget: 250,
-        goals: [],
-      });
-
-      const result = computeAllocation(input);
-      expect(result.items).toEqual([]);
-      expect(result.totalAllocated).toBeCloseTo(0, 2);
-      expect(result.unallocated).toBeCloseTo(250, 2);
-      expect(result.warnings.length).toBeGreaterThan(0);
-      expect(
-        result.warnings.some((w) =>
-          /nessun.*obiettivo|no goals|empty|vuot/i.test(w),
-        ),
-      ).toBe(true);
+  it('past deadline -> deadlineFeasible=false + deadline warning', () => {
+    const input = makeInput({
+      monthlySavingsTarget: 400,
+      goals: [makeGoal({ id: 'g-past', name: 'Scaduto', target: 1000, current: 0, deadline: daysFromToday(-30), priority: 2 })],
     });
+    const result = computeAllocation(input);
+    expect(result.items[0].deadlineFeasible).toBe(false);
+    expect(result.items[0].warnings.some((w) => /scadenz|trascors|passat|superata/i.test(w))).toBe(true);
   });
 
-  // ───────────────────────────────────────────────────────────────────────
-  // Aggregate invariants (cross-cutting sanity)
-  // ───────────────────────────────────────────────────────────────────────
-  describe('aggregate invariants', () => {
-    it('never allocates more than min(savingsTarget, incomeAfterEssentials)', () => {
-      const input = makeInput({
-        monthlyIncome: 2500,
-        monthlySavingsTarget: 500,
-        essentialsPct: 50,
-        goals: [
-          makeGoal({ id: 'a', target: 1000, priority: 1 }),
-          makeGoal({ id: 'b', target: 1000, priority: 2 }),
-          makeGoal({ id: 'c', target: 1000, priority: 3 }),
-        ],
-      });
-      const result = computeAllocation(input);
-      const cap = Math.min(500, result.incomeAfterEssentials);
-      expect(result.totalAllocated).toBeLessThanOrEqual(cap + EPS);
-      expect(sumAllocated(result)).toBeCloseTo(result.totalAllocated, 2);
+  it('all BASSA goals -> waterfall sequential by input order', () => {
+    const input = makeInput({
+      monthlyIncome: 2000, essentialsPct: 50, monthlySavingsTarget: 300,
+      goals: [
+        makeGoal({ id: 'b1', name: 'Bassa 1', target: 1000, current: 0, deadline: monthsFromToday(10), priority: 3 }),
+        makeGoal({ id: 'b2', name: 'Bassa 2', target: 1000, current: 0, deadline: monthsFromToday(10), priority: 3 }),
+        makeGoal({ id: 'b3', name: 'Bassa 3', target: 2000, current: 0, deadline: monthsFromToday(10), priority: 3 }),
+      ],
     });
+    const result = computeAllocation(input);
+    expect(result.items[0].goalId).toBe('b1');
+    expect(result.items[1].goalId).toBe('b2');
+    expect(result.items[2].goalId).toBe('b3');
+    expect(result.items[0].monthlyAmount).toBeCloseTo(100, 2);
+    expect(result.items[1].monthlyAmount).toBeCloseTo(100, 2);
+    expect(result.items[2].monthlyAmount).toBeCloseTo(100, 2);
+  });
 
-    it('returns one item per input goal (no duplicates, no drops)', () => {
-      const ids = ['p', 'q', 'r', 's'];
-      const input = makeInput({
-        monthlySavingsTarget: 400,
-        goals: ids.map((id, idx) =>
-          makeGoal({
-            id,
-            target: 500 + idx * 100,
-            priority: ((idx % 3) + 1) as PriorityRank,
-            deadline: monthsFromToday(12 + idx),
-          }),
-        ),
-      });
-      const result = computeAllocation(input);
-      expect(result.items.map((it) => it.goalId).sort()).toEqual(
-        [...ids].sort(),
-      );
+  it('gamma warning NOT emitted when emergency floor impact < 5%', () => {
+    const input = makeInput({
+      monthlyIncome: 4000, essentialsPct: 50, monthlySavingsTarget: 1000,
+      goals: [
+        makeGoal({ id: 'g-alta', name: 'Investimento', target: 19200, current: 0, deadline: monthsFromToday(20), priority: 1 }),
+        makeGoal({ id: 'g-emerg', name: 'Fondo Emergenza', target: 40, current: 0, deadline: null, priority: 2 }),
+      ],
     });
+    const result = computeAllocation(input);
+    expect(result.items.find((it) => it.goalId === 'g-emerg')!.monthlyAmount).toBeCloseTo(40, 2);
+    expect(result.warnings.some((w) => /waterfall puro|senza protezione/i.test(w))).toBe(false);
+  });
+
+  it('gamma warning emitted when emergency floor impact >= 5%', () => {
+    const input = makeInput({
+      monthlyIncome: 4000, essentialsPct: 50, monthlySavingsTarget: 1000,
+      goals: [
+        makeGoal({ id: 'g-alta', name: 'Investimento', target: 50000, current: 0, deadline: monthsFromToday(50), priority: 1 }),
+        makeGoal({ id: 'g-emerg', name: 'Fondo Emergenza', target: 60, current: 0, deadline: null, priority: 2 }),
+      ],
+    });
+    const result = computeAllocation(input);
+    expect(result.items.find((it) => it.goalId === 'g-alta')!.monthlyAmount).toBeCloseTo(940, 2);
+    expect(result.warnings.some((w) => /waterfall puro|senza protezione/i.test(w))).toBe(true);
+  });
+
+  it('savings target > income after essentials -> global warning, pool capped', () => {
+    const input = makeInput({
+      monthlyIncome: 2000, essentialsPct: 80, monthlySavingsTarget: 800,
+      goals: [makeGoal({ id: 'g', name: 'Qualsiasi', target: 1000, priority: 2, deadline: monthsFromToday(20) })],
+    });
+    const result = computeAllocation(input);
+    expect(result.incomeAfterEssentials).toBeCloseTo(400, 2);
+    expect(result.warnings.some((w) => /target|reddito|risparmio|superato|essenziali|essentials|supera/i.test(w))).toBe(true);
+    expect(result.totalAllocated).toBeLessThanOrEqual(400 + EPS);
+  });
+
+  it('totalAllocated always equals sum of items monthlyAmount', () => {
+    const input = makeInput({
+      monthlyIncome: 2500, essentialsPct: 50, monthlySavingsTarget: 500,
+      goals: [
+        makeGoal({ id: 'a', name: 'A', target: 1000, priority: 1, deadline: monthsFromToday(20) }),
+        makeGoal({ id: 'b', name: 'Fondo Emergenza', target: 5000, priority: 2, deadline: null }),
+        makeGoal({ id: 'c', name: 'C', target: 2000, priority: 3, deadline: monthsFromToday(20) }),
+      ],
+    });
+    const result = computeAllocation(input);
+    expect(sumAllocated(result)).toBeCloseTo(result.totalAllocated, 2);
+    expect(result.totalAllocated + result.unallocated).toBeCloseTo(500, 2);
+  });
+
+  it('returns exactly one item per input goal', () => {
+    const ids = ['p', 'q', 'r', 's'];
+    const input = makeInput({
+      monthlySavingsTarget: 400,
+      goals: ids.map((id, idx) =>
+        makeGoal({ id, name: `Goal ${id}`, target: 500 + idx * 100, priority: ((idx % 3) + 1) as PriorityRank, deadline: monthsFromToday(20 + idx) }),
+      ),
+    });
+    const result = computeAllocation(input);
+    expect(result.items.map((it) => it.goalId).sort()).toEqual([...ids].sort());
+  });
+
+  it('never over-allocates beyond savings pool cap', () => {
+    const input = makeInput({
+      monthlyIncome: 2500, monthlySavingsTarget: 500, essentialsPct: 50,
+      goals: [
+        makeGoal({ id: 'a', name: 'A', target: 10000, priority: 1, deadline: monthsFromToday(20) }),
+        makeGoal({ id: 'b', name: 'B', target: 10000, priority: 2, deadline: monthsFromToday(20) }),
+        makeGoal({ id: 'c', name: 'C', target: 10000, priority: 3, deadline: monthsFromToday(20) }),
+      ],
+    });
+    const result = computeAllocation(input);
+    expect(result.totalAllocated).toBeLessThanOrEqual(Math.min(500, result.incomeAfterEssentials) + EPS);
+  });
+
+  it('emergency alone receives min(pool*0.4, need), rest unallocated', () => {
+    const input = makeInput({
+      monthlyIncome: 2500, essentialsPct: 50, monthlySavingsTarget: 500,
+      goals: [makeGoal({ id: 'g-emerg', name: 'Fondo Emergenza', target: 100, current: 0, deadline: null, priority: 2 })],
+    });
+    const result = computeAllocation(input);
+    expect(result.items[0].monthlyAmount).toBeCloseTo(100, 2);
+    expect(result.unallocated).toBeCloseTo(400, 2);
+  });
+
+  it('emergency fully funded -> floor=0, all pool to waterfall', () => {
+    const input = makeInput({
+      monthlyIncome: 2500, essentialsPct: 50, monthlySavingsTarget: 500,
+      goals: [
+        makeGoal({ id: 'g-emerg', name: 'Fondo Emergenza', target: 1000, current: 1000, deadline: null, priority: 2 }),
+        makeGoal({ id: 'g-alta', name: 'Investimento', target: 10000, current: 0, deadline: monthsFromToday(20), priority: 1 }),
+      ],
+    });
+    const result = computeAllocation(input);
+    expect(result.items.find((it) => it.goalId === 'g-emerg')!.monthlyAmount).toBeCloseTo(0, 2);
+    expect(result.items.find((it) => it.goalId === 'g-alta')!.monthlyAmount).toBeCloseTo(500, 2);
+  });
+
+  it('ALTA allocated before MEDIA and BASSA in constrained budget', () => {
+    const input = makeInput({
+      monthlyIncome: 2000, essentialsPct: 50, monthlySavingsTarget: 200,
+      goals: [
+        makeGoal({ id: 'bassa', name: 'Bassa', target: 4000, current: 0, deadline: monthsFromToday(20), priority: 3 }),
+        makeGoal({ id: 'media', name: 'Media', target: 4000, current: 0, deadline: monthsFromToday(20), priority: 2 }),
+        makeGoal({ id: 'alta', name: 'Alta', target: 4000, current: 0, deadline: monthsFromToday(20), priority: 1 }),
+      ],
+    });
+    const result = computeAllocation(input);
+    expect(result.items.find((it) => it.goalId === 'alta')!.monthlyAmount).toBeCloseTo(200, 2);
+    expect(result.items.find((it) => it.goalId === 'media')!.monthlyAmount).toBeCloseTo(0, 2);
+    expect(result.items.find((it) => it.goalId === 'bassa')!.monthlyAmount).toBeCloseTo(0, 2);
+    expect(result.items[0].goalId).toBe('bassa');
+    expect(result.items[1].goalId).toBe('media');
+    expect(result.items[2].goalId).toBe('alta');
+  });
+
+  it('open-ended goal with 0 allocation -> deadlineFeasible=true + exhausted warning', () => {
+    const input = makeInput({
+      monthlyIncome: 2000, essentialsPct: 50, monthlySavingsTarget: 100,
+      goals: [
+        makeGoal({ id: 'g-alta', name: 'Alta openended', target: 500, current: 0, deadline: null, priority: 1 }),
+        makeGoal({ id: 'g-media', name: 'Media openended', target: 500, current: 0, deadline: null, priority: 2 }),
+      ],
+    });
+    const result = computeAllocation(input);
+    const alta = result.items.find((it) => it.goalId === 'g-alta');
+    const media = result.items.find((it) => it.goalId === 'g-media');
+    expect(alta!.monthlyAmount).toBeCloseTo(100, 2);
+    expect(alta!.deadlineFeasible).toBe(true);
+    expect(media!.monthlyAmount).toBeCloseTo(0, 2);
+    expect(media!.deadlineFeasible).toBe(true);
+    expect(media!.warnings.some((w) => /esaurit|allocazione|budget/i.test(w))).toBe(true);
+  });
+
+  it('priority=1 goal with deadline > 12mo and no emergency name: NOT treated as emergency', () => {
+    const input = makeInput({
+      monthlyIncome: 2500, essentialsPct: 50, monthlySavingsTarget: 300,
+      goals: [
+        makeGoal({ id: 'g-casa', name: 'Acconto Casa', target: 7200, current: 0, deadline: monthsFromToday(24), priority: 1 }),
+        makeGoal({ id: 'g-viaggio', name: 'Viaggio', target: 3000, current: 0, deadline: monthsFromToday(24), priority: 3 }),
+      ],
+    });
+    const result = computeAllocation(input);
+    expect(result.items.find((it) => it.goalId === 'g-casa')!.monthlyAmount).toBeCloseTo(300, 2);
+    expect(result.items.find((it) => it.goalId === 'g-viaggio')!.monthlyAmount).toBeCloseTo(0, 2);
+    expect(result.totalAllocated).toBeCloseTo(300, 2);
   });
 });
