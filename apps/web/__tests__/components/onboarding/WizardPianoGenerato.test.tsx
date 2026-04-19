@@ -383,7 +383,7 @@ describe('WizardPianoGenerato (Sprint 1.5)', () => {
 
   // ---- 5. handleSubmit — success path --------------------------------------
   describe('handleSubmit — success', () => {
-    it('calls persistPlan, toggles isPersisting on/off, and navigates to /dashboard', async () => {
+    it('calls persistPlan with aiPreferences, toggles isPersisting, and navigates to /dashboard/goals', async () => {
       const actions: StoreActionSpies = {
         nextStep: vi.fn(),
         prevStep: vi.fn(),
@@ -399,6 +399,7 @@ describe('WizardPianoGenerato (Sprint 1.5)', () => {
             allocationPreview: makeAllocation([GOAL_TEMP_ID]),
             userOverrides: {},
           },
+          step5: { enableAiCategorization: true, enableAiInsights: false },
           _actions: actions,
         })
       );
@@ -412,15 +413,20 @@ describe('WizardPianoGenerato (Sprint 1.5)', () => {
       });
       // userId first arg
       expect(mockPersistPlan.mock.calls[0]![0]).toBe('u1');
+      // aiPreferences forwarded from step5
+      const persistInput = mockPersistPlan.mock.calls[0]![1] as {
+        aiPreferences: { enableAiCategorization: boolean; enableAiInsights: boolean };
+      };
+      expect(persistInput.aiPreferences).toEqual({ enableAiCategorization: true, enableAiInsights: false });
       // setIsPersisting toggled true → false
       expect(actions.setIsPersisting).toHaveBeenNthCalledWith(1, true);
       expect(actions.setIsPersisting).toHaveBeenNthCalledWith(2, false);
       expect(actions.setPersistedPlanId).toHaveBeenCalledWith('plan-uuid');
-      // setUser called with onboarded: true to prevent redirect loop on /dashboard
+      // setUser called with onboarded: true to prevent redirect loop
       expect(mockSetUser).toHaveBeenCalledWith(
         expect.objectContaining({ id: 'u1', onboarded: true })
       );
-      expect(mockRouterPush).toHaveBeenCalledWith('/dashboard');
+      expect(mockRouterPush).toHaveBeenCalledWith('/dashboard/goals');
     });
   });
 

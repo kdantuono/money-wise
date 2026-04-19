@@ -62,6 +62,10 @@ export interface PersistPlanInput {
       reasoning: string;
     };
   }>;
+  aiPreferences: {
+    enableAiCategorization: boolean;
+    enableAiInsights: boolean;
+  };
 }
 
 export interface PersistPlanResult {
@@ -224,14 +228,35 @@ export const onboardingPlanClient = {
       );
     }
 
-    // 4. Flip profiles.onboarded = true now that the plan is fully persisted.
-    // This is the canonical moment: goals + allocations exist, plan is committed.
-    // Caller (WizardPianoGenerato) is responsible for updating the in-memory
-    // auth store (setUser) so the OnboardingGate redirect effect does not fire
-    // again when the user lands on /dashboard.
+    // 4. Merge AI preferences into profiles.preferences, then flip onboarded = true.
+    // Fetch existing preferences first to avoid clobbering other preference keys
+    // (e.g. theme, notifications). Merge under the 'ai' sub-key, then UPDATE in
+    // a single round-trip (Copilot review PR #459: two separate UPDATEs risk race).
+    const { data: profileRow, error: profFetchErr } = await supabase
+      .from('profiles')
+      .select('preferences')
+      .eq('id', userId)
+      .single();
+
+    if (profFetchErr) {
+      throw new OnboardingPlanApiError(
+        `Failed to load preferences for merge: ${profFetchErr.message}`,
+        500,
+        profFetchErr,
+      );
+    }
+
+    const mergedPreferences = {
+      ...((profileRow?.preferences as Record<string, unknown>) || {}),
+      ai: {
+        enableAiCategorization: input.aiPreferences.enableAiCategorization,
+        enableAiInsights: input.aiPreferences.enableAiInsights,
+      },
+    };
+
     const { error: onboardedErr } = await supabase
       .from('profiles')
-      .update({ onboarded: true })
+      .update({ onboarded: true, preferences: mergedPreferences })
       .eq('id', userId);
 
     if (onboardedErr) {
@@ -240,7 +265,7 @@ export const onboardingPlanClient = {
       // surface the error and the user retries rather than silently ending up in
       // a redirect loop.
       throw new OnboardingPlanApiError(
-        `Piano salvato ma impossibile aggiornare onboarded: ${onboardedErr.message}`,
+        `Piano salvato ma impossibile aggiornare profilo: ${onboardedErr.message}`,
         500,
         onboardedErr,
       );

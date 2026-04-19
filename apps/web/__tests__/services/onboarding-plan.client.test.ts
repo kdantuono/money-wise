@@ -160,6 +160,10 @@ const INPUT_BASE = {
       },
     },
   ],
+  aiPreferences: {
+    enableAiCategorization: true,
+    enableAiInsights: false,
+  },
 };
 
 beforeEach(() => {
@@ -232,6 +236,8 @@ describe('onboardingPlanClient.persistPlan — happy path', () => {
     goalsChain.__queueInsert({ data: { id: 'goal-uuid-2' }, error: null });
     // Insert allocations (no .select, awaited directly)
     allocChain.__queueInsert({ data: null, error: null });
+    // profiles SELECT preferences (new step 4)
+    profilesChain.single.mockResolvedValueOnce({ data: { preferences: null }, error: null });
 
     const result = await onboardingPlanClient.persistPlan(USER_ID, INPUT_BASE);
 
@@ -258,6 +264,7 @@ describe('onboardingPlanClient.persistPlan — happy path', () => {
     goalsChain.__queueInsert({ data: { id: 'g1' }, error: null });
     goalsChain.__queueInsert({ data: { id: 'g2' }, error: null });
     allocChain.__queueInsert({ data: null, error: null });
+    profilesChain.single.mockResolvedValueOnce({ data: { preferences: null }, error: null });
 
     await onboardingPlanClient.persistPlan(USER_ID, {
       ...INPUT_BASE,
@@ -285,6 +292,8 @@ describe('onboardingPlanClient.persistPlan — replace-on-exist', () => {
     goalsChain.__queueInsert({ data: { id: 'new-g1' }, error: null });
     goalsChain.__queueInsert({ data: { id: 'new-g2' }, error: null });
     allocChain.__queueInsert({ data: null, error: null });
+    // profiles SELECT preferences (new step 4)
+    profilesChain.single.mockResolvedValueOnce({ data: { preferences: { theme: 'dark' } }, error: null });
 
     const result = await onboardingPlanClient.persistPlan(USER_ID, INPUT_BASE);
 
@@ -481,6 +490,60 @@ describe('onboardingPlanClient.loadPlan', () => {
       statusCode: 400,
     });
     expect(fromMock).not.toHaveBeenCalled();
+  });
+});
+
+// =============================================================================
+// persistPlan — AI preferences persistence (#459)
+// =============================================================================
+describe('onboardingPlanClient.persistPlan — AI preferences persistence', () => {
+  it('merges aiPreferences into profiles.preferences preserving existing keys', async () => {
+    plansChain.maybeSingle.mockResolvedValueOnce({ data: null, error: null });
+    plansChain.__queueInsert({ data: { id: 'plan-pf-ok' }, error: null });
+    goalsChain.__queueInsert({ data: { id: 'g1' }, error: null });
+    goalsChain.__queueInsert({ data: { id: 'g2' }, error: null });
+    allocChain.__queueInsert({ data: null, error: null });
+    // profiles SELECT preferences — returns existing key 'theme' that must be preserved
+    profilesChain.single.mockResolvedValueOnce({
+      data: { preferences: { theme: 'dark', notifications: true } },
+      error: null,
+    });
+
+    await onboardingPlanClient.persistPlan(USER_ID, INPUT_BASE);
+
+    // profiles UPDATE must merge ai sub-key while preserving existing keys
+    const updateArg = profilesChain.update.mock.calls[0]![0] as {
+      onboarded: boolean;
+      preferences: { theme: string; notifications: boolean; ai: { enableAiCategorization: boolean; enableAiInsights: boolean } };
+    };
+    expect(updateArg.onboarded).toBe(true);
+    expect(updateArg.preferences.theme).toBe('dark');
+    expect(updateArg.preferences.notifications).toBe(true);
+    expect(updateArg.preferences.ai).toEqual({
+      enableAiCategorization: true,
+      enableAiInsights: false,
+    });
+  });
+
+  it('throws when profiles SELECT preferences fails', async () => {
+    plansChain.maybeSingle.mockResolvedValueOnce({ data: null, error: null });
+    plansChain.__queueInsert({ data: { id: 'plan-pf-err' }, error: null });
+    goalsChain.__queueInsert({ data: { id: 'g1' }, error: null });
+    goalsChain.__queueInsert({ data: { id: 'g2' }, error: null });
+    allocChain.__queueInsert({ data: null, error: null });
+    // profiles SELECT fails
+    profilesChain.single.mockResolvedValueOnce({
+      data: null,
+      error: { message: 'preferences RLS denied' },
+    });
+
+    await expect(
+      onboardingPlanClient.persistPlan(USER_ID, INPUT_BASE)
+    ).rejects.toMatchObject({
+      name: 'OnboardingPlanApiError',
+      statusCode: 500,
+      message: expect.stringContaining('preferences RLS denied'),
+    });
   });
 });
 
