@@ -37,12 +37,18 @@ export class OnboardingPlanApiError extends Error {
 // Input shape (decoupled from WizardState to allow caller to massage data)
 // =============================================================================
 
+/**
+ * Caller-supplied fields for plan persistence.
+ * `incomeAfterEssentials` is NOT accepted — it is derived inside persistPlan
+ * to guarantee the stored snapshot is always internally consistent with the
+ * supplied monthlyIncome + essentialsPct (per Copilot review PR #455: caller
+ * could compute it differently and persist an inconsistent record).
+ */
 export interface PersistPlanInput {
   plan: {
     monthlyIncome: number;
     monthlySavingsTarget: number;
     essentialsPct: number;
-    incomeAfterEssentials: number;
   };
   goals: Array<{
     name: string;
@@ -107,10 +113,37 @@ export const onboardingPlanClient = {
 
     if (existingPlan) {
       // Cascade: plan.delete → goal_allocations deleted (FK ON DELETE CASCADE)
-      await supabase.from('plans').delete().eq('id', existingPlan.id);
+      // Check errors: if DELETE fails, subsequent INSERT would hit UNIQUE(user_id).
+      const { error: planDelErr } = await supabase
+        .from('plans')
+        .delete()
+        .eq('id', existingPlan.id);
+      if (planDelErr) {
+        throw new OnboardingPlanApiError(
+          `Failed to delete existing plan: ${planDelErr.message}`,
+          500,
+          planDelErr,
+        );
+      }
       // Orphan goals cleanup (goals FK is to profiles, not plans)
-      await supabase.from('goals').delete().eq('user_id', userId);
+      const { error: goalsDelErr } = await supabase
+        .from('goals')
+        .delete()
+        .eq('user_id', userId);
+      if (goalsDelErr) {
+        throw new OnboardingPlanApiError(
+          `Failed to cleanup existing goals: ${goalsDelErr.message}`,
+          500,
+          goalsDelErr,
+        );
+      }
     }
+
+    // Derive incomeAfterEssentials internally (Copilot review PR #455 — caller
+    // must not supply it; previous code accepted it and risked inconsistent
+    // snapshot if caller's compute differed).
+    const incomeAfterEssentials =
+      input.plan.monthlyIncome * (1 - input.plan.essentialsPct / 100);
 
     // 1. Insert plan
     const { data: plan, error: planErr } = await supabase
@@ -120,7 +153,7 @@ export const onboardingPlanClient = {
         monthly_income: input.plan.monthlyIncome,
         monthly_savings_target: input.plan.monthlySavingsTarget,
         essentials_pct: input.plan.essentialsPct,
-        income_after_essentials: input.plan.incomeAfterEssentials,
+        income_after_essentials: incomeAfterEssentials,
       })
       .select('id')
       .single();

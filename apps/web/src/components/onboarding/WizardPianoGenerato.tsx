@@ -52,13 +52,13 @@ export function WizardPianoGenerato() {
     setSubmitError(null);
     setIsPersisting(true);
     try {
-      const incomeAfterEssentials = step1.monthlyIncome * (1 - step2.essentialsPct / 100);
+      // incomeAfterEssentials NON passed — derived internally by persistPlan
+      // (contract change PR #455 Copilot review: ensures DB snapshot consistency).
       const { planId } = await onboardingPlanClient.persistPlan(userId, {
         plan: {
           monthlyIncome: step1.monthlyIncome,
           monthlySavingsTarget: step2.monthlySavingsTarget,
           essentialsPct: step2.essentialsPct,
-          incomeAfterEssentials,
         },
         goals: step3.goals.map((g) => {
           const item = allocationPreview.items.find((it) => it.goalId === g.tempId);

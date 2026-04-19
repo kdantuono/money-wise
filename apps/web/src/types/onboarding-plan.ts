@@ -63,18 +63,23 @@ export interface AllocationGoalInput {
 
 /**
  * Full algorithm input.
+ *
+ * `essentialsPct` is a percentage in the range [0, 100] (matches DB schema
+ * CHECK constraint `essentials_pct BETWEEN 0 AND 100`). The algorithm
+ * derives `incomeAfterEssentials = monthlyIncome * (1 - essentialsPct/100)`.
+ *
+ * Note: emergency fund target is embedded in the user-specified `target` of
+ * the emergency goal (user enters "how much to save for the fund"), not as
+ * a separate input parameter. Sprint 1.5 decision 2026-04-19: fixed 6 ×
+ * monthly_savings is documentation-level guidance only, user can override
+ * by setting target directly. Parametric version deferred to Sprint 3 if
+ * beta feedback requests.
  */
 export interface AllocationInput {
   monthlyIncome: number;
   monthlySavingsTarget: number;
   essentialsPct: number;
   goals: AllocationGoalInput[];
-  /**
-   * Emergency fund target in months of savings (default 6 per Sprint 1.5
-   * decision 2026-04-19). Immutable for Sprint 1.5; ALTER to parametric
-   * Sprint 3 if beta feedback requests.
-   */
-  emergencyFundMonths?: number;
 }
 
 /**

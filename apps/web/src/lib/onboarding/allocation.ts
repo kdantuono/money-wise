@@ -6,9 +6,12 @@
  * Time is captured once at function entry via `new Date()`. Tests should use
  * `vi.setSystemTime()` / `vi.useFakeTimers()` to freeze time.
  *
- * EMERGENCY FUND MODEL: the emergency goal receives `40% × savingsPool` as a
- * floor allocation and is then *excluded* from the priority-weighted pool.
- * Remaining budget is distributed among all other goals by priority weight.
+ * EMERGENCY FUND MODEL: the emergency goal is INCLUDED in the priority-weighted
+ * pool and receives `max(priority-share, 40% × savingsPool)` capped at the
+ * remaining need (target - current). When the 40% floor exceeds the priority
+ * share, other goals' shares are scaled down pro-rata so the total still sums
+ * to savingsPool. (Updated after integration reconcile 9daad36 — previous
+ * docstring described an older "excluded from pool" design.)
  *
  * @module allocation
  */
@@ -34,9 +37,6 @@ const _URGENCY_MONTHS = 12;
 
 /** Emergency override fraction of the available savings pool. */
 const _EMERGENCY_OVERRIDE_FRACTION = 0.4;
-
-/** Default emergency fund target in months (Sprint 1.5 fixed value). */
-const _DEFAULT_EMERGENCY_MONTHS = 6;
 
 /**
  * Returns the number of whole months between `from` and `to`.
@@ -327,7 +327,7 @@ export function computeAllocation(input: AllocationInput): AllocationResult {
         deadlinePassed = true;
         itemWarnings.push('La scadenza di questo goal è già trascorsa.');
       } else if (monthlyAmount > 0) {
-        // Check if montly contribution covers what's needed
+        // Check if monthly contribution covers what's needed
         const remaining = Math.max(0, goal.target - goal.current);
         const requiredMonthly = monthsLeft > 0 ? remaining / monthsLeft : Infinity;
         if (requiredMonthly > monthlyAmount) {
