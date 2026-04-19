@@ -142,7 +142,7 @@ export function StepSavingsTarget() {
           >
             <p className="text-xs text-amber-700 dark:text-amber-400">
               ⚠️ Il target €{formatEuro(step2.monthlySavingsTarget)} supera il disponibile €
-              {formatEuro(afterEssentialsAmount)}. Abbassa il target OR riduci la quota essenziali.
+              {formatEuro(afterEssentialsAmount)}. Abbassa il target o riduci la quota essenziali.
             </p>
           </motion.div>
         )}
