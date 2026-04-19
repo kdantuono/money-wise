@@ -34,6 +34,8 @@ import { Label } from '@/components/ui/label';
 import { Card } from '@/components/ui/card';
 import { useAuthStore } from '@/store/auth.store';
 import { useTheme, type Theme } from '@/hooks/useTheme';
+import { userPreferencesClient } from '@/services/user-preferences.client';
+import type { UserPreferences } from '@/types/user-preferences';
 
 // =============================================================================
 // Types & Constants
@@ -196,6 +198,24 @@ export default function SettingsPage() {
       setError(err instanceof Error ? err.message : 'Impossibile salvare le modifiche');
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  // Theme change — immediately applies via ThemeProvider (localStorage) and
+  // persists to profiles.preferences in the background.
+  // Fire-and-forget: UI is not blocked on DB write; shows error on failure.
+  const handleThemeChange = async (newTheme: Theme) => {
+    setTheme(newTheme);
+    if (user?.id) {
+      try {
+        await userPreferencesClient.updateTheme(
+          user.id,
+          (user.preferences as UserPreferences | null | undefined),
+          newTheme
+        );
+      } catch {
+        setError('Tema cambiato localmente. Sincronizzazione con il server fallita — riprova.');
+      }
     }
   };
 
@@ -388,7 +408,7 @@ export default function SettingsPage() {
                 <motion.button
                   key={t.id}
                   whileTap={{ scale: 0.98 }}
-                  onClick={() => setTheme(t.id)}
+                  onClick={() => void handleThemeChange(t.id)}
                   className={`p-4 rounded-2xl border-2 text-left transition-all ${
                     theme === t.id
                       ? 'border-emerald-500 ring-2 ring-emerald-200 dark:ring-emerald-800'
