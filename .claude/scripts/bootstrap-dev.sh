@@ -232,8 +232,8 @@ install_node_via_mise() {
             rm -f "$_mise_installer"
             # mise installs to ~/.local/bin by default — extend PATH for current shell
             export PATH="$HOME/.local/bin:$PATH"
+            success "mise binary installed"
         fi
-        success "mise binary installed"
     else
         success "mise $(mise --version 2>/dev/null || echo installed) already present"
     fi
@@ -270,17 +270,20 @@ install_node_via_mise() {
     # 4. Activate mise in current shell so subsequent steps see mise-managed bins
     eval "$(mise activate bash)" 2>/dev/null || true
 
-    # 5. PATH precedence check (advisor gotcha #2 — invisible apt/mise conflict)
+    # 5. PATH precedence: mise shims must win over apt/nvm-installed nodes.
+    # Without explicit verification, a silent PATH mismatch can leave the user
+    # believing mise is active while a non-mise node is actually serving commands.
     if command -v node &>/dev/null; then
         local node_path
         node_path="$(command -v node)"
         if [[ "$node_path" == *"/mise/"* ]] || [[ "$node_path" == *"/.local/share/mise/"* ]]; then
             success "PATH precedence OK — mise shim wins: $node_path"
+            success "Node.js $(node --version) ready via mise"
         else
             warn "Node resolved via non-mise path: $node_path"
             warn "Expected mise shim (~/.local/share/mise/shims/). Open a fresh shell or run 'source ~/.bashrc' for activation to take effect."
+            warn "Node.js $(node --version) currently served by non-mise path — mise toolchain NOT active in this shell"
         fi
-        success "Node.js $(node --version) ready via mise"
     else
         warn "node command not found after mise install — check mise.toml [tools] entries"
     fi
