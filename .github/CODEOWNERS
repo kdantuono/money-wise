@@ -1,5 +1,46 @@
 # MoneyWise CODEOWNERS
 # See: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+#
+# Patterns below follow the same rules as .gitignore. Last match wins.
 
+# ─────────────────────────────────────────────────────────────────────────────
 # Default owner for everything
+# ─────────────────────────────────────────────────────────────────────────────
 * @kdantuono
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Security-critical paths (require explicit owner review)
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Database schema + RLS policies — every change potentially affects authorization
+/supabase/migrations/           @kdantuono
+
+# Edge Functions — deployed serverless code with elevated privileges
+/supabase/functions/            @kdantuono
+
+# CI/CD workflows — can inject commands with repo secrets access
+/.github/workflows/             @kdantuono
+/.github/actions/               @kdantuono
+
+# Auth/session code — authentication boundary
+/apps/web/src/lib/auth.ts       @kdantuono
+/apps/web/src/lib/auth/         @kdantuono
+/apps/web/middleware.ts         @kdantuono
+/apps/web/src/app/auth/         @kdantuono
+
+# Security utilities
+/apps/web/src/utils/sanitize.ts @kdantuono
+/apps/web/src/utils/security/   @kdantuono
+/apps/web/src/services/security.client.ts @kdantuono
+/apps/web/src/services/gdpr.client.ts @kdantuono
+
+# Supabase client + env wiring
+/apps/web/src/utils/supabase/   @kdantuono
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Documentation + governance
+# ─────────────────────────────────────────────────────────────────────────────
+/SECURITY.md                    @kdantuono
+/.github/CODEOWNERS             @kdantuono
+/.github/dependabot.yml         @kdantuono
+/CLAUDE.md                      @kdantuono
