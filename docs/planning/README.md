@@ -1,104 +1,33 @@
-# MoneyWise Project Planning
+# MoneyWise — Planning Pointer
 
-> **Central hub for all MVP planning, requirements, and implementation roadmaps**
-> **Status: MVP 95% Complete (December 2025)**
+> **Authoritative roadmap is in the private knowledge vault at `~/vault/moneywise/planning/roadmap.md`** (Obsidian-compatible Markdown, single source of truth for sprints, decisions, tech debt, backlog, and scope changes).
+>
+> This folder contains legacy planning documents from pre-Supabase era (NestJS/Express/Prisma stack, MVP phases). Those documents are **historical**: the current architecture is Next.js 15 + Supabase (no custom backend). See `archive/pre-supabase/` for those artifacts, preserved via `git mv` for history.
 
-## Current Project State
-
-MoneyWise has achieved near-MVP completion. Most planning documents in this directory are now **historical reference** rather than active roadmaps.
-
-### What's Implemented
-- ✅ Authentication (JWT, 2FA, protected routes)
-- ✅ Dashboard with financial insights
-- ✅ Banking integration (SaltEdge v6 - fully compliant)
-- ✅ Transaction sync and display
-- ✅ Budget management
-- ✅ Analytics API
-- ✅ Docker E2E infrastructure
-
-### What's Remaining
-- Transaction management UI (manual entry)
-- Account details pages
-- Investment tracking
-- Goal setting
-- Mobile app (React Native)
-
-**See**: [`../development/progress.md`](../development/progress.md) for detailed current state
-
----
-
-## Planning Documents
-
-### Active Reference
-- [`app-overview.md`](./app-overview.md) - Multi-generational finance platform vision
-- [`../development/progress.md`](../development/progress.md) - **Current development state**
-
-### Historical Reference
-The following documents were used during initial planning but contain outdated information:
-
-| Document | Status | Notes |
-|----------|--------|-------|
-| `critical-path.md` | 📜 Historical | MVP timeline from early planning |
-| `mvp/` | 📜 Historical | Original 8-week plan - most items complete |
-| `milestones/` | 📜 Historical | M1-M6 planning - M1-M3 complete |
-| `epics/EPIC-2.1-*.md` | ✅ Complete | Frontend auth implemented |
-| `epics/EPIC-2.2-*.md` | ✅ Complete | Dashboard/analytics implemented |
-| `epics/EPIC-2.3-*.md` | 🔄 Replaced | Plaid → SaltEdge v6 |
-
-### Banking Integration (Active)
-- [`integrations/SALTEDGE-INTEGRATION-GUIDE.md`](./integrations/SALTEDGE-INTEGRATION-GUIDE.md) - Current banking provider
-- [`BANKING-PROVIDER-RESEARCH-PHASE4.md`](./BANKING-PROVIDER-RESEARCH-PHASE4.md) - Provider comparison research
-- [`BANKING-PROVIDER-EXECUTIVE-SUMMARY.md`](./BANKING-PROVIDER-EXECUTIVE-SUMMARY.md) - Decision summary
-
----
-
-## Project Vision
-
-**Target**: Multi-generational finance platform (ages 7-70+)
-**Tech Stack**: NestJS + Next.js + PostgreSQL + Redis + React Native
-**Banking Provider**: SaltEdge v6 (changed from Plaid)
-
----
-
-## Relationship to Development
-
-```
-docs/planning/     →     .claude/agents/     →     apps/
-(Historical Plans)       (AI Orchestration)        (Implementation)
-       ↓                        ↓                        ↓
-docs/development/progress.md ← Single source of truth
-```
-
----
-
-## Key Connections
+## Where to look for what
 
 | Need | Location |
 |------|----------|
-| Current progress | [`../development/progress.md`](../development/progress.md) |
-| Setup guide | [`../development/setup.md`](../development/setup.md) |
-| AI orchestration | [`.claude/README.md`](../../.claude/README.md) |
-| Project vision | [`app-overview.md`](./app-overview.md) |
+| Current sprint / active focus | `~/vault/moneywise/planning/roadmap.md` (sprint cards) |
+| Sprint 1.5 Onboarding Piano Generato detail | `~/vault/moneywise/memory/plan_onboarding_payload_consumption.md` |
+| Sprint Infra Lucca migration detail | `~/vault/moneywise/memory/plan_lucca_migration_readiness.md` |
+| Architectural Decision Records (ADR-001..005) | `~/vault/moneywise/decisions/` |
+| Audit findings + tech debt | `~/vault/moneywise/memory/audit_2026_04_12_outcome.md`, `docs/audits/2026-04-12-health-audit.md` |
+| Banking provider research | `~/vault/moneywise/research/banking-provider-comparison.md` |
+| Beta strategy | `~/vault/moneywise/memory/beta_strategy_2026_04.md` |
+| Legacy NestJS-era planning | `archive/pre-supabase/` |
 
----
+## Why the vault is private
 
-## Archived/Completed Epics
+The vault contains sensitive operational material (test credentials, Supabase project IDs, audit blocker maps, provider call notes, MCP tokens). It is synced P2P between developer machines via Tailscale + bare git repos, never exposed to external Git providers. See ADR-001 (vault architecture) and ADR-005 placeholder (mobile framework).
 
-### EPIC-1.5: Technical Debt (October 2025) ✅
-- All 7 stories delivered
-- TypeORM → Prisma migration complete
-- CI/CD infrastructure complete
+## Repo-level pointers
 
-### EPIC-2.1: Frontend Authentication (November 2025) ✅
-- Login/Register forms: Complete
-- Protected routes: Complete
-- Token management: Complete
+- `CLAUDE.md` — Claude Code guidance for this repo (includes vault pointers)
+- `docs/development/` — local dev setup, troubleshooting, progress notes
+- `docs/audits/` — clinical health audits (2026-04-12 most recent)
+- `docs/architecture/` — architecture notes (vault ADRs are authoritative)
 
-### EPIC-2.2: Dashboard & Analytics (November 2025) ✅
-- Dashboard components: Complete
-- Analytics API: Complete
-- Banking integration: Complete
+## Last consolidation
 
----
-
-*This planning hub updated December 1, 2025 to reflect actual project state*
+2026-04-19 — Consolidation inaugurale: 35+ artefatti del vault unificati sotto `~/vault/moneywise/planning/roadmap.md`. Legacy `docs/planning/` archived to `archive/pre-supabase/`. See `CHANGELOG.md` entry of the same date.

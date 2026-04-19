@@ -160,11 +160,12 @@ Files allowed in root: README.md, CHANGELOG.md, CONTRIBUTING.md, FRONTEND_HANDOF
 
 ## Agent & Orchestration References
 
+- **🗺️ Roadmap master (authoritative)**: `~/vault/moneywise/planning/roadmap.md` — single source of truth for sprints, tech debt, ADRs, backlog, decision gates (since 2026-04-19 consolidation)
 - Agent details: `.claude/agents/README.md`
 - Commands: `.claude/commands/README.md`
 - Epic workflow: `.claude/workflows/epic-workflow.md`
 - Architecture decisions: `.claude/knowledge/architecture.md`
-- MVP planning: `docs/planning/README.md`
+- Planning pointer (repo-side): `docs/planning/README.md` (legacy archived in `archive/pre-supabase/`)
 - Development setup: `docs/development/setup.md`
 
 ## Knowledge Vault (Obsidian)

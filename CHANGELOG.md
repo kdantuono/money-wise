@@ -7,7 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-_Next: Sprint 1 (cartonato→reale), then Sprint 2-4 toward private beta. See vault planning for details._
+_Next: Sprint Infra 1.α (Lucca migration readiness, deadline T-10) + Sprint 1.5 (Onboarding Piano Generato). See `~/vault/moneywise/planning/roadmap.md` for the consolidated roadmap._
+
+### 2026-04-19 — Consolidation: Roadmap Master Hub + Legacy Archive + Node/Infra Parity Preparation
+
+Consolidation sprint to eliminate planning drift and prepare cross-machine dev environment parity (Steam Deck ↔ WSL2 Lucca PC).
+
+#### Added
+
+- **`~/vault/moneywise/planning/roadmap.md`** — single source of truth for sprints, tech debt, decisions, backlog. Pattern Hub+Card with 8 fields per sprint, hard cap 5 bullets scope, out_of_scope esplicito, exit_criteria binari, test_verification esplicito, decisione_pendente tracked. Includes decision gates (criteria espliciti per pivot sprint) and changelog scope changes (audit trail).
+- **ADR-005 Mobile Framework Decision** — placeholder trigger-based in `~/vault/moneywise/decisions/adr-005-mobile-framework.md`. Formalizes that Expo 52 stay is default but ADR will be written when trigger opens (web ≥50 beta users OR 6mo post-Sprint-4). Evaluates 5 options: Expo-stay, Flutter, KMP+Compose MP, Tauri 2.0, nativo Swift+Kotlin.
+- **Sprint Infra 1.α plan** — `~/vault/moneywise/memory/plan_lucca_migration_readiness.md`. 4 tracks (A toolchain, B dotfiles chezmoi, C P2P Tailnet vault mesh, D repo state) with granular checklists and 3 binary smoke test conditions for T-0 acceptance.
+- **`mise.toml`** — committed root (node 22.12.0 + pnpm 10.24.0). Single source of truth for toolchain versions, portable cross-machine via `mise install`.
+- **`.gitattributes`** — explicit LF normalization + binary file declarations. Protects against CRLF drift when developing on WSL2 Windows.
+
+#### Changed
+
+- **`README.md`** — removed obsolete NestJS/Express/Prisma/Redis/Docker references (lines 68/97/310 + more). Aligned tech stack section with actual Next.js 15 + Supabase (Edge Functions Deno, no custom backend) architecture. Added pointer to vault roadmap as authoritative source.
+- **`docs/planning/README.md`** — transformed into pointer file rimandando a vault roadmap. Previous content was pre-Supabase era (MVP 95% December 2025 claim, NestJS stack).
+- **`~/vault/moneywise/planning/ACTIVE-CONTEXT.md`** — Focus + Out-of-scope sections reduced to pure pointers toward roadmap (eliminates dual source of truth risk rilevato dal Plan agent validation).
+- **`~/vault/moneywise/memory/MEMORY.md`** — entry pinned at top `🗺️ ROADMAP HUB: [[../planning/roadmap]]`.
+- **`~/vault/moneywise/memory/backlog_onboarding_flow.md`** — frontmatter marked `superseded_by: [[plan_onboarding_payload_consumption]]` (Sprint 1.5 superset).
+- **ADR-001..004** — added `referenced_in: "[[../planning/roadmap]]"` frontmatter for bidirectional graph navigation.
+- **Node target: locked to 22.12.0 across workspace** — Node 24 migration parked (Expo issue #40145 blocks mobile). Trigger condition: "Expo 53/54 releases async-require fix".
+
+#### Pending (not this commit)
+
+- Archive legacy `docs/planning/` pre-Supabase files to `docs/planning/archive/pre-supabase/` via `git mv` (preserves history)
+- Agent roster audit (13 agents, per-agent granular approval) — Fase 3 separate execution
+- `.claude/workflows/implement-sentry-minimal.md` @sentry/nestjs → @sentry/nextjs fix
+- P2P Tailnet vault mesh actual setup (Sprint Infra 1.α-cutover, post Sprint 1.5 closure)
+
+#### Rationale
+
+User perception of "scope drift over 2 pivots in 3 weeks" prompted consolidation. Outcome: single hub with explicit decision gates + enforced changelog (via pre-commit hook when vault is git-tracked). Design goal: anti-drift by mechanism, not by discipline.
 
 ### 2026-04-16 — Sprint 0.5: Consolidation + Branch Strategy + Automation
 
