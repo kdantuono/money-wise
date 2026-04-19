@@ -138,9 +138,20 @@ Banking sync via SaltEdge is implemented but **disabled by default** (`BANKING_I
 - **Web**: Vitest with jsdom. Coverage: 70% statements/lines/functions, 65% branches.
 - **E2E**: Playwright. Tests in `apps/web/e2e/`. Runs against localhost:3000 + Supabase. Projects: chromium, mobile chrome.
 
+## Session routine — Daily notes (MANDATORY, non-violabile)
+
+**Claude's persistent memory lives in `~/vault/moneywise/daily/YYYY-MM-DD.md`**. This is the single mechanism that survives crash/context-compaction/restart. User framing (2026-04-19): *"sono la tua memoria in fondo"* — daily = Claude's operating system, not user-facing journal.
+
+Every session, without exception:
+1. **At start**: Read `~/vault/moneywise/daily/<today>.md` (create from template if missing) + read `<yesterday>.md` for `🔄 Tomorrow` carry-over.
+2. **In-flight** (NOT end-of-session batch): on every trigger event, Edit the daily **in the same response** that generates the event. Triggers + template + F1-F11 failure modes in `memory/feedback_daily_notes_management.md`.
+3. **Before close**: ensure `🔄 Tomorrow` is populated (last session of the day). Daily without Tomorrow = session transfer broken = failure mode F5.
+
+Retrofit (writing daily end-of-session) is **accepted only at first-introduction** of the pattern. All subsequent sessions must be in-flight.
+
 ## Session & CI Discipline
 
-- Run `/resume-work` at session start to restore previous context
+- Run `/resume-work` at session start — restores todos AND reads `daily/<today>.md` + `<yesterday>.md` with reconciliation verdict (see `.claude/commands/resume-work.md` Step 2.5). Daily is single source of truth for session transfer; todo is fallback.
 - Run `./.claude/scripts/init-session.sh` to verify environment
 - Run `./.claude/scripts/validate-ci.sh 8` before any push on Steam Deck (levels 1-8 cover lint/typecheck/tests/yaml/actions-syntax). Levels 9-10 require Docker + `act` and are validated in remote CI.
 - Never claim CI success without verifying via `gh run view`
@@ -160,11 +171,12 @@ Files allowed in root: README.md, CHANGELOG.md, CONTRIBUTING.md, FRONTEND_HANDOF
 
 ## Agent & Orchestration References
 
+- **🗺️ Roadmap master (authoritative)**: `~/vault/moneywise/planning/roadmap.md` — single source of truth for sprints, tech debt, ADRs, backlog, decision gates (since 2026-04-19 consolidation)
 - Agent details: `.claude/agents/README.md`
 - Commands: `.claude/commands/README.md`
 - Epic workflow: `.claude/workflows/epic-workflow.md`
 - Architecture decisions: `.claude/knowledge/architecture.md`
-- MVP planning: `docs/planning/README.md`
+- Planning pointer (repo-side): `docs/planning/README.md` (legacy archived in `archive/pre-supabase/`)
 - Development setup: `docs/development/setup.md`
 
 ## Knowledge Vault (Obsidian)

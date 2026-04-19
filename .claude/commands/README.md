@@ -31,7 +31,7 @@ Commands for tracking progress and system state.
 | `/status` | Show overall system status | `/status` |
 | `/agents` | Show agent pool status | `/agents` |
 | `/tasks` | List active tasks | `/tasks` |
-| `/resume-work` | **Recover last session (todos + context)** | `/resume-work` |
+| `/resume-work` | **Recover last session (todos + git context + daily reconciliation Step 2.5)** | `/resume-work` |
 
 ## Command Details
 

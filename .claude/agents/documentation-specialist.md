@@ -2,6 +2,8 @@
 name: documentation-specialist
 type: documentation
 description: "Documentation automation and maintenance specialist focused on newcomer accessibility, auto-generation, and consistency standards"
+model: sonnet
+tools: [Read, Grep, Glob, Write, Edit, Bash, WebFetch, WebSearch]
 capabilities:
   - Auto-documentation generation from code
   - README/CHANGELOG/SETUP.md maintenance
@@ -9,13 +11,6 @@ capabilities:
   - Documentation quality gates
   - Cross-agent documentation synchronization
   - Feature documentation automation
-tools:
-  - doc_generator
-  - accessibility_tester
-  - consistency_validator
-hooks:
-  pre: "echo 'Documentation maintenance mode activated'"
-  post: "pnpm run docs:validate"
 ---
 
 # Documentation Specialist

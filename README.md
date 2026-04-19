@@ -65,22 +65,24 @@ pnpm dev
 ```
 money-wise/
 ├── apps/
-│   ├── backend/      # NestJS API server (port 3001)
-│   ├── web/          # Next.js web application (port 3000)
-│   └── mobile/       # React Native mobile app
+│   ├── web/          # Next.js 15 web application (port 3000)
+│   └── mobile/       # Expo 52 / React Native (dormiente — vedi ADR-005)
 ├── packages/         # Shared packages
 │   ├── types/        # TypeScript type definitions
-│   ├── utils/        # Utility functions
-│   ├── ui/           # React UI components
+│   ├── utils/        # Utility functions (placeholder)
+│   ├── ui/           # React UI components (Radix + Tailwind + CVA)
 │   └── test-utils/   # Testing utilities & fixtures
+├── supabase/         # Supabase Edge Functions + migrations
+│   ├── migrations/   # SQL schema + RLS policies
+│   ├── functions/    # Deno Edge Functions (categorize, detect-transfers, detect-bnpl, account-delete, banking-*)
+│   └── config.toml   # Project configuration
 ├── docs/             # Documentation
-│   ├── api/          # API documentation
-│   ├── architecture/ # Architecture decisions (ADRs)
+│   ├── architecture/ # Architecture decisions (ADRs) — see vault for active ADRs
 │   ├── development/  # Development guides
-│   └── planning/     # Project planning & roadmaps
-├── infrastructure/   # Docker configs & deployment
-├── scripts/          # Development & CI scripts
-└── .github/          # GitHub Actions workflows
+│   ├── audits/       # Clinical health audits
+│   └── planning/     # Planning pointer — authoritative roadmap in vault
+├── .github/          # GitHub Actions workflows
+└── scripts/          # Development & CI helper scripts
 ```
 
 **Monorepo Management**:
@@ -92,30 +94,38 @@ money-wise/
 📖 **[View Complete Structure Documentation](./docs/development/monorepo-structure.md)**
 
 ### **Technology Stack**
-- **Frontend**: Next.js 15, React 19, TypeScript, Tailwind CSS v4
-- **Mobile**: React Native 0.76, Expo 52
-- **Backend**: NestJS 11, Express 5, TypeScript, Prisma
-- **Database**: PostgreSQL, Redis
-- **Testing**: Jest 30, Vitest 4, Playwright, React Testing Library
-- **DevOps**: Docker, Docker Compose, GitHub Actions, Turborepo 2.6
-- **Package Management**: pnpm 10.24 workspaces
+- **Frontend**: Next.js 15, React 19, TypeScript, Tailwind CSS v4, Radix UI, shadcn
+- **Mobile**: Expo 52, React Native 0.76 (dormant — framework decision pending via ADR-005)
+- **Backend-as-Service**: Supabase (PostgreSQL + Auth + Edge Functions Deno). No custom backend.
+- **Edge Functions**: Deno runtime — categorization, transfer detection, BNPL matching, account deletion, banking (gated)
+- **Auth**: Supabase Auth (cookie-based sessions via @supabase/ssr)
+- **State**: Zustand + TanStack Query
+- **Forms**: react-hook-form + Zod
+- **Testing**: Vitest + Jest 30, Playwright (E2E)
+- **Monitoring**: Sentry (@sentry/nextjs, @sentry/node, @sentry/react-native)
+- **DevOps**: GitHub Actions, Turborepo 2.9, pnpm 10.24 workspaces
+- **Runtime**: Node 22.12 LTS (Node 24 parked — see roadmap)
 
 ## 📋 Available Scripts
 
 ### **Development**
 ```bash
-pnpm dev              # Start all development servers
-pnpm dev:backend      # Start backend API server only
-pnpm dev:web          # Start web frontend only
-pnpm dev:mobile       # Start mobile development server
+pnpm dev              # Start all development servers (Turbo)
+pnpm dev:web          # Start web frontend only (Next.js on :3000)
+# Mobile (Expo) is currently dormant — see ADR-005 mobile framework decision
 ```
 
 ### **Building**
 ```bash
 pnpm build            # Build all applications
-pnpm build:backend    # Build backend only
 pnpm build:web        # Build web app only
-pnpm build:mobile     # Build mobile app only
+```
+
+### **Supabase**
+```bash
+supabase db push              # Push migration changes
+supabase functions deploy     # Deploy Edge Functions
+supabase functions serve      # Local Edge Functions runtime
 ```
 
 ### **Testing**
@@ -307,13 +317,15 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🙏 Acknowledgments
 
-- Built with [NestJS](https://nestjs.com/) for robust backend architecture
 - Powered by [Next.js](https://nextjs.org/) for modern web development
-- UI components with [React](https://reactjs.org/) and [Tailwind CSS](https://tailwindcss.com/)
-- Database management with [PostgreSQL](https://postgresql.org/)
+- [Supabase](https://supabase.com/) for PostgreSQL, Auth, Edge Functions, Realtime
+- UI components with [React](https://reactjs.org/), [Radix UI](https://www.radix-ui.com/), and [Tailwind CSS](https://tailwindcss.com/)
+- Mobile via [Expo](https://expo.dev/) / [React Native](https://reactnative.dev/) (framework decision pending, see ADR-005)
 
 ---
 
-**Version**: 0.6.1 | **Status**: MVP Development | **Last Updated**: 2025-12-03
+**Version**: 0.7.0 | **Status**: Pre-beta (Sprint 1 closed 2026-04-18) | **Last Updated**: 2026-04-19
+
+📋 **Authoritative roadmap**: see `~/vault/moneywise/planning/roadmap.md` (private knowledge vault, single source of truth for sprints, decisions, tech debt).
 
 For questions or support, please create an issue or contact the maintainers.
