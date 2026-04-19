@@ -88,6 +88,9 @@ vi.mock('@/store/onboarding-plan.store', () => ({
     const state = mockPlanStore();
     return selector ? selector(state) : state;
   },
+  selectCanAdvanceFromStep1: () => true,
+  INCOME_MIN: 100,
+  INCOME_MAX: 100_000,
 }));
 
 // --------------------------------------------------------------------------
