@@ -138,6 +138,17 @@ Banking sync via SaltEdge is implemented but **disabled by default** (`BANKING_I
 - **Web**: Vitest with jsdom. Coverage: 70% statements/lines/functions, 65% branches.
 - **E2E**: Playwright. Tests in `apps/web/e2e/`. Runs against localhost:3000 + Supabase. Projects: chromium, mobile chrome.
 
+## Session routine — Daily notes (MANDATORY, non-violabile)
+
+**Claude's persistent memory lives in `~/vault/moneywise/daily/YYYY-MM-DD.md`**. This is the single mechanism that survives crash/context-compaction/restart. User framing (2026-04-19): *"sono la tua memoria infondo"* — daily = Claude's operating system, not user-facing journal.
+
+Every session, without exception:
+1. **At start**: Read `~/vault/moneywise/daily/<today>.md` (create from template if missing) + read `<yesterday>.md` for `🔄 Tomorrow` carry-over.
+2. **In-flight** (NOT end-of-session batch): on every trigger event, Edit the daily **in the same response** that generates the event. Triggers + template + F1-F11 failure modes in `memory/feedback_daily_notes_management.md`.
+3. **Before close**: ensure `🔄 Tomorrow` is populated (last session of the day). Daily without Tomorrow = session transfer broken = failure mode F5.
+
+Retrofit (writing daily end-of-session) is **accepted only at first-introduction** of the pattern. All subsequent sessions must be in-flight.
+
 ## Session & CI Discipline
 
 - Run `/resume-work` at session start to restore previous context
