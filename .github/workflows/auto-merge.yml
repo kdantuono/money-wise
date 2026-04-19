@@ -18,6 +18,7 @@ jobs:
   gate:
     name: Check eligibility
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     outputs:
       eligible: ${{ steps.check.outputs.eligible }}
     steps:
@@ -75,6 +76,7 @@ jobs:
     needs: gate
     if: needs.gate.outputs.eligible == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - name: 🔄 Enable auto-merge (squash)
         env:
@@ -92,6 +94,7 @@ jobs:
     needs: gate
     if: needs.gate.outputs.eligible == 'false' && github.event.pull_request.auto_merge != null
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - name: 🛑 Disable auto-merge
         env:
