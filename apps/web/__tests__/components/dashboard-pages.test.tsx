@@ -130,31 +130,11 @@ describe('Dashboard Pages', () => {
     });
   });
 
-  describe('GoalsPage', () => {
-    it('renders the goals page with correct heading', () => {
-      render(<GoalsPage />);
-
-      expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Obiettivi');
-    });
-
-    it('renders goals description in Italian', () => {
-      render(<GoalsPage />);
-
-      expect(screen.getByText('Monitora i tuoi obiettivi di risparmio')).toBeInTheDocument();
-    });
-
-    it('renders add goal button', () => {
-      render(<GoalsPage />);
-
-      expect(screen.getByRole('button', { name: /Nuovo Obiettivo/i })).toBeInTheDocument();
-    });
-
-    it('renders goal cards', () => {
-      render(<GoalsPage />);
-
-      expect(screen.getByText('Fondo Emergenza')).toBeInTheDocument();
-    });
-  });
+  // GoalsPage tests moved to __tests__/pages/dashboard/goals.test.tsx
+  // (Sprint 1.5 refactor: page now fetches real data via onboardingPlanClient.loadPlan
+  // and requires proper mocks for useAuthStore + service. Legacy mock-data assertions
+  // — "Fondo Emergenza"/"Monitora i tuoi obiettivi di risparmio"/"Nuovo Obiettivo" —
+  // belonged to Sprint 1.2 Figma scaffold and no longer apply.)
 
   describe('SettingsPage', () => {
     beforeEach(() => {
@@ -231,9 +211,10 @@ describe('Dashboard Pages', () => {
       });
     });
 
+    // Goals page excluded: requires mocks for useAuthStore + onboardingPlanClient
+    // (see __tests__/pages/dashboard/goals.test.tsx for the Sprint 1.5 coverage)
     const pages = [
       { name: 'Investments', Component: InvestmentsPage },
-      { name: 'Goals', Component: GoalsPage },
       { name: 'Settings', Component: SettingsPage },
     ];
 

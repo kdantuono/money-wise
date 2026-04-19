@@ -578,6 +578,101 @@ export type Database = {
         }
         Relationships: []
       }
+      goal_allocations: {
+        Row: {
+          created_at: string
+          deadline_feasible: boolean
+          goal_id: string
+          id: string
+          monthly_amount: number
+          plan_id: string
+          reasoning: string | null
+        }
+        Insert: {
+          created_at?: string
+          deadline_feasible?: boolean
+          goal_id: string
+          id?: string
+          monthly_amount: number
+          plan_id: string
+          reasoning?: string | null
+        }
+        Update: {
+          created_at?: string
+          deadline_feasible?: boolean
+          goal_id?: string
+          id?: string
+          monthly_amount?: number
+          plan_id?: string
+          reasoning?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "goal_allocations_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "goals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "goal_allocations_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      goals: {
+        Row: {
+          created_at: string
+          current: number
+          deadline: string | null
+          id: string
+          monthly_allocation: number
+          name: string
+          priority: number
+          status: Database["public"]["Enums"]["goal_status"]
+          target: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current?: number
+          deadline?: string | null
+          id?: string
+          monthly_allocation?: number
+          name: string
+          priority: number
+          status?: Database["public"]["Enums"]["goal_status"]
+          target: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current?: number
+          deadline?: string | null
+          id?: string
+          monthly_allocation?: number
+          name?: string
+          priority?: number
+          status?: Database["public"]["Enums"]["goal_status"]
+          target?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "goals_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       installment_plans: {
         Row: {
           created_at: string
@@ -829,6 +924,47 @@ export type Database = {
             foreignKeyName: "notifications_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      plans: {
+        Row: {
+          created_at: string
+          essentials_pct: number
+          id: string
+          income_after_essentials: number
+          monthly_income: number
+          monthly_savings_target: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          essentials_pct?: number
+          id?: string
+          income_after_essentials: number
+          monthly_income: number
+          monthly_savings_target: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          essentials_pct?: number
+          id?: string
+          income_after_essentials?: number
+          monthly_income?: number
+          monthly_savings_target?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plans_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -1406,6 +1542,7 @@ export type Database = {
         | "TRANSFER"
         | "LIABILITY_PAYMENT"
         | "REFUND"
+      goal_status: "ACTIVE" | "COMPLETED" | "ARCHIVED"
       liability_status: "ACTIVE" | "PAID_OFF" | "CLOSED"
       liability_type: "CREDIT_CARD" | "BNPL" | "LOAN" | "MORTGAGE" | "OTHER"
       notification_priority: "LOW" | "MEDIUM" | "HIGH" | "URGENT"
@@ -1616,6 +1753,7 @@ export const Constants = {
         "LIABILITY_PAYMENT",
         "REFUND",
       ],
+      goal_status: ["ACTIVE", "COMPLETED", "ARCHIVED"],
       liability_status: ["ACTIVE", "PAID_OFF", "CLOSED"],
       liability_type: ["CREDIT_CARD", "BNPL", "LOAN", "MORTGAGE", "OTHER"],
       notification_priority: ["LOW", "MEDIUM", "HIGH", "URGENT"],
@@ -1651,4 +1789,3 @@ export const Constants = {
     },
   },
 } as const
-
