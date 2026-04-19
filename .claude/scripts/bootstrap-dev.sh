@@ -242,31 +242,46 @@ install_node_via_mise() {
         success "mise $(mise --version 2>/dev/null || echo installed) already present"
     fi
 
-    # 2. Persist shell activation (detect shell: bash / zsh; fish not auto-handled)
+    # 2. Persist shell activation — explicit cases for bash/zsh/fish, warn+skip for others.
+    # Writing wrong syntax to wrong rc file would silently break activation, so unknown
+    # shells get a manual-setup pointer instead of a best-guess fallback.
     local shell_name shell_rc activation_line
+    local skip_rc_write=false
     case "${SHELL:-/bin/bash}" in
         */zsh)
             shell_name="zsh"
             shell_rc="$HOME/.zshrc"
             activation_line='eval "$(mise activate zsh)"'
             ;;
-        */bash|*)
+        */bash)
             shell_name="bash"
             shell_rc="$HOME/.bashrc"
             activation_line='eval "$(mise activate bash)"'
             ;;
+        */fish)
+            shell_name="fish"
+            shell_rc="$HOME/.config/fish/config.fish"
+            activation_line='mise activate fish | source'
+            ;;
+        *)
+            warn "Unsupported shell detected (\$SHELL=${SHELL:-unknown}) — skipping rc-file activation"
+            warn "Manually add mise activation per https://mise.jdx.dev/installing-mise.html#activate-mise"
+            skip_rc_write=true
+            ;;
     esac
-    # fish users: add `mise activate fish | source` to ~/.config/fish/config.fish manually
 
-    if ! grep -qF "mise activate $shell_name" "$shell_rc" 2>/dev/null; then
-        if [[ "$DRY_RUN" == "true" ]]; then
-            info "[DRY RUN] Would append mise activation to $shell_rc"
+    if [[ "$skip_rc_write" != "true" ]]; then
+        if ! grep -qF "mise activate $shell_name" "$shell_rc" 2>/dev/null; then
+            if [[ "$DRY_RUN" == "true" ]]; then
+                info "[DRY RUN] Would append mise activation to $shell_rc"
+            else
+                mkdir -p "$(dirname "$shell_rc")"
+                echo "$activation_line" >> "$shell_rc"
+                success "Added mise activation to $shell_rc (applies to new shells)"
+            fi
         else
-            echo "$activation_line" >> "$shell_rc"
-            success "Added mise activation to $shell_rc (applies to new shells)"
+            success "mise activation already present in $shell_rc"
         fi
-    else
-        success "mise activation already present in $shell_rc"
     fi
 
     # 3. Install toolchain declared in mise.toml
