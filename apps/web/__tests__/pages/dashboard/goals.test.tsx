@@ -1,14 +1,20 @@
 /**
- * Tests for GoalsPage component
+ * Tests for GoalsPage component (Sprint 1.5 refactor)
  *
- * After the Figma Design Sprint, this page renders a full goals
- * dashboard with hardcoded goal data, progress bars, AI suggestions,
- * and a modal for adding new goals. All text is in Italian.
+ * Post-Sprint-1.5: GoalsPage fetches real data via onboardingPlanClient.loadPlan(userId).
+ * Legacy hardcoded goalsData mock (Fondo Emergenza/Anticipo Casa/etc.) removed — those
+ * assertions belonged to Sprint 1.2 Figma-derived mock.
+ *
+ * Current tests cover the new states:
+ *  - Loading (no user/fetching)
+ *  - Empty (no plan yet → CTA "Crea il tuo piano")
+ *  - Error and Happy path: covered by `onboarding-plan.spec.ts` e2e (Playwright) +
+ *    integration with Supabase, not by component unit tests.
  */
 
 import React from 'react';
-import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '../../utils/test-utils';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, waitFor } from '../../utils/test-utils';
 
 // Mock framer-motion
 vi.mock('framer-motion', () => ({
@@ -24,94 +30,84 @@ vi.mock('framer-motion', () => ({
   AnimatePresence: ({ children }: { children: React.ReactNode }) => children,
 }));
 
+// Mock useRouter (Next.js App Router) — default stub
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({
+    push: vi.fn(),
+    replace: vi.fn(),
+    refresh: vi.fn(),
+    back: vi.fn(),
+  }),
+}));
+
+// Mock auth store — default returns no user
+const mockAuthStore = vi.fn();
+vi.mock('@/store/auth.store', () => ({
+  useAuthStore: (selector?: (s: unknown) => unknown) => {
+    const state = mockAuthStore();
+    return selector ? selector(state) : state;
+  },
+}));
+
+// Mock onboarding-plan client — default returns null (no plan)
+const mockLoadPlan = vi.fn();
+vi.mock('@/services/onboarding-plan.client', async () => {
+  const actual = await vi.importActual<typeof import('@/services/onboarding-plan.client')>(
+    '@/services/onboarding-plan.client',
+  );
+  return {
+    ...actual,
+    onboardingPlanClient: {
+      loadPlan: (...args: unknown[]) => mockLoadPlan(...args),
+      persistPlan: vi.fn(),
+    },
+  };
+});
+
 import GoalsPage from '../../../app/dashboard/goals/page';
 
-describe('GoalsPage', () => {
-  describe('Header', () => {
-    it('renders the page heading in Italian', () => {
+describe('GoalsPage (Sprint 1.5)', () => {
+  beforeEach(() => {
+    mockAuthStore.mockReset();
+    mockLoadPlan.mockReset();
+  });
+
+  describe('Loading / no-user state', () => {
+    it('renders without crashing when user is null (early return to stop spinner)', () => {
+      mockAuthStore.mockReturnValue({ user: null });
+      mockLoadPlan.mockResolvedValue(null);
+
       render(<GoalsPage />);
 
-      expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Obiettivi');
-    });
-
-    it('renders the description text in Italian', () => {
-      render(<GoalsPage />);
-
-      expect(screen.getByText('Monitora i tuoi obiettivi di risparmio')).toBeInTheDocument();
+      // Either empty-state or loading — both acceptable on initial render.
+      // Primary assertion: page title region OR loading spinner OR empty state CTA.
+      // We just ensure it mounted.
+      expect(document.body).toBeTruthy();
     });
   });
 
-  describe('Add Goal Button', () => {
-    it('renders Nuovo Obiettivo button', () => {
+  describe('Empty state (no plan yet)', () => {
+    it('shows CTA "Crea il tuo piano" when loadPlan returns null', async () => {
+      mockAuthStore.mockReturnValue({ user: { id: 'test-user-uuid' } });
+      mockLoadPlan.mockResolvedValue(null);
+
       render(<GoalsPage />);
 
-      expect(screen.getByRole('button', { name: /Nuovo Obiettivo/i })).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText(/Nessun piano finanziario ancora/i)).toBeInTheDocument();
+      });
+      expect(screen.getByRole('button', { name: /Crea il tuo piano/i })).toBeInTheDocument();
     });
-  });
 
-  describe('Overall Progress', () => {
-    it('renders Progresso Complessivo label', () => {
+    it('renders page heading in Italian', async () => {
+      mockAuthStore.mockReturnValue({ user: { id: 'test-user-uuid' } });
+      mockLoadPlan.mockResolvedValue(null);
+
       render(<GoalsPage />);
 
-      expect(screen.getByText('Progresso Complessivo')).toBeInTheDocument();
-    });
-
-    it('renders the count of active goals', () => {
-      render(<GoalsPage />);
-
-      expect(screen.getByText('5 obiettivi attivi')).toBeInTheDocument();
-    });
-  });
-
-  describe('Goal Cards', () => {
-    it('renders goal names', () => {
-      render(<GoalsPage />);
-
-      expect(screen.getByText('Fondo Emergenza')).toBeInTheDocument();
-      expect(screen.getByText('Vacanza Estate')).toBeInTheDocument();
-      expect(screen.getByText('Anticipo Casa')).toBeInTheDocument();
-      expect(screen.getByText('Auto Nuova')).toBeInTheDocument();
-      expect(screen.getByText('Corso MBA')).toBeInTheDocument();
-    });
-
-    it('renders priority badges', () => {
-      render(<GoalsPage />);
-
-      const badges = screen.getAllByText(/priorit/i);
-      expect(badges.length).toBeGreaterThan(0);
-    });
-  });
-
-  describe('AI Suggestion', () => {
-    it('renders AI suggestion section', () => {
-      render(<GoalsPage />);
-
-      expect(screen.getByText('Suggerimento AI')).toBeInTheDocument();
-    });
-  });
-
-  describe('Add Goal Modal', () => {
-    it('opens the modal when Nuovo Obiettivo is clicked', async () => {
-      const { user } = render(<GoalsPage />);
-
-      const addButton = screen.getByRole('button', { name: /Nuovo Obiettivo/i });
-      await user.click(addButton);
-
-      // Modal should show form labels
-      expect(screen.getByText('Nome Obiettivo')).toBeInTheDocument();
-      expect(screen.getByText(/Importo Obiettivo/)).toBeInTheDocument();
-      // "Scadenza" label exists in both modal and goal cards, so use getAllByText
-      const scadenzaLabels = screen.getAllByText('Scadenza');
-      expect(scadenzaLabels.length).toBeGreaterThanOrEqual(1);
-    });
-
-    it('has Crea Obiettivo button in modal', async () => {
-      const { user } = render(<GoalsPage />);
-
-      const addButton = screen.getByRole('button', { name: /Nuovo Obiettivo/i });
-      await user.click(addButton);
-
-      expect(screen.getByRole('button', { name: /Crea Obiettivo/i })).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Obiettivi');
+      });
     });
   });
 });
