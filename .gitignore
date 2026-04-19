@@ -87,6 +87,7 @@ CLAUDE.local.md
 
 # Session temporary files
 .claude/sessions/current/
+.claude/scheduled_tasks.lock
 
 # Security sensitive files
 *.key
