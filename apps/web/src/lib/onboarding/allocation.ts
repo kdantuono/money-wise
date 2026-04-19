@@ -23,6 +23,12 @@ import type {
 
 const _EMERGENCY_NAME_PATTERN = /emergenza|emergency/i;
 const _EMERGENCY_OVERRIDE_FRACTION = 0.4;
+/** Maximum months-to-deadline for a priority=1 goal to be treated as emergency. */
+const _EMERGENCY_DEADLINE_MONTHS = 12;
+
+function _fmtEur(amount: number): string {
+  return `€${amount.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
 
 function _monthsDiff(from: Date, to: Date): number {
   const yearDiff = to.getFullYear() - from.getFullYear();
@@ -53,7 +59,7 @@ function _isEmergencyGoal(goal: AllocationGoalInput, now: Date): boolean {
     const deadlineDate = _parseDeadline(goal.deadline);
     if (deadlineDate !== null) {
       const months = _monthsDiff(now, deadlineDate);
-      if (months >= 0 && months <= 12) return true;
+      if (months >= 0 && months <= _EMERGENCY_DEADLINE_MONTHS) return true;
     }
   }
   return false;
@@ -76,16 +82,16 @@ function _buildReasoning(
     return `Fondo di emergenza: allocazione prioritaria del ${Math.round(_EMERGENCY_OVERRIDE_FRACTION * 100)}% del budget mensile disponibile come protezione finanziaria.`;
   }
   const priorityLabel = goal.priority === 1 ? 'alta' : goal.priority === 2 ? 'media' : 'bassa';
-  const parts: string[] = [`Priorita ${priorityLabel}`];
-  if (deadlinePassed) parts.push('scadenza gia superata -- allocazione mantenuta per completare il goal');
+  const parts: string[] = [`Priorità ${priorityLabel}`];
+  if (deadlinePassed) parts.push('scadenza già superata — allocazione mantenuta per completare il goal');
   const consumed = Math.min(remainingPoolBefore, _round2(requiredMonthly));
-  parts.push(`waterfall: consumato EUR${consumed.toFixed(2)} su EUR${remainingPoolBefore.toFixed(2)} disponibili`);
-  parts.push(`importo mensile: EUR${monthlyAmount.toFixed(2)}`);
-  return parts.join(' - ');
+  parts.push(`waterfall: consumato ${_fmtEur(consumed)} su ${_fmtEur(remainingPoolBefore)} disponibili`);
+  parts.push(`importo mensile: ${_fmtEur(monthlyAmount)}`);
+  return parts.join(' — ');
 }
 
 function _formatDistribution(pairs: Array<{ name: string; amount: number }>): string {
-  return pairs.map((p) => `${p.name} EUR${p.amount.toFixed(2)}`).join(', ');
+  return pairs.map((p) => `${p.name} ${_fmtEur(p.amount)}`).join(', ');
 }
 
 interface _WaterfallEntry {
@@ -93,6 +99,8 @@ interface _WaterfallEntry {
   originalIndex: number;
   requiredMonthly: number;
   amount: number;
+  /** Pool available BEFORE this entry consumed its share (for O(1) reasoning display). */
+  remainingPoolBefore: number;
 }
 
 function _runWaterfall(
@@ -108,8 +116,9 @@ function _runWaterfall(
     const monthsLeft = deadlineDate ? _monthsDiff(now, deadlineDate) : null;
     const requiredMonthly =
       monthsLeft !== null && monthsLeft > 0 ? need / monthsLeft : need;
+    const remainingPoolBefore = remainingPool;
     const amount = _round2(Math.min(remainingPool, requiredMonthly));
-    results.push({ goal, originalIndex, requiredMonthly, amount });
+    results.push({ goal, originalIndex, requiredMonthly, amount, remainingPoolBefore });
     remainingPool = _round2(remainingPool - amount);
   }
   return results;
@@ -125,7 +134,7 @@ export function computeAllocation(input: AllocationInput): AllocationResult {
 
   if (monthlySavingsTarget > incomeAfterEssentials) {
     globalWarnings.push(
-      `Il target di risparmio mensile (EUR${monthlySavingsTarget.toFixed(2)}) supera il reddito disponibile dopo le spese essenziali (EUR${incomeAfterEssentials.toFixed(2)}). Il piano e stato calcolato sul reddito disponibile effettivo.`,
+      `Il target di risparmio mensile (${_fmtEur(monthlySavingsTarget)}) supera il reddito disponibile dopo le spese essenziali (${_fmtEur(incomeAfterEssentials)}). Il piano è stato calcolato sul reddito disponibile effettivo.`,
     );
   }
 
@@ -178,7 +187,7 @@ export function computeAllocation(input: AllocationInput): AllocationResult {
   const postWaterfallResidual = _round2(remainingPool - waterfallConsumed);
   if (postWaterfallResidual > 0) {
     globalWarnings.push(
-      `Savings residuo di EUR${postWaterfallResidual.toFixed(2)} non allocato (tutti i goal sono stati finanziati per intero).`,
+      `Budget residuo di ${_fmtEur(postWaterfallResidual)} non allocato (tutti gli obiettivi sono stati finanziati per intero).`,
     );
   }
 
@@ -198,7 +207,7 @@ export function computeAllocation(input: AllocationInput): AllocationResult {
       items.push({
         goalId: goal.id, monthlyAmount: 0, deadlineFeasible: true,
         reasoning: 'Target non specificato',
-        warnings: ['Target non specificato: il goal non ricevera allocazione.'],
+        warnings: ['Target non specificato: il goal non riceverà allocazione.'],
       });
       continue;
     }
@@ -210,19 +219,19 @@ export function computeAllocation(input: AllocationInput): AllocationResult {
         const monthsLeft = _monthsDiff(now, deadlineDate);
         if (monthsLeft < 0) {
           deadlineFeasible = false;
-          itemWarnings.push('La scadenza di questo goal e gia trascorsa.');
+          itemWarnings.push('La scadenza di questo goal è già trascorsa.');
         } else if (emergencyAmount > 0) {
           const remaining = Math.max(0, goal.target - goal.current);
           const reqM = monthsLeft > 0 ? remaining / monthsLeft : Infinity;
           if (reqM > emergencyAmount) {
             deadlineFeasible = false;
-            itemWarnings.push(`Con EUR${emergencyAmount.toFixed(2)}/mese non sara possibile raggiungere l'obiettivo entro la scadenza (necessari EUR${reqM.toFixed(2)}/mese).`);
+            itemWarnings.push(`Con ${_fmtEur(emergencyAmount)}/mese non sarà possibile raggiungere l'obiettivo entro la scadenza (necessari ${_fmtEur(reqM)}/mese).`);
           }
         } else {
           const remaining = Math.max(0, goal.target - goal.current);
           if (remaining > 0) {
             deadlineFeasible = false;
-            itemWarnings.push('Nessun importo allocato: la scadenza non sara rispettata.');
+            itemWarnings.push('Nessun importo allocato: la scadenza non sarà rispettata.');
           }
         }
       }
@@ -236,13 +245,15 @@ export function computeAllocation(input: AllocationInput): AllocationResult {
 
     const entry = waterfallAmountMap.get(i);
     if (entry === undefined) {
-      items.push({ goalId: goal.id, monthlyAmount: 0, deadlineFeasible: true, reasoning: 'Target non specificato', warnings: [] });
-      continue;
+      // This branch is an invariant violation: every non-emergency goal with target > 0
+      // is added to otherGoals and must appear in waterfallAmountMap. If reached,
+      // the filter/sort logic has diverged from this loop.
+      throw new Error(
+        `Invariant violation: missing waterfall allocation for non-emergency goal with target > 0 (goalId: ${goal.id}).`,
+      );
     }
 
-    const { amount, requiredMonthly } = entry;
-    const priorConsumed = _round2(waterfallResults.slice(0, waterfallResults.indexOf(entry)).reduce((sum, e) => sum + e.amount, 0));
-    const remainingPoolBefore = _round2(remainingPool - priorConsumed);
+    const { amount, requiredMonthly, remainingPoolBefore } = entry;
 
     const deadlineDate = _parseDeadline(goal.deadline);
     let deadlineFeasible = true;
@@ -252,23 +263,23 @@ export function computeAllocation(input: AllocationInput): AllocationResult {
       const monthsLeft = _monthsDiff(now, deadlineDate);
       if (monthsLeft < 0) {
         deadlineFeasible = false; deadlinePassed = true;
-        itemWarnings.push('La scadenza di questo goal e gia trascorsa.');
+        itemWarnings.push('La scadenza di questo goal è già trascorsa.');
       } else if (amount > 0) {
         if (requiredMonthly > amount + 0.005) {
           deadlineFeasible = false;
-          itemWarnings.push(`Savings insufficienti per raggiungere questo goal in tempo (necessari EUR${requiredMonthly.toFixed(2)}/mese, allocati EUR${amount.toFixed(2)}/mese).`);
+          itemWarnings.push(`Budget insufficiente per raggiungere questo goal in tempo (necessari ${_fmtEur(requiredMonthly)}/mese, allocati ${_fmtEur(amount)}/mese).`);
         }
       } else {
         const remaining = Math.max(0, goal.target - goal.current);
         if (remaining > 0) {
           deadlineFeasible = false;
-          itemWarnings.push('Savings insufficienti per raggiungere questo goal: importo allocato EUR0.00.');
+          itemWarnings.push(`Budget insufficiente per raggiungere questo goal: importo allocato ${_fmtEur(0)}.`);
         }
       }
     } else {
       if (amount === 0) {
         const remaining = Math.max(0, goal.target - goal.current);
-        if (remaining > 0) itemWarnings.push('Savings esauriti: questo goal non ricevera allocazione in questo mese.');
+        if (remaining > 0) itemWarnings.push('Budget esaurito: questo goal non riceverà allocazione in questo mese.');
       }
     }
 

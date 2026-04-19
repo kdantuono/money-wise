@@ -102,7 +102,9 @@ export interface AllocationResultItem {
 
 /**
  * Full algorithm output.
- * Sum of items' monthlyAmount should equal min(monthlySavingsTarget, incomeAfterEssentials).
+ * `totalAllocated` = sum of items' monthlyAmount ≤ min(monthlySavingsTarget, incomeAfterEssentials).
+ * `unallocated` = savingsPool - totalAllocated (may be > 0 when all goals are fully funded
+ * before the pool is exhausted — see `warnings` for the "budget residuo" notice).
  */
 export interface AllocationResult {
   items: AllocationResultItem[];

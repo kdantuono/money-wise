@@ -16,28 +16,28 @@ import type {
 
 const TODAY = new Date('2026-04-19T00:00:00.000Z');
 
+/** UTC-safe ISO date string (avoids local-timezone ±1 day drift). */
 function isoDate(date: Date): string {
-  const y = date.getFullYear();
-  const mo = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${y}-${mo}-${d}`;
+  return date.toISOString().slice(0, 10);
 }
 
 function monthsFromToday(n: number): string {
   const d = new Date(TODAY);
-  d.setMonth(d.getMonth() + n);
+  d.setUTCMonth(d.getUTCMonth() + n);
   return isoDate(d);
 }
 
 function daysFromToday(n: number): string {
   const d = new Date(TODAY);
-  d.setDate(d.getDate() + n);
+  d.setUTCDate(d.getUTCDate() + n);
   return isoDate(d);
 }
 
+/** Deterministic ID counter — avoids Math.random() nondeterminism in the suite. */
+let _goalIdCounter = 0;
 function makeGoal(partial: Partial<AllocationGoalInput>): AllocationGoalInput {
   return {
-    id: partial.id ?? `goal-${Math.random().toString(36).slice(2, 8)}`,
+    id: partial.id ?? `goal-${++_goalIdCounter}`,
     name: partial.name ?? 'Generic Goal',
     target: partial.target ?? 1000,
     current: partial.current ?? 0,
@@ -62,7 +62,11 @@ function sumAllocated(result: AllocationResult): number {
 const EPS = 0.02;
 
 describe('computeAllocation -- beta+gamma waterfall (issue #458)', () => {
-  beforeEach(() => { vi.useFakeTimers(); vi.setSystemTime(TODAY); });
+  beforeEach(() => {
+    _goalIdCounter = 0;
+    vi.useFakeTimers();
+    vi.setSystemTime(TODAY);
+  });
   afterEach(() => { vi.useRealTimers(); });
 
   it('single ALTA goal with deadline 24mo consumes entire pool', () => {
@@ -110,7 +114,7 @@ describe('computeAllocation -- beta+gamma waterfall (issue #458)', () => {
     const media = result.items.find((it) => it.goalId === 'g-media');
     expect(alta!.monthlyAmount).toBeCloseTo(500, 2);
     expect(alta!.deadlineFeasible).toBe(false);
-    expect(alta!.warnings.some((w) => /insufficienti|savings|necessari/i.test(w))).toBe(true);
+    expect(alta!.warnings.some((w) => /insufficiente|necessari|budget/i.test(w))).toBe(true);
     expect(media!.monthlyAmount).toBeCloseTo(0, 2);
     expect(media!.deadlineFeasible).toBe(false);
     expect(media!.warnings.length).toBeGreaterThan(0);
@@ -148,7 +152,7 @@ describe('computeAllocation -- beta+gamma waterfall (issue #458)', () => {
     expect(emerg!.monthlyAmount).toBeCloseTo(140, 2);
     expect(debt!.monthlyAmount).toBeCloseTo(210, 2);
     expect(debt!.deadlineFeasible).toBe(false);
-    expect(debt!.warnings.some((w) => /insufficienti|savings|necessari/i.test(w))).toBe(true);
+    expect(debt!.warnings.some((w) => /insufficiente|necessari|budget/i.test(w))).toBe(true);
     expect(result.warnings.some((w) => /waterfall puro|senza protezione/i.test(w))).toBe(true);
     expect(result.totalAllocated).toBeCloseTo(350, 2);
     expect(result.unallocated).toBeCloseTo(0, 2);
@@ -247,7 +251,7 @@ describe('computeAllocation -- beta+gamma waterfall (issue #458)', () => {
     });
     const result = computeAllocation(input);
     expect(result.incomeAfterEssentials).toBeCloseTo(400, 2);
-    expect(result.warnings.some((w) => /target|reddito|risparmio|superato|essenziali|essentials/i.test(w))).toBe(true);
+    expect(result.warnings.some((w) => /target|reddito|risparmio|superato|essenziali|essentials|supera/i.test(w))).toBe(true);
     expect(result.totalAllocated).toBeLessThanOrEqual(400 + EPS);
   });
 
@@ -346,7 +350,7 @@ describe('computeAllocation -- beta+gamma waterfall (issue #458)', () => {
     expect(alta!.deadlineFeasible).toBe(true);
     expect(media!.monthlyAmount).toBeCloseTo(0, 2);
     expect(media!.deadlineFeasible).toBe(true);
-    expect(media!.warnings.some((w) => /esaurit|allocazione|savings/i.test(w))).toBe(true);
+    expect(media!.warnings.some((w) => /esaurit|allocazione|budget/i.test(w))).toBe(true);
   });
 
   it('priority=1 goal with deadline > 12mo and no emergency name: NOT treated as emergency', () => {
