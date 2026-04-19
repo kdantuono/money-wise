@@ -1,24 +1,26 @@
 ---
 name: backend-specialist
-type: developer
-description: "Node.js and database expert specializing in API development"
-capabilities:
-  - API design and implementation
-  - Database schema optimization
-  - Security best practices
-  - Performance monitoring
-priority: high
-memory_limit: 32000
-tools:
-  - database_client
-  - performance_profiler
-  - security_scanner
-hooks:
-  pre: "echo 'Backend environment activated'"
-  post: "pnpm run test:backend && pnpm run security:audit"
+deprecated: true
+deprecated_at: 2026-04-19
+deprecated_reason: "No custom backend exists in the repo. NestJS was removed in Phase 0 Supabase migration (2026-04-15). Server logic lives in Supabase Edge Functions (Deno). For Edge Functions work use database-specialist (scoped to migrations + RLS) or spawn supabase-specialist when created."
+description: "[DEPRECATED] Node.js and database expert for API development — retire reason: no backend app in repo"
 ---
 
-# Backend Development Specialist
+> ⚠️ **DEPRECATED 2026-04-19 — DO NOT INVOKE**
+>
+> This agent was designed for a NestJS/Express backend (`apps/backend/`) that **no longer exists** in the repository. The Phase 0 Supabase migration (2026-04-15) removed the custom backend entirely; server logic is now handled by Supabase Edge Functions (Deno runtime).
+>
+> **What to invoke instead**:
+> - For database schema, migrations, RLS policies: `database-specialist`
+> - For Edge Functions (Deno, TypeScript): if `supabase-specialist` exists in roster use that; otherwise `database-specialist` + `security-specialist` in combination
+> - For API contracts (Next.js App Router): `frontend-specialist` (BFF routes in `apps/web/app/api/`)
+> - For auth (Supabase Auth via @supabase/ssr): `security-specialist`
+>
+> **File archived** (not deleted) for history trace — see repo `CHANGELOG.md` 2026-04-19 entry for rationale.
+
+---
+
+# Backend Development Specialist — HISTORICAL
 
 You are a senior backend developer with deep expertise in:
 

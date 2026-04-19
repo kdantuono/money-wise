@@ -1,4 +1,16 @@
-# Minimal Sentry Implementation Guide
+# Minimal Sentry Implementation Guide — DEPRECATED
+
+> ⚠️ **DEPRECATED 2026-04-19**: this workflow was written for the pre-Supabase NestJS backend (`apps/backend/`), which no longer exists. The instructions (file paths `apps/backend/src/main.ts`, imports `@sentry/nestjs`, environment variable setup) reference a stack that has been removed.
+>
+> **Current Sentry status**: the project uses `@sentry/nextjs` (web) + `@sentry/node` (shared) + `@sentry/react-native` (mobile) — all installed and configured. Setup was completed during Phase 0 Supabase migration. No further initial-setup workflow is needed.
+>
+> **Pending work for Sentry**: finalize tracing config + source map upload for Edge Functions Deno runtime. Scheduled as part of Sprint 4 polish or as standalone backlog item if needed sooner. See `~/vault/moneywise/planning/roadmap.md`.
+>
+> **This file retained for historical reference only** — instructions below describe NestJS setup that does not apply to the current architecture.
+
+---
+
+## Original intent (historical, NestJS era)
 
 **Goal**: Add production error tracking in <2 hours with zero cost increase
 **Approach**: Backend-only, minimal configuration, leverage existing code
