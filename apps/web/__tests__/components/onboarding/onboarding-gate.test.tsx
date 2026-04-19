@@ -1,70 +1,47 @@
 /**
- * Tests for OnboardingGate.
+ * Tests for OnboardingGate (Sprint 1.5 behavior).
  *
- * Strategy: mock the underlying auth store + OnboardingWizard + service so we
- * can assert the gate's branching and submission flow without rendering the
- * real multi-step wizard or touching Supabase.
+ * Strategy:
+ * - Mock useAuthStore with selector pattern.
+ * - Mock useRouter to capture replace() calls.
+ * - Assert: onboarded=true → children rendered; onboarded=false → replace()
+ *   called + loader shown (no children); user=null → children rendered (defer
+ *   to ProtectedRoute).
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 
 import type { User } from '../../../lib/auth';
 
 // ---------------------------------------------------------------------------
-// Hoisted mocks (vi.mock runs before imports, so shared state must be hoisted)
+// Hoisted mocks
 // ---------------------------------------------------------------------------
 
 const mocks = vi.hoisted(() => ({
-  completeOnboardingMock: vi.fn(),
-  setUserMock: vi.fn(),
-  storeState: { user: null as unknown, setUser: null as unknown as (u: unknown) => void },
+  replaceMock: vi.fn(),
+  storeState: { user: null as unknown },
+}));
+
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({
+    replace: mocks.replaceMock,
+    push: vi.fn(),
+    refresh: vi.fn(),
+    back: vi.fn(),
+    forward: vi.fn(),
+    prefetch: vi.fn(),
+  }),
 }));
 
 vi.mock('../../../src/store/auth.store', () => ({
-  useAuthStore: () => mocks.storeState,
-}));
-
-vi.mock('../../../src/services/onboarding.client', async () => {
-  const actual = await vi.importActual<
-    typeof import('../../../src/services/onboarding.client')
-  >('../../../src/services/onboarding.client');
-  return {
-    ...actual,
-    onboardingClient: {
-      completeOnboarding: mocks.completeOnboardingMock,
-    },
-  };
-});
-
-// Replace the wizard with a stub that exposes a button to trigger onComplete.
-vi.mock('../../../src/components/onboarding/OnboardingWizard', () => ({
-  OnboardingWizard: (props: {
-    userName: string;
-    onComplete: (data: unknown) => void;
-  }) => (
-    <div data-testid="wizard-stub">
-      <p>Ciao {props.userName}</p>
-      <button
-        type="button"
-        onClick={() =>
-          props.onComplete({
-            incomeRange: '1500-3000',
-            savingsGoal: 'emergency-fund',
-            goals: ['safety-net'],
-            aiPreferences: ['auto-categorize'],
-          })
-        }
-      >
-        finish-wizard
-      </button>
-    </div>
-  ),
+  useAuthStore: (selector?: (s: unknown) => unknown) => {
+    const state = mocks.storeState;
+    return selector ? selector(state) : state;
+  },
 }));
 
 import { OnboardingGate } from '../../../src/components/onboarding/onboarding-gate';
-import { OnboardingApiError } from '../../../src/services/onboarding.client';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -93,114 +70,81 @@ function makeUser(overrides: Partial<User> = {}): User {
 // Tests
 // ---------------------------------------------------------------------------
 
-describe('OnboardingGate', () => {
+describe('OnboardingGate (Sprint 1.5 — redirect behavior)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocks.storeState.user = null;
-    mocks.storeState.setUser = mocks.setUserMock;
+    (mocks.storeState as { user: unknown }).user = null;
   });
 
   it('renders children when user is null (auth still loading)', () => {
-    mocks.storeState.user = null;
+    (mocks.storeState as { user: unknown }).user = null;
     render(
       <OnboardingGate>
         <div data-testid="dashboard">Dashboard</div>
       </OnboardingGate>
     );
     expect(screen.getByTestId('dashboard')).toBeInTheDocument();
-    expect(screen.queryByTestId('wizard-stub')).not.toBeInTheDocument();
+    expect(mocks.replaceMock).not.toHaveBeenCalled();
   });
 
   it('renders children when user is already onboarded', () => {
-    mocks.storeState.user = makeUser({ onboarded: true });
+    (mocks.storeState as { user: unknown }).user = makeUser({ onboarded: true });
     render(
       <OnboardingGate>
         <div data-testid="dashboard">Dashboard</div>
       </OnboardingGate>
     );
     expect(screen.getByTestId('dashboard')).toBeInTheDocument();
-    expect(screen.queryByTestId('wizard-stub')).not.toBeInTheDocument();
+    expect(mocks.replaceMock).not.toHaveBeenCalled();
   });
 
-  it('renders the wizard (not children) when user is not onboarded', () => {
-    mocks.storeState.user = makeUser({ onboarded: false });
+  it('calls router.replace("/onboarding/plan") when user is not onboarded', async () => {
+    (mocks.storeState as { user: unknown }).user = makeUser({ onboarded: false });
     render(
       <OnboardingGate>
         <div data-testid="dashboard">Dashboard</div>
       </OnboardingGate>
     );
-    expect(screen.getByTestId('wizard-stub')).toBeInTheDocument();
+
+    // Children NOT rendered while redirect is pending
     expect(screen.queryByTestId('dashboard')).not.toBeInTheDocument();
-  });
 
-  it('passes firstName to the wizard as userName', () => {
-    mocks.storeState.user = makeUser({ firstName: 'Giulia', onboarded: false });
-    render(<OnboardingGate>{null}</OnboardingGate>);
-    expect(screen.getByText(/Ciao Giulia/)).toBeInTheDocument();
-  });
-
-  it('falls back to fullName when firstName is empty', () => {
-    mocks.storeState.user = makeUser({
-      firstName: '',
-      fullName: 'Utente Anonimo',
-      onboarded: false,
-    });
-    render(<OnboardingGate>{null}</OnboardingGate>);
-    expect(screen.getByText(/Ciao Utente Anonimo/)).toBeInTheDocument();
-  });
-
-  it('persists onboarding and marks the user onboarded on success', async () => {
-    mocks.completeOnboardingMock.mockResolvedValueOnce({
-      incomeRange: '1500-3000',
-      savingsGoal: 'emergency-fund',
-      goals: ['safety-net'],
-      aiPreferences: ['auto-categorize'],
-      completedAt: '2026-04-17T06:00:00.000Z',
-    });
-    mocks.storeState.user = makeUser({ onboarded: false });
-
-    render(<OnboardingGate>{null}</OnboardingGate>);
-    await userEvent.click(screen.getByText('finish-wizard'));
-
+    // useEffect fires and calls replace
     await waitFor(() => {
-      expect(mocks.completeOnboardingMock).toHaveBeenCalledWith(
-        'user-1',
-        expect.objectContaining({ incomeRange: '1500-3000' })
-      );
+      expect(mocks.replaceMock).toHaveBeenCalledWith('/onboarding/plan');
     });
+  });
 
-    expect(mocks.setUserMock).toHaveBeenCalledWith(
-      expect.objectContaining({ id: 'user-1', onboarded: true })
+  it('shows loader (not dashboard) while redirecting non-onboarded user', () => {
+    (mocks.storeState as { user: unknown }).user = makeUser({ onboarded: false });
+    render(
+      <OnboardingGate>
+        <div data-testid="dashboard">Dashboard</div>
+      </OnboardingGate>
     );
+    // Loader present, children absent
+    expect(screen.queryByTestId('dashboard')).not.toBeInTheDocument();
+    // The loader has aria-live="polite" — check container is rendered
+    expect(document.querySelector('[aria-live="polite"]')).toBeInTheDocument();
   });
 
-  it('shows an error message when persistence fails (OnboardingApiError)', async () => {
-    mocks.completeOnboardingMock.mockRejectedValueOnce(
-      new OnboardingApiError('salvataggio fallito', 500)
+  it('does not call router.replace when user is null', () => {
+    (mocks.storeState as { user: unknown }).user = null;
+    render(
+      <OnboardingGate>
+        <div data-testid="dashboard">Dashboard</div>
+      </OnboardingGate>
     );
-    mocks.storeState.user = makeUser({ onboarded: false });
-
-    render(<OnboardingGate>{null}</OnboardingGate>);
-    await userEvent.click(screen.getByText('finish-wizard'));
-
-    await waitFor(() => {
-      expect(screen.getByRole('alert')).toHaveTextContent('salvataggio fallito');
-    });
-    expect(mocks.setUserMock).not.toHaveBeenCalled();
+    expect(mocks.replaceMock).not.toHaveBeenCalled();
   });
 
-  it('shows a generic message for non-OnboardingApiError failures', async () => {
-    mocks.completeOnboardingMock.mockRejectedValueOnce(new Error('network down'));
-    mocks.storeState.user = makeUser({ onboarded: false });
-
-    render(<OnboardingGate>{null}</OnboardingGate>);
-    await userEvent.click(screen.getByText('finish-wizard'));
-
-    await waitFor(() => {
-      expect(screen.getByRole('alert')).toHaveTextContent(
-        /Impossibile salvare le preferenze/
-      );
-    });
-    expect(mocks.setUserMock).not.toHaveBeenCalled();
+  it('does not call router.replace when user is already onboarded', () => {
+    (mocks.storeState as { user: unknown }).user = makeUser({ onboarded: true });
+    render(
+      <OnboardingGate>
+        <div data-testid="dashboard">Dashboard</div>
+      </OnboardingGate>
+    );
+    expect(mocks.replaceMock).not.toHaveBeenCalled();
   });
 });

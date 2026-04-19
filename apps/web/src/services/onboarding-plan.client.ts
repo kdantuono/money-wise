@@ -224,6 +224,28 @@ export const onboardingPlanClient = {
       );
     }
 
+    // 4. Flip profiles.onboarded = true now that the plan is fully persisted.
+    // This is the canonical moment: goals + allocations exist, plan is committed.
+    // Caller (WizardPianoGenerato) is responsible for updating the in-memory
+    // auth store (setUser) so the OnboardingGate redirect effect does not fire
+    // again when the user lands on /dashboard.
+    const { error: onboardedErr } = await supabase
+      .from('profiles')
+      .update({ onboarded: true })
+      .eq('id', userId);
+
+    if (onboardedErr) {
+      // Non-fatal from a data-integrity perspective (plan + goals already saved),
+      // but the gate will redirect again on next visit. Throw so the caller can
+      // surface the error and the user retries rather than silently ending up in
+      // a redirect loop.
+      throw new OnboardingPlanApiError(
+        `Piano salvato ma impossibile aggiornare onboarded: ${onboardedErr.message}`,
+        500,
+        onboardedErr,
+      );
+    }
+
     return {
       planId: plan.id,
       goalIds: insertedGoalIds,

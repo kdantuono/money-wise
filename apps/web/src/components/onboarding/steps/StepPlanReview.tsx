@@ -1,9 +1,27 @@
 'use client';
 
 import { useEffect } from 'react';
+import { motion } from 'framer-motion';
+import { Rocket } from 'lucide-react';
 import { useOnboardingPlanStore } from '@/store/onboarding-plan.store';
 import { PRIORITY_LABEL_IT } from '@/types/onboarding-plan';
 import { computeAllocation } from '@/lib/onboarding/allocation';
+
+// Priority accent classes: ALTA (1) = red, MEDIA (2) = amber, BASSA (3) = gray
+const PRIORITY_ACCENT: Record<1 | 2 | 3, { border: string; bg: string }> = {
+  1: {
+    border: 'border-red-500',
+    bg: 'bg-red-50 dark:bg-red-950/20',
+  },
+  2: {
+    border: 'border-amber-500',
+    bg: 'bg-amber-50 dark:bg-amber-950/20',
+  },
+  3: {
+    border: 'border-gray-300 dark:border-gray-600',
+    bg: 'bg-gray-50 dark:bg-gray-900/20',
+  },
+};
 
 export function StepPlanReview() {
   const step1 = useOnboardingPlanStore((s) => s.step1);
@@ -46,11 +64,25 @@ export function StepPlanReview() {
 
   return (
     <div className="space-y-4">
-      <h2 className="text-lg font-semibold text-foreground">Il tuo piano proposto</h2>
-      <p className="text-sm text-muted-foreground">
-        Basato sui tuoi input, ecco come distribuire il risparmio tra gli obiettivi.
-      </p>
+      {/* Gradient header */}
+      <div className="rounded-2xl bg-gradient-to-r from-blue-500 to-purple-500 p-5 text-white">
+        <div className="flex items-center gap-3">
+          <motion.div
+            animate={{ rotate: [0, 10, -10, 0] }}
+            transition={{ duration: 1, repeat: 1, ease: 'easeInOut' }}
+          >
+            <Rocket className="h-8 w-8 text-white" />
+          </motion.div>
+          <div>
+            <h2 className="text-xl font-bold">Il tuo piano è pronto!</h2>
+            <p className="text-sm text-blue-100 mt-0.5">
+              Ecco come distribuire il risparmio tra i tuoi obiettivi.
+            </p>
+          </div>
+        </div>
+      </div>
 
+      {/* Summary grid */}
       <div className="grid grid-cols-2 gap-3 p-4 rounded-xl bg-muted/50 border border-border">
         <div>
           <p className="text-xs text-muted-foreground">Reddito mensile</p>
@@ -90,7 +122,7 @@ export function StepPlanReview() {
 
       {!allocationPreview && step3.goals.length > 0 && step1.monthlyIncome > 0 && (
         <div className="p-4 rounded-xl border border-dashed border-border text-sm text-muted-foreground">
-          ⏳ Calcolo allocation in corso...
+          Calcolo allocation in corso...
         </div>
       )}
 
@@ -98,7 +130,8 @@ export function StepPlanReview() {
         <ul className="space-y-1">
           {allocationPreview.warnings.map((w, idx) => (
             <li key={idx} className="text-xs text-amber-700 dark:text-amber-400 flex gap-2">
-              <span>⚠️</span><span>{w}</span>
+              <span aria-hidden="true">⚠️</span>
+              <span>{w}</span>
             </li>
           ))}
         </ul>
@@ -109,17 +142,25 @@ export function StepPlanReview() {
           {allocationPreview.items.map((item) => {
             const goal = step3.goals.find((g) => g.tempId === item.goalId);
             if (!goal) return null;
+            const accent = PRIORITY_ACCENT[goal.priority as 1 | 2 | 3];
             return (
-              <li key={item.goalId} className="p-3 rounded-xl border border-border bg-card">
+              <li
+                key={item.goalId}
+                className={`p-3 rounded-xl border-l-4 ${accent.border} ${accent.bg}`}
+              >
                 <div className="flex justify-between items-start">
                   <div>
                     <p className="text-sm font-medium text-foreground">{goal.name}</p>
                     <p className="text-xs text-muted-foreground">
                       {PRIORITY_LABEL_IT[goal.priority]} priorità
-                      {!item.deadlineFeasible && ' — ⚠️ deadline non fattibile'}
+                      {!item.deadlineFeasible && (
+                        <span className="ml-1 text-amber-600 dark:text-amber-400">
+                          — deadline non fattibile
+                        </span>
+                      )}
                     </p>
                   </div>
-                  <p className="text-sm font-bold text-blue-600">
+                  <p className="text-sm font-bold text-blue-600 dark:text-blue-400">
                     €{item.monthlyAmount.toFixed(0)}/mese
                   </p>
                 </div>
