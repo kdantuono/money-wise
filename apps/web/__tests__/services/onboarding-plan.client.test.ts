@@ -27,7 +27,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 type Resolvable = { data?: unknown; error?: unknown } | Error;
 
 function makeChain() {
-  /* eslint-disable @typescript-eslint/no-explicit-any */
   const chain: any = {};
   // Terminal resolvers
   chain.single = vi.fn();
@@ -112,7 +111,6 @@ function makeChain() {
   chain.__queueDelete = (r: Resolvable) => queues.delete.push(r);
 
   return chain;
-  /* eslint-enable @typescript-eslint/no-explicit-any */
 }
 
 let plansChain: ReturnType<typeof makeChain>;
@@ -418,7 +416,6 @@ describe('onboardingPlanClient.loadPlan', () => {
     // goal_allocations.select(...).eq(...) resolves array directly
     // The client calls chain.eq after select; chain.eq returns chain, which is not thenable by default.
     // Add thenable on chain.eq for allocChain here:
-    /* eslint-disable @typescript-eslint/no-explicit-any */
     (allocChain.eq as any).mockImplementationOnce(() => ({
       then: (onFulfilled: any, onRejected?: any) => {
         return Promise.resolve({
@@ -434,7 +431,6 @@ describe('onboardingPlanClient.loadPlan', () => {
         }).then(onFulfilled, onRejected);
       },
     }));
-    /* eslint-enable @typescript-eslint/no-explicit-any */
 
     const result = await onboardingPlanClient.loadPlan(USER_ID);
     expect(result).not.toBeNull();
