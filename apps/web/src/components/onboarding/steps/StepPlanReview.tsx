@@ -24,24 +24,25 @@ const PRIORITY_ACCENT: Record<1 | 2 | 3, { border: string; bg: string }> = {
 };
 
 export function StepPlanReview() {
-  const step1 = useOnboardingPlanStore((s) => s.step1);
   const step2 = useOnboardingPlanStore((s) => s.step2);
   const step3 = useOnboardingPlanStore((s) => s.step3);
   const allocationPreview = useOnboardingPlanStore((s) => s.step4.allocationPreview);
   const setAllocationPreview = useOnboardingPlanStore((s) => s.setAllocationPreview);
 
+  // After WP-C, income lives in step2.monthlyIncome
+  const monthlyIncome = step2.monthlyIncome;
   const incomeAfterEssentials =
-    step1.monthlyIncome * (1 - step2.essentialsPct / 100);
+    monthlyIncome * (1 - step2.essentialsPct / 100);
   const savingsTarget = Math.min(step2.monthlySavingsTarget, incomeAfterEssentials);
 
   // Compute allocation on mount + whenever inputs change.
   useEffect(() => {
-    if (step1.monthlyIncome <= 0 || step3.goals.length === 0) {
+    if (monthlyIncome <= 0 || step3.goals.length === 0) {
       setAllocationPreview(null);
       return;
     }
     const result = computeAllocation({
-      monthlyIncome: step1.monthlyIncome,
+      monthlyIncome,
       monthlySavingsTarget: step2.monthlySavingsTarget,
       essentialsPct: step2.essentialsPct,
       goals: step3.goals.map((g) => ({
@@ -55,7 +56,7 @@ export function StepPlanReview() {
     });
     setAllocationPreview(result);
   }, [
-    step1.monthlyIncome,
+    monthlyIncome,
     step2.monthlySavingsTarget,
     step2.essentialsPct,
     step3.goals,
@@ -87,7 +88,7 @@ export function StepPlanReview() {
         <div>
           <p className="text-xs text-muted-foreground">Reddito mensile</p>
           <p className="text-sm font-semibold text-foreground">
-            €{step1.monthlyIncome.toLocaleString('it-IT')}
+            €{monthlyIncome.toLocaleString('it-IT')}
           </p>
         </div>
         <div>
@@ -114,13 +115,13 @@ export function StepPlanReview() {
         </div>
       )}
 
-      {!allocationPreview && step3.goals.length > 0 && step1.monthlyIncome <= 0 && (
+      {!allocationPreview && step3.goals.length > 0 && monthlyIncome <= 0 && (
         <div className="p-4 rounded-xl border border-dashed border-border text-sm text-muted-foreground">
-          Inserisci il reddito mensile allo Step 1 per calcolare il piano.
+          Inserisci il reddito mensile nel Profilo per calcolare il piano.
         </div>
       )}
 
-      {!allocationPreview && step3.goals.length > 0 && step1.monthlyIncome > 0 && (
+      {!allocationPreview && step3.goals.length > 0 && monthlyIncome > 0 && (
         <div className="p-4 rounded-xl border border-dashed border-border text-sm text-muted-foreground">
           Calcolo allocation in corso...
         </div>

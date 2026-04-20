@@ -7,13 +7,12 @@ import * as Dialog from '@radix-ui/react-dialog';
 import { X } from 'lucide-react';
 import {
   useOnboardingPlanStore,
-  selectCanAdvanceFromStep1,
+  selectCanAdvanceFromStep2,
 } from '@/store/onboarding-plan.store';
 import { useAuthStore } from '@/store/auth.store';
 import { onboardingPlanClient, OnboardingPlanApiError } from '@/services/onboarding-plan.client';
 import { StepWelcome } from './steps/StepWelcome';
-import { StepIncome } from './steps/StepIncome';
-import { StepSavingsTarget } from './steps/StepSavingsTarget';
+import { StepProfile } from './steps/StepProfile';
 import { StepGoals } from './steps/StepGoals';
 import { StepPlanReview } from './steps/StepPlanReview';
 import { StepAiPrefs } from './steps/StepAiPrefs';
@@ -21,19 +20,19 @@ import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, Check, Loader2 } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
-// Step indicator configuration — 6 steps (Sprint 1.5.2 WP-B)
-// Step 1 = Benvenuto (NEW), Steps 2-6 renumbered from previous 1-5
+// Step indicator configuration — 5 steps (Welcome + Profilo + Obiettivi + Piano + AI-Prefs)
+// Sprint 1.5.2 integrated: WP-B StepWelcome + WP-C StepProfile (4-budget model)
+// Step 1 = Benvenuto (WP-B), Step 2 = Profilo (WP-C merged), Steps 3-5 unchanged
 // ---------------------------------------------------------------------------
 const STEP_CONFIG = [
   { label: 'Benvenuto' },
-  { label: 'Reddito' },
-  { label: 'Risparmio' },
+  { label: 'Profilo' },
   { label: 'I tuoi goal' },
   { label: 'Piano proposto' },
   { label: 'Preferenze AI' },
 ] as const;
 
-const TOTAL_STEPS = STEP_CONFIG.length; // 6
+const TOTAL_STEPS = STEP_CONFIG.length; // 5
 
 interface WizardPianoGeneratoProps {
   /** 'create' (default) = first-time onboarding. 'edit' = pre-populated from existing plan. */
@@ -48,7 +47,6 @@ export function WizardPianoGenerato({ mode = 'create', onClose }: WizardPianoGen
   const currentStep = useOnboardingPlanStore((s) => s.currentStep);
   const nextStep = useOnboardingPlanStore((s) => s.nextStep);
   const prevStep = useOnboardingPlanStore((s) => s.prevStep);
-  const step1 = useOnboardingPlanStore((s) => s.step1);
   const step2 = useOnboardingPlanStore((s) => s.step2);
   const step3 = useOnboardingPlanStore((s) => s.step3);
   const allocationPreview = useOnboardingPlanStore((s) => s.step4.allocationPreview);
@@ -63,8 +61,8 @@ export function WizardPianoGenerato({ mode = 'create', onClose }: WizardPianoGen
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [prevStepRef, setPrevStepRef] = useState(currentStep);
 
-  // Income gate now applies to Step 2 (Reddito) post WP-B renumber
-  const canAdvanceIncomeStep = useOnboardingPlanStore(selectCanAdvanceFromStep1);
+  // Step 2 (Profilo) gate: all 5 allocation fields valid + sum constraint
+  const canAdvanceStep2 = useOnboardingPlanStore(selectCanAdvanceFromStep2);
 
   const isLastStep = currentStep === TOTAL_STEPS;
   const canSubmit = !!userId && !!allocationPreview && step3.goals.length > 0 && !isPersisting;
@@ -72,9 +70,9 @@ export function WizardPianoGenerato({ mode = 'create', onClose }: WizardPianoGen
   const disabledReason = !userId
     ? 'Sessione utente non rilevata — ricarica la pagina.'
     : step3.goals.length === 0
-      ? 'Aggiungi almeno un obiettivo allo Step 4.'
+      ? 'Aggiungi almeno un obiettivo allo Step 3.'
       : !allocationPreview
-        ? 'Piano non ancora calcolato — torna allo Step 5 per rigenerarlo.'
+        ? 'Piano non ancora calcolato — torna allo Step 4 per rigenerarlo.'
         : null;
 
   // Direction for slide animation: forward (+1) or backward (-1)
@@ -110,7 +108,7 @@ export function WizardPianoGenerato({ mode = 'create', onClose }: WizardPianoGen
     try {
       const { planId } = await onboardingPlanClient.persistPlan(userId, {
         plan: {
-          monthlyIncome: step1.monthlyIncome,
+          monthlyIncome: step2.monthlyIncome,
           monthlySavingsTarget: step2.monthlySavingsTarget,
           essentialsPct: step2.essentialsPct,
         },
@@ -151,10 +149,9 @@ export function WizardPianoGenerato({ mode = 'create', onClose }: WizardPianoGen
   };
 
   // Step 1 (Welcome) always allows advancing.
-  // Step 2 (Income) requires valid income bounds.
+  // Step 2 (Profilo) requires all 5 allocation fields valid + sum constraint.
   // All other steps allow free navigation.
-  const canAdvance =
-    currentStep === 2 ? canAdvanceIncomeStep : true;
+  const canAdvance = currentStep === 2 ? canAdvanceStep2 : true;
 
   return (
     <Dialog.Portal>
@@ -239,18 +236,16 @@ export function WizardPianoGenerato({ mode = 'create', onClose }: WizardPianoGen
               exit={{ x: direction * -40, opacity: 0 }}
               transition={{ duration: 0.2, ease: 'easeInOut' }}
             >
-              {/* Step 1 — Benvenuto (NEW, Sprint 1.5.2 WP-B) */}
+              {/* Step 1 — Benvenuto (WP-B) */}
               {currentStep === 1 && <StepWelcome firstName={user?.firstName ?? null} />}
-              {/* Step 2 — Reddito (previously Step 1) */}
-              {currentStep === 2 && <StepIncome />}
-              {/* Step 3 — Risparmio (previously Step 2) */}
-              {currentStep === 3 && <StepSavingsTarget />}
-              {/* Step 4 — Obiettivi (previously Step 3) */}
-              {currentStep === 4 && <StepGoals />}
-              {/* Step 5 — Piano proposto (previously Step 4) */}
-              {currentStep === 5 && <StepPlanReview />}
-              {/* Step 6 — Preferenze AI (previously Step 5) */}
-              {currentStep === 6 && <StepAiPrefs />}
+              {/* Step 2 — Profilo 4-budget model (WP-C) */}
+              {currentStep === 2 && <StepProfile />}
+              {/* Step 3 — Obiettivi */}
+              {currentStep === 3 && <StepGoals />}
+              {/* Step 4 — Piano proposto */}
+              {currentStep === 4 && <StepPlanReview />}
+              {/* Step 5 — Preferenze AI */}
+              {currentStep === 5 && <StepAiPrefs />}
             </motion.div>
           </AnimatePresence>
         </main>
@@ -290,7 +285,7 @@ export function WizardPianoGenerato({ mode = 'create', onClose }: WizardPianoGen
                 Salta
               </Button>
             )}
-            {/* Indietro: visible on steps 2-6 */}
+            {/* Indietro: visible on steps 2-5 */}
             {currentStep > 1 && (
               <Button
                 variant="outline"
