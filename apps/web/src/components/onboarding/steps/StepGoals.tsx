@@ -219,22 +219,20 @@ function AddGoalModal({ open, onOpenChange, presetId, editingGoal, onSubmit }: A
           aria-labelledby="add-goal-dialog-title"
           aria-describedby={undefined}
         >
-          <div className="flex items-center justify-between mb-4">
-            <Dialog.Title
-              id="add-goal-dialog-title"
-              className="text-base font-semibold text-foreground"
+          <Dialog.Title
+            id="add-goal-dialog-title"
+            className="text-base font-semibold text-foreground mb-4"
+          >
+            {title}
+          </Dialog.Title>
+          <Dialog.Close asChild>
+            <button
+              className="absolute top-4 right-4 rounded-lg p-1.5 hover:bg-muted transition-colors"
+              aria-label="Chiudi"
             >
-              {title}
-            </Dialog.Title>
-            <Dialog.Close asChild>
-              <button
-                className="rounded-lg p-1.5 hover:bg-muted transition-colors"
-                aria-label="Chiudi"
-              >
-                <X className="w-4 h-4 text-muted-foreground" />
-              </button>
-            </Dialog.Close>
-          </div>
+              <X className="w-4 h-4 text-muted-foreground" />
+            </button>
+          </Dialog.Close>
 
           <div className="space-y-3">
             {/* Type toggle: fixed / openended */}
