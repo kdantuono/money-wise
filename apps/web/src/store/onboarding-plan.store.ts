@@ -33,6 +33,40 @@ export const selectCanAdvanceFromStep1 = (s: WizardState): boolean => {
   return income >= INCOME_MIN && income <= INCOME_MAX;
 };
 
+/**
+ * Shape of the data returned by onboardingPlanClient.loadPlan — duplicated here
+ * to avoid a circular import between the store and the service layer.
+ */
+export interface LoadedPlanBundle {
+  plan: {
+    id: string;
+    monthlyIncome: number;
+    monthlySavingsTarget: number;
+    essentialsPct: number;
+    incomeAfterEssentials: number;
+  };
+  goals: Array<{
+    id: string;
+    name: string;
+    target: number;
+    current: number;
+    deadline: string | null;
+    priority: WizardGoalDraft['priority'];
+    monthlyAllocation: number;
+    status: string;
+  }>;
+  allocations: Array<{
+    goalId: string;
+    monthlyAmount: number;
+    deadlineFeasible: boolean;
+    reasoning: string | null;
+  }>;
+  aiPreferences?: {
+    enableAiCategorization: boolean;
+    enableAiInsights: boolean;
+  };
+}
+
 interface Actions {
   setStep: (step: WizardStep) => void;
   nextStep: () => void;
@@ -47,6 +81,14 @@ interface Actions {
   setAiPrefs: (enableCategorization: boolean, enableInsights: boolean) => void;
   setIsPersisting: (persisting: boolean) => void;
   setPersistedPlanId: (id: string | null) => void;
+  /**
+   * Hydrate the wizard store from an existing loaded plan (edit mode).
+   *
+   * Key invariant: goal `tempId` is set to the DB goal UUID so that
+   * `allocationPreview.items[].goalId` aligns with `step3.goals[].tempId`
+   * (the persistPlan caller uses `allocationPreview.items.find(it => it.goalId === g.tempId)`).
+   */
+  hydrateFromPlan: (bundle: LoadedPlanBundle) => void;
   reset: () => void;
 }
 
@@ -121,5 +163,56 @@ export const useOnboardingPlanStore = create<WizardStore>((set) => ({
     }),
   setIsPersisting: (persisting) => set({ isPersisting: persisting }),
   setPersistedPlanId: (id) => set({ persistedPlanId: id }),
+  hydrateFromPlan: (bundle) => {
+    const { plan, goals, allocations, aiPreferences } = bundle;
+
+    // Reconstruct AllocationResult from loaded DB data.
+    // Use DB goal UUID as tempId so the goalId ↔ tempId alignment
+    // in persistPlan's mapper holds (line: `items.find(it => it.goalId === g.tempId)`).
+    const allocationByGoalId = new Map(allocations.map((a) => [a.goalId, a]));
+    const totalAllocated = allocations.reduce((sum, a) => sum + a.monthlyAmount, 0);
+
+    const allocationPreview: AllocationResult = {
+      items: goals.map((g) => {
+        const alloc = allocationByGoalId.get(g.id);
+        return {
+          goalId: g.id,
+          monthlyAmount: alloc?.monthlyAmount ?? g.monthlyAllocation,
+          deadlineFeasible: alloc?.deadlineFeasible ?? true,
+          reasoning: alloc?.reasoning ?? '',
+          warnings: [],
+        };
+      }),
+      incomeAfterEssentials: plan.incomeAfterEssentials,
+      totalAllocated,
+      unallocated: Math.max(0, plan.incomeAfterEssentials - totalAllocated),
+      warnings: [],
+    };
+
+    set({
+      currentStep: 1,
+      step1: { monthlyIncome: plan.monthlyIncome },
+      step2: {
+        monthlySavingsTarget: plan.monthlySavingsTarget,
+        essentialsPct: plan.essentialsPct,
+      },
+      step3: {
+        goals: goals.map((g) => ({
+          tempId: g.id,
+          name: g.name,
+          target: g.target,
+          deadline: g.deadline,
+          priority: g.priority,
+        })),
+      },
+      step4: { allocationPreview, userOverrides: {} },
+      step5: {
+        enableAiCategorization: aiPreferences?.enableAiCategorization ?? true,
+        enableAiInsights: aiPreferences?.enableAiInsights ?? true,
+      },
+      isPersisting: false,
+      persistedPlanId: null,
+    });
+  },
   reset: () => set(initialState),
 }));

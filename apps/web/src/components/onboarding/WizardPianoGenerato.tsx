@@ -25,7 +25,13 @@ const STEP_CONFIG = [
   { label: 'Preferenze AI', icon: Brain, color: 'text-pink-500', bg: 'bg-pink-50 dark:bg-pink-950/30' },
 ] as const;
 
-export function WizardPianoGenerato() {
+interface WizardPianoGeneratoProps {
+  /** 'create' (default) = first-time onboarding. 'edit' = pre-populated from existing plan. */
+  mode?: 'create' | 'edit';
+}
+
+export function WizardPianoGenerato({ mode = 'create' }: WizardPianoGeneratoProps) {
+  const isEditMode = mode === 'edit';
   const router = useRouter();
   const currentStep = useOnboardingPlanStore((s) => s.currentStep);
   const nextStep = useOnboardingPlanStore((s) => s.nextStep);
@@ -143,7 +149,9 @@ export function WizardPianoGenerato() {
     <div className="min-h-screen bg-background p-6 flex flex-col">
       <div className="max-w-2xl mx-auto w-full flex-1 flex flex-col">
         <header className="mb-8">
-          <h1 className="text-2xl font-bold text-foreground">Piano Finanziario</h1>
+          <h1 className="text-2xl font-bold text-foreground">
+            {isEditMode ? 'Modifica il tuo piano' : 'Piano Finanziario'}
+          </h1>
 
           {/* Step indicator with icons */}
           <div
@@ -247,12 +255,12 @@ export function WizardPianoGenerato() {
               {isPersisting ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Creazione piano...
+                  {isEditMode ? 'Salvataggio...' : 'Creazione piano...'}
                 </>
               ) : (
                 <>
                   <Check className="w-4 h-4 mr-2" />
-                  Conferma e crea piano
+                  {isEditMode ? 'Salva modifiche' : 'Conferma e crea piano'}
                 </>
               )}
             </Button>
