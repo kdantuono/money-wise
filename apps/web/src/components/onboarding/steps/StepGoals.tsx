@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { useOnboardingPlanStore } from '@/store/onboarding-plan.store';
-import { PRIORITY_LABEL_IT, type PriorityRank, type WizardGoalDraft } from '@/types/onboarding-plan';
+import { PRIORITY_LABEL_IT, type PriorityRank, type WizardGoalDraft, type GoalType } from '@/types/onboarding-plan';
 import { Button } from '@/components/ui/button';
 import {
   Plus,
@@ -31,6 +31,8 @@ interface PresetGoal {
   defaultTarget: number;
   defaultDeadlineMonths: number;
   priority: PriorityRank;
+  /** DB type field. 'openended' for Fondo Emergenza. */
+  type: GoalType;
 }
 
 const PRESET_GOALS: PresetGoal[] = [
@@ -43,6 +45,7 @@ const PRESET_GOALS: PresetGoal[] = [
     defaultTarget: 5000,
     defaultDeadlineMonths: 12,
     priority: 1,
+    type: 'openended',
   },
   {
     id: 'comprare-casa',
@@ -53,6 +56,7 @@ const PRESET_GOALS: PresetGoal[] = [
     defaultTarget: 50000,
     defaultDeadlineMonths: 60,
     priority: 2,
+    type: 'fixed',
   },
   {
     id: 'iniziare-a-investire',
@@ -63,6 +67,7 @@ const PRESET_GOALS: PresetGoal[] = [
     defaultTarget: 10000,
     defaultDeadlineMonths: 24,
     priority: 2,
+    type: 'fixed',
   },
   {
     id: 'eliminare-debiti',
@@ -73,6 +78,7 @@ const PRESET_GOALS: PresetGoal[] = [
     defaultTarget: 3000,
     defaultDeadlineMonths: 12,
     priority: 1,
+    type: 'fixed',
   },
   {
     id: 'risparmiare-di-piu',
@@ -83,6 +89,7 @@ const PRESET_GOALS: PresetGoal[] = [
     defaultTarget: 5000,
     defaultDeadlineMonths: 12,
     priority: 3,
+    type: 'fixed',
   },
   {
     id: 'viaggi-vacanza',
@@ -93,6 +100,7 @@ const PRESET_GOALS: PresetGoal[] = [
     defaultTarget: 2000,
     defaultDeadlineMonths: 6,
     priority: 3,
+    type: 'fixed',
   },
   {
     id: 'far-crescere-patrimonio',
@@ -103,6 +111,7 @@ const PRESET_GOALS: PresetGoal[] = [
     defaultTarget: 20000,
     defaultDeadlineMonths: 36,
     priority: 2,
+    type: 'fixed',
   },
 ];
 
@@ -121,6 +130,8 @@ interface DraftState {
   target: string;
   deadline: string;
   priority: PriorityRank;
+  /** DB type: 'fixed' = has concrete target; 'openended' = no hard target. */
+  type: GoalType;
 }
 
 const EMPTY_DRAFT: DraftState = {
@@ -128,6 +139,7 @@ const EMPTY_DRAFT: DraftState = {
   target: '',
   deadline: '',
   priority: 2,
+  type: 'fixed',
 };
 
 // ---------------------------------------------------------------------------
@@ -140,7 +152,7 @@ interface AddGoalModalProps {
   presetId: string | null;
   /** When set, modal is in edit mode and pre-fills from this goal. */
   editingGoal: WizardGoalDraft | null;
-  onSubmit: (goal: { name: string; target: number; deadline: string | null; priority: PriorityRank }) => void;
+  onSubmit: (goal: { name: string; target: number | null; deadline: string | null; priority: PriorityRank; type: GoalType }) => void;
 }
 
 function AddGoalModal({ open, onOpenChange, presetId, editingGoal, onSubmit }: AddGoalModalProps) {
@@ -155,9 +167,10 @@ function AddGoalModal({ open, onOpenChange, presetId, editingGoal, onSubmit }: A
         // Edit mode: pre-fill from existing goal
         setDraft({
           name: editingGoal.name,
-          target: String(editingGoal.target),
+          target: editingGoal.target !== null ? String(editingGoal.target) : '',
           deadline: editingGoal.deadline ?? '',
           priority: editingGoal.priority,
+          type: editingGoal.type ?? 'fixed',
         });
       } else if (presetId) {
         // Add mode via preset: pre-fill from preset defaults
@@ -165,9 +178,10 @@ function AddGoalModal({ open, onOpenChange, presetId, editingGoal, onSubmit }: A
         if (preset) {
           setDraft({
             name: preset.name,
-            target: String(preset.defaultTarget),
-            deadline: addMonthsToToday(preset.defaultDeadlineMonths),
+            target: preset.type === 'openended' ? '' : String(preset.defaultTarget),
+            deadline: preset.type === 'openended' ? '' : addMonthsToToday(preset.defaultDeadlineMonths),
             priority: preset.priority,
+            type: preset.type,
           });
         }
       } else {
@@ -177,14 +191,19 @@ function AddGoalModal({ open, onOpenChange, presetId, editingGoal, onSubmit }: A
     }
   }, [open, presetId, editingGoal, isEditMode]);
 
+  const isOpenended = draft.type === 'openended';
+
   const handleSubmit = () => {
-    const target = Number(draft.target);
-    if (!draft.name || target <= 0) return;
+    if (!draft.name) return;
+    // Openended: target is null; fixed: target must be > 0
+    const target = isOpenended ? null : Number(draft.target);
+    if (!isOpenended && (!target || target <= 0)) return;
     onSubmit({
       name: draft.name,
       target,
       deadline: draft.deadline || null,
       priority: draft.priority,
+      type: draft.type,
     });
   };
 
@@ -197,6 +216,7 @@ function AddGoalModal({ open, onOpenChange, presetId, editingGoal, onSubmit }: A
         <Dialog.Overlay className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
         <Dialog.Content
           className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-border bg-background p-6 shadow-lg focus:outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95"
+          aria-labelledby="add-goal-dialog-title"
           aria-describedby={undefined}
         >
           <div className="flex items-center justify-between mb-4">
@@ -217,6 +237,52 @@ function AddGoalModal({ open, onOpenChange, presetId, editingGoal, onSubmit }: A
           </div>
 
           <div className="space-y-3">
+            {/* Type toggle: fixed / openended */}
+            <div>
+              <label className="text-sm font-medium text-foreground block mb-1">
+                Tipo obiettivo
+              </label>
+              <div
+                className="flex rounded-xl border border-border overflow-hidden"
+                role="group"
+                aria-label="Tipo obiettivo"
+              >
+                <button
+                  type="button"
+                  data-testid="goal-type-fixed"
+                  onClick={() => setDraft({ ...draft, type: 'fixed' })}
+                  className={[
+                    'flex-1 px-3 py-2 text-sm font-medium transition-colors',
+                    draft.type === 'fixed'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-muted/50 text-muted-foreground hover:bg-muted',
+                  ].join(' ')}
+                  aria-pressed={draft.type === 'fixed'}
+                >
+                  Importo fisso
+                </button>
+                <button
+                  type="button"
+                  data-testid="goal-type-openended"
+                  onClick={() => setDraft({ ...draft, type: 'openended', target: '', deadline: '' })}
+                  className={[
+                    'flex-1 px-3 py-2 text-sm font-medium transition-colors',
+                    draft.type === 'openended'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-muted/50 text-muted-foreground hover:bg-muted',
+                  ].join(' ')}
+                  aria-pressed={draft.type === 'openended'}
+                >
+                  Aperto
+                </button>
+              </div>
+              {isOpenended && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Obiettivo aperto: riceve la quota residua ogni mese, senza target fisso.
+                </p>
+              )}
+            </div>
+
             <div>
               <label htmlFor="goal-name" className="text-sm font-medium text-foreground block mb-1">
                 Nome
@@ -232,34 +298,37 @@ function AddGoalModal({ open, onOpenChange, presetId, editingGoal, onSubmit }: A
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label htmlFor="goal-target" className="text-sm font-medium text-foreground block mb-1">
-                  Target (€)
-                </label>
-                <input
-                  id="goal-target"
-                  type="number"
-                  min={0}
-                  value={draft.target}
-                  onChange={(e) => setDraft({ ...draft, target: e.target.value })}
-                  className="w-full bg-muted/50 border border-border rounded-xl px-3 py-2 text-sm text-foreground"
-                  placeholder="15000"
-                />
+            {/* Target + deadline: hidden for openended */}
+            {!isOpenended && (
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label htmlFor="goal-target" className="text-sm font-medium text-foreground block mb-1">
+                    Target (€)
+                  </label>
+                  <input
+                    id="goal-target"
+                    type="number"
+                    min={0}
+                    value={draft.target}
+                    onChange={(e) => setDraft({ ...draft, target: e.target.value })}
+                    className="w-full bg-muted/50 border border-border rounded-xl px-3 py-2 text-sm text-foreground"
+                    placeholder="15000"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="goal-deadline" className="text-sm font-medium text-foreground block mb-1">
+                    Scadenza (opzionale)
+                  </label>
+                  <input
+                    id="goal-deadline"
+                    type="date"
+                    value={draft.deadline}
+                    onChange={(e) => setDraft({ ...draft, deadline: e.target.value })}
+                    className="w-full bg-muted/50 border border-border rounded-xl px-3 py-2 text-sm text-foreground"
+                  />
+                </div>
               </div>
-              <div>
-                <label htmlFor="goal-deadline" className="text-sm font-medium text-foreground block mb-1">
-                  Scadenza (opzionale)
-                </label>
-                <input
-                  id="goal-deadline"
-                  type="date"
-                  value={draft.deadline}
-                  onChange={(e) => setDraft({ ...draft, deadline: e.target.value })}
-                  className="w-full bg-muted/50 border border-border rounded-xl px-3 py-2 text-sm text-foreground"
-                />
-              </div>
-            </div>
+            )}
 
             <div>
               <label htmlFor="goal-priority" className="text-sm font-medium text-foreground block mb-1">
@@ -344,7 +413,7 @@ export function StepGoals() {
     }
   };
 
-  const handleSubmit = (goal: { name: string; target: number; deadline: string | null; priority: PriorityRank }) => {
+  const handleSubmit = (goal: { name: string; target: number | null; deadline: string | null; priority: PriorityRank; type: GoalType }) => {
     if (editingGoalId) {
       updateGoal(editingGoalId, goal);
     } else {
@@ -415,7 +484,10 @@ export function StepGoals() {
               >
                 <p className="text-sm font-medium text-foreground">{g.name}</p>
                 <p className="text-xs text-muted-foreground">
-                  €{g.target.toLocaleString('it-IT')} — {PRIORITY_LABEL_IT[g.priority]} priorità
+                  {g.type === 'openended'
+                    ? 'Aperto'
+                    : `€${(g.target ?? 0).toLocaleString('it-IT')}`}{' '}
+                  — {PRIORITY_LABEL_IT[g.priority]} priorità
                   {g.deadline ? ` — entro ${g.deadline}` : ''}
                 </p>
               </div>

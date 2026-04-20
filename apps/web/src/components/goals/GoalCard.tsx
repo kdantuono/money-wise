@@ -8,19 +8,27 @@ import {
   Target,
   Trash2,
   Calendar,
+  Infinity as InfinityIcon,
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { PRIORITY_LABEL_IT, type PriorityRank } from '@/types/onboarding-plan';
-import type { GoalType } from './GoalTypeFilter';
+import type { GoalCategory } from './GoalTypeFilter';
 import type { Goal } from '@/services/goals.client';
 
 // =============================================================================
-// Type inference helper (pre-MED-11: heuristic from name)
+// Category inference helper (UI grouping from name — NOT the DB type field)
 // =============================================================================
 
-export function inferGoalType(name: string): GoalType {
+/**
+ * Derives a display category from the goal name for icon/color purposes.
+ * This is a UI heuristic; do NOT use it as a substitute for `goal.type`.
+ *
+ * WP-K: renamed from inferGoalType → inferGoalCategory (old name kept as
+ * deprecated alias to avoid breaking existing callers during migration).
+ */
+export function inferGoalCategory(name: string): GoalCategory {
   const lower = name.toLowerCase();
   if (lower.includes('emergenza') || lower.includes('fondo')) return 'emergency';
   if (lower.includes('debito') || lower.includes('debiti') || lower.includes('prestito')) return 'debt';
@@ -29,11 +37,16 @@ export function inferGoalType(name: string): GoalType {
   return 'savings';
 }
 
+/** @deprecated use inferGoalCategory — kept for backward compat */
+export function inferGoalType(name: string): GoalCategory {
+  return inferGoalCategory(name);
+}
+
 // =============================================================================
-// Icon per type
+// Icon per category
 // =============================================================================
 
-const TYPE_ICON: Record<GoalType, React.ComponentType<{ className?: string }>> = {
+const CATEGORY_ICON: Record<GoalCategory, React.ComponentType<{ className?: string }>> = {
   all: Target,
   emergency: PiggyBank,
   savings: Star,
@@ -42,7 +55,7 @@ const TYPE_ICON: Record<GoalType, React.ComponentType<{ className?: string }>> =
   lifestyle: Star,
 };
 
-const TYPE_COLOR: Record<GoalType, { bg: string; text: string; light: string }> = {
+const CATEGORY_COLOR: Record<GoalCategory, { bg: string; text: string; light: string }> = {
   all: { bg: 'bg-blue-600', text: 'text-blue-600', light: 'bg-blue-50 dark:bg-blue-950/30' },
   emergency: { bg: 'bg-blue-600', text: 'text-blue-600', light: 'bg-blue-50 dark:bg-blue-950/30' },
   savings: { bg: 'bg-emerald-600', text: 'text-emerald-600', light: 'bg-emerald-50 dark:bg-emerald-950/30' },
@@ -68,13 +81,17 @@ interface GoalCardProps {
 }
 
 export function GoalCard({ goal, onEditClick, onDeleteClick }: GoalCardProps) {
-  const type = inferGoalType(goal.name);
-  const Icon = TYPE_ICON[type];
-  const colors = TYPE_COLOR[type];
+  // WP-K: use goal.type (DB field) for openended-specific display logic.
+  // Use inferGoalCategory for icon/color (name heuristic — independent of type).
+  const isOpenended = goal.type === 'openended';
+  const category = inferGoalCategory(goal.name);
+  const Icon = CATEGORY_ICON[category];
+  const colors = CATEGORY_COLOR[category];
   const priorityColor = PRIORITY_COLOR[goal.priority];
 
-  const pct = goal.target > 0 ? Math.min(100, (goal.current / goal.target) * 100) : 0;
-  const remaining = Math.max(0, goal.target - goal.current);
+  const effectiveTarget = goal.target ?? 0;
+  const pct = effectiveTarget > 0 ? Math.min(100, (goal.current / effectiveTarget) * 100) : 0;
+  const remaining = Math.max(0, effectiveTarget - goal.current);
 
   let daysLeft: number | null = null;
   if (goal.deadline) {
@@ -106,14 +123,26 @@ export function GoalCard({ goal, onEditClick, onDeleteClick }: GoalCardProps) {
             >
               {goal.name}
             </h3>
-            <Badge
-              variant="outline"
-              className="text-xs mt-0.5"
-              data-testid="goal-card-priority"
-            >
-              <span className={`inline-block w-1.5 h-1.5 rounded-full mr-1 ${priorityColor.bg}`} />
-              {PRIORITY_LABEL_IT[goal.priority]}
-            </Badge>
+            <div className="flex items-center gap-1 mt-0.5 flex-wrap">
+              <Badge
+                variant="outline"
+                className="text-xs"
+                data-testid="goal-card-priority"
+              >
+                <span className={`inline-block w-1.5 h-1.5 rounded-full mr-1 ${priorityColor.bg}`} />
+                {PRIORITY_LABEL_IT[goal.priority]}
+              </Badge>
+              {isOpenended && (
+                <Badge
+                  variant="outline"
+                  className="text-xs gap-1"
+                  data-testid="goal-card-type-badge"
+                >
+                  <InfinityIcon className="w-3 h-3" />
+                  Aperto
+                </Badge>
+              )}
+            </div>
           </div>
         </div>
 
@@ -131,21 +160,35 @@ export function GoalCard({ goal, onEditClick, onDeleteClick }: GoalCardProps) {
         </button>
       </div>
 
-      <div className="mb-3">
-        <div className="flex justify-between text-sm mb-1.5">
-          <span className="text-muted-foreground">
-            &euro;{goal.current.toLocaleString('it-IT')}
-          </span>
-          <span
-            data-testid="goal-card-target"
-            className="font-semibold text-foreground"
-          >
-            &euro;{goal.target.toLocaleString('it-IT')}
-          </span>
+      {/* Target/progress: hidden for openended goals (no concrete target) */}
+      {!isOpenended && (
+        <div className="mb-3">
+          <div className="flex justify-between text-sm mb-1.5">
+            <span className="text-muted-foreground">
+              &euro;{goal.current.toLocaleString('it-IT')}
+            </span>
+            <span
+              data-testid="goal-card-target"
+              className="font-semibold text-foreground"
+            >
+              &euro;{effectiveTarget.toLocaleString('it-IT')}
+            </span>
+          </div>
+          <Progress value={pct} className="h-2" />
+          <p className={`text-xs font-bold mt-1 ${colors.text}`}>{pct.toFixed(0)}%</p>
         </div>
-        <Progress value={pct} className="h-2" />
-        <p className={`text-xs font-bold mt-1 ${colors.text}`}>{pct.toFixed(0)}%</p>
-      </div>
+      )}
+
+      {isOpenended && (
+        <div className="mb-3">
+          <p className="text-xs text-muted-foreground italic">
+            Obiettivo aperto — accumulo continuo senza target fisso
+          </p>
+          <p className="text-sm font-medium text-foreground mt-1">
+            &euro;{goal.current.toLocaleString('it-IT')} accumulati
+          </p>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 gap-2 pt-3 border-t border-border/40">
         <div>
@@ -168,7 +211,7 @@ export function GoalCard({ goal, onEditClick, onDeleteClick }: GoalCardProps) {
         </div>
       </div>
 
-      {remaining > 0 && (
+      {!isOpenended && remaining > 0 && (
         <p className="text-xs text-muted-foreground mt-2">
           Mancano &euro;{remaining.toLocaleString('it-IT')} al target
         </p>

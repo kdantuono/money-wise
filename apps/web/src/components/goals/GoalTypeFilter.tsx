@@ -1,19 +1,25 @@
 'use client';
 
 /**
- * GoalTypeFilter — horizontal chip row for filtering by goal type.
- * Since MED-11 migration (adds `type` column) is not yet applied, type is
- * inferred from goal names via heuristics in the parent page.
+ * GoalTypeFilter — horizontal chip row for filtering by goal category.
+ *
+ * WP-K: `GoalType` renamed to `GoalCategory` to avoid collision with the new
+ * DB-level `GoalType = 'fixed' | 'openended'` in types/onboarding-plan.ts.
+ * The 5-category taxonomy (emergency / savings / investment / debt / lifestyle)
+ * is a UI grouping derived from the goal name heuristic, not the DB field.
  */
 
-export type GoalType = 'all' | 'emergency' | 'savings' | 'investment' | 'debt' | 'lifestyle';
+export type GoalCategory = 'all' | 'emergency' | 'savings' | 'investment' | 'debt' | 'lifestyle';
+
+/** @deprecated use GoalCategory — alias kept for incremental migration */
+export type GoalType = GoalCategory;
 
 interface GoalTypeFilterProps {
-  selected: GoalType;
-  onTypeSelect: (type: GoalType) => void;
+  selected: GoalCategory;
+  onTypeSelect: (type: GoalCategory) => void;
 }
 
-const CHIPS: { type: GoalType; label: string }[] = [
+const CHIPS: { type: GoalCategory; label: string }[] = [
   { type: 'all', label: 'Tutti' },
   { type: 'emergency', label: 'Emergenza' },
   { type: 'savings', label: 'Risparmio' },

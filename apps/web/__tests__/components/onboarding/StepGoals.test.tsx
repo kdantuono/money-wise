@@ -30,12 +30,15 @@ import type { PriorityRank } from '@/types/onboarding-plan';
 // Store mock — selector pattern
 // --------------------------------------------------------------------------
 
+import type { GoalType } from '@/types/onboarding-plan';
+
 type Goal = {
   tempId: string;
   name: string;
-  target: number;
+  target: number | null;
   deadline: string | null;
   priority: PriorityRank;
+  type?: GoalType;
 };
 
 const mockAddGoal = vi.fn();
@@ -125,15 +128,17 @@ describe('StepGoals', () => {
     expect(mockSetEditingGoal).toHaveBeenCalledWith(null);
   });
 
-  it('modal renders with pre-filled values when open with fondo-emergenza preset', () => {
+  it('modal renders with pre-filled values when open with fondo-emergenza preset (openended)', () => {
     mockStore.mockReturnValue(makeStoreState([], true, 'fondo-emergenza', null));
     render(<StepGoals />);
 
     const nameInput = screen.getByLabelText(/Nome/i);
     expect(nameInput).toHaveValue('Fondo Emergenza');
 
-    const targetInput = screen.getByLabelText(/Target \(€\)/i);
-    expect(targetInput).toHaveValue(5000);
+    // Fondo Emergenza is openended — target/deadline inputs are hidden
+    expect(screen.queryByLabelText(/Target \(€\)/i)).not.toBeInTheDocument();
+    // Openended hint should be visible
+    expect(screen.getByText(/Obiettivo aperto/i)).toBeInTheDocument();
   });
 
   it('modal renders with pre-filled values for comprare-casa preset', () => {
@@ -144,7 +149,7 @@ describe('StepGoals', () => {
     expect(targetInput).toHaveValue(50000);
   });
 
-  it('submitting preset-prefilled form calls addGoal + closes modal', async () => {
+  it('submitting preset-prefilled form (fondo-emergenza, openended) calls addGoal with type=openended + target=null', async () => {
     mockStore.mockReturnValue(makeStoreState([], true, 'fondo-emergenza', null));
     render(<StepGoals />);
 
@@ -155,8 +160,9 @@ describe('StepGoals', () => {
       expect(mockAddGoal).toHaveBeenCalledWith(
         expect.objectContaining({
           name: 'Fondo Emergenza',
-          target: 5000,
+          target: null,
           priority: 1,
+          type: 'openended',
         })
       );
       expect(mockSetAddGoalModalOpen).toHaveBeenCalledWith(false);
@@ -476,7 +482,77 @@ describe('StepGoals', () => {
     expect(mockSetAddGoalModalOpen).toHaveBeenCalledWith(false);
   });
 
-  // ---- 12. WP-D: Pencil button shows on goal cards -------------------------
+  // ---- 12. WP-K: Type toggle —————————————————————————————————————————————
+
+  it('type toggle renders two buttons: "Importo fisso" and "Aperto"', () => {
+    mockStore.mockReturnValue(makeStoreState([], true, null, null));
+    render(<StepGoals />);
+
+    expect(screen.getByTestId('goal-type-fixed')).toBeInTheDocument();
+    expect(screen.getByTestId('goal-type-openended')).toBeInTheDocument();
+  });
+
+  it('clicking "Aperto" hides Target/Scadenza inputs', async () => {
+    mockStore.mockReturnValue(makeStoreState([], true, null, null));
+    render(<StepGoals />);
+
+    // Initially fixed mode — Target visible
+    expect(screen.getByLabelText(/Target \(€\)/i)).toBeInTheDocument();
+
+    await userEvent.click(screen.getByTestId('goal-type-openended'));
+
+    expect(screen.queryByLabelText(/Target \(€\)/i)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/Scadenza/i)).not.toBeInTheDocument();
+  });
+
+  it('openended mode shows hint text', async () => {
+    mockStore.mockReturnValue(makeStoreState([], true, null, null));
+    render(<StepGoals />);
+
+    await userEvent.click(screen.getByTestId('goal-type-openended'));
+
+    expect(screen.getByText(/Obiettivo aperto/i)).toBeInTheDocument();
+  });
+
+  it('submitting in openended mode calls addGoal with type=openended + target=null', async () => {
+    mockStore.mockReturnValue(makeStoreState([], true, null, null));
+    render(<StepGoals />);
+
+    await userEvent.click(screen.getByTestId('goal-type-openended'));
+    await userEvent.type(screen.getByLabelText(/Nome/i), 'Riserva Libera');
+
+    await userEvent.click(screen.getByRole('button', { name: /^Aggiungi$/ }));
+
+    await waitFor(() => {
+      expect(mockAddGoal).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: 'Riserva Libera',
+          target: null,
+          type: 'openended',
+        })
+      );
+    });
+  });
+
+  it('submitting comprare-casa (fixed) preset calls addGoal with type=fixed', async () => {
+    mockStore.mockReturnValue(makeStoreState([], true, 'comprare-casa', null));
+    render(<StepGoals />);
+
+    const addButton = screen.getByRole('button', { name: /^Aggiungi$/ });
+    await userEvent.click(addButton);
+
+    await waitFor(() => {
+      expect(mockAddGoal).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: 'Comprare Casa',
+          target: 50000,
+          type: 'fixed',
+        })
+      );
+    });
+  });
+
+  // ---- 13. WP-D: Pencil button shows on goal cards -------------------------
 
   it('each goal card shows a Pencil edit button', () => {
     mockStore.mockReturnValue(
