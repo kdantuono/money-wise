@@ -98,6 +98,11 @@ interface Actions {
   setInvokerRoute: (route: string | null) => void;
   /** Save partial skip state when the user clicks "Salta" on Step 1. */
   setSkipState: (state: WizardSkipState | null) => void;
+  /**
+   * Set the tempId of the goal being edited in the AddGoalModal.
+   * Pass null to return to "add" mode.
+   */
+  setEditingGoal: (tempId: string | null) => void;
 }
 
 type WizardStore = WizardState & Actions;
@@ -115,6 +120,7 @@ const initialState: WizardState = {
   editingPresetId: null,
   invokerRoute: null,
   skipState: null,
+  editingGoalId: null,
 };
 
 export const useOnboardingPlanStore = create<WizardStore>((set) => ({
@@ -224,6 +230,7 @@ export const useOnboardingPlanStore = create<WizardStore>((set) => ({
       },
       isPersisting: false,
       persistedPlanId: null,
+      editingGoalId: null,
     });
   },
   reset: () => set(initialState),
@@ -231,4 +238,5 @@ export const useOnboardingPlanStore = create<WizardStore>((set) => ({
   setEditingPresetId: (id) => set({ editingPresetId: id }),
   setInvokerRoute: (route) => set({ invokerRoute: route }),
   setSkipState: (state) => set({ skipState: state }),
+  setEditingGoal: (tempId) => set({ editingGoalId: tempId }),
 }));

@@ -191,6 +191,11 @@ export interface WizardState {
    * Used to show "resume onboarding" banner on dashboard.
    */
   skipState: WizardSkipState | null;
+  /**
+   * tempId of the goal currently being edited in the AddGoalModal.
+   * null = modal is in "add" mode; non-null = modal is in "edit" mode.
+   */
+  editingGoalId: string | null;
 }
 
 // ─────────────────────────────────────────────────────────────────────────
