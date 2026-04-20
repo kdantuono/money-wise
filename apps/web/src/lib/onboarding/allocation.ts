@@ -23,8 +23,6 @@ import type {
 
 const _EMERGENCY_NAME_PATTERN = /emergenza|emergency/i;
 const _EMERGENCY_OVERRIDE_FRACTION = 0.4;
-/** Maximum months-to-deadline for a priority=1 goal to be treated as emergency. */
-const _EMERGENCY_DEADLINE_MONTHS = 12;
 
 function _fmtEur(amount: number): string {
   return `€${amount.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -53,16 +51,8 @@ function _parseDeadline(deadline: string | null): Date | null {
   return new Date(year, month - 1, day);
 }
 
-function _isEmergencyGoal(goal: AllocationGoalInput, now: Date): boolean {
-  if (_EMERGENCY_NAME_PATTERN.test(goal.name)) return true;
-  if (goal.priority === 1) {
-    const deadlineDate = _parseDeadline(goal.deadline);
-    if (deadlineDate !== null) {
-      const months = _monthsDiff(now, deadlineDate);
-      if (months >= 0 && months <= _EMERGENCY_DEADLINE_MONTHS) return true;
-    }
-  }
-  return false;
+function _isEmergencyGoal(goal: AllocationGoalInput, _now: Date): boolean {
+  return _EMERGENCY_NAME_PATTERN.test(goal.name);
 }
 
 function _round2(n: number): number {
@@ -183,14 +173,6 @@ export function computeAllocation(input: AllocationInput): AllocationResult {
     }
   }
 
-  const waterfallConsumed = _round2(waterfallResults.reduce((sum, e) => sum + e.amount, 0));
-  const postWaterfallResidual = _round2(remainingPool - waterfallConsumed);
-  if (postWaterfallResidual > 0) {
-    globalWarnings.push(
-      `Budget residuo di ${_fmtEur(postWaterfallResidual)} non allocato (tutti gli obiettivi sono stati finanziati per intero).`,
-    );
-  }
-
   const waterfallAmountMap = new Map<number, _WaterfallEntry>();
   for (const entry of waterfallResults) {
     waterfallAmountMap.set(entry.originalIndex, entry);
@@ -292,5 +274,19 @@ export function computeAllocation(input: AllocationInput): AllocationResult {
 
   const totalAllocated = _round2(items.reduce((sum, it) => sum + it.monthlyAmount, 0));
   const unallocated = _round2(savingsPool - totalAllocated);
+
+  if (unallocated > 0) {
+    const hasInfeasibleItem = items.some((it) => it.deadlineFeasible === false);
+    if (hasInfeasibleItem) {
+      globalWarnings.push(
+        `Budget residuo di ${_fmtEur(unallocated)} non allocato. Alcuni obiettivi hanno deadline non raggiungibile con l'allocation corrente — considera di estendere deadline o ridurre target.`,
+      );
+    } else {
+      globalWarnings.push(
+        `Budget residuo di ${_fmtEur(unallocated)} non allocato (tutti gli obiettivi sono stati finanziati per intero).`,
+      );
+    }
+  }
+
   return { items, incomeAfterEssentials, totalAllocated, unallocated, warnings: globalWarnings };
 }
