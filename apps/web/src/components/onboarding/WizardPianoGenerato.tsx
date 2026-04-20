@@ -162,7 +162,7 @@ export function WizardPianoGenerato({ mode = 'create', onClose }: WizardPianoGen
   return (
     <Dialog.Portal>
       {/* Dim overlay — click closes via Radix default onOpenChange */}
-      <Dialog.Overlay className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm" />
+      <Dialog.Overlay className="fixed inset-0 z-40 bg-black/30 backdrop-blur-md" />
 
       <Dialog.Content
         className="fixed left-1/2 top-1/2 z-50 w-full max-w-2xl -translate-x-1/2 -translate-y-1/2 rounded-xl bg-card shadow-2xl p-6 outline-none max-h-[90vh] overflow-y-auto"

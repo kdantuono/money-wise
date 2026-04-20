@@ -267,7 +267,7 @@ export function StepProfile() {
         )}
         {!lifestyleWarning && (
           <p className="mt-1.5 text-xs text-muted-foreground">
-            Budget per uscite, pizza, abbonamenti. Min. €50 consigliato.
+            Spese discrezionali: uscite, caffè, cene fuori, sfizi occasionali. Min. €50 consigliato.
           </p>
         )}
       </div>
