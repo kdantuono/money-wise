@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
+import * as Dialog from '@radix-ui/react-dialog';
+import { X } from 'lucide-react';
 import {
   useOnboardingPlanStore,
   selectCanAdvanceFromStep1,
@@ -15,22 +17,27 @@ import { StepGoals } from './steps/StepGoals';
 import { StepPlanReview } from './steps/StepPlanReview';
 import { StepAiPrefs } from './steps/StepAiPrefs';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, Check, Loader2, Wallet, Target, TrendingUp, Rocket, Brain } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Check, Loader2 } from 'lucide-react';
 
+// ---------------------------------------------------------------------------
+// Step indicator configuration — clean lines + labels (no icon circles)
+// ---------------------------------------------------------------------------
 const STEP_CONFIG = [
-  { label: 'Reddito', icon: Wallet, color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-950/30' },
-  { label: 'Risparmio', icon: Target, color: 'text-green-500', bg: 'bg-green-50 dark:bg-green-950/30' },
-  { label: 'I tuoi goal', icon: TrendingUp, color: 'text-purple-500', bg: 'bg-purple-50 dark:bg-purple-950/30' },
-  { label: 'Piano proposto', icon: Rocket, color: 'text-orange-500', bg: 'bg-orange-50 dark:bg-orange-950/30' },
-  { label: 'Preferenze AI', icon: Brain, color: 'text-pink-500', bg: 'bg-pink-50 dark:bg-pink-950/30' },
+  { label: 'Reddito' },
+  { label: 'Risparmio' },
+  { label: 'I tuoi goal' },
+  { label: 'Piano proposto' },
+  { label: 'Preferenze AI' },
 ] as const;
 
 interface WizardPianoGeneratoProps {
   /** 'create' (default) = first-time onboarding. 'edit' = pre-populated from existing plan. */
   mode?: 'create' | 'edit';
+  /** Called when the dialog should close (handled by parent Dialog.Root via onOpenChange). */
+  onClose?: () => void;
 }
 
-export function WizardPianoGenerato({ mode = 'create' }: WizardPianoGeneratoProps) {
+export function WizardPianoGenerato({ mode = 'create', onClose }: WizardPianoGeneratoProps) {
   const isEditMode = mode === 'edit';
   const router = useRouter();
   const currentStep = useOnboardingPlanStore((s) => s.currentStep);
@@ -43,6 +50,7 @@ export function WizardPianoGenerato({ mode = 'create' }: WizardPianoGeneratoProp
   const step5 = useOnboardingPlanStore((s) => s.step5);
   const setIsPersisting = useOnboardingPlanStore((s) => s.setIsPersisting);
   const setPersistedPlanId = useOnboardingPlanStore((s) => s.setPersistedPlanId);
+  const setSkipState = useOnboardingPlanStore((s) => s.setSkipState);
   const isPersisting = useOnboardingPlanStore((s) => s.isPersisting);
   const user = useAuthStore((s) => s.user);
   const setUser = useAuthStore((s) => s.setUser);
@@ -50,18 +58,12 @@ export function WizardPianoGenerato({ mode = 'create' }: WizardPianoGeneratoProp
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [prevStepRef, setPrevStepRef] = useState(currentStep);
 
-  // Step 1 gate: income must be within bounds to advance -- fixes #457
+  // Step 1 gate: income must be within bounds to advance
   const canAdvanceStep1 = useOnboardingPlanStore(selectCanAdvanceFromStep1);
 
   const isLastStep = currentStep === 5;
-  // Submission is gated on having a user + valid allocation preview + at least 1 goal.
   const canSubmit = !!userId && !!allocationPreview && step3.goals.length > 0 && !isPersisting;
 
-  /** True when the current step allows advancing to the next one. */
-  const canAdvance = currentStep === 1 ? canAdvanceStep1 : true;
-
-  // Diagnostic reason shown to user at Step 5 when canSubmit is false — so they
-  // know WHY the button is disabled (not a mysterious stuck state).
   const disabledReason = !userId
     ? 'Sessione utente non rilevata — ricarica la pagina.'
     : step3.goals.length === 0
@@ -83,6 +85,12 @@ export function WizardPianoGenerato({ mode = 'create' }: WizardPianoGeneratoProp
     prevStep();
   };
 
+  /** Salta: save skip state, then close via parent onOpenChange. */
+  const handleSalta = () => {
+    setSkipState({ atStep: currentStep, savedAt: new Date().toISOString() });
+    onClose?.();
+  };
+
   const handleSubmit = async () => {
     if (!userId || !user) {
       setSubmitError('Utente non autenticato. Riaccedi e riprova.');
@@ -95,9 +103,6 @@ export function WizardPianoGenerato({ mode = 'create' }: WizardPianoGeneratoProp
     setSubmitError(null);
     setIsPersisting(true);
     try {
-      // incomeAfterEssentials NON passed — derived internally by persistPlan
-      // (contract change PR #455 Copilot review: ensures DB snapshot consistency).
-      // persistPlan also flips profiles.onboarded = true backend-side.
       const { planId } = await onboardingPlanClient.persistPlan(userId, {
         plan: {
           monthlyIncome: step1.monthlyIncome,
@@ -125,8 +130,6 @@ export function WizardPianoGenerato({ mode = 'create' }: WizardPianoGeneratoProp
         },
       });
       setPersistedPlanId(planId);
-      // Update in-memory auth store so OnboardingGate does not redirect again
-      // when the user lands on /dashboard/goals (profiles.onboarded is already true in DB).
       setUser({ ...user, onboarded: true });
       router.push('/dashboard/goals');
     } catch (err) {
@@ -142,64 +145,83 @@ export function WizardPianoGenerato({ mode = 'create' }: WizardPianoGeneratoProp
     }
   };
 
-  const stepConfig = STEP_CONFIG[currentStep - 1]!;
-  const StepIcon = stepConfig.icon;
+  const canAdvance = currentStep === 1 ? canAdvanceStep1 : true;
 
   return (
-    <div className="min-h-screen bg-background p-6 flex flex-col">
-      <div className="max-w-2xl mx-auto w-full flex-1 flex flex-col">
-        <header className="mb-8">
-          <h1 className="text-2xl font-bold text-foreground">
-            {isEditMode ? 'Modifica il tuo piano' : 'Piano Finanziario'}
-          </h1>
+    <Dialog.Portal>
+      {/* Dim overlay — click closes via Radix default onOpenChange */}
+      <Dialog.Overlay className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm" />
 
-          {/* Step indicator with icons */}
-          <div
-            className="flex gap-2 mt-4"
-            role="progressbar"
-            aria-valuemin={1}
-            aria-valuemax={5}
-            aria-valuenow={currentStep}
+      <Dialog.Content
+        className="fixed left-1/2 top-1/2 z-50 w-full max-w-2xl -translate-x-1/2 -translate-y-1/2 rounded-xl bg-card shadow-2xl p-6 outline-none max-h-[90vh] overflow-y-auto"
+        aria-describedby="wizard-step-description"
+      >
+        {/* Accessible title (Radix requirement) */}
+        <Dialog.Title className="text-xl font-bold text-foreground pr-8">
+          {isEditMode ? 'Modifica il tuo piano' : 'Piano Finanziario'}
+        </Dialog.Title>
+
+        {/* X close button — visible on all steps */}
+        <Dialog.Close asChild>
+          <button
+            className="absolute right-4 top-4 rounded-md p-1 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            aria-label="Chiudi wizard"
           >
-            {STEP_CONFIG.map((step, idx) => {
-              const StepIdx = idx + 1;
-              const Icon = step.icon;
-              const isActive = StepIdx === currentStep;
-              const isDone = StepIdx < currentStep;
-              return (
-                <div key={StepIdx} className="flex-1 flex flex-col items-center gap-1">
-                  <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
-                      isActive
-                        ? `${step.bg} ring-2 ring-offset-1 ring-current ${step.color}`
-                        : isDone
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-muted text-muted-foreground'
-                    }`}
-                  >
-                    {isDone ? (
-                      <Check className="w-4 h-4" />
-                    ) : (
-                      <Icon className={`w-4 h-4 ${isActive ? step.color : ''}`} />
-                    )}
-                  </div>
-                  <div
-                    className={`h-1 w-full rounded-full transition-colors ${
-                      StepIdx <= currentStep ? 'bg-blue-600' : 'bg-muted'
-                    }`}
-                  />
-                </div>
-              );
-            })}
-          </div>
+            <X className="h-5 w-5" aria-hidden="true" />
+          </button>
+        </Dialog.Close>
 
-          <p className="text-sm text-muted-foreground mt-3 flex items-center gap-1.5">
-            <StepIcon className={`w-4 h-4 ${stepConfig.color}`} />
-            Passo {currentStep} di 5 — {stepConfig.label}
-          </p>
-        </header>
+        {/* Step indicator — clean lines + labels, no circle icons */}
+        <div
+          className="flex gap-3 mt-4"
+          role="progressbar"
+          aria-valuemin={1}
+          aria-valuemax={5}
+          aria-valuenow={currentStep}
+          aria-label={`Passo ${currentStep} di 5`}
+        >
+          {STEP_CONFIG.map((step, idx) => {
+            const stepNum = idx + 1;
+            const isActive = stepNum === currentStep;
+            const isDone = stepNum < currentStep;
+            return (
+              <div key={stepNum} className="flex-1 flex flex-col items-center gap-1">
+                <div
+                  className={`w-full rounded-full transition-all ${
+                    isDone
+                      ? 'h-1 bg-blue-600'
+                      : isActive
+                        ? 'h-1.5 bg-blue-400'
+                        : 'h-1 bg-gray-300 dark:bg-gray-600'
+                  }`}
+                  aria-hidden="true"
+                />
+                <span
+                  className={`text-xs transition-colors ${
+                    isActive
+                      ? 'text-blue-600 font-semibold'
+                      : isDone
+                        ? 'text-blue-500'
+                        : 'text-muted-foreground'
+                  }`}
+                >
+                  {step.label}
+                </span>
+              </div>
+            );
+          })}
+        </div>
 
-        <main className="flex-1 overflow-hidden">
+        {/* Step subtitle — visually hidden description for screen readers */}
+        <p
+          id="wizard-step-description"
+          className="text-sm text-muted-foreground mt-2"
+        >
+          Passo {currentStep} di 5 — {STEP_CONFIG[currentStep - 1]!.label}
+        </p>
+
+        {/* Step content with framer-motion slide transitions */}
+        <main className="mt-4 min-h-[200px]">
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
               key={currentStep}
@@ -217,6 +239,7 @@ export function WizardPianoGenerato({ mode = 'create' }: WizardPianoGeneratoProp
           </AnimatePresence>
         </main>
 
+        {/* Error banner */}
         {submitError && (
           <div
             className="mt-4 p-3 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800"
@@ -226,6 +249,7 @@ export function WizardPianoGenerato({ mode = 'create' }: WizardPianoGeneratoProp
           </div>
         )}
 
+        {/* Warning banner when submit is blocked */}
         {isLastStep && disabledReason && !submitError && (
           <div
             className="mt-4 p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800"
@@ -237,15 +261,32 @@ export function WizardPianoGenerato({ mode = 'create' }: WizardPianoGeneratoProp
           </div>
         )}
 
-        <footer className="flex justify-between pt-6 border-t border-border">
-          <Button
-            variant="outline"
-            disabled={currentStep === 1 || isPersisting}
-            onClick={handlePrev}
-          >
-            <ChevronLeft className="w-4 h-4 mr-2" />
-            Indietro
-          </Button>
+        {/* Footer: Salta (Step 1 only), Indietro, Avanti/Conferma */}
+        <footer className="flex justify-between pt-6 border-t border-border mt-6">
+          <div className="flex items-center gap-2">
+            {/* Salta: visible ONLY on Step 1 */}
+            {currentStep === 1 && (
+              <Button
+                variant="ghost"
+                onClick={handleSalta}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                Salta
+              </Button>
+            )}
+            {/* Indietro: visible on steps 2-5 */}
+            {currentStep > 1 && (
+              <Button
+                variant="outline"
+                disabled={isPersisting}
+                onClick={handlePrev}
+              >
+                <ChevronLeft className="w-4 h-4 mr-2" aria-hidden="true" />
+                Indietro
+              </Button>
+            )}
+          </div>
+
           {isLastStep ? (
             <Button
               disabled={!canSubmit}
@@ -254,12 +295,12 @@ export function WizardPianoGenerato({ mode = 'create' }: WizardPianoGeneratoProp
             >
               {isPersisting ? (
                 <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" aria-hidden="true" />
                   {isEditMode ? 'Salvataggio...' : 'Creazione piano...'}
                 </>
               ) : (
                 <>
-                  <Check className="w-4 h-4 mr-2" />
+                  <Check className="w-4 h-4 mr-2" aria-hidden="true" />
                   {isEditMode ? 'Salva modifiche' : 'Conferma e crea piano'}
                 </>
               )}
@@ -267,11 +308,11 @@ export function WizardPianoGenerato({ mode = 'create' }: WizardPianoGeneratoProp
           ) : (
             <Button onClick={handleNext} disabled={!canAdvance}>
               Avanti
-              <ChevronRight className="w-4 h-4 ml-2" />
+              <ChevronRight className="w-4 h-4 ml-2" aria-hidden="true" />
             </Button>
           )}
         </footer>
-      </div>
-    </div>
+      </Dialog.Content>
+    </Dialog.Portal>
   );
 }
