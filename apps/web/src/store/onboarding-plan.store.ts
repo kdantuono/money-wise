@@ -1,7 +1,8 @@
 /**
- * Onboarding Plan Store — Sprint 1.5
+ * Onboarding Plan Store — Sprint 1.5 / Sprint 1.5.2 WP-B
  *
- * Zustand store for 5-step "Piano Generato" wizard state.
+ * Zustand store for 6-step "Piano Generato" wizard state.
+ * Step layout: 1=Benvenuto, 2=Reddito, 3=Risparmio, 4=Obiettivi, 5=Piano, 6=Preferenze AI
  * Consumes WizardState contract from types/onboarding-plan.ts.
  *
  * @module store/onboarding-plan.store
@@ -26,8 +27,9 @@ export const INCOME_MIN = 100;
 export const INCOME_MAX = 100_000;
 
 /**
- * Returns true when Step 1 income value is within accepted bounds.
+ * Returns true when the income step value (Step 2 after WP-B renumber) is within accepted bounds.
  * 0 = not yet entered (initial state) or skipped -> false.
+ * @deprecated name kept for backwards-compat; semantically "canAdvanceFromIncomeStep" post WP-B
  */
 export const selectCanAdvanceFromStep1 = (s: WizardState): boolean => {
   const income = s.step1.monthlyIncome;
@@ -122,7 +124,7 @@ export const useOnboardingPlanStore = create<WizardStore>((set) => ({
   setStep: (step) => set({ currentStep: step }),
   nextStep: () =>
     set((s) => ({
-      currentStep: (s.currentStep < 5 ? s.currentStep + 1 : s.currentStep) as WizardStep,
+      currentStep: (s.currentStep < 6 ? s.currentStep + 1 : s.currentStep) as WizardStep,
     })),
   prevStep: () =>
     set((s) => ({

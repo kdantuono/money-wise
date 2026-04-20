@@ -121,7 +121,11 @@ export interface AllocationResult {
 // Wizard state (Stream A owns, used in Zustand store)
 // ─────────────────────────────────────────────────────────────────────────
 
-export type WizardStep = 1 | 2 | 3 | 4 | 5;
+/**
+ * 6-step wizard (Sprint 1.5.2 WP-B):
+ * 1=Benvenuto, 2=Reddito, 3=Risparmio, 4=Obiettivi, 5=Piano proposto, 6=Preferenze AI
+ */
+export type WizardStep = 1 | 2 | 3 | 4 | 5 | 6;
 
 export interface WizardStepIncome {
   monthlyIncome: number;

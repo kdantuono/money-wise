@@ -11,6 +11,7 @@ import {
 } from '@/store/onboarding-plan.store';
 import { useAuthStore } from '@/store/auth.store';
 import { onboardingPlanClient, OnboardingPlanApiError } from '@/services/onboarding-plan.client';
+import { StepWelcome } from './steps/StepWelcome';
 import { StepIncome } from './steps/StepIncome';
 import { StepSavingsTarget } from './steps/StepSavingsTarget';
 import { StepGoals } from './steps/StepGoals';
@@ -20,15 +21,19 @@ import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, Check, Loader2 } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
-// Step indicator configuration — clean lines + labels (no icon circles)
+// Step indicator configuration — 6 steps (Sprint 1.5.2 WP-B)
+// Step 1 = Benvenuto (NEW), Steps 2-6 renumbered from previous 1-5
 // ---------------------------------------------------------------------------
 const STEP_CONFIG = [
+  { label: 'Benvenuto' },
   { label: 'Reddito' },
   { label: 'Risparmio' },
   { label: 'I tuoi goal' },
   { label: 'Piano proposto' },
   { label: 'Preferenze AI' },
 ] as const;
+
+const TOTAL_STEPS = STEP_CONFIG.length; // 6
 
 interface WizardPianoGeneratoProps {
   /** 'create' (default) = first-time onboarding. 'edit' = pre-populated from existing plan. */
@@ -58,18 +63,18 @@ export function WizardPianoGenerato({ mode = 'create', onClose }: WizardPianoGen
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [prevStepRef, setPrevStepRef] = useState(currentStep);
 
-  // Step 1 gate: income must be within bounds to advance
-  const canAdvanceStep1 = useOnboardingPlanStore(selectCanAdvanceFromStep1);
+  // Income gate now applies to Step 2 (Reddito) post WP-B renumber
+  const canAdvanceIncomeStep = useOnboardingPlanStore(selectCanAdvanceFromStep1);
 
-  const isLastStep = currentStep === 5;
+  const isLastStep = currentStep === TOTAL_STEPS;
   const canSubmit = !!userId && !!allocationPreview && step3.goals.length > 0 && !isPersisting;
 
   const disabledReason = !userId
     ? 'Sessione utente non rilevata — ricarica la pagina.'
     : step3.goals.length === 0
-      ? 'Aggiungi almeno un obiettivo allo Step 3.'
+      ? 'Aggiungi almeno un obiettivo allo Step 4.'
       : !allocationPreview
-        ? 'Piano non ancora calcolato — torna allo Step 4 per rigenerarlo.'
+        ? 'Piano non ancora calcolato — torna allo Step 5 per rigenerarlo.'
         : null;
 
   // Direction for slide animation: forward (+1) or backward (-1)
@@ -145,7 +150,11 @@ export function WizardPianoGenerato({ mode = 'create', onClose }: WizardPianoGen
     }
   };
 
-  const canAdvance = currentStep === 1 ? canAdvanceStep1 : true;
+  // Step 1 (Welcome) always allows advancing.
+  // Step 2 (Income) requires valid income bounds.
+  // All other steps allow free navigation.
+  const canAdvance =
+    currentStep === 2 ? canAdvanceIncomeStep : true;
 
   return (
     <Dialog.Portal>
@@ -173,12 +182,12 @@ export function WizardPianoGenerato({ mode = 'create', onClose }: WizardPianoGen
 
         {/* Step indicator — clean lines + labels, no circle icons */}
         <div
-          className="flex gap-3 mt-4"
+          className="flex gap-2 mt-4"
           role="progressbar"
           aria-valuemin={1}
-          aria-valuemax={5}
+          aria-valuemax={TOTAL_STEPS}
           aria-valuenow={currentStep}
-          aria-label={`Passo ${currentStep} di 5`}
+          aria-label={`Passo ${currentStep} di ${TOTAL_STEPS}`}
         >
           {STEP_CONFIG.map((step, idx) => {
             const stepNum = idx + 1;
@@ -217,7 +226,7 @@ export function WizardPianoGenerato({ mode = 'create', onClose }: WizardPianoGen
           id="wizard-step-description"
           className="text-sm text-muted-foreground mt-2"
         >
-          Passo {currentStep} di 5 — {STEP_CONFIG[currentStep - 1]!.label}
+          Passo {currentStep} di {TOTAL_STEPS} — {STEP_CONFIG[currentStep - 1]!.label}
         </p>
 
         {/* Step content with framer-motion slide transitions */}
@@ -230,11 +239,18 @@ export function WizardPianoGenerato({ mode = 'create', onClose }: WizardPianoGen
               exit={{ x: direction * -40, opacity: 0 }}
               transition={{ duration: 0.2, ease: 'easeInOut' }}
             >
-              {currentStep === 1 && <StepIncome />}
-              {currentStep === 2 && <StepSavingsTarget />}
-              {currentStep === 3 && <StepGoals />}
-              {currentStep === 4 && <StepPlanReview />}
-              {currentStep === 5 && <StepAiPrefs />}
+              {/* Step 1 — Benvenuto (NEW, Sprint 1.5.2 WP-B) */}
+              {currentStep === 1 && <StepWelcome firstName={user?.firstName ?? null} />}
+              {/* Step 2 — Reddito (previously Step 1) */}
+              {currentStep === 2 && <StepIncome />}
+              {/* Step 3 — Risparmio (previously Step 2) */}
+              {currentStep === 3 && <StepSavingsTarget />}
+              {/* Step 4 — Obiettivi (previously Step 3) */}
+              {currentStep === 4 && <StepGoals />}
+              {/* Step 5 — Piano proposto (previously Step 4) */}
+              {currentStep === 5 && <StepPlanReview />}
+              {/* Step 6 — Preferenze AI (previously Step 5) */}
+              {currentStep === 6 && <StepAiPrefs />}
             </motion.div>
           </AnimatePresence>
         </main>
@@ -264,7 +280,7 @@ export function WizardPianoGenerato({ mode = 'create', onClose }: WizardPianoGen
         {/* Footer: Salta (Step 1 only), Indietro, Avanti/Conferma */}
         <footer className="flex justify-between pt-6 border-t border-border mt-6">
           <div className="flex items-center gap-2">
-            {/* Salta: visible ONLY on Step 1 */}
+            {/* Salta: visible ONLY on Step 1 (Benvenuto) */}
             {currentStep === 1 && (
               <Button
                 variant="ghost"
@@ -274,7 +290,7 @@ export function WizardPianoGenerato({ mode = 'create', onClose }: WizardPianoGen
                 Salta
               </Button>
             )}
-            {/* Indietro: visible on steps 2-5 */}
+            {/* Indietro: visible on steps 2-6 */}
             {currentStep > 1 && (
               <Button
                 variant="outline"
