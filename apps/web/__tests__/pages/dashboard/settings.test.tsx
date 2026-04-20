@@ -54,8 +54,25 @@ vi.mock('../../../src/utils/supabase/client', () => ({
   })),
 }));
 
+// Mock next/navigation for useRouter (App Router)
+const mockPush = vi.fn();
+vi.mock('next/navigation', () => ({
+  useRouter: vi.fn(() => ({
+    push: mockPush,
+    replace: vi.fn(),
+    prefetch: vi.fn(),
+  })),
+}));
+
+// Mock onboarding-plan client (exports REDO_ONBOARDING_PATH constant)
+vi.mock('../../../src/services/onboarding-plan.client', () => ({
+  REDO_ONBOARDING_PATH: '/onboarding/plan?mode=edit',
+  default: {},
+}));
+
 import SettingsPage from '../../../app/dashboard/settings/page';
 import { useAuthStore } from '../../../src/store/auth.store';
+import { fireEvent } from '@testing-library/react';
 const mockUseAuthStore = useAuthStore as unknown as ReturnType<typeof vi.fn>;
 
 // Mock user matching the User interface
@@ -109,7 +126,7 @@ describe('SettingsPage', () => {
   });
 
   describe('Tab Navigation', () => {
-    it('renders all 9 tab labels', () => {
+    it('renders all 10 tab labels', () => {
       render(<SettingsPage />);
 
       expect(screen.getByText('Profilo')).toBeInTheDocument();
@@ -118,6 +135,7 @@ describe('SettingsPage', () => {
       expect(screen.getByText('API Keys')).toBeInTheDocument();
       expect(screen.getByText('Piano')).toBeInTheDocument();
       expect(screen.getByText('Notifiche')).toBeInTheDocument();
+      expect(screen.getByText('Onboarding')).toBeInTheDocument();
       expect(screen.getByText('Integrazioni')).toBeInTheDocument();
       expect(screen.getByText('Sicurezza')).toBeInTheDocument();
       expect(screen.getByText('Dati')).toBeInTheDocument();
@@ -165,6 +183,67 @@ describe('SettingsPage', () => {
       render(<SettingsPage />);
 
       expect(screen.getByRole('button', { name: /Cambia Immagine/i })).toBeInTheDocument();
+    });
+  });
+
+  describe('Onboarding Tab', () => {
+    const openOnboardingTab = () => {
+      render(<SettingsPage />);
+      fireEvent.click(screen.getByRole('button', { name: 'Onboarding' }));
+    };
+
+    it('renders the Onboarding tab section title', () => {
+      openOnboardingTab();
+      expect(screen.getByText('Rivedi il tuo piano finanziario')).toBeInTheDocument();
+    });
+
+    it('renders the description text', () => {
+      openOnboardingTab();
+      expect(screen.getByText(/Rifai il wizard di onboarding/)).toBeInTheDocument();
+      expect(screen.getByText(/I goal esistenti restano nello storico/)).toBeInTheDocument();
+    });
+
+    it('renders "Rivedi piano" primary button', () => {
+      openOnboardingTab();
+      expect(screen.getByRole('button', { name: /Rivedi piano/i })).toBeInTheDocument();
+    });
+
+    it('shows confirm dialog when "Rivedi piano" is clicked', () => {
+      openOnboardingTab();
+      fireEvent.click(screen.getByRole('button', { name: /Rivedi piano/i }));
+      expect(screen.getByText(/Sei sicuro\?/)).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Procedi/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Annulla/i })).toBeInTheDocument();
+    });
+
+    it('hides confirm dialog when Annulla is clicked', () => {
+      openOnboardingTab();
+      fireEvent.click(screen.getByRole('button', { name: /Rivedi piano/i }));
+      fireEvent.click(screen.getByRole('button', { name: /Annulla/i }));
+      expect(screen.queryByText(/Sei sicuro\?/)).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Rivedi piano/i })).toBeInTheDocument();
+    });
+
+    it('navigates to onboarding edit path when Procedi is clicked', () => {
+      openOnboardingTab();
+      fireEvent.click(screen.getByRole('button', { name: /Rivedi piano/i }));
+      fireEvent.click(screen.getByRole('button', { name: /Procedi/i }));
+      expect(mockPush).toHaveBeenCalledWith('/onboarding/plan?mode=edit');
+    });
+
+    it('renders the "Reset completo" expandable section with "In arrivo" badge', () => {
+      openOnboardingTab();
+      expect(screen.getByText('Reset completo')).toBeInTheDocument();
+      expect(screen.getByText('In arrivo')).toBeInTheDocument();
+    });
+
+    it('expands the Reset completo section on click', () => {
+      openOnboardingTab();
+      expect(screen.queryByText(/eliminerà tutti i dati/)).not.toBeInTheDocument();
+      // The expand button is the one with aria-expanded attribute
+      const expandBtn = screen.getByRole('button', { name: /Reset completo/i });
+      fireEvent.click(expandBtn);
+      expect(screen.getByText(/eliminerà tutti i dati/)).toBeInTheDocument();
     });
   });
 
