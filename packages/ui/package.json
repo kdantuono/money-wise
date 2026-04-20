@@ -60,7 +60,6 @@
     "react-resizable-panels": "^4.10.0",
     "recharts": "^2.15.4",
     "sonner": "^2.0.7",
-    "tailwind-merge": "^2.1.0",
     "tailwindcss-animate": "^1.0.7",
     "vaul": "^1.1.2"
   },
@@ -89,6 +88,7 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "storybook": "^7.6.21",
+    "tailwind-merge": "^3.5.0",
     "tailwindcss": "^3.3.6",
     "ts-jest": "^29.4.9",
     "tsup": "^8.0.1",
