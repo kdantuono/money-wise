@@ -1,13 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { useOnboardingPlanStore } from '@/store/onboarding-plan.store';
-import { PRIORITY_LABEL_IT, type PriorityRank } from '@/types/onboarding-plan';
+import { PRIORITY_LABEL_IT, type PriorityRank, type WizardGoalDraft } from '@/types/onboarding-plan';
 import { Button } from '@/components/ui/button';
 import {
   Plus,
   X,
+  Pencil,
   PiggyBank,
   Landmark,
   TrendingUp,
@@ -115,31 +116,51 @@ function addMonthsToToday(months: number): string {
   return d.toISOString().slice(0, 10);
 }
 
-const EMPTY_DRAFT = {
+interface DraftState {
+  name: string;
+  target: string;
+  deadline: string;
+  priority: PriorityRank;
+}
+
+const EMPTY_DRAFT: DraftState = {
   name: '',
   target: '',
   deadline: '',
-  priority: 2 as PriorityRank,
+  priority: 2,
 };
 
 // ---------------------------------------------------------------------------
-// AddGoalModal — Radix Dialog with form (issue #463)
+// AddGoalModal — Radix Dialog with form (issue #463, extended WP-D edit mode)
 // ---------------------------------------------------------------------------
 
 interface AddGoalModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   presetId: string | null;
+  /** When set, modal is in edit mode and pre-fills from this goal. */
+  editingGoal: WizardGoalDraft | null;
   onSubmit: (goal: { name: string; target: number; deadline: string | null; priority: PriorityRank }) => void;
 }
 
-function AddGoalModal({ open, onOpenChange, presetId, onSubmit }: AddGoalModalProps) {
-  const [draft, setDraft] = useState(EMPTY_DRAFT);
+function AddGoalModal({ open, onOpenChange, presetId, editingGoal, onSubmit }: AddGoalModalProps) {
+  const [draft, setDraft] = useState<DraftState>(EMPTY_DRAFT);
 
-  // Pre-fill draft whenever the modal opens with a preset
+  const isEditMode = editingGoal !== null;
+
+  // Pre-fill draft whenever the modal opens
   useEffect(() => {
     if (open) {
-      if (presetId) {
+      if (isEditMode && editingGoal) {
+        // Edit mode: pre-fill from existing goal
+        setDraft({
+          name: editingGoal.name,
+          target: String(editingGoal.target),
+          deadline: editingGoal.deadline ?? '',
+          priority: editingGoal.priority,
+        });
+      } else if (presetId) {
+        // Add mode via preset: pre-fill from preset defaults
         const preset = PRESET_GOALS.find((p) => p.id === presetId);
         if (preset) {
           setDraft({
@@ -150,10 +171,11 @@ function AddGoalModal({ open, onOpenChange, presetId, onSubmit }: AddGoalModalPr
           });
         }
       } else {
+        // Add mode manual: empty form
         setDraft(EMPTY_DRAFT);
       }
     }
-  }, [open, presetId]);
+  }, [open, presetId, editingGoal, isEditMode]);
 
   const handleSubmit = () => {
     const target = Number(draft.target);
@@ -165,6 +187,9 @@ function AddGoalModal({ open, onOpenChange, presetId, onSubmit }: AddGoalModalPr
       priority: draft.priority,
     });
   };
+
+  const title = isEditMode ? 'Modifica goal' : 'Aggiungi un obiettivo';
+  const submitLabel = isEditMode ? 'Salva' : 'Aggiungi';
 
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
@@ -179,7 +204,7 @@ function AddGoalModal({ open, onOpenChange, presetId, onSubmit }: AddGoalModalPr
               id="add-goal-dialog-title"
               className="text-base font-semibold text-foreground"
             >
-              Aggiungi un obiettivo
+              {title}
             </Dialog.Title>
             <Dialog.Close asChild>
               <button
@@ -259,7 +284,7 @@ function AddGoalModal({ open, onOpenChange, presetId, onSubmit }: AddGoalModalPr
             <Dialog.Close asChild>
               <Button variant="outline">Annulla</Button>
             </Dialog.Close>
-            <Button onClick={handleSubmit}>Aggiungi</Button>
+            <Button onClick={handleSubmit}>{submitLabel}</Button>
           </div>
         </Dialog.Content>
       </Dialog.Portal>
@@ -274,14 +299,40 @@ function AddGoalModal({ open, onOpenChange, presetId, onSubmit }: AddGoalModalPr
 export function StepGoals() {
   const goals = useOnboardingPlanStore((s) => s.step3.goals);
   const addGoal = useOnboardingPlanStore((s) => s.addGoal);
+  const updateGoal = useOnboardingPlanStore((s) => s.updateGoal);
   const removeGoal = useOnboardingPlanStore((s) => s.removeGoal);
   const isAddGoalModalOpen = useOnboardingPlanStore((s) => s.isAddGoalModalOpen);
   const editingPresetId = useOnboardingPlanStore((s) => s.editingPresetId);
+  const editingGoalId = useOnboardingPlanStore((s) => s.editingGoalId);
   const setAddGoalModalOpen = useOnboardingPlanStore((s) => s.setAddGoalModalOpen);
   const setEditingPresetId = useOnboardingPlanStore((s) => s.setEditingPresetId);
+  const setEditingGoal = useOnboardingPlanStore((s) => s.setEditingGoal);
 
-  const openModal = (presetId: string | null = null) => {
+  // Ref map for scrollIntoView on edit open
+  const goalRefs = useRef<Record<string, HTMLLIElement | null>>({});
+
+  // Scroll to the goal being edited when editingGoalId changes
+  useEffect(() => {
+    const el = editingGoalId ? goalRefs.current[editingGoalId] : null;
+    if (el && typeof el.scrollIntoView === 'function') {
+      el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }, [editingGoalId]);
+
+  // Derive the WizardGoalDraft being edited (null when in add mode)
+  const editingGoalDraft = editingGoalId
+    ? (goals.find((g) => g.tempId === editingGoalId) ?? null)
+    : null;
+
+  const openModalForPreset = (presetId: string | null = null) => {
+    setEditingGoal(null);
     setEditingPresetId(presetId);
+    setAddGoalModalOpen(true);
+  };
+
+  const openModalForEdit = (goal: WizardGoalDraft) => {
+    setEditingPresetId(null);
+    setEditingGoal(goal.tempId);
     setAddGoalModalOpen(true);
   };
 
@@ -289,13 +340,19 @@ export function StepGoals() {
     if (!open) {
       setAddGoalModalOpen(false);
       setEditingPresetId(null);
+      setEditingGoal(null);
     }
   };
 
   const handleSubmit = (goal: { name: string; target: number; deadline: string | null; priority: PriorityRank }) => {
-    addGoal(goal);
+    if (editingGoalId) {
+      updateGoal(editingGoalId, goal);
+    } else {
+      addGoal(goal);
+    }
     setAddGoalModalOpen(false);
     setEditingPresetId(null);
+    setEditingGoal(null);
   };
 
   return (
@@ -317,7 +374,7 @@ export function StepGoals() {
             <button
               key={preset.id}
               type="button"
-              onClick={() => openModal(preset.id)}
+              onClick={() => openModalForPreset(preset.id)}
               className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border text-center transition-all hover:scale-105 hover:shadow-sm active:scale-95 ${preset.bg}`}
               aria-label={`Aggiungi preset: ${preset.name}`}
             >
@@ -339,22 +396,53 @@ export function StepGoals() {
           {goals.map((g) => (
             <li
               key={g.tempId}
+              ref={(el) => { goalRefs.current[g.tempId] = el; }}
               className="flex items-center justify-between p-3 rounded-xl border border-border bg-card"
             >
-              <div>
+              {/* Clickable goal info area */}
+              <div
+                role="button"
+                tabIndex={0}
+                className="flex-1 min-w-0 cursor-pointer"
+                onClick={() => openModalForEdit(g)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    openModalForEdit(g);
+                  }
+                }}
+                aria-label={`Apri dettagli ${g.name}`}
+              >
                 <p className="text-sm font-medium text-foreground">{g.name}</p>
                 <p className="text-xs text-muted-foreground">
                   €{g.target.toLocaleString('it-IT')} — {PRIORITY_LABEL_IT[g.priority]} priorità
                   {g.deadline ? ` — entro ${g.deadline}` : ''}
                 </p>
               </div>
-              <button
-                onClick={() => removeGoal(g.tempId)}
-                className="p-2 rounded-lg hover:bg-muted"
-                aria-label={`Rimuovi ${g.name}`}
-              >
-                <X className="w-4 h-4 text-muted-foreground" />
-              </button>
+
+              {/* Action buttons */}
+              <div className="flex items-center gap-1 ml-2 shrink-0">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openModalForEdit(g);
+                  }}
+                  className="p-2 rounded-lg hover:bg-muted transition-colors"
+                  aria-label={`Modifica ${g.name}`}
+                >
+                  <Pencil className="w-4 h-4 text-muted-foreground" />
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    removeGoal(g.tempId);
+                  }}
+                  className="p-2 rounded-lg hover:bg-muted transition-colors"
+                  aria-label={`Rimuovi ${g.name}`}
+                >
+                  <X className="w-4 h-4 text-muted-foreground" />
+                </button>
+              </div>
             </li>
           ))}
         </ul>
@@ -370,7 +458,7 @@ export function StepGoals() {
 
       {/* Manual add trigger */}
       <Button
-        onClick={() => openModal(null)}
+        onClick={() => openModalForPreset(null)}
         variant="outline"
         className="w-full"
       >
@@ -383,6 +471,7 @@ export function StepGoals() {
         open={isAddGoalModalOpen}
         onOpenChange={closeModal}
         presetId={editingPresetId}
+        editingGoal={editingGoalDraft}
         onSubmit={handleSubmit}
       />
     </div>
