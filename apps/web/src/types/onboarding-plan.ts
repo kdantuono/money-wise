@@ -29,6 +29,19 @@ export type GoalAllocationInsert = Database['public']['Tables']['goal_allocation
 export type GoalStatus = Database['public']['Enums']['goal_status'];
 
 // ─────────────────────────────────────────────────────────────────────────
+// Goal type (issue #464 — openended goals receive surplus, no target/deadline)
+// ─────────────────────────────────────────────────────────────────────────
+
+/**
+ * 'fixed'     — goal has a specific target amount and optional deadline.
+ *               Receives allocation via waterfall (priority-based).
+ * 'openended' — goal has no fixed target; receives residual pool after all
+ *               fixed goals are funded. Deadline vacuously feasible.
+ *               Typical use: Fondo Emergenza, Risparmio Generico.
+ */
+export type GoalType = 'fixed' | 'openended';
+
+// ─────────────────────────────────────────────────────────────────────────
 // Priority mapping (DB SMALLINT 1-3 <-> UI labels)
 // ─────────────────────────────────────────────────────────────────────────
 
@@ -51,14 +64,23 @@ export const PRIORITY_URGENCY_FACTOR: Record<PriorityRank, number> = {
 /**
  * Goal input to the allocation algorithm.
  * Subset of GoalRow relevant for allocation decisions.
+ *
+ * For openended goals:
+ *   - `type` = 'openended'
+ *   - `target` is null (no fixed target amount)
+ *   - `current` may still be > 0 (existing savings in the fund)
+ *   - `deadline` is null (no deadline for surplus collection)
  */
 export interface AllocationGoalInput {
   id: string;
   name: string;
-  target: number;
+  /** null when type='openended' */
+  target: number | null;
   current: number;
   deadline: string | null;
   priority: PriorityRank;
+  /** Defaults to 'fixed' for backward compat with pre-#464 data. */
+  type: GoalType;
 }
 
 /**
@@ -136,7 +158,10 @@ export interface WizardGoalDraft {
   /** Temp UUID for form state before DB insert. */
   tempId: string;
   name: string;
-  target: number;
+  /** Goal type: 'fixed' requires target > 0; 'openended' receives residual pool. */
+  type: GoalType;
+  /** null when type='openended'. */
+  target: number | null;
   deadline: string | null;
   priority: PriorityRank;
 }

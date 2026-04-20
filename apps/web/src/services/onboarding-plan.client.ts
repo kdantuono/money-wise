@@ -52,7 +52,10 @@ export interface PersistPlanInput {
   };
   goals: Array<{
     name: string;
-    target: number;
+    /** 'fixed' (has target) | 'openended' (receives surplus). Issue #464. */
+    type: 'fixed' | 'openended';
+    /** null when type='openended'. */
+    target: number | null;
     deadline: string | null;
     priority: PriorityRank;
     monthlyAllocation: number;
@@ -181,6 +184,8 @@ export const onboardingPlanClient = {
         .insert({
           user_id: userId,
           name: g.name,
+          type: g.type,
+          // target: null is valid for openended goals (migration 20260420000000)
           target: g.target,
           current: 0,
           deadline: g.deadline,
@@ -292,7 +297,10 @@ export const onboardingPlanClient = {
     goals: Array<{
       id: string;
       name: string;
-      target: number;
+      /** 'fixed' | 'openended'. Issue #464. */
+      type: 'fixed' | 'openended';
+      /** null when type='openended'. */
+      target: number | null;
       current: number;
       deadline: string | null;
       priority: PriorityRank;
@@ -325,7 +333,7 @@ export const onboardingPlanClient = {
 
     const { data: goalRows, error: goalsErr } = await supabase
       .from('goals')
-      .select('id, name, target, current, deadline, priority, monthly_allocation, status')
+      .select('id, name, type, target, current, deadline, priority, monthly_allocation, status')
       .eq('user_id', userId)
       .eq('status', 'ACTIVE')
       .order('priority', { ascending: true });
@@ -354,7 +362,8 @@ export const onboardingPlanClient = {
       goals: goalRows.map((g) => ({
         id: g.id,
         name: g.name,
-        target: Number(g.target),
+        type: (g.type ?? 'fixed') as 'fixed' | 'openended',
+        target: g.target !== null ? Number(g.target) : null,
         current: Number(g.current),
         deadline: g.deadline,
         priority: g.priority as PriorityRank,

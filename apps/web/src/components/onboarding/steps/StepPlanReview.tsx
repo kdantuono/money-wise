@@ -47,6 +47,7 @@ export function StepPlanReview() {
       goals: step3.goals.map((g) => ({
         id: g.tempId,
         name: g.name,
+        type: g.type,
         target: g.target,
         current: 0,
         deadline: g.deadline,

@@ -633,7 +633,10 @@ export type Database = {
           name: string
           priority: number
           status: Database["public"]["Enums"]["goal_status"]
-          target: number
+          /** null when type='openended'. Added in migration 20260420000000. */
+          target: number | null
+          /** 'fixed' | 'openended'. Added in migration 20260420000000. */
+          type: string
           updated_at: string
           user_id: string
         }
@@ -646,7 +649,10 @@ export type Database = {
           name: string
           priority: number
           status?: Database["public"]["Enums"]["goal_status"]
-          target: number
+          /** null when type='openended'. */
+          target?: number | null
+          /** Defaults to 'fixed'. */
+          type?: string
           updated_at?: string
           user_id: string
         }
@@ -659,7 +665,8 @@ export type Database = {
           name?: string
           priority?: number
           status?: Database["public"]["Enums"]["goal_status"]
-          target?: number
+          target?: number | null
+          type?: string
           updated_at?: string
           user_id?: string
         }

@@ -39,7 +39,8 @@ function makeGoal(partial: Partial<AllocationGoalInput>): AllocationGoalInput {
   return {
     id: partial.id ?? `goal-${++_goalIdCounter}`,
     name: partial.name ?? 'Generic Goal',
-    target: partial.target ?? 1000,
+    type: partial.type ?? 'fixed',
+    target: partial.target !== undefined ? partial.target : 1000,
     current: partial.current ?? 0,
     deadline: partial.deadline ?? null,
     priority: (partial.priority ?? 2) as PriorityRank,
@@ -335,7 +336,7 @@ describe('computeAllocation -- beta+gamma waterfall (issue #458)', () => {
     expect(result.items[2].goalId).toBe('alta');
   });
 
-  it('open-ended goal with 0 allocation -> deadlineFeasible=true + exhausted warning', () => {
+  it('fixed goals with no deadline: deadlineFeasible=true; exhausted pool causes warning', () => {
     const input = makeInput({
       monthlyIncome: 2000, essentialsPct: 50, monthlySavingsTarget: 100,
       goals: [
@@ -365,5 +366,127 @@ describe('computeAllocation -- beta+gamma waterfall (issue #458)', () => {
     expect(result.items.find((it) => it.goalId === 'g-casa')!.monthlyAmount).toBeCloseTo(300, 2);
     expect(result.items.find((it) => it.goalId === 'g-viaggio')!.monthlyAmount).toBeCloseTo(0, 2);
     expect(result.totalAllocated).toBeCloseTo(300, 2);
+  });
+
+  // ──────────────────────────────────────────────────────────────────────
+  // Issue #464 — Openended goal scenarios
+  // ──────────────────────────────────────────────────────────────────────
+
+  it('#464 single openended goal, no fixed goals → receives 100% of pool', () => {
+    const input = makeInput({
+      monthlyIncome: 2000, essentialsPct: 50, monthlySavingsTarget: 400,
+      goals: [
+        makeGoal({ id: 'g-open', name: 'Fondo Emergenza', type: 'openended', target: null, priority: 1 }),
+      ],
+    });
+    const result = computeAllocation(input);
+    expect(result.items).toHaveLength(1);
+    const item = result.items[0]!;
+    expect(item.goalId).toBe('g-open');
+    expect(item.monthlyAmount).toBeCloseTo(400, 2);
+    expect(item.deadlineFeasible).toBe(true);
+    expect(item.reasoning).toMatch(/fondo aperto|residuo/i);
+    expect(result.totalAllocated).toBeCloseTo(400, 2);
+    expect(result.unallocated).toBeCloseTo(0, 2);
+  });
+
+  it('#464 two openended goals → equal split of pool', () => {
+    const input = makeInput({
+      monthlyIncome: 2000, essentialsPct: 50, monthlySavingsTarget: 400,
+      goals: [
+        makeGoal({ id: 'g-open1', name: 'Fondo Emergenza', type: 'openended', target: null, priority: 1 }),
+        makeGoal({ id: 'g-open2', name: 'Risparmio Libero', type: 'openended', target: null, priority: 3 }),
+      ],
+    });
+    const result = computeAllocation(input);
+    expect(result.items).toHaveLength(2);
+    const item1 = result.items.find((it) => it.goalId === 'g-open1')!;
+    const item2 = result.items.find((it) => it.goalId === 'g-open2')!;
+    expect(item1.monthlyAmount).toBeCloseTo(200, 2);
+    expect(item2.monthlyAmount).toBeCloseTo(200, 2);
+    expect(item1.deadlineFeasible).toBe(true);
+    expect(item2.deadlineFeasible).toBe(true);
+    expect(result.totalAllocated).toBeCloseTo(400, 2);
+    expect(result.unallocated).toBeCloseTo(0, 2);
+  });
+
+  it('#464 fixed + openended: fixed waterfall first, openended gets residual', () => {
+    // Pool = 500. Fixed goal needs 300/mo → openended gets 200.
+    const input = makeInput({
+      monthlyIncome: 2500, essentialsPct: 50, monthlySavingsTarget: 500,
+      goals: [
+        makeGoal({ id: 'g-fixed', name: 'Acconto Casa', type: 'fixed', target: 6000, current: 0, deadline: monthsFromToday(20), priority: 1 }),
+        makeGoal({ id: 'g-open', name: 'Fondo Emergenza', type: 'openended', target: null, priority: 2 }),
+      ],
+    });
+    const result = computeAllocation(input);
+    const fixed = result.items.find((it) => it.goalId === 'g-fixed')!;
+    const open = result.items.find((it) => it.goalId === 'g-open')!;
+    expect(fixed.monthlyAmount).toBeCloseTo(300, 2);
+    expect(open.monthlyAmount).toBeCloseTo(200, 2);
+    expect(open.deadlineFeasible).toBe(true);
+    expect(result.totalAllocated).toBeCloseTo(500, 2);
+    expect(result.unallocated).toBeCloseTo(0, 2);
+  });
+
+  it('#464 emergency floor (fixed) + fixed waterfall + openended: correct residual chain', () => {
+    // Pool = 500. Emergency floor = min(500*0.4, need) = 200.
+    // Remaining = 300 → waterfall fixed goal needs 500/mo, gets 300.
+    // Residual after waterfall = 0 → openended gets 0.
+    const input = makeInput({
+      monthlyIncome: 2500, essentialsPct: 50, monthlySavingsTarget: 500,
+      goals: [
+        makeGoal({ id: 'g-debt', name: 'Debito Auto', type: 'fixed', target: 9000, current: 0, deadline: monthsFromToday(18), priority: 1 }),
+        makeGoal({ id: 'g-emerg', name: 'Fondo Emergenza', type: 'fixed', target: 3000, current: 0, deadline: null, priority: 2 }),
+        makeGoal({ id: 'g-open', name: 'Risparmio Libero', type: 'openended', target: null, priority: 3 }),
+      ],
+    });
+    const result = computeAllocation(input);
+    const emerg = result.items.find((it) => it.goalId === 'g-emerg')!;
+    const debt = result.items.find((it) => it.goalId === 'g-debt')!;
+    const open = result.items.find((it) => it.goalId === 'g-open')!;
+    // Emergency gets min(500*0.4=200, 3000) = 200
+    expect(emerg.monthlyAmount).toBeCloseTo(200, 2);
+    // Debt gets min(300, 500) = 300
+    expect(debt.monthlyAmount).toBeCloseTo(300, 2);
+    // Residual after waterfall = 0
+    expect(open.monthlyAmount).toBeCloseTo(0, 2);
+    expect(open.deadlineFeasible).toBe(true);
+    expect(open.warnings.some((w) => /esaurit|budget|residuo/i.test(w))).toBe(true);
+    expect(result.totalAllocated).toBeCloseTo(500, 2);
+  });
+
+  it('#464 openended goal with type=openended and target=null → deadlineFeasible true, no target warning', () => {
+    const input = makeInput({
+      monthlySavingsTarget: 300,
+      goals: [makeGoal({ id: 'g-open', name: 'Fondo Aperto', type: 'openended', target: null, priority: 2 })],
+    });
+    const result = computeAllocation(input);
+    const item = result.items[0]!;
+    expect(item.deadlineFeasible).toBe(true);
+    expect(item.warnings.filter((w) => /target non specificato/i.test(w))).toHaveLength(0);
+    expect(item.reasoning).toMatch(/fondo aperto|residuo/i);
+  });
+
+  it('#464 openended Fondo Emergenza (type=openended) does NOT receive the 40% floor', () => {
+    // If Fondo Emergenza is openended, it should NOT be treated as emergency (no 40% floor).
+    // It receives only the residual after fixed goals waterfall.
+    const input = makeInput({
+      monthlyIncome: 2500, essentialsPct: 50, monthlySavingsTarget: 500,
+      goals: [
+        makeGoal({ id: 'g-casa', name: 'Acconto Casa', type: 'fixed', target: 10000, current: 0, deadline: monthsFromToday(20), priority: 1 }),
+        makeGoal({ id: 'g-emerg-open', name: 'Fondo Emergenza', type: 'openended', target: null, priority: 2 }),
+      ],
+    });
+    const result = computeAllocation(input);
+    const casa = result.items.find((it) => it.goalId === 'g-casa')!;
+    const emergOpen = result.items.find((it) => it.goalId === 'g-emerg-open')!;
+    // casa gets full 500 (waterfall), no emergency floor intercepted
+    expect(casa.monthlyAmount).toBeCloseTo(500, 2);
+    // emergOpen gets residual = 0
+    expect(emergOpen.monthlyAmount).toBeCloseTo(0, 2);
+    expect(emergOpen.deadlineFeasible).toBe(true);
+    // No gamma warning since no emergency floor was applied
+    expect(result.warnings.some((w) => /waterfall puro|senza protezione/i.test(w))).toBe(false);
   });
 });

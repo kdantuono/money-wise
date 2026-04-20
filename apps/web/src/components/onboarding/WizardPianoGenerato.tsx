@@ -102,6 +102,7 @@ export function WizardPianoGenerato() {
           const item = allocationPreview.items.find((it) => it.goalId === g.tempId);
           return {
             name: g.name,
+            type: g.type,
             target: g.target,
             deadline: g.deadline,
             priority: g.priority,

@@ -13,7 +13,7 @@ import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '../../utils/test-utils';
 import userEvent from '@testing-library/user-event';
-import type { PriorityRank } from '@/types/onboarding-plan';
+import type { PriorityRank, GoalType } from '@/types/onboarding-plan';
 
 // --------------------------------------------------------------------------
 // Store mock — selector pattern
@@ -22,7 +22,8 @@ import type { PriorityRank } from '@/types/onboarding-plan';
 type Goal = {
   tempId: string;
   name: string;
-  target: number;
+  type: GoalType;
+  target: number | null;
   deadline: string | null;
   priority: PriorityRank;
 };
@@ -85,7 +86,9 @@ describe('StepGoals', () => {
 
   // ---- 2. Preset card click -------------------------------------------------
 
-  it('preset card click opens form pre-filled with preset defaults', async () => {
+  it('preset card click (Fondo Emergenza) opens form in openended mode — no target input', async () => {
+    // Issue #464: Fondo Emergenza preset defaults to openended type.
+    // Target input should NOT be visible when type='openended'.
     render(<StepGoals />);
     await userEvent.click(screen.getByLabelText(/Aggiungi preset: Fondo Emergenza/i));
 
@@ -93,12 +96,15 @@ describe('StepGoals', () => {
     const nameInput = screen.getByLabelText(/Nome/i);
     expect(nameInput).toHaveValue('Fondo Emergenza');
 
-    // Target pre-filled with 5000
-    const targetInput = screen.getByLabelText(/Target \(€\)/i);
-    expect(targetInput).toHaveValue(5000);
+    // Target input NOT visible for openended goals
+    expect(screen.queryByLabelText(/Target \(€\)/i)).not.toBeInTheDocument();
+
+    // "Goal aperto" button should be pressed
+    const openendedBtn = screen.getByRole('button', { name: /Goal aperto/i });
+    expect(openendedBtn).toHaveAttribute('aria-pressed', 'true');
   });
 
-  it('preset "Comprare Casa" pre-fills with 50000 target', async () => {
+  it('preset "Comprare Casa" pre-fills with 50000 target (fixed type)', async () => {
     render(<StepGoals />);
     await userEvent.click(screen.getByLabelText(/Aggiungi preset: Comprare Casa/i));
 
@@ -106,11 +112,11 @@ describe('StepGoals', () => {
     expect(targetInput).toHaveValue(50000);
   });
 
-  it('after preset click, user can submit the form and addGoal is called', async () => {
+  it('after preset click (Fondo Emergenza openended), submitting calls addGoal with type=openended', async () => {
     render(<StepGoals />);
     await userEvent.click(screen.getByLabelText(/Aggiungi preset: Fondo Emergenza/i));
 
-    // Form is open with pre-filled values — click Aggiungi
+    // Form is open in openended mode — click Aggiungi
     const addButton = screen.getByRole('button', { name: /^Aggiungi$/ });
     await userEvent.click(addButton);
 
@@ -118,7 +124,8 @@ describe('StepGoals', () => {
       expect(mockAddGoal).toHaveBeenCalledWith(
         expect.objectContaining({
           name: 'Fondo Emergenza',
-          target: 5000,
+          type: 'openended',
+          target: null,
           priority: 1,
         })
       );
@@ -138,7 +145,7 @@ describe('StepGoals', () => {
     expect(targetInput).toHaveValue(null); // empty number input = null
   });
 
-  it('submitting a manual goal with valid data calls addGoal', async () => {
+  it('submitting a manual goal with valid data calls addGoal with type=fixed', async () => {
     render(<StepGoals />);
     await userEvent.click(screen.getByRole('button', { name: /Aggiungi manualmente/i }));
 
@@ -150,7 +157,7 @@ describe('StepGoals', () => {
 
     await waitFor(() => {
       expect(mockAddGoal).toHaveBeenCalledWith(
-        expect.objectContaining({ name: 'Università', target: 8000 })
+        expect.objectContaining({ name: 'Università', type: 'fixed', target: 8000 })
       );
     });
   });
@@ -165,12 +172,46 @@ describe('StepGoals', () => {
     expect(screen.getByRole('button', { name: /Aggiungi manualmente/i })).toBeInTheDocument();
   });
 
+  it('#464 toggle to openended hides target/deadline, shows description', async () => {
+    render(<StepGoals />);
+    await userEvent.click(screen.getByRole('button', { name: /Aggiungi manualmente/i }));
+
+    // Initially fixed — target should be visible
+    expect(screen.getByLabelText(/Target \(€\)/i)).toBeInTheDocument();
+
+    // Switch to openended
+    await userEvent.click(screen.getByRole('button', { name: /Goal aperto/i }));
+
+    // Target input should disappear
+    expect(screen.queryByLabelText(/Target \(€\)/i)).not.toBeInTheDocument();
+    // Deadline input should disappear
+    expect(screen.queryByLabelText(/Scadenza/i)).not.toBeInTheDocument();
+    // Description explaining openended should appear
+    expect(screen.getByText(/riceve qualsiasi risparmio residuo/i)).toBeInTheDocument();
+  });
+
+  it('#464 openended goal in list displays "Goal aperto" label and remove button', () => {
+    mockStore.mockReturnValue(
+      makeStoreState([
+        { tempId: 'g-open', name: 'Mio Fondo Aperto', type: 'openended', target: null, deadline: null, priority: 1 },
+      ])
+    );
+    render(<StepGoals />);
+    // Goal name appears in the list (use heading-level query to avoid preset card collision)
+    const listItem = screen.getByLabelText(/Rimuovi Mio Fondo Aperto/i).closest('li')!;
+    expect(listItem).toBeInTheDocument();
+    // "Goal aperto" subtitle text is present in the list item
+    expect(listItem).toHaveTextContent(/Goal aperto/i);
+    // Remove button present
+    expect(screen.getByLabelText(/Rimuovi Mio Fondo Aperto/i)).toBeInTheDocument();
+  });
+
   // ---- 4. Goals list --------------------------------------------------------
 
   it('renders existing goals from store', () => {
     mockStore.mockReturnValue(
       makeStoreState([
-        { tempId: 'g1', name: 'Obiettivo Personalizzato', target: 7500, deadline: null, priority: 2 },
+        { tempId: 'g1', name: 'Obiettivo Personalizzato', type: 'fixed', target: 7500, deadline: null, priority: 2 },
       ])
     );
     render(<StepGoals />);
@@ -183,7 +224,7 @@ describe('StepGoals', () => {
   it('remove button calls removeGoal with correct tempId', async () => {
     mockStore.mockReturnValue(
       makeStoreState([
-        { tempId: 'g-remove', name: 'Obiettivo Da Rimuovere', target: 1000, deadline: null, priority: 2 },
+        { tempId: 'g-remove', name: 'Obiettivo Da Rimuovere', type: 'fixed', target: 1000, deadline: null, priority: 2 },
       ])
     );
     render(<StepGoals />);
