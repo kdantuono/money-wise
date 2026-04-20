@@ -371,4 +371,16 @@ export const onboardingPlanClient = {
   },
 };
 
+// =============================================================================
+// Redo onboarding navigation helper
+// =============================================================================
+
+/**
+ * The path used by the "Rivedi piano" Settings flow to re-enter the onboarding
+ * wizard in edit mode (preserves existing goals in history, replaces plan on submit).
+ *
+ * Used by: Settings Onboarding tab (WP-H, Sprint 1.5.2)
+ */
+export const REDO_ONBOARDING_PATH = '/onboarding/plan?mode=edit' as const;
+
 export default onboardingPlanClient;

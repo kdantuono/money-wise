@@ -10,6 +10,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { createClient } from '@/utils/supabase/client';
 import { CategoryManager } from '@/components/categories/CategoryManager';
@@ -27,6 +28,9 @@ import {
   Key,
   Monitor,
   Loader2,
+  RefreshCw,
+  ChevronDown,
+  ChevronRight,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -35,6 +39,7 @@ import { Card } from '@/components/ui/card';
 import { useAuthStore } from '@/store/auth.store';
 import { useTheme, type Theme } from '@/hooks/useTheme';
 import { userPreferencesClient } from '@/services/user-preferences.client';
+import { REDO_ONBOARDING_PATH } from '@/services/onboarding-plan.client';
 import type { UserPreferences } from '@/types/user-preferences';
 
 // =============================================================================
@@ -48,6 +53,7 @@ type TabKey =
   | 'apikeys'
   | 'plan'
   | 'notifications'
+  | 'onboarding'
   | 'integrations'
   | 'security'
   | 'data';
@@ -78,6 +84,7 @@ const TABS: { key: TabKey; label: string }[] = [
   { key: 'apikeys', label: 'API Keys' },
   { key: 'plan', label: 'Piano' },
   { key: 'notifications', label: 'Notifiche' },
+  { key: 'onboarding', label: 'Onboarding' },
   { key: 'integrations', label: 'Integrazioni' },
   { key: 'security', label: 'Sicurezza' },
   { key: 'data', label: 'Dati' },
@@ -98,7 +105,12 @@ const TOGGLE_CLASS =
 export default function SettingsPage() {
   const { user, setUser } = useAuthStore();
   const { theme, setTheme } = useTheme();
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<TabKey>('profile');
+
+  // Onboarding redo state
+  const [showRedoConfirm, setShowRedoConfirm] = useState(false);
+  const [showResetSection, setShowResetSection] = useState(false);
 
   // Profile state
   const [isSaving, setIsSaving] = useState(false);
@@ -528,6 +540,92 @@ export default function SettingsPage() {
       {/* Notifications Tab — real persistence to profiles.preferences.notifications */}
       {/* ================================================================= */}
       {activeTab === 'notifications' && <NotificationsTab />}
+
+      {/* ================================================================= */}
+      {/* Onboarding Tab — Rifai piano finanziario */}
+      {/* ================================================================= */}
+      {activeTab === 'onboarding' && (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+          <Card className="p-6 rounded-2xl border-0 shadow-sm">
+            <div className="flex items-start gap-4 mb-6">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center flex-shrink-0">
+                <RefreshCw className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-foreground">Rivedi il tuo piano finanziario</h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Rifai il wizard di onboarding per aggiornare reddito, budget o obiettivi.
+                  Il piano corrente sarà sostituito con quello nuovo.
+                  I goal esistenti restano nello storico.
+                </p>
+              </div>
+            </div>
+
+            {!showRedoConfirm ? (
+              <Button
+                onClick={() => setShowRedoConfirm(true)}
+                className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white shadow-lg shadow-emerald-500/20 border-0"
+              >
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Rivedi piano
+              </Button>
+            ) : (
+              <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-amber-500 flex-shrink-0" />
+                  <p className="text-sm font-medium text-amber-700 dark:text-amber-400">
+                    Sei sicuro? Il wizard si aprirà pre-popolato con i tuoi valori attuali.
+                  </p>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Il piano corrente verrà sostituito al completamento. Puoi annullare in qualsiasi momento durante il wizard.
+                </p>
+                <div className="flex gap-2 pt-1">
+                  <Button
+                    onClick={() => router.push(REDO_ONBOARDING_PATH)}
+                    className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white border-0"
+                  >
+                    Procedi
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowRedoConfirm(false)}
+                  >
+                    Annulla
+                  </Button>
+                </div>
+              </div>
+            )}
+          </Card>
+
+          {/* Reset completo — future work placeholder */}
+          <Card className="p-6 rounded-2xl border-0 shadow-sm">
+            <button
+              onClick={() => setShowResetSection((v) => !v)}
+              className="flex items-center justify-between w-full text-left group"
+              aria-expanded={showResetSection}
+            >
+              <div className="flex items-center gap-2">
+                <h3 className="text-base font-semibold text-foreground">Reset completo</h3>
+                <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                  In arrivo
+                </span>
+              </div>
+              {showResetSection ? (
+                <ChevronDown className="w-4 h-4 text-muted-foreground" />
+              ) : (
+                <ChevronRight className="w-4 h-4 text-muted-foreground" />
+              )}
+            </button>
+            {showResetSection && (
+              <p className="text-sm text-muted-foreground mt-3">
+                Il reset completo eliminerà tutti i dati dell&apos;account (transazioni, goal, piano)
+                e ricomincerai da zero. Questa funzionalità sarà disponibile in una prossima versione.
+              </p>
+            )}
+          </Card>
+        </motion.div>
+      )}
 
       {/* ================================================================= */}
       {/* Integrations Tab */}
