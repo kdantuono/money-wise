@@ -41,8 +41,8 @@ vi.mock('@/components/onboarding/steps/StepCalibration', () => ({
   StepCalibration: () => <div data-testid="step-4-stub">StepCalibration</div>,
   calibrationAdvisor: {},
 }));
-vi.mock('@/components/onboarding/steps/StepAiPrefs', () => ({
-  StepAiPrefs: () => <div data-testid="step-5-stub">StepAiPrefs</div>,
+vi.mock('@/components/onboarding/steps/StepReady', () => ({
+  StepReady: () => <div data-testid="step-5-stub">StepReady</div>,
 }));
 
 // Framer-motion: props-forwarding passthrough
@@ -375,7 +375,7 @@ describe('WizardPianoGenerato — Dialog (Sprint 1.5.2 WP-A)', () => {
       expect(screen.getByText('Profilo')).toBeInTheDocument();
       expect(screen.getByText('I tuoi goal')).toBeInTheDocument();
       expect(screen.getByText('Piano proposto')).toBeInTheDocument();
-      expect(screen.getByText('Preferenze AI')).toBeInTheDocument();
+      expect(screen.getByText('Pronto')).toBeInTheDocument();
     });
 
     it('shows step description text for Step 1 (Benvenuto)', () => {
@@ -394,7 +394,7 @@ describe('WizardPianoGenerato — Dialog (Sprint 1.5.2 WP-A)', () => {
       [2, 'step-2-stub'],  // Step 2 = Profilo 4-budget (WP-C)
       [3, 'step-3-stub'],  // Step 3 = Obiettivi
       [4, 'step-4-stub'],  // Step 4 = Piano proposto
-      [5, 'step-5-stub'],  // Step 5 = Preferenze AI
+      [5, 'step-5-stub'],  // Step 5 = Pronto (WP-F)
     ])('renders step-%i component when currentStep=%i', (step, testId) => {
       mockAuthStore.mockReturnValue({ user: { id: 'u1', onboarded: false }, setUser: mockSetUser });
       mockPlanStore.mockReturnValue(makeState({ currentStep: step as 1 | 2 | 3 | 4 | 5 }));
@@ -452,7 +452,7 @@ describe('WizardPianoGenerato — Dialog (Sprint 1.5.2 WP-A)', () => {
   });
 
   // ---- 6. Step 5 canSubmit=true (last step, Preferenze AI) ------------------
-  describe('Step 5 — Conferma e crea piano (canSubmit=true)', () => {
+  describe('Step 5 — Crea il mio piano (canSubmit=true)', () => {
     it('renders enabled button when all conditions hold', () => {
       mockAuthStore.mockReturnValue({ user: { id: 'u1', onboarded: false }, setUser: mockSetUser });
       mockPlanStore.mockReturnValue(
@@ -465,7 +465,7 @@ describe('WizardPianoGenerato — Dialog (Sprint 1.5.2 WP-A)', () => {
       );
 
       renderWizard();
-      const confirm = screen.getByRole('button', { name: /Conferma e crea piano/i });
+      const confirm = screen.getByRole('button', { name: /Crea il mio piano/i });
       expect(confirm).not.toBeDisabled();
       expect(screen.queryByText(/Conferma disabilitata/i)).not.toBeInTheDocument();
     });
@@ -484,7 +484,7 @@ describe('WizardPianoGenerato — Dialog (Sprint 1.5.2 WP-A)', () => {
       );
 
       renderWizard();
-      expect(screen.getByRole('button', { name: /Conferma e crea piano/i })).toBeDisabled();
+      expect(screen.getByRole('button', { name: /Crea il mio piano/i })).toBeDisabled();
       expect(screen.getByRole('status')).toHaveTextContent(/Sessione utente non rilevata/i);
     });
 
@@ -499,7 +499,7 @@ describe('WizardPianoGenerato — Dialog (Sprint 1.5.2 WP-A)', () => {
       );
 
       renderWizard();
-      expect(screen.getByRole('button', { name: /Conferma e crea piano/i })).toBeDisabled();
+      expect(screen.getByRole('button', { name: /Crea il mio piano/i })).toBeDisabled();
       expect(screen.getByRole('status')).toHaveTextContent(/Aggiungi almeno un obiettivo/i);
     });
 
@@ -514,7 +514,7 @@ describe('WizardPianoGenerato — Dialog (Sprint 1.5.2 WP-A)', () => {
       );
 
       renderWizard();
-      expect(screen.getByRole('button', { name: /Conferma e crea piano/i })).toBeDisabled();
+      expect(screen.getByRole('button', { name: /Crea il mio piano/i })).toBeDisabled();
       expect(screen.getByRole('status')).toHaveTextContent(/Piano non ancora calcolato/i);
     });
 
@@ -558,7 +558,7 @@ describe('WizardPianoGenerato — Dialog (Sprint 1.5.2 WP-A)', () => {
       mockPersistPlan.mockResolvedValue({ planId: 'plan-uuid', goalIds: ['goal-uuid-1'] });
 
       renderWizard();
-      await userEvent.click(screen.getByRole('button', { name: /Conferma e crea piano/i }));
+      await userEvent.click(screen.getByRole('button', { name: /Crea il mio piano/i }));
 
       await waitFor(() => {
         expect(mockPersistPlan).toHaveBeenCalledTimes(1);
@@ -591,7 +591,7 @@ describe('WizardPianoGenerato — Dialog (Sprint 1.5.2 WP-A)', () => {
       renderWizard({ mode: 'edit' });
       expect(screen.getByText('Modifica il tuo piano')).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /Salva modifiche/i })).toBeInTheDocument();
-      expect(screen.queryByRole('button', { name: /Conferma e crea piano/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /Crea il mio piano/i })).not.toBeInTheDocument();
     });
 
     it('renders create-mode title by default', () => {
@@ -606,7 +606,7 @@ describe('WizardPianoGenerato — Dialog (Sprint 1.5.2 WP-A)', () => {
 
       renderWizard();
       expect(screen.getByText('Piano Finanziario')).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /Conferma e crea piano/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Crea il mio piano/i })).toBeInTheDocument();
     });
 
     it('shows "Salvataggio..." loading text in edit mode when isPersisting=true', () => {
@@ -647,7 +647,7 @@ describe('WizardPianoGenerato — Dialog (Sprint 1.5.2 WP-A)', () => {
       mockPersistPlan.mockRejectedValue(new Error('DB unavailable'));
 
       renderWizard();
-      await userEvent.click(screen.getByRole('button', { name: /Conferma e crea piano/i }));
+      await userEvent.click(screen.getByRole('button', { name: /Crea il mio piano/i }));
 
       await waitFor(() => {
         expect(screen.getByRole('alert')).toHaveTextContent(/DB unavailable/i);

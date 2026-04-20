@@ -15,7 +15,7 @@ import { StepWelcome } from './steps/StepWelcome';
 import { StepProfile } from './steps/StepProfile';
 import { StepGoals } from './steps/StepGoals';
 import { StepCalibration } from './steps/StepCalibration';
-import { StepAiPrefs } from './steps/StepAiPrefs';
+import { StepReady } from './steps/StepReady';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, Check, Loader2 } from 'lucide-react';
 
@@ -29,7 +29,7 @@ const STEP_CONFIG = [
   { label: 'Profilo' },
   { label: 'I tuoi goal' },
   { label: 'Piano proposto' },
-  { label: 'Preferenze AI' },
+  { label: 'Pronto' },
 ] as const;
 
 const TOTAL_STEPS = STEP_CONFIG.length; // 5
@@ -249,8 +249,8 @@ export function WizardPianoGenerato({ mode = 'create', onClose }: WizardPianoGen
               {currentStep === 3 && <StepGoals />}
               {/* Step 4 — Calibrazione AI-First (WP-E) */}
               {currentStep === 4 && <StepCalibration />}
-              {/* Step 5 — Preferenze AI */}
-              {currentStep === 5 && <StepAiPrefs />}
+              {/* Step 5 — Preferenze AI + Pronto (WP-F) */}
+              {currentStep === 5 && <StepReady />}
             </motion.div>
           </AnimatePresence>
         </main>
@@ -317,7 +317,7 @@ export function WizardPianoGenerato({ mode = 'create', onClose }: WizardPianoGen
               ) : (
                 <>
                   <Check className="w-4 h-4 mr-2" aria-hidden="true" />
-                  {isEditMode ? 'Salva modifiche' : 'Conferma e crea piano'}
+                  {isEditMode ? 'Salva modifiche' : 'Crea il mio piano'}
                 </>
               )}
             </Button>
