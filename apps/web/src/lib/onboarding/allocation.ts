@@ -55,6 +55,10 @@ function _isEmergencyGoal(goal: AllocationGoalInput, _now: Date): boolean {
   return _EMERGENCY_NAME_PATTERN.test(goal.name);
 }
 
+function _isOpenended(goal: AllocationGoalInput): boolean {
+  return goal.type === 'openended';
+}
+
 function _round2(n: number): number {
   return Math.round(n * 100) / 100;
 }
@@ -67,7 +71,10 @@ function _buildReasoning(
   requiredMonthly: number,
   remainingPoolBefore: number,
 ): string {
-  if (goal.target === 0) return 'Target non specificato';
+  if (goal.target === null || goal.target === 0) {
+    if (_isOpenended(goal)) return 'Obiettivo aperto: quota mensile dal budget residuo.';
+    return 'Target non specificato';
+  }
   if (isEmergency) {
     return `Fondo di emergenza: allocazione prioritaria del ${Math.round(_EMERGENCY_OVERRIDE_FRACTION * 100)}% del budget mensile disponibile come protezione finanziaria.`;
   }
@@ -101,7 +108,8 @@ function _runWaterfall(
   let remainingPool = pool;
   const results: _WaterfallEntry[] = [];
   for (const { goal, originalIndex } of sorted) {
-    const need = Math.max(0, goal.target - goal.current);
+    const target = goal.target ?? 0;
+    const need = Math.max(0, target - goal.current);
     const deadlineDate = _parseDeadline(goal.deadline);
     const monthsLeft = deadlineDate ? _monthsDiff(now, deadlineDate) : null;
     const requiredMonthly =
@@ -139,24 +147,61 @@ export function computeAllocation(input: AllocationInput): AllocationResult {
   let emergencyAmount = 0;
   let remainingPool = savingsPool;
 
-  if (emergencyIndex >= 0 && goals[emergencyIndex]!.target > 0) {
+  if (emergencyIndex >= 0) {
     const emergencyGoal = goals[emergencyIndex]!;
-    const emergencyNeed = Math.max(0, emergencyGoal.target - emergencyGoal.current);
-    emergencyAmount = _round2(Math.min(savingsPool * _EMERGENCY_OVERRIDE_FRACTION, emergencyNeed));
-    remainingPool = _round2(savingsPool - emergencyAmount);
+    // Openended emergency: null target = uncapped need → take full 40% floor
+    const isOpenendedEmergency = _isOpenended(emergencyGoal);
+    const effectiveTarget = emergencyGoal.target ?? 0;
+    const emergencyNeed = isOpenendedEmergency
+      ? savingsPool * _EMERGENCY_OVERRIDE_FRACTION // no cap for openended
+      : Math.max(0, effectiveTarget - emergencyGoal.current);
+    if (isOpenendedEmergency || effectiveTarget > 0) {
+      emergencyAmount = _round2(Math.min(savingsPool * _EMERGENCY_OVERRIDE_FRACTION, emergencyNeed));
+      remainingPool = _round2(savingsPool - emergencyAmount);
+    }
   }
 
+  // Non-emergency, non-openended goals with a real target go into the waterfall.
+  // Openended goals (other than emergency) get the residual split after waterfall.
   const otherGoals: Array<{ goal: AllocationGoalInput; originalIndex: number }> = goals
     .map((goal, originalIndex) => ({ goal, originalIndex }))
-    .filter(({ originalIndex, goal }) => originalIndex !== emergencyIndex && goal.target > 0)
+    .filter(({ originalIndex, goal }) => {
+      if (originalIndex === emergencyIndex) return false;
+      if (_isOpenended(goal)) return false;
+      return (goal.target ?? 0) > 0;
+    })
     .sort((a, b) => (a.goal.priority as number) - (b.goal.priority as number));
+
+  const openendedNonEmergencyGoals: Array<{ goal: AllocationGoalInput; originalIndex: number }> = goals
+    .map((goal, originalIndex) => ({ goal, originalIndex }))
+    .filter(({ originalIndex, goal }) => {
+      if (originalIndex === emergencyIndex) return false;
+      return _isOpenended(goal);
+    });
 
   const waterfallResults = _runWaterfall(otherGoals, remainingPool, now);
 
+  // Residual after waterfall → split equally among openended non-emergency goals
+  const waterfallConsumed = _round2(waterfallResults.reduce((sum, e) => sum + e.amount, 0));
+  const waterfallRemainder = _round2(remainingPool - waterfallConsumed);
+  const openendedAmountMap = new Map<number, number>();
+  if (openendedNonEmergencyGoals.length > 0 && waterfallRemainder > 0) {
+    const perOpenended = _round2(waterfallRemainder / openendedNonEmergencyGoals.length);
+    for (const { originalIndex } of openendedNonEmergencyGoals) {
+      openendedAmountMap.set(originalIndex, perOpenended);
+    }
+  } else if (openendedNonEmergencyGoals.length > 0) {
+    for (const { originalIndex } of openendedNonEmergencyGoals) {
+      openendedAmountMap.set(originalIndex, 0);
+    }
+  }
+
   if (emergencyAmount > 0 && otherGoals.length > 0 && savingsPool > 0) {
+    // Gamma warning: compare pure waterfall (no emergency floor) vs actual.
+    // Only consider fixed goals for this comparison.
     const allNonZeroGoals: Array<{ goal: AllocationGoalInput; originalIndex: number }> = goals
       .map((goal, originalIndex) => ({ goal, originalIndex }))
-      .filter(({ goal }) => goal.target > 0)
+      .filter(({ goal }) => !_isOpenended(goal) && (goal.target ?? 0) > 0)
       .sort((a, b) => (a.goal.priority as number) - (b.goal.priority as number));
 
     const pureWaterfallResults = _runWaterfall(allNonZeroGoals, savingsPool, now);
@@ -186,7 +231,27 @@ export function computeAllocation(input: AllocationInput): AllocationResult {
     const isEmergency = i === emergencyIndex;
     const itemWarnings: string[] = [];
 
-    if (goal.target === 0) {
+    // Openended non-emergency: distribute from residual split
+    if (!isEmergency && _isOpenended(goal)) {
+      const openendedAmount = openendedAmountMap.get(i) ?? 0;
+      if (openendedAmount === 0) {
+        itemWarnings.push('Budget esaurito: obiettivo aperto non riceverà allocazione in questo mese.');
+      }
+      items.push({
+        goalId: goal.id, monthlyAmount: openendedAmount, deadlineFeasible: true,
+        reasoning: openendedAmount > 0
+          ? `Obiettivo aperto: quota mensile dal budget residuo (${_fmtEur(openendedAmount)}).`
+          : 'Obiettivo aperto: budget residuo esaurito.',
+        warnings: itemWarnings,
+      });
+      continue;
+    }
+
+    // effectiveTarget: use 0 for null (openended or unspecified) for numeric ops below
+    const effectiveTarget = goal.target ?? 0;
+
+    // Fixed non-emergency with target=0: no allocation
+    if (!isEmergency && !_isOpenended(goal) && effectiveTarget === 0) {
       items.push({
         goalId: goal.id, monthlyAmount: 0, deadlineFeasible: true,
         reasoning: 'Target non specificato',
@@ -198,20 +263,21 @@ export function computeAllocation(input: AllocationInput): AllocationResult {
     if (isEmergency) {
       const deadlineDate = _parseDeadline(goal.deadline);
       let deadlineFeasible = true;
-      if (deadlineDate !== null) {
+      // Openended emergency: no deadline feasibility check (no hard target)
+      if (deadlineDate !== null && !_isOpenended(goal)) {
         const monthsLeft = _monthsDiff(now, deadlineDate);
         if (monthsLeft < 0) {
           deadlineFeasible = false;
           itemWarnings.push('La scadenza di questo goal è già trascorsa.');
         } else if (emergencyAmount > 0) {
-          const remaining = Math.max(0, goal.target - goal.current);
+          const remaining = Math.max(0, effectiveTarget - goal.current);
           const reqM = monthsLeft > 0 ? remaining / monthsLeft : Infinity;
           if (reqM > emergencyAmount) {
             deadlineFeasible = false;
             itemWarnings.push(`Con ${_fmtEur(emergencyAmount)}/mese non sarà possibile raggiungere l'obiettivo entro la scadenza (necessari ${_fmtEur(reqM)}/mese).`);
           }
         } else {
-          const remaining = Math.max(0, goal.target - goal.current);
+          const remaining = Math.max(0, effectiveTarget - goal.current);
           if (remaining > 0) {
             deadlineFeasible = false;
             itemWarnings.push('Nessun importo allocato: la scadenza non sarà rispettata.');
@@ -253,7 +319,7 @@ export function computeAllocation(input: AllocationInput): AllocationResult {
           itemWarnings.push(`Budget insufficiente per raggiungere questo goal in tempo (necessari ${_fmtEur(requiredMonthly)}/mese, allocati ${_fmtEur(amount)}/mese).`);
         }
       } else {
-        const remaining = Math.max(0, goal.target - goal.current);
+        const remaining = Math.max(0, effectiveTarget - goal.current);
         if (remaining > 0) {
           deadlineFeasible = false;
           itemWarnings.push(`Budget insufficiente per raggiungere questo goal: importo allocato ${_fmtEur(0)}.`);
@@ -261,7 +327,7 @@ export function computeAllocation(input: AllocationInput): AllocationResult {
       }
     } else {
       if (amount === 0) {
-        const remaining = Math.max(0, goal.target - goal.current);
+        const remaining = Math.max(0, effectiveTarget - goal.current);
         if (remaining > 0) itemWarnings.push('Budget esaurito: questo goal non riceverà allocazione in questo mese.');
       }
     }

@@ -29,6 +29,15 @@ export type GoalAllocationInsert = Database['public']['Tables']['goal_allocation
 export type GoalStatus = Database['public']['Enums']['goal_status'];
 
 // ─────────────────────────────────────────────────────────────────────────
+// Goal type (DB TEXT column: 'fixed' | 'openended')
+// 'fixed' = has a concrete target amount + optional deadline
+// 'openended' = no hard target (e.g. Fondo Emergenza, general savings habit);
+//   target is nullable; deadline is optional informational hint.
+// ─────────────────────────────────────────────────────────────────────────
+
+export type GoalType = 'fixed' | 'openended';
+
+// ─────────────────────────────────────────────────────────────────────────
 // Priority mapping (DB SMALLINT 1-3 <-> UI labels)
 // ─────────────────────────────────────────────────────────────────────────
 
@@ -51,14 +60,22 @@ export const PRIORITY_URGENCY_FACTOR: Record<PriorityRank, number> = {
 /**
  * Goal input to the allocation algorithm.
  * Subset of GoalRow relevant for allocation decisions.
+ *
+ * WP-K: `type` added (default 'fixed'). `target` is now nullable:
+ *   - 'fixed' goals: target must be > 0 (validated before reaching algorithm)
+ *   - 'openended' goals: target may be null or 0; they receive the residual
+ *     pool split after the waterfall (equal share among openended goals).
  */
 export interface AllocationGoalInput {
   id: string;
   name: string;
-  target: number;
+  /** Null allowed for openended goals. */
+  target: number | null;
   current: number;
   deadline: string | null;
   priority: PriorityRank;
+  /** DB type field; defaults to 'fixed' when absent (backward compat). */
+  type?: GoalType;
 }
 
 /**
@@ -230,9 +247,12 @@ export interface WizardGoalDraft {
   /** Temp UUID for form state before DB insert. */
   tempId: string;
   name: string;
-  target: number;
+  /** Null for openended goals (no concrete target). */
+  target: number | null;
   deadline: string | null;
   priority: PriorityRank;
+  /** DB type field. Defaults to 'fixed'. */
+  type: GoalType;
 }
 
 export interface WizardStepGoals {

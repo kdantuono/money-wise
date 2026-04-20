@@ -16,7 +16,7 @@
  */
 
 import { createClient } from '@/utils/supabase/client';
-import type { PriorityRank } from '@/types/onboarding-plan';
+import type { PriorityRank, GoalType } from '@/types/onboarding-plan';
 
 // =============================================================================
 // Error class
@@ -52,10 +52,13 @@ export interface PersistPlanInput {
   };
   goals: Array<{
     name: string;
-    target: number;
+    /** Null for openended goals. WP-K. */
+    target: number | null;
     deadline: string | null;
     priority: PriorityRank;
     monthlyAllocation: number;
+    /** DB type field. WP-K. */
+    type: GoalType;
     allocation: {
       monthlyAmount: number;
       deadlineFeasible: boolean;
@@ -187,6 +190,7 @@ export const onboardingPlanClient = {
           priority: g.priority,
           monthly_allocation: g.monthlyAllocation,
           status: 'ACTIVE' as const,
+          type: g.type,
         })
         .select('id')
         .single();
@@ -292,12 +296,15 @@ export const onboardingPlanClient = {
     goals: Array<{
       id: string;
       name: string;
-      target: number;
+      /** Null for openended goals. WP-K. */
+      target: number | null;
       current: number;
       deadline: string | null;
       priority: PriorityRank;
       monthlyAllocation: number;
       status: string;
+      /** DB type field. WP-K. */
+      type: GoalType;
     }>;
     allocations: Array<{
       goalId: string;
@@ -325,7 +332,7 @@ export const onboardingPlanClient = {
 
     const { data: goalRows, error: goalsErr } = await supabase
       .from('goals')
-      .select('id, name, target, current, deadline, priority, monthly_allocation, status')
+      .select('id, name, target, current, deadline, priority, monthly_allocation, status, type')
       .eq('user_id', userId)
       .eq('status', 'ACTIVE')
       .order('priority', { ascending: true });
@@ -354,12 +361,13 @@ export const onboardingPlanClient = {
       goals: goalRows.map((g) => ({
         id: g.id,
         name: g.name,
-        target: Number(g.target),
+        target: g.target !== null ? Number(g.target) : null,
         current: Number(g.current),
         deadline: g.deadline,
         priority: g.priority as PriorityRank,
         monthlyAllocation: Number(g.monthly_allocation),
         status: g.status,
+        type: (g.type ?? 'fixed') as GoalType,
       })),
       allocations: allocRows.map((a) => ({
         goalId: a.goal_id,

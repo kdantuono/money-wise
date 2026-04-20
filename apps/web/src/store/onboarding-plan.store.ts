@@ -21,6 +21,7 @@ import type {
   WizardSkipState,
   WizardStepProfile,
   AllocationResult,
+  GoalType,
 } from '@/types/onboarding-plan';
 
 // -------------------------------------------------------------------------
@@ -97,12 +98,15 @@ export interface LoadedPlanBundle {
   goals: Array<{
     id: string;
     name: string;
-    target: number;
+    /** Null for openended goals. WP-K. */
+    target: number | null;
     current: number;
     deadline: string | null;
     priority: WizardGoalDraft['priority'];
     monthlyAllocation: number;
     status: string;
+    /** DB type field. WP-K. */
+    type: GoalType;
   }>;
   allocations: Array<{
     goalId: string;
@@ -126,7 +130,7 @@ interface Actions {
   updateSavingsTarget: (monthlySavingsTarget: number, essentialsPct?: number) => void;
   /** Update any subset of the Profilo step (step2) fields. */
   updateProfile: (patch: Partial<WizardStepProfile>) => void;
-  addGoal: (goal: Omit<WizardGoalDraft, 'tempId'>) => void;
+  addGoal: (goal: Omit<WizardGoalDraft, 'tempId'> & { type?: GoalType }) => void;
   updateGoal: (tempId: string, patch: Partial<Omit<WizardGoalDraft, 'tempId'>>) => void;
   removeGoal: (tempId: string) => void;
   setAllocationPreview: (allocation: AllocationResult | null) => void;
@@ -220,7 +224,7 @@ export const useOnboardingPlanStore = create<WizardStore>((set) => ({
   addGoal: (goal) =>
     set((s) => ({
       step3: {
-        goals: [...s.step3.goals, { ...goal, tempId: globalThis.crypto.randomUUID() }],
+        goals: [...s.step3.goals, { ...goal, type: goal.type ?? 'fixed', tempId: globalThis.crypto.randomUUID() }],
       },
     })),
   updateGoal: (tempId, patch) =>
@@ -294,6 +298,7 @@ export const useOnboardingPlanStore = create<WizardStore>((set) => ({
           target: g.target,
           deadline: g.deadline,
           priority: g.priority,
+          type: g.type,
         })),
       },
       step4: { allocationPreview, userOverrides: {} },
