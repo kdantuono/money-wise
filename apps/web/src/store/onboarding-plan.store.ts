@@ -12,6 +12,7 @@ import type {
   WizardState,
   WizardStep,
   WizardGoalDraft,
+  WizardSkipState,
   AllocationResult,
 } from '@/types/onboarding-plan';
 
@@ -93,6 +94,10 @@ interface Actions {
   // Modal state for "Aggiungi obiettivo" Dialog (issue #463)
   setAddGoalModalOpen: (open: boolean) => void;
   setEditingPresetId: (id: string | null) => void;
+  /** Set the route to navigate to when the wizard modal is dismissed. */
+  setInvokerRoute: (route: string | null) => void;
+  /** Save partial skip state when the user clicks "Salta" on Step 1. */
+  setSkipState: (state: WizardSkipState | null) => void;
 }
 
 type WizardStore = WizardState & Actions;
@@ -108,6 +113,8 @@ const initialState: WizardState = {
   persistedPlanId: null,
   isAddGoalModalOpen: false,
   editingPresetId: null,
+  invokerRoute: null,
+  skipState: null,
 };
 
 export const useOnboardingPlanStore = create<WizardStore>((set) => ({
@@ -222,4 +229,6 @@ export const useOnboardingPlanStore = create<WizardStore>((set) => ({
   reset: () => set(initialState),
   setAddGoalModalOpen: (open) => set({ isAddGoalModalOpen: open }),
   setEditingPresetId: (id) => set({ editingPresetId: id }),
+  setInvokerRoute: (route) => set({ invokerRoute: route }),
+  setSkipState: (state) => set({ skipState: state }),
 }));

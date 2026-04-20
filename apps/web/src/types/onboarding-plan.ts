@@ -158,6 +158,13 @@ export interface WizardStepAiPrefs {
   enableAiInsights: boolean;
 }
 
+export interface WizardSkipState {
+  /** Step the user was on when they clicked "Salta". */
+  atStep: number;
+  /** ISO timestamp of when Salta was triggered. */
+  savedAt: string;
+}
+
 export interface WizardState {
   currentStep: WizardStep;
   step1: WizardStepIncome;
@@ -173,6 +180,17 @@ export interface WizardState {
   isAddGoalModalOpen: boolean;
   /** Preset id currently being edited in the modal; null for manual entry. */
   editingPresetId: string | null;
+  /**
+   * Route to navigate back to when the wizard modal is closed.
+   * Set by PlanPageClient on mount (from ?from= param or document.referrer).
+   * Fallback: /dashboard.
+   */
+  invokerRoute: string | null;
+  /**
+   * Partial state saved when user clicks "Salta" from Step 1.
+   * Used to show "resume onboarding" banner on dashboard.
+   */
+  skipState: WizardSkipState | null;
 }
 
 // ─────────────────────────────────────────────────────────────────────────

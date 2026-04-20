@@ -3,15 +3,16 @@
 /**
  * PlanPageClient — hydration layer for /onboarding/plan.
  *
- * When mode='edit' (user already onboarded), loads the existing plan from
- * Supabase and hydrates the wizard store before rendering WizardPianoGenerato.
- * This ensures the wizard is pre-populated rather than starting from blank state.
- *
- * When mode='create' (first-time onboarding), renders the wizard immediately
- * with no loading round-trip needed.
+ * Owns the Radix Dialog.Root that wraps WizardPianoGenerato.
+ * - In 'create' mode (first-time onboarding): dialog opens immediately.
+ * - In 'edit' mode: loads existing plan, hydrates store, then opens dialog.
+ * Close/ESC/backdrop click navigates to invokerRoute (from ?from= param or
+ * document.referrer same-origin), falling back to /dashboard.
  */
 
 import { useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import * as Dialog from '@radix-ui/react-dialog';
 import { Loader2 } from 'lucide-react';
 import { useAuthStore } from '@/store/auth.store';
 import { useOnboardingPlanStore } from '@/store/onboarding-plan.store';
@@ -24,13 +25,37 @@ interface PlanPageClientProps {
 }
 
 export function PlanPageClient({ mode }: PlanPageClientProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const user = useAuthStore((s) => s.user);
   const hydrateFromPlan = useOnboardingPlanStore((s) => s.hydrateFromPlan);
+  const setInvokerRoute = useOnboardingPlanStore((s) => s.setInvokerRoute);
+  const invokerRoute = useOnboardingPlanStore((s) => s.invokerRoute);
   const [isHydrating, setIsHydrating] = useState(mode === 'edit');
   const [hydrateError, setHydrateError] = useState<string | null>(null);
+  const [open, setOpen] = useState(true);
+
+  // Determine invoker route once on mount — from ?from= param, same-origin referrer,
+  // or fallback to /dashboard.
+  useEffect(() => {
+    const fromParam = searchParams.get('from');
+    if (fromParam) {
+      setInvokerRoute(fromParam);
+      return;
+    }
+    try {
+      const ref = document.referrer;
+      if (ref && new URL(ref).origin === window.location.origin) {
+        setInvokerRoute(new URL(ref).pathname);
+        return;
+      }
+    } catch {
+      // referrer parse failed — use fallback
+    }
+    setInvokerRoute('/dashboard');
+  }, [searchParams, setInvokerRoute]);
 
   useEffect(() => {
-    // Only hydrate in edit mode and when user is available.
     if (mode !== 'edit' || !user?.id) {
       setIsHydrating(false);
       return;
@@ -42,14 +67,8 @@ export function PlanPageClient({ mode }: PlanPageClientProps) {
       try {
         const bundle = await onboardingPlanClient.loadPlan(user.id);
         if (cancelled) return;
-
         if (bundle) {
-          // Merge AI preferences from profile if stored there.
-          // For now, fall back to defaults — the wizard step 5 lets user adjust.
           hydrateFromPlan(bundle);
-        } else {
-          // No plan found even though mode=edit — treat as create.
-          // (Edge case: user manually navigated with ?mode=edit before creating.)
         }
       } catch (err) {
         if (!cancelled) {
@@ -70,6 +89,14 @@ export function PlanPageClient({ mode }: PlanPageClientProps) {
       cancelled = true;
     };
   }, [mode, user?.id, hydrateFromPlan]);
+
+  /** Navigate away when the dialog closes (ESC, overlay click, X button, Salta). */
+  const handleOpenChange = (isOpen: boolean) => {
+    setOpen(isOpen);
+    if (!isOpen) {
+      router.push(invokerRoute ?? '/dashboard');
+    }
+  };
 
   if (isHydrating) {
     return (
@@ -100,5 +127,9 @@ export function PlanPageClient({ mode }: PlanPageClientProps) {
     );
   }
 
-  return <WizardPianoGenerato mode={mode} />;
+  return (
+    <Dialog.Root open={open} onOpenChange={handleOpenChange}>
+      <WizardPianoGenerato mode={mode} onClose={() => handleOpenChange(false)} />
+    </Dialog.Root>
+  );
 }
