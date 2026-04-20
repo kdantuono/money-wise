@@ -367,3 +367,74 @@ describe('computeAllocation -- beta+gamma waterfall (issue #458)', () => {
     expect(result.totalAllocated).toBeCloseTo(300, 2);
   });
 });
+
+describe('CRIT-03 hotfix regression (user screenshot bug)', () => {
+  beforeEach(() => {
+    _goalIdCounter = 0;
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-04-19T22:00:00Z'));
+  });
+  afterEach(() => { vi.useRealTimers(); });
+
+  it('non-emergency goal with priority=1 and short deadline is NOT treated as emergency', () => {
+    const input = makeInput({
+      monthlyIncome: 2250,
+      monthlySavingsTarget: 450,
+      essentialsPct: 78,
+      goals: [makeGoal({
+        id: 'debt-1',
+        name: 'Eliminare Debiti',
+        target: 3500,
+        current: 0,
+        deadline: '2026-05-19',
+        priority: 1,
+      })],
+    });
+    const result = computeAllocation(input);
+    expect(result.items[0].reasoning).not.toContain('Fondo di emergenza');
+    expect(result.items[0].reasoning).not.toContain('40%');
+    expect(result.items[0].reasoning.toLowerCase()).toMatch(/priorit\u00e0 alta/);
+  });
+
+  it('global warning reflects infeasible items correctly (non contradictory)', () => {
+    const input = makeInput({
+      monthlyIncome: 2250,
+      monthlySavingsTarget: 450,
+      essentialsPct: 78,
+      goals: [makeGoal({
+        id: 'debt-1',
+        name: 'Eliminare Debiti',
+        target: 3500,
+        current: 0,
+        deadline: '2026-05-19',
+        priority: 1,
+      })],
+    });
+    const result = computeAllocation(input);
+    const hasInfeasible = result.items.some((it) => !it.deadlineFeasible);
+    if (hasInfeasible && result.unallocated > 0) {
+      const residuoWarning = result.warnings.find((w) => w.includes('Budget residuo'));
+      expect(residuoWarning).toBeDefined();
+      expect(residuoWarning).not.toContain('finanziati per intero');
+      expect(residuoWarning).toMatch(/deadline non raggiungibile|considera/i);
+    }
+  });
+
+  it('emergency goal by name pattern IS detected correctly', () => {
+    const input = makeInput({
+      monthlyIncome: 3000,
+      monthlySavingsTarget: 500,
+      essentialsPct: 50,
+      goals: [makeGoal({
+        id: 'emergency-1',
+        name: 'Fondo Emergenza',
+        target: 5000,
+        current: 0,
+        deadline: '2027-04-19',
+        priority: 1,
+      })],
+    });
+    const result = computeAllocation(input);
+    expect(result.items[0].reasoning).toContain('Fondo di emergenza');
+  });
+});
