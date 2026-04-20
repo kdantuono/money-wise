@@ -10,6 +10,8 @@ import type {
   BehavioralWarning,
   SuggestionChip,
 } from '@/types/onboarding-plan';
+import { GoalPoolSection } from './GoalPoolSection';
+import { LifestyleInfoSection } from './LifestyleInfoSection';
 
 // ─────────────────────────────────────────────────────────────────────────
 // Singleton advisor instance (pure, no I/O)
@@ -229,10 +231,17 @@ export function StepCalibration() {
   const savingsPool = Math.min(step2.monthlySavingsTarget, incomeAfterEssentials);
   const maxSlider = Math.max(savingsPool, 1);
 
+  const hasPoolsBreakdown = !!result.pools;
+  const lifestyleProtected = hasPoolsBreakdown ? result.pools!.lifestyle.budget : 0;
+
   return (
     <div className="space-y-4" data-testid="step-calibration">
-      {/* Summary bar */}
-      <div className="grid grid-cols-3 gap-2 p-3 rounded-xl bg-muted/50 border border-border text-center">
+      {/* Summary bar: 3-col (legacy) or 2x2 mobile / 4-col desktop (3-pool) */}
+      <div
+        className={`grid gap-2 p-3 rounded-xl bg-muted/50 border border-border text-center ${
+          hasPoolsBreakdown ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3'
+        }`}
+      >
         <div>
           <p className="text-xs text-muted-foreground">Post-essenziali</p>
           <p className="text-sm font-semibold text-foreground">{fmtEur(incomeAfterEssentials)}</p>
@@ -255,6 +264,14 @@ export function StepCalibration() {
             {fmtEur(unallocated)}
           </p>
         </div>
+        {hasPoolsBreakdown && (
+          <div data-testid="summary-lifestyle">
+            <p className="text-xs text-muted-foreground">Lifestyle</p>
+            <p className="text-sm font-semibold text-amber-600 dark:text-amber-400">
+              {fmtEur(lifestyleProtected)}
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Hard block error */}
@@ -306,7 +323,43 @@ export function StepCalibration() {
         </div>
       )}
 
-      {/* Per-goal sliders */}
+      {/* 3-pool breakdown rendering (when pools present, Sprint 1.5.3 WP-Q5) */}
+      {hasPoolsBreakdown && (
+        <div className="space-y-3">
+          {(result.pools!.savings.items.length > 0 || result.pools!.savings.budget > 0) && (
+            <GoalPoolSection
+              poolType="savings"
+              title="Savings"
+              budget={result.pools!.savings.budget}
+              allocated={result.pools!.savings.allocated}
+              residual={result.pools!.savings.residual}
+              items={result.pools!.savings.items}
+              goals={step3.goals}
+              userOverrides={userOverrides}
+              onSliderChange={(goalId, v) => setUserOverride(goalId, v)}
+              maxSlider={Math.max(result.pools!.savings.budget, 1)}
+            />
+          )}
+          {(result.pools!.investments.items.length > 0 || result.pools!.investments.budget > 0) && (
+            <GoalPoolSection
+              poolType="investments"
+              title="Investimenti"
+              budget={result.pools!.investments.budget}
+              allocated={result.pools!.investments.allocated}
+              residual={result.pools!.investments.residual}
+              items={result.pools!.investments.items}
+              goals={step3.goals}
+              userOverrides={userOverrides}
+              onSliderChange={(goalId, v) => setUserOverride(goalId, v)}
+              maxSlider={Math.max(result.pools!.investments.budget, 1)}
+            />
+          )}
+          <LifestyleInfoSection budget={result.pools!.lifestyle.budget} />
+        </div>
+      )}
+
+      {/* Per-goal sliders (legacy flat list — shown when pools NOT present) */}
+      {!hasPoolsBreakdown && (
       <ul className="space-y-3" aria-label="Calibrazione allocazione per obiettivo">
         {result.items.map((item) => {
           const goal = step3.goals.find((g) => g.tempId === item.goalId);
@@ -380,6 +433,7 @@ export function StepCalibration() {
           );
         })}
       </ul>
+      )}
 
       {/* Global allocation warnings from waterfall */}
       {result.warnings.length > 0 && (
