@@ -164,7 +164,7 @@ export function StepCalibration() {
     setResult(r);
     setBehavioralWarnings(r.behavioralWarnings ?? []);
     setAllocationPreview(r);
-  }, [buildInput, setAllocationPreview, step1.monthlyIncome, step3.goals.length]);
+  }, [buildInput, setAllocationPreview, step2.monthlyIncome, step3.goals.length]);
 
   // Initial analysis
   useEffect(() => {
@@ -184,7 +184,7 @@ export function StepCalibration() {
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [userOverrides, buildInput, step1.monthlyIncome]);
+  }, [userOverrides, buildInput, step2.monthlyIncome]);
 
   const handleSliderChange = (goalId: string, value: number[]) => {
     setUserOverride(goalId, value[0] ?? 0);
