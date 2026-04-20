@@ -14,7 +14,7 @@ import { onboardingPlanClient, OnboardingPlanApiError } from '@/services/onboard
 import { StepWelcome } from './steps/StepWelcome';
 import { StepProfile } from './steps/StepProfile';
 import { StepGoals } from './steps/StepGoals';
-import { StepPlanReview } from './steps/StepPlanReview';
+import { StepCalibration } from './steps/StepCalibration';
 import { StepAiPrefs } from './steps/StepAiPrefs';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, Check, Loader2 } from 'lucide-react';
@@ -150,8 +150,13 @@ export function WizardPianoGenerato({ mode = 'create', onClose }: WizardPianoGen
 
   // Step 1 (Welcome) always allows advancing.
   // Step 2 (Profilo) requires all 5 allocation fields valid + sum constraint.
+  // Step 4 (Calibration/WP-E) is blocked when the advisor detected a hard-block condition.
   // All other steps allow free navigation.
-  const canAdvance = currentStep === 2 ? canAdvanceStep2 : true;
+  const step4HardBlocked = currentStep === 4 && !!allocationPreview?.hardBlock;
+  const canAdvance =
+    currentStep === 2 ? canAdvanceStep2 :
+    currentStep === 4 ? !step4HardBlocked :
+    true;
 
   return (
     <Dialog.Portal>
@@ -242,8 +247,8 @@ export function WizardPianoGenerato({ mode = 'create', onClose }: WizardPianoGen
               {currentStep === 2 && <StepProfile />}
               {/* Step 3 — Obiettivi */}
               {currentStep === 3 && <StepGoals />}
-              {/* Step 4 — Piano proposto */}
-              {currentStep === 4 && <StepPlanReview />}
+              {/* Step 4 — Calibrazione AI-First (WP-E) */}
+              {currentStep === 4 && <StepCalibration />}
               {/* Step 5 — Preferenze AI */}
               {currentStep === 5 && <StepAiPrefs />}
             </motion.div>
