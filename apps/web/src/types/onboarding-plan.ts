@@ -76,6 +76,12 @@ export interface AllocationGoalInput {
   priority: PriorityRank;
   /** DB type field; defaults to 'fixed' when absent (backward compat). */
   type?: GoalType;
+  /**
+   * Sprint 1.5.3 WP-Q3: preset id from StepGoals.PRESET_GOALS. Used by
+   * `inferGoalType` for deterministic pool routing when 3-pool model active.
+   * Absent for manually-added custom goals (falls back to name-heuristic).
+   */
+  presetId?: string | null;
 }
 
 /**
@@ -127,10 +133,43 @@ export interface AllocationResultItem {
 }
 
 /**
+ * Sprint 1.5.3 WP-Q3: Pool category for goal routing.
+ * Lifestyle is a locked-info budget (not a pool goals can be routed to).
+ */
+export type PoolCategory = 'savings' | 'investments';
+
+/**
+ * Sprint 1.5.3 WP-Q3: Per-pool allocation breakdown.
+ * Independent waterfall runs on savings/investments with its own budget.
+ */
+export interface PoolAllocation {
+  budget: number;
+  allocated: number;
+  residual: number;
+  items: AllocationResultItem[];
+}
+
+/**
+ * Sprint 1.5.3 WP-Q3: 3-pool breakdown carved independently from
+ * incomeAfterEssentials (lifestyleBuffer + savingsTarget + investmentsTarget
+ * ≤ incomeAfterEssentials, enforced by hardBlock boundary check).
+ * lifestyle is informational only (locked: true), non allocable to goals.
+ */
+export interface PoolBreakdown {
+  lifestyle: { budget: number; locked: true };
+  savings: PoolAllocation;
+  investments: PoolAllocation;
+}
+
+/**
  * Full algorithm output.
  * `totalAllocated` = sum of items' monthlyAmount ≤ min(monthlySavingsTarget, incomeAfterEssentials).
  * `unallocated` = savingsPool - totalAllocated (may be > 0 when all goals are fully funded
  * before the pool is exhausted — see `warnings` for the "budget residuo" notice).
+ *
+ * Sprint 1.5.3 WP-Q3: `pools` populated only when ENABLE_3POOL_MODEL flag is on.
+ * Legacy path (flag off) returns undefined for pools; `items` + `totalAllocated`
+ * + `unallocated` maintain backward compat as if all goals went to a single savings pool.
  */
 export interface AllocationResult {
   items: AllocationResultItem[];
@@ -154,6 +193,12 @@ export interface AllocationResult {
    * WP-E: Suggestion chips for infeasible goals.
    */
   suggestions?: SuggestionChip[];
+  /**
+   * Sprint 1.5.3 WP-Q3: 3-pool breakdown. Undefined when ENABLE_3POOL_MODEL=false
+   * (legacy single-pool behavior). Populated with lifestyle/savings/investments
+   * when flag is on.
+   */
+  pools?: PoolBreakdown;
 }
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -253,6 +298,13 @@ export interface WizardGoalDraft {
   priority: PriorityRank;
   /** DB type field. Defaults to 'fixed'. */
   type: GoalType;
+  /**
+   * Sprint 1.5.3 WP-Q3: preset id da StepGoals.PRESET_GOALS (es. 'fondo-emergenza',
+   * 'iniziare-a-investire'). Usato da inferGoalType per routing pool deterministico
+   * (presetId exact match → pool, altrimenti name-heuristic fallback).
+   * Absent per goal creati via "+ Aggiungi manualmente".
+   */
+  presetId?: string | null;
 }
 
 export interface WizardStepGoals {

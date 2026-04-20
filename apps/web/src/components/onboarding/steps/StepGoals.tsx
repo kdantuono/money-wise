@@ -415,7 +415,9 @@ export function StepGoals() {
     if (editingGoalId) {
       updateGoal(editingGoalId, goal);
     } else {
-      addGoal(goal);
+      // Sprint 1.5.3 WP-Q3: propagate presetId for deterministic pool routing via inferGoalType.
+      // Null when goal was created via "+ Aggiungi manualmente" (editingPresetId === null).
+      addGoal({ ...goal, presetId: editingPresetId });
     }
     setAddGoalModalOpen(false);
     setEditingPresetId(null);
