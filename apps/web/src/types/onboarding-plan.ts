@@ -76,6 +76,12 @@ export interface AllocationGoalInput {
   priority: PriorityRank;
   /** DB type field; defaults to 'fixed' when absent (backward compat). */
   type?: GoalType;
+  /**
+   * Sprint 1.5.3 WP-Q3: preset id from StepGoals.PRESET_GOALS. Used by
+   * `inferGoalType` for deterministic pool routing when 3-pool model active.
+   * Absent for manually-added custom goals (falls back to name-heuristic).
+   */
+  presetId?: string | null;
 }
 
 /**
@@ -292,6 +298,13 @@ export interface WizardGoalDraft {
   priority: PriorityRank;
   /** DB type field. Defaults to 'fixed'. */
   type: GoalType;
+  /**
+   * Sprint 1.5.3 WP-Q3: preset id da StepGoals.PRESET_GOALS (es. 'fondo-emergenza',
+   * 'iniziare-a-investire'). Usato da inferGoalType per routing pool deterministico
+   * (presetId exact match → pool, altrimenti name-heuristic fallback).
+   * Absent per goal creati via "+ Aggiungi manualmente".
+   */
+  presetId?: string | null;
 }
 
 export interface WizardStepGoals {

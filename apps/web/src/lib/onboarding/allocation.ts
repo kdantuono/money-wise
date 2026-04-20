@@ -455,9 +455,7 @@ export function computeAllocation(input: AllocationInput): AllocationResult {
   const savingsGoals: AllocationGoalInput[] = [];
   const investGoals: AllocationGoalInput[] = [];
   for (const g of goals) {
-    const presetId =
-      (g as AllocationGoalInput & { presetId?: string | null }).presetId ?? null;
-    const pool = inferGoalType({ name: g.name, presetId });
+    const pool = inferGoalType({ name: g.name, presetId: g.presetId ?? null });
     if (pool === 'investments') investGoals.push(g);
     else savingsGoals.push(g);
   }

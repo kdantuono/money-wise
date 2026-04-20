@@ -148,6 +148,7 @@ export function StepCalibration() {
         current: 0,
         deadline: g.deadline,
         priority: g.priority,
+        presetId: g.presetId ?? null,
       })),
       userOverrides,
     };

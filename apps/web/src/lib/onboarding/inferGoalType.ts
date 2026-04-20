@@ -30,7 +30,8 @@ export interface InferGoalTypeInput {
 }
 
 export function inferGoalType(goal: InferGoalTypeInput): PoolCategory {
-  if (goal.presetId && goal.presetId in PRESET_TO_POOL) {
+  // Own-property check prevents prototype pollution (e.g. presetId='__proto__').
+  if (goal.presetId && Object.prototype.hasOwnProperty.call(PRESET_TO_POOL, goal.presetId)) {
     return PRESET_TO_POOL[goal.presetId];
   }
   const name = (goal.name ?? '').trim();

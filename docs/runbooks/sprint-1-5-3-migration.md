@@ -2,7 +2,7 @@
 
 **Status**: active (post-merge tracking)
 **Feature flag**: `NEXT_PUBLIC_ENABLE_3POOL_MODEL`
-**Related**: [sprint-1-5-3-spec](../../.claude/plans/non-so-come-procedere-joyful-teacup.md) · [ADR-004](../../decisions/adr-004-banking-strategy-gated-by-piva.md) (pattern riferimento)
+**Related**: Sprint 1.5.3 spec (in Obsidian vault `~/vault/moneywise/planning/sprint-1-5-3-spec.md`, not committed to repo) · [ADR-004](../../decisions/adr-004-banking-strategy-gated-by-piva.md) (pattern riferimento)
 
 ## Context
 
@@ -47,7 +47,7 @@ Conseguenza: utenti esistenti con plan pre-Q3 hanno comunque `goal_allocations` 
 
 ### Post-rollback:
 
-1. `legacyComputeAllocation` path riprende comportamento Sprint 1.5.2
+1. `_is3PoolEnabled()` in `apps/web/src/lib/onboarding/allocation.ts` returns false → dispatcher routes to legacy single-pool path via `_computeSinglePool(goals, monthlySavingsTarget, incomeAfterEssentials, emitCapWarning=true, now)`, preservando comportamento Sprint 1.5.2
 2. Utenti non vedono pools breakdown ma allocation base funziona
 3. `goal_allocations` DB intatto (nessuna perdita)
 4. File issue su GitHub con Sentry trace + repro scenario
@@ -70,11 +70,11 @@ Se post-beta (> 20 utenti) SLA rollback richiede < 1 minuto:
 
 ### Removal procedure:
 
-1. Elimina `_is3PoolEnabled()` + `legacyComputeAllocation` branch da `allocation.ts`
-2. Rimuovi `NEXT_PUBLIC_ENABLE_3POOL_MODEL` da `.env.example`
+1. Elimina `_is3PoolEnabled()` helper + il conditional `if (!_is3PoolEnabled()) return legacy...` dispatcher branch da `apps/web/src/lib/onboarding/allocation.ts` — il file mantiene solo il 3-pool path inline nella funzione `computeAllocation` esportata, chiamando `_computeSinglePool` due volte (savings + investments)
+2. Rimuovi `NEXT_PUBLIC_ENABLE_3POOL_MODEL` da `apps/web/.env.example`
 3. Aggiorna `computeAllocation` jsdoc: "3-pool behavior permanent since 2026-05-05"
 4. Rimuovi `describe('computeAllocation — 3-pool model')` wrapper — i test diventano parte del flow principale
-5. Rimuovi `emitCapWarning` parametro da `_computeSinglePool` (legacy-only behavior)
+5. Rimuovi `emitCapWarning` parametro da `_computeSinglePool` (legacy-only behavior, post-removal il caller chiama sempre con `false`)
 6. PR dedicata `chore(onboarding): remove ENABLE_3POOL_MODEL feature flag (post-stability)`
 
 ## Dev / test user cleanup (Opzione D fallback)
