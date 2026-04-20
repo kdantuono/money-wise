@@ -633,7 +633,8 @@ export type Database = {
           name: string
           priority: number
           status: Database["public"]["Enums"]["goal_status"]
-          target: number
+          target: number | null
+          type: string
           updated_at: string
           user_id: string
         }
@@ -646,7 +647,8 @@ export type Database = {
           name: string
           priority: number
           status?: Database["public"]["Enums"]["goal_status"]
-          target: number
+          target?: number | null
+          type?: string
           updated_at?: string
           user_id: string
         }
@@ -659,7 +661,8 @@ export type Database = {
           name?: string
           priority?: number
           status?: Database["public"]["Enums"]["goal_status"]
-          target?: number
+          target?: number | null
+          type?: string
           updated_at?: string
           user_id?: string
         }
