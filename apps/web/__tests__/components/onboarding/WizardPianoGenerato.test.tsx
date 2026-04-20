@@ -433,7 +433,65 @@ describe('WizardPianoGenerato (Sprint 1.5)', () => {
     });
   });
 
-  // ---- 6. handleSubmit — error path ----------------------------------------
+  // ---- 6. Edit mode — header and button label --------------------------------
+  describe('Edit mode (mode="edit")', () => {
+    it('renders "Modifica il tuo piano" header and "Salva modifiche" button on step 5', () => {
+      mockAuthStore.mockReturnValue({ user: { id: 'u1', onboarded: true }, setUser: mockSetUser });
+      mockPlanStore.mockReturnValue(
+        makeState({
+          currentStep: 5,
+          step3: { goals: GOALS_ONE },
+          step4: {
+            allocationPreview: makeAllocation([GOAL_TEMP_ID]),
+            userOverrides: {},
+          },
+        })
+      );
+
+      render(<WizardPianoGenerato mode="edit" />);
+      expect(screen.getByRole('heading', { name: /Modifica il tuo piano/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Salva modifiche/i })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /Conferma e crea piano/i })).not.toBeInTheDocument();
+    });
+
+    it('renders create-mode header and CTA by default (mode omitted)', () => {
+      mockAuthStore.mockReturnValue({ user: { id: 'u1', onboarded: false }, setUser: mockSetUser });
+      mockPlanStore.mockReturnValue(
+        makeState({
+          currentStep: 5,
+          step3: { goals: GOALS_ONE },
+          step4: {
+            allocationPreview: makeAllocation([GOAL_TEMP_ID]),
+            userOverrides: {},
+          },
+        })
+      );
+
+      render(<WizardPianoGenerato />);
+      expect(screen.getByRole('heading', { name: /Piano Finanziario/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Conferma e crea piano/i })).toBeInTheDocument();
+    });
+
+    it('shows "Salvataggio..." loading text in edit mode when isPersisting=true', () => {
+      mockAuthStore.mockReturnValue({ user: { id: 'u1', onboarded: true }, setUser: mockSetUser });
+      mockPlanStore.mockReturnValue(
+        makeState({
+          currentStep: 5,
+          step3: { goals: GOALS_ONE },
+          step4: {
+            allocationPreview: makeAllocation([GOAL_TEMP_ID]),
+            userOverrides: {},
+          },
+          isPersisting: true,
+        })
+      );
+
+      render(<WizardPianoGenerato mode="edit" />);
+      expect(screen.getByRole('button', { name: /Salvataggio/i })).toBeDisabled();
+    });
+  });
+
+  // ---- 7. handleSubmit — error path ----------------------------------------
   describe('handleSubmit — error', () => {
     it('shows red banner and still toggles isPersisting back to false', async () => {
       const actions: StoreActionSpies = {

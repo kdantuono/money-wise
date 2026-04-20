@@ -121,7 +121,7 @@ export default function GoalsPage() {
         </div>
         <Button
           variant="outline"
-          onClick={() => router.push('/onboarding/plan')}
+          onClick={() => router.push('/onboarding/plan?mode=edit')}
         >
           <Plus className="w-4 h-4 mr-2" />
           Modifica piano
