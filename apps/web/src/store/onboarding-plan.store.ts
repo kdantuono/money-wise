@@ -48,6 +48,9 @@ interface Actions {
   setIsPersisting: (persisting: boolean) => void;
   setPersistedPlanId: (id: string | null) => void;
   reset: () => void;
+  // Modal state for "Aggiungi obiettivo" Dialog (issue #463)
+  setAddGoalModalOpen: (open: boolean) => void;
+  setEditingPresetId: (id: string | null) => void;
 }
 
 type WizardStore = WizardState & Actions;
@@ -61,6 +64,8 @@ const initialState: WizardState = {
   step5: { enableAiCategorization: true, enableAiInsights: true },
   isPersisting: false,
   persistedPlanId: null,
+  isAddGoalModalOpen: false,
+  editingPresetId: null,
 };
 
 export const useOnboardingPlanStore = create<WizardStore>((set) => ({
@@ -122,4 +127,6 @@ export const useOnboardingPlanStore = create<WizardStore>((set) => ({
   setIsPersisting: (persisting) => set({ isPersisting: persisting }),
   setPersistedPlanId: (id) => set({ persistedPlanId: id }),
   reset: () => set(initialState),
+  setAddGoalModalOpen: (open) => set({ isAddGoalModalOpen: open }),
+  setEditingPresetId: (id) => set({ editingPresetId: id }),
 }));

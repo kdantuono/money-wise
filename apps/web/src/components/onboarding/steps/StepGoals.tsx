@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import * as Dialog from '@radix-ui/react-dialog';
 import { useOnboardingPlanStore } from '@/store/onboarding-plan.store';
 import { PRIORITY_LABEL_IT, type PriorityRank } from '@/types/onboarding-plan';
 import { Button } from '@/components/ui/button';
@@ -21,6 +22,7 @@ import {
 // ---------------------------------------------------------------------------
 
 interface PresetGoal {
+  id: string;
   name: string;
   icon: React.ComponentType<{ className?: string }>;
   color: string;
@@ -32,6 +34,7 @@ interface PresetGoal {
 
 const PRESET_GOALS: PresetGoal[] = [
   {
+    id: 'fondo-emergenza',
     name: 'Fondo Emergenza',
     icon: PiggyBank,
     color: 'text-blue-600',
@@ -41,6 +44,7 @@ const PRESET_GOALS: PresetGoal[] = [
     priority: 1,
   },
   {
+    id: 'comprare-casa',
     name: 'Comprare Casa',
     icon: Landmark,
     color: 'text-green-600',
@@ -50,6 +54,7 @@ const PRESET_GOALS: PresetGoal[] = [
     priority: 2,
   },
   {
+    id: 'iniziare-a-investire',
     name: 'Iniziare a Investire',
     icon: TrendingUp,
     color: 'text-purple-600',
@@ -59,6 +64,7 @@ const PRESET_GOALS: PresetGoal[] = [
     priority: 2,
   },
   {
+    id: 'eliminare-debiti',
     name: 'Eliminare Debiti',
     icon: CreditCard,
     color: 'text-red-600',
@@ -68,6 +74,7 @@ const PRESET_GOALS: PresetGoal[] = [
     priority: 1,
   },
   {
+    id: 'risparmiare-di-piu',
     name: 'Risparmiare di Più',
     icon: Banknote,
     color: 'text-orange-600',
@@ -77,6 +84,7 @@ const PRESET_GOALS: PresetGoal[] = [
     priority: 3,
   },
   {
+    id: 'viaggi-vacanza',
     name: 'Viaggi / Vacanza',
     icon: Plane,
     color: 'text-cyan-600',
@@ -86,6 +94,7 @@ const PRESET_GOALS: PresetGoal[] = [
     priority: 3,
   },
   {
+    id: 'far-crescere-patrimonio',
     name: 'Far Crescere Patrimonio',
     icon: BarChart3,
     color: 'text-emerald-600',
@@ -106,44 +115,187 @@ function addMonthsToToday(months: number): string {
   return d.toISOString().slice(0, 10);
 }
 
+const EMPTY_DRAFT = {
+  name: '',
+  target: '',
+  deadline: '',
+  priority: 2 as PriorityRank,
+};
+
 // ---------------------------------------------------------------------------
-// Component
+// AddGoalModal — Radix Dialog with form (issue #463)
+// ---------------------------------------------------------------------------
+
+interface AddGoalModalProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  presetId: string | null;
+  onSubmit: (goal: { name: string; target: number; deadline: string | null; priority: PriorityRank }) => void;
+}
+
+function AddGoalModal({ open, onOpenChange, presetId, onSubmit }: AddGoalModalProps) {
+  const [draft, setDraft] = useState(EMPTY_DRAFT);
+
+  // Pre-fill draft whenever the modal opens with a preset
+  useEffect(() => {
+    if (open) {
+      if (presetId) {
+        const preset = PRESET_GOALS.find((p) => p.id === presetId);
+        if (preset) {
+          setDraft({
+            name: preset.name,
+            target: String(preset.defaultTarget),
+            deadline: addMonthsToToday(preset.defaultDeadlineMonths),
+            priority: preset.priority,
+          });
+        }
+      } else {
+        setDraft(EMPTY_DRAFT);
+      }
+    }
+  }, [open, presetId]);
+
+  const handleSubmit = () => {
+    const target = Number(draft.target);
+    if (!draft.name || target <= 0) return;
+    onSubmit({
+      name: draft.name,
+      target,
+      deadline: draft.deadline || null,
+      priority: draft.priority,
+    });
+  };
+
+  return (
+    <Dialog.Root open={open} onOpenChange={onOpenChange}>
+      <Dialog.Portal>
+        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
+        <Dialog.Content
+          className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-border bg-background p-6 shadow-lg focus:outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95"
+          aria-describedby={undefined}
+        >
+          <div className="flex items-center justify-between mb-4">
+            <Dialog.Title
+              id="add-goal-dialog-title"
+              className="text-base font-semibold text-foreground"
+            >
+              Aggiungi un obiettivo
+            </Dialog.Title>
+            <Dialog.Close asChild>
+              <button
+                className="rounded-lg p-1.5 hover:bg-muted transition-colors"
+                aria-label="Chiudi"
+              >
+                <X className="w-4 h-4 text-muted-foreground" />
+              </button>
+            </Dialog.Close>
+          </div>
+
+          <div className="space-y-3">
+            <div>
+              <label htmlFor="goal-name" className="text-sm font-medium text-foreground block mb-1">
+                Nome
+              </label>
+              <input
+                id="goal-name"
+                type="text"
+                value={draft.name}
+                onChange={(e) => setDraft({ ...draft, name: e.target.value })}
+                className="w-full bg-muted/50 border border-border rounded-xl px-3 py-2 text-sm text-foreground"
+                placeholder="es. Fondo Emergenza"
+                autoFocus
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label htmlFor="goal-target" className="text-sm font-medium text-foreground block mb-1">
+                  Target (€)
+                </label>
+                <input
+                  id="goal-target"
+                  type="number"
+                  min={0}
+                  value={draft.target}
+                  onChange={(e) => setDraft({ ...draft, target: e.target.value })}
+                  className="w-full bg-muted/50 border border-border rounded-xl px-3 py-2 text-sm text-foreground"
+                  placeholder="15000"
+                />
+              </div>
+              <div>
+                <label htmlFor="goal-deadline" className="text-sm font-medium text-foreground block mb-1">
+                  Scadenza (opzionale)
+                </label>
+                <input
+                  id="goal-deadline"
+                  type="date"
+                  value={draft.deadline}
+                  onChange={(e) => setDraft({ ...draft, deadline: e.target.value })}
+                  className="w-full bg-muted/50 border border-border rounded-xl px-3 py-2 text-sm text-foreground"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="goal-priority" className="text-sm font-medium text-foreground block mb-1">
+                Priorità
+              </label>
+              <select
+                id="goal-priority"
+                value={draft.priority}
+                onChange={(e) =>
+                  setDraft({ ...draft, priority: Number(e.target.value) as PriorityRank })
+                }
+                className="w-full bg-muted/50 border border-border rounded-xl px-3 py-2 text-sm text-foreground"
+              >
+                <option value={1}>Alta</option>
+                <option value={2}>Media</option>
+                <option value={3}>Bassa</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 mt-5">
+            <Dialog.Close asChild>
+              <Button variant="outline">Annulla</Button>
+            </Dialog.Close>
+            <Button onClick={handleSubmit}>Aggiungi</Button>
+          </div>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// StepGoals
 // ---------------------------------------------------------------------------
 
 export function StepGoals() {
   const goals = useOnboardingPlanStore((s) => s.step3.goals);
   const addGoal = useOnboardingPlanStore((s) => s.addGoal);
   const removeGoal = useOnboardingPlanStore((s) => s.removeGoal);
+  const isAddGoalModalOpen = useOnboardingPlanStore((s) => s.isAddGoalModalOpen);
+  const editingPresetId = useOnboardingPlanStore((s) => s.editingPresetId);
+  const setAddGoalModalOpen = useOnboardingPlanStore((s) => s.setAddGoalModalOpen);
+  const setEditingPresetId = useOnboardingPlanStore((s) => s.setEditingPresetId);
 
-  const [showAdd, setShowAdd] = useState(false);
-  const [draft, setDraft] = useState({
-    name: '',
-    target: '',
-    deadline: '',
-    priority: 2 as PriorityRank,
-  });
-
-  const handleAdd = () => {
-    const target = Number(draft.target);
-    if (!draft.name || target <= 0) return;
-    addGoal({
-      name: draft.name,
-      target,
-      deadline: draft.deadline || null,
-      priority: draft.priority,
-    });
-    setDraft({ name: '', target: '', deadline: '', priority: 2 });
-    setShowAdd(false);
+  const openModal = (presetId: string | null = null) => {
+    setEditingPresetId(presetId);
+    setAddGoalModalOpen(true);
   };
 
-  const handlePresetClick = (preset: PresetGoal) => {
-    setDraft({
-      name: preset.name,
-      target: String(preset.defaultTarget),
-      deadline: addMonthsToToday(preset.defaultDeadlineMonths),
-      priority: preset.priority,
-    });
-    setShowAdd(true);
+  const closeModal = (open: boolean) => {
+    if (!open) {
+      setAddGoalModalOpen(false);
+      setEditingPresetId(null);
+    }
+  };
+
+  const handleSubmit = (goal: { name: string; target: number; deadline: string | null; priority: PriorityRank }) => {
+    addGoal(goal);
+    setAddGoalModalOpen(false);
+    setEditingPresetId(null);
   };
 
   return (
@@ -157,31 +309,29 @@ export function StepGoals() {
         </p>
       </div>
 
-      {/* Preset cards */}
-      {!showAdd && (
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
-          {PRESET_GOALS.map((preset) => {
-            const Icon = preset.icon;
-            return (
-              <button
-                key={preset.name}
-                type="button"
-                onClick={() => handlePresetClick(preset)}
-                className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border text-center transition-all hover:scale-105 hover:shadow-sm active:scale-95 ${preset.bg}`}
-                aria-label={`Aggiungi preset: ${preset.name}`}
-              >
-                <Icon className={`w-5 h-5 ${preset.color}`} />
-                <span className="text-xs font-medium text-foreground leading-tight">
-                  {preset.name}
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  €{preset.defaultTarget.toLocaleString('it-IT')}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      )}
+      {/* Preset cards — always visible */}
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
+        {PRESET_GOALS.map((preset) => {
+          const Icon = preset.icon;
+          return (
+            <button
+              key={preset.id}
+              type="button"
+              onClick={() => openModal(preset.id)}
+              className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border text-center transition-all hover:scale-105 hover:shadow-sm active:scale-95 ${preset.bg}`}
+              aria-label={`Aggiungi preset: ${preset.name}`}
+            >
+              <Icon className={`w-5 h-5 ${preset.color}`} />
+              <span className="text-xs font-medium text-foreground leading-tight">
+                {preset.name}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                €{preset.defaultTarget.toLocaleString('it-IT')}
+              </span>
+            </button>
+          );
+        })}
+      </div>
 
       {/* Added goals list */}
       {goals.length > 0 && (
@@ -210,7 +360,7 @@ export function StepGoals() {
         </ul>
       )}
 
-      {goals.length === 0 && !showAdd && (
+      {goals.length === 0 && (
         <div className="rounded-xl border border-dashed border-border p-4 text-center">
           <p className="text-sm text-muted-foreground">
             Nessun obiettivo ancora. Scegli un preset sopra o aggiungi manualmente.
@@ -218,96 +368,23 @@ export function StepGoals() {
         </div>
       )}
 
-      {/* Custom / pre-filled form */}
-      {!showAdd && (
-        <Button
-          onClick={() => setShowAdd(true)}
-          variant="outline"
-          className="w-full"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Aggiungi manualmente
-        </Button>
-      )}
+      {/* Manual add trigger */}
+      <Button
+        onClick={() => openModal(null)}
+        variant="outline"
+        className="w-full"
+      >
+        <Plus className="w-4 h-4 mr-2" />
+        Aggiungi manualmente
+      </Button>
 
-      {showAdd && (
-        <div className="space-y-3 rounded-xl border border-border bg-card p-4" suppressHydrationWarning>
-          <div suppressHydrationWarning>
-            <label htmlFor="goal-name" className="text-sm font-medium text-foreground block mb-1">
-              Nome
-            </label>
-            <input
-              id="goal-name"
-              type="text"
-              value={draft.name}
-              onChange={(e) => setDraft({ ...draft, name: e.target.value })}
-              className="w-full bg-muted/50 border border-border rounded-xl px-3 py-2 text-sm text-foreground"
-              placeholder="es. Fondo Emergenza"
-              suppressHydrationWarning
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div suppressHydrationWarning>
-              <label htmlFor="goal-target" className="text-sm font-medium text-foreground block mb-1">
-                Target (€)
-              </label>
-              <input
-                id="goal-target"
-                type="number"
-                min={0}
-                value={draft.target}
-                onChange={(e) => setDraft({ ...draft, target: e.target.value })}
-                className="w-full bg-muted/50 border border-border rounded-xl px-3 py-2 text-sm text-foreground"
-                placeholder="15000"
-                suppressHydrationWarning
-              />
-            </div>
-            <div suppressHydrationWarning>
-              <label htmlFor="goal-deadline" className="text-sm font-medium text-foreground block mb-1">
-                Scadenza (opzionale)
-              </label>
-              <input
-                id="goal-deadline"
-                type="date"
-                value={draft.deadline}
-                onChange={(e) => setDraft({ ...draft, deadline: e.target.value })}
-                className="w-full bg-muted/50 border border-border rounded-xl px-3 py-2 text-sm text-foreground"
-                suppressHydrationWarning
-              />
-            </div>
-          </div>
-          <div suppressHydrationWarning>
-            <label htmlFor="goal-priority" className="text-sm font-medium text-foreground block mb-1">
-              Priorità
-            </label>
-            <select
-              id="goal-priority"
-              value={draft.priority}
-              onChange={(e) =>
-                setDraft({ ...draft, priority: Number(e.target.value) as PriorityRank })
-              }
-              className="w-full bg-muted/50 border border-border rounded-xl px-3 py-2 text-sm text-foreground"
-              suppressHydrationWarning
-            >
-              <option value={1}>Alta</option>
-              <option value={2}>Media</option>
-              <option value={3}>Bassa</option>
-            </select>
-          </div>
-          <div className="flex justify-end gap-2">
-            <Button
-              variant="outline"
-              onClick={() => {
-                setShowAdd(false);
-                setDraft({ name: '', target: '', deadline: '', priority: 2 });
-              }}
-            >
-              Annulla
-            </Button>
-            <Button onClick={handleAdd}>Aggiungi</Button>
-          </div>
-        </div>
-      )}
+      {/* Radix Dialog modal */}
+      <AddGoalModal
+        open={isAddGoalModalOpen}
+        onOpenChange={closeModal}
+        presetId={editingPresetId}
+        onSubmit={handleSubmit}
+      />
     </div>
   );
 }
