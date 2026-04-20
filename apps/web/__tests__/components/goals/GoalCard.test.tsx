@@ -6,7 +6,7 @@ import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '../../utils/test-utils';
 import userEvent from '@testing-library/user-event';
-import { GoalCard, inferGoalType } from '../../../src/components/goals/GoalCard';
+import { GoalCard, inferGoalType, inferGoalCategory } from '../../../src/components/goals/GoalCard';
 import type { Goal } from '../../../src/services/goals.client';
 
 const makeGoal = (overrides: Partial<Goal> = {}): Goal => ({
@@ -18,6 +18,7 @@ const makeGoal = (overrides: Partial<Goal> = {}): Goal => ({
   priority: 2,
   monthlyAllocation: 200,
   status: 'ACTIVE',
+  type: 'fixed',
   ...overrides,
 });
 
@@ -93,7 +94,7 @@ describe('GoalCard', () => {
   });
 });
 
-describe('inferGoalType', () => {
+describe('inferGoalType (deprecated alias)', () => {
   it('infers emergency from "Fondo Emergenza"', () => {
     expect(inferGoalType('Fondo Emergenza')).toBe('emergency');
   });
@@ -108,5 +109,82 @@ describe('inferGoalType', () => {
 
   it('infers savings by default for unknown names', () => {
     expect(inferGoalType('Comprare Casa')).toBe('savings');
+  });
+});
+
+describe('inferGoalCategory (WP-K renamed)', () => {
+  it('returns emergency for "Fondo Emergenza"', () => {
+    expect(inferGoalCategory('Fondo Emergenza')).toBe('emergency');
+  });
+
+  it('returns investment for "Portafoglio Crypto"', () => {
+    expect(inferGoalCategory('Portafoglio Crypto')).toBe('investment');
+  });
+
+  it('returns lifestyle for "Viaggio a Parigi"', () => {
+    expect(inferGoalCategory('Viaggio a Parigi')).toBe('lifestyle');
+  });
+});
+
+describe('GoalCard — WP-K openended display', () => {
+  it('shows "Aperto" badge for openended goals', () => {
+    render(
+      <GoalCard
+        goal={makeGoal({ type: 'openended', target: null, name: 'Fondo Emergenza' })}
+        onEditClick={vi.fn()}
+        onDeleteClick={vi.fn()}
+      />,
+    );
+    expect(screen.getByTestId('goal-card-type-badge')).toBeInTheDocument();
+    expect(screen.getByTestId('goal-card-type-badge')).toHaveTextContent('Aperto');
+  });
+
+  it('does not show "Aperto" badge for fixed goals', () => {
+    render(
+      <GoalCard
+        goal={makeGoal({ type: 'fixed', target: 10000 })}
+        onEditClick={vi.fn()}
+        onDeleteClick={vi.fn()}
+      />,
+    );
+    expect(screen.queryByTestId('goal-card-type-badge')).not.toBeInTheDocument();
+  });
+
+  it('hides progress bar for openended goals', () => {
+    render(
+      <GoalCard
+        goal={makeGoal({ type: 'openended', target: null, name: 'Fondo Emergenza' })}
+        onEditClick={vi.fn()}
+        onDeleteClick={vi.fn()}
+      />,
+    );
+    // Target element not rendered for openended
+    expect(screen.queryByTestId('goal-card-target')).not.toBeInTheDocument();
+    // Shows accumulated amount instead
+    expect(screen.getByText(/accumulati/i)).toBeInTheDocument();
+  });
+
+  it('shows target for fixed goals', () => {
+    render(
+      <GoalCard
+        goal={makeGoal({ type: 'fixed', target: 10000 })}
+        onEditClick={vi.fn()}
+        onDeleteClick={vi.fn()}
+      />,
+    );
+    expect(screen.getByTestId('goal-card-target')).toBeInTheDocument();
+  });
+
+  it('goal.type drives openended display, not name heuristic', () => {
+    // A goal named "Risparmio" with type=openended should show as openended
+    render(
+      <GoalCard
+        goal={makeGoal({ type: 'openended', target: null, name: 'Risparmio Libero' })}
+        onEditClick={vi.fn()}
+        onDeleteClick={vi.fn()}
+      />,
+    );
+    expect(screen.getByTestId('goal-card-type-badge')).toHaveTextContent('Aperto');
+    expect(screen.queryByTestId('goal-card-target')).not.toBeInTheDocument();
   });
 });

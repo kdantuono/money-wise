@@ -119,6 +119,7 @@ export function WizardPianoGenerato({ mode = 'create', onClose }: WizardPianoGen
             target: g.target,
             deadline: g.deadline,
             priority: g.priority,
+            type: g.type ?? 'fixed',
             monthlyAllocation: item?.monthlyAmount ?? 0,
             allocation: {
               monthlyAmount: item?.monthlyAmount ?? 0,

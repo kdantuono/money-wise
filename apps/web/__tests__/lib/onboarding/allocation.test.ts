@@ -39,10 +39,11 @@ function makeGoal(partial: Partial<AllocationGoalInput>): AllocationGoalInput {
   return {
     id: partial.id ?? `goal-${++_goalIdCounter}`,
     name: partial.name ?? 'Generic Goal',
-    target: partial.target ?? 1000,
+    target: partial.target !== undefined ? partial.target : 1000,
     current: partial.current ?? 0,
     deadline: partial.deadline ?? null,
     priority: (partial.priority ?? 2) as PriorityRank,
+    type: partial.type ?? 'fixed',
   };
 }
 
@@ -365,6 +366,130 @@ describe('computeAllocation -- beta+gamma waterfall (issue #458)', () => {
     expect(result.items.find((it) => it.goalId === 'g-casa')!.monthlyAmount).toBeCloseTo(300, 2);
     expect(result.items.find((it) => it.goalId === 'g-viaggio')!.monthlyAmount).toBeCloseTo(0, 2);
     expect(result.totalAllocated).toBeCloseTo(300, 2);
+  });
+});
+
+describe('WP-K: openended goal allocation', () => {
+  beforeEach(() => {
+    _goalIdCounter = 0;
+    vi.useFakeTimers();
+    vi.setSystemTime(TODAY);
+  });
+  afterEach(() => { vi.useRealTimers(); });
+
+  it('single openended goal receives full waterfall remainder (pool after no fixed goals)', () => {
+    const input = makeInput({
+      monthlyIncome: 2500, essentialsPct: 50, monthlySavingsTarget: 500,
+      goals: [makeGoal({ id: 'oe-1', name: 'Risparmio Libero', type: 'openended', target: null })],
+    });
+    const result = computeAllocation(input);
+    expect(result.items[0]!.goalId).toBe('oe-1');
+    expect(result.items[0]!.monthlyAmount).toBeCloseTo(500, 2);
+    expect(result.items[0]!.deadlineFeasible).toBe(true);
+    expect(result.totalAllocated).toBeCloseTo(500, 2);
+    expect(result.unallocated).toBeCloseTo(0, 2);
+  });
+
+  it('fixed + openended: fixed consumes first, openended gets residual', () => {
+    const input = makeInput({
+      monthlyIncome: 2500, essentialsPct: 50, monthlySavingsTarget: 500,
+      goals: [
+        makeGoal({ id: 'fixed-1', name: 'Comprare Casa', type: 'fixed', target: 6000, current: 0, deadline: monthsFromToday(24), priority: 1 }),
+        makeGoal({ id: 'oe-1', name: 'Risparmio Libero', type: 'openended', target: null, priority: 2 }),
+      ],
+    });
+    const result = computeAllocation(input);
+    const fixedItem = result.items.find((it) => it.goalId === 'fixed-1');
+    const oeItem = result.items.find((it) => it.goalId === 'oe-1');
+    expect(fixedItem!.monthlyAmount).toBeCloseTo(250, 2); // 6000/24
+    expect(oeItem!.monthlyAmount).toBeCloseTo(250, 2); // 500 - 250
+    expect(result.totalAllocated).toBeCloseTo(500, 2);
+  });
+
+  it('multiple openended goals split residual equally', () => {
+    const input = makeInput({
+      monthlyIncome: 3000, essentialsPct: 50, monthlySavingsTarget: 600,
+      goals: [
+        makeGoal({ id: 'oe-1', name: 'Fondo Lifestyle', type: 'openended', target: null, priority: 2 }),
+        makeGoal({ id: 'oe-2', name: 'Riserva Opportunità', type: 'openended', target: null, priority: 3 }),
+        makeGoal({ id: 'oe-3', name: 'Crescita Patrimonio', type: 'openended', target: null, priority: 1 }),
+      ],
+    });
+    const result = computeAllocation(input);
+    const amounts = result.items.map((it) => it.monthlyAmount);
+    // All three should get equal shares of 600/3 = 200
+    for (const amt of amounts) {
+      expect(amt).toBeCloseTo(200, 2);
+    }
+    expect(result.totalAllocated).toBeCloseTo(600, 2);
+    expect(result.unallocated).toBeCloseTo(0, 2);
+  });
+
+  it('rounding remainder distributed to last openended goal (€100/3 split)', () => {
+    // 100 / 3 = 33.33 each with _round2 → last goal absorbs remainder so unallocated = 0
+    const input = makeInput({
+      monthlyIncome: 2000, essentialsPct: 50, monthlySavingsTarget: 100,
+      goals: [
+        makeGoal({ id: 'oe-1', name: 'A', type: 'openended', target: null, priority: 1 }),
+        makeGoal({ id: 'oe-2', name: 'B', type: 'openended', target: null, priority: 2 }),
+        makeGoal({ id: 'oe-3', name: 'C', type: 'openended', target: null, priority: 3 }),
+      ],
+    });
+    const result = computeAllocation(input);
+    // Total must exactly equal the pool — no "budget residuo" warning from cent-level rounding
+    expect(result.totalAllocated).toBeCloseTo(100, 2);
+    expect(result.unallocated).toBeCloseTo(0, 2);
+    // Each item gets a positive amount
+    for (const it of result.items) {
+      expect(it.monthlyAmount).toBeGreaterThan(0);
+    }
+  });
+
+  it('openended + fixed: waterfall exhausted → openended gets 0 + warning', () => {
+    const input = makeInput({
+      monthlyIncome: 2000, essentialsPct: 50, monthlySavingsTarget: 300,
+      goals: [
+        makeGoal({ id: 'fixed-1', name: 'Casa', type: 'fixed', target: 50000, current: 0, deadline: monthsFromToday(24), priority: 1 }),
+        makeGoal({ id: 'oe-1', name: 'Risparmio Libero', type: 'openended', target: null, priority: 2 }),
+      ],
+    });
+    const result = computeAllocation(input);
+    const fixedItem = result.items.find((it) => it.goalId === 'fixed-1');
+    const oeItem = result.items.find((it) => it.goalId === 'oe-1');
+    expect(fixedItem!.monthlyAmount).toBeCloseTo(300, 2);
+    expect(oeItem!.monthlyAmount).toBeCloseTo(0, 2);
+    expect(oeItem!.deadlineFeasible).toBe(true);
+    expect(oeItem!.warnings.some((w) => /esaurit|budget|aperto/i.test(w))).toBe(true);
+  });
+
+  it('openended emergency (Fondo Emergenza type=openended, target=null) gets 40% floor', () => {
+    const input = makeInput({
+      monthlyIncome: 2500, essentialsPct: 50, monthlySavingsTarget: 500,
+      goals: [
+        makeGoal({ id: 'emerg', name: 'Fondo Emergenza', type: 'openended', target: null, priority: 1 }),
+        makeGoal({ id: 'casa', name: 'Comprare Casa', type: 'fixed', target: 10000, current: 0, deadline: monthsFromToday(20), priority: 2 }),
+      ],
+    });
+    const result = computeAllocation(input);
+    const emergItem = result.items.find((it) => it.goalId === 'emerg');
+    // Emergency floor: 500 * 0.4 = 200
+    expect(emergItem!.monthlyAmount).toBeCloseTo(200, 2);
+    expect(emergItem!.deadlineFeasible).toBe(true);
+    // Casa gets remainder = 300
+    const casaItem = result.items.find((it) => it.goalId === 'casa');
+    expect(casaItem!.monthlyAmount).toBeCloseTo(300, 2);
+    expect(result.totalAllocated).toBeCloseTo(500, 2);
+  });
+
+  it('openended reasoning contains "Obiettivo aperto" or "residuo"', () => {
+    const input = makeInput({
+      monthlyIncome: 2500, essentialsPct: 50, monthlySavingsTarget: 400,
+      goals: [
+        makeGoal({ id: 'oe-1', name: 'Fondo Libero', type: 'openended', target: null, priority: 2 }),
+      ],
+    });
+    const result = computeAllocation(input);
+    expect(result.items[0]!.reasoning.toLowerCase()).toMatch(/aperto|residuo/);
   });
 });
 
