@@ -93,6 +93,8 @@ interface Actions {
   // Modal state for "Aggiungi obiettivo" Dialog (issue #463)
   setAddGoalModalOpen: (open: boolean) => void;
   setEditingPresetId: (id: string | null) => void;
+  // Edit-in-place goal modal (issue #460)
+  setEditingGoal: (tempId: string | null) => void;
 }
 
 type WizardStore = WizardState & Actions;
@@ -108,6 +110,7 @@ const initialState: WizardState = {
   persistedPlanId: null,
   isAddGoalModalOpen: false,
   editingPresetId: null,
+  editingGoalId: null,
 };
 
 export const useOnboardingPlanStore = create<WizardStore>((set) => ({
@@ -222,4 +225,5 @@ export const useOnboardingPlanStore = create<WizardStore>((set) => ({
   reset: () => set(initialState),
   setAddGoalModalOpen: (open) => set({ isAddGoalModalOpen: open }),
   setEditingPresetId: (id) => set({ editingPresetId: id }),
+  setEditingGoal: (tempId) => set({ editingGoalId: tempId }),
 }));

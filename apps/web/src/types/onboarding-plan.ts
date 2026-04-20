@@ -173,6 +173,12 @@ export interface WizardState {
   isAddGoalModalOpen: boolean;
   /** Preset id currently being edited in the modal; null for manual entry. */
   editingPresetId: string | null;
+  /**
+   * tempId of the goal being edited in-place (issue #460).
+   * Non-null triggers the modal in edit mode, pre-populated from existing goal.
+   * null = add mode (default).
+   */
+  editingGoalId: string | null;
 }
 
 // ─────────────────────────────────────────────────────────────────────────

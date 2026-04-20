@@ -1,13 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { useOnboardingPlanStore } from '@/store/onboarding-plan.store';
-import { PRIORITY_LABEL_IT, type PriorityRank } from '@/types/onboarding-plan';
+import { PRIORITY_LABEL_IT, type PriorityRank, type WizardGoalDraft } from '@/types/onboarding-plan';
 import { Button } from '@/components/ui/button';
 import {
   Plus,
   X,
+  Pencil,
   PiggyBank,
   Landmark,
   TrendingUp,
@@ -130,16 +131,28 @@ interface AddGoalModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   presetId: string | null;
+  /** When non-null, modal is in edit mode pre-populated from this goal draft. */
+  editingGoal: WizardGoalDraft | null;
   onSubmit: (goal: { name: string; target: number; deadline: string | null; priority: PriorityRank }) => void;
 }
 
-function AddGoalModal({ open, onOpenChange, presetId, onSubmit }: AddGoalModalProps) {
+function AddGoalModal({ open, onOpenChange, presetId, editingGoal, onSubmit }: AddGoalModalProps) {
   const [draft, setDraft] = useState(EMPTY_DRAFT);
 
-  // Pre-fill draft whenever the modal opens with a preset
+  const isEditMode = editingGoal !== null;
+
+  // Pre-fill draft whenever the modal opens — edit goal takes priority over preset
   useEffect(() => {
     if (open) {
-      if (presetId) {
+      if (editingGoal) {
+        // Edit mode: pre-populate from existing goal
+        setDraft({
+          name: editingGoal.name,
+          target: String(editingGoal.target),
+          deadline: editingGoal.deadline ?? '',
+          priority: editingGoal.priority,
+        });
+      } else if (presetId) {
         const preset = PRESET_GOALS.find((p) => p.id === presetId);
         if (preset) {
           setDraft({
@@ -153,7 +166,7 @@ function AddGoalModal({ open, onOpenChange, presetId, onSubmit }: AddGoalModalPr
         setDraft(EMPTY_DRAFT);
       }
     }
-  }, [open, presetId]);
+  }, [open, presetId, editingGoal]);
 
   const handleSubmit = () => {
     const target = Number(draft.target);
@@ -179,7 +192,7 @@ function AddGoalModal({ open, onOpenChange, presetId, onSubmit }: AddGoalModalPr
               id="add-goal-dialog-title"
               className="text-base font-semibold text-foreground"
             >
-              Aggiungi un obiettivo
+              {isEditMode ? 'Modifica obiettivo' : 'Aggiungi un obiettivo'}
             </Dialog.Title>
             <Dialog.Close asChild>
               <button
@@ -259,7 +272,9 @@ function AddGoalModal({ open, onOpenChange, presetId, onSubmit }: AddGoalModalPr
             <Dialog.Close asChild>
               <Button variant="outline">Annulla</Button>
             </Dialog.Close>
-            <Button onClick={handleSubmit}>Aggiungi</Button>
+            <Button onClick={handleSubmit}>
+              {isEditMode ? 'Salva' : 'Aggiungi'}
+            </Button>
           </div>
         </Dialog.Content>
       </Dialog.Portal>
@@ -274,14 +289,41 @@ function AddGoalModal({ open, onOpenChange, presetId, onSubmit }: AddGoalModalPr
 export function StepGoals() {
   const goals = useOnboardingPlanStore((s) => s.step3.goals);
   const addGoal = useOnboardingPlanStore((s) => s.addGoal);
+  const updateGoal = useOnboardingPlanStore((s) => s.updateGoal);
   const removeGoal = useOnboardingPlanStore((s) => s.removeGoal);
   const isAddGoalModalOpen = useOnboardingPlanStore((s) => s.isAddGoalModalOpen);
   const editingPresetId = useOnboardingPlanStore((s) => s.editingPresetId);
+  const editingGoalId = useOnboardingPlanStore((s) => s.editingGoalId);
   const setAddGoalModalOpen = useOnboardingPlanStore((s) => s.setAddGoalModalOpen);
   const setEditingPresetId = useOnboardingPlanStore((s) => s.setEditingPresetId);
+  const setEditingGoal = useOnboardingPlanStore((s) => s.setEditingGoal);
+
+  // Refs for scroll-into-view when returning from Step 4 with a goal to edit
+  const goalRefs = useRef<Map<string, HTMLLIElement>>(new Map());
+
+  // Scroll the editing goal into view when editingGoalId is set (e.g., from Step 4 chip click)
+  useEffect(() => {
+    if (editingGoalId) {
+      const el = goalRefs.current.get(editingGoalId);
+      if (el && typeof el.scrollIntoView === 'function') {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+  }, [editingGoalId]);
+
+  // Resolve the goal being edited (null in add mode)
+  const editingGoalDraft = editingGoalId
+    ? (goals.find((g) => g.tempId === editingGoalId) ?? null)
+    : null;
 
   const openModal = (presetId: string | null = null) => {
     setEditingPresetId(presetId);
+    setAddGoalModalOpen(true);
+  };
+
+  const openEditModal = (tempId: string) => {
+    setEditingGoal(tempId);
+    setEditingPresetId(null);
     setAddGoalModalOpen(true);
   };
 
@@ -289,13 +331,21 @@ export function StepGoals() {
     if (!open) {
       setAddGoalModalOpen(false);
       setEditingPresetId(null);
+      setEditingGoal(null);
     }
   };
 
   const handleSubmit = (goal: { name: string; target: number; deadline: string | null; priority: PriorityRank }) => {
-    addGoal(goal);
+    if (editingGoalId) {
+      // Edit mode: update existing goal
+      updateGoal(editingGoalId, goal);
+    } else {
+      // Add mode: create new goal
+      addGoal(goal);
+    }
     setAddGoalModalOpen(false);
     setEditingPresetId(null);
+    setEditingGoal(null);
   };
 
   return (
@@ -339,7 +389,15 @@ export function StepGoals() {
           {goals.map((g) => (
             <li
               key={g.tempId}
-              className="flex items-center justify-between p-3 rounded-xl border border-border bg-card"
+              ref={(el) => {
+                if (el) goalRefs.current.set(g.tempId, el);
+                else goalRefs.current.delete(g.tempId);
+              }}
+              className={`flex items-center justify-between p-3 rounded-xl border bg-card transition-colors ${
+                editingGoalId === g.tempId
+                  ? 'border-blue-500 ring-2 ring-blue-200 dark:ring-blue-900'
+                  : 'border-border'
+              }`}
             >
               <div>
                 <p className="text-sm font-medium text-foreground">{g.name}</p>
@@ -348,13 +406,22 @@ export function StepGoals() {
                   {g.deadline ? ` — entro ${g.deadline}` : ''}
                 </p>
               </div>
-              <button
-                onClick={() => removeGoal(g.tempId)}
-                className="p-2 rounded-lg hover:bg-muted"
-                aria-label={`Rimuovi ${g.name}`}
-              >
-                <X className="w-4 h-4 text-muted-foreground" />
-              </button>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => openEditModal(g.tempId)}
+                  className="p-2 rounded-lg hover:bg-muted"
+                  aria-label={`Modifica ${g.name}`}
+                >
+                  <Pencil className="w-4 h-4 text-muted-foreground" />
+                </button>
+                <button
+                  onClick={() => removeGoal(g.tempId)}
+                  className="p-2 rounded-lg hover:bg-muted"
+                  aria-label={`Rimuovi ${g.name}`}
+                >
+                  <X className="w-4 h-4 text-muted-foreground" />
+                </button>
+              </div>
             </li>
           ))}
         </ul>
@@ -383,6 +450,7 @@ export function StepGoals() {
         open={isAddGoalModalOpen}
         onOpenChange={closeModal}
         presetId={editingPresetId}
+        editingGoal={editingGoalDraft}
         onSubmit={handleSubmit}
       />
     </div>

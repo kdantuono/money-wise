@@ -31,9 +31,11 @@ type Goal = {
 };
 
 const mockAddGoal = vi.fn();
+const mockUpdateGoal = vi.fn();
 const mockRemoveGoal = vi.fn();
 const mockSetAddGoalModalOpen = vi.fn();
 const mockSetEditingPresetId = vi.fn();
+const mockSetEditingGoal = vi.fn();
 
 const mockStore = vi.fn();
 vi.mock('@/store/onboarding-plan.store', () => ({
@@ -46,16 +48,20 @@ vi.mock('@/store/onboarding-plan.store', () => ({
 function makeStoreState(
   goals: Goal[] = [],
   isAddGoalModalOpen = false,
-  editingPresetId: string | null = null
+  editingPresetId: string | null = null,
+  editingGoalId: string | null = null
 ) {
   return {
     step3: { goals },
     addGoal: mockAddGoal,
+    updateGoal: mockUpdateGoal,
     removeGoal: mockRemoveGoal,
     isAddGoalModalOpen,
     editingPresetId,
+    editingGoalId,
     setAddGoalModalOpen: mockSetAddGoalModalOpen,
     setEditingPresetId: mockSetEditingPresetId,
+    setEditingGoal: mockSetEditingGoal,
   };
 }
 
@@ -68,7 +74,7 @@ import { StepGoals } from '@/components/onboarding/steps/StepGoals';
 describe('StepGoals', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockStore.mockReturnValue(makeStoreState([]));
+    mockStore.mockReturnValue(makeStoreState([], false, null, null));
   });
 
   // ---- 1. Initial state -----------------------------------------------------
@@ -245,5 +251,82 @@ describe('StepGoals', () => {
     );
     render(<StepGoals />);
     expect(screen.queryByText(/Nessun obiettivo ancora/i)).not.toBeInTheDocument();
+  });
+
+  // ---- 6. Edit mode (issue #460) -----------------------------------------------
+
+  it('renders "Modifica" button for each goal in the list', () => {
+    mockStore.mockReturnValue(
+      makeStoreState([
+        { tempId: 'g-edit', name: 'Goal Esistente', target: 3000, deadline: null, priority: 2 },
+      ])
+    );
+    render(<StepGoals />);
+    expect(screen.getByLabelText(/Modifica Goal Esistente/i)).toBeInTheDocument();
+  });
+
+  it('"Modifica" button calls setEditingGoal + setEditingPresetId(null) + setAddGoalModalOpen(true)', async () => {
+    mockStore.mockReturnValue(
+      makeStoreState([
+        { tempId: 'g-edit', name: 'Obiettivo Test', target: 5000, deadline: null, priority: 1 },
+      ])
+    );
+    render(<StepGoals />);
+    await userEvent.click(screen.getByLabelText(/Modifica Obiettivo Test/i));
+
+    expect(mockSetEditingGoal).toHaveBeenCalledWith('g-edit');
+    expect(mockSetEditingPresetId).toHaveBeenCalledWith(null);
+    expect(mockSetAddGoalModalOpen).toHaveBeenCalledWith(true);
+  });
+
+  it('modal in edit mode shows title "Modifica obiettivo" and pre-fills values', () => {
+    mockStore.mockReturnValue(
+      makeStoreState(
+        [{ tempId: 'g-edit', name: 'Fondo Auto', target: 8000, deadline: '2027-01-01', priority: 2 }],
+        true,   // isAddGoalModalOpen
+        null,   // editingPresetId
+        'g-edit' // editingGoalId
+      )
+    );
+    render(<StepGoals />);
+
+    expect(screen.getByRole('heading', { name: /Modifica obiettivo/i })).toBeInTheDocument();
+    expect(screen.getByLabelText(/Nome/i)).toHaveValue('Fondo Auto');
+    expect(screen.getByLabelText(/Target \(€\)/i)).toHaveValue(8000);
+  });
+
+  it('submitting edit modal calls updateGoal with correct tempId and patch', async () => {
+    mockStore.mockReturnValue(
+      makeStoreState(
+        [{ tempId: 'g-edit', name: 'Vecchio Nome', target: 1000, deadline: null, priority: 3 }],
+        true,
+        null,
+        'g-edit'
+      )
+    );
+    render(<StepGoals />);
+
+    // Change the name — use role+name to avoid ambiguity with aria-label on "Modifica" button
+    const nameInput = screen.getByRole('textbox', { name: /Nome/i });
+    await userEvent.clear(nameInput);
+    await userEvent.type(nameInput, 'Nuovo Nome');
+
+    await userEvent.click(screen.getByRole('button', { name: /^Salva$/ }));
+
+    await waitFor(() => {
+      expect(mockUpdateGoal).toHaveBeenCalledWith(
+        'g-edit',
+        expect.objectContaining({ name: 'Nuovo Nome', target: 1000 })
+      );
+      expect(mockAddGoal).not.toHaveBeenCalled();
+      expect(mockSetAddGoalModalOpen).toHaveBeenCalledWith(false);
+      expect(mockSetEditingGoal).toHaveBeenCalledWith(null);
+    });
+  });
+
+  it('modal in add mode (editingGoalId null) still shows "Aggiungi" button', () => {
+    mockStore.mockReturnValue(makeStoreState([], true, null, null));
+    render(<StepGoals />);
+    expect(screen.getByRole('button', { name: /^Aggiungi$/ })).toBeInTheDocument();
   });
 });

@@ -29,6 +29,9 @@ export function StepPlanReview() {
   const step3 = useOnboardingPlanStore((s) => s.step3);
   const allocationPreview = useOnboardingPlanStore((s) => s.step4.allocationPreview);
   const setAllocationPreview = useOnboardingPlanStore((s) => s.setAllocationPreview);
+  const prevStep = useOnboardingPlanStore((s) => s.prevStep);
+  const setEditingGoal = useOnboardingPlanStore((s) => s.setEditingGoal);
+  const setAddGoalModalOpen = useOnboardingPlanStore((s) => s.setAddGoalModalOpen);
 
   const incomeAfterEssentials =
     step1.monthlyIncome * (1 - step2.essentialsPct / 100);
@@ -153,12 +156,22 @@ export function StepPlanReview() {
                     <p className="text-sm font-medium text-foreground">{goal.name}</p>
                     <p className="text-xs text-muted-foreground">
                       {PRIORITY_LABEL_IT[goal.priority]} priorità
-                      {!item.deadlineFeasible && (
-                        <span className="ml-1 text-amber-600 dark:text-amber-400">
-                          — deadline non fattibile
-                        </span>
-                      )}
                     </p>
+                    {!item.deadlineFeasible && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingGoal(goal.tempId);
+                          setAddGoalModalOpen(true);
+                          prevStep();
+                        }}
+                        className="mt-1 inline-flex items-center gap-1 rounded-full bg-amber-100 dark:bg-amber-900/40 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-900/60 transition-colors"
+                        aria-label={`Aggiusta goal ${goal.name}`}
+                      >
+                        <span aria-hidden="true">⚠️</span>
+                        Aggiusta goal
+                      </button>
+                    )}
                   </div>
                   <p className="text-sm font-bold text-blue-600 dark:text-blue-400">
                     €{item.monthlyAmount.toFixed(0)}/mese
