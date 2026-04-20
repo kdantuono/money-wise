@@ -425,6 +425,26 @@ describe('WP-K: openended goal allocation', () => {
     expect(result.unallocated).toBeCloseTo(0, 2);
   });
 
+  it('rounding remainder distributed to last openended goal (€100/3 split)', () => {
+    // 100 / 3 = 33.33 each with _round2 → last goal absorbs remainder so unallocated = 0
+    const input = makeInput({
+      monthlyIncome: 2000, essentialsPct: 50, monthlySavingsTarget: 100,
+      goals: [
+        makeGoal({ id: 'oe-1', name: 'A', type: 'openended', target: null, priority: 1 }),
+        makeGoal({ id: 'oe-2', name: 'B', type: 'openended', target: null, priority: 2 }),
+        makeGoal({ id: 'oe-3', name: 'C', type: 'openended', target: null, priority: 3 }),
+      ],
+    });
+    const result = computeAllocation(input);
+    // Total must exactly equal the pool — no "budget residuo" warning from cent-level rounding
+    expect(result.totalAllocated).toBeCloseTo(100, 2);
+    expect(result.unallocated).toBeCloseTo(0, 2);
+    // Each item gets a positive amount
+    for (const it of result.items) {
+      expect(it.monthlyAmount).toBeGreaterThan(0);
+    }
+  });
+
   it('openended + fixed: waterfall exhausted → openended gets 0 + warning', () => {
     const input = makeInput({
       monthlyIncome: 2000, essentialsPct: 50, monthlySavingsTarget: 300,

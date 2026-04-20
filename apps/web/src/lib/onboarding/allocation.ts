@@ -71,12 +71,12 @@ function _buildReasoning(
   requiredMonthly: number,
   remainingPoolBefore: number,
 ): string {
+  if (isEmergency) {
+    return `Fondo di emergenza: allocazione prioritaria del ${Math.round(_EMERGENCY_OVERRIDE_FRACTION * 100)}% del budget mensile disponibile come protezione finanziaria.`;
+  }
   if (goal.target === null || goal.target === 0) {
     if (_isOpenended(goal)) return 'Obiettivo aperto: quota mensile dal budget residuo.';
     return 'Target non specificato';
-  }
-  if (isEmergency) {
-    return `Fondo di emergenza: allocazione prioritaria del ${Math.round(_EMERGENCY_OVERRIDE_FRACTION * 100)}% del budget mensile disponibile come protezione finanziaria.`;
   }
   const priorityLabel = goal.priority === 1 ? 'alta' : goal.priority === 2 ? 'media' : 'bassa';
   const parts: string[] = [`Priorità ${priorityLabel}`];
@@ -181,15 +181,23 @@ export function computeAllocation(input: AllocationInput): AllocationResult {
 
   const waterfallResults = _runWaterfall(otherGoals, remainingPool, now);
 
-  // Residual after waterfall → split equally among openended non-emergency goals
+  // Residual after waterfall → split equally among openended non-emergency goals.
+  // To avoid leaving cent-level residuals unallocated due to floating-point rounding,
+  // the last openended goal absorbs any remaining amount so the total matches the pool.
   const waterfallConsumed = _round2(waterfallResults.reduce((sum, e) => sum + e.amount, 0));
   const waterfallRemainder = _round2(remainingPool - waterfallConsumed);
   const openendedAmountMap = new Map<number, number>();
   if (openendedNonEmergencyGoals.length > 0 && waterfallRemainder > 0) {
     const perOpenended = _round2(waterfallRemainder / openendedNonEmergencyGoals.length);
-    for (const { originalIndex } of openendedNonEmergencyGoals) {
-      openendedAmountMap.set(originalIndex, perOpenended);
-    }
+    let allocatedToOpenended = 0;
+    openendedNonEmergencyGoals.forEach(({ originalIndex }, index) => {
+      const isLast = index === openendedNonEmergencyGoals.length - 1;
+      const amount = isLast
+        ? _round2(waterfallRemainder - allocatedToOpenended)
+        : perOpenended;
+      openendedAmountMap.set(originalIndex, amount);
+      allocatedToOpenended = _round2(allocatedToOpenended + amount);
+    });
   } else if (openendedNonEmergencyGoals.length > 0) {
     for (const { originalIndex } of openendedNonEmergencyGoals) {
       openendedAmountMap.set(originalIndex, 0);

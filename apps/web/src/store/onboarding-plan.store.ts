@@ -130,7 +130,7 @@ interface Actions {
   updateSavingsTarget: (monthlySavingsTarget: number, essentialsPct?: number) => void;
   /** Update any subset of the Profilo step (step2) fields. */
   updateProfile: (patch: Partial<WizardStepProfile>) => void;
-  addGoal: (goal: Omit<WizardGoalDraft, 'tempId'> & { type?: GoalType }) => void;
+  addGoal: (goal: Omit<WizardGoalDraft, 'tempId' | 'type'> & { type?: GoalType }) => void;
   updateGoal: (tempId: string, patch: Partial<Omit<WizardGoalDraft, 'tempId'>>) => void;
   removeGoal: (tempId: string) => void;
   setAllocationPreview: (allocation: AllocationResult | null) => void;
