@@ -26,6 +26,9 @@ ALTER TABLE goals
 
 -- 3. Re-add conditional CHECK: fixed goals must have a non-null, non-negative target.
 --    openended goals may have target IS NULL (no hard target).
+-- Idempotent: DROP IF EXISTS prima di ADD per permettere re-run (es. DB prod
+-- già aggiornato via MCP apply_migration prior ai commit landing in git).
+ALTER TABLE goals DROP CONSTRAINT IF EXISTS goals_target_fixed_not_null;
 ALTER TABLE goals
   ADD CONSTRAINT goals_target_fixed_not_null
   CHECK (
