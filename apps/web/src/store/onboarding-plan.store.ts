@@ -1,9 +1,14 @@
 /**
- * Onboarding Plan Store — Sprint 1.5 / Sprint 1.5.2 WP-B
+ * Onboarding Plan Store — Sprint 1.5 / 1.5.2 integrated (WP-B + WP-C)
  *
- * Zustand store for 6-step "Piano Generato" wizard state.
- * Step layout: 1=Benvenuto, 2=Reddito, 3=Risparmio, 4=Obiettivi, 5=Piano, 6=Preferenze AI
+ * Zustand store for 5-step "Piano Generato" wizard state.
+ * Step layout: 1=Benvenuto, 2=Profilo (4-budget), 3=Obiettivi, 4=Piano, 5=Preferenze AI
+ *
  * Consumes WizardState contract from types/onboarding-plan.ts.
+ *
+ * Sprint 1.5.2 WP-C: step2 extended with lifestyleBuffer + investmentsTarget.
+ * monthlyIncome moved from step1 → step2 (merged Profilo step).
+ * step1 kept as-is for backward-compat (hydrateFromPlan + existing tests).
  *
  * @module store/onboarding-plan.store
  */
@@ -14,26 +19,65 @@ import type {
   WizardStep,
   WizardGoalDraft,
   WizardSkipState,
+  WizardStepProfile,
   AllocationResult,
 } from '@/types/onboarding-plan';
 
 // -------------------------------------------------------------------------
-// Validation bounds (exported for selectCanAdvanceFromStep1 + tests)
+// Validation bounds (exported for selectCanAdvanceFromStep1/2 + tests)
 // -------------------------------------------------------------------------
 
-/** Minimum monthly income accepted in Step 1 (EUR/month). */
+/** Minimum monthly income accepted (EUR/month). */
 export const INCOME_MIN = 100;
-/** Maximum monthly income accepted in Step 1 (EUR/month). */
+/** Maximum monthly income accepted (EUR/month). */
 export const INCOME_MAX = 100_000;
 
+/** Minimum lifestyle buffer allowed without a hard block (soft warning below this). */
+export const LIFESTYLE_SOFT_MIN = 50;
+
+/** Minimum monthly savings target required. */
+export const SAVINGS_MIN = 10;
+
 /**
- * Returns true when the income step value (Step 2 after WP-B renumber) is within accepted bounds.
- * 0 = not yet entered (initial state) or skipped -> false.
- * @deprecated name kept for backwards-compat; semantically "canAdvanceFromIncomeStep" post WP-B
+ * Essentials % range [10, 90] per spec.
+ */
+export const ESSENTIALS_MIN_PCT = 10;
+export const ESSENTIALS_MAX_PCT = 90;
+
+/**
+ * AI default lifestyle buffer: max(50, min(500, disposable * 0.15)).
+ * Exported for tests.
+ */
+export function calcLifestyleDefault(monthlyIncome: number, essentialsPct: number): number {
+  if (monthlyIncome <= 0) return LIFESTYLE_SOFT_MIN;
+  const disposable = monthlyIncome * (1 - essentialsPct / 100);
+  return Math.max(LIFESTYLE_SOFT_MIN, Math.min(500, Math.round(disposable * 0.15)));
+}
+
+/**
+ * Returns true when Step 1 income value is within accepted bounds.
+ * @deprecated use selectCanAdvanceFromStep2 — kept for backward-compat with
+ *   existing tests that still mock this selector.
  */
 export const selectCanAdvanceFromStep1 = (s: WizardState): boolean => {
-  const income = s.step1.monthlyIncome;
+  // After WP-C, income lives in step2. Fall through to step2 first; if
+  // step1.monthlyIncome is non-zero (legacy / hydrateFromPlan) use that.
+  const income = s.step2.monthlyIncome > 0 ? s.step2.monthlyIncome : s.step1.monthlyIncome;
   return income >= INCOME_MIN && income <= INCOME_MAX;
+};
+
+/**
+ * Returns true when Step 2 (Profilo) is fully valid and sum constraint is met.
+ * Exported for wizard Avanti gate + tests.
+ */
+export const selectCanAdvanceFromStep2 = (s: WizardState): boolean => {
+  const { monthlyIncome, essentialsPct, lifestyleBuffer, monthlySavingsTarget, investmentsTarget } =
+    s.step2;
+  if (monthlyIncome < INCOME_MIN || monthlyIncome > INCOME_MAX) return false;
+  if (monthlySavingsTarget < SAVINGS_MIN) return false;
+  const essentialsEuros = monthlyIncome * (essentialsPct / 100);
+  const sum = essentialsEuros + lifestyleBuffer + monthlySavingsTarget + investmentsTarget;
+  return sum <= monthlyIncome;
 };
 
 /**
@@ -47,6 +91,8 @@ export interface LoadedPlanBundle {
     monthlySavingsTarget: number;
     essentialsPct: number;
     incomeAfterEssentials: number;
+    lifestyleBuffer?: number;
+    investmentsTarget?: number;
   };
   goals: Array<{
     id: string;
@@ -74,8 +120,12 @@ interface Actions {
   setStep: (step: WizardStep) => void;
   nextStep: () => void;
   prevStep: () => void;
+  /** @deprecated Use updateProfile instead. Kept for backward-compat. */
   updateIncome: (monthlyIncome: number) => void;
+  /** @deprecated Use updateProfile instead. Kept for backward-compat. */
   updateSavingsTarget: (monthlySavingsTarget: number, essentialsPct?: number) => void;
+  /** Update any subset of the Profilo step (step2) fields. */
+  updateProfile: (patch: Partial<WizardStepProfile>) => void;
   addGoal: (goal: Omit<WizardGoalDraft, 'tempId'>) => void;
   updateGoal: (tempId: string, patch: Partial<Omit<WizardGoalDraft, 'tempId'>>) => void;
   removeGoal: (tempId: string) => void;
@@ -111,8 +161,16 @@ type WizardStore = WizardState & Actions;
 
 const initialState: WizardState = {
   currentStep: 1,
+  // step1 is kept for backward-compat with existing tests / hydrateFromPlan.
+  // After WP-C the Profilo UI writes to step2 exclusively.
   step1: { monthlyIncome: 0 },
-  step2: { monthlySavingsTarget: 0, essentialsPct: 50 },
+  step2: {
+    monthlyIncome: 0,
+    essentialsPct: 50,
+    lifestyleBuffer: 0,
+    monthlySavingsTarget: 0,
+    investmentsTarget: 0,
+  },
   step3: { goals: [] },
   step4: { allocationPreview: null, userOverrides: {} },
   step5: { enableAiCategorization: true, enableAiInsights: true },
@@ -130,22 +188,34 @@ export const useOnboardingPlanStore = create<WizardStore>((set) => ({
   setStep: (step) => set({ currentStep: step }),
   nextStep: () =>
     set((s) => ({
-      currentStep: (s.currentStep < 6 ? s.currentStep + 1 : s.currentStep) as WizardStep,
+      currentStep: (s.currentStep < 5 ? s.currentStep + 1 : s.currentStep) as WizardStep,
     })),
   prevStep: () =>
     set((s) => ({
       currentStep: (s.currentStep > 1 ? s.currentStep - 1 : s.currentStep) as WizardStep,
     })),
+  /** @deprecated */
   updateIncome: (monthlyIncome) =>
     set((s) => ({
       step1: { ...s.step1, monthlyIncome },
+      step2: { ...s.step2, monthlyIncome },
     })),
+  /** @deprecated */
   updateSavingsTarget: (monthlySavingsTarget, essentialsPct) =>
     set((s) => ({
       step2: {
+        ...s.step2,
         monthlySavingsTarget,
         essentialsPct: essentialsPct ?? s.step2.essentialsPct,
       },
+    })),
+  updateProfile: (patch) =>
+    set((s) => ({
+      step2: { ...s.step2, ...patch },
+      // Mirror income back to step1 for backward-compat consumers (StepPlanReview, persistPlan)
+      ...(patch.monthlyIncome !== undefined
+        ? { step1: { monthlyIncome: patch.monthlyIncome } }
+        : {}),
     })),
   addGoal: (goal) =>
     set((s) => ({
@@ -187,8 +257,6 @@ export const useOnboardingPlanStore = create<WizardStore>((set) => ({
     const { plan, goals, allocations, aiPreferences } = bundle;
 
     // Reconstruct AllocationResult from loaded DB data.
-    // Use DB goal UUID as tempId so the goalId ↔ tempId alignment
-    // in persistPlan's mapper holds (line: `items.find(it => it.goalId === g.tempId)`).
     const allocationByGoalId = new Map(allocations.map((a) => [a.goalId, a]));
     const totalAllocated = allocations.reduce((sum, a) => sum + a.monthlyAmount, 0);
 
@@ -213,8 +281,11 @@ export const useOnboardingPlanStore = create<WizardStore>((set) => ({
       currentStep: 1,
       step1: { monthlyIncome: plan.monthlyIncome },
       step2: {
+        monthlyIncome: plan.monthlyIncome,
         monthlySavingsTarget: plan.monthlySavingsTarget,
         essentialsPct: plan.essentialsPct,
+        lifestyleBuffer: plan.lifestyleBuffer ?? 0,
+        investmentsTarget: plan.investmentsTarget ?? 0,
       },
       step3: {
         goals: goals.map((g) => ({

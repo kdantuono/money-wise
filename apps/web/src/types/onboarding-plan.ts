@@ -122,15 +122,29 @@ export interface AllocationResult {
 // ─────────────────────────────────────────────────────────────────────────
 
 /**
- * 6-step wizard (Sprint 1.5.2 WP-B):
- * 1=Benvenuto, 2=Reddito, 3=Risparmio, 4=Obiettivi, 5=Piano proposto, 6=Preferenze AI
+ * 5-step wizard (Sprint 1.5.2 integrated WP-B + WP-C):
+ * 1=Benvenuto, 2=Profilo (4-budget), 3=Obiettivi, 4=Piano proposto, 5=Preferenze AI
  */
-export type WizardStep = 1 | 2 | 3 | 4 | 5 | 6;
+export type WizardStep = 1 | 2 | 3 | 4 | 5;
 
 export interface WizardStepIncome {
   monthlyIncome: number;
 }
 
+/**
+ * Step 2 — Profilo: merged income + allocation profile (Sprint 1.5.2 WP-C).
+ * Replaces WizardStepIncome (step1) + WizardStepSavingsTarget (old step2).
+ * monthlyIncome moved here from step1 to keep all profile fields co-located.
+ */
+export interface WizardStepProfile {
+  monthlyIncome: number;
+  essentialsPct: number;
+  lifestyleBuffer: number;
+  monthlySavingsTarget: number;
+  investmentsTarget: number;
+}
+
+/** @deprecated use WizardStepProfile instead — kept for backward-compat during migration */
 export interface WizardStepSavingsTarget {
   monthlySavingsTarget: number;
   essentialsPct: number;
@@ -172,7 +186,7 @@ export interface WizardSkipState {
 export interface WizardState {
   currentStep: WizardStep;
   step1: WizardStepIncome;
-  step2: WizardStepSavingsTarget;
+  step2: WizardStepProfile;
   step3: WizardStepGoals;
   step4: WizardStepPlanReview;
   step5: WizardStepAiPrefs;

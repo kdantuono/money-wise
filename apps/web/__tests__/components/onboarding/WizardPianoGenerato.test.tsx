@@ -25,25 +25,23 @@ import * as Dialog from '@radix-ui/react-dialog';
 import type { AllocationResult, PriorityRank, WizardState } from '@/types/onboarding-plan';
 
 // --------------------------------------------------------------------------
-// Child step stubs (6 steps post Sprint 1.5.2 WP-B renumber)
+// Child step stubs (5-step wizard: WP-B Welcome + WP-C Profile integrated)
+// Step 1=Benvenuto (WP-B), Step 2=Profilo (WP-C), Steps 3-5 unchanged
 // --------------------------------------------------------------------------
 vi.mock('@/components/onboarding/steps/StepWelcome', () => ({
   StepWelcome: () => <div data-testid="step-1-stub">StepWelcome</div>,
 }));
-vi.mock('@/components/onboarding/steps/StepIncome', () => ({
-  StepIncome: () => <div data-testid="step-2-stub">StepIncome</div>,
-}));
-vi.mock('@/components/onboarding/steps/StepSavingsTarget', () => ({
-  StepSavingsTarget: () => <div data-testid="step-3-stub">StepSavingsTarget</div>,
+vi.mock('@/components/onboarding/steps/StepProfile', () => ({
+  StepProfile: () => <div data-testid="step-2-stub">StepProfile</div>,
 }));
 vi.mock('@/components/onboarding/steps/StepGoals', () => ({
-  StepGoals: () => <div data-testid="step-4-stub">StepGoals</div>,
+  StepGoals: () => <div data-testid="step-3-stub">StepGoals</div>,
 }));
 vi.mock('@/components/onboarding/steps/StepPlanReview', () => ({
-  StepPlanReview: () => <div data-testid="step-5-stub">StepPlanReview</div>,
+  StepPlanReview: () => <div data-testid="step-4-stub">StepPlanReview</div>,
 }));
 vi.mock('@/components/onboarding/steps/StepAiPrefs', () => ({
-  StepAiPrefs: () => <div data-testid="step-6-stub">StepAiPrefs</div>,
+  StepAiPrefs: () => <div data-testid="step-5-stub">StepAiPrefs</div>,
 }));
 
 // Framer-motion: props-forwarding passthrough
@@ -95,7 +93,9 @@ vi.mock('@/store/onboarding-plan.store', () => ({
     const state = mockPlanStore();
     return selector ? selector(state) : state;
   },
+  // Sprint 1.5.2 WP-C: selectCanAdvanceFromStep1 deprecated, selectCanAdvanceFromStep2 used
   selectCanAdvanceFromStep1: () => true,
+  selectCanAdvanceFromStep2: () => true,
   INCOME_MIN: 100,
   INCOME_MAX: 100_000,
 }));
@@ -177,7 +177,13 @@ function makeState(
   const base: WizardState = {
     currentStep: 1,
     step1: { monthlyIncome: 3000 },
-    step2: { monthlySavingsTarget: 500, essentialsPct: 50 },
+    step2: {
+      monthlyIncome: 3000,
+      essentialsPct: 50,
+      lifestyleBuffer: 200,
+      monthlySavingsTarget: 500,
+      investmentsTarget: 100,
+    },
     step3: { goals: [] },
     step4: { allocationPreview: null, userOverrides: {} },
     step5: { enableAiCategorization: true, enableAiInsights: true },
@@ -187,8 +193,9 @@ function makeState(
     editingPresetId: null,
     invokerRoute: '/dashboard',
     skipState: null,
+    editingGoalId: null,
   };
-  // WizardStep is now 1|2|3|4|5|6 (Sprint 1.5.2 WP-B)
+  // WizardStep is 1|2|3|4|5 (5-step: Welcome + Profilo + Obiettivi + Piano + AI-Prefs)
   return { ...base, ...overrides, ...actions } as WizardState & StoreActionSpies;
 }
 
@@ -253,11 +260,11 @@ describe('WizardPianoGenerato — Dialog (Sprint 1.5.2 WP-A)', () => {
       expect(screen.getByRole('button', { name: 'Chiudi wizard' })).toBeInTheDocument();
     });
 
-    it('renders X close button with aria-label "Chiudi wizard" on Step 6 (last step)', () => {
+    it('renders X close button with aria-label "Chiudi wizard" on Step 5 (last step)', () => {
       mockAuthStore.mockReturnValue({ user: { id: 'u1', onboarded: false }, setUser: mockSetUser });
       mockPlanStore.mockReturnValue(
         makeState({
-          currentStep: 6,
+          currentStep: 5,
           step3: { goals: GOALS_ONE },
           step4: { allocationPreview: makeAllocation([GOAL_TEMP_ID]), userOverrides: {} },
         })
@@ -298,11 +305,11 @@ describe('WizardPianoGenerato — Dialog (Sprint 1.5.2 WP-A)', () => {
       expect(screen.queryByRole('button', { name: 'Salta' })).not.toBeInTheDocument();
     });
 
-    it('is NOT visible on Step 6 (last step)', () => {
+    it('is NOT visible on Step 5 (last step)', () => {
       mockAuthStore.mockReturnValue({ user: { id: 'u1', onboarded: false }, setUser: mockSetUser });
       mockPlanStore.mockReturnValue(
         makeState({
-          currentStep: 6,
+          currentStep: 5,
           step3: { goals: GOALS_ONE },
           step4: { allocationPreview: makeAllocation([GOAL_TEMP_ID]), userOverrides: {} },
         })
@@ -336,7 +343,7 @@ describe('WizardPianoGenerato — Dialog (Sprint 1.5.2 WP-A)', () => {
 
   // ---- 3. Step indicator (lines, no icon circles) --------------------------
   describe('Step indicator — line segments', () => {
-    it('renders progressbar with aria attributes (6 steps)', () => {
+    it('renders progressbar with aria attributes (5 steps after WP-B+WP-C integration)', () => {
       mockAuthStore.mockReturnValue({ user: { id: 'u1', onboarded: false }, setUser: mockSetUser });
       mockPlanStore.mockReturnValue(makeState({ currentStep: 3 }));
 
@@ -344,28 +351,27 @@ describe('WizardPianoGenerato — Dialog (Sprint 1.5.2 WP-A)', () => {
       const progressbar = screen.getByRole('progressbar');
       expect(progressbar).toHaveAttribute('aria-valuenow', '3');
       expect(progressbar).toHaveAttribute('aria-valuemin', '1');
-      expect(progressbar).toHaveAttribute('aria-valuemax', '6');
-      expect(progressbar.children.length).toBe(6);
+      expect(progressbar).toHaveAttribute('aria-valuemax', '5');
+      expect(progressbar.children.length).toBe(5);
     });
 
-    it('renders 6 line segments (not icon circles) inside progressbar', () => {
+    it('renders 5 line segments (not icon circles) inside progressbar', () => {
       mockAuthStore.mockReturnValue({ user: { id: 'u1', onboarded: false }, setUser: mockSetUser });
       mockPlanStore.mockReturnValue(makeState({ currentStep: 1 }));
 
       renderWizard();
       const progressbar = screen.getByRole('progressbar');
       // Each child is a flex column div wrapping a line div + a label span
-      expect(progressbar.children.length).toBe(6);
+      expect(progressbar.children.length).toBe(5);
     });
 
-    it('shows all 6 step labels below lines', () => {
+    it('shows all 5 step labels below lines', () => {
       mockAuthStore.mockReturnValue({ user: { id: 'u1', onboarded: false }, setUser: mockSetUser });
       mockPlanStore.mockReturnValue(makeState({ currentStep: 1 }));
 
       renderWizard();
       expect(screen.getByText('Benvenuto')).toBeInTheDocument();
-      expect(screen.getByText('Reddito')).toBeInTheDocument();
-      expect(screen.getByText('Risparmio')).toBeInTheDocument();
+      expect(screen.getByText('Profilo')).toBeInTheDocument();
       expect(screen.getByText('I tuoi goal')).toBeInTheDocument();
       expect(screen.getByText('Piano proposto')).toBeInTheDocument();
       expect(screen.getByText('Preferenze AI')).toBeInTheDocument();
@@ -376,22 +382,21 @@ describe('WizardPianoGenerato — Dialog (Sprint 1.5.2 WP-A)', () => {
       mockPlanStore.mockReturnValue(makeState({ currentStep: 1 }));
 
       renderWizard();
-      expect(screen.getByText(/Passo 1 di 6 — Benvenuto/)).toBeInTheDocument();
+      expect(screen.getByText(/Passo 1 di 5 — Benvenuto/)).toBeInTheDocument();
     });
   });
 
   // ---- 4. Step rendering ---------------------------------------------------
   describe('Step rendering', () => {
     it.each([
-      [1, 'step-1-stub'],  // Step 1 = Benvenuto (NEW)
-      [2, 'step-2-stub'],  // Step 2 = Reddito
-      [3, 'step-3-stub'],  // Step 3 = Risparmio
-      [4, 'step-4-stub'],  // Step 4 = Obiettivi
-      [5, 'step-5-stub'],  // Step 5 = Piano proposto
-      [6, 'step-6-stub'],  // Step 6 = Preferenze AI
+      [1, 'step-1-stub'],  // Step 1 = Benvenuto (WP-B)
+      [2, 'step-2-stub'],  // Step 2 = Profilo 4-budget (WP-C)
+      [3, 'step-3-stub'],  // Step 3 = Obiettivi
+      [4, 'step-4-stub'],  // Step 4 = Piano proposto
+      [5, 'step-5-stub'],  // Step 5 = Preferenze AI
     ])('renders step-%i component when currentStep=%i', (step, testId) => {
       mockAuthStore.mockReturnValue({ user: { id: 'u1', onboarded: false }, setUser: mockSetUser });
-      mockPlanStore.mockReturnValue(makeState({ currentStep: step as 1 | 2 | 3 | 4 | 5 | 6 }));
+      mockPlanStore.mockReturnValue(makeState({ currentStep: step as 1 | 2 | 3 | 4 | 5 }));
 
       renderWizard();
       expect(screen.getByTestId(testId)).toBeInTheDocument();
@@ -427,7 +432,7 @@ describe('WizardPianoGenerato — Dialog (Sprint 1.5.2 WP-A)', () => {
       expect(actions.prevStep).toHaveBeenCalledTimes(1);
     });
 
-    it('shows Avanti and calls nextStep on steps 1-4', async () => {
+    it('shows Avanti and calls nextStep on non-last steps', async () => {
       const actions: StoreActionSpies = {
         nextStep: vi.fn(),
         prevStep: vi.fn(),
@@ -445,13 +450,13 @@ describe('WizardPianoGenerato — Dialog (Sprint 1.5.2 WP-A)', () => {
     });
   });
 
-  // ---- 6. Step 6 canSubmit=true (last step, Preferenze AI) ------------------
-  describe('Step 6 — Conferma e crea piano (canSubmit=true)', () => {
+  // ---- 6. Step 5 canSubmit=true (last step, Preferenze AI) ------------------
+  describe('Step 5 — Conferma e crea piano (canSubmit=true)', () => {
     it('renders enabled button when all conditions hold', () => {
       mockAuthStore.mockReturnValue({ user: { id: 'u1', onboarded: false }, setUser: mockSetUser });
       mockPlanStore.mockReturnValue(
         makeState({
-          currentStep: 6,
+          currentStep: 5,
           step3: { goals: GOALS_ONE },
           step4: { allocationPreview: makeAllocation([GOAL_TEMP_ID]), userOverrides: {} },
           isPersisting: false,
@@ -465,13 +470,13 @@ describe('WizardPianoGenerato — Dialog (Sprint 1.5.2 WP-A)', () => {
     });
   });
 
-  // ---- 7. Step 6 disabled reasons ------------------------------------------
-  describe('Step 6 — disabled reasons', () => {
+  // ---- 7. Step 5 disabled reasons ------------------------------------------
+  describe('Step 5 — disabled reasons', () => {
     it('disables button + shows amber banner when userId is null', () => {
       mockAuthStore.mockReturnValue({ user: null, setUser: mockSetUser });
       mockPlanStore.mockReturnValue(
         makeState({
-          currentStep: 6,
+          currentStep: 5,
           step3: { goals: GOALS_ONE },
           step4: { allocationPreview: makeAllocation([GOAL_TEMP_ID]), userOverrides: {} },
         })
@@ -486,7 +491,7 @@ describe('WizardPianoGenerato — Dialog (Sprint 1.5.2 WP-A)', () => {
       mockAuthStore.mockReturnValue({ user: { id: 'u1', onboarded: false }, setUser: mockSetUser });
       mockPlanStore.mockReturnValue(
         makeState({
-          currentStep: 6,
+          currentStep: 5,
           step3: { goals: [] },
           step4: { allocationPreview: makeAllocation([]), userOverrides: {} },
         })
@@ -501,7 +506,7 @@ describe('WizardPianoGenerato — Dialog (Sprint 1.5.2 WP-A)', () => {
       mockAuthStore.mockReturnValue({ user: { id: 'u1', onboarded: false }, setUser: mockSetUser });
       mockPlanStore.mockReturnValue(
         makeState({
-          currentStep: 6,
+          currentStep: 5,
           step3: { goals: GOALS_ONE },
           step4: { allocationPreview: null, userOverrides: {} },
         })
@@ -516,7 +521,7 @@ describe('WizardPianoGenerato — Dialog (Sprint 1.5.2 WP-A)', () => {
       mockAuthStore.mockReturnValue({ user: { id: 'u1', onboarded: false }, setUser: mockSetUser });
       mockPlanStore.mockReturnValue(
         makeState({
-          currentStep: 6,
+          currentStep: 5,
           step3: { goals: GOALS_ONE },
           step4: { allocationPreview: makeAllocation([GOAL_TEMP_ID]), userOverrides: {} },
           isPersisting: true,
@@ -542,7 +547,7 @@ describe('WizardPianoGenerato — Dialog (Sprint 1.5.2 WP-A)', () => {
       mockAuthStore.mockReturnValue({ user: { id: 'u1', onboarded: false }, setUser: mockSetUser });
       mockPlanStore.mockReturnValue(
         makeState({
-          currentStep: 6,
+          currentStep: 5,
           step3: { goals: GOALS_ONE },
           step4: { allocationPreview: makeAllocation([GOAL_TEMP_ID]), userOverrides: {} },
           step5: { enableAiCategorization: true, enableAiInsights: false },
@@ -572,11 +577,11 @@ describe('WizardPianoGenerato — Dialog (Sprint 1.5.2 WP-A)', () => {
 
   // ---- 9. Edit mode -------------------------------------------------------
   describe('Edit mode (mode="edit")', () => {
-    it('renders "Modifica il tuo piano" title and "Salva modifiche" button on step 6 (last)', () => {
+    it('renders "Modifica il tuo piano" title and "Salva modifiche" button on step 5 (last)', () => {
       mockAuthStore.mockReturnValue({ user: { id: 'u1', onboarded: true }, setUser: mockSetUser });
       mockPlanStore.mockReturnValue(
         makeState({
-          currentStep: 6,
+          currentStep: 5,
           step3: { goals: GOALS_ONE },
           step4: { allocationPreview: makeAllocation([GOAL_TEMP_ID]), userOverrides: {} },
         })
@@ -592,7 +597,7 @@ describe('WizardPianoGenerato — Dialog (Sprint 1.5.2 WP-A)', () => {
       mockAuthStore.mockReturnValue({ user: { id: 'u1', onboarded: false }, setUser: mockSetUser });
       mockPlanStore.mockReturnValue(
         makeState({
-          currentStep: 6,
+          currentStep: 5,
           step3: { goals: GOALS_ONE },
           step4: { allocationPreview: makeAllocation([GOAL_TEMP_ID]), userOverrides: {} },
         })
@@ -607,7 +612,7 @@ describe('WizardPianoGenerato — Dialog (Sprint 1.5.2 WP-A)', () => {
       mockAuthStore.mockReturnValue({ user: { id: 'u1', onboarded: true }, setUser: mockSetUser });
       mockPlanStore.mockReturnValue(
         makeState({
-          currentStep: 6,
+          currentStep: 5,
           step3: { goals: GOALS_ONE },
           step4: { allocationPreview: makeAllocation([GOAL_TEMP_ID]), userOverrides: {} },
           isPersisting: true,
@@ -632,7 +637,7 @@ describe('WizardPianoGenerato — Dialog (Sprint 1.5.2 WP-A)', () => {
       mockAuthStore.mockReturnValue({ user: { id: 'u1', onboarded: false }, setUser: mockSetUser });
       mockPlanStore.mockReturnValue(
         makeState({
-          currentStep: 6,
+          currentStep: 5,
           step3: { goals: GOALS_ONE },
           step4: { allocationPreview: makeAllocation([GOAL_TEMP_ID]), userOverrides: {} },
           _actions: actions,
