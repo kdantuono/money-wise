@@ -19,7 +19,19 @@ import type {
   AllocationResult,
   AllocationResultItem,
   AllocationGoalInput,
+  PoolAllocation,
 } from '@/types/onboarding-plan';
+import { inferGoalType } from './inferGoalType';
+
+/**
+ * Sprint 1.5.3 WP-Q3 feature flag — build-time.
+ * Default OFF (undefined → falsy). Set `NEXT_PUBLIC_ENABLE_3POOL_MODEL=true`
+ * in `.env.production` to activate 3-pool allocation path. Tests can override
+ * via `vi.stubEnv('NEXT_PUBLIC_ENABLE_3POOL_MODEL', 'true')`.
+ */
+function _is3PoolEnabled(): boolean {
+  return process.env.NEXT_PUBLIC_ENABLE_3POOL_MODEL === 'true';
+}
 
 const _EMERGENCY_NAME_PATTERN = /emergenza|emergency/i;
 const _EMERGENCY_OVERRIDE_FRACTION = 0.4;
@@ -123,23 +135,49 @@ function _runWaterfall(
 }
 
 
-export function computeAllocation(input: AllocationInput): AllocationResult {
-  const now = new Date();
-  const { monthlyIncome, monthlySavingsTarget, essentialsPct, goals } = input;
-
-  const incomeAfterEssentials = _round2(monthlyIncome * (1 - essentialsPct / 100));
-  const savingsPool = _round2(Math.min(monthlySavingsTarget, incomeAfterEssentials));
+/**
+ * Core per-pool allocation (extract of Sprint 1.5 algorithm).
+ * Emergency 40% floor + waterfall + openended residual split + item warnings.
+ *
+ * `emitCapWarning` toggles the "savings target > income after essentials" warning,
+ * which only applies in the legacy single-pool path (pre-Sprint-1.5.3). In 3-pool
+ * mode the boundary check (lifestyle+savings+invest ≤ incomeAfterEssentials) is
+ * enforced at the dispatcher level via hardBlock, so this warning is skipped.
+ */
+function _computeSinglePool(
+  goals: AllocationGoalInput[],
+  poolBudget: number,
+  incomeAfterEssentials: number,
+  emitCapWarning: boolean,
+  now: Date,
+): {
+  items: AllocationResultItem[];
+  totalAllocated: number;
+  residual: number;
+  warnings: string[];
+} {
   const globalWarnings: string[] = [];
 
-  if (monthlySavingsTarget > incomeAfterEssentials) {
+  if (emitCapWarning && poolBudget > incomeAfterEssentials) {
     globalWarnings.push(
-      `Il target di risparmio mensile (${_fmtEur(monthlySavingsTarget)}) supera il reddito disponibile dopo le spese essenziali (${_fmtEur(incomeAfterEssentials)}). Il piano è stato calcolato sul reddito disponibile effettivo.`,
+      `Il target di risparmio mensile (${_fmtEur(poolBudget)}) supera il reddito disponibile dopo le spese essenziali (${_fmtEur(incomeAfterEssentials)}). Il piano è stato calcolato sul reddito disponibile effettivo.`,
     );
   }
 
+  const savingsPool = emitCapWarning
+    ? _round2(Math.min(poolBudget, incomeAfterEssentials))
+    : _round2(poolBudget);
+
   if (goals.length === 0) {
-    globalWarnings.push('Nessun obiettivo definito. Il budget mensile disponibile rimane non allocato.');
-    return { items: [], incomeAfterEssentials, totalAllocated: 0, unallocated: savingsPool, warnings: globalWarnings };
+    if (savingsPool > 0) {
+      globalWarnings.push('Nessun obiettivo definito. Il budget mensile disponibile rimane non allocato.');
+    }
+    return {
+      items: [],
+      totalAllocated: 0,
+      residual: savingsPool,
+      warnings: globalWarnings,
+    };
   }
 
   const emergencyIndex = goals.findIndex((g) => _isEmergencyGoal(g, now));
@@ -363,5 +401,113 @@ export function computeAllocation(input: AllocationInput): AllocationResult {
     }
   }
 
-  return { items, incomeAfterEssentials, totalAllocated, unallocated, warnings: globalWarnings };
+  return { items, totalAllocated, residual: unallocated, warnings: globalWarnings };
+}
+
+/**
+ * Sprint 1.5.3 WP-Q3: top-level dispatcher.
+ * Flag OFF (default): legacy single-pool behavior (backward compat).
+ * Flag ON: 3-pool routing via inferGoalType + boundary check hardBlock +
+ * independent waterfall per savings/investments pool + lifestyle locked-info.
+ */
+export function computeAllocation(input: AllocationInput): AllocationResult {
+  const now = new Date();
+  const { monthlyIncome, monthlySavingsTarget, essentialsPct, goals } = input;
+  const incomeAfterEssentials = _round2(monthlyIncome * (1 - essentialsPct / 100));
+
+  if (!_is3PoolEnabled()) {
+    // Legacy single-pool path — all goals in one waterfall, savingsPool capped at income.
+    const legacy = _computeSinglePool(goals, monthlySavingsTarget, incomeAfterEssentials, true, now);
+    return {
+      items: legacy.items,
+      incomeAfterEssentials,
+      totalAllocated: legacy.totalAllocated,
+      unallocated: legacy.residual,
+      warnings: legacy.warnings,
+    };
+  }
+
+  // 3-pool path — lifestyle locked-info, savings + investments independently allocated.
+  const lifestyleBudget = input.lifestyleBuffer ?? 0;
+  const savingsBudget = monthlySavingsTarget;
+  const investBudget = input.investmentsTarget ?? 0;
+  const totalBudget = _round2(lifestyleBudget + savingsBudget + investBudget);
+
+  if (totalBudget > incomeAfterEssentials + 0.01) {
+    return {
+      items: [],
+      incomeAfterEssentials,
+      totalAllocated: 0,
+      unallocated: 0,
+      warnings: [],
+      hardBlock: {
+        reason: `Budget totale ${_fmtEur(totalBudget)} eccede il disponibile ${_fmtEur(incomeAfterEssentials)}. Riduci lifestyle/savings/invest in Step 2.`,
+      },
+      pools: {
+        lifestyle: { budget: lifestyleBudget, locked: true },
+        savings: { budget: savingsBudget, allocated: 0, residual: savingsBudget, items: [] },
+        investments: { budget: investBudget, allocated: 0, residual: investBudget, items: [] },
+      },
+    };
+  }
+
+  // Route goals via inferGoalType (presetId exact match → name-heuristic fallback).
+  const savingsGoals: AllocationGoalInput[] = [];
+  const investGoals: AllocationGoalInput[] = [];
+  for (const g of goals) {
+    const presetId =
+      (g as AllocationGoalInput & { presetId?: string | null }).presetId ?? null;
+    const pool = inferGoalType({ name: g.name, presetId });
+    if (pool === 'investments') investGoals.push(g);
+    else savingsGoals.push(g);
+  }
+
+  const savingsResult = _computeSinglePool(savingsGoals, savingsBudget, incomeAfterEssentials, false, now);
+  const investResult = _computeSinglePool(investGoals, investBudget, incomeAfterEssentials, false, now);
+
+  // Rebuild items[] preserving original goals[] order (cross-pool).
+  const itemsById = new Map<string, AllocationResultItem>();
+  for (const it of savingsResult.items) itemsById.set(it.goalId, it);
+  for (const it of investResult.items) itemsById.set(it.goalId, it);
+  const items: AllocationResultItem[] = goals.map((g) => {
+    const existing = itemsById.get(g.id);
+    return (
+      existing ?? {
+        goalId: g.id,
+        monthlyAmount: 0,
+        deadlineFeasible: true,
+        reasoning: 'Goal non classificato (nessuna allocazione).',
+        warnings: [],
+      }
+    );
+  });
+
+  const totalAllocated = _round2(savingsResult.totalAllocated + investResult.totalAllocated);
+  const unallocated = _round2(savingsResult.residual + investResult.residual);
+
+  const savingsPool: PoolAllocation = {
+    budget: savingsBudget,
+    allocated: savingsResult.totalAllocated,
+    residual: savingsResult.residual,
+    items: savingsResult.items,
+  };
+  const investmentsPool: PoolAllocation = {
+    budget: investBudget,
+    allocated: investResult.totalAllocated,
+    residual: investResult.residual,
+    items: investResult.items,
+  };
+
+  return {
+    items,
+    incomeAfterEssentials,
+    totalAllocated,
+    unallocated,
+    warnings: [...savingsResult.warnings, ...investResult.warnings],
+    pools: {
+      lifestyle: { budget: lifestyleBudget, locked: true },
+      savings: savingsPool,
+      investments: investmentsPool,
+    },
+  };
 }

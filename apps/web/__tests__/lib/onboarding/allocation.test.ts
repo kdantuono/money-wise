@@ -563,3 +563,151 @@ describe('CRIT-03 hotfix regression (user screenshot bug)', () => {
     expect(result.items[0].reasoning).toContain('Fondo di emergenza');
   });
 });
+
+// ───────────────────────────────────────────────────────────────────────────
+// Sprint 1.5.3 WP-Q3: 3-pool model (ENABLE_3POOL_MODEL=true)
+// ───────────────────────────────────────────────────────────────────────────
+
+describe('computeAllocation — 3-pool model (Sprint 1.5.3 WP-Q3)', () => {
+  beforeEach(() => {
+    vi.stubEnv('NEXT_PUBLIC_ENABLE_3POOL_MODEL', 'true');
+    _goalIdCounter = 0;
+  });
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it('pools.lifestyle.budget === lifestyleBuffer with locked:true', () => {
+    const result = computeAllocation({
+      monthlyIncome: 2250,
+      essentialsPct: 80,
+      monthlySavingsTarget: 300,
+      lifestyleBuffer: 120,
+      investmentsTarget: 20,
+      goals: [],
+    });
+    expect(result.pools).toBeDefined();
+    expect(result.pools!.lifestyle.budget).toBe(120);
+    expect(result.pools!.lifestyle.locked).toBe(true);
+  });
+
+  it('pools.savings.budget === savingsTarget, pools.investments.budget === investmentsTarget', () => {
+    const result = computeAllocation({
+      monthlyIncome: 2250,
+      essentialsPct: 80,
+      monthlySavingsTarget: 300,
+      lifestyleBuffer: 120,
+      investmentsTarget: 20,
+      goals: [],
+    });
+    expect(result.pools!.savings.budget).toBe(300);
+    expect(result.pools!.investments.budget).toBe(20);
+  });
+
+  it('hardBlock when lifestyle+savings+invest > incomeAfterEssentials', () => {
+    // incomeAfterEssentials = 2250*(1-0.80) = 450; budget sum 500 > 450 → hardBlock
+    const result = computeAllocation({
+      monthlyIncome: 2250,
+      essentialsPct: 80,
+      monthlySavingsTarget: 300,
+      lifestyleBuffer: 120,
+      investmentsTarget: 80,
+      goals: [makeGoal({ name: 'Casa', target: 50000, priority: 2 })],
+    });
+    expect(result.hardBlock).toBeDefined();
+    expect(result.hardBlock?.reason).toContain('eccede');
+    expect(result.totalAllocated).toBe(0);
+  });
+
+  it('routes savings-type goals to savings pool and invest-type goals to investments pool', () => {
+    const goals: AllocationGoalInput[] = [
+      makeGoal({ name: 'Fondo Emergenza', target: 5000, priority: 1, type: 'openended' }),
+      makeGoal({ name: 'Iniziare a Investire', target: 10000, priority: 2 }),
+    ];
+    const result = computeAllocation({
+      monthlyIncome: 2250,
+      essentialsPct: 80,
+      monthlySavingsTarget: 300,
+      lifestyleBuffer: 120,
+      investmentsTarget: 20,
+      goals,
+    });
+    expect(result.pools!.savings.items).toHaveLength(1);
+    expect(result.pools!.savings.items[0].goalId).toBe(goals[0].id);
+    expect(result.pools!.investments.items).toHaveLength(1);
+    expect(result.pools!.investments.items[0].goalId).toBe(goals[1].id);
+  });
+
+  it('user scenario 2250/80%/120/300/20 — 3 pools distinct with correct allocation', () => {
+    // User scenario from Sprint 1.5.3 plan: income 2250, essentials 80%, lifestyle 120,
+    // savings 300, invest 20. 1 emergency + 1 savings + 1 invest goal.
+    const goals: AllocationGoalInput[] = [
+      makeGoal({ name: 'Fondo Emergenza', target: 5000, priority: 1, type: 'openended' }),
+      makeGoal({ name: 'Comprare Casa', target: 50000, deadline: monthsFromToday(60), priority: 2 }),
+      makeGoal({ name: 'ETF mondiali', target: 10000, deadline: monthsFromToday(60), priority: 3 }),
+    ];
+    const result = computeAllocation({
+      monthlyIncome: 2250,
+      essentialsPct: 80,
+      monthlySavingsTarget: 300,
+      lifestyleBuffer: 120,
+      investmentsTarget: 20,
+      goals,
+    });
+    expect(result.hardBlock).toBeUndefined();
+    expect(result.pools!.lifestyle.budget).toBe(120);
+    expect(result.pools!.savings.budget).toBe(300);
+    expect(result.pools!.savings.allocated).toBeGreaterThan(0);
+    expect(result.pools!.savings.items).toHaveLength(2); // emergency + casa
+    expect(result.pools!.investments.budget).toBe(20);
+    expect(result.pools!.investments.items).toHaveLength(1); // ETF
+    // totalAllocated = savings.allocated + investments.allocated (no lifestyle)
+    expect(result.totalAllocated).toBeCloseTo(
+      result.pools!.savings.allocated + result.pools!.investments.allocated,
+      2,
+    );
+  });
+
+  it('preserves goals[] input order in items[] cross-pool', () => {
+    const goals: AllocationGoalInput[] = [
+      makeGoal({ id: 'g-invest', name: 'ETF', target: 10000, priority: 2 }),
+      makeGoal({ id: 'g-savings', name: 'Casa', target: 50000, priority: 2 }),
+      makeGoal({ id: 'g-emergency', name: 'Fondo Emergenza', target: 5000, priority: 1, type: 'openended' }),
+    ];
+    const result = computeAllocation({
+      monthlyIncome: 2250,
+      essentialsPct: 80,
+      monthlySavingsTarget: 300,
+      lifestyleBuffer: 0,
+      investmentsTarget: 50,
+      goals,
+    });
+    expect(result.items.map((i) => i.goalId)).toEqual(['g-invest', 'g-savings', 'g-emergency']);
+  });
+
+  it('legacy path still works when flag off (unstubEnv)', () => {
+    vi.unstubAllEnvs();
+    const result = computeAllocation({
+      monthlyIncome: 2250,
+      essentialsPct: 80,
+      monthlySavingsTarget: 300,
+      goals: [],
+    });
+    expect(result.pools).toBeUndefined();
+    expect(result.unallocated).toBe(300);
+  });
+
+  it('boundary contract: computeAllocation routes a name-only invest goal correctly', () => {
+    // Contract snapshot: "Crypto" name should route to investments via inferGoalType
+    const result = computeAllocation({
+      monthlyIncome: 2250,
+      essentialsPct: 80,
+      monthlySavingsTarget: 0,
+      lifestyleBuffer: 0,
+      investmentsTarget: 100,
+      goals: [makeGoal({ name: 'Crypto portfolio', target: 5000, priority: 2 })],
+    });
+    expect(result.pools!.investments.items).toHaveLength(1);
+    expect(result.pools!.savings.items).toHaveLength(0);
+  });
+});
