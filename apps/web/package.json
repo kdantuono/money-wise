@@ -33,7 +33,7 @@
     "build:clean": "pnpm clean && next build"
   },
   "dependencies": {
-    "@hookform/resolvers": "^3.3.2",
+    "@hookform/resolvers": "^5.2.2",
     "@money-wise/types": "workspace:*",
     "@money-wise/ui": "workspace:*",
     "@money-wise/utils": "workspace:*",
