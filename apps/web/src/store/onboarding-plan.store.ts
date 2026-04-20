@@ -90,6 +90,9 @@ interface Actions {
    */
   hydrateFromPlan: (bundle: LoadedPlanBundle) => void;
   reset: () => void;
+  // Modal state for "Aggiungi obiettivo" Dialog (issue #463)
+  setAddGoalModalOpen: (open: boolean) => void;
+  setEditingPresetId: (id: string | null) => void;
 }
 
 type WizardStore = WizardState & Actions;
@@ -103,6 +106,8 @@ const initialState: WizardState = {
   step5: { enableAiCategorization: true, enableAiInsights: true },
   isPersisting: false,
   persistedPlanId: null,
+  isAddGoalModalOpen: false,
+  editingPresetId: null,
 };
 
 export const useOnboardingPlanStore = create<WizardStore>((set) => ({
@@ -215,4 +220,6 @@ export const useOnboardingPlanStore = create<WizardStore>((set) => ({
     });
   },
   reset: () => set(initialState),
+  setAddGoalModalOpen: (open) => set({ isAddGoalModalOpen: open }),
+  setEditingPresetId: (id) => set({ editingPresetId: id }),
 }));

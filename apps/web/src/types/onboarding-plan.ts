@@ -169,6 +169,10 @@ export interface WizardState {
   isPersisting: boolean;
   /** Populated after successful DB persist. */
   persistedPlanId: string | null;
+  /** Controls the "Aggiungi obiettivo" Radix Dialog (issue #463). */
+  isAddGoalModalOpen: boolean;
+  /** Preset id currently being edited in the modal; null for manual entry. */
+  editingPresetId: string | null;
 }
 
 // ─────────────────────────────────────────────────────────────────────────

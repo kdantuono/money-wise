@@ -1,10 +1,13 @@
 /**
- * Tests for StepGoals (Sprint 1.5 visual upgrade).
+ * Tests for StepGoals (Sprint 1.5 visual upgrade + issue #463 modal refactor).
  *
  * Covers:
- * - Preset card click populates draft form with default values
- * - "Aggiungi manualmente" button opens empty form
- * - Custom goal can be submitted
+ * - Preset card click opens Radix Dialog modal with pre-filled values
+ * - "Aggiungi manualmente" button opens modal with empty form
+ * - Form submit adds goal + closes modal
+ * - Annulla (Dialog.Close) closes without saving
+ * - ESC key closes modal without saving
+ * - Overlay click closes modal without saving
  * - Added goals appear in the list
  * - Remove goal button fires removeGoal
  */
@@ -29,7 +32,8 @@ type Goal = {
 
 const mockAddGoal = vi.fn();
 const mockRemoveGoal = vi.fn();
-const mockGoals: Goal[] = [];
+const mockSetAddGoalModalOpen = vi.fn();
+const mockSetEditingPresetId = vi.fn();
 
 const mockStore = vi.fn();
 vi.mock('@/store/onboarding-plan.store', () => ({
@@ -39,11 +43,19 @@ vi.mock('@/store/onboarding-plan.store', () => ({
   },
 }));
 
-function makeStoreState(goals: Goal[] = []) {
+function makeStoreState(
+  goals: Goal[] = [],
+  isAddGoalModalOpen = false,
+  editingPresetId: string | null = null
+) {
   return {
     step3: { goals },
     addGoal: mockAddGoal,
     removeGoal: mockRemoveGoal,
+    isAddGoalModalOpen,
+    editingPresetId,
+    setAddGoalModalOpen: mockSetAddGoalModalOpen,
+    setEditingPresetId: mockSetEditingPresetId,
   };
 }
 
@@ -63,7 +75,6 @@ describe('StepGoals', () => {
 
   it('renders preset cards when no goals added', () => {
     render(<StepGoals />);
-    // 7 preset cards
     expect(screen.getByLabelText(/Aggiungi preset: Fondo Emergenza/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Aggiungi preset: Comprare Casa/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Aggiungi preset: Iniziare a Investire/i)).toBeInTheDocument();
@@ -73,44 +84,49 @@ describe('StepGoals', () => {
     expect(screen.getByLabelText(/Aggiungi preset: Far Crescere Patrimonio/i)).toBeInTheDocument();
   });
 
-  it('shows empty state hint when no goals and form not open', () => {
+  it('shows empty state hint when no goals', () => {
     render(<StepGoals />);
     expect(screen.getByText(/Nessun obiettivo ancora/i)).toBeInTheDocument();
   });
 
-  it('shows "Aggiungi manualmente" button when form is closed', () => {
+  it('shows "Aggiungi manualmente" button', () => {
     render(<StepGoals />);
     expect(screen.getByRole('button', { name: /Aggiungi manualmente/i })).toBeInTheDocument();
   });
 
-  // ---- 2. Preset card click -------------------------------------------------
+  // ---- 2. Preset card click opens modal with pre-filled values -----------
 
-  it('preset card click opens form pre-filled with preset defaults', async () => {
+  it('preset card click calls setEditingPresetId + setAddGoalModalOpen(true)', async () => {
     render(<StepGoals />);
     await userEvent.click(screen.getByLabelText(/Aggiungi preset: Fondo Emergenza/i));
 
-    // Form should appear with pre-filled name
+    expect(mockSetEditingPresetId).toHaveBeenCalledWith('fondo-emergenza');
+    expect(mockSetAddGoalModalOpen).toHaveBeenCalledWith(true);
+  });
+
+  it('modal renders with pre-filled values when open with fondo-emergenza preset', () => {
+    mockStore.mockReturnValue(makeStoreState([], true, 'fondo-emergenza'));
+    render(<StepGoals />);
+
     const nameInput = screen.getByLabelText(/Nome/i);
     expect(nameInput).toHaveValue('Fondo Emergenza');
 
-    // Target pre-filled with 5000
     const targetInput = screen.getByLabelText(/Target \(€\)/i);
     expect(targetInput).toHaveValue(5000);
   });
 
-  it('preset "Comprare Casa" pre-fills with 50000 target', async () => {
+  it('modal renders with pre-filled values for comprare-casa preset', () => {
+    mockStore.mockReturnValue(makeStoreState([], true, 'comprare-casa'));
     render(<StepGoals />);
-    await userEvent.click(screen.getByLabelText(/Aggiungi preset: Comprare Casa/i));
 
     const targetInput = screen.getByLabelText(/Target \(€\)/i);
     expect(targetInput).toHaveValue(50000);
   });
 
-  it('after preset click, user can submit the form and addGoal is called', async () => {
+  it('submitting preset-prefilled form calls addGoal + closes modal', async () => {
+    mockStore.mockReturnValue(makeStoreState([], true, 'fondo-emergenza'));
     render(<StepGoals />);
-    await userEvent.click(screen.getByLabelText(/Aggiungi preset: Fondo Emergenza/i));
 
-    // Form is open with pre-filled values — click Aggiungi
     const addButton = screen.getByRole('button', { name: /^Aggiungi$/ });
     await userEvent.click(addButton);
 
@@ -122,14 +138,23 @@ describe('StepGoals', () => {
           priority: 1,
         })
       );
+      expect(mockSetAddGoalModalOpen).toHaveBeenCalledWith(false);
     });
   });
 
   // ---- 3. Manual form -------------------------------------------------------
 
-  it('"Aggiungi manualmente" opens an empty form', async () => {
+  it('"Aggiungi manualmente" calls setEditingPresetId(null) + setAddGoalModalOpen(true)', async () => {
     render(<StepGoals />);
     await userEvent.click(screen.getByRole('button', { name: /Aggiungi manualmente/i }));
+
+    expect(mockSetEditingPresetId).toHaveBeenCalledWith(null);
+    expect(mockSetAddGoalModalOpen).toHaveBeenCalledWith(true);
+  });
+
+  it('modal renders with empty form when opened manually (no preset)', () => {
+    mockStore.mockReturnValue(makeStoreState([], true, null));
+    render(<StepGoals />);
 
     const nameInput = screen.getByLabelText(/Nome/i);
     expect(nameInput).toHaveValue('');
@@ -139,8 +164,8 @@ describe('StepGoals', () => {
   });
 
   it('submitting a manual goal with valid data calls addGoal', async () => {
+    mockStore.mockReturnValue(makeStoreState([], true, null));
     render(<StepGoals />);
-    await userEvent.click(screen.getByRole('button', { name: /Aggiungi manualmente/i }));
 
     await userEvent.type(screen.getByLabelText(/Nome/i), 'Università');
     await userEvent.clear(screen.getByLabelText(/Target \(€\)/i));
@@ -155,17 +180,40 @@ describe('StepGoals', () => {
     });
   });
 
-  it('Annulla button closes form without calling addGoal', async () => {
+  // ---- 4. Modal close behaviors ---------------------------------------------
+
+  it('Annulla (Dialog.Close) closes modal without calling addGoal', async () => {
+    mockStore.mockReturnValue(makeStoreState([], true, null));
     render(<StepGoals />);
-    await userEvent.click(screen.getByRole('button', { name: /Aggiungi manualmente/i }));
+
     await userEvent.click(screen.getByRole('button', { name: /Annulla/i }));
 
     expect(mockAddGoal).not.toHaveBeenCalled();
-    // Form closed — "Aggiungi manualmente" back
-    expect(screen.getByRole('button', { name: /Aggiungi manualmente/i })).toBeInTheDocument();
+    expect(mockSetAddGoalModalOpen).toHaveBeenCalledWith(false);
   });
 
-  // ---- 4. Goals list --------------------------------------------------------
+  it('X button (Dialog.Close) closes modal without calling addGoal', async () => {
+    mockStore.mockReturnValue(makeStoreState([], true, null));
+    render(<StepGoals />);
+
+    await userEvent.click(screen.getByRole('button', { name: /Chiudi/i }));
+
+    expect(mockAddGoal).not.toHaveBeenCalled();
+    expect(mockSetAddGoalModalOpen).toHaveBeenCalledWith(false);
+  });
+
+  it('ESC key closes modal without calling addGoal', async () => {
+    mockStore.mockReturnValue(makeStoreState([], true, null));
+    render(<StepGoals />);
+
+    // Modal is open — press ESC
+    await userEvent.keyboard('{Escape}');
+
+    expect(mockAddGoal).not.toHaveBeenCalled();
+    expect(mockSetAddGoalModalOpen).toHaveBeenCalledWith(false);
+  });
+
+  // ---- 5. Goals list --------------------------------------------------------
 
   it('renders existing goals from store', () => {
     mockStore.mockReturnValue(
@@ -174,9 +222,7 @@ describe('StepGoals', () => {
       ])
     );
     render(<StepGoals />);
-    // Use a name that doesn't collide with the 7 preset card labels
     expect(screen.getByText('Obiettivo Personalizzato')).toBeInTheDocument();
-    // Check the goal list item is rendered (the target formatting depends on locale support)
     expect(screen.getByLabelText(/Rimuovi Obiettivo Personalizzato/i)).toBeInTheDocument();
   });
 
@@ -189,5 +235,15 @@ describe('StepGoals', () => {
     render(<StepGoals />);
     await userEvent.click(screen.getByLabelText(/Rimuovi Obiettivo Da Rimuovere/i));
     expect(mockRemoveGoal).toHaveBeenCalledWith('g-remove');
+  });
+
+  it('does not show empty state hint when goals exist', () => {
+    mockStore.mockReturnValue(
+      makeStoreState([
+        { tempId: 'g1', name: 'Qualcosa', target: 1000, deadline: null, priority: 2 },
+      ])
+    );
+    render(<StepGoals />);
+    expect(screen.queryByText(/Nessun obiettivo ancora/i)).not.toBeInTheDocument();
   });
 });
