@@ -37,8 +37,9 @@ vi.mock('@/components/onboarding/steps/StepProfile', () => ({
 vi.mock('@/components/onboarding/steps/StepGoals', () => ({
   StepGoals: () => <div data-testid="step-3-stub">StepGoals</div>,
 }));
-vi.mock('@/components/onboarding/steps/StepPlanReview', () => ({
-  StepPlanReview: () => <div data-testid="step-4-stub">StepPlanReview</div>,
+vi.mock('@/components/onboarding/steps/StepCalibration', () => ({
+  StepCalibration: () => <div data-testid="step-4-stub">StepCalibration</div>,
+  calibrationAdvisor: {},
 }));
 vi.mock('@/components/onboarding/steps/StepAiPrefs', () => ({
   StepAiPrefs: () => <div data-testid="step-5-stub">StepAiPrefs</div>,
