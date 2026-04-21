@@ -35,6 +35,11 @@ export interface GoalInput {
   priority: PriorityRank;
   monthlyAllocation?: number;
   type?: GoalType;
+  /** Sprint 1.6 Fase 2C: current progress editable manual. Fallback quando
+   * goal non è linked a account (auto-sync da balance). Validation
+   * UI-side: 0 <= current <= target (se target non-null).
+   */
+  current?: number;
 }
 
 export class GoalsApiError extends Error {
@@ -138,6 +143,8 @@ export const goalsClient = {
         ...(patch.priority !== undefined ? { priority: patch.priority } : {}),
         ...(patch.monthlyAllocation !== undefined ? { monthly_allocation: patch.monthlyAllocation } : {}),
         ...(patch.type !== undefined ? { type: patch.type } : {}),
+        // Sprint 1.6 Fase 2C: current editable manual (fallback non-linked goals)
+        ...(patch.current !== undefined ? { current: patch.current } : {}),
       })
       .eq('id', goalId)
       .select('id, name, target, current, deadline, priority, monthly_allocation, status, type')

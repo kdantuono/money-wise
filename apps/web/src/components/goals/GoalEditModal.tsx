@@ -40,6 +40,8 @@ function goalToInput(goal: Goal): GoalInput {
     deadline: goal.deadline,
     priority: goal.priority,
     monthlyAllocation: goal.monthlyAllocation,
+    // Sprint 1.6 Fase 2C: current editable manual (fallback non-linked goals)
+    current: goal.current,
   };
 }
 
@@ -175,6 +177,39 @@ export function GoalEditModal({ open, mode, goal, onSave, onCancel }: GoalEditMo
                   className="w-full bg-muted/50 border border-border rounded-xl px-3 py-2 text-sm text-foreground"
                 />
               </div>
+            </div>
+
+            {/* Sprint 1.6 Fase 2C: Current progress editable (manual fallback) */}
+            <div>
+              <label
+                htmlFor="goal-edit-current"
+                className="text-sm font-medium text-foreground block mb-1"
+              >
+                Risparmio attuale (€)
+                <span className="ml-1 text-xs text-muted-foreground font-normal">
+                  (quanto hai già messo da parte)
+                </span>
+              </label>
+              <input
+                id="goal-edit-current"
+                type="number"
+                min={0}
+                max={draft.target ?? undefined}
+                data-testid="goal-modal-current"
+                value={draft.current ?? 0}
+                onChange={(e) => {
+                  const v = Math.max(0, Number(e.target.value) || 0);
+                  const clamped = draft.target !== null && draft.target > 0 ? Math.min(v, draft.target) : v;
+                  setDraft({ ...draft, current: clamped });
+                }}
+                className="w-full bg-muted/50 border border-border rounded-xl px-3 py-2 text-sm text-foreground"
+                placeholder="0"
+              />
+              {draft.target !== null && draft.target > 0 && draft.current !== undefined && draft.current > 0 && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Progresso: {Math.round((draft.current / draft.target) * 100)}% di €{draft.target.toLocaleString('it-IT')}
+                </p>
+              )}
             </div>
 
             {/* Priority */}
