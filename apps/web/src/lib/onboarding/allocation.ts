@@ -150,6 +150,10 @@ function _computeSinglePool(
   incomeAfterEssentials: number,
   emitCapWarning: boolean,
   now: Date,
+  /** Sprint 1.6.4D #028: pool label per disambiguare warning text
+   * (es. "Budget residuo Savings €X" invece di generico "Budget residuo €X"
+   * che user confondeva con lifestyle budget quando coincidenza numerica). */
+  poolLabel?: string,
 ): {
   items: AllocationResultItem[];
   totalAllocated: number;
@@ -390,13 +394,20 @@ function _computeSinglePool(
 
   if (unallocated > 0) {
     const hasInfeasibleItem = items.some((it) => it.deadlineFeasible === false);
+    // Sprint 1.6.4D #028: pool label esplicito per evitare ambiguità con lifestyle budget
+    const poolPrefix = poolLabel ? `Budget residuo pool ${poolLabel}` : 'Budget residuo';
     if (hasInfeasibleItem) {
       globalWarnings.push(
-        `Budget residuo di ${_fmtEur(unallocated)} non allocato. Alcuni obiettivi hanno deadline non raggiungibile con l'allocation corrente — considera di estendere deadline o ridurre target.`,
+        `${poolPrefix} di ${_fmtEur(unallocated)} non allocato. Alcuni obiettivi hanno deadline non raggiungibile con l'allocation corrente — considera di estendere deadline o ridurre target.`,
       );
     } else {
+      // Sprint 1.6.4D #028 Copilot round 1: nota "non va a lifestyle né altri pool"
+      // sensata SOLO in 3-pool mode (poolLabel valorizzato). Legacy single-pool no.
+      const extraNote = poolLabel
+        ? ` Il budget ${poolLabel} non utilizzato non va a lifestyle né ad altri pool.`
+        : '';
       globalWarnings.push(
-        `Budget residuo di ${_fmtEur(unallocated)} non allocato (tutti gli obiettivi sono stati finanziati per intero).`,
+        `${poolPrefix} di ${_fmtEur(unallocated)} non allocato (tutti gli obiettivi sono stati finanziati per intero).${extraNote}`,
       );
     }
   }
@@ -460,8 +471,8 @@ export function computeAllocation(input: AllocationInput): AllocationResult {
     else savingsGoals.push(g);
   }
 
-  const savingsResult = _computeSinglePool(savingsGoals, savingsBudget, incomeAfterEssentials, false, now);
-  const investResult = _computeSinglePool(investGoals, investBudget, incomeAfterEssentials, false, now);
+  const savingsResult = _computeSinglePool(savingsGoals, savingsBudget, incomeAfterEssentials, false, now, 'Risparmi');
+  const investResult = _computeSinglePool(investGoals, investBudget, incomeAfterEssentials, false, now, 'Investimenti');
 
   // Rebuild items[] preserving original goals[] order (cross-pool).
   const itemsById = new Map<string, AllocationResultItem>();
