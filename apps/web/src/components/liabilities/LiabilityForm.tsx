@@ -8,21 +8,17 @@ import type {
   CreateLiabilityRequest,
   UpdateLiabilityRequest,
 } from '@/services/liabilities.client';
+import { useActiveGoals } from '@/hooks/useActiveGoals';
 
 // =============================================================================
 // Type Definitions
 // =============================================================================
 
 export interface LiabilityFormProps {
-  /** Existing liability for editing (undefined for create mode) */
   liability?: Liability;
-  /** Whether the modal is open */
   isOpen: boolean;
-  /** Callback to close the modal */
   onClose: () => void;
-  /** Callback when form is submitted */
   onSubmit: (data: CreateLiabilityRequest | UpdateLiabilityRequest) => Promise<void>;
-  /** Loading state */
   isLoading?: boolean;
 }
 
@@ -39,11 +35,8 @@ interface FormData {
   paymentDueDay: string;
   statementCloseDay: string;
   provider: string;
+  goalId: string;
 }
-
-// =============================================================================
-// Helper Functions
-// =============================================================================
 
 function getInitialFormData(liability?: Liability): FormData {
   return {
@@ -52,19 +45,16 @@ function getInitialFormData(liability?: Liability): FormData {
     currentBalance: liability?.currentBalance?.toString() || '',
     creditLimit: liability?.creditLimit?.toString() || '',
     originalAmount: liability?.originalAmount?.toString() || '',
-    currency: liability?.currency || 'USD',
+    currency: liability?.currency || 'EUR',
     interestRate: liability?.interestRate?.toString() || '',
     minimumPayment: liability?.minimumPayment?.toString() || '',
     billingCycleDay: liability?.billingCycleDay?.toString() || '',
     paymentDueDay: liability?.paymentDueDay?.toString() || '',
     statementCloseDay: liability?.statementCloseDay?.toString() || '',
     provider: liability?.provider || '',
+    goalId: liability?.goalId ?? '',
   };
 }
-
-// =============================================================================
-// Component Implementation
-// =============================================================================
 
 export function LiabilityForm({
   liability,
@@ -77,39 +67,41 @@ export function LiabilityForm({
   const [formData, setFormData] = useState<FormData>(() => getInitialFormData(liability));
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
 
+  const { data: activeGoals = [] } = useActiveGoals();
+
   const validateForm = useCallback((): boolean => {
     const newErrors: Partial<Record<keyof FormData, string>> = {};
 
     if (!formData.name.trim()) {
-      newErrors.name = 'Name is required';
+      newErrors.name = 'Il nome è obbligatorio';
     }
 
     if (formData.currentBalance && isNaN(parseFloat(formData.currentBalance))) {
-      newErrors.currentBalance = 'Must be a valid number';
+      newErrors.currentBalance = 'Deve essere un numero valido';
     }
 
     if (formData.creditLimit && isNaN(parseFloat(formData.creditLimit))) {
-      newErrors.creditLimit = 'Must be a valid number';
+      newErrors.creditLimit = 'Deve essere un numero valido';
     }
 
     if (formData.interestRate) {
       const rate = parseFloat(formData.interestRate);
       if (isNaN(rate) || rate < 0 || rate > 100) {
-        newErrors.interestRate = 'Must be between 0 and 100';
+        newErrors.interestRate = 'Deve essere compreso tra 0 e 100';
       }
     }
 
     if (formData.billingCycleDay) {
       const day = parseInt(formData.billingCycleDay);
       if (isNaN(day) || day < 1 || day > 31) {
-        newErrors.billingCycleDay = 'Must be between 1 and 31';
+        newErrors.billingCycleDay = 'Deve essere compreso tra 1 e 31';
       }
     }
 
     if (formData.paymentDueDay) {
       const day = parseInt(formData.paymentDueDay);
       if (isNaN(day) || day < 1 || day > 31) {
-        newErrors.paymentDueDay = 'Must be between 1 and 31';
+        newErrors.paymentDueDay = 'Deve essere compreso tra 1 e 31';
       }
     }
 
@@ -158,6 +150,16 @@ export function LiabilityForm({
       data.provider = formData.provider.trim();
     }
 
+    // Goal linking: only set when user selected a goal OR when editing an
+    // existing linked liability and user explicitly unlinked (set to "Nessun
+    // obiettivo"). Avoids always-include pattern breaking backward-compat
+    // on environments without the goal_id column (Copilot round 1).
+    if (formData.goalId) {
+      data.goalId = formData.goalId;
+    } else if (liability?.goalId) {
+      data.goalId = null;
+    }
+
     await onSubmit(data);
   };
 
@@ -166,7 +168,6 @@ export function LiabilityForm({
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-    // Clear error when user starts typing
     if (errors[name as keyof FormData]) {
       setErrors((prev) => ({ ...prev, [name]: undefined }));
     }
@@ -192,11 +193,12 @@ export function LiabilityForm({
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b border-border">
             <h2 className="text-xl font-semibold text-foreground">
-              {isEditMode ? 'Edit Liability' : 'Add New Liability'}
+              {isEditMode ? 'Modifica debito' : 'Aggiungi nuovo debito'}
             </h2>
             <button
               type="button"
               onClick={onClose}
+              aria-label="Chiudi"
               className="p-2 text-muted-foreground hover:text-muted-foreground rounded-lg hover:bg-muted"
             >
               <X className="h-5 w-5" />
@@ -208,7 +210,7 @@ export function LiabilityForm({
             {/* Type */}
             <div>
               <label className="block text-sm font-medium text-foreground mb-1">
-                Type *
+                Tipo *
               </label>
               <select
                 name="type"
@@ -217,25 +219,25 @@ export function LiabilityForm({
                 disabled={isEditMode}
                 className="w-full border border-border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-muted"
               >
-                <option value="CREDIT_CARD">Credit Card</option>
+                <option value="CREDIT_CARD">Carta di credito</option>
                 <option value="BNPL">Buy Now Pay Later</option>
-                <option value="LOAN">Loan</option>
-                <option value="MORTGAGE">Mortgage</option>
-                <option value="OTHER">Other</option>
+                <option value="LOAN">Finanziamento</option>
+                <option value="MORTGAGE">Mutuo</option>
+                <option value="OTHER">Altro</option>
               </select>
             </div>
 
             {/* Name */}
             <div>
               <label className="block text-sm font-medium text-foreground mb-1">
-                Name *
+                Nome *
               </label>
               <input
                 type="text"
                 name="name"
                 value={formData.name}
                 onChange={handleChange}
-                placeholder="e.g., Chase Sapphire Preferred"
+                placeholder="es. Carta Intesa Sanpaolo"
                 className={`w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500
                   ${errors.name ? 'border-red-500' : 'border-border'}`}
               />
@@ -247,11 +249,11 @@ export function LiabilityForm({
             {/* Current Balance */}
             <div>
               <label className="block text-sm font-medium text-foreground mb-1">
-                Current Balance
+                Saldo attuale
               </label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                  $
+                  €
                 </span>
                 <input
                   type="text"
@@ -272,11 +274,11 @@ export function LiabilityForm({
             {isCreditCard && (
               <div>
                 <label className="block text-sm font-medium text-foreground mb-1">
-                  Credit Limit
+                  Limite di credito
                 </label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                    $
+                    €
                   </span>
                   <input
                     type="text"
@@ -295,11 +297,11 @@ export function LiabilityForm({
             {(isBNPL || isLoan) && (
               <div>
                 <label className="block text-sm font-medium text-foreground mb-1">
-                  Original Amount
+                  Importo originale
                 </label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                    $
+                    €
                   </span>
                   <input
                     type="text"
@@ -317,14 +319,14 @@ export function LiabilityForm({
             {isBNPL && (
               <div>
                 <label className="block text-sm font-medium text-foreground mb-1">
-                  Provider
+                  Fornitore
                 </label>
                 <input
                   type="text"
                   name="provider"
                   value={formData.provider}
                   onChange={handleChange}
-                  placeholder="e.g., Klarna, Afterpay, PayPal"
+                  placeholder="es. Klarna, Scalapay, PayPal"
                   className="w-full border border-border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
@@ -334,7 +336,7 @@ export function LiabilityForm({
             {!isBNPL && (
               <div>
                 <label className="block text-sm font-medium text-foreground mb-1">
-                  Interest Rate (APR %)
+                  Tasso di interesse (TAEG %)
                 </label>
                 <div className="relative">
                   <input
@@ -359,11 +361,11 @@ export function LiabilityForm({
             {/* Minimum Payment */}
             <div>
               <label className="block text-sm font-medium text-foreground mb-1">
-                Minimum Payment
+                Rata minima
               </label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                  $
+                  €
                 </span>
                 <input
                   type="text"
@@ -381,7 +383,7 @@ export function LiabilityForm({
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-1">
-                    Billing Cycle Day
+                    Giorno ciclo fatturazione
                   </label>
                   <input
                     type="text"
@@ -395,7 +397,7 @@ export function LiabilityForm({
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-1">
-                    Payment Due Day
+                    Giorno scadenza pagamento
                   </label>
                   <input
                     type="text"
@@ -410,6 +412,30 @@ export function LiabilityForm({
               </div>
             )}
 
+            {/* Goal link (Sprint 1.6 Fase 2B) */}
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-1">
+                Collega a obiettivo <span className="text-muted-foreground">(opzionale)</span>
+              </label>
+              <select
+                name="goalId"
+                value={formData.goalId}
+                onChange={handleChange}
+                data-testid="liability-goal-select"
+                className="w-full border border-border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="">Nessun obiettivo</option>
+                {activeGoals.map((goal) => (
+                  <option key={goal.id} value={goal.id}>
+                    🎯 {goal.name}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Traccia il payoff di questo debito come progresso verso l&apos;obiettivo
+              </p>
+            </div>
+
             {/* Actions */}
             <div className="flex justify-end gap-3 pt-4">
               <button
@@ -418,7 +444,7 @@ export function LiabilityForm({
                 disabled={isLoading}
                 className="px-4 py-2 border border-border rounded-lg text-foreground hover:bg-muted disabled:opacity-50"
               >
-                Cancel
+                Annulla
               </button>
               <button
                 type="submit"
@@ -426,7 +452,7 @@ export function LiabilityForm({
                 className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
               >
                 {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
-                {isEditMode ? 'Save Changes' : 'Add Liability'}
+                {isEditMode ? 'Salva modifiche' : 'Aggiungi debito'}
               </button>
             </div>
           </form>

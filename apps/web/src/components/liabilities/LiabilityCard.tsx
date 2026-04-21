@@ -24,6 +24,8 @@ export interface LiabilityCardProps {
   onClick?: (liability: Liability) => void;
   /** Whether the card is in a compact view */
   compact?: boolean;
+  /** Sprint 1.6 Fase 2B: name of linked goal, rendered as badge */
+  goalName?: string;
 }
 
 // =============================================================================
@@ -131,6 +133,7 @@ export const LiabilityCard = memo(function LiabilityCard({
   liability,
   onClick,
   compact = false,
+  goalName,
 }: LiabilityCardProps) {
   const colors = getTypeColors(liability.type);
   const typeLabel = getTypeLabel(liability.type);
@@ -301,6 +304,20 @@ export const LiabilityCard = memo(function LiabilityCard({
               }`}
           >
             {liability.status === 'PAID_OFF' ? 'Paid Off' : 'Closed'}
+          </span>
+        </div>
+      )}
+
+      {/* Sprint 1.6 Fase 2B: Goal link badge */}
+      {liability.goalId && goalName && (
+        <div className="mt-4">
+          <span
+            data-testid="liability-goal-badge"
+            className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-xs font-medium text-emerald-700 dark:text-emerald-300 max-w-full"
+            title={`Payoff verso ${goalName}`}
+          >
+            <span aria-hidden="true">🎯</span>
+            <span className="truncate">{goalName}</span>
           </span>
         </div>
       )}

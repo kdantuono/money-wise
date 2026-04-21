@@ -3,32 +3,21 @@
 import { useState, useEffect, useId } from 'react';
 import { AccountType, AccountSource } from '../../types/account.types';
 import type { CreateAccountRequest } from '../../services/accounts.client';
+import { useActiveGoals } from '../../hooks/useActiveGoals';
 
 /**
  * ManualAccountForm Component
  *
- * Form for creating manual accounts (cash, portfolio, custom tracking).
- * Handles validation and submission of account data.
- *
- * @example
- * <ManualAccountForm
- *   onSubmit={async (data) => await createAccount(data)}
- *   onCancel={() => setShowForm(false)}
- * />
+ * Form per creare conti manuali (contanti, portafogli, tracking custom).
+ * Sprint 1.6 Fase 2B: supporta linking opzionale a obiettivo.
  */
 
 interface ManualAccountFormProps {
-  /** Called when form is submitted with valid data */
   onSubmit: (data: CreateAccountRequest) => Promise<void>;
-  /** Called when user cancels the form */
   onCancel: () => void;
-  /** Optional CSS classes */
   className?: string;
-  /** Whether form is currently submitting */
   isSubmitting?: boolean;
-  /** Server error message to display */
   error?: string;
-  /** Render as modal dialog */
   isModal?: boolean;
 }
 
@@ -39,26 +28,25 @@ interface FormErrors {
   creditLimit?: string;
 }
 
-// Account type display configuration
 const accountTypeOptions = [
-  { value: '', label: 'Select account type', disabled: true },
-  { value: AccountType.CHECKING, label: 'Checking' },
-  { value: AccountType.SAVINGS, label: 'Savings' },
-  { value: AccountType.CREDIT_CARD, label: 'Credit Card' },
-  { value: AccountType.INVESTMENT, label: 'Investment' },
-  { value: AccountType.LOAN, label: 'Loan' },
-  { value: AccountType.MORTGAGE, label: 'Mortgage' },
-  { value: AccountType.OTHER, label: 'Other' },
+  { value: '', label: 'Seleziona tipo conto', disabled: true },
+  { value: AccountType.CHECKING, label: 'Conto corrente' },
+  { value: AccountType.SAVINGS, label: 'Risparmio' },
+  { value: AccountType.CREDIT_CARD, label: 'Carta di credito' },
+  { value: AccountType.INVESTMENT, label: 'Investimento' },
+  { value: AccountType.LOAN, label: 'Finanziamento' },
+  { value: AccountType.MORTGAGE, label: 'Mutuo' },
+  { value: AccountType.OTHER, label: 'Altro' },
 ];
 
 const currencyOptions = [
-  { value: 'USD', label: 'USD - US Dollar' },
   { value: 'EUR', label: 'EUR - Euro' },
-  { value: 'GBP', label: 'GBP - British Pound' },
-  { value: 'CAD', label: 'CAD - Canadian Dollar' },
-  { value: 'AUD', label: 'AUD - Australian Dollar' },
-  { value: 'JPY', label: 'JPY - Japanese Yen' },
-  { value: 'CHF', label: 'CHF - Swiss Franc' },
+  { value: 'USD', label: 'USD - Dollaro USA' },
+  { value: 'GBP', label: 'GBP - Sterlina' },
+  { value: 'CAD', label: 'CAD - Dollaro canadese' },
+  { value: 'AUD', label: 'AUD - Dollaro australiano' },
+  { value: 'JPY', label: 'JPY - Yen giapponese' },
+  { value: 'CHF', label: 'CHF - Franco svizzero' },
 ];
 
 export function ManualAccountForm({
@@ -69,20 +57,20 @@ export function ManualAccountForm({
   error,
   isModal = false,
 }: ManualAccountFormProps) {
-  // Form state
   const [name, setName] = useState('');
   const [type, setType] = useState<AccountType | ''>('');
   const [balance, setBalance] = useState('');
-  const [currency, setCurrency] = useState('USD');
+  const [currency, setCurrency] = useState('EUR');
   const [institutionName, setInstitutionName] = useState('');
   const [accountNumber, setAccountNumber] = useState('');
   const [creditLimit, setCreditLimit] = useState('');
+  const [goalId, setGoalId] = useState<string>('');
 
-  // Validation state
   const [errors, setErrors] = useState<FormErrors>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
-  // Generate unique IDs for accessibility
+  const { data: activeGoals = [] } = useActiveGoals();
+
   const formId = useId();
   const titleId = `${formId}-title`;
   const errorId = `${formId}-error`;
@@ -91,43 +79,37 @@ export function ManualAccountForm({
   const balanceErrorId = `${formId}-balance-error`;
   const creditLimitErrorId = `${formId}-credit-limit-error`;
 
-  // Check if credit limit field should be shown
   const showCreditLimit = type === AccountType.CREDIT_CARD;
 
-  // Validate form
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
 
-    // Name validation
     const trimmedName = name.trim();
     if (!trimmedName) {
-      newErrors.name = 'Account name is required';
+      newErrors.name = 'Il nome del conto è obbligatorio';
     } else if (trimmedName.length < 3) {
-      newErrors.name = 'Account name must be at least 3 characters';
+      newErrors.name = 'Il nome del conto deve avere almeno 3 caratteri';
     }
 
-    // Type validation
     if (!type) {
-      newErrors.type = 'Please select an account type';
+      newErrors.type = 'Seleziona un tipo di conto';
     }
 
-    // Balance validation
     if (!balance) {
-      newErrors.balance = 'Balance is required';
+      newErrors.balance = 'Il saldo è obbligatorio';
     } else {
       const balanceNum = parseFloat(balance);
       if (isNaN(balanceNum)) {
-        newErrors.balance = 'Invalid balance';
+        newErrors.balance = 'Saldo non valido';
       }
     }
 
-    // Credit limit validation for credit cards
     if (showCreditLimit && !creditLimit) {
-      newErrors.creditLimit = 'Credit limit is required for credit cards';
+      newErrors.creditLimit = 'Il limite di credito è obbligatorio per le carte di credito';
     } else if (showCreditLimit && creditLimit) {
       const limitNum = parseFloat(creditLimit);
       if (isNaN(limitNum) || limitNum <= 0) {
-        newErrors.creditLimit = 'Credit limit must be a positive number';
+        newErrors.creditLimit = 'Il limite di credito deve essere un numero positivo';
       }
     }
 
@@ -135,11 +117,9 @@ export function ManualAccountForm({
     return Object.keys(newErrors).length === 0;
   };
 
-  // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Mark all fields as touched
     setTouched({
       name: true,
       type: true,
@@ -159,7 +139,6 @@ export function ManualAccountForm({
       currency,
     };
 
-    // Add optional fields
     const trimmedInstitution = institutionName.trim();
     if (trimmedInstitution) {
       data.institutionName = trimmedInstitution;
@@ -174,17 +153,19 @@ export function ManualAccountForm({
       data.creditLimit = parseFloat(creditLimit);
     }
 
+    if (goalId) {
+      data.goalId = goalId;
+    }
+
     await onSubmit(data);
   };
 
-  // Re-validate on field change after first submission
   useEffect(() => {
     if (Object.keys(touched).length > 0) {
       validateForm();
     }
   }, [name, type, balance, creditLimit, touched]);
 
-  // Get current displayed error (form error or server error)
   const displayError = errors.name || errors.type || errors.balance || errors.creditLimit || error;
 
   const formContent = (
@@ -193,12 +174,10 @@ export function ManualAccountForm({
       className={`space-y-6 ${className}`}
       noValidate
     >
-      {/* Form Title */}
       <h2 id={titleId} className="text-xl font-semibold text-foreground">
-        Add Manual Account
+        Aggiungi conto manuale
       </h2>
 
-      {/* Error Alert */}
       {displayError && (
         <div
           id={errorId}
@@ -209,13 +188,12 @@ export function ManualAccountForm({
         </div>
       )}
 
-      {/* Account Name */}
       <div className="space-y-1">
         <label
           htmlFor={`${formId}-name`}
           className="block text-sm font-medium text-foreground"
         >
-          Account Name
+          Nome conto
         </label>
         <input
           id={`${formId}-name`}
@@ -227,7 +205,7 @@ export function ManualAccountForm({
           disabled={isSubmitting}
           aria-invalid={touched.name && !!errors.name}
           aria-describedby={errors.name ? nameErrorId : undefined}
-          placeholder="e.g., Cash Portfolio, Emergency Fund"
+          placeholder="es. Contanti, Fondo Emergenza"
           className={`
             w-full px-3 py-2 rounded-lg border transition-colors
             ${touched.name && errors.name
@@ -244,13 +222,12 @@ export function ManualAccountForm({
         )}
       </div>
 
-      {/* Account Type */}
       <div className="space-y-1">
         <label
           htmlFor={`${formId}-type`}
           className="block text-sm font-medium text-foreground"
         >
-          Account Type
+          Tipo conto
         </label>
         <select
           id={`${formId}-type`}
@@ -287,17 +264,16 @@ export function ManualAccountForm({
         )}
       </div>
 
-      {/* Current Balance */}
       <div className="space-y-1">
         <label
           htmlFor={`${formId}-balance`}
           className="block text-sm font-medium text-foreground"
         >
-          Current Balance
+          Saldo attuale
         </label>
         <div className="relative">
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-            $
+            €
           </span>
           <input
             id={`${formId}-balance`}
@@ -327,22 +303,21 @@ export function ManualAccountForm({
           </p>
         )}
         <p className="text-xs text-muted-foreground">
-          Use negative values for amounts owed (credit cards, loans)
+          Usa valori negativi per i debiti (carte di credito, finanziamenti)
         </p>
       </div>
 
-      {/* Credit Limit (only for credit cards) */}
       {showCreditLimit && (
         <div className="space-y-1">
           <label
             htmlFor={`${formId}-credit-limit`}
             className="block text-sm font-medium text-foreground"
           >
-            Credit Limit
+            Limite di credito
           </label>
           <div className="relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-              $
+              €
             </span>
             <input
               id={`${formId}-credit-limit`}
@@ -375,13 +350,12 @@ export function ManualAccountForm({
         </div>
       )}
 
-      {/* Currency */}
       <div className="space-y-1">
         <label
           htmlFor={`${formId}-currency`}
           className="block text-sm font-medium text-foreground"
         >
-          Currency
+          Valuta
         </label>
         <select
           id={`${formId}-currency`}
@@ -399,13 +373,12 @@ export function ManualAccountForm({
         </select>
       </div>
 
-      {/* Institution Name (optional) */}
       <div className="space-y-1">
         <label
           htmlFor={`${formId}-institution`}
           className="block text-sm font-medium text-foreground"
         >
-          Institution Name <span className="text-muted-foreground">(optional)</span>
+          Istituto <span className="text-muted-foreground">(opzionale)</span>
         </label>
         <input
           id={`${formId}-institution`}
@@ -414,18 +387,17 @@ export function ManualAccountForm({
           value={institutionName}
           onChange={(e) => setInstitutionName(e.target.value)}
           disabled={isSubmitting}
-          placeholder="e.g., Chase, Bank of America"
+          placeholder="es. Intesa Sanpaolo, ING"
           className="w-full px-3 py-2 rounded-lg border border-border focus:ring-blue-500 focus:border-blue-500 disabled:bg-muted disabled:cursor-not-allowed"
         />
       </div>
 
-      {/* Account Number (optional) */}
       <div className="space-y-1">
         <label
           htmlFor={`${formId}-account-number`}
           className="block text-sm font-medium text-foreground"
         >
-          Account Number <span className="text-muted-foreground">(optional)</span>
+          Numero conto <span className="text-muted-foreground">(opzionale)</span>
         </label>
         <input
           id={`${formId}-account-number`}
@@ -434,12 +406,38 @@ export function ManualAccountForm({
           value={accountNumber}
           onChange={(e) => setAccountNumber(e.target.value)}
           disabled={isSubmitting}
-          placeholder="Last 4 digits, e.g., ****1234"
+          placeholder="Ultime 4 cifre, es. ****1234"
           className="w-full px-3 py-2 rounded-lg border border-border focus:ring-blue-500 focus:border-blue-500 disabled:bg-muted disabled:cursor-not-allowed"
         />
       </div>
 
-      {/* Form Actions */}
+      <div className="space-y-1">
+        <label
+          htmlFor={`${formId}-goal`}
+          className="block text-sm font-medium text-foreground"
+        >
+          Collega a obiettivo <span className="text-muted-foreground">(opzionale)</span>
+        </label>
+        <select
+          id={`${formId}-goal`}
+          data-testid="account-goal-select"
+          value={goalId}
+          onChange={(e) => setGoalId(e.target.value)}
+          disabled={isSubmitting}
+          className="w-full px-3 py-2 rounded-lg border border-border focus:ring-blue-500 focus:border-blue-500 disabled:bg-muted disabled:cursor-not-allowed"
+        >
+          <option value="">Nessun obiettivo</option>
+          {activeGoals.map((goal) => (
+            <option key={goal.id} value={goal.id}>
+              🎯 {goal.name}
+            </option>
+          ))}
+        </select>
+        <p className="text-xs text-muted-foreground">
+          Il saldo del conto contribuirà al progresso dell&apos;obiettivo
+        </p>
+      </div>
+
       <div className="flex gap-3 pt-4">
         <button
           type="button"
@@ -447,7 +445,7 @@ export function ManualAccountForm({
           disabled={isSubmitting}
           className="flex-1 px-4 py-2 rounded-lg border border-border text-foreground font-medium hover:bg-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Cancel
+          Annulla
         </button>
         <button
           type="submit"
@@ -477,13 +475,12 @@ export function ManualAccountForm({
               />
             </svg>
           )}
-          {isSubmitting ? 'Creating...' : 'Create Account'}
+          {isSubmitting ? 'Creazione...' : 'Crea conto'}
         </button>
       </div>
     </form>
   );
 
-  // Render as modal dialog if isModal is true
   if (isModal) {
     return (
       <div

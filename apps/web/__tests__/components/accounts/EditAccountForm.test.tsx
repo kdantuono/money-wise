@@ -47,7 +47,7 @@ describe('EditAccountForm', () => {
     it('renders the form with correct title', () => {
       render(<EditAccountForm {...getDefaultProps()} />);
 
-      expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('Edit Account');
+      expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('Modifica conto');
     });
 
     it('renders form fields pre-filled with account data', () => {
@@ -63,8 +63,8 @@ describe('EditAccountForm', () => {
     it('renders update and cancel buttons', () => {
       render(<EditAccountForm {...getDefaultProps()} />);
 
-      expect(screen.getByRole('button', { name: /update account/i })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /cancel/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /aggiorna conto/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /annulla/i })).toBeInTheDocument();
     });
 
     it('renders icon selector', () => {
@@ -88,7 +88,7 @@ describe('EditAccountForm', () => {
 
       render(<EditAccountForm {...getDefaultProps()} account={creditCardAccount} />);
 
-      expect(screen.getByLabelText(/credit limit/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/limite di credito/i)).toBeInTheDocument();
       expect(screen.getByTestId('account-credit-limit-input')).toHaveValue(5000);
     });
 
@@ -106,10 +106,10 @@ describe('EditAccountForm', () => {
       const { user } = render(<EditAccountForm {...getDefaultProps()} />);
 
       await user.clear(screen.getByTestId('account-name-input'));
-      await user.click(screen.getByRole('button', { name: /update account/i }));
+      await user.click(screen.getByRole('button', { name: /aggiorna conto/i }));
 
       await waitFor(() => {
-        expect(screen.getByRole('alert')).toHaveTextContent(/account name is required/i);
+        expect(screen.getByRole('alert')).toHaveTextContent(/nome del conto è obbligatorio/i);
       });
       expect(mockOnSubmit).not.toHaveBeenCalled();
     });
@@ -119,10 +119,10 @@ describe('EditAccountForm', () => {
 
       await user.clear(screen.getByTestId('account-name-input'));
       await user.type(screen.getByTestId('account-name-input'), 'AB');
-      await user.click(screen.getByRole('button', { name: /update account/i }));
+      await user.click(screen.getByRole('button', { name: /aggiorna conto/i }));
 
       await waitFor(() => {
-        expect(screen.getByRole('alert')).toHaveTextContent(/at least 3 characters/i);
+        expect(screen.getByRole('alert')).toHaveTextContent(/almeno 3 caratteri/i);
       });
       expect(mockOnSubmit).not.toHaveBeenCalled();
     });
@@ -132,7 +132,7 @@ describe('EditAccountForm', () => {
 
       await user.clear(screen.getByTestId('account-balance-input'));
       await user.type(screen.getByTestId('account-balance-input'), '0');
-      await user.click(screen.getByRole('button', { name: /update account/i }));
+      await user.click(screen.getByRole('button', { name: /aggiorna conto/i }));
 
       await waitFor(() => {
         expect(mockOnSubmit).toHaveBeenCalled();
@@ -144,7 +144,7 @@ describe('EditAccountForm', () => {
 
       await user.clear(screen.getByTestId('account-balance-input'));
       await user.type(screen.getByTestId('account-balance-input'), '-500');
-      await user.click(screen.getByRole('button', { name: /update account/i }));
+      await user.click(screen.getByRole('button', { name: /aggiorna conto/i }));
 
       await waitFor(() => {
         expect(mockOnSubmit).toHaveBeenCalledWith(
@@ -165,7 +165,7 @@ describe('EditAccountForm', () => {
       await user.clear(screen.getByTestId('account-balance-input'));
       await user.type(screen.getByTestId('account-balance-input'), '2000');
 
-      await user.click(screen.getByRole('button', { name: /update account/i }));
+      await user.click(screen.getByRole('button', { name: /aggiorna conto/i }));
 
       await waitFor(() => {
         expect(mockOnSubmit).toHaveBeenCalledWith(
@@ -180,7 +180,7 @@ describe('EditAccountForm', () => {
     it('calls onSubmit with account ID', async () => {
       const { user } = render(<EditAccountForm {...getDefaultProps()} />);
 
-      await user.click(screen.getByRole('button', { name: /update account/i }));
+      await user.click(screen.getByRole('button', { name: /aggiorna conto/i }));
 
       await waitFor(() => {
         expect(mockOnSubmit).toHaveBeenCalledWith(
@@ -202,7 +202,7 @@ describe('EditAccountForm', () => {
       const colorButton = screen.getByTestId('color-blue');
       await user.click(colorButton);
 
-      await user.click(screen.getByRole('button', { name: /update account/i }));
+      await user.click(screen.getByRole('button', { name: /aggiorna conto/i }));
 
       await waitFor(() => {
         expect(mockOnSubmit).toHaveBeenCalledWith(
@@ -224,7 +224,7 @@ describe('EditAccountForm', () => {
       await user.clear(screen.getByTestId('account-institution-input'));
       await user.type(screen.getByTestId('account-institution-input'), '  Some Bank  ');
 
-      await user.click(screen.getByRole('button', { name: /update account/i }));
+      await user.click(screen.getByRole('button', { name: /aggiorna conto/i }));
 
       await waitFor(() => {
         expect(mockOnSubmit).toHaveBeenCalledWith(
@@ -245,14 +245,14 @@ describe('EditAccountForm', () => {
       expect(screen.getByTestId('account-type-select')).toBeDisabled();
       expect(screen.getByTestId('account-balance-input')).toBeDisabled();
       expect(screen.getByTestId('account-currency-select')).toBeDisabled();
-      expect(screen.getByRole('button', { name: /updating/i })).toBeDisabled();
-      expect(screen.getByRole('button', { name: /cancel/i })).toBeDisabled();
+      expect(screen.getByRole('button', { name: /aggiornamento/i })).toBeDisabled();
+      expect(screen.getByRole('button', { name: /annulla/i })).toBeDisabled();
     });
 
     it('shows loading text on submit button', () => {
       render(<EditAccountForm {...getDefaultProps()} isSubmitting />);
 
-      expect(screen.getByRole('button', { name: /updating/i })).toHaveTextContent('Updating...');
+      expect(screen.getByRole('button', { name: /aggiornamento/i })).toHaveTextContent('Aggiornamento...');
     });
   });
 
@@ -260,7 +260,7 @@ describe('EditAccountForm', () => {
     it('calls onCancel when cancel button is clicked', async () => {
       const { user } = render(<EditAccountForm {...getDefaultProps()} />);
 
-      await user.click(screen.getByRole('button', { name: /cancel/i }));
+      await user.click(screen.getByRole('button', { name: /annulla/i }));
 
       expect(mockOnCancel).toHaveBeenCalled();
     });
@@ -278,10 +278,10 @@ describe('EditAccountForm', () => {
     it('has proper labels for all form inputs', () => {
       render(<EditAccountForm {...getDefaultProps()} />);
 
-      expect(screen.getByLabelText(/account name/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/account type/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/current balance/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/currency/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/nome conto/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/tipo conto/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/saldo attuale/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/valuta/i)).toBeInTheDocument();
     });
 
     it('has accessible error messages with alert role', () => {

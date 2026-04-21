@@ -30,6 +30,7 @@ import { useBankingStore } from '@/store';
 import { initiateLink } from '@/services/banking.client';
 import { ManualAccountForm } from '@/components/accounts';
 import { EditAccountForm } from '@/components/accounts/EditAccountForm';
+import { useActiveGoals } from '@/hooks/useActiveGoals';
 
 // ---------------------------------------------------------------------------
 // Helpers — 1:1 from Figma Accounts.tsx styling
@@ -78,6 +79,8 @@ export default function AccountsPage() {
   const { syncAccount } = useBankingStore();
 
   const [accounts, setAccounts] = useState<Account[]>([]);
+  const { data: activeGoals = [] } = useActiveGoals();
+  const goalNameById = new Map(activeGoals.map((g) => [g.id, g.name]));
   const [isLoading, setIsLoading] = useState(true);
   const [showHidden, setShowHidden] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -312,6 +315,16 @@ export default function AccountsPage() {
                     }
                   </p>
                 </div>
+                {account.goalId && goalNameById.has(account.goalId) && (
+                  <div
+                    data-testid="account-goal-badge"
+                    className="mt-3 inline-flex items-center gap-1 px-2 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-[11px] font-medium text-emerald-700 dark:text-emerald-300 max-w-full"
+                    title={`Collegato a ${goalNameById.get(account.goalId)}`}
+                  >
+                    <span aria-hidden="true">🎯</span>
+                    <span className="truncate">{goalNameById.get(account.goalId)}</span>
+                  </div>
+                )}
                 {/* Sync status indicator — bottom-right */}
                 {account.isManualAccount ? (
                   <div className="absolute bottom-4 right-4 w-5 h-5 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center" title="Manuale">
