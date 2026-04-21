@@ -58,9 +58,24 @@ export function StepProfile() {
   const showIncomeError = incomeBlurred && incomeError !== null && rawIncome.trim() !== '';
 
   // ── Touched refs: track user manual edits to protect against AI override (Sprint 1.5.5 Phase 3) ──
-  const lifestyleTouchedRef = useRef(step2.lifestyleBuffer > 0);
-  const savingsTouchedRef = useRef(step2.monthlySavingsTarget > 0);
-  const investTouchedRef = useRef(step2.investmentsTarget > 0);
+  // Copilot round 1 fix: init ref=true SOLO se valore differisce dall'AI default
+  // (altrimenti post-remount un AI-autofilled non-zero verrebbe trattato come touched,
+  // bloccando reactive updates). Income=0 → ref=false (reactive attivo quando income arriva).
+  const _initLifestyleTouched =
+    step2.monthlyIncome > 0 &&
+    step2.lifestyleBuffer > 0 &&
+    step2.lifestyleBuffer !== calcLifestyleDefault(step2.monthlyIncome, step2.essentialsPct);
+  const _initSavingsTouched =
+    step2.monthlyIncome > 0 &&
+    step2.monthlySavingsTarget > 0 &&
+    step2.monthlySavingsTarget !== calcSavingsDefault(step2.monthlyIncome, step2.essentialsPct);
+  const _initInvestTouched =
+    step2.monthlyIncome > 0 &&
+    step2.investmentsTarget > 0 &&
+    step2.investmentsTarget !== calcInvestDefault(step2.monthlyIncome, step2.essentialsPct);
+  const lifestyleTouchedRef = useRef(_initLifestyleTouched);
+  const savingsTouchedRef = useRef(_initSavingsTouched);
+  const investTouchedRef = useRef(_initInvestTouched);
 
   const incomeInputId = useId();
   const essentialsId = useId();

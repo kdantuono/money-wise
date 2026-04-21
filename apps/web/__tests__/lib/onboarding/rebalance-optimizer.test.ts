@@ -12,12 +12,14 @@ function monthsFromNow(n: number): string {
 
 let _id = 0;
 function makeGoal(partial: Partial<AllocationGoalInput> = {}): AllocationGoalInput {
+  // Sprint 1.5.5 Copilot round 1: use `in` check per preservare null esplicito
+  // (openended goals hanno target=null / deadline=null; `?? 1000` li sovrascriveva).
   return {
     id: partial.id ?? `g${++_id}`,
     name: partial.name ?? 'Goal',
-    target: partial.target ?? 1000,
+    target: 'target' in partial ? (partial.target as number) : 1000,
     current: partial.current ?? 0,
-    deadline: partial.deadline ?? monthsFromNow(12),
+    deadline: 'deadline' in partial ? (partial.deadline as string) : monthsFromNow(12),
     priority: (partial.priority ?? 2) as PriorityRank,
     type: partial.type,
     presetId: partial.presetId,

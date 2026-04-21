@@ -243,6 +243,11 @@ function _equalDistribute(
  * (budget - allocations fixed) viene splittato equamente tra openended goals
  * del pool. Risolve caso Fondo Emergenza openended che riceve 0 perché
  * _computeMeta(target=null).need = 0 → requiredMonthly = 0 → Phase 1 alloca 0.
+ *
+ * Copilot round 1 fix: cent-integer math per evitare overflow boundary guard.
+ * Es. residual=100, n=6 → perGoal=16.67 × 6 = 100.02 > 100 farebbe fallire
+ * `sum(allocations) > budget + EPSILON` check. Distribuiamo in centesimi interi
+ * con first `remainderCents` goals che ricevono +1 cent per compensare resto.
  */
 function _residualSplitOpenended(
   allocations: Record<string, number>,
@@ -254,10 +259,14 @@ function _residualSplitOpenended(
   if (residual <= EPSILON) return allocations;
   const openended = goals.filter((g) => g.type === 'openended');
   if (openended.length === 0) return allocations;
-  const perGoal = _round2(residual / openended.length);
+  const residualCents = Math.round(residual * 100);
+  const perGoalCents = Math.floor(residualCents / openended.length);
+  const remainderCents = residualCents - perGoalCents * openended.length;
   const result = { ...allocations };
-  for (const g of openended) {
-    result[g.id] = _round2((result[g.id] ?? 0) + perGoal);
+  for (let i = 0; i < openended.length; i++) {
+    const g = openended[i];
+    const sharesCents = perGoalCents + (i < remainderCents ? 1 : 0);
+    result[g.id] = _round2((result[g.id] ?? 0) + sharesCents / 100);
   }
   return result;
 }
