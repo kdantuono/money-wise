@@ -215,26 +215,43 @@ export interface BehavioralWarning {
   message: string;
   /** Why this warning matters (behavioral reasoning). */
   reasoning: string;
+  /**
+   * Sprint 1.5.4 Q7: optional inline remediation actions.
+   * Rendered via WarningActionChip dispatcher in StepCalibration when present.
+   * Absent for warnings without user-selectable remediation (pure feedback).
+   */
+  actions?: SuggestionChip[];
 }
 
 export type SuggestionKind =
   | 'extend_deadline'
   | 'increase_monthly'
   | 'reduce_target'
-  | 'rebalance_portfolio';
+  | 'rebalance_portfolio'
+  // Sprint 1.5.4 Q7 additions — warning remediation action kinds.
+  | 'navigate'
+  | 'budget_transfer'
+  | 'bulk_remove_goals'
+  | 'dismiss';
 
 export interface SuggestionChip {
   kind: SuggestionKind;
   /** Goal id the suggestion applies to (null = global). */
   goalId: string | null;
-  /** Numeric magnitude of the change (e.g. 6 for 6 months). */
+  /** Numeric magnitude of the change (e.g. 6 for 6 months, step num for navigate). */
   delta: number;
-  /** New value as string or number (ISO date for extend_deadline, € for others). */
+  /** New value as string or number (ISO date for extend_deadline, step num for navigate, € for others, warning code for dismiss). */
   newValue: string | number;
   /** Human-readable label in Italian. */
   description: string;
   /** Behavioral rationale for the suggestion. */
   reasoning: string;
+  /** Sprint 1.5.4 Q7: for 'budget_transfer' kind — pool source. */
+  from?: 'savings' | 'investments';
+  /** Sprint 1.5.4 Q7: for 'budget_transfer' kind — pool destination. */
+  to?: 'savings' | 'investments';
+  /** Sprint 1.5.4 Q7: for 'bulk_remove_goals' kind — list of goal ids to remove. */
+  goalIds?: string[];
 }
 
 /**
@@ -316,6 +333,12 @@ export interface WizardStepPlanReview {
   allocationPreview: AllocationResult | null;
   /** User edits to allocation (override algo suggestion per goal). */
   userOverrides: Record<string, number>;
+  /**
+   * Sprint 1.5.4 Q7: codes of behavioral warnings dismissed by the user via
+   * the inline "dismiss" chip action. Dismissed warnings are hidden and their
+   * hard-severity does not block the Avanti button.
+   */
+  dismissedWarningCodes?: string[];
 }
 
 export interface WizardStepAiPrefs {

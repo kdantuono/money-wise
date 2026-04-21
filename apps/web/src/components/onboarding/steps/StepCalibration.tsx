@@ -4,11 +4,13 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import * as SliderPrimitive from '@radix-ui/react-slider';
 import { useOnboardingPlanStore } from '@/store/onboarding-plan.store';
 import { DeterministicBehavioralAdvisor } from '@/lib/onboarding/advisors/DeterministicBehavioralAdvisor';
+import { rebalanceOptimizer, type RebalanceCriterion } from '@/lib/onboarding/rebalance-optimizer';
 import { PRIORITY_LABEL_IT } from '@/types/onboarding-plan';
 import type {
   AllocationResult,
   BehavioralWarning,
   SuggestionChip,
+  WizardStep,
 } from '@/types/onboarding-plan';
 import { GoalPoolSection } from './GoalPoolSection';
 import { LifestyleInfoSection } from './LifestyleInfoSection';
@@ -38,7 +40,32 @@ function fmtEur(n: number): string {
 // Sub-components
 // ─────────────────────────────────────────────────────────────────────────
 
-function WarningBadge({ warning }: { warning: BehavioralWarning }) {
+function WarningActionChip({
+  chip,
+  onApply,
+}: {
+  chip: SuggestionChip;
+  onApply: (chip: SuggestionChip) => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => onApply(chip)}
+      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-700 hover:bg-amber-200 dark:hover:bg-amber-900/60 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 min-h-[28px]"
+      title={chip.reasoning}
+    >
+      {chip.description}
+    </button>
+  );
+}
+
+function WarningBadge({
+  warning,
+  onChipApply,
+}: {
+  warning: BehavioralWarning;
+  onChipApply?: (chip: SuggestionChip) => void;
+}) {
   const isHard = warning.severity === 'hard';
   const isEncouragement = warning.code === 'PLAN_BALANCED';
 
@@ -60,37 +87,46 @@ function WarningBadge({ warning }: { warning: BehavioralWarning }) {
     <div
       role="alert"
       aria-live="polite"
-      className={`flex gap-2 items-start p-3 rounded-lg border ${
+      className={`flex flex-col gap-2 p-3 rounded-lg border ${
         isHard
           ? 'bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800'
           : 'bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800'
       }`}
     >
-      <span aria-hidden="true" className="shrink-0 mt-0.5 text-base">
-        {isHard ? '🔴' : '🟡'}
-      </span>
-      <div>
-        <p
-          className={`text-sm font-medium ${
-            isHard
-              ? 'text-red-800 dark:text-red-300'
-              : 'text-amber-800 dark:text-amber-300'
-          }`}
-        >
-          {warning.message}
-        </p>
-        {warning.reasoning && (
+      <div className="flex gap-2 items-start">
+        <span aria-hidden="true" className="shrink-0 mt-0.5 text-base">
+          {isHard ? '🔴' : '🟡'}
+        </span>
+        <div>
           <p
-            className={`text-xs mt-0.5 ${
+            className={`text-sm font-medium ${
               isHard
-                ? 'text-red-700 dark:text-red-400'
-                : 'text-amber-700 dark:text-amber-400'
+                ? 'text-red-800 dark:text-red-300'
+                : 'text-amber-800 dark:text-amber-300'
             }`}
           >
-            {warning.reasoning}
+            {warning.message}
           </p>
-        )}
+          {warning.reasoning && (
+            <p
+              className={`text-xs mt-0.5 ${
+                isHard
+                  ? 'text-red-700 dark:text-red-400'
+                  : 'text-amber-700 dark:text-amber-400'
+              }`}
+            >
+              {warning.reasoning}
+            </p>
+          )}
+        </div>
       </div>
+      {warning.actions && warning.actions.length > 0 && onChipApply && (
+        <div className="flex gap-2 flex-wrap pl-7" data-testid={`warning-actions-${warning.code}`}>
+          {warning.actions.map((chip, idx) => (
+            <WarningActionChip key={`${chip.kind}-${idx}`} chip={chip} onApply={onChipApply} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -121,8 +157,16 @@ export function StepCalibration() {
   const step2 = useOnboardingPlanStore((s) => s.step2);
   const step3 = useOnboardingPlanStore((s) => s.step3);
   const userOverrides = useOnboardingPlanStore((s) => s.step4.userOverrides);
+  const dismissedWarningCodes = useOnboardingPlanStore((s) => s.step4.dismissedWarningCodes ?? []);
   const setAllocationPreview = useOnboardingPlanStore((s) => s.setAllocationPreview);
   const setUserOverride = useOnboardingPlanStore((s) => s.setUserOverride);
+  const applyRebalanceStore = useOnboardingPlanStore((s) => s.applyRebalance);
+  const dismissWarningStore = useOnboardingPlanStore((s) => s.dismissWarning);
+  const updateProfile = useOnboardingPlanStore((s) => s.updateProfile);
+  const removeGoal = useOnboardingPlanStore((s) => s.removeGoal);
+  const setStep = useOnboardingPlanStore((s) => s.setStep);
+
+  const [showAdvancedRebalance, setShowAdvancedRebalance] = useState(false);
 
   const [result, setResult] = useState<AllocationResult | null>(null);
   const [behavioralWarnings, setBehavioralWarnings] = useState<BehavioralWarning[]>([]);
@@ -148,6 +192,9 @@ export function StepCalibration() {
         current: 0,
         deadline: g.deadline,
         priority: g.priority,
+        // Sprint 1.5.4 Q4 Copilot round 1: propagate type so rebalance optimizer
+        // distinguishes openended (never "complete") from fixed goals.
+        type: g.type,
         presetId: g.presetId ?? null,
       })),
       userOverrides,
@@ -193,15 +240,69 @@ export function StepCalibration() {
     setUserOverride(goalId, value[0] ?? 0);
   };
 
+  const runRebalance = useCallback(
+    (criterion: RebalanceCriterion = 'feasibility') => {
+      const input = buildInput();
+      const r = rebalanceOptimizer({ input, criterion, currentAllocations: userOverrides });
+      if (r.newAllocations) {
+        applyRebalanceStore(r.newAllocations);
+      }
+    },
+    [buildInput, userOverrides, applyRebalanceStore],
+  );
+
   const handleChipApply = (chip: SuggestionChip) => {
-    if (!chip.goalId) return; // rebalance_portfolio = no-op here (future impl)
-    if (chip.kind === 'increase_monthly') {
-      setUserOverride(chip.goalId, Number(chip.newValue));
-    } else if (chip.kind === 'reduce_target') {
-      // For now surface info via the warning panel — target edit requires goal modal
-      // (WP-D). We show a hint that the suggestion chip has been noted.
-    } else if (chip.kind === 'extend_deadline') {
-      // Deadline edit also requires WP-D goal modal — chips inform only for now.
+    switch (chip.kind) {
+      case 'increase_monthly':
+        if (chip.goalId) setUserOverride(chip.goalId, Number(chip.newValue));
+        break;
+      case 'reduce_target':
+        // Surface-only until goal edit modal wired (WP-D).
+        break;
+      case 'extend_deadline':
+        // Surface-only until goal edit modal wired (WP-D).
+        break;
+      case 'rebalance_portfolio': {
+        // Sprint 1.5.4 Q4 Copilot round 1: accept legacy 'balanced' alias emitted by
+        // DeterministicBehavioralAdvisor.generateSuggestions() + supported 'feasibility'/'equal'.
+        // 'time' was removed from public API — falls through to 'feasibility' default.
+        const raw = typeof chip.newValue === 'string' ? chip.newValue : '';
+        const criterion: RebalanceCriterion =
+          raw === 'equal' ? 'equal' : 'feasibility';
+        runRebalance(criterion);
+        break;
+      }
+      case 'navigate': {
+        const step = Number(chip.newValue);
+        if (step >= 1 && step <= 5) setStep(step as WizardStep);
+        break;
+      }
+      case 'budget_transfer': {
+        const amount = Number(chip.newValue);
+        if (!chip.from || !chip.to || amount <= 0) break;
+        if (chip.from === 'investments' && chip.to === 'savings') {
+          updateProfile({
+            investmentsTarget: 0,
+            monthlySavingsTarget: step2.monthlySavingsTarget + amount,
+          });
+        } else if (chip.from === 'savings' && chip.to === 'investments') {
+          updateProfile({
+            monthlySavingsTarget: 0,
+            investmentsTarget: (step2.investmentsTarget ?? 0) + amount,
+          });
+        }
+        break;
+      }
+      case 'bulk_remove_goals':
+        if (chip.goalIds && chip.goalIds.length > 0) {
+          for (const id of chip.goalIds) removeGoal(id);
+        }
+        break;
+      case 'dismiss': {
+        const code = String(chip.newValue);
+        if (code) dismissWarningStore(code);
+        break;
+      }
     }
   };
 
@@ -224,8 +325,12 @@ export function StepCalibration() {
   const totalAllocated = result.totalAllocated;
   const unallocated = result.unallocated;
   const isHardBlocked = !!result.hardBlock;
-  const hardWarnings = behavioralWarnings.filter((w) => w.severity === 'hard');
-  const softWarnings = behavioralWarnings.filter((w) => w.severity === 'soft');
+  // Sprint 1.5.4 Q7: filter out warnings dismissed via inline chip action.
+  const visibleWarnings = behavioralWarnings.filter(
+    (w) => !dismissedWarningCodes.includes(w.code),
+  );
+  const hardWarnings = visibleWarnings.filter((w) => w.severity === 'hard');
+  const softWarnings = visibleWarnings.filter((w) => w.severity === 'soft');
   const encouragement = softWarnings.find((w) => w.code === 'PLAN_BALANCED');
   const actionableWarnings = softWarnings.filter((w) => w.code !== 'PLAN_BALANCED');
 
@@ -292,7 +397,7 @@ export function StepCalibration() {
       {hardWarnings.length > 0 && (
         <div className="space-y-2">
           {hardWarnings.map((w) => (
-            <WarningBadge key={w.code} warning={w} />
+            <WarningBadge key={w.code} warning={w} onChipApply={handleChipApply} />
           ))}
         </div>
       )}
@@ -301,14 +406,55 @@ export function StepCalibration() {
       {actionableWarnings.length > 0 && (
         <div className="space-y-2">
           {actionableWarnings.map((w) => (
-            <WarningBadge key={w.code} warning={w} />
+            <WarningBadge key={w.code} warning={w} onChipApply={handleChipApply} />
           ))}
         </div>
       )}
 
       {/* Encouragement (only when no other warnings) */}
       {encouragement && actionableWarnings.length === 0 && hardWarnings.length === 0 && (
-        <WarningBadge warning={encouragement} />
+        <WarningBadge warning={encouragement} onChipApply={handleChipApply} />
+      )}
+
+      {/* Sprint 1.5.4 Q4: Rebalance portfolio + opzioni avanzate */}
+      {result.pools && step3.goals.length > 1 && (
+        <div className="flex flex-col gap-2">
+          <div className="flex gap-2 flex-wrap items-center">
+            <button
+              type="button"
+              onClick={() => runRebalance('feasibility')}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-700 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 min-h-[32px]"
+              data-testid="rebalance-portfolio-chip"
+            >
+              📋 Ribilancia il portafoglio
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowAdvancedRebalance((v) => !v)}
+              className="text-xs text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:underline"
+            >
+              {showAdvancedRebalance ? '▲ Nascondi opzioni' : '▼ Opzioni avanzate'}
+            </button>
+          </div>
+          {showAdvancedRebalance && (
+            <div className="flex gap-2 flex-wrap text-xs pl-2" data-testid="rebalance-advanced-options">
+              <button
+                type="button"
+                onClick={() => runRebalance('feasibility')}
+                className="px-2.5 py-1 rounded-md bg-muted hover:bg-muted/70 border border-border"
+              >
+                Massimizza feasibility
+              </button>
+              <button
+                type="button"
+                onClick={() => runRebalance('equal')}
+                className="px-2.5 py-1 rounded-md bg-muted hover:bg-muted/70 border border-border"
+              >
+                Distribuzione equa
+              </button>
+            </div>
+          )}
+        </div>
       )}
 
       {/* Suggestion chips */}

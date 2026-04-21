@@ -135,6 +135,10 @@ interface Actions {
   removeGoal: (tempId: string) => void;
   setAllocationPreview: (allocation: AllocationResult | null) => void;
   setUserOverride: (goalId: string, monthlyAmount: number) => void;
+  /** Sprint 1.5.4 Q4: applica allocations ricalcolati dal rebalance optimizer (replace all userOverrides). */
+  applyRebalance: (newAllocations: Record<string, number>) => void;
+  /** Sprint 1.5.4 Q7: dismiss a behavioral warning by code (hidden + unblocks hard gating). */
+  dismissWarning: (code: string) => void;
   setAiPrefs: (enableCategorization: boolean, enableInsights: boolean) => void;
   setIsPersisting: (persisting: boolean) => void;
   setPersistedPlanId: (id: string | null) => void;
@@ -176,7 +180,7 @@ const initialState: WizardState = {
     investmentsTarget: 0,
   },
   step3: { goals: [] },
-  step4: { allocationPreview: null, userOverrides: {} },
+  step4: { allocationPreview: null, userOverrides: {}, dismissedWarningCodes: [] },
   step5: { enableAiCategorization: true, enableAiInsights: true },
   isPersisting: false,
   persistedPlanId: null,
@@ -241,6 +245,24 @@ export const useOnboardingPlanStore = create<WizardStore>((set) => ({
     set((s) => ({
       step4: { ...s.step4, allocationPreview: allocation },
     })),
+  applyRebalance: (newAllocations) =>
+    set((s) => ({
+      step4: {
+        ...s.step4,
+        userOverrides: { ...newAllocations },
+      },
+    })),
+  dismissWarning: (code) =>
+    set((s) => {
+      const current = s.step4.dismissedWarningCodes ?? [];
+      if (current.includes(code)) return {};
+      return {
+        step4: {
+          ...s.step4,
+          dismissedWarningCodes: [...current, code],
+        },
+      };
+    }),
   setUserOverride: (goalId, amount) =>
     set((s) => ({
       step4: {
@@ -301,7 +323,7 @@ export const useOnboardingPlanStore = create<WizardStore>((set) => ({
           type: g.type,
         })),
       },
-      step4: { allocationPreview, userOverrides: {} },
+      step4: { allocationPreview, userOverrides: {}, dismissedWarningCodes: [] },
       step5: {
         enableAiCategorization: aiPreferences?.enableAiCategorization ?? true,
         enableAiInsights: aiPreferences?.enableAiInsights ?? true,
