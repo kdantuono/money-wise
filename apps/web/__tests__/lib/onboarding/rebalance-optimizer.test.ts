@@ -222,4 +222,39 @@ describe('rebalanceOptimizer', () => {
     // Returned allocations shape intact for all 20 inputs
     expect(Object.keys(r.newAllocations!).length).toBe(20);
   });
+
+  // ─── Sprint 1.5.5 Phase 1: openended residual split ───────────────────
+  describe('openended residual split (Sprint 1.5.5 Bug #1)', () => {
+    it('1 openended solo + pool 300 → riceve tutto residual', () => {
+      const g = makeGoal({ id: 'emergency', type: 'openended', target: null as unknown as number, deadline: null, priority: 1 });
+      const r = rebalanceOptimizer({ input: input({ monthlySavingsTarget: 300, goals: [g] }) });
+      expect(r.feasible).toBe(true);
+      expect(r.newAllocations![g.id]).toBeCloseTo(300, 1);
+    });
+
+    it('1 fixed need 100/mo + 1 openended + pool 300 → fixed 100, openended 200', () => {
+      const fixed = makeGoal({ id: 'fixed', target: 1200, deadline: monthsFromNow(12), priority: 1 }); // 100/mo
+      const open = makeGoal({ id: 'open', type: 'openended', target: null as unknown as number, deadline: null, priority: 2 });
+      const r = rebalanceOptimizer({ input: input({ monthlySavingsTarget: 300, goals: [fixed, open] }) });
+      expect(r.feasible).toBe(true);
+      expect(r.newAllocations!['fixed']).toBeCloseTo(100, 1);
+      expect(r.newAllocations!['open']).toBeCloseTo(200, 1);
+    });
+
+    it('2 openended stesso pool + pool 300 → split equo 150 ciascuno', () => {
+      const a = makeGoal({ id: 'a', type: 'openended', target: null as unknown as number, deadline: null, priority: 1 });
+      const b = makeGoal({ id: 'b', type: 'openended', target: null as unknown as number, deadline: null, priority: 2 });
+      const r = rebalanceOptimizer({ input: input({ monthlySavingsTarget: 300, goals: [a, b] }) });
+      expect(r.feasible).toBe(true);
+      expect(r.newAllocations!['a']).toBeCloseTo(150, 1);
+      expect(r.newAllocations!['b']).toBeCloseTo(150, 1);
+    });
+
+    it("criterion 'equal' con openended non ha cap → riceve perGoal pieno", () => {
+      const g = makeGoal({ id: 'em', type: 'openended', target: null as unknown as number, deadline: null, priority: 1 });
+      const r = rebalanceOptimizer({ input: input({ monthlySavingsTarget: 250, goals: [g] }), criterion: 'equal' });
+      expect(r.feasible).toBe(true);
+      expect(r.newAllocations!['em']).toBeCloseTo(250, 1);
+    });
+  });
 });

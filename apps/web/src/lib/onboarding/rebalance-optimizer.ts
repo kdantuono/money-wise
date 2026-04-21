@@ -226,11 +226,40 @@ function _equalDistribute(
   }
   const perGoal = poolBudget / goals.length;
   for (const g of goals) {
+    if (g.type === 'openended') {
+      // Openended goals non hanno cap (target=null, need=0 spurious)
+      allocations[g.id] = _round2(perGoal);
+      continue;
+    }
     const meta = _computeMeta(g, now);
     // Cap at need (completed goals don't take more)
     allocations[g.id] = _round2(Math.min(perGoal, Math.max(0, meta.need)));
   }
   return allocations;
+}
+
+/**
+ * Sprint 1.5.5 Bug #1: dopo waterfall + local improve, il residual del pool
+ * (budget - allocations fixed) viene splittato equamente tra openended goals
+ * del pool. Risolve caso Fondo Emergenza openended che riceve 0 perché
+ * _computeMeta(target=null).need = 0 → requiredMonthly = 0 → Phase 1 alloca 0.
+ */
+function _residualSplitOpenended(
+  allocations: Record<string, number>,
+  goals: AllocationGoalInput[],
+  poolBudget: number,
+): Record<string, number> {
+  const totalAllocated = Object.values(allocations).reduce((a, b) => a + b, 0);
+  const residual = _round2(poolBudget - totalAllocated);
+  if (residual <= EPSILON) return allocations;
+  const openended = goals.filter((g) => g.type === 'openended');
+  if (openended.length === 0) return allocations;
+  const perGoal = _round2(residual / openended.length);
+  const result = { ...allocations };
+  for (const g of openended) {
+    result[g.id] = _round2((result[g.id] ?? 0) + perGoal);
+  }
+  return result;
 }
 
 export function rebalanceOptimizer(args: RebalanceInput): RebalanceResult {
@@ -271,8 +300,8 @@ export function rebalanceOptimizer(args: RebalanceInput): RebalanceResult {
     const i1 = _phase1Waterfall(routed.investments, investBudget, now);
     const s2 = _phase2LocalImprove(s1, routed.savings, now);
     const i2 = _phase2LocalImprove(i1, routed.investments, now);
-    savingsAlloc = s2.allocations;
-    investAlloc = i2.allocations;
+    savingsAlloc = _residualSplitOpenended(s2.allocations, routed.savings, savingsBudget);
+    investAlloc = _residualSplitOpenended(i2.allocations, routed.investments, investBudget);
     infeasibleSet = new Set([...s2.infeasible, ...i2.infeasible]);
   }
 

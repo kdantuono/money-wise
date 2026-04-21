@@ -12,6 +12,8 @@ import {
   ESSENTIALS_MIN_PCT,
   ESSENTIALS_MAX_PCT,
   calcLifestyleDefault,
+  calcSavingsDefault,
+  calcInvestDefault,
 } from '@/store/onboarding-plan.store';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -55,8 +57,10 @@ export function StepProfile() {
   const incomeError = validateIncome(rawIncome);
   const showIncomeError = incomeBlurred && incomeError !== null && rawIncome.trim() !== '';
 
-  // ── Lifestyle buffer: track whether user has manually touched it ──
+  // ── Touched refs: track user manual edits to protect against AI override (Sprint 1.5.5 Phase 3) ──
   const lifestyleTouchedRef = useRef(step2.lifestyleBuffer > 0);
+  const savingsTouchedRef = useRef(step2.monthlySavingsTarget > 0);
+  const investTouchedRef = useRef(step2.investmentsTarget > 0);
 
   const incomeInputId = useId();
   const essentialsId = useId();
@@ -69,12 +73,20 @@ export function StepProfile() {
   const essentialsPct = step2.essentialsPct;
   const essentialsEuros = income > 0 ? income * (essentialsPct / 100) : 0;
 
-  // ── Lifestyle AI default auto-fill (only while untouched) ──
+  // ── AI defaults reactive: Sprint 1.5.5 Phase 3 — Warren 50/30/20 ──
+  // lifestyle 30%, savings 50%, invest 20% on disposable post-essenziali.
+  // Batch update solo se almeno un campo non è touched, per evitare re-render spuri.
   useEffect(() => {
-    if (income > 0 && !lifestyleTouchedRef.current) {
-      const aiDefault = calcLifestyleDefault(income, essentialsPct);
-      updateProfile({ lifestyleBuffer: aiDefault });
-    }
+    if (income <= 0) return;
+    const patch: {
+      lifestyleBuffer?: number;
+      monthlySavingsTarget?: number;
+      investmentsTarget?: number;
+    } = {};
+    if (!lifestyleTouchedRef.current) patch.lifestyleBuffer = calcLifestyleDefault(income, essentialsPct);
+    if (!savingsTouchedRef.current) patch.monthlySavingsTarget = calcSavingsDefault(income, essentialsPct);
+    if (!investTouchedRef.current) patch.investmentsTarget = calcInvestDefault(income, essentialsPct);
+    if (Object.keys(patch).length > 0) updateProfile(patch);
   }, [income, essentialsPct, updateProfile]);
 
   // ── Sum constraint ──
@@ -276,6 +288,11 @@ export function StepProfile() {
       <div>
         <label htmlFor={savingsId} className="text-sm font-medium text-foreground block mb-1">
           Risparmio mensile target (€) <span className="text-red-500" aria-hidden>*</span>
+          {income > 0 && (
+            <span className="ml-1 text-xs text-muted-foreground font-normal">
+              (AI default: €{formatEuro(calcSavingsDefault(income, essentialsPct))})
+            </span>
+          )}
         </label>
         <input
           id={savingsId}
@@ -283,7 +300,10 @@ export function StepProfile() {
           min={SAVINGS_MIN}
           step={50}
           value={step2.monthlySavingsTarget || ''}
-          onChange={(e) => updateProfile({ monthlySavingsTarget: Number(e.target.value) || 0 })}
+          onChange={(e) => {
+            savingsTouchedRef.current = true;
+            updateProfile({ monthlySavingsTarget: Number(e.target.value) || 0 });
+          }}
           placeholder="es. 500"
           className="w-full bg-muted/50 border border-border rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 text-foreground"
           suppressHydrationWarning
@@ -306,6 +326,11 @@ export function StepProfile() {
         <label htmlFor={investId} className="text-sm font-medium text-foreground block mb-1">
           Investimenti mensili (€){' '}
           <span className="text-xs text-muted-foreground font-normal">(opzionale)</span>
+          {income > 0 && (
+            <span className="ml-1 text-xs text-muted-foreground font-normal">
+              (AI default: €{formatEuro(calcInvestDefault(income, essentialsPct))})
+            </span>
+          )}
         </label>
         <input
           id={investId}
@@ -313,7 +338,10 @@ export function StepProfile() {
           min={0}
           step={25}
           value={step2.investmentsTarget || ''}
-          onChange={(e) => updateProfile({ investmentsTarget: Number(e.target.value) || 0 })}
+          onChange={(e) => {
+            investTouchedRef.current = true;
+            updateProfile({ investmentsTarget: Number(e.target.value) || 0 });
+          }}
           placeholder="es. 150 (opzionale)"
           className="w-full bg-muted/50 border border-border rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 text-foreground"
           suppressHydrationWarning
