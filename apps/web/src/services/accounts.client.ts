@@ -58,6 +58,8 @@ export interface Account {
   isManualAccount: boolean
   isSyncable: boolean
   needsSync: boolean
+  /** Sprint 1.6 Fase 2A: optional link to goal for auto-progress tracking */
+  goalId?: string | null
   createdAt: string
   updatedAt: string
 }
@@ -73,6 +75,8 @@ export interface CreateAccountRequest {
   creditLimit?: number
   userId?: string
   familyId?: string
+  /** Sprint 1.6 Fase 2A: optional link to goal */
+  goalId?: string | null
 }
 
 export interface UpdateAccountRequest {
@@ -84,6 +88,8 @@ export interface UpdateAccountRequest {
   institutionName?: string
   syncEnabled?: boolean
   settings?: { icon?: string; color?: string }
+  /** Sprint 1.6 Fase 2A: link/unlink to goal. null = unlink */
+  goalId?: string | null
 }
 
 // =============================================================================
@@ -179,6 +185,9 @@ function rowToAccount(row: AccountRow): Account {
     isManualAccount: isManual,
     isSyncable: !isManual && status === 'ACTIVE' && row.sync_enabled,
     needsSync: !isManual && status === 'ACTIVE' && row.sync_enabled && !row.last_sync_at,
+    // Sprint 1.6 Fase 2A: optional goal link (types.ts non ancora aggiornato via
+    // `supabase gen types` — cast difensivo finché migration applied + types regen)
+    goalId: (row as unknown as { goal_id?: string | null }).goal_id ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }
@@ -219,7 +228,7 @@ export const accountsClient = {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new AccountsApiError('Not authenticated', 401)
 
-    const insert: AccountInsert = {
+    const insert: AccountInsert & { goal_id?: string | null } = {
       name: input.name,
       type: input.type,
       source: input.source,
@@ -229,6 +238,13 @@ export const accountsClient = {
       credit_limit: input.creditLimit,
       user_id: input.familyId ? null : user.id,
       family_id: input.familyId ?? null,
+    }
+
+    // Sprint 1.6 Fase 2A Copilot round 1: include goal_id SOLO se input.goalId
+    // defined — evita insert fail su DB pre-migration (colonna goal_id non esiste).
+    // Backward-compat: account creation legacy passa senza goal_id resta funzionante.
+    if (input.goalId !== undefined) {
+      insert.goal_id = input.goalId
     }
 
     // XOR: if no familyId provided, set user_id (personal account)
@@ -250,7 +266,7 @@ export const accountsClient = {
 
   async updateAccount(accountId: string, input: UpdateAccountRequest): Promise<Account> {
     const supabase = createClient()
-    const update: Database['public']['Tables']['accounts']['Update'] = {}
+    const update: Database['public']['Tables']['accounts']['Update'] & { goal_id?: string | null } = {}
 
     if (input.name !== undefined) update.name = input.name
     if (input.status !== undefined) update.status = input.status as Database['public']['Enums']['account_status']
@@ -260,6 +276,8 @@ export const accountsClient = {
     if (input.institutionName !== undefined) update.institution_name = input.institutionName
     if (input.syncEnabled !== undefined) update.sync_enabled = input.syncEnabled
     if (input.settings !== undefined) update.settings = input.settings
+    // Sprint 1.6 Fase 2A: link/unlink goal
+    if (input.goalId !== undefined) update.goal_id = input.goalId
 
     // Type-safe update with explicit casting to avoid Next.js build type inference issues
     const { data, error } = await (supabase
