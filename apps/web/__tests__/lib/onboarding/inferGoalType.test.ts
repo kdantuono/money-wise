@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { inferGoalType } from '@/lib/onboarding/inferGoalType';
+import { inferGoalType, inferPresetIdFromName } from '@/lib/onboarding/inferGoalType';
 
 describe('inferGoalType', () => {
   describe('presetId exact match (7 presets)', () => {
@@ -73,5 +73,47 @@ describe('inferGoalType', () => {
       // presetId savings even if name would suggest investments
       expect(inferGoalType({ presetId: 'comprare-casa', name: 'Crypto house' })).toBe('savings');
     });
+  });
+});
+
+// ─── Sprint 1.6.4D #032: inferPresetIdFromName reverse lookup ───────────
+describe('inferPresetIdFromName', () => {
+  const presetMatches: Array<[string, string]> = [
+    ['Fondo Emergenza', 'fondo-emergenza'],
+    ['Comprare Casa', 'comprare-casa'],
+    ['Iniziare a Investire', 'iniziare-a-investire'],
+    ['Eliminare Debiti', 'eliminare-debiti'],
+    ['Risparmiare di Più', 'risparmiare-di-piu'],
+    ['Viaggi / Vacanza', 'viaggi-vacanza'],
+    ['Far Crescere Patrimonio', 'far-crescere-patrimonio'],
+  ];
+
+  it.each(presetMatches)('exact name %s → presetId %s', (name, expected) => {
+    expect(inferPresetIdFromName(name)).toBe(expected);
+  });
+
+  it('returns null for null input', () => {
+    expect(inferPresetIdFromName(null)).toBeNull();
+  });
+
+  it('returns null for undefined input', () => {
+    expect(inferPresetIdFromName(undefined)).toBeNull();
+  });
+
+  it('returns null for empty string', () => {
+    expect(inferPresetIdFromName('')).toBeNull();
+  });
+
+  it('returns null for name not in preset map', () => {
+    expect(inferPresetIdFromName('Obiettivo Custom')).toBeNull();
+  });
+
+  it('case-sensitive match (no normalization)', () => {
+    expect(inferPresetIdFromName('fondo emergenza')).toBeNull();
+    expect(inferPresetIdFromName('FONDO EMERGENZA')).toBeNull();
+  });
+
+  it('does not match whitespace-padded names', () => {
+    expect(inferPresetIdFromName(' Fondo Emergenza ')).toBeNull();
   });
 });

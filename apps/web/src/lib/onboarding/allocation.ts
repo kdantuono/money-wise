@@ -401,8 +401,13 @@ function _computeSinglePool(
         `${poolPrefix} di ${_fmtEur(unallocated)} non allocato. Alcuni obiettivi hanno deadline non raggiungibile con l'allocation corrente — considera di estendere deadline o ridurre target.`,
       );
     } else {
+      // Sprint 1.6.4D #028 Copilot round 1: nota "non va a lifestyle né altri pool"
+      // sensata SOLO in 3-pool mode (poolLabel valorizzato). Legacy single-pool no.
+      const extraNote = poolLabel
+        ? ` Il budget ${poolLabel} non utilizzato non va a lifestyle né ad altri pool.`
+        : '';
       globalWarnings.push(
-        `${poolPrefix} di ${_fmtEur(unallocated)} non allocato (tutti gli obiettivi sono stati finanziati per intero). Il budget ${poolLabel ?? 'del pool'} non utilizzato non va a lifestyle né ad altri pool.`,
+        `${poolPrefix} di ${_fmtEur(unallocated)} non allocato (tutti gli obiettivi sono stati finanziati per intero).${extraNote}`,
       );
     }
   }
@@ -466,7 +471,7 @@ export function computeAllocation(input: AllocationInput): AllocationResult {
     else savingsGoals.push(g);
   }
 
-  const savingsResult = _computeSinglePool(savingsGoals, savingsBudget, incomeAfterEssentials, false, now, 'Savings');
+  const savingsResult = _computeSinglePool(savingsGoals, savingsBudget, incomeAfterEssentials, false, now, 'Risparmi');
   const investResult = _computeSinglePool(investGoals, investBudget, incomeAfterEssentials, false, now, 'Investimenti');
 
   // Rebuild items[] preserving original goals[] order (cross-pool).
