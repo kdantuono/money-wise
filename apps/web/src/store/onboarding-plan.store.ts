@@ -323,7 +323,7 @@ export const useOnboardingPlanStore = create<WizardStore>((set) => ({
           type: g.type,
         })),
       },
-      step4: { allocationPreview, userOverrides: {} },
+      step4: { allocationPreview, userOverrides: {}, dismissedWarningCodes: [] },
       step5: {
         enableAiCategorization: aiPreferences?.enableAiCategorization ?? true,
         enableAiInsights: aiPreferences?.enableAiInsights ?? true,

@@ -192,6 +192,9 @@ export function StepCalibration() {
         current: 0,
         deadline: g.deadline,
         priority: g.priority,
+        // Sprint 1.5.4 Q4 Copilot round 1: propagate type so rebalance optimizer
+        // distinguishes openended (never "complete") from fixed goals.
+        type: g.type,
         presetId: g.presetId ?? null,
       })),
       userOverrides,
@@ -260,10 +263,12 @@ export function StepCalibration() {
         // Surface-only until goal edit modal wired (WP-D).
         break;
       case 'rebalance_portfolio': {
-        const criterion =
-          (typeof chip.newValue === 'string' && ['feasibility', 'time', 'equal'].includes(chip.newValue))
-            ? (chip.newValue as RebalanceCriterion)
-            : 'feasibility';
+        // Sprint 1.5.4 Q4 Copilot round 1: accept legacy 'balanced' alias emitted by
+        // DeterministicBehavioralAdvisor.generateSuggestions() + supported 'feasibility'/'equal'.
+        // 'time' was removed from public API — falls through to 'feasibility' default.
+        const raw = typeof chip.newValue === 'string' ? chip.newValue : '';
+        const criterion: RebalanceCriterion =
+          raw === 'equal' ? 'equal' : 'feasibility';
         runRebalance(criterion);
         break;
       }
@@ -439,13 +444,6 @@ export function StepCalibration() {
                 className="px-2.5 py-1 rounded-md bg-muted hover:bg-muted/70 border border-border"
               >
                 Massimizza feasibility
-              </button>
-              <button
-                type="button"
-                onClick={() => runRebalance('time')}
-                className="px-2.5 py-1 rounded-md bg-muted hover:bg-muted/70 border border-border"
-              >
-                Minimizza estensioni deadline
               </button>
               <button
                 type="button"

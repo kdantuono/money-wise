@@ -16,7 +16,16 @@
 import type { AllocationInput, AllocationGoalInput, SuggestionChip } from '@/types/onboarding-plan';
 import { inferGoalType } from './inferGoalType';
 
-export type RebalanceCriterion = 'feasibility' | 'time' | 'equal';
+/**
+ * Sprint 1.5.4 Q4: supported rebalance strategies.
+ * - 'feasibility' (default): maximize number of feasible goals via donor/receiver transfers
+ * - 'equal': pro-rata distribution, capped at goal need (no priority ordering)
+ *
+ * Note: 'time' (minimize aggregate deadline extensions) was planned but removed
+ * from public API in Copilot round 1 — was aliasing 'feasibility' without distinct
+ * implementation, which misled users. Defer to Sprint 1.6 if business case.
+ */
+export type RebalanceCriterion = 'feasibility' | 'equal';
 
 export interface RebalanceInput {
   input: AllocationInput;
@@ -53,10 +62,13 @@ function _parseDate(s: string | null): Date | null {
 }
 
 function _monthsDiff(from: Date, to: Date): number {
-  return (
-    (to.getFullYear() - from.getFullYear()) * 12 +
-    (to.getMonth() - from.getMonth())
-  );
+  // Aligned with apps/web/src/lib/onboarding/allocation.ts::_monthsDiff — subtracts
+  // 1 month when to-day < from-day to avoid counting a partial month. Ensures
+  // requiredMonthly parity between rebalance and allocation near month boundaries.
+  const yearDiff = to.getFullYear() - from.getFullYear();
+  const monthDiff = to.getMonth() - from.getMonth();
+  const dayAdjust = to.getDate() < from.getDate() ? -1 : 0;
+  return yearDiff * 12 + monthDiff + dayAdjust;
 }
 
 function _addMonths(date: Date, months: number): Date {

@@ -129,16 +129,6 @@ describe('rebalanceOptimizer', () => {
     expect(r.newAllocations![big.id]).toBeCloseTo(500, 1);
   });
 
-  it('criterion=time: same as feasibility but different suggestion priority (smoke test)', () => {
-    const g1 = makeGoal({ target: 3600, deadline: monthsFromNow(12), priority: 1 }); // need 300
-    const r = rebalanceOptimizer({
-      input: input({ monthlySavingsTarget: 100, goals: [g1] }),
-      criterion: 'time',
-    });
-    expect(r.feasible).toBe(false);
-    expect(r.suggestions).toBeDefined();
-  });
-
   it('goal with deadline in past → NOT feasibility-affecting (skipped in phase3)', () => {
     const past = makeGoal({ target: 1000, deadline: monthsFromNow(-3), priority: 2 });
     const r = rebalanceOptimizer({
@@ -220,15 +210,16 @@ describe('rebalanceOptimizer', () => {
     expect(s.newValue as string).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
 
-  it('performance: 20 goals rebalance completes in <50ms (smoke perf)', () => {
+  it('smoke: 20 goals rebalance completes without crash', () => {
+    // Copilot round 1 feedback: removed hard <50ms bound to avoid CI flakiness.
+    // Real perf measurement lives in allocation.bench.ts (vitest bench, manual).
     const goals: AllocationGoalInput[] = [];
     for (let i = 0; i < 20; i++) {
       goals.push(makeGoal({ id: `perf-${i}`, target: 1000 * (i + 1), deadline: monthsFromNow(12 + (i % 24)), priority: ((i % 3) + 1) as PriorityRank }));
     }
-    const t0 = performance.now();
     const r = rebalanceOptimizer({ input: input({ monthlySavingsTarget: 500, goals }) });
-    const elapsed = performance.now() - t0;
     expect(r.newAllocations).toBeDefined();
-    expect(elapsed).toBeLessThan(50);
+    // Returned allocations shape intact for all 20 inputs
+    expect(Object.keys(r.newAllocations!).length).toBe(20);
   });
 });
