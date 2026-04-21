@@ -406,6 +406,19 @@ export function StepCalibration() {
 
   const hasPoolsBreakdown = !!result.pools;
   const lifestyleProtected = hasPoolsBreakdown ? result.pools!.lifestyle.budget : 0;
+
+  // Sprint 1.6.4D #030: split chip globali (goalId=null) vs per-goal (goalId set)
+  // per rendering per-goal inline sotto ciascun item in GoalPoolSection.
+  const suggestionsByGoalId = (result.suggestions ?? []).reduce<Record<string, SuggestionChip[]>>(
+    (acc, chip) => {
+      if (chip.goalId) {
+        if (!acc[chip.goalId]) acc[chip.goalId] = [];
+        acc[chip.goalId]!.push(chip);
+      }
+      return acc;
+    },
+    {},
+  );
   // Sprint 1.5.5 Phase 2: effective pool totals (reflect userOverrides live).
   const effectiveSavingsAllocated = hasPoolsBreakdown
     ? effectiveAllocatedFromItems(result.pools!.savings.items)
@@ -526,14 +539,16 @@ export function StepCalibration() {
               <button
                 type="button"
                 onClick={() => runRebalance('feasibility')}
-                className="px-2.5 py-1 rounded-md bg-muted hover:bg-muted/70 border border-border"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-700 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 min-h-[32px]"
+                aria-label="Priorità ai goal più urgenti e fattibili"
               >
-                Massimizza feasibility
+                Massimizza raggiungibilità
               </button>
               <button
                 type="button"
                 onClick={() => runRebalance('equal')}
-                className="px-2.5 py-1 rounded-md bg-muted hover:bg-muted/70 border border-border"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-700 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 min-h-[32px]"
+                aria-label="Distribuisci il budget equamente tra tutti gli obiettivi"
               >
                 Distribuzione equa
               </button>
@@ -542,18 +557,31 @@ export function StepCalibration() {
         </div>
       )}
 
-      {/* Suggestion chips */}
-      {(result.suggestions ?? []).length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {(result.suggestions ?? []).map((chip) => (
-            <SuggestionChipButton
-              key={`${chip.goalId ?? 'global'}-${chip.kind}`}
-              chip={chip}
-              onApply={handleChipApply}
-            />
-          ))}
-        </div>
-      )}
+      {/* Sprint 1.6.4D #030: split global chip (goalId=null) vs per-goal chip.
+          Per-goal chip passati a GoalPoolSection via prop suggestionsByGoalId → rendered
+          inline sotto ciascun item. Top block mostra global + fallback per-goal chip
+          non rendered in pool (edge case: flag 3-pool OFF, o goal non routed a pool). */}
+      {(() => {
+        const poolRenderedGoalIds = new Set<string>();
+        if (hasPoolsBreakdown && result.pools) {
+          for (const it of result.pools.savings.items) poolRenderedGoalIds.add(it.goalId);
+          for (const it of result.pools.investments.items) poolRenderedGoalIds.add(it.goalId);
+        }
+        const topChips = (result.suggestions ?? []).filter(
+          (c) => !c.goalId || !poolRenderedGoalIds.has(c.goalId),
+        );
+        return topChips.length > 0 ? (
+          <div className="flex flex-wrap gap-2">
+            {topChips.map((chip) => (
+              <SuggestionChipButton
+                key={`${chip.goalId ?? 'global'}-${chip.kind}`}
+                chip={chip}
+                onApply={handleChipApply}
+              />
+            ))}
+          </div>
+        ) : null;
+      })()}
 
       {/* 3-pool breakdown rendering (when pools present, Sprint 1.5.3 WP-Q5) */}
       {hasPoolsBreakdown && (
@@ -570,6 +598,8 @@ export function StepCalibration() {
               userOverrides={userOverrides}
               onSliderChange={(goalId, v) => setUserOverride(goalId, v)}
               maxSlider={Math.max(result.pools!.savings.budget, 1)}
+              suggestionsByGoalId={suggestionsByGoalId}
+              onChipApply={handleChipApply}
             />
           )}
           {(result.pools!.investments.items.length > 0 || result.pools!.investments.budget > 0) && (
@@ -584,6 +614,8 @@ export function StepCalibration() {
               userOverrides={userOverrides}
               onSliderChange={(goalId, v) => setUserOverride(goalId, v)}
               maxSlider={Math.max(result.pools!.investments.budget, 1)}
+              suggestionsByGoalId={suggestionsByGoalId}
+              onChipApply={handleChipApply}
             />
           )}
           <LifestyleInfoSection budget={result.pools!.lifestyle.budget} />

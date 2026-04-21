@@ -14,6 +14,7 @@
  */
 
 import { create } from 'zustand';
+import { inferPresetIdFromName } from '@/lib/onboarding/inferGoalType';
 import type {
   WizardState,
   WizardStep,
@@ -349,6 +350,9 @@ export const useOnboardingPlanStore = create<WizardStore>((set) => ({
           deadline: g.deadline,
           priority: g.priority,
           type: g.type,
+          // Sprint 1.6.4D #032: infer presetId from name per permettere iOS folder
+          // pattern grouping dei goals hydrated (legacy schema non persiste presetId).
+          presetId: inferPresetIdFromName(g.name),
         })),
       },
       step4: { allocationPreview, userOverrides: {}, dismissedWarningCodes: [] },

@@ -168,12 +168,17 @@ export function WizardPianoGenerato({ mode = 'create', onClose }: WizardPianoGen
 
   return (
     <Dialog.Portal>
-      {/* Dim overlay — click closes via Radix default onOpenChange */}
+      {/* Sprint 1.6.4D #036: dim overlay + blur app dietro visibile (NO nero opaco) */}
       <Dialog.Overlay className="fixed inset-0 z-40 bg-black/30 backdrop-blur-md" />
 
       <Dialog.Content
         className="fixed left-1/2 top-1/2 z-50 w-full max-w-2xl -translate-x-1/2 -translate-y-1/2 rounded-xl bg-card shadow-2xl p-6 outline-none max-h-[90vh] overflow-y-auto"
         aria-describedby="wizard-step-description"
+        // Sprint 1.6.4D #036: prevent close on outside click (user deve chiudere
+        // esplicitamente via X button o Esc → rispetta user intent, evita close
+        // accidentale perdita progresso wizard).
+        onPointerDownOutside={(e) => e.preventDefault()}
+        onInteractOutside={(e) => e.preventDefault()}
       >
         {/* Accessible title (Radix requirement) */}
         <Dialog.Title className="text-xl font-bold text-foreground pr-8">

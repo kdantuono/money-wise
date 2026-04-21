@@ -23,6 +23,7 @@ export function StepReady() {
   const step5 = useOnboardingPlanStore((s) => s.step5);
   const setAiPrefs = useOnboardingPlanStore((s) => s.setAiPrefs);
   const allocationPreview = useOnboardingPlanStore((s) => s.step4.allocationPreview);
+  const userOverrides = useOnboardingPlanStore((s) => s.step4.userOverrides ?? {});
   const isPersisting = useOnboardingPlanStore((s) => s.isPersisting);
 
   const { monthlyIncome, essentialsPct, lifestyleBuffer, monthlySavingsTarget, investmentsTarget } =
@@ -167,7 +168,9 @@ export function StepReady() {
             <ul className="space-y-2" role="list" aria-label="Lista obiettivi">
               {step3.goals.map((goal) => {
                 const item = allocationPreview?.items.find((it) => it.goalId === goal.tempId);
-                const monthlyAmount = item?.monthlyAmount ?? 0;
+                // Sprint 1.6.4D #034: effective allocation (override ?? raw) coerente con Step 4 summary
+                const override = userOverrides[goal.tempId];
+                const monthlyAmount = override !== undefined ? override : (item?.monthlyAmount ?? 0);
                 const feasible = item?.deadlineFeasible ?? true;
                 return (
                   <li

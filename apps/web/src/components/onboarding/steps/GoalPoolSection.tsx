@@ -4,7 +4,7 @@ import { useId } from 'react';
 import * as SliderPrimitive from '@radix-ui/react-slider';
 import { AlertTriangle } from 'lucide-react';
 import { PRIORITY_LABEL_IT } from '@/types/onboarding-plan';
-import type { AllocationResultItem, PoolCategory } from '@/types/onboarding-plan';
+import type { AllocationResultItem, PoolCategory, SuggestionChip } from '@/types/onboarding-plan';
 import type { WizardGoalDraft } from '@/types/onboarding-plan';
 
 /**
@@ -24,6 +24,9 @@ interface GoalPoolSectionProps {
   userOverrides: Record<string, number>;
   onSliderChange: (goalId: string, value: number) => void;
   maxSlider: number;
+  /** Sprint 1.6.4D #030: per-goal suggestion chips rendered inline sotto ogni item */
+  suggestionsByGoalId?: Record<string, SuggestionChip[]>;
+  onChipApply?: (chip: SuggestionChip) => void;
 }
 
 const POOL_PALETTE: Record<
@@ -67,6 +70,8 @@ export function GoalPoolSection({
   userOverrides,
   onSliderChange,
   maxSlider,
+  suggestionsByGoalId,
+  onChipApply,
 }: GoalPoolSectionProps) {
   const headingId = useId();
   const palette = POOL_PALETTE[poolType];
@@ -192,6 +197,23 @@ export function GoalPoolSection({
                       </li>
                     ))}
                   </ul>
+                )}
+
+                {/* Sprint 1.6.4D #030: per-goal suggestion chips inline sotto item */}
+                {suggestionsByGoalId?.[item.goalId] && suggestionsByGoalId[item.goalId]!.length > 0 && onChipApply && (
+                  <div className="flex flex-wrap gap-1.5 mt-2">
+                    {suggestionsByGoalId[item.goalId]!.map((chip) => (
+                      <button
+                        key={`${chip.kind}-${chip.delta}`}
+                        type="button"
+                        onClick={() => onChipApply(chip)}
+                        title={chip.reasoning}
+                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-white dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-300 dark:border-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/60 transition-colors"
+                      >
+                        {chip.description}
+                      </button>
+                    ))}
+                  </div>
                 )}
               </li>
             );
