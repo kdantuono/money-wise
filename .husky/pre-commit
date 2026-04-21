@@ -48,14 +48,17 @@ if echo "$STAGED" | grep -qE '^(apps/web|packages)/'; then
   NEEDS_PNPM=true
 fi
 
-# Sprint 1.6 #011: root package.json overrides/workspaces changes e
-# pnpm-workspace.yaml triggerano full pnpm gate. Meta-lesson Dependabot batch
-# 2026-04-20: `pnpm.overrides` root precede workspace deps, quindi bump override
-# root richiede test full (non solo workspace scope).
+# Sprint 1.6 #011: root dependency-management changes must trigger full pnpm gate.
+# Include root package.json updates to `overrides`, `workspaces`, or `pnpm` keys
+# + pnpm-workspace.yaml changes — affettano dependency resolution monorepo-wide.
+# Meta-lesson Dependabot batch 2026-04-20: root `pnpm.overrides` precede workspace
+# deps, quindi bump richiede test full (TS2742 osservato su override @types/react).
+# Regex stretto a JSON key syntax `"overrides":` per evitare match su script lines
+# che contengono la parola "pnpm" (es. `"test": "pnpm run test"`).
 if echo "$STAGED" | grep -q '^package\.json$'; then
-  if git diff --cached -- package.json | grep -qE '^[+-].*(overrides|workspaces|pnpm)'; then
+  if git diff --cached -- package.json | grep -qE '^[+-][[:space:]]*"(overrides|workspaces|pnpm)"[[:space:]]*:'; then
     NEEDS_PNPM=true
-    echo "  📦 Root package.json overrides/workspaces change → full pnpm gate"
+    echo "  📦 Root package.json overrides/workspaces/pnpm key change → full pnpm gate"
   fi
 fi
 
