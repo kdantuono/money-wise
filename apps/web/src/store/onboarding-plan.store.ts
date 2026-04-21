@@ -259,9 +259,16 @@ export const useOnboardingPlanStore = create<WizardStore>((set) => ({
       },
     })),
   removeGoal: (tempId) =>
-    set((s) => ({
-      step3: { goals: s.step3.goals.filter((g) => g.tempId !== tempId) },
-    })),
+    set((s) => {
+      // Sprint 1.6 Wave 2 Copilot round 1: cleanup orphan userOverrides quando
+      // rimuoviamo un goal. Prima lasciavamo override che falsavano
+      // analyzeUserOverride (Object.values sum) + warning/preview.
+      const { [tempId]: _orphan, ...remainingOverrides } = s.step4.userOverrides;
+      return {
+        step3: { goals: s.step3.goals.filter((g) => g.tempId !== tempId) },
+        step4: { ...s.step4, userOverrides: remainingOverrides },
+      };
+    }),
   setAllocationPreview: (allocation) =>
     set((s) => ({
       step4: { ...s.step4, allocationPreview: allocation },

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useId } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useOnboardingPlanStore } from '@/store/onboarding-plan.store';
@@ -408,6 +408,23 @@ export function StepGoals() {
     return () => window.removeEventListener('keydown', onKey);
   }, [expandedPresetId]);
 
+  // Sprint 1.6 Wave 2 Copilot round 1 (#524): scroll-lock body quando folder
+  // aperto + initial focus su close button. Focus-trap completo = refactor a
+  // Radix Dialog follow-up (scope ridotto per batch).
+  useEffect(() => {
+    if (!expandedPresetId) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [expandedPresetId]);
+  const folderCloseBtnRef = useRef<HTMLButtonElement | null>(null);
+  const folderTitleId = useId();
+  useEffect(() => {
+    if (expandedPresetId) folderCloseBtnRef.current?.focus();
+  }, [expandedPresetId]);
+
   // Ref map for scrollIntoView on edit open
   const goalRefs = useRef<Record<string, HTMLLIElement | null>>({});
 
@@ -534,7 +551,7 @@ export function StepGoals() {
               onClick={() => setExpandedPresetId(null)}
               role="dialog"
               aria-modal="true"
-              aria-label={`Gruppo ${preset.name} con ${folderGoals.length} obiettivo${folderGoals.length === 1 ? '' : 'i'}. Premi Escape per chiudere.`}
+              aria-labelledby={folderTitleId}
               data-testid={`folder-${expandedPresetId}`}
             >
               <motion.div
@@ -545,15 +562,18 @@ export function StepGoals() {
               >
                 <div className="flex items-center gap-2 mb-3">
                   <Icon className={`w-5 h-5 ${preset.color}`} />
-                  <h3 className="text-sm font-semibold text-foreground">{preset.name}</h3>
+                  <h3 id={folderTitleId} className="text-sm font-semibold text-foreground">
+                    {preset.name}
+                  </h3>
                   <span className="text-xs text-muted-foreground">
                     ({folderGoals.length} obiettivo{folderGoals.length === 1 ? '' : 'i'})
                   </span>
                   <button
+                    ref={folderCloseBtnRef}
                     type="button"
                     onClick={() => setExpandedPresetId(null)}
-                    className="ml-auto p-1.5 rounded-lg hover:bg-background/40 transition-colors"
-                    aria-label="Chiudi gruppo"
+                    className="ml-auto p-1.5 rounded-lg hover:bg-background/40 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                    aria-label="Chiudi gruppo (Esc)"
                   >
                     <X className="w-4 h-4 text-muted-foreground" />
                   </button>

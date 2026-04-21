@@ -305,10 +305,14 @@ export function StepCalibration() {
       case 'budget_transfer': {
         const amount = Number(chip.newValue);
         if (!chip.from || !chip.to || amount <= 0) break;
-        // Sprint 1.6 #002 Bug #3: chain-aware validation. Post-transfer il from-pool
-        // budget va a 0; se ci sono goals routed a quel pool via inferGoalType, scatterebbe
-        // hard-block INVEST_GOALS_NO_BUDGET / SAVINGS_GOALS_NO_BUDGET. Chiediamo confirm
-        // al user e, se conferma, eseguiamo transfer + bulk_remove dei goals chain-affected.
+        // Sprint 1.6 #002 Bug #3: chain-aware validation DEFENSIVE. Oggi
+        // DeterministicBehavioralAdvisor emette `budget_transfer` solo via warning
+        // ORPHAN_* (from-pool goals.length === 0) → questo branch resta dormant per
+        // i chip advisor-generati, ma protegge scenari futuri (chip programmaticamente
+        // creati in test, future warning codes, manual invocation). Senza questa guardia,
+        // un chip chain-unsafe causerebbe hard-block silenzioso post-transfer. Copilot
+        // round 1 #524 ha segnalato potenziale dead-code: scelta conservativa è guardia
+        // presente come safety net, documentata per audit futuro.
         const fromPool = chip.from;
         const goalsInFromPool = step3.goals.filter((g) => {
           const pool = inferGoalType({ name: g.name, presetId: g.presetId ?? null });
