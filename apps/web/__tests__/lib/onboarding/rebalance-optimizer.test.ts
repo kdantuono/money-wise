@@ -68,6 +68,7 @@ describe('rebalanceOptimizer', () => {
     const g2 = makeGoal({ target: 2400, deadline: monthsFromNow(12), priority: 2 }); // need 200/mo
     const r = rebalanceOptimizer({
       input: input({ monthlySavingsTarget: 500, goals: [g1, g2] }),
+      criterion: 'feasibility',
     });
     expect(r.feasible).toBe(true);
     expect(r.newAllocations![g1.id]).toBeCloseTo(100, 1);
@@ -78,6 +79,7 @@ describe('rebalanceOptimizer', () => {
     const g1 = makeGoal({ target: 12000, deadline: monthsFromNow(12), priority: 1 }); // need 1000/mo
     const r = rebalanceOptimizer({
       input: input({ monthlySavingsTarget: 200, goals: [g1] }),
+      criterion: 'feasibility',
     });
     expect(r.feasible).toBe(false);
     expect(r.suggestions).toBeDefined();
@@ -101,6 +103,7 @@ describe('rebalanceOptimizer', () => {
     // ACCETTA test che verifica feasible OR infeasible + phase3 suggerimento.
     const r = rebalanceOptimizer({
       input: input({ monthlySavingsTarget: 400, goals: [urgent2, lax2] }),
+      criterion: 'feasibility',
     });
     // urgent2 received at least all budget 400 (sorted priority 1 first)
     expect(r.newAllocations!['urgent2']).toBeCloseTo(400, 1);
@@ -145,6 +148,7 @@ describe('rebalanceOptimizer', () => {
     const g = makeGoal({ target: 1000, deadline: monthsFromNow(12), priority: 1 });
     const r = rebalanceOptimizer({
       input: input({ monthlySavingsTarget: 0, goals: [g] }),
+      criterion: 'feasibility',
     });
     expect(r.feasible).toBe(false);
     expect(r.newAllocations![g.id]).toBe(0);
@@ -161,6 +165,7 @@ describe('rebalanceOptimizer', () => {
         investmentsTarget: 300,
         goals: [savGoal, invGoal],
       }),
+      criterion: 'feasibility',
     });
     expect(r.newAllocations!['sav']).toBeCloseTo(100, 1);
     expect(r.newAllocations!['inv']).toBeCloseTo(200, 1);
@@ -192,6 +197,7 @@ describe('rebalanceOptimizer', () => {
     const invGoal = makeGoal({ id: 'inv', name: 'Crypto', target: 1200, priority: 1, deadline: monthsFromNow(12) }); // need 100
     const r = rebalanceOptimizer({
       input: input({ monthlySavingsTarget: 0, investmentsTarget: 200, goals: [invGoal] }),
+      criterion: 'feasibility',
     });
     expect(r.newAllocations!['inv']).toBeCloseTo(100, 1);
     expect(r.feasible).toBe(true);
@@ -201,6 +207,7 @@ describe('rebalanceOptimizer', () => {
     const g = makeGoal({ target: 6000, deadline: monthsFromNow(12), priority: 1 }); // need 500
     const r = rebalanceOptimizer({
       input: input({ monthlySavingsTarget: 100, goals: [g] }),
+      criterion: 'feasibility',
     });
     expect(r.suggestions).toBeDefined();
     const s = r.suggestions![0];
@@ -237,7 +244,7 @@ describe('rebalanceOptimizer', () => {
     it('1 fixed need 100/mo + 1 openended + pool 300 → fixed 100, openended 200', () => {
       const fixed = makeGoal({ id: 'fixed', target: 1200, deadline: monthsFromNow(12), priority: 1 }); // 100/mo
       const open = makeGoal({ id: 'open', type: 'openended', target: null as unknown as number, deadline: null, priority: 2 });
-      const r = rebalanceOptimizer({ input: input({ monthlySavingsTarget: 300, goals: [fixed, open] }) });
+      const r = rebalanceOptimizer({ input: input({ monthlySavingsTarget: 300, goals: [fixed, open] }), criterion: 'feasibility' });
       expect(r.feasible).toBe(true);
       expect(r.newAllocations!['fixed']).toBeCloseTo(100, 1);
       expect(r.newAllocations!['open']).toBeCloseTo(200, 1);
@@ -257,6 +264,40 @@ describe('rebalanceOptimizer', () => {
       const r = rebalanceOptimizer({ input: input({ monthlySavingsTarget: 250, goals: [g] }), criterion: 'equal' });
       expect(r.feasible).toBe(true);
       expect(r.newAllocations!['em']).toBeCloseTo(250, 1);
+    });
+  });
+
+  // ─── Sprint 1.6 #004: smart default n≤3 = 'equal' ────────────────────
+  describe('smart default criterion (Sprint 1.6 #004)', () => {
+    it('3 goals senza criterion → smart default equal (tutti pro-rata identico)', () => {
+      // Equal: perGoal = 600/3 = 200, tutti target ≥ 200 → tutti 200.
+      // Feasibility waterfall priorità distinta + requiredMonthly differenti produrrebbe
+      // allocazioni asimmetriche (≈42 / 100 / 300) — quindi test asimmetrico discrimina.
+      const g1 = makeGoal({ id: 'a', target: 500, deadline: monthsFromNow(12), priority: 1 });
+      const g2 = makeGoal({ id: 'b', target: 1200, deadline: monthsFromNow(12), priority: 2 });
+      const g3 = makeGoal({ id: 'c', target: 3600, deadline: monthsFromNow(12), priority: 3 });
+      const r = rebalanceOptimizer({ input: input({ monthlySavingsTarget: 600, goals: [g1, g2, g3] }) });
+      expect(r.newAllocations!['a']).toBeCloseTo(200, 1);
+      expect(r.newAllocations!['b']).toBeCloseTo(200, 1);
+      expect(r.newAllocations!['c']).toBeCloseTo(200, 1);
+    });
+
+    it('4 goals senza criterion → smart default feasibility (non pro-rata)', () => {
+      // Con 4 goals stesse priority+requiredMonthly, waterfall Phase 1 alloca 100 ai
+      // primi 3 (pool 300), ultimo 0. Equal darebbe 75 ciascuno. Distinzione: presenza
+      // di >= 3 goal a 100 AND >= 1 goal a 0 impossibile con equal (tutti 75).
+      const goals = [
+        makeGoal({ id: 'a', target: 1200, deadline: monthsFromNow(12), priority: 1 }),
+        makeGoal({ id: 'b', target: 1200, deadline: monthsFromNow(12), priority: 1 }),
+        makeGoal({ id: 'c', target: 1200, deadline: monthsFromNow(12), priority: 1 }),
+        makeGoal({ id: 'd', target: 1200, deadline: monthsFromNow(12), priority: 1 }),
+      ];
+      const r = rebalanceOptimizer({ input: input({ monthlySavingsTarget: 300, goals }) });
+      const values = Object.values(r.newAllocations!);
+      const hundred = values.filter((v) => Math.abs(v - 100) < 1).length;
+      const zero = values.filter((v) => v < 1).length;
+      expect(hundred).toBeGreaterThanOrEqual(3);
+      expect(zero).toBeGreaterThanOrEqual(1);
     });
   });
 });

@@ -271,13 +271,25 @@ function _residualSplitOpenended(
   return result;
 }
 
+/**
+ * Sprint 1.6 #004: smart default = 'equal' se goals.length <= 3 AND criterion
+ * non esplicito. Con pochi goal, priority-waterfall complexity non è percepita
+ * user; 'equal' è più prevedibile + matches mental model. Override via Opzioni
+ * avanzate (caller passa criterion esplicito).
+ */
+const SMART_DEFAULT_EQUAL_THRESHOLD = 3;
+
 export function rebalanceOptimizer(args: RebalanceInput): RebalanceResult {
-  const { input, criterion = 'feasibility' } = args;
+  const { input, criterion: explicitCriterion } = args;
   const now = new Date();
 
   if (input.goals.length === 0) {
     return { feasible: true, newAllocations: {}, reason: 'Nessun obiettivo da rebalancer.' };
   }
+
+  const criterion: RebalanceCriterion =
+    explicitCriterion ??
+    (input.goals.length <= SMART_DEFAULT_EQUAL_THRESHOLD ? 'equal' : 'feasibility');
 
   // Precondition: all fixed goals already completed → no-op
   const allComplete = input.goals.every((g) => {

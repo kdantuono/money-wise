@@ -3,6 +3,7 @@ import localFont from 'next/font/local';
 import './globals.css';
 import { NextIntlClientProvider } from 'next-intl';
 import { getLocale, getMessages } from 'next-intl/server';
+import { Toaster } from 'sonner';
 import { ErrorBoundary } from '@/components/ui/error-boundary';
 import { QueryProvider } from '@/components/providers/query-provider';
 import { ThemeProvider } from '@/components/providers/theme-provider';
@@ -36,6 +37,7 @@ export default async function RootLayout({
           <ThemeProvider>
             <QueryProvider>
               <ErrorBoundary>{children}</ErrorBoundary>
+              <Toaster position="bottom-right" richColors closeButton />
             </QueryProvider>
           </ThemeProvider>
         </NextIntlClientProvider>
