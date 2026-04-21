@@ -1,23 +1,9 @@
 /**
  * EditAccountForm Component
  *
- * Modal form for editing manual account details including name, balance,
- * currency, type, institution, icon, and color.
- *
- * Features:
- * - Pre-populated form fields with current account data
- * - Icon selector with common financial icons
- * - Color picker for account customization
- * - Full validation with inline errors
- * - Loading state handling
- * - WCAG 2.2 AA accessibility compliance
- *
- * @example
- * <EditAccountForm
- *   account={accountToEdit}
- *   onSubmit={handleUpdate}
- *   onCancel={handleCancel}
- * />
+ * Modal per modificare dettagli conto manuale (nome, saldo, valuta, tipo,
+ * istituto, icona, colore). Sprint 1.6 Fase 2B: supporta linking opzionale
+ * a obiettivo.
  */
 
 'use client';
@@ -25,6 +11,7 @@
 import { useState, useEffect, useId, useRef } from 'react';
 import { AccountType } from '../../types/account.types';
 import type { Account, UpdateAccountRequest } from '../../services/accounts.client';
+import { useActiveGoals } from '../../hooks/useActiveGoals';
 import {
   Wallet,
   PiggyBank,
@@ -37,72 +24,56 @@ import {
   X,
 } from 'lucide-react';
 
-// Icon options for account customization
 const ICON_OPTIONS = [
-  { id: 'wallet', label: 'Wallet', Icon: Wallet },
-  { id: 'piggybank', label: 'Piggy Bank', Icon: PiggyBank },
-  { id: 'creditcard', label: 'Credit Card', Icon: CreditCard },
-  { id: 'bank', label: 'Bank', Icon: Building2 },
-  { id: 'investment', label: 'Investment', Icon: TrendingUp },
-  { id: 'home', label: 'Home', Icon: Home },
-  { id: 'cash', label: 'Cash', Icon: Banknote },
-  { id: 'business', label: 'Business', Icon: Briefcase },
+  { id: 'wallet', label: 'Portafoglio', Icon: Wallet },
+  { id: 'piggybank', label: 'Salvadanaio', Icon: PiggyBank },
+  { id: 'creditcard', label: 'Carta di credito', Icon: CreditCard },
+  { id: 'bank', label: 'Banca', Icon: Building2 },
+  { id: 'investment', label: 'Investimento', Icon: TrendingUp },
+  { id: 'home', label: 'Casa', Icon: Home },
+  { id: 'cash', label: 'Contanti', Icon: Banknote },
+  { id: 'business', label: 'Lavoro', Icon: Briefcase },
 ] as const;
 
-// Color options for account customization
 const COLOR_OPTIONS = [
-  { id: 'blue', label: 'Blue', value: '#3B82F6' },
-  { id: 'green', label: 'Green', value: '#10B981' },
-  { id: 'purple', label: 'Purple', value: '#8B5CF6' },
-  { id: 'red', label: 'Red', value: '#EF4444' },
-  { id: 'yellow', label: 'Yellow', value: '#F59E0B' },
-  { id: 'pink', label: 'Pink', value: '#EC4899' },
-  { id: 'indigo', label: 'Indigo', value: '#6366F1' },
-  { id: 'teal', label: 'Teal', value: '#14B8A6' },
+  { id: 'blue', label: 'Blu', value: '#3B82F6' },
+  { id: 'green', label: 'Verde', value: '#10B981' },
+  { id: 'purple', label: 'Viola', value: '#8B5CF6' },
+  { id: 'red', label: 'Rosso', value: '#EF4444' },
+  { id: 'yellow', label: 'Giallo', value: '#F59E0B' },
+  { id: 'pink', label: 'Rosa', value: '#EC4899' },
+  { id: 'indigo', label: 'Indaco', value: '#6366F1' },
+  { id: 'teal', label: 'Verde acqua', value: '#14B8A6' },
 ] as const;
 
-// Currency options
 const CURRENCIES = [
-  { code: 'USD', symbol: '$', name: 'US Dollar' },
   { code: 'EUR', symbol: '€', name: 'Euro' },
-  { code: 'GBP', symbol: '£', name: 'British Pound' },
-  { code: 'CHF', symbol: 'CHF', name: 'Swiss Franc' },
-  { code: 'JPY', symbol: '¥', name: 'Japanese Yen' },
-  { code: 'CAD', symbol: 'C$', name: 'Canadian Dollar' },
-  { code: 'AUD', symbol: 'A$', name: 'Australian Dollar' },
+  { code: 'USD', symbol: '$', name: 'Dollaro USA' },
+  { code: 'GBP', symbol: '£', name: 'Sterlina' },
+  { code: 'CHF', symbol: 'CHF', name: 'Franco svizzero' },
+  { code: 'JPY', symbol: '¥', name: 'Yen giapponese' },
+  { code: 'CAD', symbol: 'C$', name: 'Dollaro canadese' },
+  { code: 'AUD', symbol: 'A$', name: 'Dollaro australiano' },
 ];
 
-// Account type options
 const ACCOUNT_TYPES = [
-  { value: AccountType.CHECKING, label: 'Checking' },
-  { value: AccountType.SAVINGS, label: 'Savings' },
-  { value: AccountType.CREDIT_CARD, label: 'Credit Card' },
-  { value: AccountType.INVESTMENT, label: 'Investment' },
-  { value: AccountType.LOAN, label: 'Loan' },
-  { value: AccountType.MORTGAGE, label: 'Mortgage' },
-  { value: AccountType.OTHER, label: 'Other' },
+  { value: AccountType.CHECKING, label: 'Conto corrente' },
+  { value: AccountType.SAVINGS, label: 'Risparmio' },
+  { value: AccountType.CREDIT_CARD, label: 'Carta di credito' },
+  { value: AccountType.INVESTMENT, label: 'Investimento' },
+  { value: AccountType.LOAN, label: 'Finanziamento' },
+  { value: AccountType.MORTGAGE, label: 'Mutuo' },
+  { value: AccountType.OTHER, label: 'Altro' },
 ];
 
 interface EditAccountFormProps {
-  /** Account to edit */
   account: Account;
-  /** Called when form is submitted with updated data */
   onSubmit: (data: UpdateAccountRequest & { id: string; settings?: AccountSettings }) => Promise<void>;
-  /** Called when form is cancelled */
   onCancel: () => void;
-  /** Whether form submission is in progress */
   isSubmitting?: boolean;
-  /** Server error message to display */
   error?: string;
-  /** Whether to render as a modal dialog */
   isModal?: boolean;
-  /** Optional CSS classes */
   className?: string;
-  /**
-   * Whether to restrict editing to display settings only (icon/color).
-   * Used for linked accounts where bank data shouldn't be modified locally.
-   * Defaults to false (show all fields).
-   */
   displaySettingsOnly?: boolean;
 }
 
@@ -120,6 +91,7 @@ interface FormData {
   creditLimit: string;
   icon: string;
   color: string;
+  goalId: string;
 }
 
 interface FormErrors {
@@ -143,7 +115,6 @@ export function EditAccountForm({
   const titleId = `${formId}-title`;
   const nameInputRef = useRef<HTMLInputElement>(null);
 
-  // Extract existing settings
   const existingSettings = (account as { settings?: AccountSettings }).settings || {};
 
   const [formData, setFormData] = useState<FormData>({
@@ -155,19 +126,20 @@ export function EditAccountForm({
     creditLimit: account.creditLimit ? String(account.creditLimit) : '',
     icon: existingSettings.icon || 'wallet',
     color: existingSettings.color || 'blue',
+    goalId: account.goalId ?? '',
   });
 
   const [errors, setErrors] = useState<FormErrors>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
-  // Focus first input on mount
+  const { data: activeGoals = [] } = useActiveGoals();
+
   useEffect(() => {
     if (nameInputRef.current) {
       nameInputRef.current.focus();
     }
   }, []);
 
-  // Handle escape key for modal
   useEffect(() => {
     if (!isModal) return;
 
@@ -184,30 +156,26 @@ export function EditAccountForm({
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
 
-    // Skip validation for display settings only mode
     if (displaySettingsOnly) {
       return true;
     }
 
-    // Name validation
     const trimmedName = formData.name.trim();
     if (!trimmedName) {
-      newErrors.name = 'Account name is required';
+      newErrors.name = 'Il nome del conto è obbligatorio';
     } else if (trimmedName.length < 3) {
-      newErrors.name = 'Account name must be at least 3 characters';
+      newErrors.name = 'Il nome del conto deve avere almeno 3 caratteri';
     }
 
-    // Balance validation
     const balance = parseFloat(formData.currentBalance);
     if (isNaN(balance)) {
-      newErrors.currentBalance = 'Balance is required';
+      newErrors.currentBalance = 'Il saldo è obbligatorio';
     }
 
-    // Credit limit validation for credit cards
     if (formData.type === AccountType.CREDIT_CARD) {
       const creditLimit = parseFloat(formData.creditLimit);
       if (isNaN(creditLimit) || creditLimit <= 0) {
-        newErrors.creditLimit = 'Credit limit is required for credit cards';
+        newErrors.creditLimit = 'Il limite di credito è obbligatorio per le carte di credito';
       }
     }
 
@@ -218,7 +186,6 @@ export function EditAccountForm({
   const handleChange = (field: keyof FormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     if (touched[field]) {
-      // Re-validate on change if field was touched
       setErrors(prev => ({ ...prev, [field]: undefined }));
     }
   };
@@ -234,7 +201,6 @@ export function EditAccountForm({
       return;
     }
 
-    // For display settings only mode, only send icon and color
     if (displaySettingsOnly) {
       const updateData: UpdateAccountRequest & { id: string; settings?: AccountSettings } = {
         id: account.id,
@@ -247,7 +213,6 @@ export function EditAccountForm({
       return;
     }
 
-    // Full update for manual accounts
     const updateData: UpdateAccountRequest & { id: string; settings?: AccountSettings } = {
       id: account.id,
       name: formData.name.trim(),
@@ -257,6 +222,7 @@ export function EditAccountForm({
         icon: formData.icon,
         color: formData.color,
       },
+      goalId: formData.goalId ? formData.goalId : null,
     };
 
     if (formData.type === AccountType.CREDIT_CARD && formData.creditLimit) {
@@ -270,7 +236,6 @@ export function EditAccountForm({
 
   const formContent = (
     <form onSubmit={handleSubmit} className={`space-y-6 ${className}`}>
-      {/* Error Alert */}
       {error && (
         <div
           role="alert"
@@ -280,7 +245,6 @@ export function EditAccountForm({
         </div>
       )}
 
-      {/* Validation Error Alert */}
       {Object.keys(errors).length > 0 && (
         <div
           role="alert"
@@ -290,26 +254,24 @@ export function EditAccountForm({
         </div>
       )}
 
-      {/* Info message for linked accounts */}
       {displaySettingsOnly && (
         <div
           role="note"
           className="p-4 bg-blue-50 border border-blue-200 rounded-lg text-blue-700"
         >
           <p className="text-sm">
-            <strong>{account.name}</strong> is a linked bank account. You can customize its icon and color for display purposes. Balance and account details are synced from your bank.
+            <strong>{account.name}</strong> è un conto bancario collegato. Puoi personalizzare icona e colore per la visualizzazione. Saldo e dettagli conto sono sincronizzati dalla banca.
           </p>
         </div>
       )}
 
-      {/* Name Field - only for manual accounts */}
       {!displaySettingsOnly && (
         <div>
           <label
             htmlFor={`${formId}-name`}
             className="block text-sm font-medium text-foreground mb-1"
           >
-            Account Name *
+            Nome conto *
           </label>
           <input
             ref={nameInputRef}
@@ -329,7 +291,7 @@ export function EditAccountForm({
               }
               focus:outline-none focus:ring-2
               disabled:bg-muted disabled:cursor-not-allowed`}
-            placeholder="e.g., My Savings"
+            placeholder="es. I miei risparmi"
           />
           {errors.name && (
             <p id={`${formId}-name-error`} className="mt-1 text-sm text-red-600">
@@ -339,14 +301,13 @@ export function EditAccountForm({
         </div>
       )}
 
-      {/* Account Type - only for manual accounts */}
       {!displaySettingsOnly && (
         <div>
           <label
             htmlFor={`${formId}-type`}
             className="block text-sm font-medium text-foreground mb-1"
           >
-            Account Type *
+            Tipo conto *
           </label>
           <select
             id={`${formId}-type`}
@@ -367,7 +328,6 @@ export function EditAccountForm({
         </div>
       )}
 
-      {/* Balance and Currency - only for manual accounts */}
       {!displaySettingsOnly && (
         <div className="grid grid-cols-2 gap-4">
           <div>
@@ -375,7 +335,7 @@ export function EditAccountForm({
               htmlFor={`${formId}-balance`}
               className="block text-sm font-medium text-foreground mb-1"
             >
-              Current Balance *
+              Saldo attuale *
             </label>
             <input
               id={`${formId}-balance`}
@@ -402,7 +362,7 @@ export function EditAccountForm({
               htmlFor={`${formId}-currency`}
               className="block text-sm font-medium text-foreground mb-1"
             >
-              Currency
+              Valuta
             </label>
             <select
               id={`${formId}-currency`}
@@ -424,14 +384,13 @@ export function EditAccountForm({
         </div>
       )}
 
-      {/* Credit Limit (only for credit cards, manual accounts only) */}
       {!displaySettingsOnly && isCreditCard && (
         <div>
           <label
             htmlFor={`${formId}-credit-limit`}
             className="block text-sm font-medium text-foreground mb-1"
           >
-            Credit Limit *
+            Limite di credito *
           </label>
           <input
             id={`${formId}-credit-limit`}
@@ -455,14 +414,13 @@ export function EditAccountForm({
         </div>
       )}
 
-      {/* Institution Name - only for manual accounts */}
       {!displaySettingsOnly && (
         <div>
           <label
             htmlFor={`${formId}-institution`}
             className="block text-sm font-medium text-foreground mb-1"
           >
-            Institution Name
+            Istituto
           </label>
           <input
             id={`${formId}-institution`}
@@ -474,21 +432,51 @@ export function EditAccountForm({
             className="w-full px-3 py-2 rounded-lg border border-border
               focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
               disabled:bg-muted disabled:cursor-not-allowed"
-            placeholder="e.g., Chase Bank"
+            placeholder="es. Intesa Sanpaolo"
           />
         </div>
       )}
 
-      {/* Icon Selector */}
+      {!displaySettingsOnly && (
+        <div>
+          <label
+            htmlFor={`${formId}-goal`}
+            className="block text-sm font-medium text-foreground mb-1"
+          >
+            Collega a obiettivo <span className="text-muted-foreground">(opzionale)</span>
+          </label>
+          <select
+            id={`${formId}-goal`}
+            value={formData.goalId}
+            onChange={(e) => handleChange('goalId', e.target.value)}
+            disabled={isSubmitting}
+            data-testid="account-goal-select"
+            className="w-full px-3 py-2 rounded-lg border border-border
+              focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+              disabled:bg-muted disabled:cursor-not-allowed"
+          >
+            <option value="">Nessun obiettivo</option>
+            {activeGoals.map((goal) => (
+              <option key={goal.id} value={goal.id}>
+                🎯 {goal.name}
+              </option>
+            ))}
+          </select>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Il saldo contribuirà al progresso dell&apos;obiettivo
+          </p>
+        </div>
+      )}
+
       <div>
         <label className="block text-sm font-medium text-foreground mb-2">
-          Account Icon
+          Icona conto
         </label>
         <div
           data-testid="account-icon-selector"
           className="flex flex-wrap gap-2"
           role="radiogroup"
-          aria-label="Select account icon"
+          aria-label="Seleziona icona conto"
         >
           {ICON_OPTIONS.map(({ id, label, Icon }) => (
             <button
@@ -513,16 +501,15 @@ export function EditAccountForm({
         </div>
       </div>
 
-      {/* Color Picker */}
       <div>
         <label className="block text-sm font-medium text-foreground mb-2">
-          Account Color
+          Colore conto
         </label>
         <div
           data-testid="account-color-picker"
           className="flex flex-wrap gap-2"
           role="radiogroup"
-          aria-label="Select account color"
+          aria-label="Seleziona colore conto"
         >
           {COLOR_OPTIONS.map(({ id, label, value }) => (
             <button
@@ -548,7 +535,6 @@ export function EditAccountForm({
         </div>
       </div>
 
-      {/* Action Buttons */}
       <div className="flex gap-3 pt-4 border-t border-border">
         <button
           type="button"
@@ -561,7 +547,7 @@ export function EditAccountForm({
             disabled:opacity-50 disabled:cursor-not-allowed
             transition-colors"
         >
-          Cancel
+          Annulla
         </button>
         <button
           type="submit"
@@ -597,18 +583,17 @@ export function EditAccountForm({
                   d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                 />
               </svg>
-              Updating...
+              Aggiornamento...
             </>
           ) : (
-            'Update Account'
+            'Aggiorna conto'
           )}
         </button>
       </div>
     </form>
   );
 
-  // Modal title varies based on account type
-  const modalTitle = displaySettingsOnly ? 'Customize Account' : 'Edit Account';
+  const modalTitle = displaySettingsOnly ? 'Personalizza conto' : 'Modifica conto';
 
   if (!isModal) {
     return (
@@ -621,7 +606,6 @@ export function EditAccountForm({
     );
   }
 
-  // Modal rendering
   return (
     <div
       role="dialog"
@@ -629,16 +613,13 @@ export function EditAccountForm({
       aria-labelledby={titleId}
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
     >
-      {/* Backdrop */}
       <div
         className="fixed inset-0 bg-black/50"
         onClick={onCancel}
         aria-hidden="true"
       />
 
-      {/* Modal Content */}
       <div className="relative bg-card rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
-        {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-border">
           <h2 id={titleId} className="text-xl font-semibold text-foreground">
             {modalTitle}
@@ -651,13 +632,12 @@ export function EditAccountForm({
               focus:outline-none focus-visible:ring-2 focus-visible:ring-ring
               disabled:opacity-50 disabled:cursor-not-allowed
               transition-colors"
-            aria-label="Close"
+            aria-label="Chiudi"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        {/* Form */}
         <div className="p-6">
           {formContent}
         </div>

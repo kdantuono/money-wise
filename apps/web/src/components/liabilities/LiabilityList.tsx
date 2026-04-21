@@ -4,6 +4,7 @@ import { useState, useMemo, useCallback } from 'react';
 import { Plus, Filter, Search, SortAsc, SortDesc } from 'lucide-react';
 import { LiabilityCard } from './LiabilityCard';
 import type { Liability, LiabilityType, LiabilityStatus } from '@/services/liabilities.client';
+import { useActiveGoals } from '@/hooks/useActiveGoals';
 
 // =============================================================================
 // Type Definitions
@@ -57,6 +58,13 @@ export function LiabilityList({
   // Sort state
   const [sortField, setSortField] = useState<SortField>('currentBalance');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+
+  // Sprint 1.6 Fase 2B: map goalId -> goal name for badge rendering
+  const { data: activeGoals = [] } = useActiveGoals();
+  const goalNameById = useMemo(
+    () => new Map(activeGoals.map((g) => [g.id, g.name])),
+    [activeGoals]
+  );
 
   // Filter and sort liabilities
   const filteredLiabilities = useMemo(() => {
@@ -322,6 +330,7 @@ export function LiabilityList({
               key={liability.id}
               liability={liability}
               onClick={onLiabilityClick}
+              goalName={liability.goalId ? goalNameById.get(liability.goalId) : undefined}
             />
           ))}
         </div>

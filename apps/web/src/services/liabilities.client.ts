@@ -78,6 +78,8 @@ export interface Liability {
   nextPaymentDate?: string;
   isBNPL: boolean;
   isCreditCard: boolean;
+  /** Sprint 1.6 Fase 2A: optional link to payoff goal */
+  goalId?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -136,6 +138,8 @@ export interface CreateLiabilityRequest {
   purchaseDate?: string;
   status?: LiabilityStatus;
   metadata?: Record<string, unknown>;
+  /** Sprint 1.6 Fase 2A: optional link to payoff goal */
+  goalId?: string | null;
 }
 
 export interface UpdateLiabilityRequest {
@@ -155,6 +159,8 @@ export interface UpdateLiabilityRequest {
   purchaseDate?: string;
   status?: LiabilityStatus;
   metadata?: Record<string, unknown>;
+  /** Sprint 1.6 Fase 2A: link/unlink payoff goal. null = unlink */
+  goalId?: string | null;
 }
 
 export interface CreateInstallmentPlanRequest {
@@ -309,6 +315,7 @@ function rowToLiability(row: LiabilityRow | LiabilityWithPlans): Liability {
     nextPaymentDate,
     isBNPL: type === 'BNPL',
     isCreditCard: type === 'CREDIT_CARD',
+    goalId: (row as LiabilityRow & { goal_id?: string | null }).goal_id ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -501,6 +508,10 @@ export const liabilitiesClient = {
       family_id: familyId,
     };
 
+    if (data.goalId !== undefined) {
+      (insert as LiabilityInsert & { goal_id?: string | null }).goal_id = data.goalId;
+    }
+
     // Type-safe insert with explicit casting to avoid Next.js build type inference issues
     const { data: created, error } = await (supabase
       .from('liabilities')
@@ -536,6 +547,9 @@ export const liabilitiesClient = {
     if (data.purchaseDate !== undefined) update.purchase_date = data.purchaseDate;
     if (data.status !== undefined) update.status = data.status as Database['public']['Enums']['liability_status'];
     if (data.metadata !== undefined) update.metadata = (data.metadata ?? null) as Json;
+    if (data.goalId !== undefined) {
+      (update as Database['public']['Tables']['liabilities']['Update'] & { goal_id?: string | null }).goal_id = data.goalId;
+    }
 
     // Type-safe update with explicit casting to avoid Next.js build type inference issues
     const { data: updated, error } = await (supabase

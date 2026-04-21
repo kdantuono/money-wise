@@ -1,8 +1,7 @@
 /**
  * ManualAccountForm Component Tests
  *
- * Tests form rendering, validation, submission for creating manual accounts.
- * Manual accounts include: Cash portfolios, investment tracking, custom accounts.
+ * Sprint 1.6 Fase 2B: italianized labels + goal linking dropdown.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -28,52 +27,56 @@ describe('ManualAccountForm', () => {
     it('renders the form with correct title', () => {
       render(<ManualAccountForm {...getDefaultProps()} />);
 
-      expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('Add Manual Account');
+      expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('Aggiungi conto manuale');
     });
 
     it('renders all required form fields', () => {
       render(<ManualAccountForm {...getDefaultProps()} />);
 
-      expect(screen.getByLabelText(/account name/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/account type/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/current balance/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/currency/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/nome conto/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/tipo conto/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/saldo attuale/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/valuta/i)).toBeInTheDocument();
     });
 
     it('renders optional fields', () => {
       render(<ManualAccountForm {...getDefaultProps()} />);
 
-      expect(screen.getByLabelText(/institution name/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/account number/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/istituto/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/numero conto/i)).toBeInTheDocument();
+    });
+
+    it('renders goal linking dropdown (Sprint 1.6 Fase 2B)', () => {
+      render(<ManualAccountForm {...getDefaultProps()} />);
+
+      expect(screen.getByLabelText(/collega a obiettivo/i)).toBeInTheDocument();
+      expect(screen.getByTestId('account-goal-select')).toBeInTheDocument();
     });
 
     it('renders credit limit field only for credit card type', async () => {
       const { user } = render(<ManualAccountForm {...getDefaultProps()} />);
 
-      // Credit limit should not be visible initially
-      expect(screen.queryByLabelText(/credit limit/i)).not.toBeInTheDocument();
+      expect(screen.queryByLabelText(/limite di credito/i)).not.toBeInTheDocument();
 
-      // Select credit card type
       await user.selectOptions(screen.getByTestId('account-type-select'), AccountType.CREDIT_CARD);
 
-      // Credit limit should now be visible
-      expect(screen.getByLabelText(/credit limit/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/limite di credito/i)).toBeInTheDocument();
     });
 
-    it('renders account type options', () => {
+    it('renders italian account type options', () => {
       render(<ManualAccountForm {...getDefaultProps()} />);
 
       const typeSelect = screen.getByTestId('account-type-select');
-      expect(typeSelect).toContainHTML('Checking');
-      expect(typeSelect).toContainHTML('Savings');
-      expect(typeSelect).toContainHTML('Credit Card');
-      expect(typeSelect).toContainHTML('Investment');
-      expect(typeSelect).toContainHTML('Loan');
-      expect(typeSelect).toContainHTML('Mortgage');
-      expect(typeSelect).toContainHTML('Other');
+      expect(typeSelect).toContainHTML('Conto corrente');
+      expect(typeSelect).toContainHTML('Risparmio');
+      expect(typeSelect).toContainHTML('Carta di credito');
+      expect(typeSelect).toContainHTML('Investimento');
+      expect(typeSelect).toContainHTML('Finanziamento');
+      expect(typeSelect).toContainHTML('Mutuo');
+      expect(typeSelect).toContainHTML('Altro');
     });
 
-    it('renders currency options', () => {
+    it('renders currency options (EUR first)', () => {
       render(<ManualAccountForm {...getDefaultProps()} />);
 
       const currencySelect = screen.getByTestId('account-currency-select');
@@ -93,8 +96,8 @@ describe('ManualAccountForm', () => {
     it('renders submit and cancel buttons', () => {
       render(<ManualAccountForm {...getDefaultProps()} />);
 
-      expect(screen.getByRole('button', { name: /create account/i })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /cancel/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /crea conto/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /annulla/i })).toBeInTheDocument();
     });
   });
 
@@ -102,14 +105,13 @@ describe('ManualAccountForm', () => {
     it('shows error when account name is empty', async () => {
       const { user } = render(<ManualAccountForm {...getDefaultProps()} />);
 
-      // Fill other required fields but leave name empty
       await user.selectOptions(screen.getByTestId('account-type-select'), AccountType.CHECKING);
       await user.type(screen.getByTestId('account-balance-input'), '1000');
 
-      await user.click(screen.getByRole('button', { name: /create account/i }));
+      await user.click(screen.getByRole('button', { name: /crea conto/i }));
 
       await waitFor(() => {
-        expect(screen.getByRole('alert')).toHaveTextContent(/account name is required/i);
+        expect(screen.getByRole('alert')).toHaveTextContent(/nome del conto è obbligatorio/i);
       });
       expect(mockOnSubmit).not.toHaveBeenCalled();
     });
@@ -121,10 +123,10 @@ describe('ManualAccountForm', () => {
       await user.selectOptions(screen.getByTestId('account-type-select'), AccountType.CHECKING);
       await user.type(screen.getByTestId('account-balance-input'), '1000');
 
-      await user.click(screen.getByRole('button', { name: /create account/i }));
+      await user.click(screen.getByRole('button', { name: /crea conto/i }));
 
       await waitFor(() => {
-        expect(screen.getByRole('alert')).toHaveTextContent(/at least 3 characters/i);
+        expect(screen.getByRole('alert')).toHaveTextContent(/almeno 3 caratteri/i);
       });
       expect(mockOnSubmit).not.toHaveBeenCalled();
     });
@@ -135,10 +137,10 @@ describe('ManualAccountForm', () => {
       await user.type(screen.getByTestId('account-name-input'), 'My Account');
       await user.type(screen.getByTestId('account-balance-input'), '1000');
 
-      await user.click(screen.getByRole('button', { name: /create account/i }));
+      await user.click(screen.getByRole('button', { name: /crea conto/i }));
 
       await waitFor(() => {
-        expect(screen.getByRole('alert')).toHaveTextContent(/please select an account type/i);
+        expect(screen.getByRole('alert')).toHaveTextContent(/seleziona un tipo di conto/i);
       });
       expect(mockOnSubmit).not.toHaveBeenCalled();
     });
@@ -148,12 +150,11 @@ describe('ManualAccountForm', () => {
 
       await user.type(screen.getByTestId('account-name-input'), 'My Account');
       await user.selectOptions(screen.getByTestId('account-type-select'), AccountType.CHECKING);
-      // Leave balance empty
 
-      await user.click(screen.getByRole('button', { name: /create account/i }));
+      await user.click(screen.getByRole('button', { name: /crea conto/i }));
 
       await waitFor(() => {
-        expect(screen.getByRole('alert')).toHaveTextContent(/balance is required/i);
+        expect(screen.getByRole('alert')).toHaveTextContent(/saldo è obbligatorio/i);
       });
       expect(mockOnSubmit).not.toHaveBeenCalled();
     });
@@ -167,7 +168,7 @@ describe('ManualAccountForm', () => {
       await user.type(screen.getByTestId('account-balance-input'), '-500');
       await user.type(screen.getByTestId('account-credit-limit-input'), '5000');
 
-      await user.click(screen.getByRole('button', { name: /create account/i }));
+      await user.click(screen.getByRole('button', { name: /crea conto/i }));
 
       await waitFor(() => {
         expect(mockOnSubmit).toHaveBeenCalled();
@@ -181,12 +182,11 @@ describe('ManualAccountForm', () => {
       await user.selectOptions(screen.getByTestId('account-type-select'), AccountType.CREDIT_CARD);
       await user.clear(screen.getByTestId('account-balance-input'));
       await user.type(screen.getByTestId('account-balance-input'), '500');
-      // Leave credit limit empty
 
-      await user.click(screen.getByRole('button', { name: /create account/i }));
+      await user.click(screen.getByRole('button', { name: /crea conto/i }));
 
       await waitFor(() => {
-        expect(screen.getByRole('alert')).toHaveTextContent(/credit limit is required/i);
+        expect(screen.getByRole('alert')).toHaveTextContent(/limite di credito è obbligatorio/i);
       });
       expect(mockOnSubmit).not.toHaveBeenCalled();
     });
@@ -202,7 +202,7 @@ describe('ManualAccountForm', () => {
       await user.type(screen.getByTestId('account-balance-input'), '1500.50');
       await user.type(screen.getByTestId('account-institution-input'), 'My Bank');
 
-      await user.click(screen.getByRole('button', { name: /create account/i }));
+      await user.click(screen.getByRole('button', { name: /crea conto/i }));
 
       await waitFor(() => {
         expect(mockOnSubmit).toHaveBeenCalledWith(
@@ -211,7 +211,7 @@ describe('ManualAccountForm', () => {
             type: AccountType.CHECKING,
             source: AccountSource.MANUAL,
             currentBalance: 1500.50,
-            currency: 'USD',
+            currency: 'EUR',
             institutionName: 'My Bank',
           })
         );
@@ -227,7 +227,7 @@ describe('ManualAccountForm', () => {
       await user.type(screen.getByTestId('account-balance-input'), '2000');
       await user.type(screen.getByTestId('account-credit-limit-input'), '10000');
 
-      await user.click(screen.getByRole('button', { name: /create account/i }));
+      await user.click(screen.getByRole('button', { name: /crea conto/i }));
 
       await waitFor(() => {
         expect(mockOnSubmit).toHaveBeenCalledWith(
@@ -250,7 +250,7 @@ describe('ManualAccountForm', () => {
       await user.type(screen.getByTestId('account-balance-input'), '1000');
       await user.type(screen.getByTestId('account-institution-input'), '  Some Bank  ');
 
-      await user.click(screen.getByRole('button', { name: /create account/i }));
+      await user.click(screen.getByRole('button', { name: /crea conto/i }));
 
       await waitFor(() => {
         expect(mockOnSubmit).toHaveBeenCalledWith(
@@ -270,7 +270,7 @@ describe('ManualAccountForm', () => {
       await user.clear(screen.getByTestId('account-balance-input'));
       await user.type(screen.getByTestId('account-balance-input'), '500');
 
-      await user.click(screen.getByRole('button', { name: /create account/i }));
+      await user.click(screen.getByRole('button', { name: /crea conto/i }));
 
       await waitFor(() => {
         expect(mockOnSubmit).toHaveBeenCalledWith(
@@ -279,6 +279,23 @@ describe('ManualAccountForm', () => {
           })
         );
       });
+    });
+
+    it('does NOT include goalId when "Nessun obiettivo" selected (Sprint 1.6 Fase 2B)', async () => {
+      const { user } = render(<ManualAccountForm {...getDefaultProps()} />);
+
+      await user.type(screen.getByTestId('account-name-input'), 'Fondo Emergenza');
+      await user.selectOptions(screen.getByTestId('account-type-select'), AccountType.SAVINGS);
+      await user.clear(screen.getByTestId('account-balance-input'));
+      await user.type(screen.getByTestId('account-balance-input'), '1000');
+
+      await user.click(screen.getByRole('button', { name: /crea conto/i }));
+
+      await waitFor(() => {
+        expect(mockOnSubmit).toHaveBeenCalled();
+      });
+      const call = mockOnSubmit.mock.calls[0][0];
+      expect(call.goalId).toBeUndefined();
     });
   });
 
@@ -290,20 +307,20 @@ describe('ManualAccountForm', () => {
       expect(screen.getByTestId('account-type-select')).toBeDisabled();
       expect(screen.getByTestId('account-balance-input')).toBeDisabled();
       expect(screen.getByTestId('account-currency-select')).toBeDisabled();
-      expect(screen.getByRole('button', { name: /creating/i })).toBeDisabled();
-      expect(screen.getByRole('button', { name: /cancel/i })).toBeDisabled();
+      expect(screen.getByRole('button', { name: /creazione/i })).toBeDisabled();
+      expect(screen.getByRole('button', { name: /annulla/i })).toBeDisabled();
     });
 
     it('shows loading text on submit button', () => {
       render(<ManualAccountForm {...getDefaultProps()} isSubmitting />);
 
-      expect(screen.getByRole('button', { name: /creating/i })).toHaveTextContent('Creating...');
+      expect(screen.getByRole('button', { name: /creazione/i })).toHaveTextContent('Creazione...');
     });
 
     it('shows spinner on submit button when submitting', () => {
       render(<ManualAccountForm {...getDefaultProps()} isSubmitting />);
 
-      const submitButton = screen.getByRole('button', { name: /creating/i });
+      const submitButton = screen.getByRole('button', { name: /creazione/i });
       expect(submitButton.querySelector('.animate-spin')).toBeInTheDocument();
     });
   });
@@ -312,7 +329,7 @@ describe('ManualAccountForm', () => {
     it('calls onCancel when cancel button is clicked', async () => {
       const { user } = render(<ManualAccountForm {...getDefaultProps()} />);
 
-      await user.click(screen.getByRole('button', { name: /cancel/i }));
+      await user.click(screen.getByRole('button', { name: /annulla/i }));
 
       expect(mockOnCancel).toHaveBeenCalled();
     });
@@ -320,7 +337,7 @@ describe('ManualAccountForm', () => {
     it('disables cancel button while submitting', () => {
       render(<ManualAccountForm {...getDefaultProps()} isSubmitting />);
 
-      expect(screen.getByRole('button', { name: /cancel/i })).toBeDisabled();
+      expect(screen.getByRole('button', { name: /annulla/i })).toBeDisabled();
     });
   });
 
@@ -350,10 +367,8 @@ describe('ManualAccountForm', () => {
 
       const typeSelect = screen.getByTestId('account-type-select');
 
-      // Check that SVG icons exist for account types
       await user.selectOptions(typeSelect, AccountType.CHECKING);
 
-      // The select should have updated
       expect(typeSelect).toHaveValue(AccountType.CHECKING);
     });
   });
@@ -362,12 +377,12 @@ describe('ManualAccountForm', () => {
     it('has proper labels for all form inputs', () => {
       render(<ManualAccountForm {...getDefaultProps()} />);
 
-      expect(screen.getByLabelText(/account name/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/account type/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/current balance/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/currency/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/institution name/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/account number/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/nome conto/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/tipo conto/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/saldo attuale/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/valuta/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/istituto/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/numero conto/i)).toBeInTheDocument();
     });
 
     it('has accessible error messages with alert role', () => {
@@ -380,8 +395,7 @@ describe('ManualAccountForm', () => {
     it('has aria-invalid on fields with errors', async () => {
       const { user } = render(<ManualAccountForm {...getDefaultProps()} />);
 
-      // Submit without filling required fields
-      await user.click(screen.getByRole('button', { name: /create account/i }));
+      await user.click(screen.getByRole('button', { name: /crea conto/i }));
 
       await waitFor(() => {
         const nameInput = screen.getByTestId('account-name-input');
@@ -392,7 +406,7 @@ describe('ManualAccountForm', () => {
     it('has aria-describedby linking to error messages', async () => {
       const { user } = render(<ManualAccountForm {...getDefaultProps()} />);
 
-      await user.click(screen.getByRole('button', { name: /create account/i }));
+      await user.click(screen.getByRole('button', { name: /crea conto/i }));
 
       await waitFor(() => {
         const nameInput = screen.getByTestId('account-name-input');
