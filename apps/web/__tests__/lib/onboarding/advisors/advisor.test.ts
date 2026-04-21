@@ -452,3 +452,180 @@ describe('DeterministicBehavioralAdvisor — behavioral warnings', () => {
     }
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────
+// Sprint 1.5.4 Q7: cross-pool mismatch warnings (gated on ENABLE_3POOL_MODEL)
+// ─────────────────────────────────────────────────────────────────────────
+
+describe('DeterministicBehavioralAdvisor — Sprint 1.5.4 Q7 cross-pool warnings', () => {
+  const advisor = new DeterministicBehavioralAdvisor();
+
+  beforeEach(() => {
+    vi.stubEnv('NEXT_PUBLIC_ENABLE_3POOL_MODEL', 'true');
+    _id = 0;
+  });
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it('ORPHAN_INVEST_BUDGET: invest target > 0 + no invest goals → soft warning with 3 actions', () => {
+    const result = advisor.proposeAllocation(
+      input({
+        monthlyIncome: 3000,
+        essentialsPct: 50,
+        monthlySavingsTarget: 300,
+        lifestyleBuffer: 200,
+        investmentsTarget: 100,
+        goals: [goal({ name: 'Fondo Emergenza', target: 5000, priority: 1 })],
+      }),
+    );
+    const w = result.behavioralWarnings?.find((x) => x.code === 'ORPHAN_INVEST_BUDGET');
+    expect(w).toBeDefined();
+    expect(w!.severity).toBe('soft');
+    expect(w!.actions).toHaveLength(3);
+    expect(w!.actions!.map((a) => a.kind)).toEqual(['navigate', 'budget_transfer', 'dismiss']);
+    const transferChip = w!.actions!.find((a) => a.kind === 'budget_transfer')!;
+    expect(transferChip.from).toBe('investments');
+    expect(transferChip.to).toBe('savings');
+    expect(transferChip.delta).toBe(100);
+  });
+
+  it('ORPHAN_INVEST_BUDGET: absent when invest goal exists', () => {
+    const result = advisor.proposeAllocation(
+      input({
+        monthlyIncome: 3000,
+        essentialsPct: 50,
+        monthlySavingsTarget: 300,
+        lifestyleBuffer: 200,
+        investmentsTarget: 100,
+        goals: [goal({ name: 'ETF mondiali', target: 10000, priority: 2 })],
+      }),
+    );
+    expect(result.behavioralWarnings?.find((w) => w.code === 'ORPHAN_INVEST_BUDGET')).toBeUndefined();
+  });
+
+  it('ORPHAN_SAVINGS_BUDGET: savings target > 0 + no savings goals → soft warning with 3 actions', () => {
+    const result = advisor.proposeAllocation(
+      input({
+        monthlyIncome: 3000,
+        essentialsPct: 50,
+        monthlySavingsTarget: 200,
+        lifestyleBuffer: 200,
+        investmentsTarget: 100,
+        goals: [goal({ name: 'Crypto portfolio', target: 10000, priority: 2 })],
+      }),
+    );
+    const w = result.behavioralWarnings?.find((x) => x.code === 'ORPHAN_SAVINGS_BUDGET');
+    expect(w).toBeDefined();
+    expect(w!.severity).toBe('soft');
+    expect(w!.actions).toHaveLength(3);
+    const transferChip = w!.actions!.find((a) => a.kind === 'budget_transfer')!;
+    expect(transferChip.from).toBe('savings');
+    expect(transferChip.to).toBe('investments');
+  });
+
+  it('ORPHAN_SAVINGS_BUDGET: absent when savings goal exists', () => {
+    const result = advisor.proposeAllocation(
+      input({
+        monthlyIncome: 3000,
+        essentialsPct: 50,
+        monthlySavingsTarget: 200,
+        lifestyleBuffer: 200,
+        investmentsTarget: 100,
+        goals: [
+          goal({ name: 'ETF', target: 10000, priority: 2 }),
+          goal({ name: 'Fondo Emergenza', target: 5000, priority: 1 }),
+        ],
+      }),
+    );
+    expect(result.behavioralWarnings?.find((w) => w.code === 'ORPHAN_SAVINGS_BUDGET')).toBeUndefined();
+  });
+
+  it('INVEST_GOALS_NO_BUDGET: invest goals + zero invest budget → hard warning with 2 actions', () => {
+    const result = advisor.proposeAllocation(
+      input({
+        monthlyIncome: 3000,
+        essentialsPct: 50,
+        monthlySavingsTarget: 500,
+        lifestyleBuffer: 200,
+        investmentsTarget: 0,
+        goals: [goal({ name: 'ETF mondiali', target: 10000, priority: 2 })],
+      }),
+    );
+    const w = result.behavioralWarnings?.find((x) => x.code === 'INVEST_GOALS_NO_BUDGET');
+    expect(w).toBeDefined();
+    expect(w!.severity).toBe('hard');
+    expect(w!.actions).toHaveLength(2);
+    expect(w!.actions!.map((a) => a.kind)).toEqual(['navigate', 'bulk_remove_goals']);
+    const bulkChip = w!.actions!.find((a) => a.kind === 'bulk_remove_goals')!;
+    expect(bulkChip.goalIds).toHaveLength(1);
+  });
+
+  it('INVEST_GOALS_NO_BUDGET: absent when invest budget > 0', () => {
+    const result = advisor.proposeAllocation(
+      input({
+        monthlyIncome: 3000,
+        essentialsPct: 50,
+        monthlySavingsTarget: 300,
+        lifestyleBuffer: 200,
+        investmentsTarget: 100,
+        goals: [goal({ name: 'ETF mondiali', target: 10000, priority: 2 })],
+      }),
+    );
+    expect(result.behavioralWarnings?.find((w) => w.code === 'INVEST_GOALS_NO_BUDGET')).toBeUndefined();
+  });
+
+  it('SAVINGS_GOALS_NO_BUDGET: savings goals + zero savings budget → hard warning with 2 actions', () => {
+    const result = advisor.proposeAllocation(
+      input({
+        monthlyIncome: 3000,
+        essentialsPct: 50,
+        monthlySavingsTarget: 0,
+        lifestyleBuffer: 200,
+        investmentsTarget: 100,
+        goals: [
+          goal({ name: 'Fondo Emergenza', target: 5000, priority: 1 }),
+          goal({ name: 'Comprare Casa', target: 50000, priority: 2 }),
+        ],
+      }),
+    );
+    const w = result.behavioralWarnings?.find((x) => x.code === 'SAVINGS_GOALS_NO_BUDGET');
+    expect(w).toBeDefined();
+    expect(w!.severity).toBe('hard');
+    expect(w!.actions).toHaveLength(2);
+    const bulkChip = w!.actions!.find((a) => a.kind === 'bulk_remove_goals')!;
+    expect(bulkChip.goalIds).toHaveLength(2);
+  });
+
+  it('SAVINGS_GOALS_NO_BUDGET: absent when savings budget > 0', () => {
+    const result = advisor.proposeAllocation(
+      input({
+        monthlyIncome: 3000,
+        essentialsPct: 50,
+        monthlySavingsTarget: 300,
+        lifestyleBuffer: 200,
+        investmentsTarget: 100,
+        goals: [goal({ name: 'Fondo Emergenza', target: 5000, priority: 1 })],
+      }),
+    );
+    expect(result.behavioralWarnings?.find((w) => w.code === 'SAVINGS_GOALS_NO_BUDGET')).toBeUndefined();
+  });
+
+  it('flag OFF: Q7 warnings non emessi', () => {
+    vi.unstubAllEnvs(); // flag default OFF
+    const result = advisor.proposeAllocation(
+      input({
+        monthlyIncome: 3000,
+        essentialsPct: 50,
+        monthlySavingsTarget: 300,
+        lifestyleBuffer: 200,
+        investmentsTarget: 100,
+        goals: [goal({ name: 'Fondo Emergenza', target: 5000, priority: 1 })],
+      }),
+    );
+    const q7Codes = ['ORPHAN_INVEST_BUDGET', 'ORPHAN_SAVINGS_BUDGET', 'INVEST_GOALS_NO_BUDGET', 'SAVINGS_GOALS_NO_BUDGET'];
+    for (const code of q7Codes) {
+      expect(result.behavioralWarnings?.find((w) => w.code === code)).toBeUndefined();
+    }
+  });
+});

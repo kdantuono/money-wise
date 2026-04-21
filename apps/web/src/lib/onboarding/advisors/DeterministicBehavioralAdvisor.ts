@@ -12,6 +12,7 @@
  */
 
 import { computeAllocation } from '@/lib/onboarding/allocation';
+import { inferGoalType } from '@/lib/onboarding/inferGoalType';
 import type { AllocationAdvisor } from './AllocationAdvisor';
 import type {
   AllocationInput,
@@ -21,6 +22,14 @@ import type {
   InfeasibleItem,
   UserAllocation,
 } from '@/types/onboarding-plan';
+
+/**
+ * Sprint 1.5.4 Q7: gate cross-validation warnings sul feature flag 3-pool.
+ * Legacy single-pool non produce i mismatch (tutto è 1 pool) — evita false-positive.
+ */
+function _is3PoolEnabled(): boolean {
+  return process.env.NEXT_PUBLIC_ENABLE_3POOL_MODEL === 'true';
+}
 
 // ─────────────────────────────────────────────────────────────────────────
 // Constants
@@ -428,6 +437,12 @@ export class DeterministicBehavioralAdvisor implements AllocationAdvisor {
       }
     }
 
+    // Sprint 1.5.4 Q7: cross-validation budget-vs-goals mismatch (gated on 3-pool flag).
+    if (_is3PoolEnabled()) {
+      const q7Warnings = _analyzeCrossPoolMismatch(input);
+      warnings.push(...q7Warnings);
+    }
+
     // Encouragement: no warnings except possible encouragement
     if (
       warnings.length === 0 &&
@@ -438,4 +453,179 @@ export class DeterministicBehavioralAdvisor implements AllocationAdvisor {
 
     return warnings;
   }
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Sprint 1.5.4 Q7: cross-pool mismatch warnings
+// ─────────────────────────────────────────────────────────────────────────
+
+function _investGoalsList(input: AllocationInput) {
+  return input.goals.filter(
+    (g) => inferGoalType({ name: g.name, presetId: g.presetId ?? null }) === 'investments',
+  );
+}
+
+function _savingsGoalsList(input: AllocationInput) {
+  return input.goals.filter(
+    (g) => inferGoalType({ name: g.name, presetId: g.presetId ?? null }) === 'savings',
+  );
+}
+
+function _warnOrphanInvestBudget(input: AllocationInput): BehavioralWarning | null {
+  const amount = input.investmentsTarget ?? 0;
+  if (amount <= 0) return null;
+  if (_investGoalsList(input).length > 0) return null;
+  return {
+    code: 'ORPHAN_INVEST_BUDGET',
+    severity: 'soft',
+    message: `💭 Hai destinato €${amount}/mese agli investimenti ma nessun goal invest.`,
+    reasoning:
+      'Il budget invest resta non allocato. Aggiungi un goal invest (es. "Iniziare a Investire", "ETF") o sposta il budget a savings.',
+    actions: [
+      {
+        kind: 'navigate',
+        goalId: null,
+        delta: 0,
+        newValue: 3,
+        description: 'Aggiungi goal invest',
+        reasoning: 'Vai a Step 3 per scegliere preset invest o aggiungerne uno custom.',
+      },
+      {
+        kind: 'budget_transfer',
+        goalId: null,
+        delta: amount,
+        newValue: amount,
+        from: 'investments',
+        to: 'savings',
+        description: `Sposta €${amount} a savings`,
+        reasoning: 'Trasferisce il budget invest al pool savings (goals savings/debt/emergency).',
+      },
+      {
+        kind: 'dismiss',
+        goalId: null,
+        delta: 0,
+        newValue: 'ORPHAN_INVEST_BUDGET',
+        description: 'Mantieni come riserva',
+        reasoning: 'Conserva il budget invest come riserva non allocata, nascondi il warning.',
+      },
+    ],
+  };
+}
+
+function _warnOrphanSavingsBudget(input: AllocationInput): BehavioralWarning | null {
+  const amount = input.monthlySavingsTarget;
+  if (amount <= 0) return null;
+  if (_savingsGoalsList(input).length > 0) return null;
+  return {
+    code: 'ORPHAN_SAVINGS_BUDGET',
+    severity: 'soft',
+    message: `💭 Hai destinato €${amount}/mese ai risparmi ma nessun goal savings/emergency/debt.`,
+    reasoning:
+      'Il budget savings resta non allocato. Aggiungi un goal savings (es. Fondo Emergenza, Casa, Debiti) o sposta a invest.',
+    actions: [
+      {
+        kind: 'navigate',
+        goalId: null,
+        delta: 0,
+        newValue: 3,
+        description: 'Aggiungi goal savings',
+        reasoning: 'Vai a Step 3 per scegliere preset savings/emergency/debt.',
+      },
+      {
+        kind: 'budget_transfer',
+        goalId: null,
+        delta: amount,
+        newValue: amount,
+        from: 'savings',
+        to: 'investments',
+        description: `Sposta €${amount} a investimenti`,
+        reasoning: 'Trasferisce il budget savings al pool investments.',
+      },
+      {
+        kind: 'dismiss',
+        goalId: null,
+        delta: 0,
+        newValue: 'ORPHAN_SAVINGS_BUDGET',
+        description: 'Mantieni come riserva',
+        reasoning: 'Conserva il budget savings come riserva non allocata, nascondi il warning.',
+      },
+    ],
+  };
+}
+
+function _warnInvestGoalsNoBudget(input: AllocationInput): BehavioralWarning | null {
+  if ((input.investmentsTarget ?? 0) > 0) return null;
+  const investGoals = _investGoalsList(input);
+  if (investGoals.length === 0) return null;
+  return {
+    code: 'INVEST_GOALS_NO_BUDGET',
+    severity: 'hard',
+    message: `⛔ Hai ${investGoals.length} goal di investimento ma budget invest è €0.`,
+    reasoning:
+      'Torna a Step 2 per dedicare una quota agli investimenti, oppure rimuovi questi goal. Senza budget, i goal invest non ricevono allocazione.',
+    actions: [
+      {
+        kind: 'navigate',
+        goalId: null,
+        delta: 0,
+        newValue: 2,
+        description: 'Torna a Step 2',
+        reasoning: 'Imposta investmentsTarget > 0 per finanziare i goal invest.',
+      },
+      {
+        kind: 'bulk_remove_goals',
+        goalId: null,
+        delta: investGoals.length,
+        newValue: investGoals.length,
+        goalIds: investGoals.map((g) => g.id),
+        description: `Rimuovi ${investGoals.length} goal invest`,
+        reasoning: 'Elimina i goal invest non compatibili col budget corrente.',
+      },
+    ],
+  };
+}
+
+function _warnSavingsGoalsNoBudget(input: AllocationInput): BehavioralWarning | null {
+  if (input.monthlySavingsTarget > 0) return null;
+  const savingsGoals = _savingsGoalsList(input);
+  if (savingsGoals.length === 0) return null;
+  return {
+    code: 'SAVINGS_GOALS_NO_BUDGET',
+    severity: 'hard',
+    message: `⛔ Hai ${savingsGoals.length} goal savings/emergency/debt ma budget savings è €0.`,
+    reasoning:
+      'Torna a Step 2 per dedicare una quota ai risparmi, oppure rimuovi questi goal.',
+    actions: [
+      {
+        kind: 'navigate',
+        goalId: null,
+        delta: 0,
+        newValue: 2,
+        description: 'Torna a Step 2',
+        reasoning: 'Imposta monthlySavingsTarget > 0 per finanziare i goal savings.',
+      },
+      {
+        kind: 'bulk_remove_goals',
+        goalId: null,
+        delta: savingsGoals.length,
+        newValue: savingsGoals.length,
+        goalIds: savingsGoals.map((g) => g.id),
+        description: `Rimuovi ${savingsGoals.length} goal savings`,
+        reasoning: 'Elimina i goal savings non compatibili col budget corrente.',
+      },
+    ],
+  };
+}
+
+function _analyzeCrossPoolMismatch(input: AllocationInput): BehavioralWarning[] {
+  const warnings: BehavioralWarning[] = [];
+  const w1 = _warnOrphanInvestBudget(input);
+  if (w1) warnings.push(w1);
+  const w2 = _warnOrphanSavingsBudget(input);
+  if (w2) warnings.push(w2);
+  const w3 = _warnInvestGoalsNoBudget(input);
+  if (w3) warnings.push(w3);
+  const w4 = _warnSavingsGoalsNoBudget(input);
+  if (w4) warnings.push(w4);
+  return warnings;
 }
