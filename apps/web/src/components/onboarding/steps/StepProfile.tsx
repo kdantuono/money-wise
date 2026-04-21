@@ -2,7 +2,7 @@
 
 import { useState, useId, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, AlertTriangle, Info } from 'lucide-react';
 import {
   useOnboardingPlanStore,
   INCOME_MIN,
@@ -111,6 +111,48 @@ export function StepProfile() {
     step2.monthlySavingsTarget +
     step2.investmentsTarget;
   const sumExceedsIncome = income > 0 && allocatedSum > income;
+
+  // ── Sprint 1.6.4C #026+#027: post-essentials residual / overflow compute + handlers ──
+  const disposable = Math.max(0, income * (1 - essentialsPct / 100));
+  const postEssentialsAllocated =
+    step2.lifestyleBuffer + step2.monthlySavingsTarget + step2.investmentsTarget;
+  const residual = Math.round((disposable - postEssentialsAllocated) * 100) / 100;
+  const overflow = residual < 0 ? -residual : 0;
+  const showResidualNudge = income > 0 && residual > 0.5;
+  const showOverflowGuidance = income > 0 && overflow > 0.5;
+
+  const applyResidualToSavings = () => {
+    savingsTouchedRef.current = true;
+    updateProfile({ monthlySavingsTarget: step2.monthlySavingsTarget + residual });
+  };
+
+  const applyWarrenRedistribute = () => {
+    // Reset tutti 3 AI default, touched reset → somma = disposable garantita via Warren 50/30/20
+    lifestyleTouchedRef.current = false;
+    savingsTouchedRef.current = false;
+    investTouchedRef.current = false;
+    updateProfile({
+      lifestyleBuffer: calcLifestyleDefault(income, essentialsPct),
+      monthlySavingsTarget: calcSavingsDefault(income, essentialsPct),
+      investmentsTarget: calcInvestDefault(income, essentialsPct),
+    });
+  };
+
+  const applyProportionalReduction = () => {
+    if (postEssentialsAllocated <= 0) return;
+    const factor = disposable / postEssentialsAllocated;
+    updateProfile({
+      lifestyleBuffer: Math.round(step2.lifestyleBuffer * factor * 100) / 100,
+      monthlySavingsTarget: Math.round(step2.monthlySavingsTarget * factor * 100) / 100,
+      investmentsTarget: Math.round(step2.investmentsTarget * factor * 100) / 100,
+    });
+  };
+
+  // Sprint 1.6.4C Copilot round 1 #5-6: chip "Aumenta essenziali" rimosso.
+  // Logic rivelata invertita: in overflow case `requiredPct < essentialsPct` →
+  // max(current, required) = current invariato (chip no-op) + aumento essentials
+  // peggiora overflow (disposable diminuisce). Chip Warren + Proportional sufficienti
+  // per risolvere overflow. User può modificare essentials slider manualmente se serve.
 
   // ── Warnings ──
   const lifestyleWarning =
@@ -274,8 +316,13 @@ export function StepProfile() {
           step={10}
           value={step2.lifestyleBuffer || ''}
           onChange={(e) => {
-            lifestyleTouchedRef.current = true;
-            updateProfile({ lifestyleBuffer: Number(e.target.value) || 0 });
+            // Sprint 1.6.4C #025 + Copilot round 1: distinguiamo "clear" (raw === '')
+            // da "intentional 0" (raw === '0'). Clear → touched=false (reset AI default
+            // reactive). Value 0 esplicito → touched=true (rispetta user intent di €0).
+            const raw = e.target.value;
+            const v = Number(raw) || 0;
+            lifestyleTouchedRef.current = raw !== '';
+            updateProfile({ lifestyleBuffer: v });
           }}
           placeholder="es. 200"
           className="w-full bg-muted/50 border border-border rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 text-foreground"
@@ -316,8 +363,11 @@ export function StepProfile() {
           step={50}
           value={step2.monthlySavingsTarget || ''}
           onChange={(e) => {
-            savingsTouchedRef.current = true;
-            updateProfile({ monthlySavingsTarget: Number(e.target.value) || 0 });
+            // Sprint 1.6.4C #025 + Copilot round 1: clear '' → reset, 0 esplicito → intent
+            const raw = e.target.value;
+            const v = Number(raw) || 0;
+            savingsTouchedRef.current = raw !== '';
+            updateProfile({ monthlySavingsTarget: v });
           }}
           placeholder="es. 500"
           className="w-full bg-muted/50 border border-border rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 text-foreground"
@@ -354,8 +404,11 @@ export function StepProfile() {
           step={25}
           value={step2.investmentsTarget || ''}
           onChange={(e) => {
-            investTouchedRef.current = true;
-            updateProfile({ investmentsTarget: Number(e.target.value) || 0 });
+            // Sprint 1.6.4C #025 + Copilot round 1: clear '' → reset, 0 esplicito → intent (no invest voluto)
+            const raw = e.target.value;
+            const v = Number(raw) || 0;
+            investTouchedRef.current = raw !== '';
+            updateProfile({ investmentsTarget: v });
           }}
           placeholder="es. 150 (opzionale)"
           className="w-full bg-muted/50 border border-border rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 text-foreground"
@@ -457,8 +510,92 @@ export function StepProfile() {
         </div>
       )}
 
-      {/* ── Sum overflow error ── */}
-      {sumExceedsIncome && (
+      {/* Sprint 1.6.4C #027: overflow guidance con chip redistribuzione */}
+      {showOverflowGuidance && (
+        <motion.div
+          initial={{ opacity: 0, y: -4 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.2 }}
+          role="alert"
+          aria-live="polite"
+          className="p-3 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800"
+          data-testid="step2-overflow-guidance"
+        >
+          <div className="flex items-start gap-2">
+            <AlertTriangle className="w-4 h-4 text-red-600 dark:text-red-400 mt-0.5 shrink-0" aria-hidden />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-red-900 dark:text-red-100">
+                Hai allocato <strong>€{formatEuro(postEssentialsAllocated)}</strong> ma disponibile dopo essenziali è <strong>€{formatEuro(disposable)}</strong>. Eccesso: <strong>€{formatEuro(overflow)}</strong>.
+              </p>
+              <p className="text-xs text-red-700 dark:text-red-300 mt-0.5">
+                Scegli come riequilibrare prima di proseguire:
+              </p>
+              <div className="flex gap-2 mt-2 flex-wrap">
+                <button
+                  type="button"
+                  onClick={applyWarrenRedistribute}
+                  className="text-xs px-2.5 py-1 rounded-full bg-white dark:bg-red-900/40 border border-red-300 dark:border-red-700 text-red-800 dark:text-red-200 hover:bg-red-100 dark:hover:bg-red-900/60 transition-colors"
+                  data-testid="chip-warren-redistribute"
+                >
+                  Redistribuisci con AI (Warren: 50% risparmi / 30% lifestyle / 20% invest)
+                </button>
+                <button
+                  type="button"
+                  onClick={applyProportionalReduction}
+                  className="text-xs px-2.5 py-1 rounded-full bg-white dark:bg-red-900/40 border border-red-300 dark:border-red-700 text-red-800 dark:text-red-200 hover:bg-red-100 dark:hover:bg-red-900/60 transition-colors"
+                  data-testid="chip-proportional-reduction"
+                >
+                  Riduci proporzionalmente
+                </button>
+                {/* Chip "Aumenta essenziali" rimosso (Copilot round 1): logic era invertita. */}
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
+      {/* Sprint 1.6.4C #026: residual positive nudge "ammontare non tracciato" */}
+      {showResidualNudge && (
+        <motion.div
+          initial={{ opacity: 0, y: -4 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.2 }}
+          role="status"
+          aria-live="polite"
+          className="p-3 rounded-xl bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800"
+          data-testid="step2-residual-nudge"
+        >
+          <div className="flex items-start gap-2">
+            <Info className="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5 shrink-0" aria-hidden />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm text-blue-900 dark:text-blue-100">
+                Hai ancora <strong>€{formatEuro(residual)}</strong> non allocati del disposable post-essenziali (€{formatEuro(disposable)}).
+              </p>
+              <div className="flex gap-2 mt-2 flex-wrap">
+                <button
+                  type="button"
+                  onClick={applyResidualToSavings}
+                  className="text-xs px-2.5 py-1 rounded-full bg-white dark:bg-blue-900/40 border border-blue-300 dark:border-blue-700 text-blue-800 dark:text-blue-200 hover:bg-blue-100 dark:hover:bg-blue-900/60 transition-colors"
+                  data-testid="chip-residual-to-savings"
+                >
+                  Alloca €{formatEuro(residual)} a risparmi
+                </button>
+                <button
+                  type="button"
+                  onClick={applyWarrenRedistribute}
+                  className="text-xs px-2.5 py-1 rounded-full bg-white dark:bg-blue-900/40 border border-blue-300 dark:border-blue-700 text-blue-800 dark:text-blue-200 hover:bg-blue-100 dark:hover:bg-blue-900/60 transition-colors"
+                  data-testid="chip-warren-from-residual"
+                >
+                  Redistribuisci con AI (Warren: 50% risparmi / 30% lifestyle / 20% invest)
+                </button>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
+      {/* Legacy sum overflow fallback (sumExceedsIncome include essentials overflow, diverso da postEssentials) */}
+      {sumExceedsIncome && !showOverflowGuidance && (
         <motion.div
           initial={{ opacity: 0, y: -4 }}
           animate={{ opacity: 1, y: 0 }}
@@ -468,8 +605,7 @@ export function StepProfile() {
         >
           <p className="text-xs text-red-700 dark:text-red-400 flex items-center gap-1">
             <AlertCircle className="w-3.5 h-3.5 shrink-0" aria-hidden />
-            La somma eccede il reddito: €{formatEuro(allocatedSum)} &gt; €{formatEuro(income)}.
-            Riduci uno o più valori.
+            La somma eccede il reddito: €{formatEuro(allocatedSum)} &gt; €{formatEuro(income)}. Riduci uno o più valori.
           </p>
         </motion.div>
       )}

@@ -316,8 +316,8 @@ describe('StepProfile', () => {
     expect(screen.queryByText(/zero investimenti/i)).not.toBeInTheDocument();
   });
 
-  it('shows sum-overflow error when allocatedSum > income', () => {
-    // income=3000, essentials=50%(1500), lifestyle=200, savings=500, invest=1000 → sum=3200 > 3000
+  it('shows overflow guidance with redistribute chips when post-essentials allocated > disposable (Sprint 1.6.4C #027)', () => {
+    // income=3000, essentials=50%(1500), disposable=1500, lifestyle=200, savings=500, invest=1000 → post-essentials sum=1700 > 1500
     mockPlanStore.mockReturnValue(
       makeState({
         step2: {
@@ -330,16 +330,38 @@ describe('StepProfile', () => {
       })
     );
     render(<StepProfile />);
-    expect(screen.getByRole('alert', { hidden: false })).toBeInTheDocument();
-    expect(screen.getByRole('alert')).toHaveTextContent(/somma eccede/i);
+    const alert = screen.getByTestId('step2-overflow-guidance');
+    expect(alert).toBeInTheDocument();
+    expect(alert).toHaveTextContent(/Eccesso.*€200/i);
+    // Chip redistribute presenti
+    expect(screen.getByTestId('chip-warren-redistribute')).toBeInTheDocument();
+    expect(screen.getByTestId('chip-proportional-reduction')).toBeInTheDocument();
   });
 
-  it('does NOT show sum-overflow error when sum ≤ income', () => {
+  it('does NOT show overflow guidance when allocation ≤ disposable', () => {
     mockPlanStore.mockReturnValue(makeState());
     render(<StepProfile />);
-    // Only income validation alerts should fire, none about sum
-    const alerts = screen.queryAllByRole('alert');
-    expect(alerts.every((a) => !a.textContent?.match(/somma eccede/i))).toBe(true);
+    expect(screen.queryByTestId('step2-overflow-guidance')).not.toBeInTheDocument();
+  });
+
+  it('shows residual nudge with allocate chips when disposable > allocation (Sprint 1.6.4C #026)', () => {
+    // income=2250, essentials=75%(1687.5), disposable=562.5, lifestyle=169, savings=0, invest=113 → allocated=282, residual=280.5
+    mockPlanStore.mockReturnValue(
+      makeState({
+        step2: {
+          monthlyIncome: 2250,
+          essentialsPct: 75,
+          lifestyleBuffer: 169,
+          monthlySavingsTarget: 0,
+          investmentsTarget: 113,
+        },
+      })
+    );
+    render(<StepProfile />);
+    const nudge = screen.getByTestId('step2-residual-nudge');
+    expect(nudge).toBeInTheDocument();
+    expect(nudge).toHaveTextContent(/non allocati/i);
+    expect(screen.getByTestId('chip-residual-to-savings')).toBeInTheDocument();
   });
 
   it('renders 4-segment split bar when income > 0', () => {
