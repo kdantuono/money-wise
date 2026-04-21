@@ -149,7 +149,16 @@ export function LiabilityForm({
     if (formData.provider.trim()) {
       data.provider = formData.provider.trim();
     }
-    data.goalId = formData.goalId ? formData.goalId : null;
+
+    // Goal linking: only set when user selected a goal OR when editing an
+    // existing linked liability and user explicitly unlinked (set to "Nessun
+    // obiettivo"). Avoids always-include pattern breaking backward-compat
+    // on environments without the goal_id column (Copilot round 1).
+    if (formData.goalId) {
+      data.goalId = formData.goalId;
+    } else if (liability?.goalId) {
+      data.goalId = null;
+    }
 
     await onSubmit(data);
   };

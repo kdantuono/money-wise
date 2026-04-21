@@ -222,8 +222,15 @@ export function EditAccountForm({
         icon: formData.icon,
         color: formData.color,
       },
-      goalId: formData.goalId ? formData.goalId : null,
     };
+
+    // Only patch goalId if changed — avoids unnecessary DB writes and
+    // bypasses service's backward-compat pattern (Copilot round 1).
+    const normalizedGoalId = formData.goalId || null;
+    const originalGoalId = account.goalId ?? null;
+    if (normalizedGoalId !== originalGoalId) {
+      updateData.goalId = normalizedGoalId;
+    }
 
     if (formData.type === AccountType.CREDIT_CARD && formData.creditLimit) {
       updateData.creditLimit = parseFloat(formData.creditLimit);

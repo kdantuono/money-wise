@@ -3,7 +3,7 @@
  * Provides configured render function and common testing helpers
  */
 
-import React, { ReactElement } from 'react';
+import React, { ReactElement, useState } from 'react';
 import { render, RenderOptions } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { vi } from 'vitest';
@@ -11,12 +11,14 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from '../../src/components/providers/theme-provider';
 
 const AllTheProviders = ({ children }: { children: React.ReactNode }) => {
-  const queryClient = new QueryClient({
+  // Stable QueryClient across rerenders (Copilot round 1: useState lazy init
+  // prevents cache wipe on rerender() — important for hooks relying on cache).
+  const [queryClient] = useState(() => new QueryClient({
     defaultOptions: {
       queries: { retry: false, gcTime: 0, staleTime: 0 },
       mutations: { retry: false },
     },
-  });
+  }));
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>{children}</ThemeProvider>
