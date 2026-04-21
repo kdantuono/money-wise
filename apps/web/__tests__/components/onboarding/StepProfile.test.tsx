@@ -11,6 +11,8 @@ import type { WizardState } from '@/types/onboarding-plan';
 import {
   selectCanAdvanceFromStep2,
   calcLifestyleDefault,
+  calcSavingsDefault,
+  calcInvestDefault,
   INCOME_MIN,
   INCOME_MAX,
   LIFESTYLE_SOFT_MIN,
@@ -85,24 +87,56 @@ function makeState(overrides: Partial<MockState> = {}): MockState {
 // calcLifestyleDefault unit tests
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('calcLifestyleDefault', () => {
+describe('calcLifestyleDefault (Sprint 1.5.5: upgrade 15% → 30% Warren)', () => {
   it('returns LIFESTYLE_SOFT_MIN when income = 0', () => {
     expect(calcLifestyleDefault(0, 50)).toBe(LIFESTYLE_SOFT_MIN);
   });
 
-  it('returns max(50, min(500, disposable*0.15)) for typical income', () => {
-    // income=3000, ess=50% → disposable=1500 → 1500*0.15=225 → clamped to [50,500]
-    expect(calcLifestyleDefault(3000, 50)).toBe(225);
+  it('returns max(50, min(500, disposable*0.30)) for typical income', () => {
+    // income=3000, ess=50% → disposable=1500 → 1500*0.30=450 → clamped to [50,500]
+    expect(calcLifestyleDefault(3000, 50)).toBe(450);
   });
 
-  it('clamps to LIFESTYLE_SOFT_MIN (50) when disposable*0.15 < 50', () => {
-    // income=200, ess=90% → disposable=20 → 20*0.15=3 → clamped to 50
-    expect(calcLifestyleDefault(200, 90)).toBe(LIFESTYLE_SOFT_MIN);
+  it('clamps to LIFESTYLE_SOFT_MIN (50) when disposable*0.30 < 50', () => {
+    // income=100, ess=90% → disposable=10 → 10*0.30=3 → clamped to 50
+    expect(calcLifestyleDefault(100, 90)).toBe(LIFESTYLE_SOFT_MIN);
   });
 
-  it('clamps to 500 when disposable*0.15 > 500', () => {
-    // income=50000, ess=10% → disposable=45000 → 45000*0.15=6750 → clamped to 500
-    expect(calcLifestyleDefault(50_000, 10)).toBe(500);
+  it('clamps to 500 when disposable*0.30 > 500', () => {
+    // income=5000, ess=10% → disposable=4500 → 4500*0.30=1350 → clamped to 500
+    expect(calcLifestyleDefault(5000, 10)).toBe(500);
+  });
+});
+
+describe('calcSavingsDefault (Sprint 1.5.5: Warren 50%)', () => {
+  it('returns SAVINGS_MIN when income = 0', () => {
+    expect(calcSavingsDefault(0, 50)).toBe(SAVINGS_MIN);
+  });
+
+  it('returns disposable*0.50 for typical income', () => {
+    // income=3000, ess=50% → disposable=1500 → 1500*0.50=750
+    expect(calcSavingsDefault(3000, 50)).toBe(750);
+  });
+
+  it('clamps to SAVINGS_MIN when disposable*0.50 < SAVINGS_MIN', () => {
+    // income=100, ess=95% → disposable=5 → 5*0.50=2.5 → clamped to 10
+    expect(calcSavingsDefault(100, 95)).toBe(SAVINGS_MIN);
+  });
+});
+
+describe('calcInvestDefault (Sprint 1.5.5: Warren 20%)', () => {
+  it('returns 0 when income = 0', () => {
+    expect(calcInvestDefault(0, 50)).toBe(0);
+  });
+
+  it('returns disposable*0.20 for typical income', () => {
+    // income=3000, ess=50% → disposable=1500 → 1500*0.20=300
+    expect(calcInvestDefault(3000, 50)).toBe(300);
+  });
+
+  it('floors to 0 when disposable*0.20 rounds below 1', () => {
+    // income=100, ess=99% → disposable=1 → 1*0.20=0.2 → rounds to 0
+    expect(calcInvestDefault(100, 99)).toBe(0);
   });
 });
 

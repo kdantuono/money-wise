@@ -46,13 +46,34 @@ export const ESSENTIALS_MIN_PCT = 10;
 export const ESSENTIALS_MAX_PCT = 90;
 
 /**
- * AI default lifestyle buffer: max(50, min(500, disposable * 0.15)).
+ * AI default lifestyle buffer (Sprint 1.5.5 Phase 3: upgrade 15% → 30% Warren
+ * canonical 50/30/20 rule). Max(50, min(500, disposable * 0.30)).
  * Exported for tests.
  */
 export function calcLifestyleDefault(monthlyIncome: number, essentialsPct: number): number {
   if (monthlyIncome <= 0) return LIFESTYLE_SOFT_MIN;
   const disposable = monthlyIncome * (1 - essentialsPct / 100);
-  return Math.max(LIFESTYLE_SOFT_MIN, Math.min(500, Math.round(disposable * 0.15)));
+  return Math.max(LIFESTYLE_SOFT_MIN, Math.min(500, Math.round(disposable * 0.3)));
+}
+
+/**
+ * Sprint 1.5.5 Phase 3: AI default savings (Warren 50% del disposable post-essenziali).
+ * max(SAVINGS_MIN, disposable * 0.50).
+ */
+export function calcSavingsDefault(monthlyIncome: number, essentialsPct: number): number {
+  if (monthlyIncome <= 0) return SAVINGS_MIN;
+  const disposable = monthlyIncome * (1 - essentialsPct / 100);
+  return Math.max(SAVINGS_MIN, Math.round(disposable * 0.5));
+}
+
+/**
+ * Sprint 1.5.5 Phase 3: AI default investments (Warren 20% del disposable post-essenziali).
+ * max(0, disposable * 0.20). Zero floor consentito (user può non investire).
+ */
+export function calcInvestDefault(monthlyIncome: number, essentialsPct: number): number {
+  if (monthlyIncome <= 0) return 0;
+  const disposable = monthlyIncome * (1 - essentialsPct / 100);
+  return Math.max(0, Math.round(disposable * 0.2));
 }
 
 /**

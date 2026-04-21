@@ -226,11 +226,49 @@ function _equalDistribute(
   }
   const perGoal = poolBudget / goals.length;
   for (const g of goals) {
+    if (g.type === 'openended') {
+      // Openended goals non hanno cap (target=null, need=0 spurious)
+      allocations[g.id] = _round2(perGoal);
+      continue;
+    }
     const meta = _computeMeta(g, now);
     // Cap at need (completed goals don't take more)
     allocations[g.id] = _round2(Math.min(perGoal, Math.max(0, meta.need)));
   }
   return allocations;
+}
+
+/**
+ * Sprint 1.5.5 Bug #1: dopo waterfall + local improve, il residual del pool
+ * (budget - allocations fixed) viene splittato equamente tra openended goals
+ * del pool. Risolve caso Fondo Emergenza openended che riceve 0 perché
+ * _computeMeta(target=null).need = 0 → requiredMonthly = 0 → Phase 1 alloca 0.
+ *
+ * Copilot round 1 fix: cent-integer math per evitare overflow boundary guard.
+ * Es. residual=100, n=6 → perGoal=16.67 × 6 = 100.02 > 100 farebbe fallire
+ * `sum(allocations) > budget + EPSILON` check. Distribuiamo in centesimi interi
+ * con first `remainderCents` goals che ricevono +1 cent per compensare resto.
+ */
+function _residualSplitOpenended(
+  allocations: Record<string, number>,
+  goals: AllocationGoalInput[],
+  poolBudget: number,
+): Record<string, number> {
+  const totalAllocated = Object.values(allocations).reduce((a, b) => a + b, 0);
+  const residual = _round2(poolBudget - totalAllocated);
+  if (residual <= EPSILON) return allocations;
+  const openended = goals.filter((g) => g.type === 'openended');
+  if (openended.length === 0) return allocations;
+  const residualCents = Math.round(residual * 100);
+  const perGoalCents = Math.floor(residualCents / openended.length);
+  const remainderCents = residualCents - perGoalCents * openended.length;
+  const result = { ...allocations };
+  for (let i = 0; i < openended.length; i++) {
+    const g = openended[i];
+    const sharesCents = perGoalCents + (i < remainderCents ? 1 : 0);
+    result[g.id] = _round2((result[g.id] ?? 0) + sharesCents / 100);
+  }
+  return result;
 }
 
 export function rebalanceOptimizer(args: RebalanceInput): RebalanceResult {
@@ -271,8 +309,8 @@ export function rebalanceOptimizer(args: RebalanceInput): RebalanceResult {
     const i1 = _phase1Waterfall(routed.investments, investBudget, now);
     const s2 = _phase2LocalImprove(s1, routed.savings, now);
     const i2 = _phase2LocalImprove(i1, routed.investments, now);
-    savingsAlloc = s2.allocations;
-    investAlloc = i2.allocations;
+    savingsAlloc = _residualSplitOpenended(s2.allocations, routed.savings, savingsBudget);
+    investAlloc = _residualSplitOpenended(i2.allocations, routed.investments, investBudget);
     infeasibleSet = new Set([...s2.infeasible, ...i2.infeasible]);
   }
 

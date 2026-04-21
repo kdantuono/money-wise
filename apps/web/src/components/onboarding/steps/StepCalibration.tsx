@@ -322,8 +322,14 @@ export function StepCalibration() {
   }
 
   const incomeAfterEssentials = result.incomeAfterEssentials;
-  const totalAllocated = result.totalAllocated;
-  const unallocated = result.unallocated;
+  // Sprint 1.5.5 Phase 2: effective totals UI-aware — summary bar + pool header
+  // reflect userOverrides post-rebalance/slider. computeAllocation ignora
+  // userOverrides by design; computiamo effective on-the-fly dagli items.
+  const effectiveAllocatedFromItems = (items: { goalId: string; monthlyAmount: number }[]) =>
+    Math.round(
+      items.reduce((sum, it) => sum + (userOverrides[it.goalId] ?? it.monthlyAmount), 0) * 100,
+    ) / 100;
+  const totalAllocated = effectiveAllocatedFromItems(result.items ?? []);
   const isHardBlocked = !!result.hardBlock;
   // Sprint 1.5.4 Q7: filter out warnings dismissed via inline chip action.
   const visibleWarnings = behavioralWarnings.filter(
@@ -339,6 +345,24 @@ export function StepCalibration() {
 
   const hasPoolsBreakdown = !!result.pools;
   const lifestyleProtected = hasPoolsBreakdown ? result.pools!.lifestyle.budget : 0;
+  // Sprint 1.5.5 Phase 2: effective pool totals (reflect userOverrides live).
+  const effectiveSavingsAllocated = hasPoolsBreakdown
+    ? effectiveAllocatedFromItems(result.pools!.savings.items)
+    : totalAllocated;
+  const effectiveSavingsResidual = hasPoolsBreakdown
+    ? Math.round((result.pools!.savings.budget - effectiveSavingsAllocated) * 100) / 100
+    : 0;
+  const effectiveInvestAllocated = hasPoolsBreakdown
+    ? effectiveAllocatedFromItems(result.pools!.investments.items)
+    : 0;
+  const effectiveInvestResidual = hasPoolsBreakdown
+    ? Math.round((result.pools!.investments.budget - effectiveInvestAllocated) * 100) / 100
+    : 0;
+  // Unallocated top-level: per pools 3-pool, residuo dopo lifestyle+savings+invest.
+  // Per legacy flat, residuo totale post-savings.
+  const unallocated = hasPoolsBreakdown
+    ? Math.round((effectiveSavingsResidual + effectiveInvestResidual) * 100) / 100
+    : Math.round((savingsPool - totalAllocated) * 100) / 100;
 
   return (
     <div className="space-y-4" data-testid="step-calibration">
@@ -478,8 +502,8 @@ export function StepCalibration() {
               poolType="savings"
               title="Savings"
               budget={result.pools!.savings.budget}
-              allocated={result.pools!.savings.allocated}
-              residual={result.pools!.savings.residual}
+              allocated={effectiveSavingsAllocated}
+              residual={effectiveSavingsResidual}
               items={result.pools!.savings.items}
               goals={step3.goals}
               userOverrides={userOverrides}
@@ -492,8 +516,8 @@ export function StepCalibration() {
               poolType="investments"
               title="Investimenti"
               budget={result.pools!.investments.budget}
-              allocated={result.pools!.investments.allocated}
-              residual={result.pools!.investments.residual}
+              allocated={effectiveInvestAllocated}
+              residual={effectiveInvestResidual}
               items={result.pools!.investments.items}
               goals={step3.goals}
               userOverrides={userOverrides}
