@@ -68,6 +68,7 @@ describe('rebalanceOptimizer', () => {
     const g2 = makeGoal({ target: 2400, deadline: monthsFromNow(12), priority: 2 }); // need 200/mo
     const r = rebalanceOptimizer({
       input: input({ monthlySavingsTarget: 500, goals: [g1, g2] }),
+      criterion: 'feasibility',
     });
     expect(r.feasible).toBe(true);
     expect(r.newAllocations![g1.id]).toBeCloseTo(100, 1);
@@ -78,6 +79,7 @@ describe('rebalanceOptimizer', () => {
     const g1 = makeGoal({ target: 12000, deadline: monthsFromNow(12), priority: 1 }); // need 1000/mo
     const r = rebalanceOptimizer({
       input: input({ monthlySavingsTarget: 200, goals: [g1] }),
+      criterion: 'feasibility',
     });
     expect(r.feasible).toBe(false);
     expect(r.suggestions).toBeDefined();
@@ -101,6 +103,7 @@ describe('rebalanceOptimizer', () => {
     // ACCETTA test che verifica feasible OR infeasible + phase3 suggerimento.
     const r = rebalanceOptimizer({
       input: input({ monthlySavingsTarget: 400, goals: [urgent2, lax2] }),
+      criterion: 'feasibility',
     });
     // urgent2 received at least all budget 400 (sorted priority 1 first)
     expect(r.newAllocations!['urgent2']).toBeCloseTo(400, 1);
@@ -145,6 +148,7 @@ describe('rebalanceOptimizer', () => {
     const g = makeGoal({ target: 1000, deadline: monthsFromNow(12), priority: 1 });
     const r = rebalanceOptimizer({
       input: input({ monthlySavingsTarget: 0, goals: [g] }),
+      criterion: 'feasibility',
     });
     expect(r.feasible).toBe(false);
     expect(r.newAllocations![g.id]).toBe(0);
@@ -161,6 +165,7 @@ describe('rebalanceOptimizer', () => {
         investmentsTarget: 300,
         goals: [savGoal, invGoal],
       }),
+      criterion: 'feasibility',
     });
     expect(r.newAllocations!['sav']).toBeCloseTo(100, 1);
     expect(r.newAllocations!['inv']).toBeCloseTo(200, 1);
@@ -192,6 +197,7 @@ describe('rebalanceOptimizer', () => {
     const invGoal = makeGoal({ id: 'inv', name: 'Crypto', target: 1200, priority: 1, deadline: monthsFromNow(12) }); // need 100
     const r = rebalanceOptimizer({
       input: input({ monthlySavingsTarget: 0, investmentsTarget: 200, goals: [invGoal] }),
+      criterion: 'feasibility',
     });
     expect(r.newAllocations!['inv']).toBeCloseTo(100, 1);
     expect(r.feasible).toBe(true);
@@ -201,6 +207,7 @@ describe('rebalanceOptimizer', () => {
     const g = makeGoal({ target: 6000, deadline: monthsFromNow(12), priority: 1 }); // need 500
     const r = rebalanceOptimizer({
       input: input({ monthlySavingsTarget: 100, goals: [g] }),
+      criterion: 'feasibility',
     });
     expect(r.suggestions).toBeDefined();
     const s = r.suggestions![0];
@@ -237,7 +244,7 @@ describe('rebalanceOptimizer', () => {
     it('1 fixed need 100/mo + 1 openended + pool 300 → fixed 100, openended 200', () => {
       const fixed = makeGoal({ id: 'fixed', target: 1200, deadline: monthsFromNow(12), priority: 1 }); // 100/mo
       const open = makeGoal({ id: 'open', type: 'openended', target: null as unknown as number, deadline: null, priority: 2 });
-      const r = rebalanceOptimizer({ input: input({ monthlySavingsTarget: 300, goals: [fixed, open] }) });
+      const r = rebalanceOptimizer({ input: input({ monthlySavingsTarget: 300, goals: [fixed, open] }), criterion: 'feasibility' });
       expect(r.feasible).toBe(true);
       expect(r.newAllocations!['fixed']).toBeCloseTo(100, 1);
       expect(r.newAllocations!['open']).toBeCloseTo(200, 1);

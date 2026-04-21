@@ -2,9 +2,11 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import * as SliderPrimitive from '@radix-ui/react-slider';
+import { toast } from 'sonner';
 import { useOnboardingPlanStore } from '@/store/onboarding-plan.store';
 import { DeterministicBehavioralAdvisor } from '@/lib/onboarding/advisors/DeterministicBehavioralAdvisor';
 import { rebalanceOptimizer, type RebalanceCriterion } from '@/lib/onboarding/rebalance-optimizer';
+import { inferGoalType } from '@/lib/onboarding/inferGoalType';
 import { PRIORITY_LABEL_IT } from '@/types/onboarding-plan';
 import type {
   AllocationResult,
@@ -164,6 +166,7 @@ export function StepCalibration() {
   const dismissWarningStore = useOnboardingPlanStore((s) => s.dismissWarning);
   const updateProfile = useOnboardingPlanStore((s) => s.updateProfile);
   const removeGoal = useOnboardingPlanStore((s) => s.removeGoal);
+  const updateGoal = useOnboardingPlanStore((s) => s.updateGoal);
   const setStep = useOnboardingPlanStore((s) => s.setStep);
 
   const [showAdvancedRebalance, setShowAdvancedRebalance] = useState(false);
@@ -241,7 +244,8 @@ export function StepCalibration() {
   };
 
   const runRebalance = useCallback(
-    (criterion: RebalanceCriterion = 'feasibility') => {
+    // Sprint 1.6 #004: criterion opzionale — undefined → smart-default (equal se n≤3)
+    (criterion?: RebalanceCriterion) => {
       const input = buildInput();
       const r = rebalanceOptimizer({ input, criterion, currentAllocations: userOverrides });
       if (r.newAllocations) {
@@ -254,13 +258,29 @@ export function StepCalibration() {
   const handleChipApply = (chip: SuggestionChip) => {
     switch (chip.kind) {
       case 'increase_monthly':
-        if (chip.goalId) setUserOverride(chip.goalId, Number(chip.newValue));
+        if (chip.goalId) {
+          const v = Number(chip.newValue);
+          setUserOverride(chip.goalId, v);
+          toast.success(`Budget obiettivo aggiornato a €${v.toLocaleString('it-IT')}/mese`);
+        }
         break;
       case 'reduce_target':
-        // Surface-only until goal edit modal wired (WP-D).
+        // Sprint 1.6 #005: direct apply via updateGoal. Goal edit modal full-flow
+        // con reasoning contestuale = follow-up lavoro (scope ridotto per batch).
+        if (chip.goalId && chip.newValue != null) {
+          const target = Number(chip.newValue);
+          if (Number.isFinite(target) && target > 0) {
+            updateGoal(chip.goalId, { target });
+            toast.success(`Target ridotto a €${target.toLocaleString('it-IT')}`);
+          }
+        }
         break;
       case 'extend_deadline':
-        // Surface-only until goal edit modal wired (WP-D).
+        // Sprint 1.6 #005: direct apply via updateGoal.
+        if (chip.goalId && typeof chip.newValue === 'string' && chip.newValue.length > 0) {
+          updateGoal(chip.goalId, { deadline: chip.newValue });
+          toast.success(`Deadline estesa a ${chip.newValue}`);
+        }
         break;
       case 'rebalance_portfolio': {
         // Sprint 1.5.4 Q4 Copilot round 1: accept legacy 'balanced' alias emitted by
@@ -270,6 +290,11 @@ export function StepCalibration() {
         const criterion: RebalanceCriterion =
           raw === 'equal' ? 'equal' : 'feasibility';
         runRebalance(criterion);
+        toast.success(
+          criterion === 'equal'
+            ? 'Portafoglio ribilanciato (distribuzione equa)'
+            : 'Portafoglio ribilanciato (massimizza feasibility)',
+        );
         break;
       }
       case 'navigate': {
@@ -280,6 +305,27 @@ export function StepCalibration() {
       case 'budget_transfer': {
         const amount = Number(chip.newValue);
         if (!chip.from || !chip.to || amount <= 0) break;
+        // Sprint 1.6 #002 Bug #3: chain-aware validation. Post-transfer il from-pool
+        // budget va a 0; se ci sono goals routed a quel pool via inferGoalType, scatterebbe
+        // hard-block INVEST_GOALS_NO_BUDGET / SAVINGS_GOALS_NO_BUDGET. Chiediamo confirm
+        // al user e, se conferma, eseguiamo transfer + bulk_remove dei goals chain-affected.
+        const fromPool = chip.from;
+        const goalsInFromPool = step3.goals.filter((g) => {
+          const pool = inferGoalType({ name: g.name, presetId: g.presetId ?? null });
+          return pool === fromPool;
+        });
+        if (goalsInFromPool.length > 0) {
+          const poolLabel = fromPool === 'investments' ? 'Investimenti' : 'Risparmi';
+          const names = goalsInFromPool.map((g) => g.name).join(', ');
+          const confirmed =
+            typeof window !== 'undefined' && typeof window.confirm === 'function'
+              ? window.confirm(
+                  `Spostando €${amount} dal pool ${poolLabel}, ${goalsInFromPool.length} obiettivo/i resteranno senza budget e genereranno un hard-block: ${names}.\n\nProcedi e rimuovi anche ${goalsInFromPool.length === 1 ? 'questo obiettivo' : `questi ${goalsInFromPool.length} obiettivi`}?`,
+                )
+              : true;
+          if (!confirmed) break;
+          for (const g of goalsInFromPool) removeGoal(g.tempId);
+        }
         if (chip.from === 'investments' && chip.to === 'savings') {
           updateProfile({
             investmentsTarget: 0,
@@ -291,16 +337,27 @@ export function StepCalibration() {
             investmentsTarget: (step2.investmentsTarget ?? 0) + amount,
           });
         }
+        toast.success(
+          goalsInFromPool.length > 0
+            ? `€${amount} spostati + ${goalsInFromPool.length} obiettivo${goalsInFromPool.length === 1 ? '' : 'i'} rimossi`
+            : `€${amount} spostati a ${chip.to === 'investments' ? 'Investimenti' : 'Risparmi'}`,
+        );
         break;
       }
       case 'bulk_remove_goals':
         if (chip.goalIds && chip.goalIds.length > 0) {
           for (const id of chip.goalIds) removeGoal(id);
+          toast.success(
+            `${chip.goalIds.length} obiettivo${chip.goalIds.length === 1 ? '' : 'i'} rimossi`,
+          );
         }
         break;
       case 'dismiss': {
         const code = String(chip.newValue);
-        if (code) dismissWarningStore(code);
+        if (code) {
+          dismissWarningStore(code);
+          toast('Avviso nascosto', { description: 'Puoi riattivarlo dalle impostazioni' });
+        }
         break;
       }
     }
@@ -446,7 +503,7 @@ export function StepCalibration() {
           <div className="flex gap-2 flex-wrap items-center">
             <button
               type="button"
-              onClick={() => runRebalance('feasibility')}
+              onClick={() => runRebalance()}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-700 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 min-h-[32px]"
               data-testid="rebalance-portfolio-chip"
             >
