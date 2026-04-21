@@ -194,7 +194,10 @@ export function GoalEditModal({ open, mode, goal, onSave, onCancel }: GoalEditMo
                 id="goal-edit-current"
                 type="number"
                 min={0}
-                max={draft.target ?? undefined}
+                // Sprint 1.6 Fase 2C Copilot round 1: max solo se target > 0 —
+                // se target=0 (EMPTY_DRAFT iniziale o field clearato), max=0
+                // bloccherebbe input positivo via native number validation.
+                max={draft.target !== null && draft.target > 0 ? draft.target : undefined}
                 data-testid="goal-modal-current"
                 value={draft.current ?? 0}
                 onChange={(e) => {

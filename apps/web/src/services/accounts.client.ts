@@ -238,8 +238,13 @@ export const accountsClient = {
       credit_limit: input.creditLimit,
       user_id: input.familyId ? null : user.id,
       family_id: input.familyId ?? null,
-      // Sprint 1.6 Fase 2A: optional goal link
-      goal_id: input.goalId ?? null,
+    }
+
+    // Sprint 1.6 Fase 2A Copilot round 1: include goal_id SOLO se input.goalId
+    // defined — evita insert fail su DB pre-migration (colonna goal_id non esiste).
+    // Backward-compat: account creation legacy passa senza goal_id resta funzionante.
+    if (input.goalId !== undefined) {
+      insert.goal_id = input.goalId
     }
 
     // XOR: if no familyId provided, set user_id (personal account)

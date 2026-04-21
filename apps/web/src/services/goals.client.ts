@@ -101,7 +101,9 @@ export const goalsClient = {
         user_id: userId,
         name: goal.name.trim(),
         target: goal.target,
-        current: 0,
+        // Sprint 1.6 Fase 2C Copilot round 1: persist user-entered current (default 0
+        // per backward-compat). Clamp UI-side [0, target] già applicato in GoalEditModal.
+        current: Math.max(0, goal.current ?? 0),
         deadline: goal.deadline,
         priority: goal.priority,
         monthly_allocation: goal.monthlyAllocation ?? 0,
