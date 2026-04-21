@@ -345,7 +345,7 @@ describe('StepProfile', () => {
   });
 
   it('shows residual nudge with allocate chips when disposable > allocation (Sprint 1.6.4C #026)', () => {
-    // income=2250, essentials=75%(1688), disposable=562, lifestyle=169, savings=0, invest=113 → allocated=282, residual=280
+    // income=2250, essentials=75%(1687.5), disposable=562.5, lifestyle=169, savings=0, invest=113 → allocated=282, residual=280.5
     mockPlanStore.mockReturnValue(
       makeState({
         step2: {

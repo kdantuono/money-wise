@@ -148,18 +148,11 @@ export function StepProfile() {
     });
   };
 
-  const applyIncreaseEssentials = () => {
-    if (income <= 0) return;
-    const requiredPct = Math.ceil(((income - postEssentialsAllocated) / income) * 100);
-    const clampedPct = Math.min(ESSENTIALS_MAX_PCT, Math.max(essentialsPct, requiredPct));
-    updateProfile({ essentialsPct: clampedPct });
-  };
-
-  const suggestedEssentialsPctDelta = (() => {
-    if (income <= 0) return 0;
-    const requiredPct = Math.ceil(((income - postEssentialsAllocated) / income) * 100);
-    return Math.max(0, Math.min(ESSENTIALS_MAX_PCT, requiredPct) - essentialsPct);
-  })();
+  // Sprint 1.6.4C Copilot round 1 #5-6: chip "Aumenta essenziali" rimosso.
+  // Logic rivelata invertita: in overflow case `requiredPct < essentialsPct` →
+  // max(current, required) = current invariato (chip no-op) + aumento essentials
+  // peggiora overflow (disposable diminuisce). Chip Warren + Proportional sufficienti
+  // per risolvere overflow. User può modificare essentials slider manualmente se serve.
 
   // ── Warnings ──
   const lifestyleWarning =
@@ -323,10 +316,12 @@ export function StepProfile() {
           step={10}
           value={step2.lifestyleBuffer || ''}
           onChange={(e) => {
-            // Sprint 1.6.4C #025: touched reset su svuotamento — semantica "reset intent"
-            // invece di "user ha scelto 0". Riabilita reactive AI default next income/essentials change.
-            const v = Number(e.target.value) || 0;
-            lifestyleTouchedRef.current = v > 0;
+            // Sprint 1.6.4C #025 + Copilot round 1: distinguiamo "clear" (raw === '')
+            // da "intentional 0" (raw === '0'). Clear → touched=false (reset AI default
+            // reactive). Value 0 esplicito → touched=true (rispetta user intent di €0).
+            const raw = e.target.value;
+            const v = Number(raw) || 0;
+            lifestyleTouchedRef.current = raw !== '';
             updateProfile({ lifestyleBuffer: v });
           }}
           placeholder="es. 200"
@@ -368,9 +363,10 @@ export function StepProfile() {
           step={50}
           value={step2.monthlySavingsTarget || ''}
           onChange={(e) => {
-            // Sprint 1.6.4C #025: touched reset su svuotamento
-            const v = Number(e.target.value) || 0;
-            savingsTouchedRef.current = v > 0;
+            // Sprint 1.6.4C #025 + Copilot round 1: clear '' → reset, 0 esplicito → intent
+            const raw = e.target.value;
+            const v = Number(raw) || 0;
+            savingsTouchedRef.current = raw !== '';
             updateProfile({ monthlySavingsTarget: v });
           }}
           placeholder="es. 500"
@@ -408,9 +404,10 @@ export function StepProfile() {
           step={25}
           value={step2.investmentsTarget || ''}
           onChange={(e) => {
-            // Sprint 1.6.4C #025: touched reset su svuotamento
-            const v = Number(e.target.value) || 0;
-            investTouchedRef.current = v > 0;
+            // Sprint 1.6.4C #025 + Copilot round 1: clear '' → reset, 0 esplicito → intent (no invest voluto)
+            const raw = e.target.value;
+            const v = Number(raw) || 0;
+            investTouchedRef.current = raw !== '';
             updateProfile({ investmentsTarget: v });
           }}
           placeholder="es. 150 (opzionale)"
@@ -540,7 +537,7 @@ export function StepProfile() {
                   className="text-xs px-2.5 py-1 rounded-full bg-white dark:bg-red-900/40 border border-red-300 dark:border-red-700 text-red-800 dark:text-red-200 hover:bg-red-100 dark:hover:bg-red-900/60 transition-colors"
                   data-testid="chip-warren-redistribute"
                 >
-                  Distribuisci Warren 50/30/20
+                  Redistribuisci con AI (Warren: 50% risparmi / 30% lifestyle / 20% invest)
                 </button>
                 <button
                   type="button"
@@ -550,16 +547,7 @@ export function StepProfile() {
                 >
                   Riduci proporzionalmente
                 </button>
-                {suggestedEssentialsPctDelta > 0 && essentialsPct < ESSENTIALS_MAX_PCT && (
-                  <button
-                    type="button"
-                    onClick={applyIncreaseEssentials}
-                    className="text-xs px-2.5 py-1 rounded-full bg-white dark:bg-red-900/40 border border-red-300 dark:border-red-700 text-red-800 dark:text-red-200 hover:bg-red-100 dark:hover:bg-red-900/60 transition-colors"
-                    data-testid="chip-increase-essentials"
-                  >
-                    Aumenta essenziali +{suggestedEssentialsPctDelta}%
-                  </button>
-                )}
+                {/* Chip "Aumenta essenziali" rimosso (Copilot round 1): logic era invertita. */}
               </div>
             </div>
           </div>
@@ -598,7 +586,7 @@ export function StepProfile() {
                   className="text-xs px-2.5 py-1 rounded-full bg-white dark:bg-blue-900/40 border border-blue-300 dark:border-blue-700 text-blue-800 dark:text-blue-200 hover:bg-blue-100 dark:hover:bg-blue-900/60 transition-colors"
                   data-testid="chip-warren-from-residual"
                 >
-                  Distribuisci Warren 50/30/20
+                  Redistribuisci con AI (Warren: 50% risparmi / 30% lifestyle / 20% invest)
                 </button>
               </div>
             </div>
