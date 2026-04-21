@@ -50,6 +50,7 @@ export function WizardPianoGenerato({ mode = 'create', onClose }: WizardPianoGen
   const step2 = useOnboardingPlanStore((s) => s.step2);
   const step3 = useOnboardingPlanStore((s) => s.step3);
   const allocationPreview = useOnboardingPlanStore((s) => s.step4.allocationPreview);
+  const dismissedWarningCodes = useOnboardingPlanStore((s) => s.step4.dismissedWarningCodes ?? []);
   const step5 = useOnboardingPlanStore((s) => s.step5);
   const setIsPersisting = useOnboardingPlanStore((s) => s.setIsPersisting);
   const setPersistedPlanId = useOnboardingPlanStore((s) => s.setPersistedPlanId);
@@ -153,7 +154,13 @@ export function WizardPianoGenerato({ mode = 'create', onClose }: WizardPianoGen
   // Step 2 (Profilo) requires all 5 allocation fields valid + sum constraint.
   // Step 4 (Calibration/WP-E) is blocked when the advisor detected a hard-block condition.
   // All other steps allow free navigation.
-  const step4HardBlocked = currentStep === 4 && !!allocationPreview?.hardBlock;
+  // Sprint 1.5.4 Q7: extend hard-block gating to include hard behavioralWarnings
+  // post-dismiss filter (e.g. INVEST_GOALS_NO_BUDGET / SAVINGS_GOALS_NO_BUDGET).
+  const hardBehavioralWarnings = (allocationPreview?.behavioralWarnings ?? []).filter(
+    (w) => w.severity === 'hard' && !dismissedWarningCodes.includes(w.code),
+  );
+  const step4HardBlocked =
+    currentStep === 4 && (!!allocationPreview?.hardBlock || hardBehavioralWarnings.length > 0);
   const canAdvance =
     currentStep === 2 ? canAdvanceStep2 :
     currentStep === 4 ? !step4HardBlocked :

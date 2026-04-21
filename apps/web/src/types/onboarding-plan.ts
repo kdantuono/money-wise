@@ -333,6 +333,12 @@ export interface WizardStepPlanReview {
   allocationPreview: AllocationResult | null;
   /** User edits to allocation (override algo suggestion per goal). */
   userOverrides: Record<string, number>;
+  /**
+   * Sprint 1.5.4 Q7: codes of behavioral warnings dismissed by the user via
+   * the inline "dismiss" chip action. Dismissed warnings are hidden and their
+   * hard-severity does not block the Avanti button.
+   */
+  dismissedWarningCodes?: string[];
 }
 
 export interface WizardStepAiPrefs {
