@@ -48,6 +48,22 @@ if echo "$STAGED" | grep -qE '^(apps/web|packages)/'; then
   NEEDS_PNPM=true
 fi
 
+# Sprint 1.6 #011: root package.json overrides/workspaces changes e
+# pnpm-workspace.yaml triggerano full pnpm gate. Meta-lesson Dependabot batch
+# 2026-04-20: `pnpm.overrides` root precede workspace deps, quindi bump override
+# root richiede test full (non solo workspace scope).
+if echo "$STAGED" | grep -q '^package\.json$'; then
+  if git diff --cached -- package.json | grep -qE '^[+-].*(overrides|workspaces|pnpm)'; then
+    NEEDS_PNPM=true
+    echo "  📦 Root package.json overrides/workspaces change → full pnpm gate"
+  fi
+fi
+
+if echo "$STAGED" | grep -q '^pnpm-workspace\.yaml$'; then
+  NEEDS_PNPM=true
+  echo "  📦 pnpm-workspace.yaml change → full pnpm gate"
+fi
+
 TOUCHES_FUNCTIONS=false
 if echo "$STAGED" | grep -q '^supabase/functions/'; then
   TOUCHES_FUNCTIONS=true
