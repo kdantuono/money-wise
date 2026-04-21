@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useOnboardingPlanStore } from '@/store/onboarding-plan.store';
 import { PRIORITY_LABEL_IT, type PriorityRank, type WizardGoalDraft, type GoalType } from '@/types/onboarding-plan';
 import { Button } from '@/components/ui/button';
@@ -375,6 +376,38 @@ export function StepGoals() {
   const setEditingPresetId = useOnboardingPlanStore((s) => s.setEditingPresetId);
   const setEditingGoal = useOnboardingPlanStore((s) => s.setEditingGoal);
 
+  // Sprint 1.6 WP-Q6: iOS folder pattern state + derivation
+  const [expandedPresetId, setExpandedPresetId] = useState<string | null>(null);
+
+  const goalsByPreset = useMemo(() => {
+    const map = new Map<string, WizardGoalDraft[]>();
+    for (const g of goals) {
+      const pid = g.presetId ?? '__custom__';
+      if (!map.has(pid)) map.set(pid, []);
+      map.get(pid)!.push(g);
+    }
+    return map;
+  }, [goals]);
+
+  const customGoals = goalsByPreset.get('__custom__') ?? [];
+
+  // Auto-close folder if last goal removed
+  useEffect(() => {
+    if (expandedPresetId && (goalsByPreset.get(expandedPresetId)?.length ?? 0) === 0) {
+      setExpandedPresetId(null);
+    }
+  }, [expandedPresetId, goalsByPreset]);
+
+  // ESC keyboard handler closes folder
+  useEffect(() => {
+    if (!expandedPresetId) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setExpandedPresetId(null);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [expandedPresetId]);
+
   // Ref map for scrollIntoView on edit open
   const goalRefs = useRef<Record<string, HTMLLIElement | null>>({});
 
@@ -435,18 +468,42 @@ export function StepGoals() {
         </p>
       </div>
 
-      {/* Preset cards — always visible */}
+      {/* Preset cards — always visible. Sprint 1.6 WP-Q6: iOS folder pattern with counter badge. */}
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
         {PRESET_GOALS.map((preset) => {
           const Icon = preset.icon;
+          const count = goalsByPreset.get(preset.id)?.length ?? 0;
+          const countLabel = count > 9 ? '9+' : String(count);
+          const onClickPreset = () => {
+            if (count > 0) {
+              setExpandedPresetId(preset.id);
+            } else {
+              openModalForPreset(preset.id);
+            }
+          };
           return (
-            <button
+            <motion.button
               key={preset.id}
+              layoutId={`preset-${preset.id}`}
               type="button"
-              onClick={() => openModalForPreset(preset.id)}
-              className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border text-center transition-all hover:scale-105 hover:shadow-sm active:scale-95 ${preset.bg}`}
-              aria-label={`Aggiungi preset: ${preset.name}`}
+              onClick={onClickPreset}
+              className={`relative flex flex-col items-center gap-1.5 p-3 rounded-xl border text-center transition-shadow hover:shadow-sm ${preset.bg}`}
+              aria-label={
+                count > 0
+                  ? `Apri gruppo ${preset.name} con ${count} obiettivo${count === 1 ? '' : 'i'}`
+                  : `Aggiungi preset: ${preset.name}`
+              }
+              data-testid={`preset-card-${preset.id}`}
             >
+              {count > 0 && (
+                <span
+                  className="absolute -top-1.5 -right-1.5 min-w-[20px] h-5 px-1 rounded-full bg-blue-600 text-white text-[10px] font-semibold flex items-center justify-center shadow-sm ring-2 ring-background"
+                  aria-hidden
+                  data-testid={`preset-counter-${preset.id}`}
+                >
+                  {countLabel}
+                </span>
+              )}
               <Icon className={`w-5 h-5 ${preset.color}`} />
               <span className="text-xs font-medium text-foreground leading-tight">
                 {preset.name}
@@ -454,70 +511,167 @@ export function StepGoals() {
               <span className="text-xs text-muted-foreground">
                 €{preset.defaultTarget.toLocaleString('it-IT')}
               </span>
-            </button>
+            </motion.button>
           );
         })}
       </div>
 
-      {/* Added goals list */}
-      {goals.length > 0 && (
-        <ul className="space-y-2">
-          {goals.map((g) => (
-            <li
-              key={g.tempId}
-              ref={(el) => { goalRefs.current[g.tempId] = el; }}
-              className="flex items-center justify-between p-3 rounded-xl border border-border bg-card"
+      {/* Sprint 1.6 WP-Q6: folder overlay (iOS pattern) when expandedPresetId set */}
+      <AnimatePresence>
+        {expandedPresetId && (() => {
+          const preset = PRESET_GOALS.find((p) => p.id === expandedPresetId);
+          if (!preset) return null;
+          const folderGoals = goalsByPreset.get(expandedPresetId) ?? [];
+          const Icon = preset.icon;
+          return (
+            <motion.div
+              key="folder-backdrop"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.18 }}
+              className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4"
+              onClick={() => setExpandedPresetId(null)}
+              role="dialog"
+              aria-modal="true"
+              aria-label={`Gruppo ${preset.name} con ${folderGoals.length} obiettivo${folderGoals.length === 1 ? '' : 'i'}. Premi Escape per chiudere.`}
+              data-testid={`folder-${expandedPresetId}`}
             >
-              {/* Clickable goal info area */}
-              <div
-                role="button"
-                tabIndex={0}
-                className="flex-1 min-w-0 cursor-pointer"
-                onClick={() => openModalForEdit(g)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    openModalForEdit(g);
-                  }
-                }}
-                aria-label={`Apri dettagli ${g.name}`}
+              <motion.div
+                layoutId={`preset-${expandedPresetId}`}
+                className={`relative w-full max-w-md rounded-2xl border p-5 shadow-xl ${preset.bg}`}
+                onClick={(e) => e.stopPropagation()}
+                transition={{ type: 'spring', stiffness: 320, damping: 30 }}
               >
-                <p className="text-sm font-medium text-foreground">{g.name}</p>
-                <p className="text-xs text-muted-foreground">
-                  {g.type === 'openended'
-                    ? 'Aperto'
-                    : `€${(g.target ?? 0).toLocaleString('it-IT')}`}{' '}
-                  — {PRIORITY_LABEL_IT[g.priority]} priorità
-                  {g.deadline ? ` — entro ${g.deadline}` : ''}
-                </p>
-              </div>
+                <div className="flex items-center gap-2 mb-3">
+                  <Icon className={`w-5 h-5 ${preset.color}`} />
+                  <h3 className="text-sm font-semibold text-foreground">{preset.name}</h3>
+                  <span className="text-xs text-muted-foreground">
+                    ({folderGoals.length} obiettivo{folderGoals.length === 1 ? '' : 'i'})
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setExpandedPresetId(null)}
+                    className="ml-auto p-1.5 rounded-lg hover:bg-background/40 transition-colors"
+                    aria-label="Chiudi gruppo"
+                  >
+                    <X className="w-4 h-4 text-muted-foreground" />
+                  </button>
+                </div>
+                <ul className="space-y-2 max-h-[50vh] overflow-y-auto">
+                  {folderGoals.map((g) => (
+                    <li
+                      key={g.tempId}
+                      className="flex items-center justify-between p-2.5 rounded-lg bg-background/60 border border-border/60"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate">{g.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {g.type === 'openended'
+                            ? 'Aperto'
+                            : `€${(g.target ?? 0).toLocaleString('it-IT')}`}{' '}
+                          — {PRIORITY_LABEL_IT[g.priority]} priorità
+                          {g.deadline ? ` — entro ${g.deadline}` : ''}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-1 ml-2 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => openModalForEdit(g)}
+                          className="p-1.5 rounded-md hover:bg-muted transition-colors"
+                          aria-label={`Modifica ${g.name}`}
+                        >
+                          <Pencil className="w-4 h-4 text-muted-foreground" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => removeGoal(g.tempId)}
+                          className="p-1.5 rounded-md hover:bg-muted transition-colors"
+                          aria-label={`Rimuovi ${g.name}`}
+                        >
+                          <X className="w-4 h-4 text-muted-foreground" />
+                        </button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+                <Button
+                  onClick={() => {
+                    openModalForPreset(expandedPresetId);
+                  }}
+                  variant="outline"
+                  className="w-full mt-3"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Aggiungi altro {preset.name}
+                </Button>
+              </motion.div>
+            </motion.div>
+          );
+        })()}
+      </AnimatePresence>
 
-              {/* Action buttons */}
-              <div className="flex items-center gap-1 ml-2 shrink-0">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    openModalForEdit(g);
+      {/* Custom goals list (no preset, "Aggiungi manualmente") */}
+      {customGoals.length > 0 && (
+        <div className="space-y-2">
+          <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+            Obiettivi personalizzati
+          </h4>
+          <ul className="space-y-2">
+            {customGoals.map((g) => (
+              <li
+                key={g.tempId}
+                ref={(el) => { goalRefs.current[g.tempId] = el; }}
+                className="flex items-center justify-between p-3 rounded-xl border border-border bg-card"
+              >
+                <div
+                  role="button"
+                  tabIndex={0}
+                  className="flex-1 min-w-0 cursor-pointer"
+                  onClick={() => openModalForEdit(g)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      openModalForEdit(g);
+                    }
                   }}
-                  className="p-2 rounded-lg hover:bg-muted transition-colors"
-                  aria-label={`Modifica ${g.name}`}
+                  aria-label={`Apri dettagli ${g.name}`}
                 >
-                  <Pencil className="w-4 h-4 text-muted-foreground" />
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    removeGoal(g.tempId);
-                  }}
-                  className="p-2 rounded-lg hover:bg-muted transition-colors"
-                  aria-label={`Rimuovi ${g.name}`}
-                >
-                  <X className="w-4 h-4 text-muted-foreground" />
-                </button>
-              </div>
-            </li>
-          ))}
-        </ul>
+                  <p className="text-sm font-medium text-foreground">{g.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {g.type === 'openended'
+                      ? 'Aperto'
+                      : `€${(g.target ?? 0).toLocaleString('it-IT')}`}{' '}
+                    — {PRIORITY_LABEL_IT[g.priority]} priorità
+                    {g.deadline ? ` — entro ${g.deadline}` : ''}
+                  </p>
+                </div>
+                <div className="flex items-center gap-1 ml-2 shrink-0">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openModalForEdit(g);
+                    }}
+                    className="p-2 rounded-lg hover:bg-muted transition-colors"
+                    aria-label={`Modifica ${g.name}`}
+                  >
+                    <Pencil className="w-4 h-4 text-muted-foreground" />
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      removeGoal(g.tempId);
+                    }}
+                    className="p-2 rounded-lg hover:bg-muted transition-colors"
+                    aria-label={`Rimuovi ${g.name}`}
+                  >
+                    <X className="w-4 h-4 text-muted-foreground" />
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
 
       {goals.length === 0 && (
