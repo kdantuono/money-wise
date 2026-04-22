@@ -10,7 +10,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import * as Dialog from '@radix-ui/react-dialog';
 import { createClient } from '@/utils/supabase/client';
@@ -108,7 +107,6 @@ const TOGGLE_CLASS =
 export default function SettingsPage() {
   const { user, setUser } = useAuthStore();
   const { theme, setTheme } = useTheme();
-  const router = useRouter();
   const [activeTab, setActiveTab] = useState<TabKey>('profile');
 
   // Onboarding redo state
