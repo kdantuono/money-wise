@@ -31,6 +31,7 @@ const EMPTY_DRAFT: GoalInput = {
   deadline: null,
   priority: 2,
   monthlyAllocation: 0,
+  type: 'fixed',
 };
 
 function goalToInput(goal: Goal): GoalInput {
@@ -42,6 +43,8 @@ function goalToInput(goal: Goal): GoalInput {
     monthlyAllocation: goal.monthlyAllocation,
     // Sprint 1.6 Fase 2C: current editable manual (fallback non-linked goals)
     current: goal.current,
+    // #059: preserve goal type (fixed | openended) — openended hides target field
+    type: goal.type,
   };
 }
 
@@ -61,10 +64,15 @@ export function GoalEditModal({ open, mode, goal, onSave, onCancel }: GoalEditMo
     }
   }, [open, mode, goal]);
 
+  const isOpenended = draft.type === 'openended';
+
   const validate = (): boolean => {
     const next: typeof errors = {};
     if (!draft.name.trim()) next.name = 'Il nome è obbligatorio';
-    if (draft.target <= 0) next.target = 'Il target deve essere > 0';
+    // #059: openended goals hanno target=null intrinseco, skip validation target
+    if (!isOpenended && (draft.target === null || draft.target <= 0)) {
+      next.target = 'Il target deve essere > 0';
+    }
     setErrors(next);
     return Object.keys(next).length === 0;
   };
@@ -134,50 +142,61 @@ export function GoalEditModal({ open, mode, goal, onSave, onCancel }: GoalEditMo
               )}
             </div>
 
-            {/* Target + Deadline */}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label
-                  htmlFor="goal-edit-target"
-                  className="text-sm font-medium text-foreground block mb-1"
-                >
-                  Target (€)
-                </label>
-                <input
-                  id="goal-edit-target"
-                  type="number"
-                  min={0}
-                  data-testid="goal-modal-target"
-                  value={draft.target || ''}
-                  onChange={(e) => setDraft({ ...draft, target: Number(e.target.value) })}
-                  className="w-full bg-muted/50 border border-border rounded-xl px-3 py-2 text-sm text-foreground"
-                  placeholder="5000"
-                />
-                {errors.target && (
-                  <p data-testid="goal-modal-target-error" className="text-xs text-red-500 mt-1">
-                    {errors.target}
-                  </p>
-                )}
+            {/* Target + Deadline — #059: hidden per goal openended (no target concept) */}
+            {isOpenended ? (
+              <div
+                data-testid="goal-modal-openended-info"
+                role="note"
+                className="rounded-xl border border-border bg-muted/30 px-3 py-2.5 text-sm text-muted-foreground"
+              >
+                <span className="font-medium text-foreground">Obiettivo aperto</span>
+                <span className="ml-1">— senza target fisso né scadenza. Accumula risparmi senza vincoli.</span>
               </div>
-              <div>
-                <label
-                  htmlFor="goal-edit-deadline"
-                  className="text-sm font-medium text-foreground block mb-1"
-                >
-                  Scadenza
-                </label>
-                <input
-                  id="goal-edit-deadline"
-                  type="date"
-                  data-testid="goal-modal-deadline"
-                  value={draft.deadline ?? ''}
-                  onChange={(e) =>
-                    setDraft({ ...draft, deadline: e.target.value || null })
-                  }
-                  className="w-full bg-muted/50 border border-border rounded-xl px-3 py-2 text-sm text-foreground"
-                />
+            ) : (
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label
+                    htmlFor="goal-edit-target"
+                    className="text-sm font-medium text-foreground block mb-1"
+                  >
+                    Target (€)
+                  </label>
+                  <input
+                    id="goal-edit-target"
+                    type="number"
+                    min={0}
+                    data-testid="goal-modal-target"
+                    value={draft.target || ''}
+                    onChange={(e) => setDraft({ ...draft, target: Number(e.target.value) })}
+                    className="w-full bg-muted/50 border border-border rounded-xl px-3 py-2 text-sm text-foreground"
+                    placeholder="5000"
+                  />
+                  {errors.target && (
+                    <p data-testid="goal-modal-target-error" className="text-xs text-red-500 mt-1">
+                      {errors.target}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <label
+                    htmlFor="goal-edit-deadline"
+                    className="text-sm font-medium text-foreground block mb-1"
+                  >
+                    Scadenza
+                  </label>
+                  <input
+                    id="goal-edit-deadline"
+                    type="date"
+                    data-testid="goal-modal-deadline"
+                    value={draft.deadline ?? ''}
+                    onChange={(e) =>
+                      setDraft({ ...draft, deadline: e.target.value || null })
+                    }
+                    className="w-full bg-muted/50 border border-border rounded-xl px-3 py-2 text-sm text-foreground"
+                  />
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Sprint 1.6 Fase 2C: Current progress editable (manual fallback) */}
             <div>

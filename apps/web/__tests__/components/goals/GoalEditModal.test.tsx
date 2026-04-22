@@ -18,6 +18,19 @@ const mockGoal: Goal = {
   priority: 1,
   monthlyAllocation: 300,
   status: 'ACTIVE',
+  type: 'fixed',
+};
+
+const mockOpenendedGoal: Goal = {
+  id: 'goal-43',
+  name: 'Iniziare a Investire',
+  target: null,
+  current: 0,
+  deadline: null,
+  priority: 2,
+  monthlyAllocation: 90,
+  status: 'ACTIVE',
+  type: 'openended',
 };
 
 describe('GoalEditModal', () => {
@@ -142,6 +155,49 @@ describe('GoalEditModal', () => {
 
     expect(screen.getByTestId('goal-modal-target-error')).toBeInTheDocument();
     expect(onSave).not.toHaveBeenCalled();
+  });
+
+  // #059 fix: openended goal editing hides target/deadline fields
+  it('hides target + deadline fields when goal.type is openended', () => {
+    render(
+      <GoalEditModal
+        open={true}
+        mode="edit"
+        goal={mockOpenendedGoal}
+        onSave={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
+    expect(screen.queryByTestId('goal-modal-target')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('goal-modal-deadline')).not.toBeInTheDocument();
+    expect(screen.getByTestId('goal-modal-openended-info')).toBeInTheDocument();
+    expect(screen.getByTestId('goal-modal-openended-info')).toHaveTextContent(/Obiettivo aperto/);
+  });
+
+  it('saves openended goal without target validation error', async () => {
+    const user = userEvent.setup({ delay: null });
+    const onSave = vi.fn();
+    render(
+      <GoalEditModal
+        open={true}
+        mode="edit"
+        goal={mockOpenendedGoal}
+        onSave={onSave}
+        onCancel={vi.fn()}
+      />,
+    );
+
+    await user.click(screen.getByTestId('goal-modal-save'));
+
+    await waitFor(() => {
+      expect(onSave).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'openended',
+          target: null,
+          name: 'Iniziare a Investire',
+        }),
+      );
+    });
   });
 
   it('calls onCancel when cancel button clicked', async () => {
