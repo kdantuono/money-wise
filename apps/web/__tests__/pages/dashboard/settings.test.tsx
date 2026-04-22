@@ -64,10 +64,30 @@ vi.mock('next/navigation', () => ({
   })),
 }));
 
-// Mock onboarding-plan client (exports REDO_ONBOARDING_PATH constant)
+// Mock onboarding-plan client (#050 fix: wizard now opens inline as modal)
+const { mockLoadPlan } = vi.hoisted(() => ({
+  mockLoadPlan: vi.fn().mockResolvedValue(null),
+}));
 vi.mock('../../../src/services/onboarding-plan.client', () => ({
   REDO_ONBOARDING_PATH: '/onboarding/plan?mode=edit',
+  onboardingPlanClient: {
+    loadPlan: mockLoadPlan,
+  },
+  OnboardingPlanApiError: class extends Error {},
   default: {},
+}));
+
+// Mock onboarding-plan store (used by Settings to hydrate wizard)
+vi.mock('../../../src/store/onboarding-plan.store', () => ({
+  useOnboardingPlanStore: (selector: (s: unknown) => unknown) =>
+    selector({
+      hydrateFromPlan: vi.fn(),
+    }),
+}));
+
+// Mock WizardPianoGenerato (heavy component with framer-motion)
+vi.mock('../../../src/components/onboarding/WizardPianoGenerato', () => ({
+  WizardPianoGenerato: () => null,
 }));
 
 import SettingsPage from '../../../app/dashboard/settings/page';
@@ -224,11 +244,15 @@ describe('SettingsPage', () => {
       expect(screen.getByRole('button', { name: /Rivedi piano/i })).toBeInTheDocument();
     });
 
-    it('navigates to onboarding edit path when Procedi is clicked', () => {
+    it('loads plan and opens wizard modal inline when Procedi is clicked (#050)', async () => {
       openOnboardingTab();
       fireEvent.click(screen.getByRole('button', { name: /Rivedi piano/i }));
       fireEvent.click(screen.getByRole('button', { name: /Procedi/i }));
-      expect(mockPush).toHaveBeenCalledWith('/onboarding/plan?mode=edit');
+      // #050: non più router.push, ma loadPlan + modal inline (backdrop sovrappone Settings)
+      expect(mockPush).not.toHaveBeenCalledWith('/onboarding/plan?mode=edit');
+      await vi.waitFor(() => {
+        expect(mockLoadPlan).toHaveBeenCalled();
+      });
     });
 
     it('renders the "Reset completo" expandable section with "In arrivo" badge', () => {

@@ -159,6 +159,18 @@ export default function AccountsPage() {
     }
   };
 
+  const handleCreate = async (data: Parameters<typeof accountsClient.createAccount>[0]) => {
+    try {
+      await accountsClient.createAccount(data);
+      setActiveModal(null);
+      await fetchAccounts();
+    } catch (err) {
+      console.error('Create account failed:', err);
+      // Rethrow so ManualAccountForm can surface error state
+      throw err;
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-8">
@@ -501,10 +513,7 @@ export default function AccountsPage() {
         <ManualAccountForm
           isModal
           onCancel={() => setActiveModal(null)}
-          onSubmit={async () => {
-            setActiveModal(null);
-            await fetchAccounts();
-          }}
+          onSubmit={handleCreate}
         />
       )}
 
