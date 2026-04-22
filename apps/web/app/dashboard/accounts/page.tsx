@@ -88,6 +88,8 @@ export default function AccountsPage() {
   const [showAddMenu, setShowAddMenu] = useState(false);
   const [activeModal, setActiveModal] = useState<ModalType>(null);
   const [editSubmitting, setEditSubmitting] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
 
   // Transactions for selected account
   const [accountTransactions, setAccountTransactions] = useState<Transaction[]>([]);
@@ -160,14 +162,17 @@ export default function AccountsPage() {
   };
 
   const handleCreate = async (data: Parameters<typeof accountsClient.createAccount>[0]) => {
+    setIsCreating(true);
+    setCreateError(null);
     try {
       await accountsClient.createAccount(data);
       setActiveModal(null);
       await fetchAccounts();
     } catch (err) {
       console.error('Create account failed:', err);
-      // Rethrow so ManualAccountForm can surface error state
-      throw err;
+      setCreateError('Impossibile creare il conto. Riprova.');
+    } finally {
+      setIsCreating(false);
     }
   };
 
@@ -512,8 +517,10 @@ export default function AccountsPage() {
       {activeModal === 'manual' && (
         <ManualAccountForm
           isModal
-          onCancel={() => setActiveModal(null)}
+          onCancel={() => { setActiveModal(null); setCreateError(null); }}
           onSubmit={handleCreate}
+          isSubmitting={isCreating}
+          error={createError ?? undefined}
         />
       )}
 

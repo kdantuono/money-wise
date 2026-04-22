@@ -9,7 +9,7 @@
 
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '../../utils/test-utils';
+import { render, screen, waitFor } from '../../utils/test-utils';
 
 // Mock framer-motion
 vi.mock('framer-motion', () => ({
@@ -250,7 +250,7 @@ describe('SettingsPage', () => {
       fireEvent.click(screen.getByRole('button', { name: /Procedi/i }));
       // #050: non più router.push, ma loadPlan + modal inline (backdrop sovrappone Settings)
       expect(mockPush).not.toHaveBeenCalledWith('/onboarding/plan?mode=edit');
-      await vi.waitFor(() => {
+      await waitFor(() => {
         expect(mockLoadPlan).toHaveBeenCalled();
       });
     });
