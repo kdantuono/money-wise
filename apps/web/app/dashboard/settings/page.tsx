@@ -10,14 +10,15 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
+import * as Dialog from '@radix-ui/react-dialog';
 import { createClient } from '@/utils/supabase/client';
 import { CategoryManager } from '@/components/categories/CategoryManager';
 import { NotificationsTab } from '@/components/settings/NotificationsTab';
 import { SecurityTab } from '@/components/settings/SecurityTab';
 import { DataTab } from '@/components/settings/DataTab';
 import { ComingSoonTab } from '@/components/settings/ComingSoonTab';
+import { WizardPianoGenerato } from '@/components/onboarding/WizardPianoGenerato';
 import {
   Link as LinkIcon,
   Check,
@@ -39,7 +40,8 @@ import { Card } from '@/components/ui/card';
 import { useAuthStore } from '@/store/auth.store';
 import { useTheme, type Theme } from '@/hooks/useTheme';
 import { userPreferencesClient } from '@/services/user-preferences.client';
-import { REDO_ONBOARDING_PATH } from '@/services/onboarding-plan.client';
+import { onboardingPlanClient, OnboardingPlanApiError } from '@/services/onboarding-plan.client';
+import { useOnboardingPlanStore } from '@/store/onboarding-plan.store';
 import type { UserPreferences } from '@/types/user-preferences';
 
 // =============================================================================
@@ -105,12 +107,16 @@ const TOGGLE_CLASS =
 export default function SettingsPage() {
   const { user, setUser } = useAuthStore();
   const { theme, setTheme } = useTheme();
-  const router = useRouter();
   const [activeTab, setActiveTab] = useState<TabKey>('profile');
 
   // Onboarding redo state
   const [showRedoConfirm, setShowRedoConfirm] = useState(false);
   const [showResetSection, setShowResetSection] = useState(false);
+  // #050 fix: wizard inline modal instead of route navigation (backdrop su Settings)
+  const [wizardOpen, setWizardOpen] = useState(false);
+  const [wizardLoading, setWizardLoading] = useState(false);
+  const [wizardError, setWizardError] = useState<string | null>(null);
+  const hydrateFromPlan = useOnboardingPlanStore((s) => s.hydrateFromPlan);
 
   // Profile state
   const [isSaving, setIsSaving] = useState(false);
@@ -582,10 +588,35 @@ export default function SettingsPage() {
                 </p>
                 <div className="flex gap-2 pt-1">
                   <Button
-                    onClick={() => router.push(REDO_ONBOARDING_PATH)}
+                    onClick={async () => {
+                      if (!user?.id) return;
+                      setWizardLoading(true);
+                      setWizardError(null);
+                      try {
+                        const bundle = await onboardingPlanClient.loadPlan(user.id);
+                        if (bundle) hydrateFromPlan(bundle);
+                        setWizardOpen(true);
+                        setShowRedoConfirm(false);
+                      } catch (err) {
+                        setWizardError(
+                          err instanceof OnboardingPlanApiError
+                            ? `Errore caricamento piano: ${err.message}`
+                            : err instanceof Error
+                              ? err.message
+                              : 'Errore sconosciuto',
+                        );
+                      } finally {
+                        setWizardLoading(false);
+                      }
+                    }}
+                    disabled={wizardLoading || !user?.id}
                     className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white border-0"
                   >
-                    Procedi
+                    {wizardLoading ? (
+                      <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Caricamento...</>
+                    ) : (
+                      'Procedi'
+                    )}
                   </Button>
                   <Button
                     variant="outline"
@@ -651,6 +682,27 @@ export default function SettingsPage() {
       {/* Data Tab */}
       {/* ================================================================= */}
       {activeTab === 'data' && <DataTab />}
+
+      {/* ================================================================= */}
+      {/* Onboarding wizard modal (#050): inline invece di route navigation */}
+      {/* ================================================================= */}
+      {wizardError && (
+        <div role="alert" className="fixed bottom-4 right-4 max-w-sm p-4 rounded-2xl bg-red-50 border border-red-200 text-red-800 shadow-lg z-50">
+          <p className="text-sm font-semibold">Impossibile caricare il piano</p>
+          <p className="text-xs mt-1">{wizardError}</p>
+          <button
+            onClick={() => setWizardError(null)}
+            className="mt-2 text-xs underline hover:no-underline"
+          >
+            Chiudi
+          </button>
+        </div>
+      )}
+      <Dialog.Root open={wizardOpen} onOpenChange={setWizardOpen}>
+        {wizardOpen && (
+          <WizardPianoGenerato mode="edit" onClose={() => setWizardOpen(false)} />
+        )}
+      </Dialog.Root>
     </div>
   );
 }

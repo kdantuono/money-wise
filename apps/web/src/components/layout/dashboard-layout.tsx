@@ -21,6 +21,7 @@ import {
   LogOut,
   FileText,
   Sparkles,
+  CreditCard,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '@/store/auth.store';
@@ -33,6 +34,7 @@ import { TopBar } from './top-bar';
 const mainNav = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Conti', href: '/dashboard/accounts', icon: Wallet },
+  { name: 'Debiti', href: '/dashboard/liabilities', icon: CreditCard },
   { name: 'Investimenti', href: '/dashboard/investments', icon: TrendingUp },
   { name: 'Spese', href: '/dashboard/transactions', icon: Receipt },
   { name: 'Budget', href: '/dashboard/budgets', icon: PiggyBank },
