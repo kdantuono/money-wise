@@ -9,6 +9,8 @@ import {
   Trash2,
   Calendar,
   Infinity as InfinityIcon,
+  Check,
+  Archive,
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -78,9 +80,11 @@ interface GoalCardProps {
   goal: Goal;
   onEditClick: (goal: Goal) => void;
   onDeleteClick: (goalId: string) => void;
+  /** #058: optional archive handler, rendered as secondary action per goal COMPLETED */
+  onArchiveClick?: (goalId: string) => void;
 }
 
-export function GoalCard({ goal, onEditClick, onDeleteClick }: GoalCardProps) {
+export function GoalCard({ goal, onEditClick, onDeleteClick, onArchiveClick }: GoalCardProps) {
   // WP-K: use goal.type (DB field) for openended-specific display logic.
   // Use inferGoalCategory for icon/color (name heuristic — independent of type).
   const isOpenended = goal.type === 'openended';
@@ -142,22 +146,61 @@ export function GoalCard({ goal, onEditClick, onDeleteClick }: GoalCardProps) {
                   Aperto
                 </Badge>
               )}
+              {/* #058: COMPLETED status badge */}
+              {goal.status === 'COMPLETED' && (
+                <Badge
+                  className="text-xs gap-1 bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/10"
+                  data-testid="goal-card-completed-badge"
+                >
+                  <Check className="w-3 h-3" />
+                  Completato
+                </Badge>
+              )}
+              {/* #058: ARCHIVED status badge */}
+              {goal.status === 'ARCHIVED' && (
+                <Badge
+                  variant="outline"
+                  className="text-xs gap-1 text-muted-foreground"
+                  data-testid="goal-card-archived-badge"
+                >
+                  <Archive className="w-3 h-3" />
+                  Archiviato
+                </Badge>
+              )}
             </div>
           </div>
         </div>
 
-        <button
-          type="button"
-          data-testid={`goal-delete-${goal.id}`}
-          onClick={(e) => {
-            e.stopPropagation();
-            onDeleteClick(goal.id);
-          }}
-          className="shrink-0 p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors ml-2"
-          aria-label={`Elimina ${goal.name}`}
-        >
-          <Trash2 className="w-4 h-4 text-muted-foreground hover:text-red-500 transition-colors" />
-        </button>
+        <div className="flex items-center gap-1 shrink-0 ml-2">
+          {/* #058: archive button (rendered only if handler passed + goal non-ARCHIVED) */}
+          {onArchiveClick && goal.status !== 'ARCHIVED' && (
+            <button
+              type="button"
+              data-testid={`goal-archive-${goal.id}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                onArchiveClick(goal.id);
+              }}
+              className="p-1.5 rounded-lg hover:bg-muted transition-colors"
+              aria-label={`Archivia ${goal.name}`}
+              title="Archivia"
+            >
+              <Archive className="w-4 h-4 text-muted-foreground hover:text-foreground transition-colors" />
+            </button>
+          )}
+          <button
+            type="button"
+            data-testid={`goal-delete-${goal.id}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              onDeleteClick(goal.id);
+            }}
+            className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+            aria-label={`Elimina ${goal.name}`}
+          >
+            <Trash2 className="w-4 h-4 text-muted-foreground hover:text-red-500 transition-colors" />
+          </button>
+        </div>
       </div>
 
       {/* Target/progress: hidden for openended goals (no concrete target) */}

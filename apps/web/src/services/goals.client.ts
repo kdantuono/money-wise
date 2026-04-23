@@ -7,7 +7,7 @@
  */
 
 import { createClient } from '@/utils/supabase/client';
-import type { PriorityRank, GoalType } from '@/types/onboarding-plan';
+import type { PriorityRank, GoalType, GoalStatus } from '@/types/onboarding-plan';
 
 // =============================================================================
 // Types
@@ -59,17 +59,26 @@ export class GoalsApiError extends Error {
 
 export const goalsClient = {
   /**
-   * Load all ACTIVE goals for a user.
+   * Load goals for a user, filtered by status.
+   *
+   * Default filter = ['ACTIVE'] per backward-compat con caller legacy.
+   * Per #058 archive/completed flow: pass ['ACTIVE','COMPLETED'] per mostrare
+   * entrambi nella dashboard principale, o ['ARCHIVED'] per view archivio.
    */
-  async loadGoals(userId: string): Promise<Goal[]> {
+  async loadGoals(
+    userId: string,
+    opts?: { statuses?: GoalStatus[] },
+  ): Promise<Goal[]> {
     if (!userId) throw new GoalsApiError('userId is required', 400);
+
+    const statuses = opts?.statuses ?? ['ACTIVE'];
 
     const supabase = createClient();
     const { data, error } = await supabase
       .from('goals')
       .select('id, name, target, current, deadline, priority, monthly_allocation, status, type')
       .eq('user_id', userId)
-      .eq('status', 'ACTIVE')
+      .in('status', statuses)
       .order('priority', { ascending: true });
 
     if (error) throw new GoalsApiError(error.message, 500, error);
@@ -130,24 +139,53 @@ export const goalsClient = {
 
   /**
    * Update fields on an existing goal.
+   *
+   * #058: auto-completion detection — se patch causes `current >= target` e
+   * status era ACTIVE e target non-null → mark COMPLETED. Trigger lato client
+   * (no DB trigger richiesto). L'utente può poi archiviare manualmente.
    */
   async updateGoal(goalId: string, patch: Partial<GoalInput>): Promise<Goal> {
     if (!goalId) throw new GoalsApiError('goalId is required', 400);
 
     const supabase = createClient();
 
-    const { data, error } = await supabase
+    // Fetch current state per evaluate auto-completion
+    const { data: existing, error: fetchErr } = await supabase
       .from('goals')
-      .update({
-        ...(patch.name !== undefined ? { name: patch.name.trim() } : {}),
-        ...(patch.target !== undefined ? { target: patch.target } : {}),
-        ...(patch.deadline !== undefined ? { deadline: patch.deadline } : {}),
-        ...(patch.priority !== undefined ? { priority: patch.priority } : {}),
-        ...(patch.monthlyAllocation !== undefined ? { monthly_allocation: patch.monthlyAllocation } : {}),
-        ...(patch.type !== undefined ? { type: patch.type } : {}),
-        // Sprint 1.6 Fase 2C: current editable manual (fallback non-linked goals)
-        ...(patch.current !== undefined ? { current: patch.current } : {}),
-      })
+      .select('status, target, current')
+      .eq('id', goalId)
+      .single();
+
+    if (fetchErr || !existing) throw new GoalsApiError(fetchErr?.message ?? 'Goal not found', 404, fetchErr);
+
+    const updatePayload: Record<string, unknown> = {
+      ...(patch.name !== undefined ? { name: patch.name.trim() } : {}),
+      ...(patch.target !== undefined ? { target: patch.target } : {}),
+      ...(patch.deadline !== undefined ? { deadline: patch.deadline } : {}),
+      ...(patch.priority !== undefined ? { priority: patch.priority } : {}),
+      ...(patch.monthlyAllocation !== undefined ? { monthly_allocation: patch.monthlyAllocation } : {}),
+      ...(patch.type !== undefined ? { type: patch.type } : {}),
+      // Sprint 1.6 Fase 2C: current editable manual
+      ...(patch.current !== undefined ? { current: patch.current } : {}),
+    };
+
+    // #058: auto-completion — trigger solo se ACTIVE + target fixed + nuovo current >= target
+    const newCurrent = patch.current ?? (existing.current as number);
+    const newTarget = patch.target !== undefined ? patch.target : existing.target;
+    if (
+      existing.status === 'ACTIVE' &&
+      newTarget !== null &&
+      (newTarget as number) > 0 &&
+      newCurrent >= (newTarget as number)
+    ) {
+      updatePayload.status = 'COMPLETED';
+    }
+
+    // Type-safe update with explicit cast (mirror pattern accounts.client.ts)
+    const { data, error } = await (supabase
+      .from('goals')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .update as any)(updatePayload)
       .eq('id', goalId)
       .select('id, name, target, current, deadline, priority, monthly_allocation, status, type')
       .single();
@@ -169,6 +207,7 @@ export const goalsClient = {
 
   /**
    * Soft-delete: set status to ARCHIVED.
+   * #058: kept as primary "delete" — semantically equivalent to archive.
    */
   async deleteGoal(goalId: string): Promise<void> {
     if (!goalId) throw new GoalsApiError('goalId is required', 400);
@@ -180,5 +219,56 @@ export const goalsClient = {
       .eq('id', goalId);
 
     if (error) throw new GoalsApiError(error.message, 500, error);
+  },
+
+  /**
+   * #058: Archive a goal (typically used per goal COMPLETED → ARCHIVED
+   * transition, o user click "Archivia").
+   */
+  async archiveGoal(goalId: string): Promise<void> {
+    if (!goalId) throw new GoalsApiError('goalId is required', 400);
+
+    const supabase = createClient();
+    const { error } = await supabase
+      .from('goals')
+      .update({ status: 'ARCHIVED' as const })
+      .eq('id', goalId);
+
+    if (error) throw new GoalsApiError(error.message, 500, error);
+  },
+
+  /**
+   * #058: Reactivate an archived goal → ACTIVE.
+   */
+  async reactivateGoal(goalId: string): Promise<void> {
+    if (!goalId) throw new GoalsApiError('goalId is required', 400);
+
+    const supabase = createClient();
+    const { error } = await supabase
+      .from('goals')
+      .update({ status: 'ACTIVE' as const })
+      .eq('id', goalId);
+
+    if (error) throw new GoalsApiError(error.message, 500, error);
+  },
+
+  /**
+   * #058: Archive all COMPLETED goals for a user in bulk.
+   * Returns count archived.
+   */
+  async archiveAllCompleted(userId: string): Promise<number> {
+    if (!userId) throw new GoalsApiError('userId is required', 400);
+
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from('goals')
+      .update({ status: 'ARCHIVED' as const })
+      .eq('user_id', userId)
+      .eq('status', 'COMPLETED')
+      .select('id');
+
+    if (error) throw new GoalsApiError(error.message, 500, error);
+
+    return (data ?? []).length;
   },
 };
