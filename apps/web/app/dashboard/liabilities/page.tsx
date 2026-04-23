@@ -1,8 +1,8 @@
 /**
- * Dashboard Liabilities Page
+ * Dashboard Liabilities Page — Debiti
  *
- * Main page for managing liabilities including credit cards, BNPL,
- * loans, mortgages, and other debts.
+ * Gestione debiti (carte di credito, BNPL, finanziamenti, mutui, altro).
+ * Sprint 1.6.6 #047: italianizzazione completa + currency EUR + Figma conformance.
  *
  * @module app/dashboard/liabilities/page
  */
@@ -39,9 +39,6 @@ export default function LiabilitiesPage() {
   const [showForm, setShowForm] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
 
-  /**
-   * Fetch all liabilities
-   */
   const fetchLiabilities = useCallback(async () => {
     try {
       setIsLoading(true);
@@ -50,15 +47,12 @@ export default function LiabilitiesPage() {
       setLiabilities(data);
     } catch (err) {
       console.error('Failed to fetch liabilities:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load liabilities');
+      setError(err instanceof Error ? err.message : 'Impossibile caricare i debiti');
     } finally {
       setIsLoading(false);
     }
   }, []);
 
-  /**
-   * Refresh liabilities
-   */
   const handleRefresh = async () => {
     try {
       setIsRefreshing(true);
@@ -67,15 +61,12 @@ export default function LiabilitiesPage() {
       setLiabilities(data);
     } catch (err) {
       console.error('Failed to refresh liabilities:', err);
-      setError(err instanceof Error ? err.message : 'Failed to refresh liabilities');
+      setError(err instanceof Error ? err.message : 'Impossibile aggiornare i debiti');
     } finally {
       setIsRefreshing(false);
     }
   };
 
-  /**
-   * Handle liability click - navigate to detail page
-   */
   const handleLiabilityClick = useCallback(
     (liability: Liability) => {
       router.push(`/dashboard/liabilities/${liability.id}`);
@@ -83,23 +74,14 @@ export default function LiabilitiesPage() {
     [router]
   );
 
-  /**
-   * Handle add new liability
-   */
   const handleAddNew = () => {
     setShowForm(true);
   };
 
-  /**
-   * Handle form close
-   */
   const handleFormClose = () => {
     setShowForm(false);
   };
 
-  /**
-   * Handle create liability
-   */
   const handleCreateLiability = async (data: CreateLiabilityRequest) => {
     try {
       setIsCreating(true);
@@ -114,9 +96,6 @@ export default function LiabilitiesPage() {
     }
   };
 
-  /**
-   * Dismiss error
-   */
   const handleDismissError = () => {
     setError(null);
   };
@@ -127,29 +106,29 @@ export default function LiabilitiesPage() {
   }, [fetchLiabilities]);
 
   return (
-    <div className="space-y-6" data-testid="liabilities-container">
-      {/* Page Header */}
-      <div className="flex items-center justify-between">
+    <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-6" data-testid="liabilities-container">
+      {/* Page Header — Figma pattern 1:1 con Accounts/Goals */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-red-100 rounded-lg">
-            <CreditCard className="h-6 w-6 text-red-600" aria-hidden="true" />
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-rose-500 to-orange-500 flex items-center justify-center flex-shrink-0 shadow-sm">
+            <CreditCard className="h-6 w-6 text-white" aria-hidden="true" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Liabilities</h1>
-            <p className="text-sm text-gray-500">
-              Manage your credit cards, loans, and payment plans
+            <h1 className="text-[32px] tracking-[-0.03em] text-foreground">Debiti</h1>
+            <p className="text-[13px] text-muted-foreground mt-1.5">
+              Gestisci carte di credito, finanziamenti, mutui e piani di rateizzazione
             </p>
           </div>
         </div>
 
-        {/* Refresh Button */}
+        {/* Refresh button */}
         <button
           onClick={handleRefresh}
           disabled={isLoading || isRefreshing}
-          aria-label="Refresh liabilities"
+          aria-label="Aggiorna elenco debiti"
           aria-busy={isRefreshing}
-          className="inline-flex items-center justify-center px-4 py-2 rounded-lg font-medium
-            transition-colors duration-200 border border-gray-300
+          className="inline-flex items-center justify-center px-4 py-2 rounded-xl text-[13px] font-medium
+            transition-colors duration-200 border border-border/50
             text-foreground bg-card hover:bg-muted active:bg-muted/80
             focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500
             disabled:opacity-50 disabled:cursor-not-allowed"
@@ -158,28 +137,28 @@ export default function LiabilitiesPage() {
             className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`}
             aria-hidden="true"
           />
-          {isRefreshing ? 'Refreshing...' : 'Refresh'}
+          {isRefreshing ? 'Aggiornamento...' : 'Aggiorna'}
         </button>
       </div>
 
-      {/* Error Alert */}
+      {/* Error alert */}
       {error && (
         <div
-          className="flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-lg"
+          className="flex items-center gap-3 p-4 bg-rose-500/10 border border-rose-500/20 rounded-2xl"
           role="alert"
         >
-          <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0" />
-          <p className="text-sm text-red-700 flex-1">{error}</p>
+          <AlertCircle className="h-5 w-5 text-rose-600 dark:text-rose-400 flex-shrink-0" />
+          <p className="text-sm text-rose-700 dark:text-rose-300 flex-1">{error}</p>
           <button
             onClick={handleDismissError}
-            className="text-red-600 hover:text-red-800 text-sm font-medium"
+            className="text-rose-600 dark:text-rose-400 hover:text-rose-800 text-sm font-medium"
           >
-            Dismiss
+            Chiudi
           </button>
         </div>
       )}
 
-      {/* Liability List */}
+      {/* Liability list */}
       <LiabilityList
         liabilities={liabilities}
         isLoading={isLoading}
@@ -188,7 +167,7 @@ export default function LiabilitiesPage() {
         onAddNew={handleAddNew}
       />
 
-      {/* Create Form Modal */}
+      {/* Create form modal */}
       <LiabilityForm
         isOpen={showForm}
         onClose={handleFormClose}

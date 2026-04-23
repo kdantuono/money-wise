@@ -5,7 +5,7 @@ import { Clock, AlertTriangle, ChevronRight, CreditCard } from 'lucide-react';
 import type { Liability } from '@/services/liabilities.client';
 
 // =============================================================================
-// Type Definitions
+// Types
 // =============================================================================
 
 export interface UpcomingPayment {
@@ -24,24 +24,20 @@ export interface UpcomingPayment {
 }
 
 export interface UpcomingPaymentsProps {
-  /** Liabilities with upcoming payments */
   liabilities: Liability[];
-  /** Maximum number of payments to show */
   limit?: number;
-  /** Callback when a payment is clicked */
   onPaymentClick?: (payment: UpcomingPayment) => void;
-  /** Callback to view all payments */
   onViewAll?: () => void;
-  /** Whether to show in compact mode */
   compact?: boolean;
 }
 
 // =============================================================================
-// Helper Functions
+// Helpers
 // =============================================================================
 
-function formatCurrency(amount: number, currency: string = 'USD'): string {
-  return new Intl.NumberFormat('en-US', {
+// #047: EUR default + it-IT locale
+function formatCurrency(amount: number, currency: string = 'EUR'): string {
+  return new Intl.NumberFormat('it-IT', {
     style: 'currency',
     currency,
     minimumFractionDigits: 2,
@@ -54,22 +50,21 @@ function formatDate(dateString: string): string {
   const tomorrow = new Date(today);
   tomorrow.setDate(today.getDate() + 1);
 
-  // Reset time for comparison
   today.setHours(0, 0, 0, 0);
   tomorrow.setHours(0, 0, 0, 0);
   const targetDate = new Date(date);
   targetDate.setHours(0, 0, 0, 0);
 
   if (targetDate.getTime() === today.getTime()) {
-    return 'Today';
+    return 'Oggi';
   }
   if (targetDate.getTime() === tomorrow.getTime()) {
-    return 'Tomorrow';
+    return 'Domani';
   }
 
-  return new Intl.DateTimeFormat('en-US', {
-    month: 'short',
+  return new Intl.DateTimeFormat('it-IT', {
     day: 'numeric',
+    month: 'short',
   }).format(date);
 }
 
@@ -90,18 +85,19 @@ function isDueSoon(dateString: string, daysThreshold: number = 7): boolean {
   return days >= 0 && days <= daysThreshold;
 }
 
+// #047: italianized type labels
 function getTypeLabel(type: string): string {
   switch (type) {
     case 'CREDIT_CARD':
-      return 'Credit Card';
+      return 'Carta di credito';
     case 'BNPL':
       return 'BNPL';
     case 'LOAN':
-      return 'Loan';
+      return 'Finanziamento';
     case 'MORTGAGE':
-      return 'Mortgage';
+      return 'Mutuo';
     default:
-      return 'Other';
+      return 'Altro';
   }
 }
 
@@ -111,7 +107,6 @@ function extractUpcomingPayments(liabilities: Liability[]): UpcomingPayment[] {
   for (const liability of liabilities) {
     if (liability.status !== 'ACTIVE') continue;
 
-    // Add minimum payment if applicable (credit cards, loans with payment due dates)
     if (liability.nextPaymentDate && liability.minimumPayment) {
       payments.push({
         id: `${liability.id}-min-payment`,
@@ -127,7 +122,6 @@ function extractUpcomingPayments(liabilities: Liability[]): UpcomingPayment[] {
       });
     }
 
-    // Add upcoming installments from BNPL plans
     if (liability.installmentPlans) {
       for (const plan of liability.installmentPlans) {
         if (plan.isPaidOff) continue;
@@ -154,27 +148,17 @@ function extractUpcomingPayments(liabilities: Liability[]): UpcomingPayment[] {
     }
   }
 
-  // Sort by due date (earliest first, overdue at top)
   return payments.sort((a, b) => {
-    // Overdue items come first
     if (a.isOverdue && !b.isOverdue) return -1;
     if (!a.isOverdue && b.isOverdue) return 1;
-
-    // Then sort by date
     return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
   });
 }
 
 // =============================================================================
-// Component Implementation
+// Component
 // =============================================================================
 
-/**
- * UpcomingPayments Component
- *
- * Dashboard widget showing upcoming payment obligations.
- * Displays next due payments from credit cards, loans, and BNPL installments.
- */
 export const UpcomingPayments = memo(function UpcomingPayments({
   liabilities,
   limit = 5,
@@ -200,23 +184,21 @@ export const UpcomingPayments = memo(function UpcomingPayments({
   }, [upcomingPayments]);
 
   const handlePaymentClick = (payment: UpcomingPayment) => {
-    if (onPaymentClick) {
-      onPaymentClick(payment);
-    }
+    if (onPaymentClick) onPaymentClick(payment);
   };
 
   if (upcomingPayments.length === 0) {
     return (
-      <div className="bg-card rounded-xl border border-border p-6">
+      <div className="bg-card rounded-2xl border-0 shadow-sm p-6">
         <div className="flex items-center gap-2 mb-4">
           <Clock className="h-5 w-5 text-muted-foreground" />
-          <h3 className="font-semibold text-foreground">Upcoming Payments</h3>
+          <h3 className="font-semibold text-foreground">Prossime rate</h3>
         </div>
         <div className="text-center py-8">
           <CreditCard className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
-          <p className="text-muted-foreground">No upcoming payments</p>
+          <p className="text-muted-foreground">Nessuna rata in scadenza</p>
           <p className="text-sm text-muted-foreground mt-1">
-            All caught up! No payments due.
+            Sei in regola con tutti i pagamenti.
           </p>
         </div>
       </div>
@@ -225,15 +207,15 @@ export const UpcomingPayments = memo(function UpcomingPayments({
 
   if (compact) {
     return (
-      <div className="bg-card rounded-xl border border-border p-4">
+      <div className="bg-card rounded-2xl border-0 shadow-sm p-4">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <Clock className="h-4 w-4 text-muted-foreground" />
-            <h3 className="font-medium text-foreground">Upcoming</h3>
+            <h3 className="font-medium text-foreground">In scadenza</h3>
           </div>
           {overdueCount > 0 && (
-            <span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs rounded-full">
-              {overdueCount} overdue
+            <span className="px-2 py-0.5 bg-rose-500/10 text-rose-600 dark:text-rose-400 text-xs rounded-full border border-rose-500/20">
+              {overdueCount} {overdueCount === 1 ? 'scaduta' : 'scadute'}
             </span>
           )}
         </div>
@@ -244,20 +226,28 @@ export const UpcomingPayments = memo(function UpcomingPayments({
               key={payment.id}
               type="button"
               onClick={() => handlePaymentClick(payment)}
-              className={`w-full flex items-center justify-between p-2 rounded-lg transition-colors
-                ${payment.isOverdue ? 'bg-red-50' : payment.isDueSoon ? 'bg-yellow-50' : 'bg-muted'}
+              className={`w-full flex items-center justify-between p-2 rounded-xl transition-colors
+                ${payment.isOverdue
+                  ? 'bg-rose-500/10'
+                  : payment.isDueSoon
+                  ? 'bg-amber-500/10'
+                  : 'bg-muted/50'}
                 ${onPaymentClick ? 'hover:bg-muted cursor-pointer' : ''}`}
             >
               <div className="flex items-center gap-2 min-w-0">
                 {payment.isOverdue && (
-                  <AlertTriangle className="h-4 w-4 text-red-500 flex-shrink-0" />
+                  <AlertTriangle className="h-4 w-4 text-rose-500 flex-shrink-0" />
                 )}
                 <span className="text-sm font-medium text-foreground truncate">
                   {payment.liabilityName}
                 </span>
               </div>
               <div className="text-right flex-shrink-0 ml-2">
-                <span className={`text-sm font-semibold ${payment.isOverdue ? 'text-red-700' : 'text-foreground'}`}>
+                <span
+                  className={`text-sm font-semibold tabular-nums ${
+                    payment.isOverdue ? 'text-rose-700 dark:text-rose-400' : 'text-foreground'
+                  }`}
+                >
                   {formatCurrency(payment.amount, payment.currency)}
                 </span>
               </div>
@@ -269,9 +259,9 @@ export const UpcomingPayments = memo(function UpcomingPayments({
           <button
             type="button"
             onClick={onViewAll}
-            className="w-full mt-3 text-sm text-blue-600 hover:text-blue-700 font-medium"
+            className="w-full mt-3 text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 font-medium"
           >
-            View all {totalPayments} payments
+            Vedi tutte le {totalPayments} rate
           </button>
         )}
       </div>
@@ -279,35 +269,35 @@ export const UpcomingPayments = memo(function UpcomingPayments({
   }
 
   return (
-    <div className="bg-card rounded-xl border border-border p-6">
+    <div className="bg-card rounded-2xl border-0 shadow-sm p-6">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2">
           <Clock className="h-5 w-5 text-muted-foreground" />
-          <h3 className="font-semibold text-foreground">Upcoming Payments</h3>
+          <h3 className="font-semibold text-foreground">Prossime rate</h3>
         </div>
         {overdueCount > 0 && (
-          <span className="px-2.5 py-1 bg-red-100 text-red-700 text-xs font-medium rounded-full">
-            {overdueCount} overdue
+          <span className="px-2.5 py-1 bg-rose-500/10 text-rose-600 dark:text-rose-400 text-xs font-medium rounded-full border border-rose-500/20">
+            {overdueCount} {overdueCount === 1 ? 'scaduta' : 'scadute'}
           </span>
         )}
       </div>
 
       {/* Summary */}
-      <div className="flex items-center justify-between p-4 bg-muted rounded-lg mb-4">
+      <div className="flex items-center justify-between p-4 bg-muted/50 rounded-2xl mb-4">
         <div>
-          <p className="text-sm text-muted-foreground">Total Due</p>
-          <p className="text-xl font-bold text-foreground">
+          <p className="text-sm text-muted-foreground">Totale da pagare</p>
+          <p className="text-xl font-bold text-foreground tabular-nums">
             {formatCurrency(totalAmountDue)}
           </p>
         </div>
         <div className="text-right">
-          <p className="text-sm text-muted-foreground">Payments</p>
-          <p className="text-xl font-bold text-foreground">{upcomingPayments.length}</p>
+          <p className="text-sm text-muted-foreground">Rate</p>
+          <p className="text-xl font-bold text-foreground tabular-nums">{upcomingPayments.length}</p>
         </div>
       </div>
 
-      {/* Payment List */}
+      {/* Payments list */}
       <div className="space-y-3">
         {upcomingPayments.map((payment) => (
           <div
@@ -321,22 +311,21 @@ export const UpcomingPayments = memo(function UpcomingPayments({
                 handlePaymentClick(payment);
               }
             }}
-            className={`flex items-center gap-4 p-4 rounded-lg border transition-all
+            className={`flex items-center gap-4 p-4 rounded-2xl border transition-all
               ${payment.isOverdue
-                ? 'bg-red-50 border-red-200'
+                ? 'bg-rose-500/10 border-rose-500/20'
                 : payment.isDueSoon
-                ? 'bg-yellow-50 border-yellow-200'
+                ? 'bg-amber-500/10 border-amber-500/20'
                 : 'bg-card border-border'
               }
               ${onPaymentClick ? 'cursor-pointer hover:shadow-md' : ''}`}
           >
-            {/* Status Icon */}
             <div
               className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0
                 ${payment.isOverdue
-                  ? 'bg-red-500 text-white'
+                  ? 'bg-rose-500 text-white'
                   : payment.isDueSoon
-                  ? 'bg-yellow-500 text-white'
+                  ? 'bg-amber-500 text-white'
                   : 'bg-muted text-muted-foreground'
                 }`}
             >
@@ -347,28 +336,26 @@ export const UpcomingPayments = memo(function UpcomingPayments({
               )}
             </div>
 
-            {/* Payment Info */}
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
                 <h4 className="font-medium text-foreground truncate">
                   {payment.liabilityName}
                 </h4>
-                <span className="px-2 py-0.5 bg-muted text-muted-foreground text-xs rounded">
+                <span className="px-2 py-0.5 bg-muted text-muted-foreground text-xs rounded-full">
                   {getTypeLabel(payment.liabilityType)}
                 </span>
               </div>
               <p className="text-sm text-muted-foreground mt-0.5">
                 {payment.type === 'installment'
-                  ? `Payment ${payment.installmentNumber} of ${payment.totalInstallments}`
-                  : 'Minimum payment'}
+                  ? `Rata ${payment.installmentNumber} di ${payment.totalInstallments}`
+                  : 'Rata minima'}
               </p>
             </div>
 
-            {/* Amount & Date */}
             <div className="text-right">
               <p
-                className={`font-semibold ${
-                  payment.isOverdue ? 'text-red-700' : 'text-foreground'
+                className={`font-semibold tabular-nums ${
+                  payment.isOverdue ? 'text-rose-700 dark:text-rose-400' : 'text-foreground'
                 }`}
               >
                 {formatCurrency(payment.amount, payment.currency)}
@@ -376,17 +363,16 @@ export const UpcomingPayments = memo(function UpcomingPayments({
               <p
                 className={`text-sm ${
                   payment.isOverdue
-                    ? 'text-red-600 font-medium'
+                    ? 'text-rose-600 dark:text-rose-400 font-medium'
                     : payment.isDueSoon
-                    ? 'text-yellow-700'
+                    ? 'text-amber-700 dark:text-amber-400'
                     : 'text-muted-foreground'
                 }`}
               >
-                {payment.isOverdue ? 'Overdue' : `Due ${formatDate(payment.dueDate)}`}
+                {payment.isOverdue ? 'Scaduta' : `Scade ${formatDate(payment.dueDate)}`}
               </p>
             </div>
 
-            {/* Chevron */}
             {onPaymentClick && (
               <ChevronRight className="h-5 w-5 text-muted-foreground flex-shrink-0" />
             )}
@@ -394,14 +380,13 @@ export const UpcomingPayments = memo(function UpcomingPayments({
         ))}
       </div>
 
-      {/* View All Link */}
       {onViewAll && totalPayments > limit && (
         <button
           type="button"
           onClick={onViewAll}
-          className="w-full mt-4 py-2 text-center text-blue-600 hover:text-blue-700 font-medium text-sm"
+          className="w-full mt-4 py-2 text-center text-blue-600 hover:text-blue-700 dark:text-blue-400 font-medium text-sm"
         >
-          View all {totalPayments} upcoming payments
+          Vedi tutte le {totalPayments} rate in scadenza
         </button>
       )}
     </div>

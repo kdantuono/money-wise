@@ -9,7 +9,7 @@ import {
   CircleDot,
   Calendar,
   Percent,
-  DollarSign,
+  Euro,
 } from 'lucide-react';
 import type { Liability, LiabilityType } from '@/services/liabilities.client';
 
@@ -18,11 +18,8 @@ import type { Liability, LiabilityType } from '@/services/liabilities.client';
 // =============================================================================
 
 export interface LiabilityCardProps {
-  /** Liability data */
   liability: Liability;
-  /** Callback when card is clicked */
   onClick?: (liability: Liability) => void;
-  /** Whether the card is in a compact view */
   compact?: boolean;
   /** Sprint 1.6 Fase 2B: name of linked goal, rendered as badge */
   goalName?: string;
@@ -32,9 +29,6 @@ export interface LiabilityCardProps {
 // Helper Functions
 // =============================================================================
 
-/**
- * Type icon component that renders the appropriate icon based on liability type
- */
 function TypeIcon({ type, className }: { type: LiabilityType; className?: string }) {
   switch (type) {
     case 'CREDIT_CARD':
@@ -50,85 +44,66 @@ function TypeIcon({ type, className }: { type: LiabilityType; className?: string
   }
 }
 
-/**
- * Get color classes for liability type
- */
 function getTypeColors(type: LiabilityType): { bg: string; text: string; icon: string } {
   switch (type) {
     case 'CREDIT_CARD':
-      return { bg: 'bg-purple-50', text: 'text-purple-700', icon: 'text-purple-500' };
+      return { bg: 'bg-purple-500/10', text: 'text-purple-600 dark:text-purple-400', icon: 'text-purple-500' };
     case 'BNPL':
-      return { bg: 'bg-orange-50', text: 'text-orange-700', icon: 'text-orange-500' };
+      return { bg: 'bg-orange-500/10', text: 'text-orange-600 dark:text-orange-400', icon: 'text-orange-500' };
     case 'LOAN':
-      return { bg: 'bg-blue-50', text: 'text-blue-700', icon: 'text-blue-500' };
+      return { bg: 'bg-blue-500/10', text: 'text-blue-600 dark:text-blue-400', icon: 'text-blue-500' };
     case 'MORTGAGE':
-      return { bg: 'bg-green-50', text: 'text-green-700', icon: 'text-green-500' };
+      return { bg: 'bg-emerald-500/10', text: 'text-emerald-600 dark:text-emerald-400', icon: 'text-emerald-500' };
     default:
-      return { bg: 'bg-muted', text: 'text-foreground', icon: 'text-muted-foreground' };
+      return { bg: 'bg-muted', text: 'text-muted-foreground', icon: 'text-muted-foreground' };
   }
 }
 
-/**
- * Get human-readable label for liability type
- */
+// #047: italianized type labels
 function getTypeLabel(type: LiabilityType): string {
   switch (type) {
     case 'CREDIT_CARD':
-      return 'Credit Card';
+      return 'Carta di credito';
     case 'BNPL':
       return 'Buy Now Pay Later';
     case 'LOAN':
-      return 'Loan';
+      return 'Finanziamento';
     case 'MORTGAGE':
-      return 'Mortgage';
+      return 'Mutuo';
     default:
-      return 'Other';
+      return 'Altro';
   }
 }
 
-/**
- * Format currency amount
- */
-function formatCurrency(amount: number, currency: string = 'USD'): string {
-  return new Intl.NumberFormat('en-US', {
+// #047: EUR default + it-IT locale per formatting numerico italiano
+function formatCurrency(amount: number, currency: string = 'EUR'): string {
+  return new Intl.NumberFormat('it-IT', {
     style: 'currency',
     currency,
     minimumFractionDigits: 2,
   }).format(amount);
 }
 
-/**
- * Format date for display
- */
 function formatDate(dateString: string | undefined): string {
-  if (!dateString) return 'N/A';
+  if (!dateString) return 'N/D';
   const date = new Date(dateString);
-  return new Intl.DateTimeFormat('en-US', {
-    month: 'short',
+  return new Intl.DateTimeFormat('it-IT', {
     day: 'numeric',
+    month: 'short',
   }).format(date);
 }
 
-/**
- * Get utilization color class
- */
 function getUtilizationColor(percent: number): string {
-  if (percent >= 90) return 'bg-red-500';
+  if (percent >= 90) return 'bg-rose-500';
   if (percent >= 70) return 'bg-orange-500';
-  if (percent >= 50) return 'bg-yellow-500';
-  return 'bg-green-500';
+  if (percent >= 50) return 'bg-amber-500';
+  return 'bg-emerald-500';
 }
 
 // =============================================================================
-// Component Implementation
+// Component
 // =============================================================================
 
-/**
- * LiabilityCard Component
- *
- * Displays a single liability with type icon, balance, and key details.
- * Supports both full and compact views.
- */
 export const LiabilityCard = memo(function LiabilityCard({
   liability,
   onClick,
@@ -146,9 +121,7 @@ export const LiabilityCard = memo(function LiabilityCard({
   }, [liability.currentBalance, liability.creditLimit]);
 
   const handleClick = () => {
-    if (onClick) {
-      onClick(liability);
-    }
+    if (onClick) onClick(liability);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -165,7 +138,7 @@ export const LiabilityCard = memo(function LiabilityCard({
         tabIndex={onClick ? 0 : undefined}
         onClick={handleClick}
         onKeyDown={onClick ? handleKeyDown : undefined}
-        className={`flex items-center gap-3 p-3 rounded-lg border border-border bg-card
+        className={`flex items-center gap-3 p-3 rounded-xl border border-border bg-card transition-colors
           ${onClick ? 'cursor-pointer hover:border-border hover:shadow-sm' : ''}`}
       >
         <div className={`p-2 rounded-lg ${colors.bg}`}>
@@ -176,7 +149,7 @@ export const LiabilityCard = memo(function LiabilityCard({
           <p className="text-sm text-muted-foreground">{typeLabel}</p>
         </div>
         <div className="text-right">
-          <p className="font-semibold text-foreground">
+          <p className="font-semibold text-foreground tabular-nums">
             {formatCurrency(liability.currentBalance, liability.currency)}
           </p>
         </div>
@@ -190,20 +163,20 @@ export const LiabilityCard = memo(function LiabilityCard({
       tabIndex={onClick ? 0 : undefined}
       onClick={handleClick}
       onKeyDown={onClick ? handleKeyDown : undefined}
-      className={`rounded-xl border border-border bg-card p-5 transition-all
-        ${onClick ? 'cursor-pointer hover:border-border hover:shadow-md' : ''}
+      className={`rounded-2xl border-0 bg-card p-5 shadow-sm transition-all
+        ${onClick ? 'cursor-pointer hover:shadow-md' : ''}
         focus:outline-none focus:ring-2 focus:ring-blue-500`}
     >
       {/* Header */}
       <div className="flex items-start gap-4">
-        <div className={`p-3 rounded-xl ${colors.bg}`}>
+        <div className={`p-3 rounded-2xl ${colors.bg}`}>
           <TypeIcon type={liability.type} className={`h-6 w-6 ${colors.icon}`} />
         </div>
         <div className="flex-1 min-w-0">
           <h3 className="font-semibold text-foreground truncate">{liability.name}</h3>
           <div className="flex items-center gap-2 mt-1">
             <span
-              className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${colors.bg} ${colors.text}`}
+              className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium ${colors.bg} ${colors.text}`}
             >
               {typeLabel}
             </span>
@@ -213,19 +186,19 @@ export const LiabilityCard = memo(function LiabilityCard({
           </div>
         </div>
         <div className="text-right">
-          <p className="text-2xl font-bold text-foreground">
+          <p className="text-2xl font-bold text-foreground tabular-nums">
             {formatCurrency(liability.currentBalance, liability.currency)}
           </p>
-          <p className="text-sm text-muted-foreground">Current Balance</p>
+          <p className="text-xs text-muted-foreground mt-0.5">Saldo attuale</p>
         </div>
       </div>
 
-      {/* Credit Utilization Bar (for credit cards) */}
+      {/* Credit utilization bar (solo per carte di credito) */}
       {utilizationPercent !== null && liability.creditLimit && (
         <div className="mt-4">
-          <div className="flex justify-between text-sm mb-1">
-            <span className="text-muted-foreground">Credit Utilization</span>
-            <span className="font-medium text-foreground">
+          <div className="flex justify-between text-sm mb-1.5">
+            <span className="text-muted-foreground">Utilizzo credito</span>
+            <span className="font-medium text-foreground tabular-nums">
               {utilizationPercent.toFixed(0)}%
             </span>
           </div>
@@ -235,21 +208,21 @@ export const LiabilityCard = memo(function LiabilityCard({
               style={{ width: `${utilizationPercent}%` }}
             />
           </div>
-          <div className="flex justify-between text-xs text-muted-foreground mt-1">
-            <span>Used: {formatCurrency(liability.currentBalance, liability.currency)}</span>
-            <span>Limit: {formatCurrency(liability.creditLimit, liability.currency)}</span>
+          <div className="flex justify-between text-xs text-muted-foreground mt-1.5 tabular-nums">
+            <span>Usato: {formatCurrency(liability.currentBalance, liability.currency)}</span>
+            <span>Limite: {formatCurrency(liability.creditLimit, liability.currency)}</span>
           </div>
         </div>
       )}
 
-      {/* Details Grid */}
+      {/* Details grid */}
       <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-border">
         {liability.interestRate !== undefined && liability.interestRate > 0 && (
           <div className="flex items-center gap-2">
             <Percent className="h-4 w-4 text-muted-foreground" />
             <div>
-              <p className="text-xs text-muted-foreground">APR</p>
-              <p className="text-sm font-medium text-foreground">
+              <p className="text-xs text-muted-foreground">TAEG</p>
+              <p className="text-sm font-medium text-foreground tabular-nums">
                 {liability.interestRate.toFixed(2)}%
               </p>
             </div>
@@ -258,10 +231,10 @@ export const LiabilityCard = memo(function LiabilityCard({
 
         {liability.minimumPayment !== undefined && liability.minimumPayment > 0 && (
           <div className="flex items-center gap-2">
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <Euro className="h-4 w-4 text-muted-foreground" />
             <div>
-              <p className="text-xs text-muted-foreground">Min Payment</p>
-              <p className="text-sm font-medium text-foreground">
+              <p className="text-xs text-muted-foreground">Rata minima</p>
+              <p className="text-sm font-medium text-foreground tabular-nums">
                 {formatCurrency(liability.minimumPayment, liability.currency)}
               </p>
             </div>
@@ -272,7 +245,7 @@ export const LiabilityCard = memo(function LiabilityCard({
           <div className="flex items-center gap-2">
             <Calendar className="h-4 w-4 text-muted-foreground" />
             <div>
-              <p className="text-xs text-muted-foreground">Next Payment</p>
+              <p className="text-xs text-muted-foreground">Prossima rata</p>
               <p className="text-sm font-medium text-foreground">
                 {formatDate(liability.nextPaymentDate)}
               </p>
@@ -284,8 +257,8 @@ export const LiabilityCard = memo(function LiabilityCard({
           <div className="flex items-center gap-2">
             <CreditCard className="h-4 w-4 text-muted-foreground" />
             <div>
-              <p className="text-xs text-muted-foreground">Available</p>
-              <p className="text-sm font-medium text-green-600">
+              <p className="text-xs text-muted-foreground">Disponibile</p>
+              <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400 tabular-nums">
                 {formatCurrency(liability.availableCredit, liability.currency)}
               </p>
             </div>
@@ -293,27 +266,27 @@ export const LiabilityCard = memo(function LiabilityCard({
         )}
       </div>
 
-      {/* Status Badge */}
+      {/* Status badge (non-ACTIVE) */}
       {liability.status !== 'ACTIVE' && (
         <div className="mt-4">
           <span
             className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
               ${liability.status === 'PAID_OFF'
-                ? 'bg-green-100 text-green-800'
-                : 'bg-muted text-foreground'
+                ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                : 'bg-muted text-muted-foreground'
               }`}
           >
-            {liability.status === 'PAID_OFF' ? 'Paid Off' : 'Closed'}
+            {liability.status === 'PAID_OFF' ? 'Estinto' : 'Chiuso'}
           </span>
         </div>
       )}
 
-      {/* Sprint 1.6 Fase 2B: Goal link badge */}
+      {/* Sprint 1.6 Fase 2B: goal link badge */}
       {liability.goalId && goalName && (
         <div className="mt-4">
           <span
             data-testid="liability-goal-badge"
-            className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-xs font-medium text-emerald-700 dark:text-emerald-300 max-w-full"
+            className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-xs font-medium text-emerald-600 dark:text-emerald-400 max-w-full"
             title={`Payoff verso ${goalName}`}
           >
             <span aria-hidden="true">🎯</span>

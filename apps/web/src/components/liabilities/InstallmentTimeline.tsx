@@ -21,8 +21,9 @@ export interface InstallmentTimelineProps {
 // Helper Functions
 // =============================================================================
 
-function formatCurrency(amount: number, currency: string = 'USD'): string {
-  return new Intl.NumberFormat('en-US', {
+// #047: EUR default + it-IT locale
+function formatCurrency(amount: number, currency: string = 'EUR'): string {
+  return new Intl.NumberFormat('it-IT', {
     style: 'currency',
     currency,
     minimumFractionDigits: 2,
@@ -31,9 +32,9 @@ function formatCurrency(amount: number, currency: string = 'USD'): string {
 
 function formatDate(dateString: string): string {
   const date = new Date(dateString);
-  return new Intl.DateTimeFormat('en-US', {
-    month: 'short',
+  return new Intl.DateTimeFormat('it-IT', {
     day: 'numeric',
+    month: 'short',
     year: 'numeric',
   }).format(date);
 }
@@ -99,14 +100,14 @@ export const InstallmentTimeline = memo(function InstallmentTimeline({
               style={{ width: `${progress}%` }}
             />
           </div>
-          <span className="text-sm text-muted-foreground">
-            {plan.numberOfInstallments - plan.remainingInstallments} of{' '}
-            {plan.numberOfInstallments} paid
+          <span className="text-sm text-muted-foreground tabular-nums">
+            {plan.numberOfInstallments - plan.remainingInstallments} di{' '}
+            {plan.numberOfInstallments} pagate
           </span>
         </div>
 
         {/* Compact installment dots */}
-        <div className="flex gap-1">
+        <div className="flex gap-1 flex-wrap">
           {sortedInstallments.map((inst) => (
             <button
               key={inst.id}
@@ -115,15 +116,15 @@ export const InstallmentTimeline = memo(function InstallmentTimeline({
               className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium transition-colors
                 ${
                   inst.isPaid
-                    ? 'bg-green-100 text-green-700'
+                    ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
                     : isOverdue(inst.dueDate, inst.isPaid)
-                    ? 'bg-red-100 text-red-700'
+                    ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400'
                     : isDueSoon(inst.dueDate, inst.isPaid)
-                    ? 'bg-yellow-100 text-yellow-700'
+                    ? 'bg-amber-500/10 text-amber-700 dark:text-amber-400'
                     : 'bg-muted text-muted-foreground'
                 }
                 ${onInstallmentClick ? 'cursor-pointer hover:ring-2 hover:ring-blue-300' : ''}`}
-              title={`Payment ${inst.installmentNumber}: ${formatCurrency(inst.amount, plan.currency)} - ${inst.isPaid ? 'Paid' : formatDate(inst.dueDate)}`}
+              title={`Rata ${inst.installmentNumber}: ${formatCurrency(inst.amount, plan.currency)} — ${inst.isPaid ? 'Pagata' : formatDate(inst.dueDate)}`}
             >
               {inst.installmentNumber}
             </button>
@@ -137,17 +138,17 @@ export const InstallmentTimeline = memo(function InstallmentTimeline({
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h3 className="font-medium text-foreground">Payment Schedule</h3>
-        <span className="text-sm text-muted-foreground">
-          {plan.numberOfInstallments - plan.remainingInstallments} of{' '}
-          {plan.numberOfInstallments} payments complete
+        <h3 className="font-medium text-foreground">Piano di pagamento</h3>
+        <span className="text-sm text-muted-foreground tabular-nums">
+          {plan.numberOfInstallments - plan.remainingInstallments} di{' '}
+          {plan.numberOfInstallments} rate pagate
         </span>
       </div>
 
       {/* Progress bar */}
       <div className="h-2 bg-muted rounded-full overflow-hidden">
         <div
-          className="h-full bg-green-500 rounded-full transition-all"
+          className="h-full bg-emerald-500 rounded-full transition-all"
           style={{ width: `${progress}%` }}
         />
       </div>
@@ -170,28 +171,28 @@ export const InstallmentTimeline = memo(function InstallmentTimeline({
                   handleClick(inst);
                 }
               }}
-              className={`flex items-center gap-4 p-3 rounded-lg border transition-all
+              className={`flex items-center gap-4 p-3 rounded-2xl border transition-all
                 ${
                   inst.isPaid
-                    ? 'bg-green-50 border-green-200'
+                    ? 'bg-emerald-500/10 border-emerald-500/20'
                     : overdue
-                    ? 'bg-red-50 border-red-200'
+                    ? 'bg-rose-500/10 border-rose-500/20'
                     : dueSoon
-                    ? 'bg-yellow-50 border-yellow-200'
+                    ? 'bg-amber-500/10 border-amber-500/20'
                     : 'bg-card border-border'
                 }
                 ${onInstallmentClick ? 'cursor-pointer hover:shadow-md' : ''}`}
             >
-              {/* Status Icon */}
+              {/* Status icon */}
               <div
                 className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0
                   ${
                     inst.isPaid
-                      ? 'bg-green-500 text-white'
+                      ? 'bg-emerald-500 text-white'
                       : overdue
-                      ? 'bg-red-500 text-white'
+                      ? 'bg-rose-500 text-white'
                       : dueSoon
-                      ? 'bg-yellow-500 text-white'
+                      ? 'bg-amber-500 text-white'
                       : 'bg-muted text-muted-foreground'
                   }`}
               >
@@ -208,39 +209,39 @@ export const InstallmentTimeline = memo(function InstallmentTimeline({
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="font-medium text-foreground">
-                    Payment {inst.installmentNumber}
+                    Rata {inst.installmentNumber}
                   </span>
                   {inst.isPaid && (
-                    <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">
-                      Paid
+                    <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs rounded-full border border-emerald-500/20">
+                      Pagata
                     </span>
                   )}
                   {overdue && (
-                    <span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs rounded-full">
-                      Overdue
+                    <span className="px-2 py-0.5 bg-rose-500/10 text-rose-600 dark:text-rose-400 text-xs rounded-full border border-rose-500/20">
+                      Scaduta
                     </span>
                   )}
                   {dueSoon && !overdue && (
-                    <span className="px-2 py-0.5 bg-yellow-100 text-yellow-700 text-xs rounded-full">
-                      Due Soon
+                    <span className="px-2 py-0.5 bg-amber-500/10 text-amber-700 dark:text-amber-400 text-xs rounded-full border border-amber-500/20">
+                      In scadenza
                     </span>
                   )}
                 </div>
                 <p className="text-sm text-muted-foreground">
                   {inst.isPaid && inst.paidAt
-                    ? `Paid on ${formatDate(inst.paidAt)}`
-                    : `Due ${formatDate(inst.dueDate)}`}
+                    ? `Pagata il ${formatDate(inst.paidAt)}`
+                    : `Scade il ${formatDate(inst.dueDate)}`}
                 </p>
               </div>
 
               {/* Amount */}
               <div className="text-right">
                 <p
-                  className={`font-semibold ${
+                  className={`font-semibold tabular-nums ${
                     inst.isPaid
-                      ? 'text-green-700'
+                      ? 'text-emerald-700 dark:text-emerald-400'
                       : overdue
-                      ? 'text-red-700'
+                      ? 'text-rose-700 dark:text-rose-400'
                       : 'text-foreground'
                   }`}
                 >
@@ -262,17 +263,17 @@ export const InstallmentTimeline = memo(function InstallmentTimeline({
 
       {/* Summary */}
       <div className="flex justify-between pt-4 border-t border-border">
-        <span className="text-muted-foreground">Total Amount</span>
-        <span className="font-semibold text-foreground">
+        <span className="text-muted-foreground">Importo totale</span>
+        <span className="font-semibold text-foreground tabular-nums">
           {formatCurrency(plan.totalAmount, plan.currency)}
         </span>
       </div>
 
       {plan.isPaidOff && (
-        <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg">
-          <Check className="h-5 w-5 text-green-600" />
-          <span className="text-green-700 font-medium">
-            This payment plan is complete!
+        <div className="flex items-center gap-2 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl">
+          <Check className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+          <span className="text-emerald-700 dark:text-emerald-400 font-medium">
+            Piano di pagamento completato!
           </span>
         </div>
       )}
