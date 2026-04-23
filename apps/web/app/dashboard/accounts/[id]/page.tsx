@@ -398,7 +398,11 @@ export default function AccountDetailsPage() {
                   key={tx.id}
                   transaction={tx}
                   isSelectable={false}
+                  showActions={false}
                   categoryName={tx.categoryId ? categoryMap.get(tx.categoryId) : undefined}
+                  // #044: stub handlers richiesti da TransactionRow signature ma bottoni
+                  // nascosti via showActions=false. View read-only in account detail —
+                  // per Modifica/Elimina naviga a /dashboard/transactions.
                   onSelect={() => {}}
                   onEdit={() => {}}
                   onDelete={() => {}}

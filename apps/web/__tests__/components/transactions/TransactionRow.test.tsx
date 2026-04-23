@@ -87,6 +87,7 @@ describe('TransactionRow', () => {
       isSelectable: boolean;
       isUpdating: boolean;
       isDeleting: boolean;
+      showActions: boolean;
       categoryName?: string;
       categoryIcon?: string;
       accountName?: string;
@@ -102,6 +103,7 @@ describe('TransactionRow', () => {
         isSelectable={props.isSelectable ?? true}
         isUpdating={props.isUpdating ?? false}
         isDeleting={props.isDeleting ?? false}
+        showActions={props.showActions ?? true}
         categoryName={props.categoryName}
         categoryIcon={props.categoryIcon}
         accountName={props.accountName}
@@ -248,6 +250,17 @@ describe('TransactionRow', () => {
     it('should disable delete button while deleting', () => {
       renderRow(mockTransaction, { isDeleting: true });
       expect(screen.getByRole('button', { name: /elimina transazione/i })).toBeDisabled();
+    });
+
+    // #044: read-only mode — hide action buttons entirely
+    it('should NOT render edit + delete buttons when showActions=false', () => {
+      renderRow(mockTransaction, { showActions: false });
+      expect(
+        screen.queryByRole('button', { name: /modifica transazione/i })
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole('button', { name: /elimina transazione/i })
+      ).not.toBeInTheDocument();
     });
   });
 
