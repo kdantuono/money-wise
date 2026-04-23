@@ -20,6 +20,12 @@ export interface TransactionRowProps {
   categoryName?: string;
   categoryIcon?: string;
   accountName?: string;
+  /**
+   * #044: controlla visibilità bottoni Modifica/Elimina inline.
+   * Default true (backward-compat). Pass false in contesti read-only (es.
+   * account detail view) dove non vogliamo azioni per-row.
+   */
+  showActions?: boolean;
 }
 
 // =============================================================================
@@ -62,6 +68,7 @@ export const TransactionRow = memo(function TransactionRow({
   isSelectable = true,
   isUpdating = false,
   isDeleting = false,
+  showActions = true,
   categoryName,
   categoryIcon,
   accountName,
@@ -177,26 +184,29 @@ export const TransactionRow = memo(function TransactionRow({
       </div>
 
       {/* Actions — always visible on small screens, visible on hover/focus on larger screens */}
-      <div className="flex-shrink-0 flex items-center gap-0.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 transition-opacity">
-        <button
-          type="button"
-          onClick={handleEdit}
-          disabled={isUpdating || isDeleting}
-          aria-label="Modifica transazione"
-          className="p-1.5 rounded-lg text-muted-foreground/40 hover:text-foreground hover:bg-muted/50 focus-visible:text-foreground focus-visible:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50 transition-colors"
-        >
-          {isUpdating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Pencil className="w-3.5 h-3.5" />}
-        </button>
-        <button
-          type="button"
-          onClick={handleDelete}
-          disabled={isUpdating || isDeleting}
-          aria-label="Elimina transazione"
-          className="p-1.5 rounded-lg text-muted-foreground/40 hover:text-rose-600 hover:bg-rose-500/10 focus-visible:text-rose-600 focus-visible:bg-rose-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50 transition-colors"
-        >
-          {isDeleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
-        </button>
-      </div>
+      {/* #044: `showActions=false` nasconde bottoni in contesti read-only (evita stub no-op handlers) */}
+      {showActions && (
+        <div className="flex-shrink-0 flex items-center gap-0.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 transition-opacity">
+          <button
+            type="button"
+            onClick={handleEdit}
+            disabled={isUpdating || isDeleting}
+            aria-label="Modifica transazione"
+            className="p-1.5 rounded-lg text-muted-foreground/40 hover:text-foreground hover:bg-muted/50 focus-visible:text-foreground focus-visible:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50 transition-colors"
+          >
+            {isUpdating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Pencil className="w-3.5 h-3.5" />}
+          </button>
+          <button
+            type="button"
+            onClick={handleDelete}
+            disabled={isUpdating || isDeleting}
+            aria-label="Elimina transazione"
+            className="p-1.5 rounded-lg text-muted-foreground/40 hover:text-rose-600 hover:bg-rose-500/10 focus-visible:text-rose-600 focus-visible:bg-rose-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50 transition-colors"
+          >
+            {isDeleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+          </button>
+        </div>
+      )}
     </article>
   );
 });
