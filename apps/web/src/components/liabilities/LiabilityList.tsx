@@ -7,31 +7,27 @@ import type { Liability, LiabilityType, LiabilityStatus } from '@/services/liabi
 import { useActiveGoals } from '@/hooks/useActiveGoals';
 
 // =============================================================================
-// Type Definitions
+// Types
 // =============================================================================
 
 type SortField = 'name' | 'currentBalance' | 'type' | 'createdAt';
 type SortDirection = 'asc' | 'desc';
 
 export interface LiabilityListProps {
-  /** List of liabilities to display */
   liabilities: Liability[];
-  /** Loading state */
   isLoading?: boolean;
-  /** Error message */
   error?: string | null;
-  /** Callback when a liability is clicked */
   onLiabilityClick?: (liability: Liability) => void;
-  /** Callback when add new is clicked */
   onAddNew?: () => void;
 }
 
 // =============================================================================
-// Helper Functions
+// Helpers
 // =============================================================================
 
-function formatCurrency(amount: number, currency: string = 'USD'): string {
-  return new Intl.NumberFormat('en-US', {
+// #047: EUR default + it-IT locale
+function formatCurrency(amount: number, currency: string = 'EUR'): string {
+  return new Intl.NumberFormat('it-IT', {
     style: 'currency',
     currency,
     minimumFractionDigits: 2,
@@ -39,7 +35,7 @@ function formatCurrency(amount: number, currency: string = 'USD'): string {
 }
 
 // =============================================================================
-// Component Implementation
+// Component
 // =============================================================================
 
 export function LiabilityList({
@@ -49,28 +45,24 @@ export function LiabilityList({
   onLiabilityClick,
   onAddNew,
 }: LiabilityListProps) {
-  // Filter state
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<LiabilityType | 'ALL'>('ALL');
   const [statusFilter, setStatusFilter] = useState<LiabilityStatus | 'ALL'>('ALL');
   const [showFilters, setShowFilters] = useState(false);
 
-  // Sort state
   const [sortField, setSortField] = useState<SortField>('currentBalance');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
 
-  // Sprint 1.6 Fase 2B: map goalId -> goal name for badge rendering
+  // Sprint 1.6 Fase 2B: goalId -> name map for badge rendering
   const { data: activeGoals = [] } = useActiveGoals();
   const goalNameById = useMemo(
     () => new Map(activeGoals.map((g) => [g.id, g.name])),
     [activeGoals]
   );
 
-  // Filter and sort liabilities
   const filteredLiabilities = useMemo(() => {
     let result = [...liabilities];
 
-    // Apply search filter
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       result = result.filter(
@@ -80,22 +72,19 @@ export function LiabilityList({
       );
     }
 
-    // Apply type filter
     if (typeFilter !== 'ALL') {
       result = result.filter((l) => l.type === typeFilter);
     }
 
-    // Apply status filter
     if (statusFilter !== 'ALL') {
       result = result.filter((l) => l.status === statusFilter);
     }
 
-    // Apply sorting
     result.sort((a, b) => {
       let comparison = 0;
       switch (sortField) {
         case 'name':
-          comparison = a.name.localeCompare(b.name);
+          comparison = a.name.localeCompare(b.name, 'it-IT');
           break;
         case 'currentBalance':
           comparison = a.currentBalance - b.currentBalance;
@@ -114,7 +103,6 @@ export function LiabilityList({
     return result;
   }, [liabilities, searchQuery, typeFilter, statusFilter, sortField, sortDirection]);
 
-  // Calculate totals
   const totals = useMemo(() => {
     const activeLiabilities = liabilities.filter((l) => l.status === 'ACTIVE');
     return {
@@ -137,31 +125,29 @@ export function LiabilityList({
     });
   }, []);
 
-  // Loading state
   if (isLoading) {
     return (
       <div className="space-y-4">
         {[1, 2, 3].map((i) => (
           <div
             key={i}
-            className="h-48 bg-muted rounded-xl animate-pulse"
+            className="h-48 bg-muted rounded-2xl animate-pulse"
           />
         ))}
       </div>
     );
   }
 
-  // Error state
   if (error) {
     return (
       <div className="text-center py-12">
-        <p className="text-red-600 mb-4">{error}</p>
+        <p className="text-rose-600 mb-4">{error}</p>
         <button
           type="button"
           onClick={() => window.location.reload()}
           className="text-blue-600 hover:underline"
         >
-          Try again
+          Riprova
         </button>
       </div>
     );
@@ -169,124 +155,124 @@ export function LiabilityList({
 
   return (
     <div className="space-y-6">
-      {/* Summary Cards */}
+      {/* Summary cards — Figma-style rounded-2xl shadow-sm border-0 */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-card rounded-xl border border-border p-4">
-          <p className="text-sm text-muted-foreground">Total Owed</p>
-          <p className="text-2xl font-bold text-foreground">
+        <div className="bg-card rounded-2xl border-0 shadow-sm p-5">
+          <p className="text-sm text-muted-foreground">Totale Dovuto</p>
+          <p className="text-2xl font-bold text-foreground tabular-nums mt-1">
             {formatCurrency(totals.totalOwed)}
           </p>
         </div>
-        <div className="bg-card rounded-xl border border-border p-4">
-          <p className="text-sm text-muted-foreground">Total Credit Limit</p>
-          <p className="text-2xl font-bold text-foreground">
+        <div className="bg-card rounded-2xl border-0 shadow-sm p-5">
+          <p className="text-sm text-muted-foreground">Limite Credito Totale</p>
+          <p className="text-2xl font-bold text-foreground tabular-nums mt-1">
             {formatCurrency(totals.totalCreditLimit)}
           </p>
         </div>
-        <div className="bg-card rounded-xl border border-border p-4">
-          <p className="text-sm text-muted-foreground">Active Liabilities</p>
-          <p className="text-2xl font-bold text-foreground">{totals.count}</p>
+        <div className="bg-card rounded-2xl border-0 shadow-sm p-5">
+          <p className="text-sm text-muted-foreground">Debiti Attivi</p>
+          <p className="text-2xl font-bold text-foreground tabular-nums mt-1">{totals.count}</p>
         </div>
       </div>
 
       {/* Controls */}
-      <div className="flex flex-col sm:flex-row gap-4">
+      <div className="flex flex-col sm:flex-row gap-3">
         {/* Search */}
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <input
             type="text"
-            placeholder="Search liabilities..."
+            placeholder="Cerca debiti..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="w-full pl-10 pr-4 py-2 border border-border rounded-xl bg-card focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            aria-label="Cerca debiti"
           />
         </div>
 
-        {/* Filter Toggle */}
+        {/* Filter toggle */}
         <button
           type="button"
           onClick={() => setShowFilters(!showFilters)}
-          className={`flex items-center gap-2 px-4 py-2 border rounded-lg transition-colors
-            ${showFilters ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-border text-foreground hover:bg-muted'}`}
+          className={`inline-flex items-center gap-2 px-4 py-2 border rounded-xl transition-colors
+            ${showFilters
+              ? 'border-blue-500 bg-blue-500/10 text-blue-600 dark:text-blue-400'
+              : 'border-border text-foreground hover:bg-muted'}`}
         >
           <Filter className="h-4 w-4" />
-          Filters
+          Filtri
         </button>
 
-        {/* Add New Button */}
+        {/* Add new */}
         {onAddNew && (
           <button
             type="button"
             onClick={onAddNew}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors shadow-sm"
           >
             <Plus className="h-4 w-4" />
-            Add Liability
+            Aggiungi debito
           </button>
         )}
       </div>
 
-      {/* Expanded Filters */}
+      {/* Expanded filters */}
       {showFilters && (
-        <div className="flex flex-wrap gap-4 p-4 bg-muted rounded-lg">
-          {/* Type Filter */}
+        <div className="flex flex-wrap gap-4 p-4 bg-muted/50 rounded-2xl border border-border">
           <div>
             <label className="block text-sm font-medium text-foreground mb-1">
-              Type
+              Tipo
             </label>
             <select
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value as LiabilityType | 'ALL')}
-              className="border border-border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500"
+              className="border border-border rounded-xl px-3 py-2 bg-card focus:ring-2 focus:ring-blue-500"
             >
-              <option value="ALL">All Types</option>
-              <option value="CREDIT_CARD">Credit Card</option>
+              <option value="ALL">Tutti i tipi</option>
+              <option value="CREDIT_CARD">Carta di credito</option>
               <option value="BNPL">Buy Now Pay Later</option>
-              <option value="LOAN">Loan</option>
-              <option value="MORTGAGE">Mortgage</option>
-              <option value="OTHER">Other</option>
+              <option value="LOAN">Finanziamento</option>
+              <option value="MORTGAGE">Mutuo</option>
+              <option value="OTHER">Altro</option>
             </select>
           </div>
 
-          {/* Status Filter */}
           <div>
             <label className="block text-sm font-medium text-foreground mb-1">
-              Status
+              Stato
             </label>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as LiabilityStatus | 'ALL')}
-              className="border border-border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500"
+              className="border border-border rounded-xl px-3 py-2 bg-card focus:ring-2 focus:ring-blue-500"
             >
-              <option value="ALL">All Statuses</option>
-              <option value="ACTIVE">Active</option>
-              <option value="PAID_OFF">Paid Off</option>
-              <option value="CLOSED">Closed</option>
+              <option value="ALL">Tutti gli stati</option>
+              <option value="ACTIVE">Attivo</option>
+              <option value="PAID_OFF">Estinto</option>
+              <option value="CLOSED">Chiuso</option>
             </select>
           </div>
 
-          {/* Sort */}
           <div>
             <label className="block text-sm font-medium text-foreground mb-1">
-              Sort By
+              Ordina per
             </label>
             <div className="flex gap-2">
               <select
                 value={sortField}
                 onChange={(e) => handleSort(e.target.value as SortField)}
-                className="border border-border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500"
+                className="border border-border rounded-xl px-3 py-2 bg-card focus:ring-2 focus:ring-blue-500"
               >
-                <option value="currentBalance">Balance</option>
-                <option value="name">Name</option>
-                <option value="type">Type</option>
-                <option value="createdAt">Date Added</option>
+                <option value="currentBalance">Saldo</option>
+                <option value="name">Nome</option>
+                <option value="type">Tipo</option>
+                <option value="createdAt">Data aggiunta</option>
               </select>
               <button
                 type="button"
                 onClick={() => setSortDirection((d) => (d === 'asc' ? 'desc' : 'asc'))}
-                className="p-2 border border-border rounded-lg hover:bg-muted"
-                aria-label={`Sort ${sortDirection === 'asc' ? 'descending' : 'ascending'}`}
+                className="p-2 border border-border rounded-xl bg-card hover:bg-muted"
+                aria-label={`Ordine ${sortDirection === 'asc' ? 'decrescente' : 'crescente'}`}
               >
                 {sortDirection === 'asc' ? (
                   <SortAsc className="h-5 w-5" />
@@ -299,27 +285,29 @@ export function LiabilityList({
         </div>
       )}
 
-      {/* Results Count */}
+      {/* Results counter */}
       <p className="text-sm text-muted-foreground">
-        Showing {filteredLiabilities.length} of {liabilities.length} liabilities
+        {filteredLiabilities.length === liabilities.length
+          ? `${liabilities.length} ${liabilities.length === 1 ? 'debito' : 'debiti'}`
+          : `${filteredLiabilities.length} di ${liabilities.length} ${liabilities.length === 1 ? 'debito' : 'debiti'}`}
       </p>
 
-      {/* Liability Cards */}
+      {/* Grid */}
       {filteredLiabilities.length === 0 ? (
-        <div className="text-center py-12 bg-muted rounded-xl">
+        <div className="text-center py-12 bg-card rounded-2xl border-0 shadow-sm">
           <p className="text-muted-foreground mb-4">
             {liabilities.length === 0
-              ? 'No liabilities yet. Add your first one to get started!'
-              : 'No liabilities match your filters.'}
+              ? 'Nessun debito ancora. Aggiungi il primo per iniziare.'
+              : 'Nessun debito corrisponde ai filtri.'}
           </p>
           {onAddNew && liabilities.length === 0 && (
             <button
               type="button"
               onClick={onAddNew}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors shadow-sm"
             >
               <Plus className="h-4 w-4" />
-              Add Your First Liability
+              Aggiungi il tuo primo debito
             </button>
           )}
         </div>
