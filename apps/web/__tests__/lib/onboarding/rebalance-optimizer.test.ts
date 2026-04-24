@@ -1,23 +1,49 @@
 /**
- * NOTA 2026-04-25: 5 test sono `.skip` per regression pre-esistente su develop
- * (atomic note #041 rebalance-optimizer-test-regression-develop). Root cause:
- * commit 747a797 (Sprint 1.6 Phase E #004 smart default n≤3 = equal) ha cambiato
- * comportamento allocator che produce valori 109.09 invece di 100 per i test
- * con `criterion: 'feasibility'` esplicito o criterion undefined. Fix dedicato
- * tracciato come Sprint 1.7 deferred item separato. Skip temporaneo per non
- * bloccare PR non-correlati al rebalance-optimizer.
+ * Sprint 1.7 fix atomic #041 (2026-04-25):
+ *
+ * Root cause originale: bug timezone-dependent nel test helper `monthsFromNow`,
+ * NON regression del codice di produzione. `new Date()` ritorna timestamp LOCAL,
+ * `.toISOString()` serializza in UTC. Tra ~22:00 UTC e ~24:00 UTC del giorno
+ * (00:00-02:00 LOCAL CEST), il day UTC è precedente al day LOCAL. Risultato:
+ * deadline ISO string ha day-1 → quando `_parseDate` lo parse come LOCAL date,
+ * `_monthsDiff` calcola `dayAdjust=-1` per il `to.getDate() < from.getDate()`
+ * → monthsLeft=11 invece di 12 → need=1200/11=109.09 invece di 100.
+ *
+ * Fix dual-layer:
+ * 1. TODAY fixed (mid-January 2026) elimina time-of-day dependency
+ * 2. monthsFromNow usa LOCAL date construction (`getDate/getMonth/getFullYear`)
+ *    invece di toISOString → matching `_parseDate(y,m-1,d)` che è LOCAL.
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, beforeAll, afterAll, vi } from 'vitest';
 import { rebalanceOptimizer } from '@/lib/onboarding/rebalance-optimizer';
 import type { AllocationGoalInput, AllocationInput, PriorityRank } from '@/types/onboarding-plan';
 
-const TODAY = new Date();
+// TODAY fissa mid-January 2026 evita boundary timezone issues + variabilità per
+// tempo di esecuzione test (deterministic regardless of run hour/locale).
+// useFakeTimers garantisce che `new Date()` dentro rebalance-optimizer ritorni
+// stessa data, permettendo a `_monthsDiff(now, deadline)` di calcolare valori
+// matematicamente esatti (12 mesi pieni, non 11.x edge-case).
+const TODAY = new Date(2026, 0, 15); // 2026-01-15 LOCAL noon
+
+beforeAll(() => {
+  vi.useFakeTimers();
+  vi.setSystemTime(TODAY);
+});
+
+afterAll(() => {
+  vi.useRealTimers();
+});
 
 function monthsFromNow(n: number): string {
   const d = new Date(TODAY);
   d.setMonth(d.getMonth() + n);
-  return d.toISOString().slice(0, 10);
+  // LOCAL ISO format YYYY-MM-DD per matching `_parseDate` LOCAL parse.
+  // Evita drift `toISOString()` UTC → LOCAL day-1 in late-evening UTC.
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
 }
 
 let _id = 0;
@@ -73,7 +99,7 @@ describe('rebalanceOptimizer', () => {
     expect(r.newAllocations![g.id]).toBeGreaterThanOrEqual(0);
   });
 
-  it.skip('happy path: 2 goals fit in savings budget → phase1 allocates both feasible', () => {
+  it('happy path: 2 goals fit in savings budget → phase1 allocates both feasible', () => {
     const g1 = makeGoal({ target: 1200, deadline: monthsFromNow(12), priority: 1 }); // need 100/mo
     const g2 = makeGoal({ target: 2400, deadline: monthsFromNow(12), priority: 2 }); // need 200/mo
     const r = rebalanceOptimizer({
@@ -166,7 +192,7 @@ describe('rebalanceOptimizer', () => {
     expect(r.suggestions?.find((s) => s.goalId === g.id)).toBeUndefined();
   });
 
-  it.skip('savings + investments split: invest goal routes to invest pool', () => {
+  it('savings + investments split: invest goal routes to invest pool', () => {
     const savGoal = makeGoal({ id: 'sav', name: 'Fondo Emergenza', presetId: 'fondo-emergenza', target: 5000, priority: 1, deadline: monthsFromNow(50) }); // need 100
     const invGoal = makeGoal({ id: 'inv', name: 'ETF mondiali', presetId: 'iniziare-a-investire', target: 2400, priority: 2, deadline: monthsFromNow(12) }); // need 200
     const r = rebalanceOptimizer({
@@ -203,7 +229,7 @@ describe('rebalanceOptimizer', () => {
     expect(total).toBeLessThanOrEqual(POOL + 0.01);
   });
 
-  it.skip('mixed pools with one empty → still processes the non-empty one', () => {
+  it('mixed pools with one empty → still processes the non-empty one', () => {
     const invGoal = makeGoal({ id: 'inv', name: 'Crypto', target: 1200, priority: 1, deadline: monthsFromNow(12) }); // need 100
     const r = rebalanceOptimizer({
       input: input({ monthlySavingsTarget: 0, investmentsTarget: 200, goals: [invGoal] }),
@@ -251,7 +277,7 @@ describe('rebalanceOptimizer', () => {
       expect(r.newAllocations![g.id]).toBeCloseTo(300, 1);
     });
 
-    it.skip('1 fixed need 100/mo + 1 openended + pool 300 → fixed 100, openended 200', () => {
+    it('1 fixed need 100/mo + 1 openended + pool 300 → fixed 100, openended 200', () => {
       const fixed = makeGoal({ id: 'fixed', target: 1200, deadline: monthsFromNow(12), priority: 1 }); // 100/mo
       const open = makeGoal({ id: 'open', type: 'openended', target: null as unknown as number, deadline: null, priority: 2 });
       const r = rebalanceOptimizer({ input: input({ monthlySavingsTarget: 300, goals: [fixed, open] }), criterion: 'feasibility' });
@@ -292,7 +318,7 @@ describe('rebalanceOptimizer', () => {
       expect(r.newAllocations!['c']).toBeCloseTo(200, 1);
     });
 
-    it.skip('4 goals senza criterion → smart default feasibility (non pro-rata)', () => {
+    it('4 goals senza criterion → smart default feasibility (non pro-rata)', () => {
       // Con 4 goals stesse priority+requiredMonthly, waterfall Phase 1 alloca 100 ai
       // primi 3 (pool 300), ultimo 0. Equal darebbe 75 ciascuno. Distinzione: presenza
       // di >= 3 goal a 100 AND >= 1 goal a 0 impossibile con equal (tutti 75).
