@@ -1,8 +1,10 @@
 /**
  * Unit tests for financial-instruments.client (ADR-005 Fase 2.1).
  *
- * Focus: mapping logic + computeNetWorth pure function.
- * Integration (VIEW query) coperta da E2E patrimonio.spec.ts.
+ * Focus: `computeNetWorth` pure function (golden cases).
+ * Mapping `mapRowToInstrument` is internal (non-exported); fail-visible
+ * behavior è coperta tramite integration (VIEW query live) che sarà
+ * aggiunta in patrimonio.spec.ts (Fase 2.1 follow-up deferred).
  */
 
 import { describe, it, expect } from 'vitest';

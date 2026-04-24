@@ -100,11 +100,28 @@ type ViewRow = {
 };
 
 function mapRowToInstrument(row: ViewRow): FinancialInstrument | null {
-  // Copilot-style fail-visible filter: required fields null = corruption/RLS bug
-  if (row.id === null || row.class === null || row.name === null || row.status === null) {
+  // Copilot review #541 fix: fail-visible su TUTTI i required fields (schema
+  // NOT NULL nelle tabelle base → VIEW null indica corruption/RLS/schema drift).
+  // Include current_balance, currency, created_at, updated_at per evitare
+  // fabbricare valori (`?? 0`, `?? 'EUR'`, `?? new Date()`) che mascherano bug.
+  const required = {
+    id: row.id,
+    class: row.class,
+    type: row.type,
+    name: row.name,
+    status: row.status,
+    current_balance: row.current_balance,
+    currency: row.currency,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+  };
+  const nullFields = Object.entries(required)
+    .filter(([, v]) => v === null)
+    .map(([k]) => k);
+  if (nullFields.length > 0) {
     console.error(
-      '[financialInstrumentsClient] Skipping invalid row with null required field:',
-      { id: row.id, class: row.class, name: row.name, status: row.status },
+      '[financialInstrumentsClient] Skipping row with null required field(s):',
+      { nullFields, rowId: row.id },
     );
     return null;
   }
@@ -113,24 +130,25 @@ function mapRowToInstrument(row: ViewRow): FinancialInstrument | null {
     console.error('[financialInstrumentsClient] Unknown class value:', row.class);
     return null;
   }
+  // TypeScript narrowing: post-filter i field required sono non-null
   return {
-    id: row.id,
+    id: row.id as string,
     class: cls,
-    type: row.type ?? 'OTHER',
+    type: row.type as string,
     userId: row.user_id,
     familyId: row.family_id,
-    name: row.name,
-    currentBalance: Number(row.current_balance ?? 0),
-    currency: row.currency ?? 'EUR',
+    name: row.name as string,
+    currentBalance: Number(row.current_balance),
+    currency: row.currency as string,
     originalAmount: row.original_amount !== null ? Number(row.original_amount) : null,
     creditLimit: row.credit_limit !== null ? Number(row.credit_limit) : null,
     interestRate: row.interest_rate !== null ? Number(row.interest_rate) : null,
     minimumPayment: row.minimum_payment !== null ? Number(row.minimum_payment) : null,
     goalId: row.goal_id,
-    status: row.status,
+    status: row.status as string,
     institutionName: row.institution_name,
-    createdAt: row.created_at ?? new Date().toISOString(),
-    updatedAt: row.updated_at ?? new Date().toISOString(),
+    createdAt: row.created_at as string,
+    updatedAt: row.updated_at as string,
   };
 }
 
