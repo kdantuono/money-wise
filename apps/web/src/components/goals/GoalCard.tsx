@@ -94,8 +94,17 @@ export function GoalCard({ goal, onEditClick, onDeleteClick, onArchiveClick }: G
   const priorityColor = PRIORITY_COLOR[goal.priority];
 
   const effectiveTarget = goal.target ?? 0;
-  const pct = effectiveTarget > 0 ? Math.min(100, (goal.current / effectiveTarget) * 100) : 0;
-  const remaining = Math.max(0, effectiveTarget - goal.current);
+  // Sprint 1.6.6 Fase 3a (#043): usa currentEffective (manual + linked accounts
+  // - linked liabilities) per progress display. Fallback `current` se VIEW non
+  // disponibile (dati legacy pre-Fase-3a).
+  const displayCurrent = goal.currentEffective ?? goal.current;
+  // Copilot review #536 fix: clamp [0,100]. Debt goal con liability linked
+  // (current - SUM(liabilities)) può produrre displayCurrent negativo → pct
+  // negativo creava mismatch UI (Progress bar clampa a 0, label mostrava -X%).
+  const pct = effectiveTarget > 0
+    ? Math.max(0, Math.min(100, (displayCurrent / effectiveTarget) * 100))
+    : 0;
+  const remaining = Math.max(0, effectiveTarget - displayCurrent);
 
   let daysLeft: number | null = null;
   if (goal.deadline) {
@@ -207,8 +216,16 @@ export function GoalCard({ goal, onEditClick, onDeleteClick, onArchiveClick }: G
       {!isOpenended && (
         <div className="mb-3">
           <div className="flex justify-between text-sm mb-1.5">
-            <span className="text-muted-foreground">
-              &euro;{goal.current.toLocaleString('it-IT')}
+            <span
+              className="text-muted-foreground"
+              data-testid="goal-card-current"
+              title={
+                goal.currentEffective !== undefined && goal.currentEffective !== goal.current
+                  ? `Manuale: €${goal.current.toLocaleString('it-IT')} · Effective (+ balance linked): €${goal.currentEffective.toLocaleString('it-IT')}`
+                  : undefined
+              }
+            >
+              &euro;{displayCurrent.toLocaleString('it-IT')}
             </span>
             <span
               data-testid="goal-card-target"
@@ -227,8 +244,8 @@ export function GoalCard({ goal, onEditClick, onDeleteClick, onArchiveClick }: G
           <p className="text-xs text-muted-foreground italic">
             Obiettivo aperto — accumulo continuo senza target fisso
           </p>
-          <p className="text-sm font-medium text-foreground mt-1">
-            &euro;{goal.current.toLocaleString('it-IT')} accumulati
+          <p className="text-sm font-medium text-foreground mt-1" data-testid="goal-card-current">
+            &euro;{displayCurrent.toLocaleString('it-IT')} accumulati
           </p>
         </div>
       )}
