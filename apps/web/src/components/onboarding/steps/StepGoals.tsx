@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useOnboardingPlanStore } from '@/store/onboarding-plan.store';
 import { PRIORITY_LABEL_IT, type PriorityRank, type WizardGoalDraft, type GoalType } from '@/types/onboarding-plan';
 import { Button } from '@/components/ui/button';
+import { OnboardingTip } from '@/components/onboarding/OnboardingTip';
 import {
   Plus,
   X,
@@ -484,6 +485,12 @@ export function StepGoals() {
           <strong>Fondo Emergenza</strong>.
         </p>
       </div>
+
+      {/* #053: hint onboarding primo accesso — spiega folder pattern iOS */}
+      <OnboardingTip
+        id="step3_folders"
+        message="Tocca una categoria per aggiungere un obiettivo. Categorie con più obiettivi si aprono come cartelle — clicca di nuovo per vederle tutte insieme."
+      />
 
       {/* Preset cards — always visible. Sprint 1.6 WP-Q6: iOS folder pattern with counter badge. */}
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
