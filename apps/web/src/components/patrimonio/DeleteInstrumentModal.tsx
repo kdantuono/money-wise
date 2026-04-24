@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -30,6 +30,12 @@ export function DeleteInstrumentModal({
 }: DeleteInstrumentModalProps) {
   const queryClient = useQueryClient();
   const [error, setError] = useState<string | null>(null);
+
+  // Copilot fix: reset error state quando modal si apre (altrimenti un errore
+  // precedente riappare al re-open post overlay/Esc close).
+  useEffect(() => {
+    if (open) setError(null);
+  }, [open]);
 
   const mutation = useMutation({
     mutationFn: async () => {
@@ -71,17 +77,33 @@ export function DeleteInstrumentModal({
             </Dialog.Description>
           </div>
 
-          <div className="text-sm text-muted-foreground">
+          <div className="text-sm text-muted-foreground space-y-1">
             {isLiability ? (
-              <p>
-                Le rate storiche e i pagamenti collegati resteranno visibili nello storico
-                transazioni, ma il debito scomparirà dal patrimonio.
-              </p>
+              <>
+                <p>
+                  <strong className="text-red-700 dark:text-red-400">
+                    Eliminazione permanente
+                  </strong>
+                  : il debito e le rate associate saranno rimossi dal database.
+                </p>
+                <p className="text-xs">
+                  I pagamenti storici già applicati a transazioni resteranno nello
+                  storico, ma non saranno più linkati a un debito esistente.
+                </p>
+              </>
             ) : (
-              <p>
-                Le transazioni storiche resteranno archiviate. Se il conto ha trasferimenti
-                collegati, l&apos;eliminazione sarà bloccata e dovrai gestirli prima.
-              </p>
+              <>
+                <p>
+                  <strong className="text-red-700 dark:text-red-400">
+                    Eliminazione permanente
+                  </strong>
+                  : il conto e le sue transazioni saranno rimossi dal database.
+                </p>
+                <p className="text-xs">
+                  Se il conto ha trasferimenti collegati, l&apos;eliminazione sarà
+                  bloccata — dovrai gestirli prima.
+                </p>
+              </>
             )}
           </div>
 

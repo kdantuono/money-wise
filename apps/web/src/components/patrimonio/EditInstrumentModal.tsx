@@ -50,6 +50,12 @@ export function EditInstrumentModal({
       if (!Number.isFinite(parsedBalance)) {
         throw new Error('Saldo non valido');
       }
+      // FinancialInstrument.currentBalance è positivo sempre (convenzione italiana:
+      // assets positivi, liabilities positivi = debito residuo). Rifiutare negativi
+      // preserva la semantica del dominio.
+      if (parsedBalance < 0) {
+        throw new Error('Il saldo non può essere negativo');
+      }
       const trimmedName = name.trim();
       if (trimmedName.length === 0) {
         throw new Error('Nome obbligatorio');
@@ -127,6 +133,7 @@ export function EditInstrumentModal({
                 data-testid="edit-instrument-balance"
                 type="number"
                 step="0.01"
+                min="0"
                 value={balance}
                 onChange={(e) => setBalance(e.target.value)}
                 required

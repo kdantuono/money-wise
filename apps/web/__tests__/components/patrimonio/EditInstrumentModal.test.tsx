@@ -4,7 +4,7 @@
 
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '../../utils/test-utils';
+import { render, screen, waitFor, fireEvent } from '../../utils/test-utils';
 import userEvent from '@testing-library/user-event';
 import { EditInstrumentModal } from '../../../src/components/patrimonio/EditInstrumentModal';
 import type { FinancialInstrument } from '../../../src/services/financial-instruments.client';
@@ -146,6 +146,33 @@ describe('EditInstrumentModal', () => {
         name: 'Finanziamento Auto',
         currentBalance: 3500,
       });
+    });
+    expect(accountsClient.updateAccount).not.toHaveBeenCalled();
+  });
+
+  it('rejects negative balance (dominio positivo sempre)', async () => {
+    const user = userEvent.setup();
+    render(
+      <EditInstrumentModal
+        instrument={assetInstrument}
+        open={true}
+        onOpenChange={vi.fn()}
+      />,
+    );
+
+    // Usiamo fireEvent.change + fireEvent.submit per bypassare HTML5 `min="0"`
+    // validation che in jsdom blocca il form nativo. Il test verifica il
+    // JS-level guard, complementare alla constraint browser-level (defense-in-depth).
+    const balanceInput = screen.getByTestId('edit-instrument-balance');
+    fireEvent.change(balanceInput, { target: { value: '-100' } });
+
+    const form = screen.getByTestId('edit-instrument-submit').closest('form')!;
+    fireEvent.submit(form);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('edit-instrument-error')).toHaveTextContent(
+        'Il saldo non può essere negativo',
+      );
     });
     expect(accountsClient.updateAccount).not.toHaveBeenCalled();
   });
