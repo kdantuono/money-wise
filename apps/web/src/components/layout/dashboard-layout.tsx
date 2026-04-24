@@ -22,6 +22,7 @@ import {
   FileText,
   Sparkles,
   CreditCard,
+  Coins,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '@/store/auth.store';
@@ -31,8 +32,12 @@ import { TopBar } from './top-bar';
 // Navigation config — mapped to Next.js App Router paths
 // ---------------------------------------------------------------------------
 
+// ADR-005 Fase 2.1: "Patrimonio" nuova entry sopra Conti/Debiti (Q1 lock
+// coexistenza 1 sprint). Badge "Nuovo" soft-deprecate /accounts e
+// /liabilities in Fase 2.2. TODO remove badge post-Fase-2.2.
 const mainNav = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+  { name: 'Patrimonio', href: '/dashboard/patrimonio', icon: Coins, badge: 'Nuovo' },
   { name: 'Conti', href: '/dashboard/accounts', icon: Wallet },
   { name: 'Debiti', href: '/dashboard/liabilities', icon: CreditCard },
   { name: 'Investimenti', href: '/dashboard/investments', icon: TrendingUp },
@@ -92,6 +97,11 @@ function NavLink({
         />
         <span className={active ? 'tracking-[-0.01em]' : ''}>{item.name}</span>
       </div>
+      {'badge' in item && item.badge && (
+        <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-blue-500/15 text-blue-600 dark:bg-blue-400/20 dark:text-blue-300 uppercase tracking-wide">
+          {item.badge}
+        </span>
+      )}
     </Link>
   );
 }

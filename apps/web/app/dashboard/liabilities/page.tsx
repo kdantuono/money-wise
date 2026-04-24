@@ -21,6 +21,7 @@ import {
   type Liability,
   type CreateLiabilityRequest,
 } from '@/services/liabilities.client';
+import { NewFeatureBanner } from '@/components/ui/new-feature-banner';
 
 // =============================================================================
 // Component
@@ -107,6 +108,12 @@ export default function LiabilitiesPage() {
 
   return (
     <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-6" data-testid="liabilities-container">
+      {/* ADR-005 Fase 2.1: deprecation hint verso unified Patrimonio */}
+      <NewFeatureBanner
+        href="/dashboard/patrimonio"
+        message="Conti + investimenti + debiti in un'unica vista unificata."
+        testId="liabilities-patrimonio-banner"
+      />
       {/* Page Header — Figma pattern 1:1 con Accounts/Goals */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div className="flex items-center gap-3">
