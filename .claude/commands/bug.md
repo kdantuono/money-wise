@@ -3,7 +3,7 @@ description: Autonomous GitHub bug resolution — single command takes issue →
 
 # /bug — Autonomous Bug Resolution
 
-Takes a GitHub issue number and drives the full lifecycle autonomously: triage → agent routing → branch setup → fix implementation → PR creation → review+CI monitoring → auto-merge. **No user confirmation between steps** (matches MoneyWise autonomous continuation rule — `feedback_autonomous_continuation.md`).
+Takes a GitHub issue number and drives the full lifecycle autonomously: triage → agent routing → branch setup → fix implementation → PR creation → review+CI monitoring → auto-merge. **No user confirmation between steps** (matches MoneyWise autonomous continuation rule — see `~/vault/moneywise/memory/feedback_autonomous_continuation.md`; vault is the single source of truth for `feedback_*` memories, not this repo).
 
 ## Arguments
 
@@ -48,6 +48,12 @@ gh issue view $ARGUMENTS --json number,title,body,labels,assignees,comments
 git fetch origin
 git checkout develop
 git pull --ff-only origin develop
+
+# Init state file if missing (first invocation per machine)
+STATE_DIR=".claude/orchestration/state"
+STATE_FILE="$STATE_DIR/bugs-active.json"
+mkdir -p "$STATE_DIR"
+[ -f "$STATE_FILE" ] || echo '{"bugs": []}' > "$STATE_FILE"
 ```
 
 **Read** `.claude/orchestration/state/bugs-active.json` — check for overlapping `paths_touched_predicted`:
@@ -67,12 +73,12 @@ git pull --ff-only origin develop
 }
 ```
 
-**Conflict rules:**
+**Conflict rules (single source of truth for status on initial append):**
 
-- **Overlap detected** (same file tree branch): SERIAL queue → append current bug with `status: "queued"`, `blocked_by: [N]`. Create `CronCreate` every 10 min checking if blocker status=merged → then resume.
-- **Disjoint paths**: PARALLEL → spawn agent immediately.
+- **Overlap detected** (same file tree branch): append entry with `status: "queued"` + `blocked_by: [N]` (serial queue). Create `CronCreate` every 10 min checking if blocker status=`merged` → on match, transition entry to `status: "in_progress"` + spawn agent.
+- **Disjoint paths**: append entry with `status: "in_progress"` + spawn agent immediately (no queue).
 
-**Append** current bug entry to `bugs-active.json` with `status: "in_progress"`.
+Status lifecycle in `bugs-active.json`: `queued` → `in_progress` → `pr_open` → `merging` → `merged` (or `failed`).
 
 ## Step 3 — Branch setup
 
@@ -88,6 +94,13 @@ git checkout -b "$BRANCH"
 
 ## Step 4 — Spawn specialist agent (background)
 
+Pre-compute before spawn:
+
+```bash
+ISSUE_URL=$(gh issue view "$ISSUE_NUM" --json url --jq '.url')
+REPO_ROOT=$(git rev-parse --show-toplevel)
+```
+
 ```
 Agent({
   subagent_type: <from Step 1 routing>,
@@ -100,7 +113,7 @@ Full issue: ${ISSUE_URL}
 Fetch with: gh issue view ${ISSUE_NUM} --json body,title,labels
 
 BRANCH: ${BRANCH} (already created + checked out)
-REPO: /home/deck/dev/money-wise
+REPO: ${REPO_ROOT}
 
 PROCEDURE (TDD):
 1. Read issue + related files
@@ -155,12 +168,13 @@ Check PR status for issue #${ISSUE_NUM} branch ${BRANCH}:
 - Copilot review state (REQUEST_CHANGES requires fix cycle)
 - CI/CD rollup state (FAILURE requires fix cycle)
 
-ACTIONS:
-- If REVIEW_REQUESTED + APPROVED + all CI green (5+ min since last push for race-prevention): apply 'auto-merge' label
-- If Copilot REQUEST_CHANGES: read comments, classify (must-fix / nice-to-have / wrong), spawn quick fix commit if must-fix
-- If CI fails: read logs, spawn fix or escalate
-- If MERGED: CronDelete self + remove entry from bugs-active.json + daily note entry
-- If still in_progress: just log status + wait next tick
+ACTIONS (usa i valori esatti di \`gh pr view --json reviewDecision,state,statusCheckRollup\`):
+- If reviewDecision == "APPROVED" (o "" = no review required) + all CI green + (5+ min since last push): apply 'auto-merge' label
+  → JSON path: \`gh pr view N --json reviewDecision,statusCheckRollup --jq '{decision: .reviewDecision, failed: [.statusCheckRollup[] | select(.conclusion=="FAILURE")]}'\`
+- If reviewDecision == "CHANGES_REQUESTED": read inline comments (\`gh api repos/.../pulls/N/comments\`), classify (must-fix/nice-to-have/wrong), commit fix if must-fix + trigger @copilot re-review
+- If any statusCheckRollup entry has conclusion == "FAILURE": read logs (\`gh run view <id> --log-failed\`), spawn fix or escalate
+- If state == "MERGED": CronDelete self + update entry in bugs-active.json (status=merged + merge_sha) + daily note entry + cleanup local branch
+- Else (pending CI, UNSTABLE, BLOCKED): log status + wait next tick
   `
 })
 ```
@@ -230,9 +244,14 @@ Path: `.claude/orchestration/state/bugs-active.json` (gitignored).
 
 ## Related references
 
-- `feedback_autonomous_continuation.md` — autonomy rule
-- `feedback_pr_lifecycle_loop_workflow.md` — PR monitoring
-- `feedback_auto_merge_label_timing.md` — 5-min buffer
-- `feedback_agent_orchestration.md` — agent spawn policy (bypassPermissions, no-worktree default)
-- `feedback_branch_discipline.md` — branch naming
-- `feedback_ci_checkpoints.md` — CI verification gates
+Le memorie `feedback_*.md` vivono nel vault Obsidian (non nel repo). Path:
+`~/vault/moneywise/memory/` (symlink'd a `~/.claude/projects/<project-id>/memory/`).
+Vedi CLAUDE.md § "Knowledge Vault (Obsidian)" per setup.
+
+- `~/vault/moneywise/memory/feedback_autonomous_continuation.md` — autonomy rule (non stop mid-phase)
+- `~/vault/moneywise/memory/feedback_pr_lifecycle_loop_workflow.md` — CronCreate post-PR mandatory
+- `~/vault/moneywise/memory/feedback_auto_merge_label_timing.md` — 5-min buffer post-push
+- `~/vault/moneywise/memory/feedback_agent_orchestration.md` — agent spawn policy (bypassPermissions, no-worktree default)
+- `~/vault/moneywise/memory/feedback_branch_discipline.md` — branch naming convention
+- `~/vault/moneywise/memory/feedback_ci_checkpoints.md` — CI verification gates
+- `~/vault/moneywise/memory/feedback_copilot_re_review_ping.md` — trigger re-review post-fix push

@@ -21,6 +21,7 @@ Commands for standard development workflows.
 |---------|-------------|-------|
 | `/feature` | Implement new feature | `/feature transaction-export` |
 | `/fix` | Fix GitHub issue | `/fix 123` |
+| `/bug` | **Autonomous** issue → agent → PR → auto-merge lifecycle | `/bug 458` |
 | `/refactor` | Safe refactoring with tests | `/refactor user-service` |
 
 ### 🔍 Status & Monitoring
