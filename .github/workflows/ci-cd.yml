@@ -973,7 +973,7 @@ jobs:
         run: |
           if [ -z "$NEXT_PUBLIC_SUPABASE_URL" ] || [ -z "$NEXT_PUBLIC_SUPABASE_ANON_KEY" ]; then
             echo "⏭️  Skipping E2E: Supabase secrets not configured in repo."
-            echo "::warning title=E2E skipped::Configure NEXT_PUBLIC_SUPABASE_URL + NEXT_PUBLIC_SUPABASE_ANON_KEY in repo secrets to enable E2E on CI. See planning/issues/061-e2e-env-supabase-missing.md."
+            echo "::warning title=E2E skipped::Configure NEXT_PUBLIC_SUPABASE_URL + NEXT_PUBLIC_SUPABASE_ANON_KEY in repository secrets under Settings > Secrets and variables > Actions to enable E2E on CI."
             exit 0
           fi
           cd apps/web
