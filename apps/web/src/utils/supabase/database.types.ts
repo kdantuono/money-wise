@@ -1499,6 +1499,28 @@ export type Database = {
       }
     }
     Views: {
+      financial_instruments: {
+        Row: {
+          class: string | null
+          created_at: string | null
+          credit_limit: number | null
+          currency: string | null
+          current_balance: number | null
+          family_id: string | null
+          goal_id: string | null
+          id: string | null
+          institution_name: string | null
+          interest_rate: number | null
+          minimum_payment: number | null
+          name: string | null
+          original_amount: number | null
+          status: string | null
+          type: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
       goals_with_progress: {
         Row: {
           created_at: string | null

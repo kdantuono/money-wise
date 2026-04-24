@@ -31,6 +31,7 @@ import { initiateLink } from '@/services/banking.client';
 import { ManualAccountForm } from '@/components/accounts';
 import { EditAccountForm } from '@/components/accounts/EditAccountForm';
 import { useActiveGoals } from '@/hooks/useActiveGoals';
+import { NewFeatureBanner } from '@/components/ui/new-feature-banner';
 
 // ---------------------------------------------------------------------------
 // Helpers — 1:1 from Figma Accounts.tsx styling
@@ -191,6 +192,13 @@ export default function AccountsPage() {
 
   return (
     <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-8">
+      {/* ADR-005 Fase 2.1: deprecation hint verso unified Patrimonio */}
+      <NewFeatureBanner
+        href="/dashboard/patrimonio"
+        message="Conti + investimenti + debiti in un'unica vista unificata."
+        testId="accounts-patrimonio-banner"
+      />
+
       {/* Header — 1:1 Figma */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
