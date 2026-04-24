@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import * as SliderPrimitive from '@radix-ui/react-slider';
+import * as Dialog from '@radix-ui/react-dialog';
 import { toast } from 'sonner';
 import { useOnboardingPlanStore } from '@/store/onboarding-plan.store';
 import { DeterministicBehavioralAdvisor } from '@/lib/onboarding/advisors/DeterministicBehavioralAdvisor';
@@ -170,6 +171,10 @@ export function StepCalibration() {
   const setStep = useOnboardingPlanStore((s) => s.setStep);
 
   const [showAdvancedRebalance, setShowAdvancedRebalance] = useState(false);
+  // #057 sacrifice lifestyle dialog state (hooks at top, before any early return)
+  const [showSacrificeDialog, setShowSacrificeDialog] = useState(false);
+  const [sacrificeAmount, setSacrificeAmount] = useState(0);
+  const [sacrificeTarget, setSacrificeTarget] = useState<'savings' | 'invest'>('savings');
 
   const [result, setResult] = useState<AllocationResult | null>(null);
   const [behavioralWarnings, setBehavioralWarnings] = useState<BehavioralWarning[]>([]);
@@ -532,17 +537,32 @@ export function StepCalibration() {
           role="alert"
           aria-live="polite"
           data-testid="step4-banner-red"
-          className="flex gap-2 items-start p-3 rounded-lg bg-rose-500/10 dark:bg-rose-950/30 border border-rose-500/20 dark:border-rose-800"
+          className="flex flex-col gap-2 p-3 rounded-lg bg-rose-500/10 dark:bg-rose-950/30 border border-rose-500/20 dark:border-rose-800"
         >
-          <span aria-hidden="true" className="shrink-0 mt-0.5 text-base">⚠️</span>
-          <div>
-            <p className="text-sm font-medium text-rose-800 dark:text-rose-300">
-              Eccedenza {fmtEur(-unallocated)}: riduci uno o più goal o sposta dai pool disponibili.
-            </p>
-            <p className="text-xs text-rose-700 dark:text-rose-400 mt-0.5">
-              Il totale allocato supera il budget Step 2. Il piano non è valido finché non risolvi lo sforamento.
-            </p>
+          <div className="flex gap-2 items-start">
+            <span aria-hidden="true" className="shrink-0 mt-0.5 text-base">⚠️</span>
+            <div>
+              <p className="text-sm font-medium text-rose-800 dark:text-rose-300">
+                Eccedenza {fmtEur(-unallocated)}: riduci uno o più goal o sposta dai pool disponibili.
+              </p>
+              <p className="text-xs text-rose-700 dark:text-rose-400 mt-0.5">
+                Il totale allocato supera il budget Step 2. Il piano non è valido finché non risolvi lo sforamento.
+              </p>
+            </div>
           </div>
+          {/* #057 sacrifice lifestyle chip: contestuale solo su sforamento */}
+          {step2.lifestyleBuffer > 0 && (
+            <div className="flex gap-2 flex-wrap pl-7">
+              <button
+                type="button"
+                onClick={() => setShowSacrificeDialog(true)}
+                data-testid="sacrifice-lifestyle-chip"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20 hover:bg-amber-500/20 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 min-h-[32px]"
+              >
+                🎯 Sacrifica lifestyle (max {fmtEur(step2.lifestyleBuffer)})
+              </button>
+            </div>
+          )}
         </div>
       )}
       {bannerStatus === 'yellow' && (
@@ -764,6 +784,127 @@ export function StepCalibration() {
           ))}
         </ul>
       )}
+
+      {/* #057 Sacrifice lifestyle dialog — modal overlay con slider range */}
+      <Dialog.Root open={showSacrificeDialog} onOpenChange={setShowSacrificeDialog}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
+          <Dialog.Content
+            data-testid="sacrifice-lifestyle-dialog"
+            className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-border bg-background p-6 shadow-xl focus:outline-none data-[state=open]:animate-in data-[state=closed]:animate-out"
+            aria-describedby={undefined}
+          >
+            <Dialog.Title className="text-base font-semibold text-foreground mb-2">
+              🎯 Sacrifica Lifestyle
+            </Dialog.Title>
+            <p className="text-sm text-muted-foreground mb-4">
+              Riduci temporaneamente il budget Lifestyle per finanziare i tuoi obiettivi.
+              Il delta sarà spostato al pool selezionato.
+            </p>
+
+            {/* Target selector */}
+            <div className="mb-4">
+              <label className="text-sm font-medium text-foreground block mb-2">
+                Sposta verso:
+              </label>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSacrificeTarget('savings')}
+                  className={`flex-1 px-3 py-2 rounded-xl text-sm font-medium border transition-colors ${
+                    sacrificeTarget === 'savings'
+                      ? 'bg-blue-500/10 border-blue-500/40 text-blue-700 dark:text-blue-300'
+                      : 'border-border text-muted-foreground hover:bg-muted'
+                  }`}
+                >
+                  Risparmi ({fmtEur(step2.monthlySavingsTarget)})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSacrificeTarget('invest')}
+                  className={`flex-1 px-3 py-2 rounded-xl text-sm font-medium border transition-colors ${
+                    sacrificeTarget === 'invest'
+                      ? 'bg-purple-500/10 border-purple-500/40 text-purple-700 dark:text-purple-300'
+                      : 'border-border text-muted-foreground hover:bg-muted'
+                  }`}
+                >
+                  Investimenti ({fmtEur(step2.investmentsTarget ?? 0)})
+                </button>
+              </div>
+            </div>
+
+            {/* Slider range */}
+            <div className="mb-4">
+              <div className="flex justify-between text-sm mb-2">
+                <span className="text-muted-foreground">Lifestyle attuale: {fmtEur(step2.lifestyleBuffer)}</span>
+                <span className="font-semibold text-foreground tabular-nums">
+                  Sposta {fmtEur(sacrificeAmount)}
+                </span>
+              </div>
+              <input
+                type="range"
+                min={0}
+                max={step2.lifestyleBuffer}
+                step={10}
+                value={sacrificeAmount}
+                onChange={(e) => setSacrificeAmount(Number(e.target.value))}
+                className="w-full"
+                data-testid="sacrifice-slider"
+              />
+              <div className="flex justify-between text-xs text-muted-foreground mt-1 tabular-nums">
+                <span>€0</span>
+                <span>{fmtEur(step2.lifestyleBuffer)}</span>
+              </div>
+            </div>
+
+            {/* Warning lifestyle < 50 */}
+            {step2.lifestyleBuffer - sacrificeAmount < 50 && sacrificeAmount > 0 && (
+              <p className="text-xs text-amber-700 dark:text-amber-400 mb-3 flex gap-1 items-start">
+                <span aria-hidden="true">⚠️</span>
+                <span>Nuovo Lifestyle €{step2.lifestyleBuffer - sacrificeAmount} — sotto il minimo consigliato €50/mese per sostenibilità.</span>
+              </p>
+            )}
+
+            <div className="flex justify-end gap-2">
+              <Dialog.Close asChild>
+                <button
+                  type="button"
+                  onClick={() => setSacrificeAmount(0)}
+                  className="px-4 py-2 rounded-xl text-sm font-medium border border-border hover:bg-muted"
+                >
+                  Annulla
+                </button>
+              </Dialog.Close>
+              <button
+                type="button"
+                onClick={() => {
+                  if (sacrificeAmount <= 0) return;
+                  const newLifestyle = step2.lifestyleBuffer - sacrificeAmount;
+                  const patch =
+                    sacrificeTarget === 'savings'
+                      ? {
+                          lifestyleBuffer: newLifestyle,
+                          monthlySavingsTarget: step2.monthlySavingsTarget + sacrificeAmount,
+                        }
+                      : {
+                          lifestyleBuffer: newLifestyle,
+                          investmentsTarget: (step2.investmentsTarget ?? 0) + sacrificeAmount,
+                        };
+                  updateProfile(patch);
+                  toast.success(`Spostati ${fmtEur(sacrificeAmount)} da Lifestyle a ${sacrificeTarget === 'savings' ? 'Risparmi' : 'Investimenti'}`);
+                  setShowSacrificeDialog(false);
+                  setSacrificeAmount(0);
+                }}
+                disabled={sacrificeAmount <= 0}
+                data-testid="sacrifice-confirm"
+                className="px-4 py-2 rounded-xl text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Conferma spostamento
+              </button>
+            </div>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
     </div>
   );
 }
