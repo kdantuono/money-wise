@@ -14,7 +14,7 @@ Issue number: `$ARGUMENTS` (e.g., `/bug 458`)
 - **Epic features** (multi-PR, new modules): use `/full-feature` instead.
 - **Security-critical with uncertain fix**: triage manually + consult security-specialist first.
 - **Unlabeled vague issue** (no reproduction steps, no affected area): comment on issue asking for clarification; don't spawn agent on guesswork.
-- **Migration-touching fix**: tier-1 confirm required (MANDATORY per `feedback_autonomous_continuation.md` migration exception).
+- **Migration-touching fix**: tier-1 confirm required (MANDATORY per `~/vault/moneywise/memory/feedback_autonomous_continuation.md` migration exception).
 
 ## Step 1 — Fetch & Triage (autonomous)
 
@@ -90,7 +90,7 @@ BRANCH="fix/issue-$ISSUE_NUM-$TITLE_SLUG"
 git checkout -b "$BRANCH"
 ```
 
-**DO NOT** use worktree isolation by default (see `feedback_agent_orchestration.md` — subagent sandbox rules). Exception: tasks >2h may opt-in via `scripts/bootstrap-worktree.sh`.
+**DO NOT** use worktree isolation by default (see `~/vault/moneywise/memory/feedback_agent_orchestration.md` — subagent sandbox rules). Exception: tasks >2h may opt-in via `scripts/bootstrap-worktree.sh`.
 
 ## Step 4 — Spawn specialist agent (background)
 
@@ -165,7 +165,7 @@ CronCreate({
   prompt: `
 Check PR status for issue #${ISSUE_NUM} branch ${BRANCH}:
 - gh pr view --json number,state,reviewDecision,statusCheckRollup
-- Copilot review state (REQUEST_CHANGES requires fix cycle)
+- Copilot review state (CHANGES_REQUESTED requires fix cycle)
 - CI/CD rollup state (FAILURE requires fix cycle)
 
 ACTIONS (usa i valori esatti di \`gh pr view --json reviewDecision,state,statusCheckRollup\`):
@@ -179,7 +179,7 @@ ACTIONS (usa i valori esatti di \`gh pr view --json reviewDecision,state,statusC
 })
 ```
 
-Buffer rule 5-min: wait at least 5 min after last commit push before applying auto-merge label (Copilot may re-review). Documented in `feedback_auto_merge_label_timing.md`.
+Buffer rule 5-min: wait at least 5 min after last commit push before applying auto-merge label (Copilot may re-review). Documented in `~/vault/moneywise/memory/feedback_auto_merge_label_timing.md`.
 
 ## Step 7 — Cleanup post-merge
 
