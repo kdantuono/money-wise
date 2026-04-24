@@ -39,10 +39,15 @@ import { categoriesClient, type Category } from '@/services/categories.client';
 // Helper Functions
 // =============================================================================
 
-function getIconComponent(iconName: string | null): LucideIcon {
-  if (!iconName) return Folder;
+function renderIconByName(
+  iconName: string | null,
+  className?: string,
+  style?: React.CSSProperties,
+) {
+  if (!iconName) return <Folder className={className} style={style} />;
   const icons = LucideIcons as unknown as Record<string, LucideIcon>;
-  return icons[iconName] || Folder;
+  const Icon = icons[iconName] || Folder;
+  return <Icon className={className} style={style} />;
 }
 
 function formatCategoryType(type: string): string {
@@ -311,8 +316,6 @@ export default function CategoryDetailPage() {
     );
   }
 
-  const IconComponent = getIconComponent(category.icon);
-
   return (
     <div className="space-y-6" data-testid="category-detail-container">
       {/* Back Button */}
@@ -335,10 +338,9 @@ export default function CategoryDetailPage() {
                 backgroundColor: category.color ? `${category.color}20` : '#f3f4f6',
               }}
             >
-              <IconComponent
-                className="h-8 w-8"
-                style={{ color: category.color || '#6b7280' }}
-              />
+              {renderIconByName(category.icon, 'h-8 w-8', {
+                color: category.color || '#6b7280',
+              })}
             </div>
 
             {/* Name and Type */}
