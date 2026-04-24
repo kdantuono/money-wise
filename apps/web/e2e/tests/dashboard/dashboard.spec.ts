@@ -17,7 +17,7 @@ test.beforeEach(async ({ page }) => {
   // Login
   await page.goto(ROUTES.AUTH.LOGIN);
   await page.waitForSelector(TEST_IDS.AUTH.LOGIN_FORM, { state: 'visible' });
-  await page.fill(TEST_IDS.AUTH.EMAIL_INPUT, 'e2e-shard-3@moneywise.test');
+  await page.fill(TEST_IDS.AUTH.EMAIL_INPUT, 'e2e-shard-3@moneywise.app');
   await page.fill(TEST_IDS.AUTH.PASSWORD_INPUT, 'SecureTest#2025!');
   await Promise.all([
     page.waitForResponse(r => r.url().includes('/api/auth/login')),

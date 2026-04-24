@@ -24,6 +24,10 @@ const FRONTEND_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 // Supabase configuration (same env vars the frontend uses)
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+// Service role key (opzionale ma raccomandato in CI): abilita `auth.admin.createUser`
+// che bypassa email confirmation → zero email sent → zero rate limit Supabase.
+// Se assente → fallback a `auth.signUp` con limitazioni documentate.
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 // Test user credentials
 // Password must NOT contain firstName, lastName, or email parts
@@ -156,12 +160,32 @@ function cleanupAuthState() {
 
 /**
  * Create test user pool via Supabase Auth for parallel test execution.
- * Uses signUp() which works with the anon key.
+ *
+ * Architettura:
+ * - **Path A (raccomandato, CI)**: se `SUPABASE_SERVICE_ROLE_KEY` è presente, usa
+ *   `auth.admin.createUser({ email_confirm: true })`. Bypassa invio email di conferma
+ *   → zero email sent → zero rate limit. Preserva test isolation fresh-per-run.
+ * - **Path B (fallback locale)**: se solo anon key è disponibile, usa `auth.signUp`.
+ *   Soggetto a rate limit email Supabase (~4 user/ora). Da preferire sviluppo locale.
+ *
+ * Domain change 2026-04-24 (P0 fix): `.test` TLD era rifiutato da Supabase email
+ * validation ("Email address invalid"). Passato a `.app` che è whitelist-safe.
  */
 async function createTestUserPool() {
   console.log('👥 Creating test user pool via Supabase Auth...');
 
-  const supabase = createClient(SUPABASE_URL!, SUPABASE_ANON_KEY!);
+  const useAdminApi = Boolean(SUPABASE_SERVICE_ROLE_KEY);
+  const supabase = useAdminApi
+    ? createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!, {
+        auth: { autoRefreshToken: false, persistSession: false },
+      })
+    : createClient(SUPABASE_URL!, SUPABASE_ANON_KEY!);
+
+  console.log(
+    useAdminApi
+      ? '   🔑 Using service_role_key (admin API: email_confirm bypass)'
+      : '   🔓 Using anon_key (signUp fallback: subject to email rate limit)',
+  );
 
   // Ensure .auth directory exists
   const authDir = path.dirname(TEST_USERS_FILE);
@@ -172,75 +196,42 @@ async function createTestUserPool() {
   const createdUsers: Array<{ email: string; password: string }> = [];
   const failedUsers: Array<{ email: string; error: string }> = [];
 
-  // Create shard users for parallel execution
-  for (let i = 0; i < 8; i++) {
-    const user = {
-      email: `e2e-shard-${i}@moneywise.test`,
-      password: 'SecureTest#2025!',
-      firstName: 'E2E',
-      lastName: `Shard${i}`,
-    };
+  // Shard users for parallel execution. Domain `.app` (was `.test` — rejected by Supabase).
+  const shardUsers = Array.from({ length: 8 }, (_, i) => ({
+    email: `e2e-shard-${i}@moneywise.app`,
+    password: 'SecureTest#2025!',
+    firstName: 'E2E',
+    lastName: `Shard${i}`,
+    label: `Shard ${i + 1}/8`,
+  }));
 
+  const predefinedUsers = TEST_USERS.map((u) => ({ ...u, label: `Predefined` }));
+
+  const allUsers = [...shardUsers, ...predefinedUsers];
+
+  for (const user of allUsers) {
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email: user.email,
-        password: user.password,
-        options: {
-          data: {
-            first_name: user.firstName,
-            last_name: user.lastName,
-          },
-        },
-      });
+      const result = useAdminApi
+        ? await createUserViaAdminApi(supabase, user)
+        : await createUserViaSignUp(supabase, user);
 
-      if (error) {
-        // "User already registered" is fine — means the user exists
-        if (error.message?.includes('already registered') || error.message?.includes('already exists')) {
-          createdUsers.push({ email: user.email, password: user.password });
-          console.log(`  ✅ User ${i + 1}/8: ${user.email} (existing)`);
-        } else {
-          failedUsers.push({ email: user.email, error: error.message });
-          console.warn(`  ⚠️ User ${i + 1}/8 failed: ${user.email} - ${error.message}`);
-        }
-      } else {
+      if (result.success) {
         createdUsers.push({ email: user.email, password: user.password });
-        console.log(`  ✅ User ${i + 1}/8: ${user.email}`);
+        console.log(`  ✅ ${user.label}: ${user.email}${result.existing ? ' (existing)' : ''}`);
+      } else {
+        failedUsers.push({ email: user.email, error: result.error ?? 'unknown' });
+        console.warn(`  ⚠️ ${user.label} failed: ${user.email} - ${result.error}`);
       }
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
       failedUsers.push({ email: user.email, error: errorMsg });
-      console.warn(`  ⚠️ User ${i + 1}/8 error: ${user.email} - ${errorMsg}`);
+      console.warn(`  ⚠️ ${user.label} error: ${user.email} - ${errorMsg}`);
     }
 
-    // Small delay to avoid rate limiting
-    await new Promise(resolve => setTimeout(resolve, 100));
-  }
-
-  // Also add the pre-defined test users
-  for (const user of TEST_USERS) {
-    try {
-      const { error } = await supabase.auth.signUp({
-        email: user.email,
-        password: user.password,
-        options: {
-          data: {
-            first_name: user.firstName,
-            last_name: user.lastName,
-          },
-        },
-      });
-
-      if (!error || error.message?.includes('already registered') || error.message?.includes('already exists')) {
-        createdUsers.push({ email: user.email, password: user.password });
-        console.log(`  ✅ Predefined user: ${user.email}`);
-      } else {
-        console.warn(`  ⚠️ Predefined user failed: ${user.email} - ${error.message}`);
-      }
-    } catch (error) {
-      console.warn(`  ⚠️ Predefined user failed: ${user.email}`);
+    // Small delay between requests (defensive — admin API non rate-limited ma prudenziale).
+    if (!useAdminApi) {
+      await new Promise((resolve) => setTimeout(resolve, 100));
     }
-
-    await new Promise(resolve => setTimeout(resolve, 100));
   }
 
   // Save user pool to file
@@ -251,12 +242,89 @@ async function createTestUserPool() {
   console.log(`💾 Saved to: ${TEST_USERS_FILE}`);
 
   if (failedUsers.length > 0) {
-    console.warn(`⚠️ ${failedUsers.length} users failed to create (tests will use available users)`);
+    console.warn(
+      `⚠️ ${failedUsers.length} users failed to create (tests will use available users)`,
+    );
   }
 
   if (createdUsers.length === 0) {
-    throw new Error('Failed to create any test users. Please check Supabase connection and auth settings.');
+    throw new Error(
+      'Failed to create any test users. ' +
+        (useAdminApi
+          ? 'Check SUPABASE_SERVICE_ROLE_KEY validity and RLS policies.'
+          : 'Rate limit likely hit — set SUPABASE_SERVICE_ROLE_KEY secret to bypass email rate limits.'),
+    );
   }
+}
+
+interface UserCreationInput {
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+}
+
+interface UserCreationResult {
+  success: boolean;
+  existing?: boolean;
+  error?: string;
+}
+
+/**
+ * Path A: admin API — email_confirm:true marca l'utente confermato senza inviare email.
+ * Zero rate limit. Richiede service_role_key (NON client anon).
+ */
+async function createUserViaAdminApi(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  admin: any,
+  user: UserCreationInput,
+): Promise<UserCreationResult> {
+  const { error } = await admin.auth.admin.createUser({
+    email: user.email,
+    password: user.password,
+    email_confirm: true,
+    user_metadata: {
+      first_name: user.firstName,
+      last_name: user.lastName,
+    },
+  });
+
+  if (!error) return { success: true };
+
+  const msg = error.message ?? '';
+  if (msg.includes('already been registered') || msg.includes('already exists')) {
+    return { success: true, existing: true };
+  }
+  return { success: false, error: msg };
+}
+
+/**
+ * Path B: public signUp — fallback locale senza service_role_key.
+ * Soggetto a email rate limit (~4 user/ora per progetto).
+ */
+async function createUserViaSignUp(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  client: any,
+  user: UserCreationInput,
+): Promise<UserCreationResult> {
+  const { error } = await client.auth.signUp({
+    email: user.email,
+    password: user.password,
+    options: {
+      data: {
+        first_name: user.firstName,
+        last_name: user.lastName,
+      },
+    },
+  });
+
+  if (!error) return { success: true };
+
+  const msg = error.message ?? '';
+  if (msg.includes('already registered') || msg.includes('already exists')) {
+    return { success: true, existing: true };
+  }
+  return { success: false, error: msg };
 }
 
 /**

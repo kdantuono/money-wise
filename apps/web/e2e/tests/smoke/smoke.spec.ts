@@ -57,7 +57,7 @@ test.describe('Smoke Tests', () => {
     await page.goto(ROUTES.AUTH.LOGIN);
     await page.waitForSelector(TEST_IDS.AUTH.LOGIN_FORM, { state: 'visible' });
     
-    await page.fill(TEST_IDS.AUTH.EMAIL_INPUT, 'e2e-shard-0@moneywise.test');
+    await page.fill(TEST_IDS.AUTH.EMAIL_INPUT, 'e2e-shard-0@moneywise.app');
     await page.fill(TEST_IDS.AUTH.PASSWORD_INPUT, 'SecureTest#2025!');
     
     // Click login and wait for navigation
@@ -79,7 +79,7 @@ test.describe('Smoke Tests', () => {
     // Login via UI
     await page.goto(ROUTES.AUTH.LOGIN);
     await page.waitForSelector(TEST_IDS.AUTH.LOGIN_FORM, { state: 'visible' });
-    await page.fill(TEST_IDS.AUTH.EMAIL_INPUT, 'e2e-shard-0@moneywise.test');
+    await page.fill(TEST_IDS.AUTH.EMAIL_INPUT, 'e2e-shard-0@moneywise.app');
     await page.fill(TEST_IDS.AUTH.PASSWORD_INPUT, 'SecureTest#2025!');
     
     await Promise.all([
@@ -106,7 +106,7 @@ test.describe('Smoke Tests', () => {
     // Login first via UI
     await page.goto(ROUTES.AUTH.LOGIN);
     await page.waitForSelector(TEST_IDS.AUTH.LOGIN_FORM, { state: 'visible' });
-    await page.fill(TEST_IDS.AUTH.EMAIL_INPUT, 'e2e-shard-0@moneywise.test');
+    await page.fill(TEST_IDS.AUTH.EMAIL_INPUT, 'e2e-shard-0@moneywise.app');
     await page.fill(TEST_IDS.AUTH.PASSWORD_INPUT, 'SecureTest#2025!');
     await Promise.all([
       page.waitForResponse(r => r.url().includes('/api/auth/login')),

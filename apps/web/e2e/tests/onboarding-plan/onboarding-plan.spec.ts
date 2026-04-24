@@ -11,7 +11,7 @@
  *
  * Test isolation / data discipline
  * --------------------------------
- * - We pick `e2e-shard-7@moneywise.test` (unused by other specs at time of
+ * - We pick `e2e-shard-7@moneywise.app` (unused by other specs at time of
  *   writing) so this test's residual plan cannot pollute dashboard.spec.ts or
  *   categories.spec.ts (both on shard-3).
  * - `plans.user_id` is UNIQUE (see 20260419160000_sprint_1_5_onboarding_plans.sql).
@@ -45,7 +45,7 @@ import { ROUTES } from '../../config/routes';
 import { TEST_IDS } from '../../config/test-ids';
 
 // Dedicated shard to avoid polluting specs that rely on shard-3 having no plan.
-const TEST_EMAIL = 'e2e-shard-7@moneywise.test';
+const TEST_EMAIL = 'e2e-shard-7@moneywise.app';
 const TEST_PASSWORD = 'SecureTest#2025!';
 const TEST_GOAL_NAME = 'Fondo Emergenza Test E2E';
 

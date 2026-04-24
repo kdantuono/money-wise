@@ -970,11 +970,17 @@ jobs:
           CI: true
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          # Opzionale: abilita auth.admin.createUser in global-setup (bypass email rate limit).
+          # Senza questa, signUp fallback colpisce ~4 user/ora limit Supabase → setup fail.
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
           if [ -z "$NEXT_PUBLIC_SUPABASE_URL" ] || [ -z "$NEXT_PUBLIC_SUPABASE_ANON_KEY" ]; then
             echo "⏭️  Skipping E2E: Supabase secrets not configured in repo."
             echo "::warning title=E2E skipped::Configure NEXT_PUBLIC_SUPABASE_URL + NEXT_PUBLIC_SUPABASE_ANON_KEY in repository secrets under Settings > Secrets and variables > Actions to enable E2E on CI."
             exit 0
+          fi
+          if [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
+            echo "::warning title=E2E rate-limit risk::SUPABASE_SERVICE_ROLE_KEY not configured. E2E will fall back to signUp() which is subject to Supabase email rate limit (~4 users/hour). For stable CI, configure it in repository secrets."
           fi
           cd apps/web
           echo "🏃 Running full E2E test suite"

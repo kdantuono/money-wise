@@ -147,7 +147,7 @@ test.describe('Authentication @critical', () => {
       // Use an existing user email
       await page.fill(TEST_IDS.AUTH.FIRST_NAME_INPUT, 'Test');
       await page.fill(TEST_IDS.AUTH.LAST_NAME_INPUT, 'User');
-      await page.fill(TEST_IDS.AUTH.EMAIL_INPUT, 'e2e-shard-1@moneywise.test');
+      await page.fill(TEST_IDS.AUTH.EMAIL_INPUT, 'e2e-shard-1@moneywise.app');
       await page.fill(TEST_IDS.AUTH.PASSWORD_INPUT, 'SecurePassword123!');
       await page.fill(TEST_IDS.AUTH.CONFIRM_PASSWORD_INPUT, 'SecurePassword123!');
 
@@ -224,7 +224,7 @@ test.describe('Authentication @critical', () => {
       await page.goto(ROUTES.AUTH.LOGIN);
       await page.waitForSelector(TEST_IDS.AUTH.LOGIN_FORM, { state: 'visible', timeout: 15000 });
 
-      await page.fill(TEST_IDS.AUTH.EMAIL_INPUT, 'e2e-shard-1@moneywise.test');
+      await page.fill(TEST_IDS.AUTH.EMAIL_INPUT, 'e2e-shard-1@moneywise.app');
       await page.fill(TEST_IDS.AUTH.PASSWORD_INPUT, 'SecureTest#2025!');
 
       await Promise.all([
@@ -265,7 +265,7 @@ test.describe('Authentication @critical', () => {
       await page.goto(ROUTES.AUTH.LOGIN);
       await page.waitForSelector(TEST_IDS.AUTH.LOGIN_FORM, { state: 'visible', timeout: 15000 });
 
-      await page.fill(TEST_IDS.AUTH.EMAIL_INPUT, 'e2e-shard-2@moneywise.test');
+      await page.fill(TEST_IDS.AUTH.EMAIL_INPUT, 'e2e-shard-2@moneywise.app');
       await page.fill(TEST_IDS.AUTH.PASSWORD_INPUT, 'SecureTest#2025!');
 
       await Promise.all([
@@ -293,7 +293,7 @@ test.describe('Authentication @critical', () => {
       await page.goto(ROUTES.AUTH.LOGIN);
       await page.waitForSelector(TEST_IDS.AUTH.LOGIN_FORM, { state: 'visible', timeout: 15000 });
 
-      await page.fill(TEST_IDS.AUTH.EMAIL_INPUT, 'e2e-shard-3@moneywise.test');
+      await page.fill(TEST_IDS.AUTH.EMAIL_INPUT, 'e2e-shard-3@moneywise.app');
       await page.fill(TEST_IDS.AUTH.PASSWORD_INPUT, 'SecureTest#2025!');
 
       await Promise.all([
@@ -321,7 +321,7 @@ test.describe('Authentication @critical', () => {
       await page.goto(ROUTES.AUTH.LOGIN);
       await page.waitForSelector(TEST_IDS.AUTH.LOGIN_FORM, { state: 'visible', timeout: 15000 });
 
-      await page.fill(TEST_IDS.AUTH.EMAIL_INPUT, 'e2e-shard-4@moneywise.test');
+      await page.fill(TEST_IDS.AUTH.EMAIL_INPUT, 'e2e-shard-4@moneywise.app');
       await page.fill(TEST_IDS.AUTH.PASSWORD_INPUT, 'SecureTest#2025!');
 
       await Promise.all([

@@ -24,7 +24,7 @@ test.describe('Authentication', () => {
       await page.waitForSelector(TEST_IDS.AUTH.LOGIN_FORM, { state: 'visible' });
       
       // Use existing test user
-      await page.fill(TEST_IDS.AUTH.EMAIL_INPUT, 'e2e-shard-1@moneywise.test');
+      await page.fill(TEST_IDS.AUTH.EMAIL_INPUT, 'e2e-shard-1@moneywise.app');
       await page.fill(TEST_IDS.AUTH.PASSWORD_INPUT, 'SecureTest#2025!');
       
       // Wait for API response and navigation
@@ -121,7 +121,7 @@ test.describe('Authentication', () => {
       // Use existing user email
       await page.fill(TEST_IDS.AUTH.FIRST_NAME_INPUT, 'Test');
       await page.fill(TEST_IDS.AUTH.LAST_NAME_INPUT, 'User');
-      await page.fill(TEST_IDS.AUTH.EMAIL_INPUT, 'e2e-shard-1@moneywise.test');
+      await page.fill(TEST_IDS.AUTH.EMAIL_INPUT, 'e2e-shard-1@moneywise.app');
       await page.fill(TEST_IDS.AUTH.PASSWORD_INPUT, 'SecureTest#2025!');
       await page.fill(TEST_IDS.AUTH.CONFIRM_PASSWORD_INPUT, 'SecureTest#2025!');
       
@@ -191,7 +191,7 @@ test.describe('Authentication', () => {
       // Login
       await page.goto(ROUTES.AUTH.LOGIN);
       await page.waitForSelector(TEST_IDS.AUTH.LOGIN_FORM, { state: 'visible' });
-      await page.fill(TEST_IDS.AUTH.EMAIL_INPUT, 'e2e-shard-2@moneywise.test');
+      await page.fill(TEST_IDS.AUTH.EMAIL_INPUT, 'e2e-shard-2@moneywise.app');
       await page.fill(TEST_IDS.AUTH.PASSWORD_INPUT, 'SecureTest#2025!');
       await Promise.all([
         page.waitForResponse(r => r.url().includes('/api/auth/login')),
