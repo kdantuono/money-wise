@@ -18,7 +18,22 @@ export interface Goal {
   name: string;
   /** Null for openended goals (no hard target). WP-K. */
   target: number | null;
+  /**
+   * Manual baseline (editable via GoalEditModal). Persisted in `goals.current`.
+   * Per goal non-linked a account/liability = unico source of progress (fallback
+   * Fase 2C). Per goal linked = offset manuale (es. "aggiungi €500 già
+   * risparmiati fuori dal conto").
+   */
   current: number;
+  /**
+   * Sprint 1.6.6 Fase 3a (#043): computed effective progress.
+   * Formula (via VIEW `goals_with_progress`):
+   *   current + SUM(accounts.current_balance WHERE goal_id=g.id)
+   *           - SUM(liabilities.current_balance WHERE goal_id=g.id)
+   * UI usa questo per progress bar + "a che punto sei". Manual edit aggiorna
+   * `current`; effective si ricalcola automaticamente post-balance change.
+   */
+  currentEffective: number;
   deadline: string | null;
   priority: PriorityRank;
   monthlyAllocation: number;
@@ -74,20 +89,37 @@ export const goalsClient = {
     const statuses = opts?.statuses ?? ['ACTIVE'];
 
     const supabase = createClient();
-    const { data, error } = await supabase
-      .from('goals')
-      .select('id, name, target, current, deadline, priority, monthly_allocation, status, type')
+    // Sprint 1.6.6 Fase 3a (#043): query goals_with_progress VIEW per ottenere
+    // effective_current (manual + linked accounts - linked liabilities).
+    // Cast VIEW non presente in Database types (da rigenerare post-merge via
+    // `supabase gen types`). Cast esplicito tipizzato per row shape.
+    type GoalWithProgressRow = {
+      id: string;
+      name: string;
+      target: number | null;
+      current: number;
+      effective_current: number;
+      deadline: string | null;
+      priority: number;
+      monthly_allocation: number;
+      status: string;
+      type: string | null;
+    };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase.from as any)('goals_with_progress')
+      .select('id, name, target, current, effective_current, deadline, priority, monthly_allocation, status, type')
       .eq('user_id', userId)
       .in('status', statuses)
       .order('priority', { ascending: true });
 
     if (error) throw new GoalsApiError(error.message, 500, error);
 
-    return (data ?? []).map((g) => ({
+    return ((data ?? []) as GoalWithProgressRow[]).map((g) => ({
       id: g.id,
       name: g.name,
       target: g.target !== null ? Number(g.target) : null,
       current: Number(g.current),
+      currentEffective: Number(g.effective_current),
       deadline: g.deadline,
       priority: g.priority as PriorityRank,
       monthlyAllocation: Number(g.monthly_allocation),
@@ -124,11 +156,14 @@ export const goalsClient = {
 
     if (error || !data) throw new GoalsApiError(error?.message ?? 'Failed to add goal', 500, error);
 
+    // #043: goal appena creato non ha ancora linked accounts/liabilities,
+    // currentEffective === current. Evita re-query VIEW per latency.
     return {
       id: data.id,
       name: data.name,
       target: data.target !== null ? Number(data.target) : null,
       current: Number(data.current),
+      currentEffective: Number(data.current),
       deadline: data.deadline,
       priority: data.priority as PriorityRank,
       monthlyAllocation: Number(data.monthly_allocation),
@@ -192,11 +227,20 @@ export const goalsClient = {
 
     if (error || !data) throw new GoalsApiError(error?.message ?? 'Failed to update goal', 500, error);
 
+    // #043: re-query VIEW per ottenere effective_current aggiornato (goal può
+    // avere linked accounts/liabilities — dopo update `current`, effective cambia).
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: viewData } = await (supabase.from as any)('goals_with_progress')
+      .select('effective_current')
+      .eq('id', goalId)
+      .single() as { data: { effective_current: number } | null };
+
     return {
       id: data.id,
       name: data.name,
       target: data.target !== null ? Number(data.target) : null,
       current: Number(data.current),
+      currentEffective: viewData ? Number(viewData.effective_current) : Number(data.current),
       deadline: data.deadline,
       priority: data.priority as PriorityRank,
       monthlyAllocation: Number(data.monthly_allocation),
