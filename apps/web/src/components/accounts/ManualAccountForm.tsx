@@ -188,6 +188,12 @@ export function ManualAccountForm({
         </div>
       )}
 
+      {/* #048: Section — Dati principali */}
+      <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide border-b border-border/50 pb-1">
+        Dati principali
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div className="space-y-1">
         <label
           htmlFor={`${formId}-name`}
@@ -262,6 +268,7 @@ export function ManualAccountForm({
             {errors.type}
           </p>
         )}
+      </div>
       </div>
 
       <div className="space-y-1">
@@ -373,6 +380,12 @@ export function ManualAccountForm({
         </select>
       </div>
 
+      {/* #048: Section — Opzionali */}
+      <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide border-b border-border/50 pb-1">
+        Dati opzionali
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div className="space-y-1">
         <label
           htmlFor={`${formId}-institution`}
@@ -409,6 +422,12 @@ export function ManualAccountForm({
           placeholder="Ultime 4 cifre, es. ****1234"
           className="w-full px-3 py-2 rounded-lg border border-border focus:ring-blue-500 focus:border-blue-500 disabled:bg-muted disabled:cursor-not-allowed"
         />
+      </div>
+      </div>
+
+      {/* #048: Section — Linking */}
+      <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide border-b border-border/50 pb-1">
+        Collegamenti
       </div>
 
       <div className="space-y-1">
@@ -489,7 +508,7 @@ export function ManualAccountForm({
         aria-modal="true"
         className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
       >
-        <div className="bg-card rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto p-6">
+        <div className="bg-card rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6">
           {formContent}
         </div>
       </div>
