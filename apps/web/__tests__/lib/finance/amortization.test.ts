@@ -142,6 +142,18 @@ describe('calculateMonthlyPayment', () => {
       calculateMonthlyPayment({ principal: 1000, annualRate: 5, numPayments: Infinity }),
     ).toBe(0);
   });
+
+  it('Returns 0 when numPayments is non-integer (12.5)', () => {
+    expect(
+      calculateMonthlyPayment({ principal: 1000, annualRate: 5, numPayments: 12.5 }),
+    ).toBe(0);
+  });
+
+  it('Returns 0 when numPayments is a tiny fraction (0.5)', () => {
+    expect(
+      calculateMonthlyPayment({ principal: 1000, annualRate: 5, numPayments: 0.5 }),
+    ).toBe(0);
+  });
 });
 
 describe('amortize', () => {
