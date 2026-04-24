@@ -26,6 +26,7 @@ export type Database = {
           currency: string
           current_balance: number
           family_id: string | null
+          goal_id: string | null
           id: string
           institution_name: string | null
           is_active: boolean
@@ -61,6 +62,7 @@ export type Database = {
           currency?: string
           current_balance?: number
           family_id?: string | null
+          goal_id?: string | null
           id?: string
           institution_name?: string | null
           is_active?: boolean
@@ -96,6 +98,7 @@ export type Database = {
           currency?: string
           current_balance?: number
           family_id?: string | null
+          goal_id?: string | null
           id?: string
           institution_name?: string | null
           is_active?: boolean
@@ -126,6 +129,20 @@ export type Database = {
             columns: ["family_id"]
             isOneToOne: false
             referencedRelation: "families"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "accounts_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "goals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "accounts_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "goals_with_progress"
             referencedColumns: ["id"]
           },
           {
@@ -615,6 +632,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "goal_allocations_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "goals_with_progress"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "goal_allocations_plan_id_fkey"
             columns: ["plan_id"]
             isOneToOne: false
@@ -793,6 +817,7 @@ export type Database = {
           current_balance: number
           external_id: string | null
           family_id: string
+          goal_id: string | null
           id: string
           interest_rate: number | null
           last_statement_date: string | null
@@ -817,6 +842,7 @@ export type Database = {
           current_balance?: number
           external_id?: string | null
           family_id: string
+          goal_id?: string | null
           id?: string
           interest_rate?: number | null
           last_statement_date?: string | null
@@ -841,6 +867,7 @@ export type Database = {
           current_balance?: number
           external_id?: string | null
           family_id?: string
+          goal_id?: string | null
           id?: string
           interest_rate?: number | null
           last_statement_date?: string | null
@@ -869,6 +896,20 @@ export type Database = {
             columns: ["family_id"]
             isOneToOne: false
             referencedRelation: "families"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "liabilities_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "goals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "liabilities_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "goals_with_progress"
             referencedColumns: ["id"]
           },
         ]
@@ -1458,7 +1499,62 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      goals_with_progress: {
+        Row: {
+          created_at: string | null
+          current: number | null
+          deadline: string | null
+          effective_current: number | null
+          id: string | null
+          monthly_allocation: number | null
+          name: string | null
+          priority: number | null
+          status: Database["public"]["Enums"]["goal_status"] | null
+          target: number | null
+          type: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          current?: number | null
+          deadline?: string | null
+          effective_current?: never
+          id?: string | null
+          monthly_allocation?: number | null
+          name?: string | null
+          priority?: number | null
+          status?: Database["public"]["Enums"]["goal_status"] | null
+          target?: number | null
+          type?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          current?: number | null
+          deadline?: string | null
+          effective_current?: never
+          id?: string | null
+          monthly_allocation?: number | null
+          name?: string | null
+          priority?: number | null
+          status?: Database["public"]["Enums"]["goal_status"] | null
+          target?: number | null
+          type?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "goals_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       get_balance_summary: {
