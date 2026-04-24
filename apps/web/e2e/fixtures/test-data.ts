@@ -7,19 +7,19 @@ export const testUsers = {
   validUser: {
     firstName: 'John',
     lastName: 'Doe',
-    email: 'john.doe@example.com',
+    email: 'john.doe@moneywise.app',
     password: 'SecurePassword123!',
   },
   adminUser: {
     firstName: 'Admin',
     lastName: 'User',
-    email: 'admin@moneywise.com',
+    email: 'admin@moneywise.app',
     password: 'AdminPassword123!',
   },
   newUser: {
     firstName: 'Jane',
     lastName: 'Smith',
-    email: 'jane.smith@example.com',
+    email: 'jane.smith@moneywise.app',
     password: 'NewPassword123!',
   },
 };

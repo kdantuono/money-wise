@@ -9,7 +9,7 @@
  *  5. integrity.spec.ts        — edge case hard-block + DB consistency
  *
  * Design constraints:
- * - Pool users (e2e-shard-N@moneywise.test) are persistent across runs, so
+ * - Pool users (e2e-shard-N@moneywise.app) are persistent across runs, so
  *   every spec MUST run `resetUserState()` in beforeEach to force a clean
  *   starting point (no leftover plan, onboarded=false, no orphan goals).
  * - Shards 1, 2, 4, 5, 6 are dedicated to WP-J. Shards 0/3/7 are claimed by
@@ -39,11 +39,11 @@ import { TEST_IDS } from '../config/test-ids';
  *   shard-7 → onboarding-plan.spec.ts
  */
 export const WP_J_SHARDS = {
-  fullFlow: 'e2e-shard-1@moneywise.test',
-  goalsCrud: 'e2e-shard-2@moneywise.test',
-  themeAiPrefs: 'e2e-shard-4@moneywise.test',
-  behavioralAi: 'e2e-shard-5@moneywise.test',
-  integrity: 'e2e-shard-6@moneywise.test',
+  fullFlow: 'e2e-shard-1@moneywise.app',
+  goalsCrud: 'e2e-shard-2@moneywise.app',
+  themeAiPrefs: 'e2e-shard-4@moneywise.app',
+  behavioralAi: 'e2e-shard-5@moneywise.app',
+  integrity: 'e2e-shard-6@moneywise.app',
 } as const;
 
 export const SHARD_PASSWORD = 'SecureTest#2025!';

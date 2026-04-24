@@ -95,7 +95,7 @@ test.describe('Critical User Journeys', () => {
     // 1. Login
     await page.goto(ROUTES.AUTH.LOGIN);
     await page.waitForSelector(TEST_IDS.AUTH.LOGIN_FORM, { state: 'visible' });
-    await page.fill(TEST_IDS.AUTH.EMAIL_INPUT, 'e2e-shard-4@moneywise.test');
+    await page.fill(TEST_IDS.AUTH.EMAIL_INPUT, 'e2e-shard-4@moneywise.app');
     await page.fill(TEST_IDS.AUTH.PASSWORD_INPUT, 'SecureTest#2025!');
     await Promise.all([
       page.waitForResponse(r => r.url().includes('/api/auth/login')),
@@ -126,7 +126,7 @@ test.describe('Critical User Journeys', () => {
     // 1. Login
     await page.goto(ROUTES.AUTH.LOGIN);
     await page.waitForSelector(TEST_IDS.AUTH.LOGIN_FORM, { state: 'visible' });
-    await page.fill(TEST_IDS.AUTH.EMAIL_INPUT, 'e2e-shard-5@moneywise.test');
+    await page.fill(TEST_IDS.AUTH.EMAIL_INPUT, 'e2e-shard-5@moneywise.app');
     await page.fill(TEST_IDS.AUTH.PASSWORD_INPUT, 'SecureTest#2025!');
     await Promise.all([
       page.waitForResponse(r => r.url().includes('/api/auth/login')),

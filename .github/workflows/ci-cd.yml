@@ -970,10 +970,21 @@ jobs:
           CI: true
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          # Opzionale: abilita auth.admin.createUser in global-setup (bypass email rate limit).
+          # Senza questa, signUp fallback colpisce ~4 user/ora limit Supabase → setup fail.
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
           if [ -z "$NEXT_PUBLIC_SUPABASE_URL" ] || [ -z "$NEXT_PUBLIC_SUPABASE_ANON_KEY" ]; then
             echo "⏭️  Skipping E2E: Supabase secrets not configured in repo."
             echo "::warning title=E2E skipped::Configure NEXT_PUBLIC_SUPABASE_URL + NEXT_PUBLIC_SUPABASE_ANON_KEY in repository secrets under Settings > Secrets and variables > Actions to enable E2E on CI."
+            exit 0
+          fi
+          if [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
+            # Skip (not fail) se service_role_key missing: CI senza admin API = rate-limit
+            # inevitabile sul secondo run consecutivo. Warning esplicito guida setup user.
+            # Preferiamo skip a fail per non bloccare la pipeline su config gap noto.
+            echo "⏭️  Skipping E2E: SUPABASE_SERVICE_ROLE_KEY missing — signUp fallback colpirà rate limit Supabase su secondo run."
+            echo "::warning title=E2E skipped (rate-limit risk)::Configure SUPABASE_SERVICE_ROLE_KEY in repository secrets to enable auth.admin.createUser (bypass email rate limit). Finding Supabase Dashboard → Settings → API → service_role key."
             exit 0
           fi
           cd apps/web
