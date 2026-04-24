@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useOnboardingPlanStore } from '@/store/onboarding-plan.store';
 import { PRIORITY_LABEL_IT, type PriorityRank, type WizardGoalDraft, type GoalType } from '@/types/onboarding-plan';
 import { Button } from '@/components/ui/button';
-import { OnboardingTip } from '../OnboardingTip';
+import { OnboardingTip } from '@/components/onboarding/OnboardingTip';
 import {
   Plus,
   X,

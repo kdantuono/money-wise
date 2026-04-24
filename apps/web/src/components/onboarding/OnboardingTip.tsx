@@ -28,7 +28,7 @@ const DISMISSED_SUFFIX = '_dismissed';
  *
  * Accessibility:
  * - role="note" + aria-label
- * - Dismiss button tabable + Enter activatable
+ * - Dismiss button tabbable + Enter activatable
  * - Screen reader: messaggio letto all'apertura (aria-live="polite")
  */
 export function OnboardingTip({
