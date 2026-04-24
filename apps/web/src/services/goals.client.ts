@@ -101,18 +101,33 @@ export const goalsClient = {
 
     if (error) throw new GoalsApiError(error.message, 500, error);
 
-    return (data ?? []).map((g) => ({
-      id: g.id ?? '',
-      name: g.name ?? '',
-      target: g.target !== null && g.target !== undefined ? Number(g.target) : null,
-      current: Number(g.current ?? 0),
-      currentEffective: Number(g.effective_current ?? g.current ?? 0),
-      deadline: g.deadline,
-      priority: (g.priority ?? 2) as PriorityRank,
-      monthlyAllocation: Number(g.monthly_allocation ?? 0),
-      status: g.status ?? 'ACTIVE',
-      type: (g.type ?? 'fixed') as GoalType,
-    }));
+    // Copilot review #538 fix: required fields (id/name/status) sono NOT NULL
+    // nella tabella goals → via VIEW devono sempre essere populated. Null qui
+    // indicherebbe corruption o RLS filtering imprevisto — fail-visible via
+    // filter-out + console.error invece di fail-silent con magic defaults
+    // (`id: ''` ruppe downstream updates/routes).
+    // Numeric fields (target, current, monthly_allocation) e priority/type
+    // restano con fallback safe (truly optional).
+    return (data ?? [])
+      .filter((g): g is typeof g & { id: string; name: string; status: string } => {
+        if (g.id === null || g.name === null || g.status === null) {
+          console.error('[goalsClient.loadGoals] Skipping invalid row with null required field:', { id: g.id, name: g.name, status: g.status });
+          return false;
+        }
+        return true;
+      })
+      .map((g) => ({
+        id: g.id,
+        name: g.name,
+        target: g.target !== null && g.target !== undefined ? Number(g.target) : null,
+        current: Number(g.current ?? 0),
+        currentEffective: Number(g.effective_current ?? g.current ?? 0),
+        deadline: g.deadline,
+        priority: (g.priority ?? 2) as PriorityRank,
+        monthlyAllocation: Number(g.monthly_allocation ?? 0),
+        status: g.status,
+        type: (g.type ?? 'fixed') as GoalType,
+      }));
   },
 
   /**
