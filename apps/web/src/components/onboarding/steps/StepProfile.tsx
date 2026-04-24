@@ -297,6 +297,8 @@ export function StepProfile() {
         </p>
       </div>
 
+      {/* #051: grid 2-col per Reddito + Essentials (mobile fallback single-col) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
       {/* ── Reddito mensile ── */}
       <div>
         <label
@@ -384,7 +386,10 @@ export function StepProfile() {
           </button>
         </div>
       </div>
+      </div>
 
+      {/* #051: grid 2-col per Lifestyle + Savings */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
       {/* ── Lifestyle buffer ── */}
       <div>
         <label htmlFor={lifestyleId} className="text-sm font-medium text-foreground block mb-1">
@@ -456,6 +461,7 @@ export function StepProfile() {
             Minimo €{SAVINGS_MIN}/mese. Regola 50/30/20: ~20% del reddito.
           </p>
         )}
+      </div>
       </div>
 
       {/* ── Investimenti target (optional) ── */}

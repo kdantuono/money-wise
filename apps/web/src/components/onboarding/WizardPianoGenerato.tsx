@@ -171,8 +171,11 @@ export function WizardPianoGenerato({ mode = 'create', onClose }: WizardPianoGen
       {/* Sprint 1.6.4D #036: dim overlay + blur app dietro visibile (NO nero opaco) */}
       <Dialog.Overlay className="fixed inset-0 z-40 bg-black/30 backdrop-blur-md" />
 
+      {/* #051: Step 2 (Profilo) richiede layout 2-col → max-w-4xl; altri step max-w-2xl */}
       <Dialog.Content
-        className="fixed left-1/2 top-1/2 z-50 w-full max-w-2xl -translate-x-1/2 -translate-y-1/2 rounded-xl bg-card shadow-2xl p-6 outline-none max-h-[90vh] overflow-y-auto"
+        className={`fixed left-1/2 top-1/2 z-50 w-full ${
+          currentStep === 2 ? 'max-w-4xl' : 'max-w-2xl'
+        } -translate-x-1/2 -translate-y-1/2 rounded-xl bg-card shadow-2xl p-6 outline-none max-h-[90vh] overflow-y-auto`}
         aria-describedby="wizard-step-description"
         // Sprint 1.6.4D #036: prevent close on outside click (user deve chiudere
         // esplicitamente via X button o Esc → rispetta user intent, evita close
