@@ -15,25 +15,17 @@
  *    invece di toISOString → matching `_parseDate(y,m-1,d)` che è LOCAL.
  */
 
-import { describe, it, expect, beforeEach, beforeAll, afterAll, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { rebalanceOptimizer } from '@/lib/onboarding/rebalance-optimizer';
 import type { AllocationGoalInput, AllocationInput, PriorityRank } from '@/types/onboarding-plan';
 
-// TODAY fissa mid-January 2026 evita boundary timezone issues + variabilità per
-// tempo di esecuzione test (deterministic regardless of run hour/locale).
+// TODAY fissa mid-January 2026 ore 12:00 LOCAL evita boundary timezone issues +
+// variabilità per tempo di esecuzione test (deterministic regardless of run
+// hour/locale). Noon esplicito previene edge-case DST/midnight.
 // useFakeTimers garantisce che `new Date()` dentro rebalance-optimizer ritorni
 // stessa data, permettendo a `_monthsDiff(now, deadline)` di calcolare valori
 // matematicamente esatti (12 mesi pieni, non 11.x edge-case).
-const TODAY = new Date(2026, 0, 15); // 2026-01-15 LOCAL noon
-
-beforeAll(() => {
-  vi.useFakeTimers();
-  vi.setSystemTime(TODAY);
-});
-
-afterAll(() => {
-  vi.useRealTimers();
-});
+const TODAY = new Date(2026, 0, 15, 12, 0, 0); // 2026-01-15 12:00 LOCAL
 
 function monthsFromNow(n: number): string {
   const d = new Date(TODAY);
@@ -76,7 +68,16 @@ function input(overrides: Partial<AllocationInput> = {}): AllocationInput {
 
 describe('rebalanceOptimizer', () => {
   beforeEach(() => {
+    // Pattern coerente con resto della suite (es. components/onboarding tests):
+    // fake timers scoped al describe permettono isolation per-test e evitano
+    // leak di timer state cross-suite.
+    vi.useFakeTimers();
+    vi.setSystemTime(TODAY);
     _id = 0;
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it('empty goals → feasible no-op', () => {
