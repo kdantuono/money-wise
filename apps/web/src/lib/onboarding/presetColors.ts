@@ -1,17 +1,23 @@
 /**
- * Palette colori preset goals — shared Step 3 ↔ Step 4.
+ * Palette colori preset goals — Step 4 rendering.
  *
- * Atomic note #060: il barcode goal card (left border) deve riflettere
- * la categoria del preset Step 3, NON la priorità. Priorità è indicata
- * come text chip separato.
+ * Atomic note #060: il barcode goal card in Step 4 (left border) deve
+ * riflettere la categoria del preset (scelto in Step 3), NON la priorità.
+ * Priorità è indicata come text chip separato.
+ *
+ * NOTA: Step 3 (StepGoals.tsx PRESET_GOALS) attualmente usa una palette
+ * hard-coded diversa (bg-* + text-* distinti). Consolidamento
+ * Step 3 ↔ Step 4 shared → deferred a Fase 2.2 (refactor PRESET_GOALS
+ * per consumare presetColors come single source of truth).
  *
  * Mapping preset → color (Tailwind classi):
  *  - emergency: red-500 (fondo emergenza, safety-first)
  *  - house: yellow-500 (comprare casa)
- *  - invest: indigo-500 (iniziare investire, far crescere patrimonio)
+ *  - invest: indigo-500 (iniziare investire)
  *  - debt: orange-500 (eliminare debiti)
  *  - savings: blue-500 (risparmiare di più — generic savings)
- *  - lifestyle: teal-500 (viaggi, vacanze)
+ *  - travel: teal-500 (viaggi, vacanze)
+ *  - patrimonio: purple-500 (far crescere patrimonio)
  *  - custom: slate-500 (fallback no-preset)
  */
 
@@ -73,10 +79,11 @@ export const PRESET_COLORS: Record<string, PresetColorSpec> = {
 /**
  * Fallback per goal custom (no presetId).
  */
+// slate-500 consistent: border + hex + label coerenti.
 export const CUSTOM_PRESET_COLOR: PresetColorSpec = {
-  border: 'border-l-slate-400',
+  border: 'border-l-slate-500',
   bg: 'bg-slate-50/50 dark:bg-slate-900/20',
-  hex: '#64748b',
+  hex: '#64748b', // slate-500 (Tailwind)
   label: 'Personalizzato',
 };
 
