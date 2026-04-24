@@ -76,6 +76,8 @@ export function StepProfile() {
   const lifestyleTouchedRef = useRef(_initLifestyleTouched);
   const savingsTouchedRef = useRef(_initSavingsTouched);
   const investTouchedRef = useRef(_initInvestTouched);
+  // #052 Bug 2: track disposable per redistribute delta essentials su touched
+  const prevDisposableRef = useRef<number | null>(null);
 
   const incomeInputId = useId();
   const essentialsId = useId();
@@ -91,18 +93,102 @@ export function StepProfile() {
   // ── AI defaults reactive: Sprint 1.5.5 Phase 3 — Warren 50/30/20 ──
   // lifestyle 30%, savings 50%, invest 20% on disposable post-essenziali.
   // Batch update solo se almeno un campo non è touched, per evitare re-render spuri.
+  //
+  // #052 Bug 2 fix: quando essentialsPct cambia e ci sono campi touched,
+  // ridistribuisci il delta disposable pro-rata sui touched (user Q3 lock #054).
   useEffect(() => {
     if (income <= 0) return;
+    const newDisp = income * (1 - essentialsPct / 100);
+    const isFirstRun = prevDisposableRef.current === null;
+    const prevDisp = prevDisposableRef.current ?? newDisp;
+    const deltaDisp = newDisp - prevDisp;
+    prevDisposableRef.current = newDisp;
+
     const patch: {
       lifestyleBuffer?: number;
       monthlySavingsTarget?: number;
       investmentsTarget?: number;
     } = {};
+
+    // Warren default per campi non-touched (stesso comportamento originale)
     if (!lifestyleTouchedRef.current) patch.lifestyleBuffer = calcLifestyleDefault(income, essentialsPct);
     if (!savingsTouchedRef.current) patch.monthlySavingsTarget = calcSavingsDefault(income, essentialsPct);
     if (!investTouchedRef.current) patch.investmentsTarget = calcInvestDefault(income, essentialsPct);
+
+    // #052 Bug 2: pro-rata redistribute delta essentials su touched (skip first run)
+    if (!isFirstRun && Math.abs(deltaDisp) > 0.5) {
+      const touchedFields: Array<'lifestyle' | 'savings' | 'invest'> = [];
+      if (lifestyleTouchedRef.current) touchedFields.push('lifestyle');
+      if (savingsTouchedRef.current) touchedFields.push('savings');
+      if (investTouchedRef.current) touchedFields.push('invest');
+
+      if (touchedFields.length > 0) {
+        const perField = deltaDisp / touchedFields.length;
+        if (lifestyleTouchedRef.current) {
+          patch.lifestyleBuffer = Math.max(0, Math.round((step2.lifestyleBuffer + perField) * 100) / 100);
+        }
+        if (savingsTouchedRef.current) {
+          patch.monthlySavingsTarget = Math.max(0, Math.round((step2.monthlySavingsTarget + perField) * 100) / 100);
+        }
+        if (investTouchedRef.current) {
+          patch.investmentsTarget = Math.max(0, Math.round(((step2.investmentsTarget ?? 0) + perField) * 100) / 100);
+        }
+      }
+    }
+
     if (Object.keys(patch).length > 0) updateProfile(patch);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [income, essentialsPct, updateProfile]);
+
+  // #052 Bug 1 fix: current-field awareness — quando user edita field X,
+  // delta ridistribuito pro-rata sugli altri touched fields (Q3 lock #054).
+  // Se nessun altro touched, delta resta in X (AI ri-calcolerà non-touched via useEffect).
+  type FieldKey = 'lifestyle' | 'savings' | 'invest';
+  function handleFieldChange(fieldKey: FieldKey, raw: string) {
+    const newValue = Number(raw) || 0;
+    const touchedRaw = raw !== '';
+    const oldValue =
+      fieldKey === 'lifestyle'
+        ? step2.lifestyleBuffer
+        : fieldKey === 'savings'
+          ? step2.monthlySavingsTarget
+          : (step2.investmentsTarget ?? 0);
+    const delta = newValue - oldValue;
+
+    // Mark this field touched (o reset se raw '')
+    if (fieldKey === 'lifestyle') lifestyleTouchedRef.current = touchedRaw;
+    if (fieldKey === 'savings') savingsTouchedRef.current = touchedRaw;
+    if (fieldKey === 'invest') investTouchedRef.current = touchedRaw;
+
+    const patch: {
+      lifestyleBuffer?: number;
+      monthlySavingsTarget?: number;
+      investmentsTarget?: number;
+    } = {};
+    if (fieldKey === 'lifestyle') patch.lifestyleBuffer = newValue;
+    if (fieldKey === 'savings') patch.monthlySavingsTarget = newValue;
+    if (fieldKey === 'invest') patch.investmentsTarget = newValue;
+
+    // Collect altri touched fields (exclude self)
+    const otherTouched: FieldKey[] = [];
+    if (fieldKey !== 'lifestyle' && lifestyleTouchedRef.current) otherTouched.push('lifestyle');
+    if (fieldKey !== 'savings' && savingsTouchedRef.current) otherTouched.push('savings');
+    if (fieldKey !== 'invest' && investTouchedRef.current) otherTouched.push('invest');
+
+    if (otherTouched.length > 0 && Math.abs(delta) > 0.5 && touchedRaw) {
+      const perField = -delta / otherTouched.length;
+      if (otherTouched.includes('lifestyle')) {
+        patch.lifestyleBuffer = Math.max(0, Math.round((step2.lifestyleBuffer + perField) * 100) / 100);
+      }
+      if (otherTouched.includes('savings')) {
+        patch.monthlySavingsTarget = Math.max(0, Math.round((step2.monthlySavingsTarget + perField) * 100) / 100);
+      }
+      if (otherTouched.includes('invest')) {
+        patch.investmentsTarget = Math.max(0, Math.round(((step2.investmentsTarget ?? 0) + perField) * 100) / 100);
+      }
+    }
+    updateProfile(patch);
+  }
 
   // ── Sum constraint ──
   const allocatedSum =
@@ -315,15 +401,7 @@ export function StepProfile() {
           min={0}
           step={10}
           value={step2.lifestyleBuffer || ''}
-          onChange={(e) => {
-            // Sprint 1.6.4C #025 + Copilot round 1: distinguiamo "clear" (raw === '')
-            // da "intentional 0" (raw === '0'). Clear → touched=false (reset AI default
-            // reactive). Value 0 esplicito → touched=true (rispetta user intent di €0).
-            const raw = e.target.value;
-            const v = Number(raw) || 0;
-            lifestyleTouchedRef.current = raw !== '';
-            updateProfile({ lifestyleBuffer: v });
-          }}
+          onChange={(e) => handleFieldChange('lifestyle', e.target.value)}
           placeholder="es. 200"
           className="w-full bg-muted/50 border border-border rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 text-foreground"
           aria-describedby={lifestyleWarning ? `${lifestyleId}-warn` : undefined}
@@ -362,13 +440,7 @@ export function StepProfile() {
           min={SAVINGS_MIN}
           step={50}
           value={step2.monthlySavingsTarget || ''}
-          onChange={(e) => {
-            // Sprint 1.6.4C #025 + Copilot round 1: clear '' → reset, 0 esplicito → intent
-            const raw = e.target.value;
-            const v = Number(raw) || 0;
-            savingsTouchedRef.current = raw !== '';
-            updateProfile({ monthlySavingsTarget: v });
-          }}
+          onChange={(e) => handleFieldChange('savings', e.target.value)}
           placeholder="es. 500"
           className="w-full bg-muted/50 border border-border rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 text-foreground"
           suppressHydrationWarning
@@ -403,13 +475,7 @@ export function StepProfile() {
           min={0}
           step={25}
           value={step2.investmentsTarget || ''}
-          onChange={(e) => {
-            // Sprint 1.6.4C #025 + Copilot round 1: clear '' → reset, 0 esplicito → intent (no invest voluto)
-            const raw = e.target.value;
-            const v = Number(raw) || 0;
-            investTouchedRef.current = raw !== '';
-            updateProfile({ investmentsTarget: v });
-          }}
+          onChange={(e) => handleFieldChange('invest', e.target.value)}
           placeholder="es. 150 (opzionale)"
           className="w-full bg-muted/50 border border-border rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 text-foreground"
           suppressHydrationWarning
