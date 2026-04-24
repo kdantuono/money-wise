@@ -189,9 +189,9 @@ export function ManualAccountForm({
       )}
 
       {/* #048: Section — Dati principali */}
-      <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide border-b border-border/50 pb-1">
+      <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide border-b border-border/50 pb-1">
         Dati principali
-      </div>
+      </h3>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div className="space-y-1">
@@ -380,10 +380,10 @@ export function ManualAccountForm({
         </select>
       </div>
 
-      {/* #048: Section — Opzionali */}
-      <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide border-b border-border/50 pb-1">
+      {/* #048: Section — Dati opzionali */}
+      <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide border-b border-border/50 pb-1">
         Dati opzionali
-      </div>
+      </h3>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div className="space-y-1">
@@ -425,10 +425,10 @@ export function ManualAccountForm({
       </div>
       </div>
 
-      {/* #048: Section — Linking */}
-      <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide border-b border-border/50 pb-1">
+      {/* #048: Section — Collegamenti */}
+      <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide border-b border-border/50 pb-1">
         Collegamenti
-      </div>
+      </h3>
 
       <div className="space-y-1">
         <label
