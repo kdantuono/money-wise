@@ -189,7 +189,7 @@ export function LiabilityForm({
 
       {/* Modal */}
       <div className="flex min-h-full items-center justify-center p-4">
-        <div className="relative w-full max-w-lg bg-card rounded-xl shadow-xl">
+        <div className="relative w-full max-w-2xl bg-card rounded-xl shadow-xl">
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b border-border">
             <h2 className="text-xl font-semibold text-foreground">
