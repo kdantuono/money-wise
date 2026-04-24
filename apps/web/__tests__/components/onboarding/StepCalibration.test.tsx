@@ -246,9 +246,17 @@ describe('StepCalibration', () => {
     expect(alert).toHaveClass('bg-red-50');
   });
 
-  it('renders encouragement badge when PLAN_BALANCED', () => {
+  // #056 tri-state: test store step2 savingsTarget=500 → savingsPool=500.
+  // Component recalcs totalAllocated da items[].monthlyAmount (effective con overrides),
+  // quindi mock override deve modificare items, non totalAllocated.
+
+  it('renders encouragement badge when PLAN_BALANCED (banner green)', () => {
+    // Green: items sum = 500 → unallocated=0
     mockProposeAllocation.mockReturnValue(
       makeAllocationResult({
+        items: [
+          { goalId: 'goal-1', monthlyAmount: 500, deadlineFeasible: true, reasoning: '', warnings: [] },
+        ],
         behavioralWarnings: [
           {
             code: 'PLAN_BALANCED',
@@ -261,6 +269,55 @@ describe('StepCalibration', () => {
     );
     render(<StepCalibration />);
     expect(screen.getByText(/Sei sulla strada giusta/i)).toBeInTheDocument();
+  });
+
+  it('renders red banner when residuo negativo (overflow)', () => {
+    // Red: items sum = 550 > savingsPool 500 → unallocated = -50
+    mockProposeAllocation.mockReturnValue(
+      makeAllocationResult({
+        items: [
+          { goalId: 'goal-1', monthlyAmount: 550, deadlineFeasible: true, reasoning: '', warnings: [] },
+        ],
+      }),
+    );
+    render(<StepCalibration />);
+    expect(screen.getByTestId('step4-banner-red')).toBeInTheDocument();
+    expect(screen.getByText(/Eccedenza/i)).toBeInTheDocument();
+  });
+
+  it('renders yellow banner when residuo > 10% pool (sotto-allocato)', () => {
+    // Yellow: items sum = 400 → unallocated=100 (20% di pool 500, >10%)
+    mockProposeAllocation.mockReturnValue(
+      makeAllocationResult({
+        items: [
+          { goalId: 'goal-1', monthlyAmount: 400, deadlineFeasible: true, reasoning: '', warnings: [] },
+        ],
+      }),
+    );
+    render(<StepCalibration />);
+    expect(screen.getByTestId('step4-banner-yellow')).toBeInTheDocument();
+    expect(screen.getByText(/Puoi allocare altri/i)).toBeInTheDocument();
+  });
+
+  it('does NOT show green encouragement when banner is red or yellow', () => {
+    mockProposeAllocation.mockReturnValue(
+      makeAllocationResult({
+        items: [
+          { goalId: 'goal-1', monthlyAmount: 550, deadlineFeasible: true, reasoning: '', warnings: [] },
+        ],
+        behavioralWarnings: [
+          {
+            code: 'PLAN_BALANCED',
+            severity: 'soft',
+            message: '🔥 Sei sulla strada giusta!',
+            reasoning: 'Ottimo lavoro!',
+          },
+        ],
+      }),
+    );
+    render(<StepCalibration />);
+    expect(screen.getByTestId('step4-banner-red')).toBeInTheDocument();
+    expect(screen.queryByText(/Sei sulla strada giusta/i)).not.toBeInTheDocument();
   });
 
   // ── Suggestion chips ──────────────────────────────────────────────────

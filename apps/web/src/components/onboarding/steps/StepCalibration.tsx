@@ -404,6 +404,11 @@ export function StepCalibration() {
   const savingsPool = Math.min(step2.monthlySavingsTarget, incomeAfterEssentials);
   const maxSlider = Math.max(savingsPool, 1);
 
+  // #056 banner reactive tri-state (#054 Q2 lock: threshold residuo/pool > 10%)
+  // - residuo < 0 → red (overflow)
+  // - residuo > 10% pool (sotto-allocato significativo) → yellow (nudge)
+  // - else → green (bilanciato, allow encouragement se advisor concorda)
+
   const hasPoolsBreakdown = !!result.pools;
   const lifestyleProtected = hasPoolsBreakdown ? result.pools!.lifestyle.budget : 0;
 
@@ -437,6 +442,18 @@ export function StepCalibration() {
   const unallocated = hasPoolsBreakdown
     ? Math.round((effectiveSavingsResidual + effectiveInvestResidual) * 100) / 100
     : Math.round((savingsPool - totalAllocated) * 100) / 100;
+
+  // #056: tri-state banner reactive a residuo. Pool totale = savings + invest
+  // (lifestyle locked-info non fa parte del source). Threshold Q2 = >10%.
+  const totalPool = hasPoolsBreakdown
+    ? Math.round((result.pools!.savings.budget + result.pools!.investments.budget) * 100) / 100
+    : savingsPool;
+  const bannerStatus: 'red' | 'yellow' | 'green' =
+    unallocated < 0
+      ? 'red'
+      : totalPool > 0 && unallocated > totalPool * 0.1
+        ? 'yellow'
+        : 'green';
 
   return (
     <div className="space-y-4" data-testid="step-calibration">
@@ -509,8 +526,45 @@ export function StepCalibration() {
         </div>
       )}
 
-      {/* Encouragement (only when no other warnings) */}
-      {encouragement && actionableWarnings.length === 0 && hardWarnings.length === 0 && (
+      {/* #056: banner tri-state reactive a residuo (sostituisce encouragement legacy). */}
+      {bannerStatus === 'red' && (
+        <div
+          role="alert"
+          aria-live="polite"
+          data-testid="step4-banner-red"
+          className="flex gap-2 items-start p-3 rounded-lg bg-rose-500/10 dark:bg-rose-950/30 border border-rose-500/20 dark:border-rose-800"
+        >
+          <span aria-hidden="true" className="shrink-0 mt-0.5 text-base">⚠️</span>
+          <div>
+            <p className="text-sm font-medium text-rose-800 dark:text-rose-300">
+              Eccedenza {fmtEur(-unallocated)}: riduci uno o più goal o sposta dai pool disponibili.
+            </p>
+            <p className="text-xs text-rose-700 dark:text-rose-400 mt-0.5">
+              Il totale allocato supera il budget Step 2. Il piano non è valido finché non risolvi lo sforamento.
+            </p>
+          </div>
+        </div>
+      )}
+      {bannerStatus === 'yellow' && (
+        <div
+          role="status"
+          aria-live="polite"
+          data-testid="step4-banner-yellow"
+          className="flex gap-2 items-start p-3 rounded-lg bg-amber-500/10 dark:bg-amber-950/30 border border-amber-500/20 dark:border-amber-800"
+        >
+          <span aria-hidden="true" className="shrink-0 mt-0.5 text-base">💡</span>
+          <div>
+            <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
+              Puoi allocare altri {fmtEur(unallocated)} verso un obiettivo.
+            </p>
+            <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">
+              Hai budget disponibile non ancora assegnato — aggiungi o aumenta un goal per sfruttarlo.
+            </p>
+          </div>
+        </div>
+      )}
+      {/* Encouragement (solo quando banner GREEN e advisor conferma PLAN_BALANCED). */}
+      {bannerStatus === 'green' && encouragement && actionableWarnings.length === 0 && hardWarnings.length === 0 && (
         <WarningBadge warning={encouragement} onChipApply={handleChipApply} />
       )}
 
