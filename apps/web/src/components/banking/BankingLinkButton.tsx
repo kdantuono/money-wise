@@ -187,7 +187,7 @@ export function BankingLinkButton({
 
   // Handle component cleanup
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const cleanup = useCallback(handleClose, []);
+  const cleanup = useCallback(() => handleClose(), []);
 
   return (
     <div className="flex flex-col gap-2">

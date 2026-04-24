@@ -58,18 +58,18 @@ function formatDate(dateString: string | undefined): string {
   }).format(date);
 }
 
-function getTypeIcon(type: string) {
+function renderTypeIcon(type: string, className?: string) {
   switch (type) {
     case 'CREDIT_CARD':
-      return CreditCard;
+      return <CreditCard className={className} />;
     case 'BNPL':
-      return ShoppingBag;
+      return <ShoppingBag className={className} />;
     case 'LOAN':
-      return Landmark;
+      return <Landmark className={className} />;
     case 'MORTGAGE':
-      return Home;
+      return <Home className={className} />;
     default:
-      return CircleDot;
+      return <CircleDot className={className} />;
   }
 }
 
@@ -267,7 +267,6 @@ export default function LiabilityDetailsPage() {
 
   if (!liability) return null;
 
-  const TypeIcon = getTypeIcon(liability.type);
   const colors = getTypeColors(liability.type);
   const statusBadge = getStatusBadge(liability.status);
 
@@ -300,7 +299,7 @@ export default function LiabilityDetailsPage() {
 
             <div className="flex items-center gap-4">
               <div className={`p-3 rounded-xl ${colors.bg}`}>
-                <TypeIcon className={`h-8 w-8 ${colors.icon}`} />
+                {renderTypeIcon(liability.type, `h-8 w-8 ${colors.icon}`)}
               </div>
 
               <div>
