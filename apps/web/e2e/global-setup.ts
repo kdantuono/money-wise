@@ -8,7 +8,7 @@
  */
 
 import { chromium, FullConfig } from '@playwright/test';
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import * as path from 'path';
 import * as fs from 'fs';
 import { fileURLToPath } from 'url';
@@ -39,22 +39,25 @@ const TEST_USER = {
   lastName: 'Automation',
 };
 
-// Test users to create (from test-data.ts fixtures)
+// Test users to create (from test-data.ts fixtures).
+// Domain allineato a `@moneywise.app` (non-production Supabase whitelist-safe) per
+// evitare che il signUp fallback path invii email reali a example.com / moneywise.com
+// consumando lo stesso rate limit che stiamo cercando di evitare.
 const TEST_USERS = [
   {
-    email: 'john.doe@example.com',
+    email: 'john.doe@moneywise.app',
     password: 'SecurePassword123!',
     firstName: 'John',
     lastName: 'Doe',
   },
   {
-    email: 'admin@moneywise.com',
+    email: 'admin@moneywise.app',
     password: 'AdminPassword123!',
     firstName: 'Admin',
     lastName: 'User',
   },
   {
-    email: 'jane.smith@example.com',
+    email: 'jane.smith@moneywise.app',
     password: 'NewPassword123!',
     firstName: 'Jane',
     lastName: 'Smith',
@@ -197,19 +200,27 @@ async function createTestUserPool() {
   const failedUsers: Array<{ email: string; error: string }> = [];
 
   // Shard users for parallel execution. Domain `.app` (was `.test` — rejected by Supabase).
+  // shardIndex tracciato per fail-fast coverage check post-loop.
   const shardUsers = Array.from({ length: 8 }, (_, i) => ({
     email: `e2e-shard-${i}@moneywise.app`,
     password: 'SecureTest#2025!',
     firstName: 'E2E',
     lastName: `Shard${i}`,
     label: `Shard ${i + 1}/8`,
+    shardIndex: i,
   }));
 
   const predefinedUsers = TEST_USERS.map((u) => ({ ...u, label: `Predefined` }));
 
   const allUsers = [...shardUsers, ...predefinedUsers];
 
+  // Track shard coverage separately: E2E specs usano fixed shard emails (e2e-shard-0..7),
+  // quindi un pool parziale (es. shard 3 missing) produce failure downstream confuse.
+  // Fail-fast se anche 1 shard fallisce.
+  const shardCoverage = new Set<number>();
+
   for (const user of allUsers) {
+    const errorFallback = 'unknown error';
     try {
       const result = useAdminApi
         ? await createUserViaAdminApi(supabase, user)
@@ -217,10 +228,12 @@ async function createTestUserPool() {
 
       if (result.success) {
         createdUsers.push({ email: user.email, password: user.password });
+        if ('shardIndex' in user) shardCoverage.add(user.shardIndex as number);
         console.log(`  ✅ ${user.label}: ${user.email}${result.existing ? ' (existing)' : ''}`);
       } else {
-        failedUsers.push({ email: user.email, error: result.error ?? 'unknown' });
-        console.warn(`  ⚠️ ${user.label} failed: ${user.email} - ${result.error}`);
+        const errMsg = result.error ?? errorFallback;
+        failedUsers.push({ email: user.email, error: errMsg });
+        console.warn(`  ⚠️ ${user.label} failed: ${user.email} - ${errMsg}`);
       }
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
@@ -243,7 +256,7 @@ async function createTestUserPool() {
 
   if (failedUsers.length > 0) {
     console.warn(
-      `⚠️ ${failedUsers.length} users failed to create (tests will use available users)`,
+      `⚠️ ${failedUsers.length} users failed to create`,
     );
   }
 
@@ -251,8 +264,23 @@ async function createTestUserPool() {
     throw new Error(
       'Failed to create any test users. ' +
         (useAdminApi
-          ? 'Check SUPABASE_SERVICE_ROLE_KEY validity and RLS policies.'
+          ? 'Check SUPABASE_SERVICE_ROLE_KEY validity and Auth settings.'
           : 'Rate limit likely hit — set SUPABASE_SERVICE_ROLE_KEY secret to bypass email rate limits.'),
+    );
+  }
+
+  // Fail-fast: E2E specs hardcodano shard email (e2e-shard-0..7). Pool parziale
+  // produce confusing downstream failures. Abort setup se shard coverage incompleto.
+  if (shardCoverage.size < shardUsers.length) {
+    const missing = shardUsers
+      .filter((_, i) => !shardCoverage.has(i))
+      .map((u) => u.email);
+    throw new Error(
+      `Incomplete shard pool: ${shardCoverage.size}/${shardUsers.length} shards created. ` +
+        `Missing: ${missing.join(', ')}. E2E specs reference fixed shard emails — abort to avoid confusing downstream failures. ` +
+        (useAdminApi
+          ? 'Check SUPABASE_SERVICE_ROLE_KEY validity or Supabase Auth state.'
+          : 'Rate limit likely hit — configure SUPABASE_SERVICE_ROLE_KEY to bypass.'),
     );
   }
 }
@@ -275,8 +303,7 @@ interface UserCreationResult {
  * Zero rate limit. Richiede service_role_key (NON client anon).
  */
 async function createUserViaAdminApi(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  admin: any,
+  admin: SupabaseClient,
   user: UserCreationInput,
 ): Promise<UserCreationResult> {
   const { error } = await admin.auth.admin.createUser({
@@ -303,8 +330,7 @@ async function createUserViaAdminApi(
  * Soggetto a email rate limit (~4 user/ora per progetto).
  */
 async function createUserViaSignUp(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  client: any,
+  client: SupabaseClient,
   user: UserCreationInput,
 ): Promise<UserCreationResult> {
   const { error } = await client.auth.signUp({
