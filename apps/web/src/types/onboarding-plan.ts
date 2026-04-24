@@ -167,9 +167,9 @@ export interface PoolBreakdown {
  * `unallocated` = savingsPool - totalAllocated (may be > 0 when all goals are fully funded
  * before the pool is exhausted — see `warnings` for the "budget residuo" notice).
  *
- * Sprint 1.5.3 WP-Q3: `pools` populated only when ENABLE_3POOL_MODEL flag is on.
- * Legacy path (flag off) returns undefined for pools; `items` + `totalAllocated`
- * + `unallocated` maintain backward compat as if all goals went to a single savings pool.
+ * Sprint 1.6.6 #055+#008: 3-pool unified post flag removal. `pools` sempre
+ * popolato (lifestyle locked-info + savings + investments). Optional solo
+ * per backward-compat legacy callers che non usano il breakdown.
  */
 export interface AllocationResult {
   items: AllocationResultItem[];
@@ -194,9 +194,8 @@ export interface AllocationResult {
    */
   suggestions?: SuggestionChip[];
   /**
-   * Sprint 1.5.3 WP-Q3: 3-pool breakdown. Undefined when ENABLE_3POOL_MODEL=false
-   * (legacy single-pool behavior). Populated with lifestyle/savings/investments
-   * when flag is on.
+   * Sprint 1.6.6 #055+#008: 3-pool breakdown (lifestyle/savings/investments).
+   * Sempre popolato dopo flag removal (unified behavior).
    */
   pools?: PoolBreakdown;
 }

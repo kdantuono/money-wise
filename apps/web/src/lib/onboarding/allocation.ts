@@ -23,15 +23,9 @@ import type {
 } from '@/types/onboarding-plan';
 import { inferGoalType } from './inferGoalType';
 
-/**
- * Sprint 1.5.3 WP-Q3 feature flag — build-time.
- * Default OFF (undefined → falsy). Set `NEXT_PUBLIC_ENABLE_3POOL_MODEL=true`
- * in `.env.production` to activate 3-pool allocation path. Tests can override
- * via `vi.stubEnv('NEXT_PUBLIC_ENABLE_3POOL_MODEL', 'true')`.
- */
-function _is3PoolEnabled(): boolean {
-  return process.env.NEXT_PUBLIC_ENABLE_3POOL_MODEL === 'true';
-}
+// Sprint 1.6.6 #055 + #008: feature flag NEXT_PUBLIC_ENABLE_3POOL_MODEL rimosso.
+// 3-pool model è ora comportamento unico. Vedi ADR-005 + #054 invariants I2/I3
+// (pool cap hard) e atomic #008 "flag removal" chiuso.
 
 const _EMERGENCY_NAME_PATTERN = /emergenza|emergency/i;
 const _EMERGENCY_OVERRIDE_FRACTION = 0.4;
@@ -416,29 +410,19 @@ function _computeSinglePool(
 }
 
 /**
- * Sprint 1.5.3 WP-Q3: top-level dispatcher.
- * Flag OFF (default): legacy single-pool behavior (backward compat).
- * Flag ON: 3-pool routing via inferGoalType + boundary check hardBlock +
- * independent waterfall per savings/investments pool + lifestyle locked-info.
+ * Top-level dispatcher for Step 4 "Piano proposto" allocation.
+ *
+ * Sprint 1.6.6 #055: 3-pool allocation (unified post flag removal #008).
+ * Routing: goal via `inferGoalType` → savings OR investments.
+ * Pool cap enforcement: SUM(allocated per pool) ≤ Step2.pool (invariant I2 #054).
+ * Hard block: `lifestyle + savings + invest > incomeAfterEssentials` → no allocation.
  */
 export function computeAllocation(input: AllocationInput): AllocationResult {
   const now = new Date();
   const { monthlyIncome, monthlySavingsTarget, essentialsPct, goals } = input;
   const incomeAfterEssentials = _round2(monthlyIncome * (1 - essentialsPct / 100));
 
-  if (!_is3PoolEnabled()) {
-    // Legacy single-pool path — all goals in one waterfall, savingsPool capped at income.
-    const legacy = _computeSinglePool(goals, monthlySavingsTarget, incomeAfterEssentials, true, now);
-    return {
-      items: legacy.items,
-      incomeAfterEssentials,
-      totalAllocated: legacy.totalAllocated,
-      unallocated: legacy.residual,
-      warnings: legacy.warnings,
-    };
-  }
-
-  // 3-pool path — lifestyle locked-info, savings + investments independently allocated.
+  // 3-pool path (sempre): lifestyle locked-info, savings + investments independent.
   const lifestyleBudget = input.lifestyleBuffer ?? 0;
   const savingsBudget = monthlySavingsTarget;
   const investBudget = input.investmentsTarget ?? 0;
