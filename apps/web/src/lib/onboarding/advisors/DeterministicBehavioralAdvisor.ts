@@ -23,13 +23,8 @@ import type {
   UserAllocation,
 } from '@/types/onboarding-plan';
 
-/**
- * Sprint 1.5.4 Q7: gate cross-validation warnings sul feature flag 3-pool.
- * Legacy single-pool non produce i mismatch (tutto è 1 pool) — evita false-positive.
- */
-function _is3PoolEnabled(): boolean {
-  return process.env.NEXT_PUBLIC_ENABLE_3POOL_MODEL === 'true';
-}
+// Sprint 1.6.6 #055 + #008: feature flag rimosso. Cross-validation Q7 attiva sempre
+// (unified 3-pool model, niente più "legacy single-pool false-positive" da evitare).
 
 // ─────────────────────────────────────────────────────────────────────────
 // Constants
@@ -437,11 +432,10 @@ export class DeterministicBehavioralAdvisor implements AllocationAdvisor {
       }
     }
 
-    // Sprint 1.5.4 Q7: cross-validation budget-vs-goals mismatch (gated on 3-pool flag).
-    if (_is3PoolEnabled()) {
-      const q7Warnings = _analyzeCrossPoolMismatch(input);
-      warnings.push(...q7Warnings);
-    }
+    // Sprint 1.5.4 Q7 / Sprint 1.6.6 #008: cross-validation budget-vs-goals mismatch
+    // sempre attivo (flag 3-pool rimosso, model unified).
+    const q7Warnings = _analyzeCrossPoolMismatch(input);
+    warnings.push(...q7Warnings);
 
     // Encouragement: no warnings except possible encouragement
     if (

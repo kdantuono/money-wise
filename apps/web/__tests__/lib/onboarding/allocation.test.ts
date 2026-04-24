@@ -106,7 +106,7 @@ describe('computeAllocation -- beta+gamma waterfall (issue #458)', () => {
     const input = makeInput({
       monthlyIncome: 2500, essentialsPct: 50, monthlySavingsTarget: 500,
       goals: [
-        makeGoal({ id: 'g-alta', name: 'Investimento casa', target: 18000, current: 0, deadline: monthsFromToday(30), priority: 1 }),
+        makeGoal({ id: 'g-alta', name: 'Ristrutturazione casa', target: 18000, current: 0, deadline: monthsFromToday(30), priority: 1 }),
         makeGoal({ id: 'g-media', name: 'Vacanza MEDIA', target: 6000, current: 0, deadline: monthsFromToday(30), priority: 2 }),
       ],
     });
@@ -223,7 +223,7 @@ describe('computeAllocation -- beta+gamma waterfall (issue #458)', () => {
     const input = makeInput({
       monthlyIncome: 4000, essentialsPct: 50, monthlySavingsTarget: 1000,
       goals: [
-        makeGoal({ id: 'g-alta', name: 'Investimento', target: 19200, current: 0, deadline: monthsFromToday(20), priority: 1 }),
+        makeGoal({ id: 'g-alta', name: 'Ristrutturazione', target: 19200, current: 0, deadline: monthsFromToday(20), priority: 1 }),
         makeGoal({ id: 'g-emerg', name: 'Fondo Emergenza', target: 40, current: 0, deadline: null, priority: 2 }),
       ],
     });
@@ -236,7 +236,7 @@ describe('computeAllocation -- beta+gamma waterfall (issue #458)', () => {
     const input = makeInput({
       monthlyIncome: 4000, essentialsPct: 50, monthlySavingsTarget: 1000,
       goals: [
-        makeGoal({ id: 'g-alta', name: 'Investimento', target: 50000, current: 0, deadline: monthsFromToday(50), priority: 1 }),
+        makeGoal({ id: 'g-alta', name: 'Ristrutturazione', target: 50000, current: 0, deadline: monthsFromToday(50), priority: 1 }),
         makeGoal({ id: 'g-emerg', name: 'Fondo Emergenza', target: 60, current: 0, deadline: null, priority: 2 }),
       ],
     });
@@ -245,15 +245,18 @@ describe('computeAllocation -- beta+gamma waterfall (issue #458)', () => {
     expect(result.warnings.some((w) => /waterfall puro|senza protezione/i.test(w))).toBe(true);
   });
 
-  it('savings target > income after essentials -> global warning, pool capped', () => {
+  it('savings target > income after essentials -> hardBlock (#055 + #008 unified)', () => {
+    // Sprint 1.6.6: 3-pool unified path emette hardBlock invece del legacy global warning
+    // quando totalBudget (lifestyle+savings+invest) eccede incomeAfterEssentials.
     const input = makeInput({
       monthlyIncome: 2000, essentialsPct: 80, monthlySavingsTarget: 800,
       goals: [makeGoal({ id: 'g', name: 'Qualsiasi', target: 1000, priority: 2, deadline: monthsFromToday(20) })],
     });
     const result = computeAllocation(input);
     expect(result.incomeAfterEssentials).toBeCloseTo(400, 2);
-    expect(result.warnings.some((w) => /target|reddito|risparmio|superato|essenziali|essentials|supera/i.test(w))).toBe(true);
-    expect(result.totalAllocated).toBeLessThanOrEqual(400 + EPS);
+    expect(result.hardBlock).toBeDefined();
+    expect(result.hardBlock!.reason).toMatch(/supera|eccede|riduci/i);
+    expect(result.totalAllocated).toBe(0);
   });
 
   it('totalAllocated always equals sum of items monthlyAmount', () => {
@@ -310,7 +313,7 @@ describe('computeAllocation -- beta+gamma waterfall (issue #458)', () => {
       monthlyIncome: 2500, essentialsPct: 50, monthlySavingsTarget: 500,
       goals: [
         makeGoal({ id: 'g-emerg', name: 'Fondo Emergenza', target: 1000, current: 1000, deadline: null, priority: 2 }),
-        makeGoal({ id: 'g-alta', name: 'Investimento', target: 10000, current: 0, deadline: monthsFromToday(20), priority: 1 }),
+        makeGoal({ id: 'g-alta', name: 'Ristrutturazione', target: 10000, current: 0, deadline: monthsFromToday(20), priority: 1 }),
       ],
     });
     const result = computeAllocation(input);
@@ -412,7 +415,7 @@ describe('WP-K: openended goal allocation', () => {
       goals: [
         makeGoal({ id: 'oe-1', name: 'Fondo Lifestyle', type: 'openended', target: null, priority: 2 }),
         makeGoal({ id: 'oe-2', name: 'Riserva Opportunità', type: 'openended', target: null, priority: 3 }),
-        makeGoal({ id: 'oe-3', name: 'Crescita Patrimonio', type: 'openended', target: null, priority: 1 }),
+        makeGoal({ id: 'oe-3', name: 'Crescita Fondi', type: 'openended', target: null, priority: 1 }),
       ],
     });
     const result = computeAllocation(input);
@@ -565,16 +568,12 @@ describe('CRIT-03 hotfix regression (user screenshot bug)', () => {
 });
 
 // ───────────────────────────────────────────────────────────────────────────
-// Sprint 1.5.3 WP-Q3: 3-pool model (ENABLE_3POOL_MODEL=true)
+// Sprint 1.5.3 WP-Q3 / Sprint 1.6.6 #055 + #008: 3-pool model (flag removed)
 // ───────────────────────────────────────────────────────────────────────────
 
-describe('computeAllocation — 3-pool model (Sprint 1.5.3 WP-Q3)', () => {
+describe('computeAllocation — 3-pool model (unified, flag removed)', () => {
   beforeEach(() => {
-    vi.stubEnv('NEXT_PUBLIC_ENABLE_3POOL_MODEL', 'true');
     _goalIdCounter = 0;
-  });
-  afterEach(() => {
-    vi.unstubAllEnvs();
   });
 
   it('pools.lifestyle.budget === lifestyleBuffer with locked:true', () => {
@@ -685,15 +684,19 @@ describe('computeAllocation — 3-pool model (Sprint 1.5.3 WP-Q3)', () => {
     expect(result.items.map((i) => i.goalId)).toEqual(['g-invest', 'g-savings', 'g-emergency']);
   });
 
-  it('legacy path still works when flag off (unstubEnv)', () => {
-    vi.unstubAllEnvs();
+  // #055 + #008: legacy single-pool path removed. Default input (no lifestyleBuffer
+  // / investmentsTarget) still works — 3-pool path treats them as 0.
+  it('returns pools structure even with minimal input (defaults to 0 for lifestyle+invest)', () => {
     const result = computeAllocation({
       monthlyIncome: 2250,
       essentialsPct: 80,
       monthlySavingsTarget: 300,
       goals: [],
     });
-    expect(result.pools).toBeUndefined();
+    expect(result.pools).toBeDefined();
+    expect(result.pools!.savings.budget).toBe(300);
+    expect(result.pools!.lifestyle.budget).toBe(0);
+    expect(result.pools!.investments.budget).toBe(0);
     expect(result.unallocated).toBe(300);
   });
 

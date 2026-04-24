@@ -1,12 +1,13 @@
 /**
- * Sprint 1.5.3 WP-Q3: performance benchmark for computeAllocation.
- * Target: < 10ms p95 per 20-goal input (realistic upper bound for user beta).
+ * Sprint 1.5.3 WP-Q3 / Sprint 1.6.6 #055+#008: performance benchmark per
+ * computeAllocation (3-pool unified post flag removal).
+ * Target: < 10ms p95 per 20-goal input (realistic upper bound user beta).
  *
- * Run with: `pnpm --filter @money-wise/web exec vitest bench`
+ * Run: `pnpm --filter @money-wise/web exec vitest bench`
  * Fails CI as regression alert only (not blocking PR at first hit).
  */
 
-import { bench, describe, beforeAll, afterAll, vi } from 'vitest';
+import { bench, describe } from 'vitest';
 import { computeAllocation } from '@/lib/onboarding/allocation';
 import type { AllocationGoalInput, AllocationInput, PriorityRank } from '@/types/onboarding-plan';
 
@@ -34,42 +35,25 @@ function makeGoals(count: number): AllocationGoalInput[] {
   return goals;
 }
 
-const INPUT_20_GOALS_LEGACY: AllocationInput = {
+const INPUT_20_GOALS: AllocationInput = {
   monthlyIncome: 2250,
   monthlySavingsTarget: 300,
   essentialsPct: 80,
+  lifestyleBuffer: 120,
+  investmentsTarget: 20,
   goals: makeGoals(20),
 };
 
-const INPUT_20_GOALS_3POOL: AllocationInput = {
-  ...INPUT_20_GOALS_LEGACY,
-  lifestyleBuffer: 120,
-  investmentsTarget: 20,
-};
-
-describe('computeAllocation — legacy single-pool path', () => {
+describe('computeAllocation — 3-pool unified', () => {
   bench('20 goals — cold', () => {
-    computeAllocation(INPUT_20_GOALS_LEGACY);
-  });
-});
-
-describe('computeAllocation — 3-pool model', () => {
-  beforeAll(() => {
-    vi.stubEnv('NEXT_PUBLIC_ENABLE_3POOL_MODEL', 'true');
-  });
-  afterAll(() => {
-    vi.unstubAllEnvs();
-  });
-
-  bench('20 goals — cold', () => {
-    computeAllocation(INPUT_20_GOALS_3POOL);
+    computeAllocation(INPUT_20_GOALS);
   });
 
   bench('20 goals warm with 5 overrides', () => {
     const overrides: Record<string, number> = {};
     for (let i = 0; i < 5; i++) {
-      overrides[`bench-goal-${i}`] = 10 + i * 2;
+      overrides[`bench-goal-${i}`] = 50;
     }
-    computeAllocation({ ...INPUT_20_GOALS_3POOL, userOverrides: overrides });
+    computeAllocation({ ...INPUT_20_GOALS, userOverrides: overrides });
   });
 });

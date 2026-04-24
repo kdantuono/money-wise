@@ -2,18 +2,15 @@ import { test, expect } from '@playwright/test';
 import { loginTestUser } from '../../fixtures/onboarding-v2-helpers';
 
 /**
- * Sprint 1.5.3 WP-Q3 + WP-Q5 MVP — user scenario from spec:
+ * Sprint 1.5.3 WP-Q3 + WP-Q5 MVP / Sprint 1.6.6 #055+#008 — user scenario from spec:
  * Income 2250, essentials 80%, lifestyle 120, savings 300, invest 20.
  *
  * Asserts 3 pool split distinct visible + correct routing + no hardBlock.
- *
- * Requires ENABLE_3POOL_MODEL=true in test env. Skip if flag off.
+ * Feature flag rimosso: 3-pool è unified behavior, no skip.
  */
 
 test.describe('Sprint 1.5.3 — 3-pool split (user scenario)', () => {
   test.beforeEach(async ({ page }) => {
-    const flag = process.env.NEXT_PUBLIC_ENABLE_3POOL_MODEL;
-    test.skip(flag !== 'true', '3-pool flag disabled in test env');
     await loginTestUser(page);
   });
 

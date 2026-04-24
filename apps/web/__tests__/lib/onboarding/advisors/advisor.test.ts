@@ -223,6 +223,7 @@ describe('DeterministicBehavioralAdvisor — behavioral warnings', () => {
   // ── 6. Encouragement ─────────────────────────────────────────────────
 
   it('emits PLAN_BALANCED encouragement when no issues found', () => {
+    // #055 + #008: con Q7 cross-pool sempre attivo, serve plan feasible per entrambi i pool.
     const result = advisor.proposeAllocation(
       input({
         monthlyIncome: 3000,
@@ -232,7 +233,7 @@ describe('DeterministicBehavioralAdvisor — behavioral warnings', () => {
         investmentsTarget: 100,
         goals: [
           goal({ name: 'Fondo Emergenza', priority: 1, target: 500, deadline: null }),
-          goal({ name: 'ETF Globale', priority: 2, target: 5000, deadline: monthsFromNow(24) }),
+          goal({ name: 'ETF Globale', priority: 2, target: 1000, deadline: monthsFromNow(24) }),
         ],
       }),
     );
@@ -454,18 +455,15 @@ describe('DeterministicBehavioralAdvisor — behavioral warnings', () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────
-// Sprint 1.5.4 Q7: cross-pool mismatch warnings (gated on ENABLE_3POOL_MODEL)
+// Sprint 1.5.4 Q7 / Sprint 1.6.6 #055+#008: cross-pool mismatch warnings
+// (sempre attive post flag removal)
 // ─────────────────────────────────────────────────────────────────────────
 
 describe('DeterministicBehavioralAdvisor — Sprint 1.5.4 Q7 cross-pool warnings', () => {
   const advisor = new DeterministicBehavioralAdvisor();
 
   beforeEach(() => {
-    vi.stubEnv('NEXT_PUBLIC_ENABLE_3POOL_MODEL', 'true');
     _id = 0;
-  });
-  afterEach(() => {
-    vi.unstubAllEnvs();
   });
 
   it('ORPHAN_INVEST_BUDGET: invest target > 0 + no invest goals → soft warning with 3 actions', () => {
@@ -611,21 +609,6 @@ describe('DeterministicBehavioralAdvisor — Sprint 1.5.4 Q7 cross-pool warnings
     expect(result.behavioralWarnings?.find((w) => w.code === 'SAVINGS_GOALS_NO_BUDGET')).toBeUndefined();
   });
 
-  it('flag OFF: Q7 warnings non emessi', () => {
-    vi.unstubAllEnvs(); // flag default OFF
-    const result = advisor.proposeAllocation(
-      input({
-        monthlyIncome: 3000,
-        essentialsPct: 50,
-        monthlySavingsTarget: 300,
-        lifestyleBuffer: 200,
-        investmentsTarget: 100,
-        goals: [goal({ name: 'Fondo Emergenza', target: 5000, priority: 1 })],
-      }),
-    );
-    const q7Codes = ['ORPHAN_INVEST_BUDGET', 'ORPHAN_SAVINGS_BUDGET', 'INVEST_GOALS_NO_BUDGET', 'SAVINGS_GOALS_NO_BUDGET'];
-    for (const code of q7Codes) {
-      expect(result.behavioralWarnings?.find((w) => w.code === code)).toBeUndefined();
-    }
-  });
+  // Sprint 1.6.6 #055 + #008: flag rimosso, Q7 sempre attivo. Test legacy
+  // "flag OFF" rimosso (vedi ADR-005 + atomic #008 flag removal).
 });
