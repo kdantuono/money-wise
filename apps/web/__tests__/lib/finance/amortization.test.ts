@@ -104,6 +104,56 @@ describe('calculateMonthlyPayment', () => {
     // Deve essere multiplo di 0.01
     expect(Math.abs(rata * 100 - Math.round(rata * 100))).toBeLessThan(0.01);
   });
+
+  // === Non-finite guards (NaN / Infinity / -Infinity) ===
+
+  it('Returns 0 when principal is NaN', () => {
+    expect(calculateMonthlyPayment({ principal: NaN, annualRate: 10, numPayments: 36 })).toBe(0);
+  });
+
+  it('Returns 0 when principal is Infinity', () => {
+    expect(
+      calculateMonthlyPayment({ principal: Infinity, annualRate: 10, numPayments: 36 }),
+    ).toBe(0);
+  });
+
+  it('Returns 0 when principal is -Infinity', () => {
+    expect(
+      calculateMonthlyPayment({ principal: -Infinity, annualRate: 10, numPayments: 36 }),
+    ).toBe(0);
+  });
+
+  it('Returns 0 when annualRate is NaN', () => {
+    expect(calculateMonthlyPayment({ principal: 1000, annualRate: NaN, numPayments: 12 })).toBe(0);
+  });
+
+  it('Returns 0 when annualRate is Infinity', () => {
+    expect(
+      calculateMonthlyPayment({ principal: 1000, annualRate: Infinity, numPayments: 12 }),
+    ).toBe(0);
+  });
+
+  it('Returns 0 when numPayments is NaN', () => {
+    expect(calculateMonthlyPayment({ principal: 1000, annualRate: 5, numPayments: NaN })).toBe(0);
+  });
+
+  it('Returns 0 when numPayments is Infinity', () => {
+    expect(
+      calculateMonthlyPayment({ principal: 1000, annualRate: 5, numPayments: Infinity }),
+    ).toBe(0);
+  });
+
+  it('Returns 0 when numPayments is non-integer (12.5)', () => {
+    expect(
+      calculateMonthlyPayment({ principal: 1000, annualRate: 5, numPayments: 12.5 }),
+    ).toBe(0);
+  });
+
+  it('Returns 0 when numPayments is a tiny fraction (0.5)', () => {
+    expect(
+      calculateMonthlyPayment({ principal: 1000, annualRate: 5, numPayments: 0.5 }),
+    ).toBe(0);
+  });
 });
 
 describe('amortize', () => {
@@ -125,6 +175,36 @@ describe('amortize', () => {
 
   it('returns zero-shape for invalid input', () => {
     const result = amortize({ principal: 0, annualRate: 5, numPayments: 12 });
+    expect(result.monthlyPayment).toBe(0);
+    expect(result.totalPaid).toBe(0);
+    expect(result.totalInterest).toBe(0);
+  });
+
+  // === Non-finite guards: parity con calculateMonthlyPayment ===
+
+  it('returns zero-shape when principal is NaN (no silent propagation)', () => {
+    const result = amortize({ principal: NaN, annualRate: 5, numPayments: 12 });
+    expect(result.monthlyPayment).toBe(0);
+    expect(result.totalPaid).toBe(0);
+    expect(result.totalInterest).toBe(0);
+  });
+
+  it('returns zero-shape when numPayments is NaN', () => {
+    const result = amortize({ principal: 1000, annualRate: 5, numPayments: NaN });
+    expect(result.monthlyPayment).toBe(0);
+    expect(result.totalPaid).toBe(0);
+    expect(result.totalInterest).toBe(0);
+  });
+
+  it('returns zero-shape when annualRate is Infinity', () => {
+    const result = amortize({ principal: 1000, annualRate: Infinity, numPayments: 12 });
+    expect(result.monthlyPayment).toBe(0);
+    expect(result.totalPaid).toBe(0);
+    expect(result.totalInterest).toBe(0);
+  });
+
+  it('returns zero-shape when principal is -Infinity', () => {
+    const result = amortize({ principal: -Infinity, annualRate: 5, numPayments: 12 });
     expect(result.monthlyPayment).toBe(0);
     expect(result.totalPaid).toBe(0);
     expect(result.totalInterest).toBe(0);
@@ -152,5 +232,27 @@ describe('paymentScartoRatio', () => {
 
   it('returns NaN when calculated is negative (edge invalid)', () => {
     expect(paymentScartoRatio(100, -10)).toBeNaN();
+  });
+
+  // === Non-finite guards ===
+
+  it('returns NaN when userPayment is NaN', () => {
+    expect(paymentScartoRatio(NaN, 129.07)).toBeNaN();
+  });
+
+  it('returns NaN when userPayment is Infinity', () => {
+    expect(paymentScartoRatio(Infinity, 129.07)).toBeNaN();
+  });
+
+  it('returns NaN when userPayment is -Infinity', () => {
+    expect(paymentScartoRatio(-Infinity, 129.07)).toBeNaN();
+  });
+
+  it('returns NaN when calculatedPayment is NaN', () => {
+    expect(paymentScartoRatio(100, NaN)).toBeNaN();
+  });
+
+  it('returns NaN when calculatedPayment is Infinity', () => {
+    expect(paymentScartoRatio(100, Infinity)).toBeNaN();
   });
 });
