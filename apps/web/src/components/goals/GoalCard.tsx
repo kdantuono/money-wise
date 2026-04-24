@@ -98,7 +98,12 @@ export function GoalCard({ goal, onEditClick, onDeleteClick, onArchiveClick }: G
   // - linked liabilities) per progress display. Fallback `current` se VIEW non
   // disponibile (dati legacy pre-Fase-3a).
   const displayCurrent = goal.currentEffective ?? goal.current;
-  const pct = effectiveTarget > 0 ? Math.min(100, (displayCurrent / effectiveTarget) * 100) : 0;
+  // Copilot review #536 fix: clamp [0,100]. Debt goal con liability linked
+  // (current - SUM(liabilities)) può produrre displayCurrent negativo → pct
+  // negativo creava mismatch UI (Progress bar clampa a 0, label mostrava -X%).
+  const pct = effectiveTarget > 0
+    ? Math.max(0, Math.min(100, (displayCurrent / effectiveTarget) * 100))
+    : 0;
   const remaining = Math.max(0, effectiveTarget - displayCurrent);
 
   let daysLeft: number | null = null;

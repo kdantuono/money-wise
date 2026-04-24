@@ -105,12 +105,21 @@ export const goalsClient = {
       status: string;
       type: string | null;
     };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase.from as any)('goals_with_progress')
-      .select('id, name, target, current, effective_current, deadline, priority, monthly_allocation, status, type')
-      .eq('user_id', userId)
-      .in('status', statuses)
-      .order('priority', { ascending: true });
+    // Copilot review #536 fix: cast esplicito tipizzato sul result preserva
+    // sia `data: GoalWithProgressRow[]` che `error`. `.from as any` è
+    // limitato a bypass string name check (VIEW non in schema types), il
+    // result è tipizzato.
+    const { data, error } = (await (
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (supabase.from as any)('goals_with_progress')
+        .select('id, name, target, current, effective_current, deadline, priority, monthly_allocation, status, type')
+        .eq('user_id', userId)
+        .in('status', statuses)
+        .order('priority', { ascending: true })
+    )) as {
+      data: GoalWithProgressRow[] | null;
+      error: { message: string; code?: string } | null;
+    };
 
     if (error) throw new GoalsApiError(error.message, 500, error);
 
@@ -229,11 +238,23 @@ export const goalsClient = {
 
     // #043: re-query VIEW per ottenere effective_current aggiornato (goal può
     // avere linked accounts/liabilities — dopo update `current`, effective cambia).
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: viewData } = await (supabase.from as any)('goals_with_progress')
-      .select('effective_current')
-      .eq('id', goalId)
-      .single() as { data: { effective_current: number } | null };
+    // Copilot review #536 fix: capture + log error (non throw: UPDATE riuscito,
+    // re-query miss è fallback accettabile a `data.current`). Il caller può
+    // re-caricare manualmente via loadGoals se effective stale.
+    const { data: viewData, error: viewError } = (await (
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (supabase.from as any)('goals_with_progress')
+        .select('effective_current')
+        .eq('id', goalId)
+        .single()
+    )) as {
+      data: { effective_current: number } | null;
+      error: { message: string; code?: string } | null;
+    };
+
+    if (viewError) {
+      console.warn('[goalsClient.updateGoal] VIEW re-query failed, falling back to manual current:', viewError.message);
+    }
 
     return {
       id: data.id,

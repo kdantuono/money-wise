@@ -23,6 +23,10 @@
 --
 -- Performance: indici esistenti idx_accounts_goal + idx_liabilities_goal
 -- (partial WHERE goal_id IS NOT NULL, Sprint 1.6 Fase 2A) coprono i lookup.
+--
+-- Status filter (Copilot review #536): esclude account/liability non-ACTIVE
+-- (HIDDEN/CLOSED/INACTIVE/ERROR per accounts; PAID_OFF/CLOSED per liabilities).
+-- Un account chiuso con goal_id residuo NON deve contaminare effective_current.
 
 CREATE VIEW public.goals_with_progress
 WITH (security_invoker = true)
@@ -43,12 +47,14 @@ SELECT
   g.current + COALESCE(
     (SELECT SUM(a.current_balance)
        FROM public.accounts a
-       WHERE a.goal_id = g.id),
+       WHERE a.goal_id = g.id
+         AND a.status = 'ACTIVE'),
     0
   ) - COALESCE(
     (SELECT SUM(l.current_balance)
        FROM public.liabilities l
-       WHERE l.goal_id = g.id),
+       WHERE l.goal_id = g.id
+         AND l.status = 'ACTIVE'),
     0
   ) AS effective_current
 FROM public.goals g;
