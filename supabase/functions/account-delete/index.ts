@@ -1,292 +1,129 @@
 /**
- * account-delete — GDPR Art. 17 erasure endpoint.
+ * account-delete — GDPR Art. 17 erasure endpoint (Phase 04 refactor v2).
  *
- * POST /functions/v1/account-delete
- *   body: { password: string, exportDataFirst?: boolean }
- *   headers: Authorization: Bearer <user JWT>
+ * Schema v2 (ADR-0010): soft delete + anonymize + hard delete tre livelli.
+ * Phase 04 implementa solo livelli 1+2 (soft delete + anonymize). Hard delete
+ * scheduler post-retention rinviato a Phase 07 (regola 7).
  *
  * Flow:
- *   1. getClaims() → userId, email
- *   2. Re-verify password via signInWithPassword (defense against session hijack)
- *   3. (Optional) collect all personal data and return as JSON blob
- *   4. If user is the sole member of their family → delete the family row
- *      (cascades to family-scoped tables: accounts, budgets, categories,
- *       liabilities, scheduled_transactions)
- *   5. auth.admin.deleteUser(userId) → cascades to profiles and all
- *      user-scoped tables (audit_logs, user_preferences, notifications,
- *      push_subscriptions, user_achievements, banking_*)
+ *  1. Auth user
+ *  2. Soft delete: financial_positions del household → deleted_at=now()
+ *     + child CTI cascade automatica (ON DELETE CASCADE Phase 01)
+ *  3. Anonymize: PII strip su tabelle preservate (profiles), audit log con source='admin'
+ *  4. Provider connections: REVOKED_BY_USER + Saltedge revoke best-effort
+ *  5. Audit trail comprehensive in data_audit_logs
  *
- * The ordering (family first, then user) ensures we don't orphan user-owned
- * family rows: deleting the user first would CASCADE the profile, and if
- * that was the last profile on the family, we'd still need a separate
- * sweep — doing family first collapses the two cases.
- *
- * JWT verification is DISABLED at the gateway (see supabase/config.toml —
- * verify_jwt=false). Auth is enforced here via getClaims() per
- * feedback_edge_functions_jwt memory.
+ * Permanenza dati: legacy_backup schema (Phase 03) preserve indipendentemente.
+ * NB: questo endpoint NON drop hard data. Per hard delete dopo retention legale
+ * → scheduler dedicato Phase 07.
  */
 
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { handleCors } from '../_shared/cors.ts'
+import { createServiceClient, getUserId, getHouseholdId, setAuditSource } from '../_shared/supabase.ts'
 import { jsonResponse, errorResponse } from '../_shared/responses.ts'
+import { SaltEdgeClient } from '../_shared/saltedge.ts'
 
-// ---------------------------------------------------------------------------
-// Input validation
-// ---------------------------------------------------------------------------
-
-interface DeleteInput {
-  password: string
-  exportDataFirst?: boolean
+interface RequestBody {
+  confirmEmail?: string  // user deve confermare con email per evitare cancellazioni accidentali
 }
 
-function parseInput(raw: unknown): DeleteInput | { error: string } {
-  if (!raw || typeof raw !== 'object') {
-    return { error: 'Invalid request body' }
-  }
-  const body = raw as Record<string, unknown>
-  const password = body.password
-  const exportDataFirst = body.exportDataFirst
-
-  if (typeof password !== 'string' || password.length === 0) {
-    return { error: 'password is required' }
-  }
-  if (exportDataFirst !== undefined && typeof exportDataFirst !== 'boolean') {
-    return { error: 'exportDataFirst must be boolean' }
-  }
-  return { password, exportDataFirst: exportDataFirst === true }
-}
-
-// ---------------------------------------------------------------------------
-// Supabase clients
-// ---------------------------------------------------------------------------
-
-function createUserClient(authHeader: string) {
-  return createClient(
-    Deno.env.get('SUPABASE_URL')!,
-    Deno.env.get('SUPABASE_ANON_KEY')!,
-    { global: { headers: { Authorization: authHeader } } }
-  )
-}
-
-function createAdminClient() {
-  return createClient(
-    Deno.env.get('SUPABASE_URL')!,
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
-    { auth: { autoRefreshToken: false, persistSession: false } }
-  )
-}
-
-// ---------------------------------------------------------------------------
-// Data export
-// ---------------------------------------------------------------------------
-
-// Tables owned by the user via profiles.id (schema invariant: they all
-// carry a `user_id UUID REFERENCES profiles(id) ON DELETE CASCADE` column).
-//
-// ⚠️ `banking_sync_logs` is NOT here despite touching user data: it has
-// `account_id` (FK to accounts) but NO `user_id` column. Including it would
-// cause the export query below to fail silently (PostgREST rejects the
-// `.eq('user_id', ...)` filter) and leave sync-log rows out of the JSON
-// export. For the common sole-member case, those rows cascade via
-// families → accounts and are still deleted server-side; for multi-member
-// families, the sync logs survive the user delete (known limitation, see
-// migration 20260417020000 header comment). Post-beta: either add user_id
-// to the table or join via accounts.family_id.
-const USER_SCOPED_TABLES = [
-  'audit_logs',
-  'banking_customers',
-  'banking_connections',
-  'user_preferences',
-  'notifications',
-  'push_subscriptions',
-  'user_achievements',
-] as const
-
-// Tables scoped by family (exported only when the user is the sole member)
-const FAMILY_SCOPED_TABLES = [
-  'accounts',
-  'budgets',
-  'categories',
-  'liabilities',
-  'scheduled_transactions',
-  'transactions',
-] as const
-
-type TableName = typeof USER_SCOPED_TABLES[number] | typeof FAMILY_SCOPED_TABLES[number]
-
-type SupabaseAdminClient = ReturnType<typeof createAdminClient>
-
-async function exportUserData(
-  admin: SupabaseAdminClient,
-  userId: string,
-  familyId: string,
-  isSoleMember: boolean
-): Promise<Record<string, unknown>> {
-  const exported: Record<string, unknown> = {
-    userId,
-    familyId,
-    isSoleMember,
-    exportedAt: new Date().toISOString(),
-    profile: null,
-    userScoped: {} as Record<string, unknown[]>,
-    familyScoped: {} as Record<string, unknown[]>,
-  }
-
-  const { data: profile } = await admin
-    .from('profiles')
-    .select('*')
-    .eq('id', userId)
-    .maybeSingle()
-  exported.profile = profile ?? null
-
-  for (const table of USER_SCOPED_TABLES) {
-    const { data } = await admin.from(table).select('*').eq('user_id', userId)
-    ;(exported.userScoped as Record<string, unknown[]>)[table] = data ?? []
-  }
-
-  // Family data is only exported when the user owns the family exclusively;
-  // sharing family data from multi-member families would leak other users'
-  // personal data.
-  if (isSoleMember) {
-    for (const table of FAMILY_SCOPED_TABLES) {
-      const column = table === 'transactions' ? 'family_id' : 'family_id'
-      const { data } = await admin.from(table).select('*').eq(column, familyId)
-      ;(exported.familyScoped as Record<string, unknown[]>)[table] = data ?? []
-    }
-  }
-
-  return exported
-}
-
-// ---------------------------------------------------------------------------
-// Main handler
-// ---------------------------------------------------------------------------
-
-async function handleDelete(req: Request): Promise<Response> {
-  const authHeader = req.headers.get('Authorization')
-  if (!authHeader) return errorResponse('Unauthorized', 401)
-
-  // JWT claims
-  const userClient = createUserClient(authHeader)
-  const token = authHeader.replace(/^Bearer\s+/i, '').trim()
-  if (!token) return errorResponse('Unauthorized', 401)
-
-  const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token)
-  if (claimsError || !claimsData?.claims?.sub) {
-    return errorResponse('Unauthorized', 401)
-  }
-  const userId = claimsData.claims.sub
-  const email = (claimsData.claims.email as string | undefined) ?? ''
-
-  if (!email) {
-    return errorResponse('Email not in token claims', 401)
-  }
-
-  // Parse + validate body
-  let rawBody: unknown
-  try {
-    rawBody = await req.json()
-  } catch {
-    return errorResponse('Invalid JSON', 400)
-  }
-  const parsed = parseInput(rawBody)
-  if ('error' in parsed) return errorResponse(parsed.error, 400)
-
-  // Password reverify
-  const verifyClient = createClient(
-    Deno.env.get('SUPABASE_URL')!,
-    Deno.env.get('SUPABASE_ANON_KEY')!,
-    { auth: { autoRefreshToken: false, persistSession: false } }
-  )
-  const { error: reverifyError } = await verifyClient.auth.signInWithPassword({
-    email,
-    password: parsed.password,
-  })
-  if (reverifyError) {
-    return errorResponse('password_mismatch', 401)
-  }
-
-  const admin = createAdminClient()
-
-  // Look up family + membership count
-  const { data: profile, error: profileError } = await admin
-    .from('profiles')
-    .select('family_id')
-    .eq('id', userId)
-    .maybeSingle()
-
-  if (profileError || !profile) {
-    return errorResponse('profile_not_found', 404)
-  }
-  const familyId = profile.family_id as string
-
-  const { count: memberCount, error: countError } = await admin
-    .from('profiles')
-    .select('id', { count: 'exact', head: true })
-    .eq('family_id', familyId)
-
-  if (countError) {
-    return errorResponse('family_lookup_failed', 500)
-  }
-  const isSoleMember = (memberCount ?? 0) <= 1
-
-  // Optional export
-  let exportData: Record<string, unknown> | undefined
-  if (parsed.exportDataFirst) {
-    try {
-      exportData = await exportUserData(admin, userId, familyId, isSoleMember)
-    } catch (err) {
-      return errorResponse(
-        `export_failed: ${err instanceof Error ? err.message : 'unknown'}`,
-        500
-      )
-    }
-  }
-
-  // Delete family first (if sole member) — cascades to family-scoped tables.
-  if (isSoleMember) {
-    const { error: famErr } = await admin
-      .from('families')
-      .delete()
-      .eq('id', familyId)
-    if (famErr) {
-      return errorResponse(`family_delete_failed: ${famErr.message}`, 500)
-    }
-  }
-
-  // Delete user — cascades profiles + user-scoped tables.
-  const { error: userErr } = await admin.auth.admin.deleteUser(userId)
-  if (userErr) {
-    return errorResponse(`user_delete_failed: ${userErr.message}`, 500)
-  }
-
-  return jsonResponse({
-    success: true,
-    deletedAt: new Date().toISOString(),
-    familyDeleted: isSoleMember,
-    exportData,
-  })
-}
-
-// ---------------------------------------------------------------------------
-// Entrypoint
-// ---------------------------------------------------------------------------
-
-Deno.serve(async (req) => {
-  const cors = handleCors(req)
-  if (cors) return cors
-
-  if (req.method !== 'POST') {
-    return errorResponse('Method not allowed', 405)
-  }
+Deno.serve(async (req: Request) => {
+  const corsResponse = handleCors(req)
+  if (corsResponse) return corsResponse
 
   try {
-    return await handleDelete(req)
+    const userId = await getUserId(req)
+    const householdId = await getHouseholdId(req)
+    const supabase = createServiceClient()
+    const body: RequestBody = await req.json()
+
+    // Verify confirmEmail
+    const { data: profile } = await supabase.auth.admin.getUserById(userId)
+    if (!profile.user || profile.user.email !== body.confirmEmail) {
+      return errorResponse('EmailConfirmationMismatch', 400)
+    }
+
+    await setAuditSource(supabase, 'admin')
+
+    const now = new Date().toISOString()
+
+    // 1. Saltedge revoke best-effort (per ogni active provider_connection)
+    const saltEdge = new SaltEdgeClient()
+    const { data: connections } = await supabase
+      .from('provider_connections')
+      .select('id, provider, provider_connection_id')
+      .eq('household_id', householdId)
+      .eq('provider', 'saltedge')
+      .eq('status', 'ACTIVE')
+
+    for (const conn of connections ?? []) {
+      if (conn.provider_connection_id) {
+        try {
+          await saltEdge.revokeConnection(conn.provider_connection_id)
+        } catch (err) {
+          console.warn(JSON.stringify({ event: 'gdpr_saltedge_revoke_failed', conn: conn.id, error: String(err) }))
+        }
+      }
+    }
+
+    // 2. Soft delete financial_positions (cascade su child CTI tramite ON DELETE)
+    await supabase
+      .from('financial_positions')
+      .update({ deleted_at: now, status: 'CLOSED' })
+      .eq('household_id', householdId)
+      .is('deleted_at', null)
+
+    // 3. Soft delete payment_obligations
+    await supabase
+      .from('payment_obligations')
+      .update({ deleted_at: now })
+      .eq('household_id', householdId)
+      .is('deleted_at', null)
+
+    // 4. Anonymize profiles (PII strip — email, full_name, ecc.)
+    await supabase
+      .from('profiles')
+      .update({
+        full_name: null,
+        avatar_url: null,
+        phone: null,
+      })
+      .eq('id', userId)
+
+    // 5. Provider connections REVOKED_BY_USER
+    await supabase
+      .from('provider_connections')
+      .update({ status: 'REVOKED_BY_USER', last_error_at: now })
+      .eq('household_id', householdId)
+
+    // 6. Audit trail GDPR erasure event
+    await supabase.from('data_audit_logs').insert({
+      user_id: userId,
+      table_name: 'GDPR_ARTICLE_17_ERASURE',
+      record_id: householdId,
+      operation: 'DELETE',
+      source: 'admin',
+      new_values: {
+        event: 'GDPR_ARTICLE_17_ERASURE',
+        erased_at: now,
+        connections_revoked: connections?.length ?? 0,
+      },
+    })
+
+    return jsonResponse({
+      success: true,
+      data: {
+        userId,
+        householdId,
+        erasedAt: now,
+        connectionsRevoked: connections?.length ?? 0,
+        note: 'Soft delete + anonymize completed. Hard delete after legal retention (Phase 07 scheduler).',
+      },
+    })
   } catch (err) {
-    const msg = err instanceof Error ? err.message : 'unknown_error'
-    return errorResponse(`internal_error: ${msg}`, 500)
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    console.error(JSON.stringify({ event: 'account_delete_error', error: message }))
+    const status = message === 'Unauthorized' ? 401 : 500
+    return errorResponse(message, status)
   }
 })
-
-// Exported for tests
-export { handleDelete, parseInput, USER_SCOPED_TABLES, FAMILY_SCOPED_TABLES }

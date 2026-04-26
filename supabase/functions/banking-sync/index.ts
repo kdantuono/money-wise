@@ -1,256 +1,161 @@
 /**
- * Banking Sync — Syncs transactions for a specific account
+ * banking-sync — pull periodico transactions + balance update da Saltedge.
+ * Phase 04 refactor 2026-04-26: schema v2.
  *
- * Authenticated endpoint (user JWT required).
- * Fetches transactions from SaltEdge for the given account,
- * upserts them into the transactions table, and updates the account balance.
+ * Idempotency forte (ADR-0011):
+ *  - INSERT transactions con ON CONFLICT (position_id, provider_transaction_id) DO NOTHING
+ *  - Saltedge ritorna `id` stabile per transaction → idempotency key naturale
  *
- * POST { accountId }
- * Returns { syncLogId, status, transactionsSynced, balanceUpdated }
+ * Flow:
+ *  1. Auth + household
+ *  2. Per ogni provider_connection ACTIVE del household:
+ *     a. Refresh Saltedge connection
+ *     b. Per ogni financial_positions del provider (saltedge):
+ *        - Fetch transactions Saltedge dal último sync
+ *        - INSERT transactions v2 con sign mapping (Ratifica 2 Phase 03)
+ *        - Update current_balance_cents da Saltedge canonical (Ratifica 5 Phase 04)
+ *  3. Update provider_connections.last_successful_sync_at
  */
 
-import { handleCors } from '../_shared/cors.ts'
-import { createServiceClient, getUserId } from '../_shared/supabase.ts'
-import { jsonResponse, errorResponse } from '../_shared/responses.ts'
-import { SaltEdgeClient, type SaltEdgeTransaction } from '../_shared/saltedge.ts'
+import { corsHeaders } from '../_shared/cors.ts'
+import { createServiceClient, getUserId, getHouseholdId, setAuditSource } from '../_shared/supabase.ts'
+import { SaltEdgeClient } from '../_shared/saltedge.ts'
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-/** Map SaltEdge transaction status to our transaction_status enum */
-function mapTransactionStatus(status: string): string {
-  const statusMap: Record<string, string> = {
-    pending: 'PENDING',
-    posted: 'POSTED',
-    completed: 'POSTED',
-    cancelled: 'CANCELLED',
-  }
-  return statusMap[status?.toLowerCase()] ?? 'POSTED'
-}
-
-// ---------------------------------------------------------------------------
-// Handler
-// ---------------------------------------------------------------------------
+const DEFAULT_SYNC_DAYS_BACK = 30  // TBD ratifica esplicita Phase 06+ se cambia
 
 Deno.serve(async (req: Request) => {
-  const corsResponse = handleCors(req)
-  if (corsResponse) return corsResponse
-
-  if (req.method !== 'POST') {
-    return errorResponse('Method not allowed', 405)
-  }
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
   try {
     const userId = await getUserId(req)
-
-    const body = await req.json()
-    const accountId: string = body.accountId
-
-    if (!accountId) {
-      return errorResponse('accountId is required', 400)
-    }
-
+    const householdId = await getHouseholdId(req)
     const supabase = createServiceClient()
     const saltEdge = new SaltEdgeClient()
 
-    // 1. Find account and verify ownership
-    const { data: account, error: acctErr } = await supabase
-      .from('accounts')
-      .select('*')
-      .eq('id', accountId)
-      .single()
+    await setAuditSource(supabase, 'sync')
 
-    if (acctErr || !account) {
-      return errorResponse(`Account not found: ${accountId}`, 404)
-    }
+    // Fetch ACTIVE provider_connections
+    const { data: connections } = await supabase
+      .from('provider_connections')
+      .select('id, provider, provider_connection_id, last_successful_sync_at')
+      .eq('household_id', householdId)
+      .eq('provider', 'saltedge')
+      .eq('status', 'ACTIVE')
 
-    if (account.user_id !== userId) {
-      return errorResponse('Unauthorized', 403)
-    }
-
-    if (!account.saltedge_account_id) {
-      return errorResponse('Account is not linked to SaltEdge', 400)
-    }
-
-    if (!account.saltedge_connection_id) {
-      return errorResponse('Account has no SaltEdge connection ID', 400)
-    }
-
-    // 2. Create sync_log entry
-    const { data: syncLog, error: logErr } = await supabase
-      .from('banking_sync_logs')
-      .insert({
-        account_id: accountId,
-        provider: 'SALTEDGE',
-        status: 'SYNCING',
-        started_at: new Date().toISOString(),
+    if (!connections || connections.length === 0) {
+      return new Response(JSON.stringify({ success: true, data: { synced: 0, message: 'No active connections' } }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
-      .select('id')
-      .single()
-
-    if (logErr) throw new Error(`Failed to create sync log: ${logErr.message}`)
-
-    // 3. Update account sync status
-    await supabase
-      .from('accounts')
-      .update({ sync_status: 'SYNCING' })
-      .eq('id', accountId)
-
-    // 4. Fetch transactions from SaltEdge (last 90 days)
-    const fromDate = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000)
-      .toISOString()
-      .split('T')[0]
-
-    let transactions: SaltEdgeTransaction[]
-    try {
-      transactions = await saltEdge.getTransactions(
-        account.saltedge_connection_id,
-        account.saltedge_account_id,
-        fromDate,
-      )
-    } catch (fetchErr) {
-      // Handle SaltEdge errors (e.g., connection deleted)
-      const errMsg = fetchErr instanceof Error ? fetchErr.message : 'Failed to fetch transactions'
-
-      await supabase
-        .from('banking_sync_logs')
-        .update({
-          status: 'ERROR',
-          completed_at: new Date().toISOString(),
-          error: errMsg,
-          error_code: 'FETCH_ERROR',
-          transactions_synced: 0,
-        })
-        .eq('id', syncLog.id)
-
-      await supabase
-        .from('accounts')
-        .update({ sync_status: 'ERROR' })
-        .eq('id', accountId)
-
-      return errorResponse(errMsg, 502)
     }
 
-    // 5. Upsert transactions
-    let transactionsSynced = 0
+    // Fetch currency decimals map per amount conversion (Ratifica 5)
+    const { data: currencies } = await supabase.from('currencies').select('code, decimals')
+    const decimalsMap: Record<string, number> = {}
+    for (const c of currencies ?? []) decimalsMap[c.code] = c.decimals
 
-    for (const tx of transactions) {
+    let syncedTxCount = 0
+    let updatedBalances = 0
+
+    for (const conn of connections) {
+      if (!conn.provider_connection_id) continue
+
+      // Saltedge refresh (best effort)
       try {
-        const saltEdgeTxId = String(tx.id)
+        await saltEdge.refreshConnection(conn.provider_connection_id)
+      } catch (err) {
+        console.warn(JSON.stringify({ event: 'saltedge_refresh_failed', conn: conn.id, error: String(err) }))
+      }
 
-        // Check if transaction already exists
-        const { data: existing } = await supabase
-          .from('transactions')
-          .select('id')
-          .eq('saltedge_transaction_id', saltEdgeTxId)
-          .maybeSingle()
+      // Fetch financial_positions per questa connection (provider_account_id non null)
+      const { data: positions } = await supabase
+        .from('financial_positions')
+        .select('id, provider_account_id, currency, current_balance_cents')
+        .eq('household_id', householdId)
+        .eq('provider', 'saltedge')
+        .is('deleted_at', null)
+        .not('provider_account_id', 'is', null)
 
-        const txAmount = Math.abs(tx.amount)
-        const txType = tx.amount >= 0 ? 'CREDIT' : 'DEBIT'
-        const flowType = tx.amount > 0 ? 'INCOME' : 'EXPENSE'
+      if (!positions) continue
 
-        if (existing) {
-          // Update existing transaction
+      const fromDate = conn.last_successful_sync_at
+        ? new Date(conn.last_successful_sync_at).toISOString().split('T')[0]
+        : new Date(Date.now() - DEFAULT_SYNC_DAYS_BACK * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+
+      // Saltedge accounts (for balance update)
+      const seAccounts = await saltEdge.getAccounts(conn.provider_connection_id)
+      const seAccountById: Record<string, typeof seAccounts[number]> = {}
+      for (const a of seAccounts) seAccountById[String(a.id)] = a
+
+      for (const pos of positions) {
+        const seAcc = seAccountById[pos.provider_account_id!]
+        if (!seAcc) continue
+
+        // Update balance (Ratifica 5: Saltedge canonical)
+        const decimals = decimalsMap[seAcc.currency_code.toUpperCase()] ?? 2
+        const balanceCents = Math.round(seAcc.balance * Math.pow(10, decimals))
+        if (balanceCents !== pos.current_balance_cents) {
           await supabase
-            .from('transactions')
-            .update({
-              amount: txAmount,
-              status: mapTransactionStatus(tx.status),
-              description: tx.description || 'No description',
-              merchant_name: tx.extra?.merchant_name || null,
-              is_pending: tx.status === 'pending',
-            })
-            .eq('id', existing.id)
-        } else {
-          // Create new transaction
-          const { error: insertErr } = await supabase
-            .from('transactions')
-            .insert({
-              account_id: accountId,
-              amount: txAmount,
-              type: txType,
-              status: mapTransactionStatus(tx.status),
-              source: 'SALTEDGE',
-              currency: tx.currency_code || account.currency || 'EUR',
-              flow_type: flowType,
-              date: tx.made_on,
-              description: tx.description || 'No description',
-              merchant_name: tx.extra?.merchant_name || null,
-              is_pending: tx.status === 'pending',
-              saltedge_transaction_id: String(tx.id),
-            })
-
-          if (insertErr) {
-            console.warn(`[banking-sync] Failed to insert transaction ${tx.id}:`, insertErr.message)
-            continue
-          }
+            .from('financial_positions')
+            .update({ current_balance_cents: balanceCents, balance_as_of: new Date().toISOString() })
+            .eq('id', pos.id)
+          updatedBalances++
         }
 
-        transactionsSynced++
-      } catch (txErr) {
-        console.warn(`[banking-sync] Failed to process transaction ${tx.id}:`, txErr)
-      }
-    }
+        // Fetch transactions
+        const seTxs = await saltEdge.getTransactions(conn.provider_connection_id, pos.provider_account_id!, fromDate)
 
-    // 6. Update account balance from SaltEdge
-    let balanceUpdated = false
-    try {
-      const accounts = await saltEdge.getAccounts(account.saltedge_connection_id)
-      const seAccount = accounts.find((a) => String(a.id) === account.saltedge_account_id)
+        for (const tx of seTxs) {
+          if (tx.duplicated) continue  // Saltedge marca duplicati noti
 
-      if (seAccount) {
-        await supabase
-          .from('accounts')
-          .update({
-            current_balance: seAccount.balance,
-            sync_status: 'SYNCED',
-            last_sync_at: new Date().toISOString(),
+          const txDecimals = decimalsMap[tx.currency_code.toUpperCase()] ?? 2
+          const amountCents = Math.abs(Math.round(tx.amount * Math.pow(10, txDecimals)))
+          const direction: 'CREDIT' | 'DEBIT' =
+            tx.amount > 0 ? 'CREDIT' : 'DEBIT'  // Ratifica 2 Phase 03: amount=0 → DEBIT default
+
+          // Idempotency forte: ON CONFLICT (position_id, provider_transaction_id) DO NOTHING
+          // (advisor uq_transactions_provider_tx partial unique index Phase 01)
+          const { error: insertError } = await supabase.from('transactions').insert({
+            position_id: pos.id,
+            household_id: householdId,
+            amount_cents: amountCents,
+            direction,
+            currency: tx.currency_code.toUpperCase(),
+            description: tx.description,
+            provider_transaction_id: String(tx.id),
+            occurred_at: tx.made_on,
+            synced_at: new Date().toISOString(),
           })
-          .eq('id', accountId)
 
-        balanceUpdated = true
-      } else {
-        await supabase
-          .from('accounts')
-          .update({
-            sync_status: 'SYNCED',
-            last_sync_at: new Date().toISOString(),
-          })
-          .eq('id', accountId)
+          if (insertError) {
+            // 23505 = unique_violation → idempotent skip
+            if (insertError.code !== '23505') {
+              console.warn(JSON.stringify({ event: 'tx_insert_failed', tx_id: tx.id, error: insertError.message }))
+            }
+            continue
+          }
+          syncedTxCount++
+        }
       }
-    } catch {
-      // Balance update is non-critical
+
+      // Update last_successful_sync_at
       await supabase
-        .from('accounts')
-        .update({
-          sync_status: 'SYNCED',
-          last_sync_at: new Date().toISOString(),
-        })
-        .eq('id', accountId)
+        .from('provider_connections')
+        .update({ last_successful_sync_at: new Date().toISOString(), last_error_code: null, last_error_at: null })
+        .eq('id', conn.id)
     }
 
-    // 7. Update sync log
-    await supabase
-      .from('banking_sync_logs')
-      .update({
-        status: 'SYNCED',
-        completed_at: new Date().toISOString(),
-        accounts_synced: 1,
-        transactions_synced: transactionsSynced,
-        balance_updated: balanceUpdated,
-      })
-      .eq('id', syncLog.id)
-
-    return jsonResponse({
-      syncLogId: syncLog.id,
-      status: 'SYNCED',
-      transactionsSynced,
-      balanceUpdated,
+    return new Response(
+      JSON.stringify({ success: true, data: { syncedTxCount, updatedBalances, connections: connections.length } }),
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+    )
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    console.error(JSON.stringify({ event: 'banking_sync_error', error: message }))
+    const status = message === 'Unauthorized' ? 401 : 500
+    return new Response(JSON.stringify({ success: false, error: message }), {
+      status,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
-  } catch (error) {
-    console.error('[banking-sync] Error:', error)
-    const message = error instanceof Error ? error.message : 'Internal server error'
-    return errorResponse(message, 500)
   }
 })

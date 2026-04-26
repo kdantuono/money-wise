@@ -1,25 +1,33 @@
 /**
- * Banking Webhook — Handles SaltEdge webhook callbacks
+ * banking-webhook — Saltedge webhook handler v2 (Phase 04 refactor 2026-04-26).
  *
- * PUBLIC endpoint (no JWT required).
- * SaltEdge sends callbacks when:
- * - notify: Connection creation started
- * - success: Connection successfully created
- * - fail: Connection failed
+ * Cambi rispetto a legacy:
+ *  - **Webhook signature verification mandatory** (chiusura gap B19 ADR-0008):
+ *    prima azione del handler, reject 401 + audit log se invalid.
+ *  - Schema v2: provider_connections (non più banking_connections),
+ *    financial_positions + cash_accounts/credit_lines/loans/bnpl_plans/etc
+ *    (non più accounts), set audit_source='webhook' prima delle mutazioni.
+ *  - Mapping nature canonical 11+ via mapSaltedgeNatureToKind() (ratifica 2).
+ *  - Idempotency su (saltedge_connection_id) sostituita da provider_connection_id v2.
  *
- * Always returns 200 to prevent SaltEdge retries.
+ * SaltEdge webhook stages (URL-encoded in path):
+ *  - .../banking-webhook/notify  → start (connection creation initiated)
+ *  - .../banking-webhook/success → finish (connection authorized + accounts fetched)
+ *  - .../banking-webhook/fail    → fail (connection rejected/expired)
  *
- * POST — SaltEdge Service-type apps authenticate via App-id + Secret headers.
- * Returns { status: 'ok' }
+ * Always returns 200 to prevent SaltEdge retries (anti-amplification),
+ * salvo per signature/auth fail dove ritorna 401 con body opaco (ADR-0008).
  */
 
 import { corsHeaders } from '../_shared/cors.ts'
-import { createServiceClient } from '../_shared/supabase.ts'
-import { SaltEdgeClient, type SaltEdgeAccount } from '../_shared/saltedge.ts'
-
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
+import { createServiceClient, setAuditSource } from '../_shared/supabase.ts'
+import {
+  SaltEdgeClient,
+  type SaltEdgeAccount,
+  mapSaltedgeNatureToKind,
+  mapSaltedgeStatus,
+  verifySignature,
+} from '../_shared/saltedge.ts'
 
 interface WebhookPayload {
   data: {
@@ -38,10 +46,6 @@ interface WebhookPayload {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
 function jsonOk(data: unknown): Response {
   return new Response(JSON.stringify(data), {
     status: 200,
@@ -49,27 +53,35 @@ function jsonOk(data: unknown): Response {
   })
 }
 
-function mapAccountType(nature: string): string {
-  const typeMap: Record<string, string> = {
-    checking: 'CHECKING',
-    savings: 'SAVINGS',
-    credit: 'CREDIT_CARD',
-    credit_card: 'CREDIT_CARD',
-    loan: 'LOAN',
-    mortgage: 'MORTGAGE',
-    investment: 'INVESTMENT',
-  }
-  return typeMap[nature?.toLowerCase()] ?? 'OTHER'
+function reject401(): Response {
+  // Body opaco intenzionalmente per non leakare detail su perché reject (ADR-0008)
+  return new Response('', { status: 401, headers: corsHeaders })
 }
 
-// ---------------------------------------------------------------------------
-// Account storage (reused for 'finish' stage)
-// ---------------------------------------------------------------------------
+async function logInvalidSignature(
+  reason: string,
+  customerHint?: string,
+): Promise<void> {
+  try {
+    const supabase = createServiceClient()
+    await setAuditSource(supabase, 'webhook_invalid_signature')
+    await supabase.from('data_audit_logs').insert({
+      table_name: 'banking_webhook_endpoint',
+      record_id: '00000000-0000-0000-0000-000000000000',  // sentinel: no real record
+      operation: 'INSERT',
+      source: 'webhook_invalid_signature',
+      new_values: { reason, customer_hint: customerHint ?? null, occurred_at: new Date().toISOString() },
+    })
+  } catch (err) {
+    // Audit log fail non deve far passare il reject — log a console per debug
+    console.error('[banking-webhook] logInvalidSignature failed:', err)
+  }
+}
 
 async function fetchAndStoreAccounts(
   supabase: ReturnType<typeof createServiceClient>,
   saltEdge: SaltEdgeClient,
-  userId: string,
+  householdId: string,
   saltEdgeConnectionId: string,
 ): Promise<void> {
   let accounts: SaltEdgeAccount[]
@@ -88,50 +100,127 @@ async function fetchAndStoreAccounts(
     return
   }
 
+  await setAuditSource(supabase, 'webhook')
+
   for (const seAccount of accounts) {
     try {
       const saltEdgeAcctId = String(seAccount.id)
+      const map = mapSaltedgeNatureToKind(seAccount.nature)
 
+      // Idempotency v2: lookup via provider + provider_account_id
       const { data: existing } = await supabase
-        .from('accounts')
+        .from('financial_positions')
         .select('id')
-        .eq('saltedge_account_id', saltEdgeAcctId)
-        .eq('user_id', userId)
+        .eq('provider', 'saltedge')
+        .eq('provider_account_id', saltEdgeAcctId)
+        .eq('household_id', householdId)
         .maybeSingle()
+
+      // Pattern di population balance: ratifica 5 — Saltedge canonical.
+      // current_balance_cents = round(saltedge_balance * 10^currencies.decimals)
+      const { data: currencyMeta } = await supabase
+        .from('currencies')
+        .select('decimals')
+        .eq('code', seAccount.currency_code.toUpperCase())
+        .maybeSingle()
+      const decimals = currencyMeta?.decimals ?? 2
+      const balanceCents = Math.round(seAccount.balance * Math.pow(10, decimals))
+
+      let positionId: string
 
       if (existing) {
         await supabase
-          .from('accounts')
-          .update({
-            current_balance: seAccount.balance,
-            sync_status: 'SYNCED',
-            last_sync_at: new Date().toISOString(),
-          })
+          .from('financial_positions')
+          .update({ current_balance_cents: balanceCents, balance_as_of: new Date().toISOString() })
           .eq('id', existing.id)
-      } else {
-        await supabase
-          .from('accounts')
-          .insert({
-            user_id: userId,
-            name: seAccount.name,
-            account_number: seAccount.extra?.iban || null,
-            banking_provider: 'SALTEDGE',
-            saltedge_account_id: saltEdgeAcctId,
-            saltedge_connection_id: saltEdgeConnectionId,
-            sync_status: 'PENDING',
-            institution_name: connectionData.provider_name,
-            current_balance: seAccount.balance,
-            currency: seAccount.currency_code,
-            source: 'SALTEDGE',
-            type: mapAccountType(seAccount.nature),
-            status: 'ACTIVE',
-            settings: {
-              bankCountry: connectionData.country_code,
-              accountHolderName: seAccount.extra?.holder_name || null,
-              accountType: seAccount.nature,
-              provider: 'SALTEDGE',
+        positionId = existing.id
+
+        // Audit warning per nature drift detection (ratifica 4)
+        if (map.requiresWarning) {
+          await supabase.from('data_audit_logs').insert({
+            user_id: null,
+            table_name: 'financial_positions',
+            record_id: positionId,
+            operation: 'UPDATE',
+            source: 'sync',
+            new_values: {
+              unmapped_saltedge_nature: seAccount.nature,
+              position_id: positionId,
+              defaulted_to: 'OTHER',
             },
           })
+        }
+      } else {
+        const { data: inserted, error: insertError } = await supabase
+          .from('financial_positions')
+          .insert({
+            household_id: householdId,
+            name: seAccount.name,
+            currency: seAccount.currency_code.toUpperCase(),
+            provider: 'saltedge',
+            provider_account_id: saltEdgeAcctId,
+            nature: map.nature,
+            kind: map.kind,
+            current_balance_cents: balanceCents,
+            balance_as_of: new Date().toISOString(),
+            status: 'ACTIVE',
+            provider_country_code: connectionData.country_code?.toUpperCase() ?? null,
+          })
+          .select('id')
+          .single()
+
+        if (insertError || !inserted) {
+          console.warn(`[banking-webhook] Failed to insert position for ${saltEdgeAcctId}:`, insertError)
+          continue
+        }
+        positionId = inserted.id
+
+        // CTI child table insert basato su kind
+        if (map.kind === 'CASH') {
+          await supabase.from('cash_accounts').insert({
+            position_id: positionId,
+            iban: seAccount.extra?.iban ?? null,
+            account_holder_name: seAccount.extra?.holder_name ?? null,
+          })
+        } else if (map.kind === 'CREDIT_LINE') {
+          await supabase.from('credit_lines').insert({
+            position_id: positionId,
+            credit_limit_cents: 0,  // TBD: Saltedge non ritorna credit_limit per CC, manual via UI
+          })
+        } else if (map.kind === 'LOAN') {
+          await supabase.from('loans').insert({
+            position_id: positionId,
+            original_principal_cents: Math.abs(balanceCents) || 1,
+            outstanding_principal_cents: Math.abs(balanceCents),
+            interest_rate_apr: 0,
+            term_months: 1,
+            start_date: new Date().toISOString().split('T')[0],
+            amortization_type: seAccount.nature?.toLowerCase() === 'mortgage' ? 'FRENCH' : 'OTHER',
+          })
+        } else if (map.kind === 'INVESTMENT') {
+          await supabase.from('investment_accounts').insert({
+            position_id: positionId,
+            account_holder_name: seAccount.extra?.holder_name ?? null,
+          })
+        }
+        // kind === 'OTHER' → no child table (Phase 01 trigger 2)
+        // kind === 'BNPL'/'CRYPTO' non da Saltedge in questo flusso
+
+        // Audit warning per nature drift (ratifica 4)
+        if (map.requiresWarning) {
+          await supabase.from('data_audit_logs').insert({
+            user_id: null,
+            table_name: 'financial_positions',
+            record_id: positionId,
+            operation: 'INSERT',
+            source: 'sync',
+            new_values: {
+              unmapped_saltedge_nature: seAccount.nature,
+              position_id: positionId,
+              defaulted_to: 'OTHER',
+            },
+          })
+        }
       }
     } catch (err) {
       console.warn(`[banking-webhook] Failed to store account ${seAccount.id}:`, err)
@@ -139,12 +228,7 @@ async function fetchAndStoreAccounts(
   }
 }
 
-// ---------------------------------------------------------------------------
-// Handler
-// ---------------------------------------------------------------------------
-
 Deno.serve(async (req: Request) => {
-  // CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
@@ -153,184 +237,160 @@ Deno.serve(async (req: Request) => {
     return jsonOk({ status: 'error', message: 'Method not allowed' })
   }
 
+  // ─── STEP 1 — Webhook signature verification (B19, ADR-0008) ──────────
+  // Mandatory pre-payload-parse. Reject 401 + audit log se invalid.
+  // Nessun bypass per dev/staging — mock con signature mock + key mock se serve.
+  const publicKeyPem = Deno.env.get('SALTEDGE_WEBHOOK_PUBLIC_KEY') ?? ''
+  if (!publicKeyPem) {
+    console.error('[banking-webhook] SALTEDGE_WEBHOOK_PUBLIC_KEY not configured')
+    await logInvalidSignature('missing_public_key_env')
+    return reject401()
+  }
+
+  const signatureHeader = req.headers.get('Signature') ?? ''
+  const rawBody = await req.text()
+
+  // Parse early per estrarre meta.time per replay protection (verifySignature lo legge)
+  let parsedForVerify: WebhookPayload | null = null
+  try {
+    parsedForVerify = JSON.parse(rawBody) as WebhookPayload
+  } catch {
+    // Payload non-JSON: signature verify comunque, ma timestamp undefined skipa replay check
+    parsedForVerify = null
+  }
+
+  const verifyResult = await verifySignature(
+    rawBody,
+    signatureHeader,
+    publicKeyPem,
+    parsedForVerify?.meta?.time,
+  )
+
+  if (!verifyResult.valid) {
+    await logInvalidSignature(verifyResult.reason ?? 'unknown', parsedForVerify?.data?.customer_id)
+    return reject401()
+  }
+
+  // ─── STEP 2 — Process payload (signature valid) ────────────────────────
   try {
     const saltEdge = new SaltEdgeClient()
     const supabase = createServiceClient()
 
-    // 1. Parse payload
-    let payload: WebhookPayload
-    try {
-      payload = await req.json()
-    } catch {
-      console.error('[banking-webhook] Failed to parse payload')
-      return jsonOk({ status: 'error', message: 'Invalid JSON' })
+    const payload = parsedForVerify
+    if (!payload?.data?.customer_id) {
+      console.warn('[banking-webhook] Missing customer_id in payload (post-verify)')
+      return jsonOk({ status: 'error', message: 'Missing customer_id' })
     }
 
     const { data } = payload
 
-    if (!data?.customer_id) {
-      console.warn('[banking-webhook] Missing customer_id in payload')
-      return jsonOk({ status: 'error', message: 'Missing customer_id' })
-    }
-
-    // 3. Determine stage from URL path (primary) or payload (fallback)
-    //    SaltEdge webhook URLs are configured as:
-    //    .../banking-webhook/notify  -> start
-    //    .../banking-webhook/success -> finish
-    //    .../banking-webhook/fail    -> fail
     const url = new URL(req.url)
     const segments = url.pathname.split('/').filter(Boolean)
     const lastSegment = segments[segments.length - 1]
 
     let stage: 'start' | 'finish' | 'fail'
-    if (lastSegment === 'notify') {
-      stage = 'start'
-    } else if (lastSegment === 'fail') {
-      stage = 'fail'
-    } else if (lastSegment === 'success') {
-      stage = 'finish'
-    } else {
-      // Fallback for root path or unrecognized segment: use payload-based detection
-      stage = data.error_class ? 'fail' : 'finish'
-    }
+    if (lastSegment === 'notify') stage = 'start'
+    else if (lastSegment === 'fail') stage = 'fail'
+    else if (lastSegment === 'success') stage = 'finish'
+    else stage = data.error_class ? 'fail' : 'finish'
 
-    console.log(`[banking-webhook] Processing: customer=${data.customer_id}, connection=${data.connection_id}, stage=${stage}`)
+    console.log(JSON.stringify({
+      event: 'banking_webhook_received',
+      customer_id: data.customer_id,
+      connection_id: data.connection_id,
+      stage,
+    }))
 
-    // 4. Find customer by saltedge_customer_id
-    const { data: customer } = await supabase
-      .from('banking_customers')
-      .select('*')
-      .eq('saltedge_customer_id', data.customer_id)
-      .maybeSingle()
-
-    if (!customer) {
-      console.warn(`[banking-webhook] Customer not found for SaltEdge ID: ${data.customer_id}`)
-      return jsonOk({ status: 'ok' })
-    }
-
-    // 5. Find pending connection for this customer
-    let connection: Record<string, unknown> | null = null
-
-    // Try to find by pending status first
-    const { data: pendingConn } = await supabase
-      .from('banking_connections')
-      .select('*')
-      .eq('customer_id', customer.id)
-      .eq('status', 'PENDING')
+    // Step 3: Find provider_connection by provider_customer_id (Phase 03 ALTER)
+    await setAuditSource(supabase, 'webhook')
+    const { data: pc } = await supabase
+      .from('provider_connections')
+      .select('id, household_id')
+      .eq('provider_customer_id', data.customer_id)
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle()
 
-    connection = pendingConn
-
-    // Fallback: find by SaltEdge connection ID
-    if (!connection && data.connection_id) {
-      const { data: existingConn } = await supabase
-        .from('banking_connections')
-        .select('*')
-        .eq('saltedge_connection_id', data.connection_id)
-        .maybeSingle()
-
-      connection = existingConn
-    }
-
-    // Also try IN_PROGRESS connections
-    if (!connection) {
-      const { data: inProgressConn } = await supabase
-        .from('banking_connections')
-        .select('*')
-        .eq('customer_id', customer.id)
-        .eq('status', 'IN_PROGRESS')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle()
-
-      connection = inProgressConn
-    }
-
-    if (!connection) {
-      console.warn(`[banking-webhook] No connection found for customer: ${customer.id}`)
+    if (!pc) {
+      console.warn(`[banking-webhook] No provider_connection for customer: ${data.customer_id}`)
       return jsonOk({ status: 'ok' })
     }
 
-    // 6. Update connection based on stage
+    // Step 4: Update provider_connection based on stage
+    const householdId = pc.household_id
+
     switch (stage) {
       case 'start':
         await supabase
-          .from('banking_connections')
+          .from('provider_connections')
           .update({
-            status: 'IN_PROGRESS',
-            saltedge_connection_id: data.connection_id || null,
+            status: 'REAUTH_REQUIRED',  // ancora pending OAuth
+            provider_connection_id: data.connection_id ?? null,
           })
-          .eq('id', connection.id)
+          .eq('id', pc.id)
         break
 
       case 'finish': {
-        // Fetch connection details from SaltEdge
         const saltEdgeConnId = data.connection_id!
-        let providerCode: string | null = data.provider_code || null
-        let providerName: string | null = data.provider_name || null
-        let countryCode: string | null = data.country_code || null
+        let providerCode: string | null = data.provider_code ?? null
+        let providerName: string | null = data.provider_name ?? null
+        let countryCode: string | null = data.country_code ?? null
         let lastSuccessAt: string | null = null
+        let authStatus: string | undefined
+        let errorClass: string | undefined
 
         try {
           const connDetails = await saltEdge.getConnection(saltEdgeConnId)
           providerCode = connDetails.provider_code
           providerName = connDetails.provider_name
           countryCode = connDetails.country_code
-          lastSuccessAt = connDetails.last_success_at || null
+          lastSuccessAt = connDetails.last_success_at ?? null
+          authStatus = connDetails.authentication_status
+          errorClass = connDetails.error_class
         } catch (err) {
           console.warn('[banking-webhook] Failed to fetch connection details:', err)
         }
 
-        await supabase
-          .from('banking_connections')
-          .update({
-            status: 'AUTHORIZED',
-            saltedge_connection_id: saltEdgeConnId,
-            provider_code: providerCode,
-            provider_name: providerName,
-            country_code: countryCode,
-            authorized_at: new Date().toISOString(),
-            last_success_at: lastSuccessAt ? new Date(lastSuccessAt).toISOString() : new Date().toISOString(),
-            metadata: {
-              ...(typeof connection.metadata === 'object' && connection.metadata ? connection.metadata : {}),
-              webhookFinishedAt: new Date().toISOString(),
-            },
-          })
-          .eq('id', connection.id)
+        const newStatus = authStatus
+          ? mapSaltedgeStatus(authStatus, errorClass)
+          : 'ACTIVE'
 
-        // Auto-fetch and store accounts
-        await fetchAndStoreAccounts(
-          supabase,
-          saltEdge,
-          connection.user_id as string,
-          saltEdgeConnId,
-        )
+        await supabase
+          .from('provider_connections')
+          .update({
+            status: newStatus,
+            provider_connection_id: saltEdgeConnId,
+            last_successful_sync_at: lastSuccessAt
+              ? new Date(lastSuccessAt).toISOString()
+              : new Date().toISOString(),
+            last_error_code: null,
+            last_error_at: null,
+          })
+          .eq('id', pc.id)
+
+        // Auto-fetch accounts → financial_positions + child CTI
+        if (newStatus === 'ACTIVE') {
+          await fetchAndStoreAccounts(supabase, saltEdge, householdId, saltEdgeConnId)
+        }
         break
       }
 
       case 'fail':
         await supabase
-          .from('banking_connections')
+          .from('provider_connections')
           .update({
-            status: 'FAILED',
-            saltedge_connection_id: data.connection_id || null,
-            metadata: {
-              ...(typeof connection.metadata === 'object' && connection.metadata ? connection.metadata : {}),
-              errorClass: data.error_class,
-              errorMessage: data.error_message,
-              failedAt: new Date().toISOString(),
-            },
+            status: data.error_class ? mapSaltedgeStatus('error', data.error_class) : 'ERROR_GENERIC',
+            provider_connection_id: data.connection_id ?? null,
+            last_error_code: data.error_class ?? 'unknown',
+            last_error_at: new Date().toISOString(),
           })
-          .eq('id', connection.id)
+          .eq('id', pc.id)
         break
     }
 
     return jsonOk({ status: 'ok' })
   } catch (error) {
     console.error('[banking-webhook] Unhandled error:', error)
-    // Always return 200 to prevent SaltEdge retries
     return jsonOk({ status: 'ok' })
   }
 })

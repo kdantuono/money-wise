@@ -1,156 +1,91 @@
 /**
- * Banking Revoke — Revokes a banking connection
+ * banking-revoke — disconnessione Saltedge + soft delete provider_connection v2.
+ * Phase 04 refactor 2026-04-26.
  *
- * Authenticated endpoint (user JWT required).
- * Soft-deletes accounts (marks as HIDDEN + DISCONNECTED) and
- * deletes the BankingConnection record.
- *
- * POST { connectionId } or POST { accountId }
- * Returns { success: true }
+ * Flow:
+ *  1. Auth user + household
+ *  2. Lookup provider_connections target
+ *  3. Saltedge revoke (DELETE /connections/{id}) — best effort, continua se fail
+ *  4. Update provider_connections.status = REVOKED_BY_USER
+ *  5. Soft delete financial_positions associate (set deleted_at, status=CLOSED)
  */
 
-import { handleCors } from '../_shared/cors.ts'
-import { createServiceClient, getUserId } from '../_shared/supabase.ts'
-import { jsonResponse, errorResponse } from '../_shared/responses.ts'
+import { corsHeaders } from '../_shared/cors.ts'
+import { createServiceClient, getUserId, getHouseholdId, setAuditSource } from '../_shared/supabase.ts'
+import { SaltEdgeClient } from '../_shared/saltedge.ts'
+
+interface RequestBody {
+  providerConnectionId?: string  // v2 provider_connections.id
+}
 
 Deno.serve(async (req: Request) => {
-  const corsResponse = handleCors(req)
-  if (corsResponse) return corsResponse
-
-  if (req.method !== 'POST') {
-    return errorResponse('Method not allowed', 405)
-  }
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
   try {
     const userId = await getUserId(req)
+    const householdId = await getHouseholdId(req)
+    const body: RequestBody = req.body ? await req.json() : {}
 
-    const body = await req.json()
-    const connectionId: string | undefined = body.connectionId
-    const accountId: string | undefined = body.accountId
-
-    if (!connectionId && !accountId) {
-      return errorResponse('Either connectionId or accountId is required', 400)
+    if (!body.providerConnectionId) {
+      return new Response(JSON.stringify({ success: false, error: 'Missing providerConnectionId' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
     }
 
     const supabase = createServiceClient()
+    const saltEdge = new SaltEdgeClient()
 
-    let targetConnectionId: string | null = null
-    let saltEdgeConnectionId: string | null = null
+    await setAuditSource(supabase, 'user_action')
 
-    if (connectionId) {
-      // Direct connection ID provided
-      const { data: connection, error: connErr } = await supabase
-        .from('banking_connections')
-        .select('*')
-        .eq('id', connectionId)
-        .single()
+    const { data: pc } = await supabase
+      .from('provider_connections')
+      .select('id, household_id, provider, provider_connection_id')
+      .eq('id', body.providerConnectionId)
+      .eq('household_id', householdId)
+      .maybeSingle()
 
-      if (connErr || !connection) {
-        return errorResponse(`Banking connection not found: ${connectionId}`, 404)
-      }
+    if (!pc) {
+      return new Response(JSON.stringify({ success: false, error: 'ProviderConnectionNotFound' }), {
+        status: 404,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
 
-      if (connection.user_id !== userId) {
-        return errorResponse('Unauthorized', 403)
-      }
-
-      targetConnectionId = connection.id
-      saltEdgeConnectionId = connection.saltedge_connection_id
-    } else if (accountId) {
-      // Look up connection via account
-      const { data: account, error: acctErr } = await supabase
-        .from('accounts')
-        .select('*')
-        .eq('id', accountId)
-        .single()
-
-      if (acctErr || !account) {
-        return errorResponse(`Account not found: ${accountId}`, 404)
-      }
-
-      if (account.user_id !== userId) {
-        return errorResponse('Unauthorized', 403)
-      }
-
-      saltEdgeConnectionId = account.saltedge_connection_id
-
-      if (!saltEdgeConnectionId) {
-        // No connection ID on account; just hide the account directly
-        await supabase
-          .from('accounts')
-          .update({
-            status: 'HIDDEN',
-            sync_status: 'DISCONNECTED',
-            saltedge_connection_id: null,
-            saltedge_account_id: null,
-          })
-          .eq('id', accountId)
-
-        return jsonResponse({ success: true })
-      }
-
-      // Find the BankingConnection by saltedge_connection_id
-      const { data: connection } = await supabase
-        .from('banking_connections')
-        .select('id')
-        .eq('saltedge_connection_id', saltEdgeConnectionId)
-        .eq('user_id', userId)
-        .maybeSingle()
-
-      if (connection) {
-        targetConnectionId = connection.id
-      } else {
-        // No connection found; just mark accounts as hidden
-        await supabase
-          .from('accounts')
-          .update({
-            status: 'HIDDEN',
-            sync_status: 'DISCONNECTED',
-          })
-          .eq('saltedge_connection_id', saltEdgeConnectionId)
-          .eq('user_id', userId)
-
-        return jsonResponse({ success: true })
+    // Saltedge revoke (best effort)
+    if (pc.provider === 'saltedge' && pc.provider_connection_id) {
+      try {
+        await saltEdge.revokeConnection(pc.provider_connection_id)
+      } catch (err) {
+        console.warn(JSON.stringify({ event: 'saltedge_revoke_failed', error: String(err) }))
       }
     }
 
-    // Mark accounts as HIDDEN and DISCONNECTED
-    if (saltEdgeConnectionId) {
-      const { count: updatedCount } = await supabase
-        .from('accounts')
-        .update({
-          status: 'HIDDEN',
-          sync_status: 'DISCONNECTED',
-        })
-        .eq('user_id', userId)
-        .eq('saltedge_connection_id', saltEdgeConnectionId)
-        .select('id', { count: 'exact', head: true })
+    // Update provider_connection v2
+    await supabase
+      .from('provider_connections')
+      .update({ status: 'REVOKED_BY_USER', last_error_at: new Date().toISOString() })
+      .eq('id', pc.id)
 
-      // Fallback: if no accounts matched, disconnect SALTEDGE accounts with no connection ID
-      if (!updatedCount || updatedCount === 0) {
-        await supabase
-          .from('accounts')
-          .update({
-            status: 'HIDDEN',
-            sync_status: 'DISCONNECTED',
-          })
-          .eq('user_id', userId)
-          .eq('banking_provider', 'SALTEDGE')
-          .is('saltedge_connection_id', null)
-      }
-    }
+    // Soft delete financial_positions associate
+    await supabase
+      .from('financial_positions')
+      .update({ deleted_at: new Date().toISOString(), status: 'CLOSED' })
+      .eq('household_id', householdId)
+      .eq('provider', pc.provider)
+      .is('deleted_at', null)
 
-    // Delete the BankingConnection record
-    if (targetConnectionId) {
-      await supabase
-        .from('banking_connections')
-        .delete()
-        .eq('id', targetConnectionId)
-    }
-
-    return jsonResponse({ success: true })
-  } catch (error) {
-    console.error('[banking-revoke] Error:', error)
-    const message = error instanceof Error ? error.message : 'Internal server error'
-    return errorResponse(message, 500)
+    return new Response(JSON.stringify({ success: true, data: { providerConnectionId: pc.id } }), {
+      status: 200,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    console.error(JSON.stringify({ event: 'banking_revoke_error', error: message }))
+    const status = message === 'Unauthorized' ? 401 : 500
+    return new Response(JSON.stringify({ success: false, error: message }), {
+      status,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
   }
 })
