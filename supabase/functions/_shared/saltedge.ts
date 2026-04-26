@@ -248,6 +248,7 @@ export async function verifySignature(
       return { valid: false, reason: 'invalid_timestamp' }
     }
     const drift = Math.abs(Date.now() - ts)
+    // Tolerance ratificata in ADR-0008 §replay protection. Modifiche richiedono ratifica esplicita.
     const TOLERANCE_MS = 5 * 60 * 1000  // ±5 minuti come da ADR-0008
     if (drift > TOLERANCE_MS) {
       return { valid: false, reason: 'replay_protection' }

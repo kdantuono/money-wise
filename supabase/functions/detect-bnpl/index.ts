@@ -99,7 +99,8 @@ Deno.serve(async (req: Request) => {
           due_date: tx.occurred_at.split('T')[0],
           status: 'PAID',
           settled_by_transaction_id: tx.id,
-          projection_confidence: 0.85,  // confidence ML
+          // TODO Phase 06: ML confidence calibration AI Layer 2. Valore corrente arbitrario, sostituire con calibrated probability.
+          projection_confidence: 0.85,
           generated_by: 'AI_FORECAST',
         })
         .select('id')

@@ -21,7 +21,8 @@ import { corsHeaders } from '../_shared/cors.ts'
 import { createServiceClient, getUserId, getHouseholdId, setAuditSource } from '../_shared/supabase.ts'
 import { SaltEdgeClient } from '../_shared/saltedge.ts'
 
-const DEFAULT_SYNC_DAYS_BACK = 30  // TBD ratifica esplicita Phase 06+ se cambia
+// TODO Phase 06: ratificare batch size sync window. Default 30gg coerente con cycle bancari standard.
+const DEFAULT_SYNC_DAYS_BACK = 30
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
@@ -67,12 +68,12 @@ Deno.serve(async (req: Request) => {
         console.warn(JSON.stringify({ event: 'saltedge_refresh_failed', conn: conn.id, error: String(err) }))
       }
 
-      // Fetch financial_positions per questa connection (provider_account_id non null)
+      // Fetch financial_positions per questa specific connection (Q9 ratifica Phase 04: filter via provider_connection_id)
       const { data: positions } = await supabase
         .from('financial_positions')
         .select('id, provider_account_id, currency, current_balance_cents')
         .eq('household_id', householdId)
-        .eq('provider', 'saltedge')
+        .eq('provider_connection_id', conn.id)
         .is('deleted_at', null)
         .not('provider_account_id', 'is', null)
 

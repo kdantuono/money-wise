@@ -83,6 +83,7 @@ async function fetchAndStoreAccounts(
   saltEdge: SaltEdgeClient,
   householdId: string,
   saltEdgeConnectionId: string,
+  providerConnectionId: string,  // Q9 ratifica Phase 04: propagation per multi-connection scope
 ): Promise<void> {
   let accounts: SaltEdgeAccount[]
   try {
@@ -107,11 +108,12 @@ async function fetchAndStoreAccounts(
       const saltEdgeAcctId = String(seAccount.id)
       const map = mapSaltedgeNatureToKind(seAccount.nature)
 
-      // Idempotency v2: lookup via provider + provider_account_id
+      // Idempotency v2: lookup via provider_connection_id + provider_account_id
+      // (Phase 04 ALTER Q9: multi-connection scope discriminator)
       const { data: existing } = await supabase
         .from('financial_positions')
         .select('id')
-        .eq('provider', 'saltedge')
+        .eq('provider_connection_id', providerConnectionId)
         .eq('provider_account_id', saltEdgeAcctId)
         .eq('household_id', householdId)
         .maybeSingle()
@@ -159,6 +161,7 @@ async function fetchAndStoreAccounts(
             currency: seAccount.currency_code.toUpperCase(),
             provider: 'saltedge',
             provider_account_id: saltEdgeAcctId,
+            provider_connection_id: providerConnectionId,  // Phase 04 ALTER Q9
             nature: map.nature,
             kind: map.kind,
             current_balance_cents: balanceCents,
@@ -183,19 +186,25 @@ async function fetchAndStoreAccounts(
             account_holder_name: seAccount.extra?.holder_name ?? null,
           })
         } else if (map.kind === 'CREDIT_LINE') {
+          // Sentinel removed Phase 04 pass correttivo: NULL + is_complete=false invece di valori 0/1 fasulli.
+          // UI futura completerà i dati via flag.
           await supabase.from('credit_lines').insert({
             position_id: positionId,
-            credit_limit_cents: 0,  // TBD: Saltedge non ritorna credit_limit per CC, manual via UI
+            credit_limit_cents: null,
+            is_complete: false,
           })
         } else if (map.kind === 'LOAN') {
+          // Sentinel removed Phase 04 pass correttivo: NULL + is_complete=false invece di valori 0/1 fasulli.
+          // UI futura completerà i dati via flag.
           await supabase.from('loans').insert({
             position_id: positionId,
-            original_principal_cents: Math.abs(balanceCents) || 1,
+            original_principal_cents: null,
             outstanding_principal_cents: Math.abs(balanceCents),
-            interest_rate_apr: 0,
-            term_months: 1,
+            interest_rate_apr: null,
+            term_months: null,
             start_date: new Date().toISOString().split('T')[0],
             amortization_type: seAccount.nature?.toLowerCase() === 'mortgage' ? 'FRENCH' : 'OTHER',
+            is_complete: false,
           })
         } else if (map.kind === 'INVESTMENT') {
           await supabase.from('investment_accounts').insert({
@@ -370,7 +379,7 @@ Deno.serve(async (req: Request) => {
 
         // Auto-fetch accounts → financial_positions + child CTI
         if (newStatus === 'ACTIVE') {
-          await fetchAndStoreAccounts(supabase, saltEdge, householdId, saltEdgeConnId)
+          await fetchAndStoreAccounts(supabase, saltEdge, householdId, saltEdgeConnId, pc.id)
         }
         break
       }

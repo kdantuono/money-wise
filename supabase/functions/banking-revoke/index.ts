@@ -67,12 +67,15 @@ Deno.serve(async (req: Request) => {
       .update({ status: 'REVOKED_BY_USER', last_error_at: new Date().toISOString() })
       .eq('id', pc.id)
 
-    // Soft delete financial_positions associate
+    // Soft delete financial_positions associate (multi-connection scenario fix Q9 ratifica)
+    // Filter via provider_connection_id (Phase 04 ALTER #2) per atomic scope a singola connection.
+    // Pre-Phase-04-ALTER fallback: se provider_connection_id NULL su tutte (legacy backfill incompleta),
+    // gestisce con OR clause per backward compat — rimuovere post-Phase-06+ quando ALTER eseguita su tutti env.
     await supabase
       .from('financial_positions')
       .update({ deleted_at: new Date().toISOString(), status: 'CLOSED' })
       .eq('household_id', householdId)
-      .eq('provider', pc.provider)
+      .eq('provider_connection_id', pc.id)
       .is('deleted_at', null)
 
     return new Response(JSON.stringify({ success: true, data: { providerConnectionId: pc.id } }), {

@@ -23,6 +23,7 @@ import { handleCors } from '../_shared/cors.ts'
 import { createServiceClient, getUserId, getHouseholdId, setAuditSource } from '../_shared/supabase.ts'
 import { jsonResponse, errorResponse } from '../_shared/responses.ts'
 
+// TODO Phase 06: ratificare window via observed pattern empirico. 48h copre most retail banking sync cycle ma può essere stretto per investment.
 const TRANSFER_WINDOW_HOURS = 48
 
 Deno.serve(async (req: Request) => {
