@@ -276,9 +276,10 @@ export async function verifySignature(
   }
 
   // Decode signature da base64
-  let signatureBytes: Uint8Array
+  let signatureBytes: Uint8Array<ArrayBuffer>
   try {
-    signatureBytes = Uint8Array.from(atob(signature), (c) => c.charCodeAt(0))
+    const decoded = Uint8Array.from(atob(signature), (c) => c.charCodeAt(0))
+    signatureBytes = new Uint8Array(decoded)
   } catch {
     return { valid: false, reason: 'invalid_signature_encoding' }
   }
