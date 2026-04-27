@@ -9,6 +9,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 _Next: Sprint Infra 1.α (Lucca migration readiness, deadline T-10) + Sprint 1.5 (Onboarding Piano Generato). See `~/vault/moneywise/planning/roadmap.md` for the consolidated roadmap._
 
+### 2026-04-27 — Cleanup: legacy NestJS/TypeORM/JWT/Redis vars from root .env.local (post-Supabase pivot)
+
+Cleanup mirato del file gitignored `/.env.local` rimuovendo 32 vars dead post-Phase-0-Supabase migration. Verifica empirica via grep: zero usage runtime nel codebase corrente.
+
+#### Removed (root `.env.local` only — gitignored, no code change)
+
+- **NestJS backend config** — `PORT`, `APP_NAME`, `APP_VERSION`, `API_PREFIX`, `CORS_ORIGIN`, `APP_URL` (backend NestJS dismesso, sostituito da Supabase Edge Functions Deno)
+- **TypeORM DB config** — `DB_HOST`, `DB_PORT`, `DB_USERNAME`, `DB_PASSWORD`, `DB_NAME`, `DB_SCHEMA` (TypeORM rimosso, Supabase RLS gestisce authorization)
+- **JWT custom auth** — `JWT_ACCESS_SECRET`, `JWT_ACCESS_EXPIRES_IN`, `JWT_REFRESH_SECRET`, `JWT_REFRESH_EXPIRES_IN` (Supabase Auth via JWT Signing Keys + getClaims)
+- **Redis cache** — `REDIS_HOST`, `REDIS_PORT`, `REDIS_DB` (no Redis dependency)
+- **AWS observability** — `CLOUDWATCH_ENABLED`, `AWS_REGION` (no AWS infra, Sentry sostituisce CloudWatch)
+- **Saltedge duplicates** — `SALTEDGE_CLIENT_ID`, `SALTEDGE_SECRET`, `SALTEDGE_APP_ID`, `SALTEDGE_API_URL`, `BANKING_INTEGRATION_ENABLED` (edge functions Deno leggono da Supabase Dashboard secrets, non da file locale)
+- **Frontend NEXT_PUBLIC_*** — `NEXT_PUBLIC_APP_NAME`, `NEXT_PUBLIC_APP_VERSION`, `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` (Next.js legge SOLO `apps/web/.env.local`, root non viene letto, vedi memory `feedback_nextjs_env_local_priority.md`)
+- **Sentry server-side** — `SENTRY_DSN` (fallback in `apps/web/sentry.{server,edge}.config.ts` a `NEXT_PUBLIC_SENTRY_DSN`)
+
+#### Replaced
+
+- **Root `.env.local`** sostituito con header esplicativo che documenta:
+  - Storia del cleanup (pre-Phase-0 32 vars → post-pivot 0 vars)
+  - Dove vivono ora le vars (apps/web per Next.js, Supabase Dashboard per Edge Functions)
+  - Next.js env precedence (NO merge, apps/web prioritizzato)
+  - Pattern per future addizioni vars
+  - Pointer al backup pre-cleanup gitignored
+
+#### Backup
+
+- **`.env.local.backup-pre-cleanup-20260427T223416Z`** (gitignored via `*.backup-*` pattern) — preserva le 32 vars legacy per riferimento storico.
+
+#### Verification
+
+- Next.js dev server (`pnpm dev:web`) attivo durante cleanup → no boot errors, HTTP 307 redirect su `/` (auth-gated home, behavior atteso).
+- Empirical grep verification (32 vars × `process.env.X` + `Deno.env.get('X')` + `import.meta.env.X` patterns): zero runtime usage di vars rimosse fuori da node_modules/.next/.
+
+#### Why now
+
+Pivot strategico clean slate Zecca V2 (project Supabase `ocfypfqvesuvzsmkeokv`) ha richiesto update di `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_ANON_KEY`. Update in 2 file (root + apps/web) ha rivelato la duplicazione → trigger per cleanup mirato del root post-pivot.
+
 ### 2026-04-19 — Consolidation: Roadmap Master Hub + Legacy Archive + Node/Infra Parity Preparation
 
 Consolidation sprint to eliminate planning drift and prepare cross-machine dev environment parity (Steam Deck ↔ WSL2 Lucca PC).
