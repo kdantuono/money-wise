@@ -164,3 +164,9 @@ apps/backend/performance-results.json
 
 # Orchestration runtime state (ephemeral)
 .claude/orchestration/state/bugs-active.json
+
+# Supabase CLI cache (linked project metadata, version cache).
+# Auto-aggiornato ad ogni `supabase link/status/...`. Mai committare:
+# contiene refs project-specific che cambiano post-pivot e versioni CLI/runtime
+# dipendenti dalla local toolchain di chi clona.
+supabase/.temp/
