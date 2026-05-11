@@ -82,7 +82,7 @@
     "ts-jest": "^29.4.9",
     "tsx": "^4.20.6",
     "turbo": "^2.9.6",
-    "wait-on": "^9.0.5"
+    "wait-on": "^9.0.10"
   },
   "pnpm": {
     "peerDependencyRules": {
